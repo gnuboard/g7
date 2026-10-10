@@ -1,0 +1,109 @@
+<!-- 리뷰 작성 창 — 주문한 **항목 하나**에 대해 쓴다. 첨부 장수·용량 한도는 화면에 적지 않고 운영자 설정
+     (`reviewSettings`)을 그대로 읽어 컴포넌트에 넘긴다. 사진은 곧바로 올리지 않고(`autoUpload=false`)
+     리뷰 등록과 함께 보낸다 — 쓰다 만 리뷰의 사진이 서버에 남지 않게 하기 위해서다. -->
+<partial description="리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부" editor_label="$t:user.modal_label.mypage_orders.modal_write_review">
+  <modal data-type="composite" data-ref="modal_write_review" width="560px" title="$t:mypage.order_detail.review_modal.title">
+    <div class="p-5 space-y-5">
+      <!-- 상품 정보 -->
+      <div class="flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+          <img data-if="{{$parent._local.reviewTarget?.thumbnail_url}}" src="{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}" alt="{{$parent._local.reviewTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
+          <div data-if="{{!$parent._local.reviewTarget?.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+            <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{{$parent._local.reviewTarget?.product_name ?? ''}}</p>
+          <p data-if="{{$parent._local.reviewTarget?.option_name}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{$parent._local.reviewTarget?.option_name ?? ''}}</p>
+        </div>
+      </div>
+      <!-- 별점 선택 — _local에 저장 (취소 모달 패턴과 동일) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.rating_label</label>
+        <div class="flex gap-1">
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=1" aria-pressed="{{(_local.reviewRating ?? 5) === 1}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+            <on type="click">
+              <!-- 별 1점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
+              <set-state target="_local" :reviewRating="1"/>
+            </on>
+            <icon name="star" prefix="fas" size="lg"/>
+          </button>
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=2" aria-pressed="{{(_local.reviewRating ?? 5) === 2}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+            <on type="click">
+              <!-- 별 2점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
+              <set-state target="_local" :reviewRating="2"/>
+            </on>
+            <icon name="star" prefix="fas" size="lg"/>
+          </button>
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=3" aria-pressed="{{(_local.reviewRating ?? 5) === 3}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+            <on type="click">
+              <!-- 별 3점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
+              <set-state target="_local" :reviewRating="3"/>
+            </on>
+            <icon name="star" prefix="fas" size="lg"/>
+          </button>
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=4" aria-pressed="{{(_local.reviewRating ?? 5) === 4}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+            <on type="click">
+              <!-- 별 4점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
+              <set-state target="_local" :reviewRating="4"/>
+            </on>
+            <icon name="star" prefix="fas" size="lg"/>
+          </button>
+          <button aria-label="$t:mypage.order_detail.review_modal.rating_star|count=5" aria-pressed="{{(_local.reviewRating ?? 5) === 5}}" type="button" class="p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}">
+            <on type="click">
+              <!-- 별 5점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다) -->
+              <set-state target="_local" :reviewRating="5"/>
+            </on>
+            <icon name="star" prefix="fas" size="lg"/>
+          </button>
+        </div>
+      </div>
+      <!-- 리뷰 내용 — _local에 저장 (취소 모달 패턴과 동일) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.content_label</label>
+        <textarea value="{{_local.reviewContent ?? ''}}" placeholder="$t:mypage.order_detail.review_modal.content_placeholder" :rows="5" :maxLength="2000" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
+          <on type="input">
+            <!-- 본문. 글자수 상한은 컴포넌트가 막고 아래 카운터가 남은 수를 보여 준다 -->
+            <set-state target="_local" reviewContent="{{$event.target.value}}"/>
+          </on>
+        </textarea>
+        <div class="flex justify-between mt-1">
+          <span class="text-xs text-gray-400 dark:text-gray-500">$t:mypage.order_detail.review_modal.content_min_length</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{(_local.reviewContent ?? '').length}}/2000</span>
+        </div>
+      </div>
+      <!-- 이미지 첨부 (리뷰 정책 max_images=0 이면 숨김) -->
+      <div data-if="{{(reviewSettings?.data?.review_settings?.max_images ?? 5) > 0}}">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}</label>
+        <file-uploader data-type="composite" :autoUpload="false" accept=".jpg,.jpeg,.png,.gif,.webp" maxFiles="{{reviewSettings?.data?.review_settings?.max_images ?? 5}}" maxSize="{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}">
+          <on type="change">
+            <!-- 고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다 -->
+            <set-state target="_local" reviewImages="{{$event.target.files ?? []}}"/>
+          </on>
+        </file-uploader>
+      </div>
+      <!-- 에러 메시지 -->
+      <div data-if="{{!!_local.reviewError}}" class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+        <icon name="circle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0" size="sm"/>
+        <span class="text-sm text-red-600 dark:text-red-400">{{_local.reviewError ?? ''}}</span>
+      </div>
+      <!-- 버튼 영역 -->
+      <div class="flex gap-3 pt-2">
+        <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <!-- 등록 버튼 — 데이터를 params로 핸들러에 직접 전달 (취소 모달 패턴과 동일) -->
+        <button type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isSubmittingReview === true}}">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.submitReview" orderId="{{$parent._local.reviewTarget?.orderId ?? ''}}" optionId="{{$parent._local.reviewTarget?.id ?? ''}}" productId="{{$parent._local.reviewTarget?.product_id ?? ''}}" rating="{{_local.reviewRating ?? 5}}" content="{{_local.reviewContent ?? ''}}" images="{{_local.reviewImages ?? []}}"/>
+          </on>
+          <icon data-if="{{_local.isSubmittingReview}}" name="spinner" class="animate-spin" size="sm"/>
+          <span>{{_local.isSubmittingReview ? '$t:common.processing' : '$t:mypage.order_detail.review_modal.submit_button'}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

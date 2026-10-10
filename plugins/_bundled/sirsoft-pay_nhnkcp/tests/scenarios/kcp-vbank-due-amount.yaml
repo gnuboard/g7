@@ -1,0 +1,20 @@
+feature: KCP 가상계좌 입금 안내 — 입금 금액 = 결제예정금액
+
+description: |
+  마이페이지 주문 상세 「가상계좌 입금 안내」(후속 B 세션 B5, 전수 실측 S2 인계). 입금 금액은 실제 입금액인 결제예정금액
+  (`total_due_amount_formatted`, 마일리지 차감 뒤)을 먼저 읽고, 그 값이 없는 비회원 응답에서는 주문금액으로 대신한다.
+  KCP 확장은 금액 행 자체가 없었다. 입금 대기 중에는 결제예정금액과 주문금액이 같은 값이다(실측 B5 마일리지 주문 5,000/5,000).
+  입금 안내는 결제 정보 카드의 조각(user_order_show)이 그린다(#639 에서 주입 스크립트를 조각으로 옮김) — 조각 트리의
+  금액 바인딩과 엔진 렌더 결과를 함께 본다.
+
+axes:
+  case: [fragment_contract, member_with_mileage, guest_without_due]
+
+effects:
+  - kcp_vbank_shows_due_amount
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/vbankDepositAmountDue.test.ts
+
+validation:
+  browser_check: 마일리지를 쓴 가상계좌 입금 대기 주문의 마이페이지 주문 상세 → 입금 금액이 결제예정금액, 자동 취소 안내 표시

@@ -1,658 +1,867 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_ecommerce_settings",
-  "permissions": [
-    "sirsoft-ecommerce.settings.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:sirsoft-ecommerce.admin.settings.title",
-    "description": "$t:sirsoft-ecommerce.admin.settings.description"
-  },
-  "computed": {
-    "isReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
-    "isNotificationReadOnly": "{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}"
-  },
-  "state": {
-    "notificationDefinitionCurrentPage": 1,
-    "notificationDefinitionTotalPages": 1,
-    "notificationDefinitionTotalItems": 0,
-    "isClearingCache": false
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "settings",
-      "seoStats",
-      "carriers",
-      "ecommerceNotificationDefinitions",
-      "availableChannels"
-    ],
-    "target": "ecommerce_settings_tab_content",
-    "fallback_target": "right_content_area"
-  },
-  "data_sources": [
-    {
-      "id": "settings",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.settings",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "initLocal": "form",
-      "refetchOnMount": true,
-      "errorHandling": {
-        "403": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
-        }
-      }
+    "comment": "쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다\n  필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지\n  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다.",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.settings.title",
+        "description": "$t:sirsoft-ecommerce.admin.settings.description"
     },
-    {
-      "id": "seoStats",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.seoStats",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings/seo-cache-info",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'seo'}}",
-      "auto_fetch": true,
-      "auth_required": true
-    },
-    {
-      "id": "carriers",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.carriers",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'shipping'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "errorHandling": {
-        "default": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
-        }
-      }
-    },
-    {
-      "id": "ecommerceNotificationDefinitions",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceNotificationDefinitions",
-      "type": "api",
-      "endpoint": "/api/admin/notification-definitions?extension_type=module&extension_identifier=sirsoft-ecommerce",
-      "method": "GET",
-      "if": "{{['notification_definitions', 'mileage'].includes(query.tab || _global.activeEcommerceSettingsTab || 'basic_info')}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 20}}",
-        "search": "{{query.search}}",
-        "search_type": "{{query.search_type}}",
-        "template_channel": "{{query.channel ?? 'mail'}}"
-      },
-      "initLocal": {
-        "_merge": "deep",
-        "notificationDefinitionCurrentPage": "pagination.current_page",
-        "notificationDefinitionTotalPages": "pagination.last_page",
-        "notificationDefinitionTotalItems": "pagination.total"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "pagination": []
-        }
-      },
-      "errorHandling": {
-        "default": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
-        }
-      }
-    },
-    {
-      "id": "availableChannels",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.availableChannels",
-      "type": "api",
-      "endpoint": "/api/admin/notification-channels",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'notification_definitions'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "channels": []
-        }
-      }
-    },
-    {
-      "id": "ecommerceIdentityPolicies",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPolicies",
-      "type": "api",
-      "endpoint": "/api/admin/identity/policies",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "source_identifier": "sirsoft-ecommerce",
-        "source_type": "{{query.source_type ?? ''}}",
-        "scope": "{{query.scope ?? ''}}",
-        "purpose": "{{query.purpose ?? ''}}",
-        "search": "{{query.search ?? ''}}",
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 10}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "meta": {}
-        }
-      }
-    },
-    {
-      "id": "ecommerceIdentityPurposes",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPurposes",
-      "type": "api",
-      "endpoint": "/api/identity/purposes",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "identityProviders",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.identityProviders",
-      "type": "api",
-      "endpoint": "/api/admin/identity/providers",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "_local",
-        "notificationDefinitionCurrentPage": "{{+(query.page || 1)}}"
-      }
-    }
-  ],
-  "initLocal": {
-    "editingDefinition": null,
-    "editingTemplate": null,
-    "editLang": "ko",
-    "previewData": null,
-    "notificationDefinitionFilter": {
-      "search": "",
-      "searchType": "all"
-    },
-    "expandedNotificationDefinitionIds": []
-  },
-  "defines": {
-    "currencyToFlag": {
-      "KRW": "kr",
-      "USD": "us",
-      "JPY": "jp",
-      "CNY": "cn",
-      "EUR": "eu",
-      "GBP": "gb",
-      "AUD": "au",
-      "CAD": "ca",
-      "CHF": "ch",
-      "HKD": "hk",
-      "SGD": "sg",
-      "THB": "th",
-      "VND": "vn",
-      "TWD": "tw",
-      "INR": "in",
-      "RUB": "ru",
-      "BRL": "br",
-      "MXN": "mx",
-      "ZAR": "za",
-      "NZD": "nz"
-    }
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "settings_content",
-        "type": "basic",
-        "name": "Div",
-        "dataKey": "form",
-        "trackChanges": true,
-        "props": {
-          "className": "admin-page-content-responsive"
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "composite",
-            "name": "PageHeader",
-            "props": {
-              "title": "$t:sirsoft-ecommerce.admin.settings.title",
-              "description": "$t:sirsoft-ecommerce.admin.settings.description"
-            }
-          },
-          {
-            "id": "read_only_banner",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{_computed.isReadOnly}}",
-            "props": {
-              "className": "alert-warning"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Icon",
-                "props": {
-                  "name": "fas fa-lock",
-                  "className": "text-yellow-600 dark:text-yellow-400"
-                }
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "props": {
-                  "className": "text-warning-soft"
-                },
-                "text": "$t:sirsoft-ecommerce.common.read_only_notice"
-              }
-            ]
-          },
-          {
-            "comment": "className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다.",
-            "id": "tab_navigation",
-            "type": "composite",
-            "name": "TabNavigation",
-            "props": {
-              "tabs": [
-                {
-                  "id": "basic_info",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"
-                },
-                {
-                  "id": "language_currency",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"
-                },
-                {
-                  "id": "seo",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.seo"
-                },
-                {
-                  "id": "order_settings",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"
-                },
-                {
-                  "id": "claim",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.claim"
-                },
-                {
-                  "id": "shipping",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.shipping"
-                },
-                {
-                  "id": "review_settings",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"
-                },
-                {
-                  "id": "notification_definitions",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"
-                },
-                {
-                  "id": "identity_policies",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"
-                },
-                {
-                  "id": "mileage",
-                  "label": "$t:sirsoft-ecommerce.admin.settings.tabs.mileage"
-                }
-              ],
-              "activeTabId": "{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}",
-              "variant": "default",
-              "className": "sticky-tab-nav-responsive"
-            },
-            "actions": [
-              {
-                "event": "onTabChange",
-                "type": "change",
-                "handler": "sequence",
-                "params": {
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "errors": null
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "activeEcommerceSettingsTab": "{{$args[0]}}"
-                      }
-                    },
-                    {
-                      "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/ecommerce/settings",
-                        "query": {
-                          "tab": "{{$args[0]}}"
-                        },
-                        "replace": true
-                      }
+    "data_sources": [
+        {
+            "id": "settings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.settings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
                     }
-                  ]
                 }
-              }
-            ]
-          },
-          {
-            "id": "ecommerce_settings_tab_content",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-              {
-                "id": "validation_error",
+            },
+            "comment": "전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 이 한 응답이 열 탭을 모두 덮는다. 탭 전환은 같은 화면으로의 재진입(navigate replace)이라 refetchOnMount 로 다시 받아 폼을 덮는다 — 그래서 저장하지 않은 변경이 있으면 탭 줄이 옮기기 전에 묻는다. 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다"
+        },
+        {
+            "id": "ecommercePrivacyRetentionPreview",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommercePrivacyRetentionPreview",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings/privacy-retention-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'privacy_retention'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "orders": null
+                }
+            },
+            "comment": "개인정보 보유기간 대상 건수 — 「개인정보 보유기간」 탭의 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽는다. 꺼져 있어도 서버가 센다(꺼짐은 `enabled` 로 구분) — null 은 응답을 받기 전 fallback 뿐이다"
+        },
+        {
+            "id": "privacyManualRuns",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.privacyManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'privacy_retention'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "retention:sirsoft-ecommerce.order",
+                "since": "{{_global.privacyRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "privacyManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "ecommercePrivacyRetentionPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).\n       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로\n       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은\n       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식)."
+        },
+        {
+            "id": "privacyTargets",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.privacyTargets",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-ecommerce.order'}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 20
+            },
+            "comment": "개인정보 보유기간 대상 주문 창 — 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에 넣고 다시 받은 뒤 연다.\n       명단은 코어 공통 대상 목록 API 가 이 모듈 핸들러를 식별자로 찾아 내려준다."
+        },
+        {
+            "id": "seoStats",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.seoStats",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings/seo-cache-info",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'seo'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "comment": "SEO 탭에서만 — 생성된 정적 페이지 수·마지막 생성 시각처럼 설정값이 아니라 현재 캐시 상태를 보여 주는 값이다"
+        },
+        {
+            "id": "carriers",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.carriers",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'shipping'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "배송 탭에서만 — 택배사는 설정 본문이 아니라 별도 목록이라 따로 받는다"
+        },
+        {
+            "id": "ecommerceNotificationDefinitions",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceNotificationDefinitions",
+            "type": "api",
+            "endpoint": "/api/admin/notification-definitions?extension_type=module&extension_identifier=sirsoft-ecommerce",
+            "method": "GET",
+            "if": "{{['notification_definitions', 'mileage'].includes(query.tab || _global.activeEcommerceSettingsTab || 'basic_info')}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "search_type": "{{query.search_type}}",
+                "template_channel": "{{query.channel ?? 'mail'}}"
+            },
+            "initLocal": {
+                "_merge": "deep",
+                "notificationDefinitionCurrentPage": "pagination.current_page",
+                "notificationDefinitionTotalPages": "pagination.last_page",
+                "notificationDefinitionTotalItems": "pagination.total"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": []
+                }
+            },
+            "errorHandling": {
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "알림 정의는 코어가 가진 목록이라 확장 식별자로 이 모듈 몫만 걸러 받는다. 마일리지 탭도 자기 알림을 보여 주므로 두 탭이 함께 쓴다"
+        },
+        {
+            "id": "availableChannels",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.availableChannels",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'notification_definitions'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "channels": []
+                }
+            },
+            "comment": "알림 탭에서만 — 어떤 발송 수단(메일·SMS 등)을 켤 수 있는지는 설치된 채널에 달려 있어 서버에서 받아 온다"
+        },
+        {
+            "id": "ecommerceIdentityPolicies",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPolicies",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/identity-policies",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "source_identifier": "sirsoft-ecommerce",
+                "source_type": "{{query.source_type ?? ''}}",
+                "scope": "{{query.scope ?? ''}}",
+                "purpose": "{{query.purpose ?? ''}}",
+                "search": "{{query.search ?? ''}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 10}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": {}
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없으면(403) 표지를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 「등록된 정책 없음」으로 보인다.\n         다시 성공하면 computed 가 abilities 를 먼저 본다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "identityPoliciesLoadError": "forbidden"
+                    }
+                }
+            },
+            "comment": "본인인증 탭에서만 — 코어 정책 표에서 이 모듈이 소유한 것만 이커머스 모듈 경로로 받고, 목록 검색·쪽수는 URL 쿼리를 그대로 넘긴다.\n       이 경로는 이커머스 권한(`identity.policies.read`, 쓰기·abilities 는 `.update`)으로 동작한다 — 코어 경로는 코어 권한을 요구해\n       이커머스 권한이 아무 효과가 없었다. 서버가 출처를 이커머스로 고정하므로 `source_identifier` 는 표지일 뿐이다"
+        },
+        {
+            "id": "ecommerceIdentityPurposes",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPurposes",
+            "type": "api",
+            "endpoint": "/api/identity/purposes",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "정책을 만들 때 고를 인증 목적(주문·환불 등) 선택지"
+        },
+        {
+            "id": "identityProviders",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.identityProviders",
+            "type": "api",
+            "endpoint": "/api/identity/providers",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "정책에 붙일 인증 제공자 선택지 — 설치·활성된 플러그인에 따라 달라진다. 권한이 필요 없는 공개 목록에서 받는다(폼은 id·이름만 쓴다) —\n       코어 관리자 목록은 코어 권한을 요구해, 이커머스 권한만 가진 운영자의 선택지가 비었다"
+        }
+    ],
+    "initLocal": {
+        "editingDefinition": null,
+        "editingTemplate": null,
+        "editLang": "ko",
+        "previewData": null,
+        "notificationDefinitionFilter": {
+            "search": "",
+            "searchType": "all"
+        },
+        "expandedNotificationDefinitionIds": []
+    },
+    "computed": {
+        "isReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
+        "activeRateProvider": "{{settings?.data?.active_rate_provider ?? null}}",
+        "managedRateCodes": "{{settings?.data?.active_rate_provider?.managed_codes ?? []}}",
+        "isNotificationReadOnly": "{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}",
+        "identityPoliciesNoReadPermission": "{{!ecommerceIdentityPolicies?.data?.abilities && _local.identityPoliciesLoadError === 'forbidden'}}",
+        "isIdentityPolicyReadOnly": "{{ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.settings.read"
+    ],
+    "defines": {
+        "currencyToFlag": {
+            "KRW": "kr",
+            "USD": "us",
+            "JPY": "jp",
+            "CNY": "cn",
+            "EUR": "eu",
+            "GBP": "gb",
+            "AUD": "au",
+            "CAD": "ca",
+            "CHF": "ch",
+            "HKD": "hk",
+            "SGD": "sg",
+            "THB": "th",
+            "VND": "vn",
+            "TWD": "tw",
+            "INR": "in",
+            "RUB": "ru",
+            "BRL": "br",
+            "MXN": "mx",
+            "ZAR": "za",
+            "NZD": "nz"
+        }
+    },
+    "transition_overlay": {
+        "target": "ecommerce_settings_tab_content",
+        "fallback_target": "right_content_area",
+        "wait_for": [
+            "settings",
+            "seoStats",
+            "ecommercePrivacyRetentionPreview",
+            "privacyManualRuns",
+            "carriers",
+            "ecommerceNotificationDefinitions",
+            "availableChannels",
+            "ecommerceIdentityPolicies"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "_local",
+                "notificationDefinitionCurrentPage": "{{+(query.page || 1)}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "settings_content",
                 "type": "basic",
                 "name": "Div",
-                "if": "{{_local.errors}}",
+                "dataKey": "form",
+                "trackChanges": true,
                 "props": {
-                  "className": "alert-danger"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "flex gap-3"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
                         "props": {
-                          "name": "triangle-exclamation",
-                          "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                            "title": "$t:sirsoft-ecommerce.admin.settings.title",
+                            "description": "$t:sirsoft-ecommerce.admin.settings.description"
                         }
-                      },
-                      {
+                    },
+                    {
+                        "id": "read_only_banner",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{_computed.isReadOnly}}",
+                        "props": {
+                            "className": "alert-warning"
+                        },
                         "children": [
-                          {
-                            "type": "basic",
-                            "name": "H3",
-                            "props": {
-                              "className": "text-error-strong"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.settings.validation_error"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "P",
-                            "if": "{{typeof _local.errors === 'string'}}",
-                            "props": {
-                              "className": "text-error-soft mt-2"
-                            },
-                            "text": "{{_local.errors}}"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Ul",
-                            "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                            "props": {
-                              "className": "mt-2 list-disc list-inside space-y-1"
-                            },
-                            "iteration": {
-                              "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
-                              "item_var": "message"
-                            },
-                            "children": [
-                              {
+                            {
                                 "type": "basic",
-                                "name": "Li",
+                                "name": "Icon",
                                 "props": {
-                                  "className": "text-error-soft"
+                                    "name": "fas fa-lock",
+                                    "className": "text-yellow-600 dark:text-yellow-400"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
                                 },
-                                "text": "{{message}}"
-                              }
-                            ]
-                          }
+                                "text": "$t:sirsoft-ecommerce.common.read_only_notice"
+                            }
                         ]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_basic_info.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_language_currency.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_seo.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_order_settings.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_claim.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_shipping.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_review_settings.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_notification_definitions.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_identity_policies.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_settings/_tab_mileage.json"
-              }
-            ],
-            "props": {
-              "className": "tab-content"
-            }
-          },
-          {
-            "id": "footer_buttons",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "sticky-footer-buttons"
-            },
-            "children": [
-              {
-                "id": "cancel_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "className": "btn btn-secondary"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "/admin"
-                    }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:common.cancel"
-                  }
-                ]
-              },
-              {
-                "id": "save_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "data-testid": "ecommerce-settings-save",
-                  "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
-                  "className": "btn btn-primary flex-center gap-1.5"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "params": {
-                      "actions": [
-                        {
-                          "handler": "toast",
-                          "if": "{{_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true}}",
-                          "params": {
-                            "type": "error",
-                            "message": "$t:sirsoft-ecommerce.admin.settings.save_pending_currency"
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}",
-                          "params": {
-                            "target": "local",
-                            "isSaving": true,
-                            "errors": null
-                          }
-                        },
-                        {
-                          "handler": "apiCall",
-                          "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}",
-                          "auth_required": true,
-                          "target": "/api/modules/sirsoft-ecommerce/admin/settings",
-                          "params": {
-                            "method": "PUT",
-                            "body": "{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}"
-                          },
-                          "onSuccess": [
+                    },
+                    {
+                        "comment": "className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다.",
+                        "id": "tab_navigation",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
                             {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "isSaving": false,
-                                "hasChanges": false,
-                                "isAddingCurrency": false,
-                                "form.newCurrency": null,
-                                "isAddingMileageCurrency": false,
-                                "form.newMileageCurrency": null
-                              }
-                            },
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "settings",
-                                "sync": true
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "$t:sirsoft-ecommerce.admin.settings.save_success"
-                              }
+                                "comment": "저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게)",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "conditions",
+                                "conditions": [
+                                    {
+                                        "if": "{{_local.hasChanges === true && $args[0] !== (_global.activeEcommerceSettingsTab || query.tab || 'basic_info')}}",
+                                        "then": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "pendingEcommerceSettingsTab": "{{$args[0]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "modal_ecommerce_settings_unsaved_tab"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "then": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "탭을 옮기면 열어 둔 인라인 추가 폼도 함께 정리한다(확인 창 「저장하지 않고 이동」 partials/admin_ecommerce_settings/_modal_unsaved_tab_switch 도 같은 목록 — 함께 고친다). 페이지 [저장] 가드는 이 플래그들을 **탭과 무관하게** 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 그 뒤로 어느 탭에서도 저장하지 못하고 화면에 있지도 않은 폼을 확정하라는 안내만 받는다(브라우저 실측으로 재현 — S10 17차). 각 폼의 '취소' 가 비우는 것과 같은 범위를 비운다: 플래그 + 입력 버퍼 + 그 폼의 오류. 가드가 열거식이므로 새 인라인 폼이 생기면 여기에도 더해야 한다.",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "errors": null,
+                                                        "isAddingExchangeReason": false,
+                                                        "exchangeReasonForm": null,
+                                                        "exchangeReasonFormErrors": null,
+                                                        "isAddingReturnReason": false,
+                                                        "returnReasonForm": null,
+                                                        "returnReasonFormErrors": null,
+                                                        "isAddingRefundReason": false,
+                                                        "refundReasonForm": null,
+                                                        "refundReasonFormErrors": null,
+                                                        "isAddingCarrier": false,
+                                                        "carrierForm": null,
+                                                        "carrierFormErrors": null,
+                                                        "isAddingShippingType": false,
+                                                        "shippingTypeForm": null,
+                                                        "shippingTypeFormErrors": null,
+                                                        "isAddingCountry": false,
+                                                        "newCountry": null,
+                                                        "isAddingCurrency": false,
+                                                        "form.newCurrency": null,
+                                                        "isAddingMileageCurrency": false,
+                                                        "form.newMileageCurrency": null,
+                                                        "claimReasonTab": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "activeEcommerceSettingsTab": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/ecommerce/settings",
+                                                        "replace": true,
+                                                        "query": {
+                                                            "tab": "{{$args[0]}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
                             }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "isSaving": false,
-                                "errors": "{{error.errors}}"
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.save_error')}}"
-                              }
-                            }
-                          ]
+                        ],
+                        "props": {
+                            "activeTabId": "{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}",
+                            "variant": "default",
+                            "className": "sticky-tab-nav-responsive",
+                            "tabs": [
+                                {
+                                    "id": "basic_info",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"
+                                },
+                                {
+                                    "id": "language_currency",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"
+                                },
+                                {
+                                    "id": "seo",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.seo"
+                                },
+                                {
+                                    "id": "order_settings",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"
+                                },
+                                {
+                                    "id": "claim",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.claim"
+                                },
+                                {
+                                    "id": "shipping",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.shipping"
+                                },
+                                {
+                                    "id": "review_settings",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"
+                                },
+                                {
+                                    "id": "notification_definitions",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"
+                                },
+                                {
+                                    "id": "identity_policies",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"
+                                },
+                                {
+                                    "id": "mileage",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.mileage"
+                                },
+                                {
+                                    "id": "privacy_retention",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.privacy_retention"
+                                }
+                            ]
                         }
-                      ]
+                    },
+                    {
+                        "id": "ecommerce_settings_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "id": "validation_error",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.errors}}",
+                                "props": {
+                                    "className": "alert-danger"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "triangle-exclamation",
+                                                    "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H3",
+                                                        "props": {
+                                                            "className": "text-error-strong"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.settings.validation_error"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{typeof _local.errors === 'string'}}",
+                                                        "props": {
+                                                            "className": "text-error-soft mt-2"
+                                                        },
+                                                        "text": "{{_local.errors}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Ul",
+                                                        "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                                        "iteration": {
+                                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                            "item_var": "message"
+                                                        },
+                                                        "props": {
+                                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "props": {
+                                                                    "className": "text-error-soft"
+                                                                },
+                                                                "text": "{{message}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_basic_info.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_language_currency.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_seo.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_order_settings.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_claim.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_shipping.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_review_settings.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_notification_definitions.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_identity_policies.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_mileage.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_privacy_retention.json"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의\n              값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에\n              걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —\n              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.\n              통화 탭은 환율 제공자가 관리하는 기존 통화의 환율을 빼고 보낸다 — 그 칸은 잠겨 있어\n              운영자가 바꿀 수 없고, 화면을 연 사이 제공자가 환율을 갱신했으면 받아 둔 값이 저장값과\n              달라 저장 전체가 「관리 환율 변경」 오류로 막힌다. 빠진 값은 서버가 저장값으로 채운다.\n              키를 빼는 데 구조분해 매개변수를 쓰지 않는다 — 식 평가기가 읽지 못해 본문 전체가 식 원문\n              문자열로 나가 모든 탭 저장이 아무것도 저장하지 못했다(#703 실측).",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "toast",
+                                                "if": "{{_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true}}",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:sirsoft-ecommerce.admin.settings.save_pending_currency"
+                                                }
+                                            },
+                                            {
+                                                "comment": "통화 2축과 같은 가드를 사유 3종·배송사·배송유형·배송가능국가의 추가 폼에도 둔다 — 폼을 연 채 저장하면 그 버퍼(*Form)는 form.* 로 옮겨지지 않은 채 조용히 버려지고 성공 토스트가 뜬다. 가드가 열거식이라 새 인라인 폼이 생기면 여기에도 더해야 한다. 문구는 지금 열려 있는 폼만 지목한다 — 종전엔 세 가지를 고정으로 나열해, 배송가능국가 폼만 연 운영자가 열려 있지도 않은 폼을 확정하라는 안내를 받았다($t 는 치환 인자를 받지 않으므로 :forms 자리를 여기서 채운다).",
+                                                "handler": "toast",
+                                                "if": "{{_local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true}}",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{$t('sirsoft-ecommerce.admin.settings.save_pending_form').replace(':forms', [[_local.isAddingExchangeReason, 'exchange_reason'], [_local.isAddingReturnReason, 'return_reason'], [_local.isAddingRefundReason, 'refund_reason'], [_local.isAddingCarrier, 'carrier'], [_local.isAddingShippingType, 'shipping_type'], [_local.isAddingCountry, 'country']].filter(pair => pair[0] === true).map(pair => $t('sirsoft-ecommerce.admin.settings.save_pending_form_targets.' + pair[1])).join(', '))}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true || _local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true)}}",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/modules/sirsoft-ecommerce/admin/settings",
+                                                "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true || _local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true)}}",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PUT",
+                                                    "body": "{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } if (tab === 'language_currency') { const managed = _computed.managedRateCodes ?? []; const savedCodes = (settings?.data?.language_currency?.currencies ?? []).map(c => c?.code); const lc = form.language_currency ?? {}; const currencies = Array.isArray(lc.currencies) ? lc.currencies.map(c => (c && managed.includes(c.code) && savedCodes.includes(c.code)) ? Object.keys(c).filter(k => k !== 'exchange_rate').reduce((o, k) => ({ ...o, [k]: c[k] }), {}) : c) : lc.currencies; return { _tab: tab, language_currency: { ...lc, currencies }, inquiry: form.inquiry ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "comment": "쓸 수 없게 된 공개 자산 디스크 안내는 저장 응답값으로 덮는다 — 설정 재조회는 폼에 없는 키를 지우지 않아, 새 디스크를 골라 저장해도 옛 안내가 남았다. 다른 탭을 저장하면 응답이 여전히 옛 이름을 실어 안내가 유지된다",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false,
+                                                            "isAddingCurrency": false,
+                                                            "form.newCurrency": null,
+                                                            "isAddingMileageCurrency": false,
+                                                            "form.newMileageCurrency": null,
+                                                            "form.basic_info.public_asset_disk_unavailable": "{{response.data?.basic_info?.public_asset_disk_unavailable ?? null}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "settings",
+                                                            "sync": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "if": "{{(_global.activeEcommerceSettingsTab || query.tab) === 'privacy_retention'}}",
+                                                        "params": {
+                                                            "dataSourceId": "ecommercePrivacyRetentionPreview"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-ecommerce.admin.settings.save_success"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "errors": "{{error.errors}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.save_error')}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "data-testid": "ecommerce-settings-save",
+                                    "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_local.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "if": "{{_local.isSaving}}",
-                    "props": {
-                      "name": "spinner",
-                      "className": "spinner-sm"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{!_local.isSaving}}",
-                    "text": "$t:common.save"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{_local.isSaving}}",
-                    "text": "$t:common.saving"
-                  }
                 ]
-              }
-            ]
-          }
+            }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "무통장 입금 계좌 관리 (주문 설정 탭)",
+            "partial": "partials/admin_ecommerce_settings/_bank_management_modal.json"
+        },
+        {
+            "comment": "해외배송 끄기 확인 — 이미 등록된 해외 배송정책·주소가 묶여 있어 되돌리기 전에 묻는다",
+            "partial": "partials/admin_ecommerce_settings/_disable_international_shipping_modal.json"
+        },
+        {
+            "comment": "알림 템플릿 편집 — 채널·언어별 제목과 본문을 고친다",
+            "partial": "partials/admin_ecommerce_settings/_modal_notification_template_edit.json"
+        },
+        {
+            "comment": "알림 템플릿 미리보기 — 치환 변수를 예시 값으로 채워 실제 발송 모습을 보여 준다",
+            "partial": "partials/admin_ecommerce_settings/_modal_notification_template_preview.json"
+        },
+        {
+            "comment": "알림 정의 초기화 확인 — 손댄 템플릿을 모듈 기본값으로 되돌린다",
+            "partial": "partials/admin_ecommerce_settings/_modal_notification_definition_reset.json"
+        },
+        {
+            "comment": "SEO 캐시 비우기 확인 — 정적 페이지를 지우면 다음 방문부터 다시 생성된다",
+            "partial": "partials/admin_ecommerce_settings/_modal_clear_seo_cache.json"
+        },
+        {
+            "comment": "본인인증 정책 등록·수정",
+            "partial": "partials/admin_ecommerce_settings/_modal_identity_policy_form.json"
+        },
+        {
+            "comment": "본인인증 정책 삭제 확인",
+            "partial": "partials/admin_ecommerce_settings/_modal_identity_policy_delete.json"
+        },
+        {
+            "comment": "개인정보 보유기간 대상 주문 창(개인정보 보유기간 탭).",
+            "partial": "partials/admin_ecommerce_settings/_modal_privacy_targets.json"
+        },
+        {
+            "comment": "개인정보 보유기간 직권 실행 확인 창(개인정보 보유기간 탭).",
+            "partial": "partials/admin_ecommerce_settings/_modal_privacy_run.json"
+        },
+        {
+            "comment": "저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다",
+            "partial": "partials/admin_ecommerce_settings/_modal_unsaved_tab_switch.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_ecommerce_settings/_bank_management_modal.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_settings/_disable_international_shipping_modal.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_settings/_modal_notification_template_edit.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_settings/_modal_notification_template_preview.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_settings/_modal_notification_definition_reset.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_settings/_modal_clear_seo_cache.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_settings/_modal_identity_policy_form.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_settings/_modal_identity_policy_delete.json"
-    }
-  ]
 }

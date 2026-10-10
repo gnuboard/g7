@@ -20,9 +20,11 @@ import { DataBindingEngine } from './DataBindingEngine';
 import { extractSingleBinding } from './BindingShape';
 import { hasPipes } from './PipeRegistry';
 import { resolveExpressionString } from './helpers/RenderHelpers';
+import { evaluateComputedDefinitions } from './helpers/ComputedEvaluator';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
-import { AuthManager, AuthType } from '../auth/AuthManager';
+import { AuthManager, AuthType, LoginResult } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
+import { getConsentRuntime } from '../consent';
 import { getErrorHandlingResolver } from '../error';
 import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
@@ -32,10 +34,34 @@ import { addMissingLeafKeys } from './helpers/StateMerge';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
-import { isAbortError, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
+import { resolveSafeNavPath, isDangerousScheme, isSameOriginRequestUrl } from '../support/navPolicy';
+import {
+  toExpressionEvent,
+  toExpressionArgs,
+  toExpressionData,
+  toExpressionError,
+} from './helpers/expressionData';
 
 const logger = createLogger('ActionDispatcher');
+
+/**
+ * 같은 종류·같은 문구 토스트를 겹쳐 쌓지 않는 시간(ms) — engine-v1.78.5.
+ * 화면 공통 데이터소스 여러 개가 한꺼번에 같은 오류로 실패할 때 한 장만 띄운다.
+ */
+const TOAST_DEDUPE_WINDOW_MS = 3000;
+
+/**
+ * 스크립트 로드가 미뤄졌음을 표시하는 코어 속성.
+ *
+ * 스크립트 로드를 미루는 확장(동의 전 추적 스크립트를 막는 확장 등)이 `<script>` 의 src setter 에서
+ * 이 속성을 붙이면, `loadScript` 는 태그를 붙이지 않고 미완료로 돌려준다. 코어는 어느 확장이 미루는지
+ * 모른다 — 속성 이름만이 계약이다(`docs/extension/hooks.md` 「스크립트 로드 지연 계약」).
+ *
+ * @since engine-v1.73.0
+ */
+export const SCRIPT_DEFERRED_ATTRIBUTE = 'data-g7-script-deferred';
 
 /**
  * 액션 실패 시 화면에 띄울 문구를 결정합니다.
@@ -85,6 +111,7 @@ const PREVIEW_SUPPRESSED_HANDLERS: ReadonlySet<string> = new Set([
     'navigateBack',
     'navigateForward',
     'replaceUrl',
+    'redirect',         // 외부 주소로 통째 이탈 — 프리뷰에서 돌면 미리보기 창이 사라진다
 
     // 간접 네비게이션 — 페이지 리로드 또는 리다이렉트 유발
     'refresh',          // window.location.reload()
@@ -134,6 +161,8 @@ export type ActionType =
   | 'login' // 로그인 (토큰 저장 포함)
   | 'loginTwoFactor' // 2단계 인증 코드 확인 (로그인 완료)
   | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
+  | 'loginPasswordChange' // 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
+  | 'loginPasswordChangePostpone' // 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -227,6 +256,13 @@ export interface ActionDefinition {
   errorHandling?: import('../types/ErrorHandling').ErrorHandlingMap;
   /** 확인 메시지 표시 여부 */
   confirm?: string;
+  /**
+   * 상위로 이벤트 전파를 차단할지 여부 (engine-v1.68.0)
+   *
+   * 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 싶을 때 쓴다.
+   * 진입점 액션에서만 의미가 있다 — 이벤트 객체를 쥐고 있는 것이 그 자리뿐이다.
+   */
+  stopPropagation?: boolean;
   /** 키보드 이벤트에서 특정 키 필터링 (예: "Enter", "Escape") */
   key?: string;
   /** switch 핸들러용 케이스 정의 - $args[0] 값을 기준으로 분기 */
@@ -581,6 +617,13 @@ export class ActionDispatcher {
   /** 기본 컨텍스트 */
   private defaultContext: Partial<ActionContext>;
 
+  /**
+   * 기본 401 처리(`navigate {{auth.loginPath}}`)가 쓸 로그인 경로를 만드는 함수 (engine-v1.78.2)
+   *
+   * 템플릿 앱이 자기 인증 종류(관리자/사용자)와 현재 주소로 복귀 경로가 실린 로그인 주소를 돌려주도록 주입한다.
+   */
+  private loginPathResolver?: () => string;
+
   /** 전역 상태 업데이트 함수 (engine-v1.42.0: render 옵션 추가) */
   private globalStateUpdater?: (updates: any, options?: { render?: boolean }) => void;
 
@@ -859,6 +902,12 @@ export class ActionDispatcher {
   ): Record<string, string> {
     const result: Record<string, string> = {};
 
+    // 보안: 전역 헤더(비회원 주문 조회 토큰·비밀글 열람 토큰 등)는 같은 출처 요청에만 싣는다 —
+    // 패턴이 `*` 여도 교차 출처 대상으로 증표가 새지 않게, Bearer 와 같은 판정을 쓴다.
+    if (!isSameOriginRequestUrl(endpoint)) {
+      return result;
+    }
+
     for (const rule of this.globalHeaders) {
       if (this.matchesPattern(endpoint, rule.pattern)) {
         Object.entries(rule.headers).forEach(([key, value]) => {
@@ -899,10 +948,11 @@ export class ActionDispatcher {
         actions: handler.actions, // sequence 핸들러용 actions 배열 전달
       };
 
-      // 에러 컨텍스트를 data에 포함
+      // 에러 컨텍스트를 data에 포함 — 기본 401 처리의 `{{auth.loginPath}}` 가 풀리도록 auth 도 싣는다.
       const context: Partial<ActionContext> = {
         data: {
           ...this.defaultContext.data,
+          auth: this.buildErrorAuthContext(),
           error: errorContext.error,
         },
       };
@@ -2005,6 +2055,23 @@ export class ActionDispatcher {
       }
     });
 
+    // refreshConsent: 방문자 동의 스냅샷을 다시 조회한다 (engine-v1.78.0, #639)
+    // 동의를 저장한 화면(쿠키 배너·마이페이지 동의 카드)이 성공 뒤에 부른다. 코어 동의 런타임이
+    // `_global.consent` 를 갱신하고 `consent:changed` 리스너(차단 엔진 동기화 등)가 끝날 때까지 기다린 뒤
+    // 끝나므로, 같은 시퀀스의 다음 동작(토스트 등)은 동기화 이후에 실행된다. 관리자 화면처럼 런타임이
+    // 없으면 아무 일도 하지 않는다.
+    //
+    // @example <action handler="refreshConsent"/>
+    this.registerHandler('refreshConsent', async () => {
+      const runtime = getConsentRuntime();
+      if (!runtime) {
+        logger.warn('refreshConsent: consent runtime is not available (admin template?)');
+        return;
+      }
+
+      await runtime.refresh();
+    });
+
     // suppress: 에러 전파를 의도적으로 방지하는 no-op 핸들러
     // 데이터소스/apiCall의 errorHandling에서 특정 에러 코드를 상위 레벨로 전파하지 않을 때 사용
     // 예: 비회원의 /api/auth/user 401은 정상 동작이므로 레이아웃 errorHandling으로 전파 방지
@@ -2034,6 +2101,7 @@ export class ActionDispatcher {
       { name: 'reloadTranslations', description: '다국어 파일을 다시 로드합니다' },
       { name: 'showErrorPage', description: '에러 페이지를 표시합니다' },
       { name: 'emitEvent', description: '이벤트를 발생시킵니다' },
+      { name: 'refreshConsent', description: '방문자 동의 상태를 다시 조회합니다' },
       { name: 'updateProductField', description: '상품 필드를 인라인 수정합니다' },
       { name: 'updateOptionField', description: '상품 옵션 필드를 인라인 수정합니다' },
       { name: 'setLocale', description: '언어를 변경합니다 (DB 저장 + UI 리렌더링)' },
@@ -2055,7 +2123,7 @@ export class ActionDispatcher {
     action: ActionDefinition,
     dataContext?: any,
     componentContext?: { state?: any; setState?: (updates: any) => void; isolatedContext?: IsolatedContextValue | null }
-  ): (event: Event) => void {
+  ): (event?: Event) => void {
     logger.log('createHandler called for:', action.handler, action.type);
 
     // DevTools: 핸들러 생성 시점 상태 캡처 (stale closure 감지용)
@@ -2064,7 +2132,7 @@ export class ActionDispatcher {
     const capturedLocalState = componentContext?.state ? { ...componentContext.state } : null;
     const handlerId = `handler_${action.handler}_${handlerCreatedAt}`;
 
-    return async (event: Event) => {
+    const run = async (event: Event) => {
       logger.log('Handler invoked for:', action.handler, 'event:', event.type);
 
       // DevTools: 핸들러 실행 시점에 stale closure 감지
@@ -2098,6 +2166,9 @@ export class ActionDispatcher {
         }
       }
 
+      // 보안: 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다
+      const eventData = toExpressionEvent(event);
+
       try {
         // 기본 이벤트 동작 방지 (폼 제출 시 페이지 리로드 방지)
         // 단, change 이벤트에서는 preventDefault()를 호출하면 안됨
@@ -2105,6 +2176,15 @@ export class ActionDispatcher {
         // 네이티브 상태 변경이 취소되어 React 상태와 불일치 발생
         if (event.type !== 'change') {
           event.preventDefault();
+        }
+
+        // 상위로 이벤트 전파 차단 (engine-v1.68.0)
+        //
+        // 클릭 가능한 행 안에 토글/버튼을 두는 구조에서, 안쪽 컨트롤을 눌러도 바깥 행의
+        // click 이 함께 발화한다. 레이아웃은 예전부터 액션에 `stopPropagation: true` 를
+        // 적어 이를 막으려 했으나 엔진에 소비처가 없어 **한 번도 동작한 적이 없었다**.
+        if (action.stopPropagation === true) {
+          event.stopPropagation();
         }
 
         // 폼 데이터 추출 (submit 이벤트인 경우)
@@ -2130,8 +2210,10 @@ export class ActionDispatcher {
             form: formData, // 폼 데이터를 form 객체로 추가
             // _local: 레이아웃 수준의 로컬 상태 (componentContext.state)
             _local: componentContext?.state || {},
-            // $event: 이벤트 객체를 data에 추가 ({{$event.target.value}} 바인딩 지원)
-            $event: event,
+            // $event: 이벤트의 plain 스냅샷 ({{$event.target.value}} 바인딩 지원).
+            // 원본 이벤트는 target.ownerDocument.defaultView 로 Window 에 닿으므로 보안상 싣지 않는다.
+            // 핸들러는 context.event 로 원본을 받는다.
+            $event: eventData,
           },
           event,
           // 컴포넌트 컨텍스트 병합
@@ -2192,11 +2274,12 @@ export class ActionDispatcher {
             ...this.defaultContext,
             data: {
               ...dataContext,
-              error: errorData, // 에러 객체 추가
+              // 에러 DTO — own 필드(response·status·errors·code …)+message·name, stack·호스트 객체 제외
+              error: toExpressionError(errorData),
               // _local: 레이아웃 수준의 로컬 상태 (componentContext.state)
               _local: componentContext?.state || {},
-              // $event: 이벤트 객체를 data에 추가
-              $event: event,
+              // $event: 본 실행과 같은 이벤트 스냅샷
+              $event: eventData,
             },
             event,
             // 컴포넌트 컨텍스트 병합 (setState를 통해 에러 상태 업데이트 가능)
@@ -2214,6 +2297,61 @@ export class ActionDispatcher {
         }
       }
     };
+
+    // engine-v1.77.1: 인자 없이 불려도 실행한다 — 컴포넌트가 콜백을 `onClose()` 처럼 이벤트 없이 부르면
+    // `run` 의 `event.type`·`preventDefault()` 가 TypeError 로 거부돼 액션이 실행되지 않았다
+    // (admin_basic Modal 의 Escape → closeModal 이 무반응 — #736 S2, 2025-12-19 부터). 액션 type 의
+    // 대체 이벤트를 넘긴다(target 없음 — 폼 submit 판정·$event.target 은 비어 있다).
+    return (event?: Event) => this.runGuardingFormSubmit(event ?? new Event(action.type || 'click'), run);
+  }
+
+  /**
+   * 제출이 진행 중인 폼과 그 제출 이벤트 (폼별 1건).
+   *
+   * 저장 버튼의 `disabled="{{_global.isSaving}}"` 는 첫 제출의 상태 변경이 렌더된 뒤에야 걸려
+   * 같은 틱의 두 번째 submit 을 막지 못한다(더블클릭에 저장 요청 2건). `sequence :debounce` 는
+   * submit 의 기본 동작 차단과 폼 요소를 잃어 대안이 되지 못하므로 엔진이 폼 단위로 막는다.
+   *
+   * @since engine-v1.75.0
+   */
+  private static readonly submitsInFlight: WeakMap<HTMLFormElement, { event: Event; running: number }> = new WeakMap();
+
+  /**
+   * 폼 submit 이면 같은 폼의 제출이 끝나기 전에 들어온 **새** submit 을 기본 동작만 막고 무시합니다.
+   *
+   * 한 submit 이벤트에 묶인 액션 여럿은 같은 이벤트 객체를 받으므로 모두 실행한다. 잠금은 그
+   * 이벤트의 액션이 성공하든 실패하든 모두 끝나면 풀린다. submit 이 아니면 그대로 실행한다.
+   *
+   * @param event 원본 이벤트
+   * @param run 실제 핸들러
+   * @returns 핸들러 완료 Promise
+   */
+  private async runGuardingFormSubmit(event: Event, run: (event: Event) => Promise<void>): Promise<void> {
+    const form = event?.type === 'submit' && event.target instanceof HTMLFormElement ? event.target : null;
+    if (!form) {
+      return run(event);
+    }
+
+    const inFlight = ActionDispatcher.submitsInFlight.get(form);
+    if (inFlight && inFlight.event !== event) {
+      event.preventDefault();
+      logger.log('Duplicate form submit ignored while the previous submit is in flight');
+
+      return;
+    }
+
+    const entry = inFlight ?? { event, running: 0 };
+    entry.running += 1;
+    ActionDispatcher.submitsInFlight.set(form, entry);
+
+    try {
+      await run(event);
+    } finally {
+      entry.running -= 1;
+      if (entry.running === 0 && ActionDispatcher.submitsInFlight.get(form) === entry) {
+        ActionDispatcher.submitsInFlight.delete(form);
+      }
+    }
   }
 
   /**
@@ -2401,7 +2539,13 @@ export class ActionDispatcher {
         case 'navigate':
           // navigate 액션의 경우 params.path를 우선적으로 사용 (동적 바인딩 지원)
           const navigatePath = resolvedParams.path || resolvedTarget;
-          result = await this.handleNavigate(navigatePath!, resolvedParams, context);
+          // 빈 경로는 건너뛴다 — 그대로 넘기면 경로 처리에서 TypeError 가 나고, 그 TypeError 가
+          // 「네트워크 실패」 로 분류돼 엉뚱한 토스트가 뜬다(engine-v1.78.2, O-F1).
+          if (typeof navigatePath !== 'string' || navigatePath.trim() === '') {
+            logger.warn('navigate skipped — empty path', { params: action.params, target: action.target });
+            break;
+          }
+          result = await this.handleNavigate(navigatePath, resolvedParams, context);
           break;
 
         case 'navigateBack':
@@ -2415,6 +2559,13 @@ export class ActionDispatcher {
         case 'openWindow': {
           const openWindowPath = resolvedParams.path || resolvedTarget;
           result = await this.handleOpenWindow(openWindowPath!, resolvedParams);
+          break;
+        }
+
+        case 'redirect': {
+          // `url` 을 먼저 본다 — 이 핸들러의 유일한 호출처(본인인증 외부 이동)가 그 이름으로 적는다.
+          const redirectUrl = resolvedParams.url || resolvedParams.path || resolvedTarget;
+          result = await this.handleRedirect(redirectUrl!, resolvedParams);
           break;
         }
 
@@ -2476,6 +2627,22 @@ export class ActionDispatcher {
 
         case 'loginTwoFactorResend':
           result = await this.handleLoginTwoFactorResend(
+            resolvedTarget!,
+            resolvedParams,
+            context
+          );
+          break;
+
+        case 'loginPasswordChange':
+          result = await this.handleLoginPasswordChange(
+            resolvedTarget!,
+            resolvedParams,
+            context
+          );
+          break;
+
+        case 'loginPasswordChangePostpone':
+          result = await this.handleLoginPasswordChangePostpone(
             resolvedTarget!,
             resolvedParams,
             context
@@ -2747,6 +2914,13 @@ export class ActionDispatcher {
       // 2. action.onError
       // 3. 레이아웃/템플릿/시스템 기본값 (ErrorHandlingResolver)
 
+      // 떠나는 문서(세션 만료로 로그인 화면으로 옮기는 중 등)의 실패는 오류 처리를 돌리지 않는다 —
+      // 떠날 화면에 토스트가 남거나 진행 중인 이동과 겨룬다(engine-v1.78.2, O-F1).
+      if (isDocumentUnloading()) {
+        logger.log(`Document is leaving — error handling skipped for ${action.handler}`);
+        return { success: false, error: actionError };
+      }
+
       // ErrorHandlingResolver를 통해 핸들러 결정
       const resolver = getErrorHandlingResolver();
       const result = resolver.resolve(errorStatus, {
@@ -2775,10 +2949,11 @@ export class ActionDispatcher {
           );
         }
 
-        // 핸들러가 결정되면 실행
+        // 핸들러가 결정되면 실행 — 기본 401 처리의 `{{auth.loginPath}}` 가 풀리도록 auth 도 싣는다.
         const errorContext = {
           ...context,
           data: {
+            auth: this.buildErrorAuthContext(),
             ...context.data,
             error: errorContextData,
           },
@@ -2911,13 +3086,22 @@ export class ActionDispatcher {
         const transitionOverlayTarget = typeof (params as any).transition_overlay_target === 'string'
           ? (params as any).transition_overlay_target
           : undefined;
+        // refetch_data_sources: 이 이동에서 다시 받을 데이터 소스 id(쉼표 구분 문자열 또는 배열).
+        // 같은 탭 안 목록의 검색·필터·쪽 넘김이 설정 폼 소스까지 다시 받아 고친 값을 덮지 않게 한다 (@since engine-v1.79.0)
+        const rawRefetch = (params as any).refetch_data_sources;
+        const refetchDataSourceIds = (Array.isArray(rawRefetch) ? rawRefetch : typeof rawRefetch === 'string' ? rawRefetch.split(',') : [])
+          .map((id: unknown) => String(id).trim())
+          .filter((id: string) => id !== '');
+        const updateOptions: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] } = {};
+        if (transitionOverlayTarget) updateOptions.transitionOverlayTarget = transitionOverlayTarget;
+        if (refetchDataSourceIds.length > 0) updateOptions.refetchDataSourceIds = refetchDataSourceIds;
         await G7Core.updateQueryParams(
           finalPath,
-          transitionOverlayTarget ? { transitionOverlayTarget } : undefined
+          Object.keys(updateOptions).length > 0 ? updateOptions : undefined
         );
         logger.log(
           'handleNavigate: Used updateQueryParams for replace mode',
-          transitionOverlayTarget ? { transitionOverlayTarget } : undefined
+          Object.keys(updateOptions).length > 0 ? updateOptions : undefined
         );
         // 이동 후 스크롤 위치 적용 (기본: 상단)
         this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
@@ -3330,9 +3514,81 @@ export class ActionDispatcher {
     logger.log('handleOpenWindow:', { target, params, finalPath, windowTarget });
 
     if (windowTarget === '_self') {
-      window.location.assign(finalPath);
+      // 같은 탭 이동은 same-origin 경로만 — navigate 미매칭 폴백도 이 자리로 온다.
+      // 보안: `?redirect=javascript:…`·`//evil` 이 레이아웃을 거쳐 그대로 흘러드는 sink 다.
+      const safePath = resolveSafeNavPath(finalPath, '/');
+      if (safePath !== finalPath) {
+        logger.warn('[handleOpenWindow] same-origin 경로가 아니라 기본 경로로 이동합니다.', finalPath);
+      }
+      window.location.assign(safePath);
     } else {
-      window.open(finalPath, '_blank');
+      // 새 창은 정상 외부 링크가 있으므로 실행 스킴만 막는다(과차단 방지).
+      if (isDangerousScheme(finalPath)) {
+        logger.warn('[handleOpenWindow] 실행 스킴 주소라 새 창을 열지 않습니다.', finalPath);
+
+        return;
+      }
+      if (isSameOriginRequestUrl(finalPath)) {
+        window.open(finalPath, '_blank');
+
+        return;
+      }
+      // 보안: 외부 주소는 https 만 열고, 새 창이 이 창(opener)을 조작하지 못하게 끊은 뒤 싣는다
+      // (역방향 탭내빙 차단). 빈 창을 먼저 여는 이유 — `noopener` 지정은 사용자 제스처 판정·팝업 크기
+      // 처리가 브라우저마다 달라, 열린 창을 받아 opener 를 직접 끊는다.
+      if (!/^https:\/\//i.test(finalPath)) {
+        logger.warn('[handleOpenWindow] https 가 아닌 외부 주소라 새 창을 열지 않습니다.', finalPath);
+
+        return;
+      }
+      const opened = window.open('', '_blank');
+      if (opened) {
+        opened.opener = null;
+        opened.location.href = finalPath;
+      }
+    }
+  }
+
+  /**
+   * 현재 탭을 주어진 주소로 통째로 이동시킵니다 (SPA 라우팅 밖).
+   *
+   * `navigate` 는 SPA 경로용이라 외부 절대 주소를 넘기면 라우트로 해석해 엉뚱한 곳에 닿고,
+   * `openWindow` 는 새 창이라 팝업 차단에 걸린다. 본인인증 제공자처럼 **같은 탭에서 나갔다가
+   * 돌아오는** 흐름은 그 둘 어느 쪽도 아니다 — 그 자리가 이 핸들러다.
+   *
+   * `<action handler="redirect" url="…">` 는 #297 부터 레이아웃에 적혀 있었으나 엔진에 소비처가
+   * 없어 **한 번도 동작한 적이 없었다**(전 이력 조사 — `case 'redirect'` 0건, 매니페스트 0건,
+   * 확장 등록 0건). 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에 흔적이 남지 않는다.
+   *
+   * 프리뷰에서는 {@link PREVIEW_SUPPRESSED_HANDLERS} 가 막는다 — 미리보기 창이 사라지기 때문이다.
+   *
+   * 이동 대상은 same-origin 경로로 제한한다(engine-v1.73.0). 레이아웃은 이 주소를 `query` 에서
+   * 채우기도 하므로(`identity_challenge` 의 `redirect_url`) 검증 없이 넘기면 `javascript:` 실행·
+   * 오프사이트 이동 sink 가 된다. 본인인증 제공자의 외부 origin 이동은 명시
+   * 허용목록이 생기기 전까지 기본 경로(`/`)로 떨어진다.
+   *
+   * @param target 이동할 주소 (same-origin 절대 경로)
+   * @param params `replace: true` 면 뒤로가기 이력을 남기지 않는다
+   * @since engine-v1.70.0
+   */
+  private async handleRedirect(target: string, params: Record<string, any>): Promise<void> {
+    if (typeof target !== 'string' || target.trim() === '') {
+      logger.warn('[handleRedirect] 이동할 주소가 비어 있어 아무것도 하지 않습니다.', params);
+
+      return;
+    }
+
+    const safeTarget = resolveSafeNavPath(target, '/');
+    if (safeTarget !== target.trim()) {
+      logger.warn('[handleRedirect] same-origin 경로가 아니라 기본 경로로 이동합니다.', target);
+    }
+
+    logger.log('handleRedirect:', { target: safeTarget, replace: params.replace === true });
+
+    if (params.replace === true) {
+      window.location.replace(safeTarget);
+    } else {
+      window.location.assign(safeTarget);
     }
   }
 
@@ -3661,15 +3917,23 @@ export class ActionDispatcher {
       await this.ensureCsrfToken();
     }
 
+    // 보안: 인증 정보(Bearer·XSRF)는 동일 출처 대상에만 싣는다. 레이아웃은 대상 주소를
+    // 표현식으로 조립할 수 있어, 출처를 보지 않고 실으면 레이아웃 편집 권한만으로 관리자 토큰을 외부로
+    // 보낼 수 있다. ApiClient(데이터 소스)도 같은 원칙이다. 교차 출처 요청 자체는 막지 않는다.
+    const sameOrigin = isSameOriginRequestUrl(target);
+    if (!sameOrigin && authMode !== 'none') {
+      logger.warn('[handleApiCall] 교차 출처 대상이라 인증 정보를 싣지 않습니다.', target);
+    }
+
     // CSRF 토큰을 쿠키에서 추출하여 헤더에 추가
-    const csrfToken = this.getCsrfTokenFromCookie();
+    const csrfToken = sameOrigin ? this.getCsrfTokenFromCookie() : null;
 
     // authMode에 따라 Bearer 토큰 추가
     // - 'none': 토큰 미포함
     // - 'required': 토큰 필수 (토큰이 있으면 포함)
     // - 'optional': 토큰이 있으면 포함, 없으면 미포함
     let authHeader: Record<string, string> = {};
-    if (authMode === 'required' || authMode === 'optional') {
+    if (sameOrigin && (authMode === 'required' || authMode === 'optional')) {
       const apiClient = getApiClient();
       const token = apiClient.getToken();
       if (token) {
@@ -3768,7 +4032,12 @@ export class ActionDispatcher {
 
       // HTTP 428 + identity_verification_required → IDV Guard 인터셉트
       // Challenge 모달 launcher 호출 후 성공 시 원 요청을 재실행합니다.
-      if (IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
+      // 동일 출처 응답만 믿는다 — launcher 는 응답의 challenge_start_url 로 토큰을 실어 보내므로,
+      // 교차 출처 서버가 428 을 흉내 내면 위에서 뺀 토큰을 후속 요청으로 받아 간다.
+      if (!sameOrigin && IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
+        logger.warn('[handleApiCall] 교차 출처 응답의 본인인증 요구는 따르지 않습니다.', target);
+      }
+      if (sameOrigin && IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
         // retry fetch 가 원 요청의 body/headers/credentials 를 그대로 재사용해야 백엔드가
         // 빈 body 로 422 를 던지지 않음 (회원가입 등 모든 POST 흐름의 핵심 회귀 방지)
         const replayed = await IdentityGuardInterceptor.handle(
@@ -3871,17 +4140,56 @@ export class ActionDispatcher {
         return {
           user: null,
           two_factor_required: true,
+          password_change_required: false,
           challenge_id: result.challenge.challengeId,
           provider_id: result.challenge.providerId,
           expires_at: result.challenge.expiresAt,
         };
       }
 
-      // `user` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 `response.user` 를 읽는다.
-      return { user: result.user, two_factor_required: false };
+      // `user`·`two_factor_required` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 읽는다.
+      // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored` 등)도 함께 넘긴다 — 버리면 로그인 화면의
+      // `<toast if="{{response.dormancy_restored}}">` 가 한 번도 뜨지 않는다 (engine-v1.76.0).
+      return { ...this.toLoginStepResponse(result), two_factor_required: false };
     } catch (error: any) {
       throw this.toLoginActionError(error, 'Login failed');
     }
+  }
+
+  /**
+   * 로그인 결과(인증 완료 / 비밀번호 변경 단계)를 레이아웃이 읽는 응답 모양으로 바꿉니다.
+   *
+   * 로그인·2단계 인증 확인·비밀번호 변경·연기 네 핸들러가 같은 모양을 돌려주도록 단일
+   * 지점에 둔다 — 갈라지면 한 경로에서만 `dormancy_restored`(휴면 해제 안내)나 변경 단계
+   * 필드가 빠진다(engine-v1.76.0 이전에는 `dormancy_restored` 를 버려 휴면 해제 토스트가
+   * 한 번도 뜨지 않았다).
+   *
+   * @param result AuthManager 로그인 결과 (2단계 인증 형태 제외)
+   * @returns 레이아웃 `response`
+   * @since engine-v1.77.0
+   */
+  private toLoginStepResponse(result: LoginResult): Record<string, any> {
+    if (result.status === 'password_change_required') {
+      return {
+        user: null,
+        password_change_required: true,
+        challenge_id: result.challenge.challengeId,
+        reason: result.challenge.reason,
+        can_postpone: result.challenge.canPostpone,
+        postpone_days: result.challenge.postponeDays,
+        expired_at: result.challenge.expiredAt,
+        expires_at: result.challenge.expiresAt,
+      };
+    }
+
+    if (result.status !== 'authenticated') {
+      // 다음 단계 응답에서 2단계 인증 challenge 는 오지 않는다(AuthManager 가 받지 않음).
+      throw new ActionError('Unexpected login step result');
+    }
+
+    // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored`·연기 기한 `postponed_until` 등)는 서버가 실었을
+    // 때만 키가 있다 — 레이아웃은 `response.dormancy_restored` 로 안내한다 (engine-v1.76.0).
+    return { ...(result.extras ?? {}), user: result.user, password_change_required: false };
   }
 
   /**
@@ -3913,13 +4221,103 @@ export class ActionDispatcher {
       : '/api/auth/login/two-factor';
 
     try {
-      const user = await AuthManager.getInstance().completeTwoFactor(
+      const result = await AuthManager.getInstance().completeTwoFactorSession(
         authType,
         { challengeId: String(body.challenge_id), code: String(body.code) },
         this.buildAuthRequestOptions(endpoint, context)
       );
 
-      return { user };
+      // 코드가 맞아도 비밀번호 변경 단계가 올 수 있다 — `response.password_change_required` 로 가른다.
+      return this.toLoginStepResponse(result);
+    } catch (error: any) {
+      throw this.toLoginActionError(error, 'Login failed');
+    }
+  }
+
+  /**
+   * loginPasswordChange 액션을 처리합니다.
+   *
+   * 로그인 비밀번호 변경 단계에서 새 비밀번호를 정하고 로그인을 완료합니다. 성공하면
+   * 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급합니다.
+   *
+   * @param target 인증 타입 (admin 또는 user)
+   * @param params 요청 파라미터 (body에 challenge_id, password, password_confirmation 포함)
+   * @param context 액션 컨텍스트
+   * @since engine-v1.77.0
+   */
+  private async handleLoginPasswordChange(
+    target: string,
+    params: Record<string, any>,
+    context: ActionContext
+  ): Promise<any> {
+    const { body } = params;
+
+    if (!body || !body.challenge_id) {
+      throw new ActionError(
+        'loginPasswordChange requires challenge_id in body params'
+      );
+    }
+
+    const authType = this.resolveAuthType(target);
+    const endpoint = authType === 'admin'
+      ? '/api/auth/admin/login/password-change'
+      : '/api/auth/login/password-change';
+
+    try {
+      // 빈 비밀번호도 서버로 보낸다 — 규칙 위반 문구(422 `errors.password`)는 서버가 정한다.
+      const result = await AuthManager.getInstance().completePasswordChange(
+        authType,
+        {
+          challengeId: String(body.challenge_id),
+          password: String(body.password ?? ''),
+          passwordConfirmation: String(body.password_confirmation ?? ''),
+        },
+        this.buildAuthRequestOptions(endpoint, context)
+      );
+
+      return this.toLoginStepResponse(result);
+    } catch (error: any) {
+      throw this.toLoginActionError(error, 'Login failed');
+    }
+  }
+
+  /**
+   * loginPasswordChangePostpone 액션을 처리합니다.
+   *
+   * 로그인 비밀번호 변경 단계를 미루고('다음에 변경') 로그인을 완료합니다. 만료 시 동작이
+   * '다음에 변경 허용' 일 때만 서버가 받아 줍니다.
+   *
+   * @param target 인증 타입 (admin 또는 user)
+   * @param params 요청 파라미터 (body에 challenge_id 포함)
+   * @param context 액션 컨텍스트
+   * @since engine-v1.77.0
+   */
+  private async handleLoginPasswordChangePostpone(
+    target: string,
+    params: Record<string, any>,
+    context: ActionContext
+  ): Promise<any> {
+    const { body } = params;
+
+    if (!body || !body.challenge_id) {
+      throw new ActionError(
+        'loginPasswordChangePostpone requires challenge_id in body params'
+      );
+    }
+
+    const authType = this.resolveAuthType(target);
+    const endpoint = authType === 'admin'
+      ? '/api/auth/admin/login/password-change/postpone'
+      : '/api/auth/login/password-change/postpone';
+
+    try {
+      const result = await AuthManager.getInstance().postponePasswordChange(
+        authType,
+        { challengeId: String(body.challenge_id) },
+        this.buildAuthRequestOptions(endpoint, context)
+      );
+
+      return this.toLoginStepResponse(result);
     } catch (error: any) {
       throw this.toLoginActionError(error, 'Login failed');
     }
@@ -5049,8 +5447,8 @@ export class ActionDispatcher {
       return;
     }
 
-    // 현재 모달 스택 가져오기
-    const currentStack = context.data?._global?.modalStack || [];
+    // 현재 모달 스택 가져오기 — sequence 안에서도 최신값 (engine-v1.75.2)
+    const currentStack = this.latestModalStack(context);
 
     // 이미 열려있는 모달이면 스택에 추가하지 않음
     if (currentStack.includes(target)) {
@@ -5130,6 +5528,39 @@ export class ActionDispatcher {
   }
 
   /**
+   * 지금의 모달 스택을 읽습니다 (sequence 안에서도 최신값).
+   *
+   * sequence 는 단계마다 `data` 를 `...context.data` 로 다시 만들어 `_global` 이 sequence 시작 시점의 사본이다.
+   * 그 사본을 읽으면 같은 sequence 안의 closeModal → openModal 이 방금 닫은 창을 되살린다 — 닫기는 `[]` 를 쓰고
+   * 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 쓴다(#712 실측: 강제 활성 창 → 언어팩 다시 켜기 창). setState 의 같은
+   * 뿌리(troubleshooting-state-setstate 사례 12)처럼 `G7Core.state.get()` 을 먼저 읽는다 — globalStateUpdater 호출
+   * 직후의 `_global` 내용을 돌려준다. 전역 상태 접근이 없을 때(부트 전·단위 테스트)는 문맥 사본으로 물러선다.
+   *
+   * 문맥에 전역 사본(`data._global`)이 없는 호출 — `G7Core.dispatch()` 를 액션 문맥 없이 부른 확장 JS(본인인증
+   * launcher 등)·DataSourceManager 콜백 — 은 종전대로 빈 스택에서 시작한다. 그 경로의 의미(열기는 스택 교체, 닫기는
+   * 전부 닫기)를 바꾸면 다른 창 안에서 띄운 본인인증 창의 동작이 달라지므로 이번 수정 범위에 넣지 않는다.
+   *
+   * @param context 액션 컨텍스트 (선택적)
+   * @returns 모달 ID 스택 (바닥 → 맨 위)
+   * @since engine-v1.75.2
+   */
+  private latestModalStack(context?: ActionContext): string[] {
+    const snapshot = context?.data?._global;
+
+    if (!snapshot) {
+      return [];
+    }
+
+    const latest = (window as any).G7Core?.state?.get?.()?.modalStack;
+
+    if (Array.isArray(latest)) {
+      return latest;
+    }
+
+    return snapshot.modalStack || [];
+  }
+
+  /**
    * closeModal 액션을 처리합니다.
    *
    * 모달 스택에서 최상위 모달을 제거합니다.
@@ -5143,8 +5574,8 @@ export class ActionDispatcher {
       return;
     }
 
-    // 현재 모달 스택 가져오기
-    const currentStack = context?.data?._global?.modalStack || [];
+    // 현재 모달 스택 가져오기 — sequence 안에서도 최신값 (engine-v1.75.2)
+    const currentStack = this.latestModalStack(context);
 
     // 닫히는 모달 ID (스택의 마지막 항목)
     const closingModalId = currentStack.length > 0 ? currentStack[currentStack.length - 1] : null;
@@ -5270,6 +5701,23 @@ export class ActionDispatcher {
       const G7Core = (window as any).G7Core;
       const currentState = G7Core?.state?.get();
       const currentToasts = currentState?.toasts || [];
+
+      // 같은 종류·같은 문구의 토스트가 잠깐 안에 이미 쌓였으면 새로 쌓지 않는다(engine-v1.78.5).
+      // 권한이 좁은 운영자의 화면 공통 데이터소스 403 이 시스템 기본 처리로 같은 「해당 권한이 없습니다.」 를
+      // 한 화면에 13장 쌓았다(7.1.0 영역 J O-D3). 시간이 지나면(사용자가 다시 누른 저장 실패 등) 다시 쌓인다.
+      const now = Date.now();
+      const duplicate = currentToasts.some(
+        (t: { type?: string; message?: unknown; createdAt?: number }) =>
+          t.type === type &&
+          t.message === resolvedMessage &&
+          typeof t.createdAt === 'number' &&
+          now - t.createdAt < TOAST_DEDUPE_WINDOW_MS
+      );
+      if (duplicate) {
+        logger.log(`[Toast] 같은 토스트가 이미 떠 있어 겹쳐 쌓지 않음: ${String(resolvedMessage)}`);
+        return;
+      }
+      (newToast as Record<string, unknown>).createdAt = now;
 
       // 기존 toasts 배열에 새 토스트 추가
       const newToasts = [...currentToasts, newToast];
@@ -5563,6 +6011,42 @@ export class ActionDispatcher {
     this.intervals.clear();
   }
 
+  /**
+   * sequence 안에서 상태가 바뀐 뒤 `_computed` 를 다시 계산한다.
+   *
+   * 렌더 경로와 같은 공용 평가기를 쓴다 — 결과를 직전 `_computed` 에서 시작하므로 `$switch`·
+   * `{{}}` 없는 리터럴 computed 의 키가 사라지지 않고, 뒤에 정의된 키를 읽으면 직전 값을 본다.
+   * 실패한 키는 직전 값을 유지한다(종전과 같이 경고는 새로 만들지 않는다).
+   *
+   * @param context 액션 컨텍스트(`data._computedDefinitions` 를 읽는다)
+   * @param currentState sequence 가 누적한 최신 `_local`
+   * @param isolatedState sequence 가 누적한 최신 `_isolated`
+   * @param currentComputed 직전 `_computed`
+   * @returns 재계산한 `_computed` (정의가 없으면 `currentComputed` 그대로)
+   * @since engine-v1.74.0
+   */
+  private recalculateSequenceComputed(
+    context: ActionContext,
+    currentState: Record<string, any>,
+    isolatedState: Record<string, any>,
+    currentComputed: Record<string, any>
+  ): Record<string, any> {
+    const computedDefinitions = context.data?._computedDefinitions;
+    if (!computedDefinitions || Object.keys(computedDefinitions).length === 0) {
+      return currentComputed;
+    }
+    return evaluateComputedDefinitions(
+      computedDefinitions,
+      { ...context.data, _local: currentState, _isolated: isolatedState },
+      this.bindingEngine,
+      {
+        previous: currentComputed,
+        onError: 'keep-previous',
+        failureLog: (key, error) => logger.log(`[handleSequence] computed 재계산 실패(직전 값 유지): ${key}`, error),
+      }
+    );
+  }
+
   private async handleSequence(
     action: ActionDefinition,
     context: ActionContext
@@ -5696,45 +6180,9 @@ export class ActionDispatcher {
           }
 
           // _computed 재계산: _local 변경 시 _computed도 업데이트해야 다음 액션에서 최신 값 참조 가능
-          const computedDefinitions = context.data?._computedDefinitions;
-          if (computedDefinitions && Object.keys(computedDefinitions).length > 0) {
-            const newComputed: Record<string, any> = {};
-            const computedContext = {
-              ...context.data,
-              _local: currentState,
-              _computed: newComputed,
-              $computed: newComputed,
-              _isolated: isolatedState,
-            };
-            for (const [key, expression] of Object.entries(computedDefinitions)) {
-              if (typeof expression === 'string') {
-                const trimmed = expression.trim();
-                if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
-                  try {
-                    const innerExpr = trimmed.slice(2, -2).trim();
-                    // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 렌더 경로의
-                    // computed 재계산(DynamicRenderer)과 같은 규칙이다. 한쪽만 고치면
-                    // 같은 computed 가 렌더 직후와 액션 직후에 다른 값이 된다.
-                    // @since engine-v1.54.10
-                    newComputed[key] = hasPipes(innerExpr)
-                      ? this.bindingEngine.evaluatePipeExpression(
-                        innerExpr,
-                        computedContext,
-                        { skipCache: true }
-                      )
-                      : this.bindingEngine.evaluateExpression(
-                        innerExpr,
-                        computedContext,
-                        { skipCache: true }
-                      );
-                  } catch (e) {
-                    // 평가 실패 시 기존 값 유지
-                    newComputed[key] = currentComputed[key];
-                  }
-                }
-              }
-            }
-            currentComputed = newComputed;
+          const recalculated = this.recalculateSequenceComputed(context, currentState, isolatedState, currentComputed);
+          if (recalculated !== currentComputed) {
+            currentComputed = recalculated;
             logger.log('[handleSequence] _computed recalculated after setState:', currentComputed);
           }
         }
@@ -5756,43 +6204,9 @@ export class ActionDispatcher {
             logger.log('[handleSequence] currentState synchronized from __g7SequenceLocalSync after custom handler:', currentAction.handler);
 
             // _computed 재계산: 상태가 변경되었으므로 _computed도 업데이트
-            const computedDefinitions = context.data?._computedDefinitions;
-            if (computedDefinitions && Object.keys(computedDefinitions).length > 0) {
-              const newComputed: Record<string, any> = {};
-              const computedContext = {
-                ...context.data,
-                _local: currentState,
-                _computed: newComputed,
-                $computed: newComputed,
-                _isolated: isolatedState,
-              };
-              for (const [key, expression] of Object.entries(computedDefinitions)) {
-                if (typeof expression === 'string') {
-                  const trimmed = expression.trim();
-                  if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
-                    try {
-                      const innerExpr = trimmed.slice(2, -2).trim();
-                      // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 위 setState
-                      // 직후 재계산 블록과 같은 규칙이다. @since engine-v1.54.10
-                      newComputed[key] = hasPipes(innerExpr)
-                        ? this.bindingEngine.evaluatePipeExpression(
-                          innerExpr,
-                          computedContext,
-                          { skipCache: true }
-                        )
-                        : this.bindingEngine.evaluateExpression(
-                          innerExpr,
-                          computedContext,
-                          { skipCache: true }
-                        );
-                    } catch (e) {
-                      // 평가 실패 시 기존 값 유지
-                      newComputed[key] = currentComputed[key];
-                    }
-                  }
-                }
-              }
-              currentComputed = newComputed;
+            const recalculated = this.recalculateSequenceComputed(context, currentState, isolatedState, currentComputed);
+            if (recalculated !== currentComputed) {
+              currentComputed = recalculated;
               logger.log('[handleSequence] _computed recalculated after custom handler:', currentComputed);
             }
           }
@@ -6080,11 +6494,11 @@ export class ActionDispatcher {
     script.async = async;
     script.defer = defer;
 
-    // 동의 관리(gdpr) preblocker 가 src setter 에서 동기적으로 차단을 기록한다.
-    // 차단된 스크립트는 append 해도 영영 로드되지 않으므로, 태그를 붙이지 않고
-    // 미완료 상태(resolve(false))로 돌려준다 — 오류가 아니라 "동의 전" 이라는 상태다.
-    // 캐시·in-flight 에 기록하지 않으므로 동의 후 재디스패치하면 정상 로드된다.
-    if (script.hasAttribute('data-gdpr-blocked-src')) {
+    // 스크립트 로드를 미루는 확장(예: 동의 전 추적 스크립트를 막는 확장)은 src setter 에서 동기적으로
+    // 코어 속성 `data-g7-script-deferred` 를 붙인다(코어 계약). 미뤄진 스크립트는 append 해도 영영
+    // 로드되지 않으므로, 태그를 붙이지 않고 미완료 상태(resolve(false))로 돌려준다 — 오류가 아니라
+    // "아직 허용 전" 이라는 상태다. 캐시·in-flight 에 기록하지 않으므로 허용 후 재디스패치하면 정상 로드된다.
+    if (script.hasAttribute(SCRIPT_DEFERRED_ATTRIBUTE)) {
       logger.warn(`loadScript: script blocked by consent manager (not loaded): ${src}`);
       return false;
     }
@@ -6271,7 +6685,7 @@ export class ActionDispatcher {
           if (callbackAction) {
             const callbackContext = {
               ...context,
-              data: { ...context.data, $event: data },
+              data: { ...context.data, $event: toExpressionData(data) },
             };
             const actions = Array.isArray(callbackAction) ? callbackAction : [callbackAction];
             for (const cbAction of actions) {
@@ -6432,7 +6846,7 @@ export class ActionDispatcher {
           if (callbackAction) {
             const callbackContext = {
               ...context,
-              data: { ...context.data, $event: data },
+              data: { ...context.data, $event: toExpressionData(data) },
             };
             const actions = Array.isArray(callbackAction) ? callbackAction : [callbackAction];
             for (const cbAction of actions) {
@@ -7148,7 +7562,10 @@ export class ActionDispatcher {
       let effectiveContext = dataContext;
       if (expr.includes('_global')) {
         const G7Core = (window as any).G7Core;
-        const latestGlobal = G7Core?.state?.get()?._global;
+        // `state.get()` 이 **곧 `_global` 의 내용물**이다(`TemplateApp.getGlobalState()` → `{...globalState}`).
+        // 여기에 `._global` 을 한 번 더 붙이면 언제나 undefined 라, 이 stale closure 방어는
+        // engine-v1.70.0 이전까지 **한 번도 돈 적이 없었다** — 가드가 falsy 라 조용히 건너뛴다.
+        const latestGlobal = G7Core?.state?.get?.();
         if (latestGlobal) {
           effectiveContext = { ...dataContext, _global: latestGlobal };
         }
@@ -7178,7 +7595,8 @@ export class ActionDispatcher {
     let effectiveDataContext = dataContext;
     if (expression.includes('_global')) {
       const G7Core = (window as any).G7Core;
-      const latestGlobal = G7Core?.state?.get()?._global;
+      // 위 복합 표현식 분기와 **같은 이유**로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
+      const latestGlobal = G7Core?.state?.get?.();
       if (latestGlobal) {
         effectiveDataContext = {
           ...dataContext,
@@ -7251,6 +7669,38 @@ export class ActionDispatcher {
     this.defaultContext = {
       ...this.defaultContext,
       ...context,
+    };
+  }
+
+  /**
+   * 오류 처리 문맥의 `auth.loginPath` 를 만드는 함수를 설정합니다.
+   *
+   * 시스템 기본 401 처리는 `{{auth.loginPath}}` 로 이동한다. 이 값을 싣는 곳이 없으면 경로가 빈 값으로 풀려
+   * 이동이 실패하고, 그 실패가 「네트워크 실패」 토스트로 바뀌어 보였다(7.1.0 O-F1).
+   *
+   * @param resolver 로그인 주소(복귀 경로 포함)를 돌려주는 함수
+   * @since engine-v1.78.2
+   */
+  setLoginPathResolver(resolver: () => string): void {
+    this.loginPathResolver = resolver;
+  }
+
+  /**
+   * 오류 처리 문맥에 실을 인증 정보(`auth`)를 만듭니다.
+   *
+   * @return 로그인 경로를 담은 객체
+   * @since engine-v1.78.2
+   */
+  private buildErrorAuthContext(): { loginPath: string } {
+    let loginPath: string | undefined;
+    try {
+      loginPath = this.loginPathResolver?.();
+    } catch (error) {
+      logger.warn('loginPathResolver failed — falling back to the user login path', error);
+    }
+
+    return {
+      loginPath: loginPath || AuthManager.getInstance().getConfig?.('user')?.loginPath || '/login',
     };
   }
 
@@ -7340,7 +7790,7 @@ export class ActionDispatcher {
       // onError 액션 실행
       if (action.onError) {
         const errorData = error instanceof ActionError && error.originalError
-          ? { message: error.originalError.message, response: (error.originalError as any).response }
+          ? { message: error.originalError.message, response: toExpressionData((error.originalError as any).response) }
           : { message: error instanceof Error ? error.message : String(error) };
 
         const errorContext: ActionContext = {
@@ -7468,56 +7918,9 @@ export class ActionDispatcher {
    * @returns 추출된 이벤트 데이터
    */
   private extractEventData(event: Event): Record<string, any> {
-    const target = event.target as HTMLInputElement | HTMLSelectElement | null;
-
-    // 커스텀 이벤트 감지 (예: MultilingualInput에서 emit하는 { target: { name, value } })
-    // 커스텀 이벤트는 tagName이 없고, value가 객체일 수 있음
-    const isCustomEvent = target && !('tagName' in target);
-
-    if (isCustomEvent) {
-      // 커스텀 이벤트: target 속성을 그대로 복사
-      const result: Record<string, any> = {
-        type: (event as any).type ?? 'custom',
-        target: {
-          value: (target as any).value,
-          name: (target as any).name ?? '',
-        },
-      };
-
-      // _changedKeys 메타데이터 보존 (디바운스 병합에 사용)
-      if ((event as any)._changedKeys) {
-        result._changedKeys = (event as any)._changedKeys;
-      }
-
-      return result;
-    }
-
-    // DOM 이벤트: 기존 로직
-    const targetData: Record<string, any> = target
-      ? {
-          value: target.value,
-          name: target.name ?? '',
-          checked: (target as HTMLInputElement).checked ?? false,
-          type: target.type ?? '',
-          tagName: target.tagName,
-        }
-      : {};
-
-    // scroll 이벤트인 경우 스크롤 관련 속성 추가
-    if (event.type === 'scroll' && target) {
-      const element = target as HTMLElement;
-      targetData.scrollHeight = element.scrollHeight ?? 0;
-      targetData.scrollTop = element.scrollTop ?? 0;
-      targetData.clientHeight = element.clientHeight ?? 0;
-      targetData.scrollLeft = element.scrollLeft ?? 0;
-      targetData.clientWidth = element.clientWidth ?? 0;
-      targetData.scrollWidth = element.scrollWidth ?? 0;
-    }
-
-    return {
-      type: event.type,
-      target: target ? targetData : null,
-    };
+    // 표현식용 이벤트 스냅샷과 같은 변환기를 쓴다 — 디바운스 경로와 즉시 실행 경로가 같은 필드를 싣는다.
+    // 합성 컴포넌트의 { target: { name, value } } 도 value(다국어 객체 포함)를 그대로 복사한다.
+    return toExpressionEvent(event) as Record<string, any>;
   }
 
   /**
@@ -7540,7 +7943,7 @@ export class ActionDispatcher {
     const contextWithEvent = {
       ...dataContext,
       $event: extractedEvent,
-      $args: args,
+      $args: toExpressionArgs(args),
     };
 
     // 가짜 이벤트 객체 생성 (extractedEvent 기반)
@@ -7752,9 +8155,12 @@ export class ActionDispatcher {
    * 비디바운스 액션이 실행되기 전에 호출하여, 디바운스로 인해
    * 아직 state에 반영되지 않은 변경사항을 즉시 적용합니다.
    * 이를 통해 비디바운스 핸들러가 항상 최신 state를 읽을 수 있습니다.
+   *
+   * @return 실제로 flush 한 대기분이 있었으면 true (호출부가 데이터 문맥을 새로 읽을지 판단한다)
+   * @since engine-v1.70.0 반환 타입이 `void` 에서 `boolean` 으로 바뀌었다 — 종전 호출부는 반환을 무시하므로 그대로 동작한다.
    */
-  flushPendingDebounceTimers(): void {
-    if (this.pendingDebounceFlushers.size === 0) return;
+  flushPendingDebounceTimers(): boolean {
+    if (this.pendingDebounceFlushers.size === 0) return false;
 
     // 반복 중 맵 변경 방지를 위해 복사 후 정리
     const flushers = new Map(this.pendingDebounceFlushers);
@@ -7779,6 +8185,34 @@ export class ActionDispatcher {
     if (this.globalStateUpdater) {
       this.globalStateUpdater({});
     }
+
+    return true;
+  }
+
+  /**
+   * flush 직후의 store 값으로 데이터 문맥의 `_global` 을 덮은 사본을 만듭니다.
+   *
+   * 렌더 시점에 만들어진 `dataContext` 는 스냅샷이라 flush 로 바뀐 값을 담고 있지 않다. 이 좁은
+   * 덮어쓰기가 없으면 디바운스 창 안에서 눌린 비디바운스 액션(저장 등)이 **직전 버퍼**를 보낸다.
+   *
+   * `_local` 은 여기서 손대지 않는다 — {@link createHandler} 가 `componentContext.state` 로 무조건
+   * 다시 덮으므로 이 자리의 갱신은 도달하지 못한다(그쪽 축은 별도다). 데이터소스 키·`route` 등
+   * 나머지 문맥도 그대로 둔다 — flush 가 바꿀 수 있는 것은 상태뿐이다.
+   *
+   * @param dataContext 렌더 시점 데이터 문맥
+   * @return 전역 상태만 최신화한 사본 (읽을 수 없으면 원본)
+   * @since engine-v1.70.0
+   */
+  private withFlushedState(dataContext: any): any {
+    if (!dataContext || typeof dataContext !== 'object' || typeof window === 'undefined') {
+      return dataContext;
+    }
+
+    const nextGlobal = (window as any).G7Core?.state?.get?.();
+
+    if (!nextGlobal || typeof nextGlobal !== 'object') return dataContext;
+
+    return { ...dataContext, _global: { ...(dataContext._global ?? {}), ...nextGlobal } };
   }
 
   /**
@@ -7895,7 +8329,7 @@ export class ActionDispatcher {
 
               // 커스텀 이벤트인 경우 $args 컨텍스트 추가
               const contextForDebounce = action.event
-                ? { ...dataContext, $args: args }
+                ? { ...dataContext, $args: toExpressionArgs(args) }
                 : dataContext;
 
               this.handleDebouncedAction(
@@ -7907,16 +8341,25 @@ export class ActionDispatcher {
                 args
               );
             } else {
-              // 대기 중인 debounce 액션을 즉시 실행하여 state 최신화
-              this.flushPendingDebounceTimers();
+              // 대기 중인 debounce 액션을 즉시 실행하여 state 최신화.
+              //
+              // flush 는 store 를 갱신하지만 `dataContext` 는 **렌더 시점 스냅샷**이라 그대로 두면
+              // 핸들러가 flush 이전 값을 읽는다 — 타이핑 직후(디바운스 창 안에) 저장을 누르면
+              // 마지막 편집이 빠진 채 요청이 나가고, 응답은 200 이라 화면에는 성공으로 보인다.
+              // 그래서 실제로 flush 한 경우에만 문맥의 `_global` 을 최신 store 값으로 덮는다
+              // (`_local` 은 아래 `createHandler` 가 `componentContext.state` 로 무조건 다시
+              //  덮으므로 여기서 손대지 않는다 — {@link withFlushedState} 참조).
+              const flushed = this.flushPendingDebounceTimers();
+              const freshContext = flushed ? this.withFlushedState(dataContext) : dataContext;
 
               // 기존 로직 (debounce 없음)
               // 커스텀 이벤트 핸들러인 경우 (action.event 사용)
               if (action.event) {
                 // 커스텀 콜백의 모든 인자를 $args 배열로 전달
                 const contextWithArgs = {
-                  ...dataContext,
-                  $args: args,
+                  ...freshContext,
+                  // 보안: 콜백 인자는 plain 사본으로 싣는다 — 원본 이벤트·DOM 참조 차단
+                  $args: toExpressionArgs(args),
                 };
 
                 // 이벤트 객체 결정: 표준 DOM 이벤트 > 커스텀 컴포넌트 이벤트 > 빈 이벤트.
@@ -7929,7 +8372,7 @@ export class ActionDispatcher {
               } else {
                 // 표준 이벤트 핸들러
                 if (isStandardEvent) {
-                  this.createHandler(action, dataContext, componentContext)(firstArg);
+                  this.createHandler(action, freshContext, componentContext)(firstArg);
                 } else {
                   // 커스텀 컴포넌트 이벤트 감지 (예: MultilingualInput의 { target: { name, value } })
                   // React 컴포넌트에서 onChange로 emit하는 plain object
@@ -7948,7 +8391,7 @@ export class ActionDispatcher {
                       preventDefault: () => {},
                       stopPropagation: () => {},
                     } as unknown as Event;
-                    this.createHandler(action, dataContext, componentContext)(eventForHandler);
+                    this.createHandler(action, freshContext, componentContext)(eventForHandler);
                   }
                   // 주의: raw value fallback 없음 — 컴포넌트는 `{ target: { value } }` 패턴을 사용해야 함
                   // (사례 26 회귀 테스트 참조: 마운트 시 raw value로 초기 setState가 발동하여

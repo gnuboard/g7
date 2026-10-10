@@ -62,6 +62,9 @@ return [
     // 검증 오류에 표시할 사용자 친화적 필드명
     'attributes' => [
         'search' => '검색어',
+        'temp_key' => '임시 첨부 키',
+        'title' => '페이지 제목',
+        'content' => '페이지 본문',
     ],
 
     // search_field 검증 메시지

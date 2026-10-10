@@ -35,6 +35,18 @@ class PublicPageResource extends BaseApiResource
     }
 
     /**
+     * 공개 페이지의 관리자 [편집]·버전 배지를 여는 근거 — 링크 대상(관리자 페이지 수정 화면)과 같은 권한이다.
+     *
+     * @return array<string, string> 능력 키 → 권한 식별자
+     */
+    protected function abilityMap(): array
+    {
+        return [
+            'can_update' => 'sirsoft-page.pages.update',
+        ];
+    }
+
+    /**
      * 리소스를 배열로 변환합니다.
      *
      * @param  Request  $request  HTTP 요청 객체
@@ -77,6 +89,8 @@ class PublicPageResource extends BaseApiResource
             'updated_at' => $this->updated_at
                 ? $this->formatDateTimeStringForUser($this->updated_at)
                 : null,
+            // 관리자 링크 판정(can_update) — is_admin 만 보던 링크가 수정 권한 없는 관리자에게도 열렸다
+            ...$this->resourceMeta($request),
         ];
     }
 }

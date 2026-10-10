@@ -5,6 +5,7 @@ namespace Tests\Unit\Extension\Helpers;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Models\IdentityPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -18,12 +19,26 @@ class IdentityPolicySyncHelperTest extends TestCase
 
     private IdentityPolicySyncHelper $helper;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->helper = $this->app->make(IdentityPolicySyncHelper::class);
     }
 
+    /**
+     * 처음 동기화하면 정책을 새로 만든다.
+     *
+     * @scenario policy_stage=sync, verification_progress=none
+     *
+     * @effects sync_policy_creates_new_policy_on_first_run
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync_policy_creates_new_policy_on_first_run(): void
     {
         $policy = $this->helper->syncPolicy([
@@ -42,6 +57,15 @@ class IdentityPolicySyncHelperTest extends TestCase
         $this->assertTrue($policy->enabled);
     }
 
+    /**
+     * 운영자가 고치지 않은 칸만 동기화로 갱신한다.
+     *
+     * @scenario policy_stage=sync, verification_progress=none
+     *
+     * @effects sync_policy_updates_fields_not_in_user_overrides
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync_policy_updates_fields_not_in_user_overrides(): void
     {
         $this->helper->syncPolicy([
@@ -83,6 +107,12 @@ class IdentityPolicySyncHelperTest extends TestCase
      *
      * 회원가입 단계 등 정책 조건은 운영자가 화면에서 수정 후 user_overrides 에 'conditions' 가 추가되며,
      * 모듈 재sync 시 declared default 가 운영자 값을 덮어쓰지 않아야 한다.
+     *
+     * @scenario policy_stage=sync, verification_progress=none
+     *
+     * @effects sync_policy_preserves_conditions_in_user_overrides
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_policy_preserves_conditions_in_user_overrides(): void
     {
@@ -123,8 +153,16 @@ class IdentityPolicySyncHelperTest extends TestCase
      * trackable 5필드(enabled / grace_minutes / provider_id / fail_mode / conditions) 각각에 대해
      * user_overrides 등록 시 syncPolicy 가 운영자 값을 보존하는지 매트릭스 검증.
      *
-     * @dataProvider trackableFieldProvider
+     * @scenario policy_stage=sync, verification_progress=none
+     *
+     * @effects sync_preserves_each_trackable_field_in_user_overrides
+     *
+     * @param  string  $field  추적 칸 이름
+     * @param  mixed  $declared  선언 값
+     * @param  mixed  $override  운영자 값
+     * @return void 반환값 없음
      */
+    #[DataProvider('trackableFieldProvider')]
     public function test_sync_preserves_each_trackable_field_in_user_overrides(string $field, mixed $declared, mixed $override): void
     {
         $key = "test.matrix.{$field}";
@@ -167,6 +205,11 @@ class IdentityPolicySyncHelperTest extends TestCase
         );
     }
 
+    /**
+     * 운영자 수정 추적 대상 칸과 선언 값, 운영자 값을 돌려줍니다.
+     *
+     * @return array<string, array{0: string, 1: mixed, 2: mixed}> 칸 이름, 선언 값, 운영자 값
+     */
     public static function trackableFieldProvider(): array
     {
         return [
@@ -178,6 +221,15 @@ class IdentityPolicySyncHelperTest extends TestCase
         ];
     }
 
+    /**
+     * 현재 선언에 없는 정책은 정리 때 지운다.
+     *
+     * @scenario policy_stage=sync, verification_progress=none
+     *
+     * @effects cleanup_stale_removes_policies_not_in_current_keys
+     *
+     * @return void 반환값 없음
+     */
     public function test_cleanup_stale_removes_policies_not_in_current_keys(): void
     {
         $this->helper->syncPolicy([
@@ -205,6 +257,15 @@ class IdentityPolicySyncHelperTest extends TestCase
         $this->assertNotNull(IdentityPolicy::where('key', 'test.stale.b')->first());
     }
 
+    /**
+     * 다른 출처(관리자 등)의 정책은 정리하지 않는다.
+     *
+     * @scenario policy_stage=sync, verification_progress=none
+     *
+     * @effects cleanup_stale_preserves_other_sources
+     *
+     * @return void 반환값 없음
+     */
     public function test_cleanup_stale_preserves_other_sources(): void
     {
         $this->helper->syncPolicy([

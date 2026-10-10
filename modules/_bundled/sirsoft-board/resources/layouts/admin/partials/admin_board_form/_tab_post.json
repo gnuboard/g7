@@ -1,1043 +1,1054 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Board Form - Post Tab Content"
-  },
-  "id": "section_post_card",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "id": "section_post",
-      "type": "basic",
-      "name": "H3",
-      "props": {
-        "className": "card-title"
-      },
-      "text": "$t:sirsoft-board.admin.form.tabs.post"
+    "comment": "게시판 폼 「글」 탭 — 글·댓글에 걸리는 한도를 모아 둔다(제목·본문·댓글 길이의 최소와 최대, 답글·댓글 깊이, 첨부 개수·크기·확장자, 금지어, 「새 글」 표시가 유지되는 시간). 이 게시판에 글을 쓰는 쪽이 지켜야 할 규칙을 한자리에 모은 탭이다",
+    "meta": {
+        "is_partial": true,
+        "description": "Board Form - Post Tab Content"
     },
-    {
-      "id": "section_post_fields",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
-        {
-          "id": "post_title_length_group",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col"
-          },
-          "children": [
-            {
-              "id": "min_title_length_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "min_title_length_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.min_title_length.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "min_title_length_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "min_title_length",
-                    "min": "{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "min_title_length_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.min_title_length.hint|min={{board_config?.data?.limits?.min_title_length_min ?? 0}}|max={{board_config?.data?.limits?.min_title_length_max ?? 200}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.min_title_length}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.min_title_length?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "max_title_length_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "max_title_length_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.max_title_length.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "max_title_length_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "max_title_length",
-                    "min": "{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "max_title_length_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.max_title_length.hint|min={{board_config?.data?.limits?.max_title_length_min ?? 1}}|max={{board_config?.data?.limits?.max_title_length_max ?? 200}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.max_title_length}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.max_title_length?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "post_content_length_group",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col"
-          },
-          "children": [
-            {
-              "id": "min_content_length_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "min_content_length_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.min_content_length.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "min_content_length_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "min_content_length",
-                    "min": "{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "min_content_length_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.min_content_length.hint|min={{board_config?.data?.limits?.min_content_length_min ?? 0}}|max={{board_config?.data?.limits?.min_content_length_max ?? 10000}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.min_content_length}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.min_content_length?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "max_content_length_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "max_content_length_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.max_content_length.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "max_content_length_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "max_content_length",
-                    "min": "{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "max_content_length_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.max_content_length.hint|min={{board_config?.data?.limits?.max_content_length_min ?? 1}}|max={{board_config?.data?.limits?.max_content_length_max ?? 50000}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.max_content_length}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.max_content_length?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "blocked_keywords_field",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "blocked_keywords_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.blocked_keywords.label"
-                }
-              ]
-            },
-            {
-              "id": "blocked_keywords_input",
-              "type": "composite",
-              "name": "TagInput",
-              "props": {
-                "name": "blocked_keywords",
-                "placeholder": "$t:sirsoft-board.admin.form.fields.blocked_keywords.placeholder",
-                "creatable": true,
-                "disabled": "{{_computed.isReadOnly}}"
-              }
-            },
-            {
-              "id": "blocked_keywords_description",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.fields.blocked_keywords.description"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.blocked_keywords}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.blocked_keywords?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "new_display_hours_field",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "new_display_hours_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.new_display_hours.label"
-                }
-              ]
-            },
-            {
-              "id": "new_display_hours_input",
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "number",
-                "name": "new_display_hours",
-                "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}",
-                "max": "{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": ""
-              }
-            },
-            {
-              "id": "new_display_hours_hint",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.fields.new_display_hours.hint"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.new_display_hours}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.new_display_hours?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "use_reply_toggle",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.use_reply"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.descriptions.use_reply"
-                }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "use_reply",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
-        },
-        {
-          "id": "max_reply_depth_field",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_reply}}",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "max_reply_depth_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.max_reply_depth.label"
-                }
-              ]
-            },
-            {
-              "id": "max_reply_depth_input",
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "number",
-                "name": "max_reply_depth",
-                "min": "{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}",
-                "max": "{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": ""
-              }
-            },
-            {
-              "id": "max_reply_depth_hint",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.max_reply_depth}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.max_reply_depth?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "reply_delete_policy_field",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_reply}}",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "reply_delete_policy_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.label"
-                }
-              ]
-            },
-            {
-              "id": "reply_delete_policy_select",
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "reply_delete_policy",
-                "options": [
-                  {
-                    "value": "cascade",
-                    "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.cascade"
-                  },
-                  {
-                    "value": "block",
-                    "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.block"
-                  }
-                ],
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": ""
-              }
-            },
-            {
-              "id": "reply_delete_policy_hint",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.reply_delete_policy}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.reply_delete_policy?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "use_comment_toggle",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.use_comment"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.descriptions.use_comment"
-                }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "use_comment",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
-        },
-        {
-          "id": "post_comment_length_group",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_comment}}",
-          "props": {
-            "className": "grid-2col"
-          },
-          "children": [
-            {
-              "id": "min_comment_length_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "min_comment_length_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.min_comment_length.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "min_comment_length_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "min_comment_length",
-                    "min": "{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "min_comment_length_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.min_comment_length.hint|min={{board_config?.data?.limits?.min_comment_length_min ?? 0}}|max={{board_config?.data?.limits?.min_comment_length_max ?? 1000}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.min_comment_length}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.min_comment_length?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "max_comment_length_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "max_comment_length_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.max_comment_length.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "max_comment_length_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "max_comment_length",
-                    "min": "{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "max_comment_length_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.max_comment_length.hint|min={{board_config?.data?.limits?.max_comment_length_min ?? 1}}|max={{board_config?.data?.limits?.max_comment_length_max ?? 1000}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.max_comment_length}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.max_comment_length?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "max_comment_depth_field",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_comment}}",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "max_comment_depth_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.max_comment_depth.label"
-                }
-              ]
-            },
-            {
-              "id": "max_comment_depth_input",
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "number",
-                "name": "max_comment_depth",
-                "min": "{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}",
-                "max": "{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": ""
-              }
-            },
-            {
-              "id": "max_comment_depth_hint",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.fields.max_comment_depth.hint|min={{board_config?.data?.limits?.max_comment_depth_min ?? 0}}|max={{board_config?.data?.limits?.max_comment_depth_max ?? 10}}"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.max_comment_depth}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.max_comment_depth?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "comment_order_field",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_comment}}",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "comment_order_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.comment_order.label"
-                }
-              ]
-            },
-            {
-              "id": "comment_order_select",
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "comment_order",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "w-full",
-                "options": [
-                  {
-                    "value": "ASC",
-                    "label": "$t:sirsoft-board.admin.form.fields.comment_order.options.asc"
-                  },
-                  {
-                    "value": "DESC",
-                    "label": "$t:sirsoft-board.admin.form.fields.comment_order.options.desc"
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "use_file_upload_toggle",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.label"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.description"
-                }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "use_file_upload",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
-        },
-        {
-          "id": "file_settings_group",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_file_upload}}",
-          "props": {
-            "className": "grid-2col"
-          },
-          "children": [
-            {
-              "id": "max_file_count_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "max_file_count_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.max_file_count.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "max_file_count_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "max_file_count",
-                    "min": "{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "max_file_count_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.max_file_count.hint|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.max_file_count}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.max_file_count?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "max_file_size_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "max_file_size_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.max_file_size.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "max_file_size_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "max_file_size",
-                    "min": "{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}",
-                    "placeholder": "$t:sirsoft-board.admin.form.fields.max_file_size.placeholder",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "max_file_size_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.max_file_size.hint|maxMB={{board_config?.data?.limits?.max_file_size_max ?? 200}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.max_file_size}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.max_file_size?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "allowed_extensions_field",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_file_upload}}",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "allowed_extensions_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.allowed_extensions.label"
-                }
-              ]
-            },
-            {
-              "id": "allowed_extensions_input",
-              "type": "composite",
-              "name": "TagInput",
-              "props": {
-                "name": "allowed_extensions",
-                "placeholder": "$t:sirsoft-board.admin.form.fields.allowed_extensions.placeholder",
-                "creatable": true,
-                "disabled": "{{_computed.isReadOnly}}"
-              }
-            },
-            {
-              "id": "allowed_extensions_description",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.fields.allowed_extensions.description"
-            }
-          ]
+    "id": "section_post_card",
+    "type": "basic",
+    "name": "Div",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
         }
-      ]
-    }
-  ]
+    },
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "id": "section_post",
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-board.admin.form.tabs.post"
+        },
+        {
+            "id": "section_post_fields",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "post_title_length_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col"
+                    },
+                    "children": [
+                        {
+                            "id": "min_title_length_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "min_title_length_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.min_title_length.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "min_title_length_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "min_title_length",
+                                        "min": "{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "min_title_length_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.min_title_length.hint|min={{board_config?.data?.limits?.min_title_length_min ?? 0}}|max={{board_config?.data?.limits?.min_title_length_max ?? 200}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.min_title_length}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.min_title_length?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "max_title_length_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "max_title_length_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.max_title_length.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "max_title_length_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "max_title_length",
+                                        "min": "{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "max_title_length_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_title_length.hint|min={{board_config?.data?.limits?.max_title_length_min ?? 1}}|max={{board_config?.data?.limits?.max_title_length_max ?? 200}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.max_title_length}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.max_title_length?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "post_content_length_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col"
+                    },
+                    "children": [
+                        {
+                            "id": "min_content_length_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "min_content_length_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.min_content_length.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "min_content_length_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "min_content_length",
+                                        "min": "{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "min_content_length_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.min_content_length.hint|min={{board_config?.data?.limits?.min_content_length_min ?? 0}}|max={{board_config?.data?.limits?.min_content_length_max ?? 10000}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.min_content_length}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.min_content_length?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "max_content_length_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "max_content_length_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.max_content_length.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "max_content_length_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "max_content_length",
+                                        "min": "{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "max_content_length_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_content_length.hint|min={{board_config?.data?.limits?.max_content_length_min ?? 1}}|max={{board_config?.data?.limits?.max_content_length_max ?? 50000}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.max_content_length}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.max_content_length?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "blocked_keywords_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "blocked_keywords_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.blocked_keywords.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "blocked_keywords_input",
+                            "type": "composite",
+                            "name": "TagInput",
+                            "props": {
+                                "name": "blocked_keywords",
+                                "placeholder": "$t:sirsoft-board.admin.form.fields.blocked_keywords.placeholder",
+                                "creatable": true,
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "id": "blocked_keywords_description",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.blocked_keywords.description"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.blocked_keywords}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.blocked_keywords?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "new_display_hours_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "new_display_hours_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.new_display_hours.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "new_display_hours_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "number",
+                                "name": "new_display_hours",
+                                "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}",
+                                "max": "{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": ""
+                            }
+                        },
+                        {
+                            "id": "new_display_hours_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.new_display_hours.hint"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.new_display_hours}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.new_display_hours?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "use_reply_toggle",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.use_reply"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.descriptions.use_reply"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "use_reply",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "max_reply_depth_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_reply}}",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "max_reply_depth_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_reply_depth.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "max_reply_depth_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "number",
+                                "name": "max_reply_depth",
+                                "min": "{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}",
+                                "max": "{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": ""
+                            }
+                        },
+                        {
+                            "id": "max_reply_depth_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.max_reply_depth}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.max_reply_depth?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "reply_delete_policy_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_reply}}",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "reply_delete_policy_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "reply_delete_policy_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "reply_delete_policy",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "",
+                                "options": [
+                                    {
+                                        "value": "cascade",
+                                        "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.cascade"
+                                    },
+                                    {
+                                        "value": "block",
+                                        "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.block"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "reply_delete_policy_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.reply_delete_policy}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.reply_delete_policy?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "use_comment_toggle",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.use_comment"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.descriptions.use_comment"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "use_comment",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "post_comment_length_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_comment}}",
+                    "props": {
+                        "className": "grid-2col"
+                    },
+                    "children": [
+                        {
+                            "id": "min_comment_length_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "min_comment_length_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.min_comment_length.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "min_comment_length_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "min_comment_length",
+                                        "min": "{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "min_comment_length_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.min_comment_length.hint|min={{board_config?.data?.limits?.min_comment_length_min ?? 0}}|max={{board_config?.data?.limits?.min_comment_length_max ?? 1000}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.min_comment_length}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.min_comment_length?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "max_comment_length_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "max_comment_length_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.max_comment_length.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "max_comment_length_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "max_comment_length",
+                                        "min": "{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "max_comment_length_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_comment_length.hint|min={{board_config?.data?.limits?.max_comment_length_min ?? 1}}|max={{board_config?.data?.limits?.max_comment_length_max ?? 1000}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.max_comment_length}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.max_comment_length?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "max_comment_depth_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_comment}}",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "max_comment_depth_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_comment_depth.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "max_comment_depth_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "number",
+                                "name": "max_comment_depth",
+                                "min": "{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}",
+                                "max": "{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": ""
+                            }
+                        },
+                        {
+                            "id": "max_comment_depth_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.max_comment_depth.hint|min={{board_config?.data?.limits?.max_comment_depth_min ?? 0}}|max={{board_config?.data?.limits?.max_comment_depth_max ?? 10}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.max_comment_depth}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.max_comment_depth?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "comment_order_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_comment}}",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "comment_order_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.comment_order.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "comment_order_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "comment_order",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "w-full",
+                                "options": [
+                                    {
+                                        "value": "ASC",
+                                        "label": "$t:sirsoft-board.admin.form.fields.comment_order.options.asc"
+                                    },
+                                    {
+                                        "value": "DESC",
+                                        "label": "$t:sirsoft-board.admin.form.fields.comment_order.options.desc"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "use_file_upload_toggle",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.description"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "use_file_upload",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "file_settings_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_file_upload}}",
+                    "props": {
+                        "className": "grid-2col"
+                    },
+                    "children": [
+                        {
+                            "id": "max_file_count_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "max_file_count_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.max_file_count.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "max_file_count_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "max_file_count",
+                                        "min": "{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "max_file_count_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_file_count.hint|count={{board_config?.data?.limits?.max_file_count_max ?? 20}}|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.max_file_count}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.max_file_count?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "max_file_size_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "max_file_size_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.max_file_size.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "max_file_size_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "max_file_size",
+                                        "min": "{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}",
+                                        "placeholder": "$t:sirsoft-board.admin.form.fields.max_file_size.placeholder",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "max_file_size_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.max_file_size.hint|maxMB={{board_config?.data?.limits?.max_file_size_max ?? 200}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.max_file_size}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.max_file_size?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "allowed_extensions_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_file_upload}}",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "allowed_extensions_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.allowed_extensions.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "allowed_extensions_input",
+                            "type": "composite",
+                            "name": "TagInput",
+                            "props": {
+                                "name": "allowed_extensions",
+                                "placeholder": "$t:sirsoft-board.admin.form.fields.allowed_extensions.placeholder",
+                                "creatable": true,
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "id": "allowed_extensions_description",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.allowed_extensions.description"
+                        },
+                        {
+                            "comment": "확장자 없이 첨부를 켜고 저장하면 422 가 이 칸을 가리킨다 — 형제 칸(최대 파일 용량·개수)처럼 칸 아래에도 문구를 둔다",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.allowed_extensions}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.allowed_extensions?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

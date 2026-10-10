@@ -12,10 +12,11 @@ return [
         'admin_earn' => '관리자 지급',
         'order_use' => '주문 사용',
         'admin_deduct' => '관리자 차감',
-        'expired' => '유효기간 소멸',
+        'expired' => '소멸',
         'refund_restore' => '환불 복원',
         'order_cancel_restore' => '주문취소 복원',
         'earn_cancel' => '적립 회수',
+        'refund_credit' => '환불 지급',
     ],
 
     // 마일리지 적립 시점 (MileageEarnTriggerEnum 값과 일치)
@@ -47,6 +48,7 @@ return [
         'products' => '상품 목록',
         'orders' => '주문 목록',
         'customers' => '고객 목록',
+        'claims' => '취소/반품/교환 목록',
     ],
     'date_type' => [
         'created_at' => '등록일',
@@ -65,11 +67,20 @@ return [
         'payment_complete' => '결제완료',
         'shipping_hold' => '배송보류',
         'preparing' => '상품준비중',
-        'shipping_ready' => '배송준비완료',
+        'shipping_ready' => '배송준비중',
         'shipping' => '배송중',
         'delivered' => '배송완료',
         'confirmed' => '구매확정',
         'cancelled' => '주문취소',
+        'exchange_in_progress' => '교환진행중',
+        'return_in_progress' => '반품진행중',
+        'exchanged' => '교환완료',
+        'returned' => '반품완료',
+    ],
+
+    // 주문 상태 합산 카운터 라벨 — 마이페이지 목록 상단 건수 칸(OrderStatusEnum::statisticsFilterGroups)
+    'order_status_groups' => [
+        'preparing' => '상품준비·배송준비',
     ],
 
     // 결제상태 (PaymentStatusEnum 값과 일치)
@@ -100,7 +111,7 @@ return [
     'shipping_status' => [
         'pending' => '배송대기',
         'preparing' => '상품준비중',
-        'ready' => '배송준비완료',
+        'ready' => '배송준비중',
         'shipped' => '배송중',
         'in_transit' => '이동중',
         'out_for_delivery' => '배송출발',
@@ -268,6 +279,85 @@ return [
     // 클레임 사유 유형 (ClaimReasonTypeEnum 값과 일치)
     'claim_reason_type' => [
         'refund' => '환불/취소',
+        'exchange' => '교환',
+        'return' => '반품',
+    ],
+
+    // 주문 변경 유형 (AdjustmentType 값과 일치)
+    'adjustment_type' => [
+        'cancel' => '취소',
+        'exchange' => '교환',
+        'order_return' => '반품',
+    ],
+
+    // 클레임 유형 (ClaimTypeEnum 값과 일치)
+    'claim_type' => [
+        'exchange' => '교환',
+        'return' => '반품',
+        'refund' => '환불',
+        'cancel' => '취소',
+    ],
+
+    // 클레임 첨부 업로드 주체 (ClaimImageUploaderTypeEnum 값과 일치)
+    'claim_image_uploader_type' => [
+        'customer' => '고객',
+        'admin' => '운영자',
+        'unknown' => '미상',
+    ],
+
+    // 클레임 청구 방식 (ClaimChargeMethodEnum 값과 일치)
+    'claim_charge_method' => [
+        'pay_on_request' => '신청 시 결제',
+        'pay_on_approval' => '승인 후 결제',
+        'deduct_from_refund' => '환불액에서 차감',
+    ],
+
+    // 클레임 추가결제 상태 (ClaimPaymentStatusEnum 값과 일치)
+    'claim_payment_status' => [
+        'pending' => '결제대기',
+        'paid' => '결제완료',
+        'failed' => '결제실패',
+        'cancelled' => '결제취소',
+        'refunded' => '환급완료',
+    ],
+
+    // 클레임 배송비 산정 모드 (ClaimShippingFeeModeEnum 값과 일치)
+    'claim_shipping_fee_mode' => [
+        'fixed' => '고정 금액',
+        'original_policy' => '원래 배송정책 재계산',
+    ],
+
+    // 교환상태 (ExchangeStatusEnum 값과 일치)
+    'exchange_status' => [
+        'requested' => '교환신청',
+        'payment_pending' => '교환결제대기',
+        'paid' => '교환결제완료',
+        'approved' => '교환승인',
+        'on_hold' => '교환보류',
+        'rejected' => '교환반려',
+        'collection_ready' => '교환회수준비중',
+        'collecting' => '교환회수중',
+        'collected' => '교환회수도착',
+        'redelivery_ready' => '교환발송준비중',
+        'redelivering' => '교환발송중',
+        'redelivered' => '교환발송도착',
+        'completed' => '교환완료',
+        'withdrawn' => '교환철회',
+    ],
+
+    // 반품상태 (ReturnStatusEnum 값과 일치)
+    'return_status' => [
+        'requested' => '반품신청',
+        'payment_pending' => '반품결제대기',
+        'paid' => '반품결제완료',
+        'approved' => '반품승인',
+        'on_hold' => '반품보류',
+        'rejected' => '반품반려',
+        'collection_ready' => '반품회수준비중',
+        'collecting' => '반품회수중',
+        'collected' => '반품회수도착',
+        'completed' => '반품완료',
+        'withdrawn' => '반품철회',
     ],
 
     // 취소옵션상태 (CancelOptionStatusEnum 값과 일치)
@@ -284,29 +374,58 @@ return [
         'on_hold' => '환불보류',
         'completed' => '환불완료',
         'rejected' => '환불반려',
+        'withdrawn' => '환불철회',
+    ],
+
+    // 환불 발생 출처 유형 (RefundSourceTypeEnum 값과 일치)
+    'refund_source_type' => [
+        'cancel' => '주문 취소 발',
+        'return' => '반품 발',
+        'exchange' => '교환 차액',
+        'direct' => '고객 신청',
+        'admin' => '운영자 접수',
     ],
 
     // 환불수단 (RefundMethodEnum 값과 일치)
     'refund_method' => [
         'pg' => 'PG사 환불',
         'bank' => '계좌이체 환불',
-        'points' => '마일리지 환불',
+        'points' => '마일리지로 환불',
     ],
 
     // 환불 우선순위 (RefundPriorityEnum 값과 일치)
+    // 신청 출처 (계획 676 — 출처 뱃지). 운영자는 셋을 다르게 대한다 — 고객 건은 연락처가
+    // 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다.
+    'request_source' => [
+        'customer' => '고객 신청',
+        'guest' => '비회원 신청',
+        // 고객에게도 보이는 라벨이다 — 「운영자」 는 쇼핑몰 안쪽 말이라 고객 화면에서는 판매자로 부른다(D8).
+        'admin' => '판매자 접수',
+    ],
+
     'refund_priority' => [
         'pg_first' => '결제수단(PG) 먼저 환불',
         'points_first' => '포인트 먼저 환불',
     ],
 
-    // 환불옵션상태 (RefundOptionStatusEnum 값과 일치)
-    'refund_option_status' => [
-        'requested' => '환불신청',
-        'approved' => '환불승인',
-        'processing' => '환불처리중',
-        'on_hold' => '환불보류',
-        'completed' => '처리완료',
-        'rejected' => '환불반려',
+    // 클레임 송장 방향 (ClaimTrackingDirectionEnum 값과 일치)
+    'claim_tracking_direction' => [
+        'collection' => '회수',
+        'redelivery' => '재발송',
+    ],
+
+    // 교환 진행 방식 (ExchangeModeEnum 값과 일치)
+    'exchange_mode' => [
+        'standard' => '일반 교환',
+        'advance' => '선교환',
+    ],
+
+    // 신청 상품 회수 진행 (ClaimItemCollectionStateEnum 값과 일치)
+    'claim_item_collection_state' => [
+        'pending' => '회수 대기',
+        'in_transit' => '회수중',
+        'collected' => '회수 도착',
+        'unreturned' => '미회수',
     ],
 
     // 리뷰 상태 (ReviewStatus 값과 일치)

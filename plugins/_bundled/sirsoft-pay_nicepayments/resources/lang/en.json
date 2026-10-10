@@ -36,7 +36,7 @@
         "redirect_success_url": "Payment Success Redirect URL",
         "redirect_success_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL (https://...). {orderId} will be replaced with the actual order number.",
         "redirect_fail_url": "Payment Failure Redirect URL",
-        "redirect_fail_url_hint": "Supports relative paths or full URLs. Error details are appended as query parameters.",
+        "redirect_fail_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL. Error details are appended as query parameters.",
         "use_escrow": "Enable Escrow Payment",
         "use_escrow_hint": "Enables escrow payment for buyer protection when selling physical goods. Delivery registration is required after escrow payment.",
         "section_easy_pay": "Easy Pay Settings",
@@ -123,19 +123,32 @@
         "receipt_label": "Receipt",
         "view_receipt": "View Receipt",
         "view_cash_receipt": "View Cash Receipt",
+        "view_sales_slip": "View Sales Slip",
         "easy_pay_label": "Easy Pay",
         "test_mode_badge": "TEST",
         "tax_breakdown_title": "Tax Breakdown",
         "supply_amount": "Supply Amount",
         "vat_amount": "VAT",
         "tax_free_amount": "Tax-Free Amount",
-        "vbank_deposit_info": "Virtual Account Deposit Info",
+        "vbank_deposit_info": "Virtual Account Deposit Guide",
         "vbank_bank": "Bank",
         "vbank_account": "Account Number",
         "vbank_holder": "Account Holder",
         "vbank_amount": "Deposit Amount",
         "vbank_due": "Deposit Due",
-        "vbank_notice": "If deposit is not completed by the due date, the order will be auto-cancelled."
+        "vbank_notice": "If deposit is not completed by the due date, the order will be auto-cancelled.",
+        "receipt_view": "View Receipt",
+        "loading": "Loading...",
+        "easy_pay_names": {
+            "NAVERPAY": "Naver Pay",
+            "KAKAOPAY": "Kakao Pay",
+            "SAMSUNGPAY": "Samsung Pay",
+            "APPLEPAY": "Apple Pay",
+            "PAYCO": "PAYCO",
+            "SKPAY": "11pay",
+            "SSGPAY": "SSG Pay",
+            "LPAY": "L.pay"
+        }
     },
     "messages": {
         "refund": {
@@ -153,7 +166,10 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator.",
+            "sdk_load_failed": "Could not load the NicePayments SDK. Please try again later.",
+            "request_failed": "An error occurred during payment. Please try again later."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

@@ -48,8 +48,22 @@ class CheckoutRequest extends FormRequest
             'direct_items.*.additional_option_selections.*.value_id' => ['required_with:direct_items.*.additional_option_selections', 'integer'],
             // 직접입력 텍스트 (선택지의 allow_custom_text 여부·필수성은 서버에서 재검증)
             'direct_items.*.additional_option_selections.*.custom_text' => ['nullable', 'string', 'max:255'],
-            'coupon_issue_ids' => 'nullable|array',
-            'coupon_issue_ids.*' => 'integer',
+            // 주문쿠폰은 `order_coupon_issue_id`(단수) 하나로 받는다 — 컨트롤러가 읽는 자리도
+            // 그것뿐이고(`CheckoutController::update`), 주문서 저장 구조
+            // (`TempOrder::getPromotions()` = item_coupons · order_coupon_issue_id ·
+            // shipping_coupon_issue_id)도 세 슬롯으로 나뉜다.
+            //
+            // 예전엔 여기에 `coupon_issue_ids`(복수) 규칙이 있었는데 **최초 커밋부터 소비처가
+            // 없었다**(72156e6f0 시점의 컨트롤러도 단수형만 읽는다). 검증은 통과하므로 그 필드를
+            // 보낸 쪽은 200 을 받고 **할인만 조용히 빠졌다** — 규칙이 계약 문서처럼 읽히는데
+            // 실제로는 무시되는, 가장 알아채기 어려운 형태였다.
+            //
+            // 규칙을 지워도 **요청이 422 가 되지는 않는다**(라라벨은 규칙 없는 키를 조용히 버린다).
+            // 바뀌는 것은 **규칙 목록이 더 이상 그 필드를 지원한다고 말하지 않는다**는 것이다 —
+            // 계약 문서로서의 오해를 없애는 것이 이 삭제의 목적이고, 동작은 그대로다.
+            //
+            // 주의: 같은 이름이 `orders.promotions_applied_snapshot['coupon_issue_ids']` 에도
+            // 있는데 **그쪽은 서버가 계산해 저장하는 취소·복원 SSoT** 다(무관 · 건드리지 말 것).
             'use_points' => 'nullable|integer|min:0',
         ];
 

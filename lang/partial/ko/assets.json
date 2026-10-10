@@ -1,6 +1,7 @@
 {
-  "load_failed": "{label}을(를) 불러오지 못했습니다.",
+  "load_failed": "{label} 불러오기에 실패했습니다.",
   "load_failed_multiple": "{count}개 항목을 불러오지 못했습니다.",
+  "layout_script": "화면 기능 스크립트",
   "module_styles": "모듈 스타일",
   "plugin_styles": "플러그인 스타일",
   "retry": "다시 시도",

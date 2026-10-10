@@ -1,0 +1,228 @@
+{
+    "comment": "회원 «상세» 화면에 인증 앱 탭을 하나 얹는 조각. 형제 확장(board 스크랩·ecommerce 마일리지)과\n  같은 짜임으로 주입이 **두 군데**로 갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에\n  항목을 덧붙이고(`append`), 그 탭이 펼칠 본문은 별도 앵커(`extension_tab_content`)에 자식으로\n  붙인다. 둘을 잇는 것은 `id`(`ext_totp_security`) 하나뿐이라 한쪽만 고치면 탭은 있고 내용은\n  빈 화면이 된다.\n\n  관리자 템플릿을 고치지 않으므로 이 플러그인을 끄면 탭도 함께 사라진다.\n\n  **권한 가드를 화면 조건으로 두지 않는다.** 종전 판본은 `_global.currentUser?.permissions` 를\n  봤는데, 관리자 셸(`_admin_base`)이 전역에 올리는 것은 `installedModules`·`installedPlugins`·\n  `adminNotificationCount` 뿐이라 그 값이 **항상 undefined** 였다 — 탭은 뜨는데 본문만 통째로\n  사라졌다(2026-09-18 브라우저 실측). 형제 확장(board 반응·스크랩, marketing)도 전부 화면\n  조건은 `user?.data?.*` 같은 서버 제공 값으로만 쓴다. 강제 해제의 실제 권한 집행은 라우트\n  미들웨어(`permission:admin,sirsoft-totp.credentials.delete`)가 하며, 그쪽이 정본이다. 등록 여부와 [강제 해제]\n  노출도 같은 결로 서버 제공 값(`user.data.totp_enrollment` — 해제 권한자의 응답에만 실림)으로만 정한다.\n\n  강제 해제는 코드 확인 없이 남의 2단계 인증을 푸는 경로다. 실행은\n  `sirsoft-totp.credential.admin_reset` 훅을 타고 `TotpAdminResetActivityLogListener` 가\n  활동 로그에 남긴다 — 누가 누구의 2단계 인증을 풀었는지 추적할 수 없으면 이 경로 자체가\n  권한 상승 수단이 된다.",
+    "target_layout": "admin_user_detail",
+    "priority": 120,
+    "injections": [
+        {
+            "target_id": "user_detail_tabs",
+            "position": "inject_props",
+            "props": {
+                "tabs": {
+                    "_append": [
+                        {
+                            "id": "ext_totp_security",
+                            "label": "$t:sirsoft-totp.admin.user_card.tab_label",
+                            "iconName": "shield-halved",
+                            "if": "{{!!route?.id}}"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "target_id": "extension_tab_content",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "ext_totp_security_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!route?.id}}",
+                    "props": {
+                        "id": "ext_totp_security",
+                        "className": "scroll-mt-32"
+                    },
+                    "children": [
+                        {
+                            "id": "admin_user_totp_card",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "admin-card"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "shield-halved",
+                                                        "className": "text-xl text-gray-600 dark:text-gray-400"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "admin_user_totp_title",
+                                                    "type": "basic",
+                                                    "name": "H3",
+                                                    "props": {
+                                                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "$t:sirsoft-totp.admin.user_card.title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "ExtensionBadge",
+                                            "props": {
+                                                "type": "plugin",
+                                                "identifier": "sirsoft-totp",
+                                                "installedPlugins": "{{_global.installedPlugins}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "admin_user_totp_description",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "card-description"
+                                    },
+                                    "text": "$t:sirsoft-totp.admin.user_card.description"
+                                },
+                                {
+                                    "comment": "등록 여부 — `totp_enrollment` 는 UserTotpEnrollmentInfoListener 가 **해제 권한을 가진 관리자의 응답에만** 싣는다.\n             값이 없으면(권한 없음) 상태 대신 그 사실을 알리고 [강제 해제] 도 내지 않는다(눌러 봐야 403).\n             미등록이면 해제할 것이 없으므로 단추를 숨기고 안내만 둔다(결정 2026-10-07, 7.1.0 관측 R-26).",
+                                    "id": "admin_user_totp_status",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!user?.data?.totp_enrollment}}",
+                                    "props": {
+                                        "className": "mt-3 flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.user_card.status_label"
+                                        },
+                                        {
+                                            "id": "admin_user_totp_status_enrolled",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{user?.data?.totp_enrollment?.enrolled === true}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.user_card.enrolled"
+                                        },
+                                        {
+                                            "id": "admin_user_totp_status_not_enrolled",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{user?.data?.totp_enrollment?.enrolled === false}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-totp.admin.user_card.not_enrolled"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "admin_user_totp_not_enrolled_notice",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{user?.data?.totp_enrollment?.enrolled === false}}",
+                                    "props": {
+                                        "className": "text-hint mt-2"
+                                    },
+                                    "text": "$t:sirsoft-totp.admin.user_card.not_enrolled_notice"
+                                },
+                                {
+                                    "id": "admin_user_totp_status_unavailable",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!user?.data?.totp_enrollment}}",
+                                    "props": {
+                                        "className": "text-hint mt-3"
+                                    },
+                                    "text": "$t:sirsoft-totp.admin.user_card.status_unavailable"
+                                },
+                                {
+                                    "id": "admin_user_totp_reset",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{user?.data?.totp_enrollment?.enrolled === true}}",
+                                    "actions": [
+                                        {
+                                            "comment": "되돌릴 수 없는 조치라 확인을 거친다 — 해제하면 그 회원은 다음 로그인부터 인증 앱을\n                 요구받지 않고, 메일 폴백이 꺼져 있으면 재등록 전까지 로그인하지 못한다.",
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-totp/admin/credentials/{{route?.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "confirm": "$t:sirsoft-totp.admin.user_card.confirm",
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{response.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "해제 뒤 카드가 「미등록」으로 바뀌도록 회원 상세를 다시 받는다",
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "user"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "admin_user_totp_reset_text",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-totp.admin.user_card.reset"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "admin_user_totp_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{user?.data?.totp_enrollment?.enrolled === true}}",
+                                    "props": {
+                                        "className": "text-hint mt-2"
+                                    },
+                                    "text": "$t:sirsoft-totp.admin.user_card.hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

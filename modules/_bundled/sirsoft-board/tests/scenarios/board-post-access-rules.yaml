@@ -1,0 +1,68 @@
+feature: 게시판 게시글 접근 규칙 (비밀글, 작성 간격, 비회원 토큰, 블라인드 사유, 개수 동기)
+
+description: |
+  비밀글 열람 경계, 연속 작성 간격 제한, 비회원 게시글 토큰, 블라인드 사유 노출 범위, 게시글과 댓글 개수 동기를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 concern 은 지키는 접근 규칙, condition 은 그 규칙이 받는 입력 조건이다.
+  viewer_with_access 와 viewer_without_access 는 비밀글 본문과 블라인드 사유를 볼 자격(읽기 권한, 작성자, 맞는 비회원 비밀번호, 관리 권한)이 있는지 없는지다.
+
+axes:
+  concern: [secret_post, write_cooldown, guest_post_token, blind_reason, count_sync]
+  condition: [secret_mode_setting, viewer_with_access, viewer_without_access, cooldown_off, cooldown_active,
+              token_valid, token_reused, token_mismatched, comment_change, post_change, drift_recovery]
+
+exclusions:
+  - { concern: secret_post, condition: [cooldown_off, cooldown_active, token_valid, token_reused, token_mismatched, comment_change, post_change, drift_recovery],
+      reason: "비밀글 규칙은 게시판 비밀글 설정과 열람자 자격만 보고 작성 간격, 비회원 토큰, 개수 변경은 입력으로 받지 않는다." }
+  - { concern: write_cooldown, condition: [secret_mode_setting, viewer_with_access, viewer_without_access, token_valid, token_reused, token_mismatched, comment_change, post_change, drift_recovery],
+      reason: "작성 간격 제한은 같은 회원의 직전 작성 시각만 보고 열람 자격, 토큰, 개수 변경과 무관하다." }
+  - { concern: guest_post_token, condition: [secret_mode_setting, viewer_with_access, viewer_without_access, cooldown_off, cooldown_active, comment_change, post_change, drift_recovery],
+      reason: "비회원 게시글 토큰은 발급된 토큰과 게시판, 게시글 짝만 대조해 다른 규칙의 조건이 들어가지 않는다." }
+  - { concern: blind_reason, condition: [secret_mode_setting, cooldown_off, cooldown_active, token_valid, token_reused, token_mismatched, comment_change, post_change, drift_recovery],
+      reason: "블라인드 사유 노출은 조회자의 관리 자격만 보고 비밀글 설정, 작성 간격, 토큰, 개수 변경을 입력으로 받지 않는다." }
+  - { concern: count_sync, condition: [secret_mode_setting, viewer_with_access, viewer_without_access, cooldown_off, cooldown_active, token_valid, token_reused, token_mismatched],
+      reason: "개수 동기는 게시글과 댓글의 생성, 삭제, 블라인드 사건만 보고 열람 자격, 작성 간격, 토큰과 무관하다." }
+
+effects:
+  - secret_mode_disabled_rejects_is_secret_true
+  - secret_mode_enabled_allows_user_to_choose
+  - secret_mode_always_forces_all_posts_secret
+  - secret_mode_always_guest_post_becomes_secret
+  - user_with_read_secret_permission_can_view_secret_content
+  - user_without_read_secret_sees_masked_content
+  - secret_post_author_can_always_view_own_content
+  - guest_secret_post_accessible_with_correct_password
+  - guest_secret_post_denied_with_wrong_password
+  - secret_posts_appear_in_list_with_masked_content
+  - navigation_does_not_500_on_always_secret_board
+  - consecutive_posts_allowed_when_cooldown_disabled
+  - first_post_succeeds_when_cooldown_active
+  - second_post_rejected_when_cooldown_active
+  - cooldown_is_isolated_per_user
+  - cooldown_rejection_returns_422_with_errors
+  - store_returns_token_and_expires_at
+  - consume_valid_token_returns_true
+  - consume_token_is_one_time_use
+  - consume_nonexistent_token_returns_false
+  - token_is_isolated_by_slug
+  - token_is_isolated_by_post_id
+  - manager_sees_blind_reason_in_post_action_logs
+  - regular_user_does_not_see_post_action_logs
+  - manager_sees_blind_reason_in_comment_action_logs
+  - regular_user_does_not_see_comment_action_logs
+  - comment_counts_update_immediately_without_queue_worker
+  - multiple_comments_accumulate_count
+  - comment_delete_decrements_counts_immediately
+  - comment_blind_does_not_change_counts
+  - comment_reply_increments_parent_replies_count
+  - post_create_increments_board_posts_count
+  - drift_state_is_recovered_by_listener_on_next_event
+  - post_api_response_exposes_up_to_date_comment_count
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/SecretPostScenarioTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostCooldownTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/PostServiceGuestTokenTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BlindReasonExposureTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/CountSyncIntegrationTest.php

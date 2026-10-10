@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase 수동 로드 (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -19,6 +18,9 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 공지글 네비게이션 미제공 (prev/next 모두 null)
  * - 첫 번째 글 prev=null, 마지막 글 next=null
  * - 존재하지 않는 게시글 → 404
+ *
+ * @effects navigation_boundary_null,
+ *   navigation_null_for_notice
  */
 class PostNavigationApiTest extends BoardTestCase
 {

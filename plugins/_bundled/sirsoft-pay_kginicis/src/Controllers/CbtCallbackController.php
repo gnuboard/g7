@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
@@ -18,6 +23,8 @@ use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
+use Plugins\Sirsoft\PayKginicis\Support\CbtClaimApproveToken;
+use Plugins\Sirsoft\PayKginicis\Support\CbtCvsResponse;
 use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
 
 /**
@@ -31,6 +38,8 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class CbtCallbackController
 {
+    use HandlesCbtClaimPayments;
+    use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use SerializesPaymentCallbacks;
@@ -105,11 +114,21 @@ class CbtCallbackController
         'prtcCode',
     ];
 
+    /**
+     * CBT 콜백 처리에 필요한 서비스를 주입받습니다.
+     *
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
+     * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
+     * @param  CbtReconciliationService  $reconciliationService  CBT 대사 상태 기록 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly KgInicisApiService $apiService,
         private readonly CbtReconciliationService $reconciliationService,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -133,6 +152,15 @@ class CbtCallbackController
                 'result_msg' => $authResultMsg,
             ]);
 
+            // 클레임 추가결제는 체크아웃이 아니라 신청서 상세로 돌려보낸다 (국내 경로와 동일).
+            if (ClaimPayment::isClaimPaymentNumber($oid)) {
+                $claimRedirect = $this->redirectClaimWindowFailure($oid, null);
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
+
             return redirect($this->resolveFailUrl());
         }
 
@@ -149,6 +177,19 @@ class CbtCallbackController
                 'result_code' => $authResultCode,
                 'result_msg' => $authResultMsg,
             ]);
+
+            // 결제창 단계 실패도 클레임은 신청서 상세로 돌려보낸다 — PG 원문 메시지는 싣지 않고
+            // 코드만 전달한다(이 경로는 비인증 브라우저 리다이렉트다).
+            if (ClaimPayment::isClaimPaymentNumber($oid)) {
+                $claimRedirect = $this->redirectClaimWindowFailure(
+                    $oid,
+                    $authResultCode !== '' ? $authResultCode : 'cbt_auth_failed',
+                );
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
 
             return redirect($this->resolveFailUrl($this->buildCbtFailureRedirectParams(
                 $authResultCode !== '' ? $authResultCode : 'cbt_auth_failed',
@@ -172,6 +213,36 @@ class CbtCallbackController
         $approvedTid = null;
         $approvedAmount = 0;
         $callbackLock = null;
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 뒤의 거절은 모듈의
+        // `claim_payment.void_approval` 필터(승인 리스너가 CBT 환불 API 로 되돌림)가 보상한다.
+        // 주문 경로와 같은 직렬화 락을 건다.
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            $claimPayment = $this->resolveApprovableCbtClaimPayment($oid);
+
+            if (! $claimPayment) {
+                Log::error('KG Inicis CBT: claim payment not approvable', ['oid' => $oid]);
+
+                $claimRedirect = $this->redirectClaimWindowFailure($oid, 'claim_payment_not_approvable');
+
+                return $claimRedirect ?? redirect($this->resolveFailUrl([
+                    'error' => 'claim_payment_not_found',
+                    'orderId' => $oid,
+                ]));
+            }
+
+            // 락 대기 초과는 500 이 아니라 신청서 상세 복귀로 끝난다(`approveClaimPaymentSerialized`).
+            return $this->approveClaimPaymentSerialized(
+                'cbtAuthCallback',
+                $claimPayment,
+                // 승인 재료(sid)를 서버가 넘겼다는 서명 — 클라이언트 승인 API 는 이것을 만들 수 없다.
+                $request->except(['_token', 'cbt_token']) + [
+                    'cbt_sid' => $sid,
+                    'cbt_token' => CbtClaimApproveToken::sign($oid, $sid),
+                ],
+            );
+        }
 
         try {
             $order = $this->orderService->findByOrderNumber($oid);
@@ -222,8 +293,22 @@ class CbtCallbackController
                 return redirect($this->resolveSuccessUrl($oid));
             }
 
-            $payMethod = (string) ($pgResponse['paymethod'] ?? $request->input('paymethod', 'CBT'));
-            if (! $this->isCbtCvsPayMethod($payMethod)) {
+            // 편의점(CVS) 판정은 **승인 응답** 기준이다(`CbtCvsResponse` — 클레임 경로와 같은 판정).
+            // 응답에 결제수단이 비어 오면 종전에는 브라우저 콜백의 paymethod 로 채웠는데, 그 값을 CARD 로
+            // 바꿔 보내면 입금 전 편의점 결제번호 발급이 결제완료로 확정됐다. 콜백 값은 응답에 결제수단이
+            // 없을 때 기록용으로만 쓰고, 그 값이 CVS 라도 응답이 CVS 가 아니면 CVS 로 인정하지 않는다
+            // (그러면 아래 결제수단 대조가 어긋나 승인분을 환불한다).
+            $isCvs = CbtCvsResponse::matches($pgResponse);
+            $payMethod = CbtCvsResponse::responsePayMethod($pgResponse);
+
+            if ($payMethod === '') {
+                $callbackPayMethod = trim((string) $request->input('paymethod', ''));
+                $payMethod = $isCvs
+                    ? 'CVS'
+                    : ($callbackPayMethod !== '' && strtoupper($callbackPayMethod) !== 'CVS' ? $callbackPayMethod : 'CBT');
+            }
+
+            if (! $isCvs) {
                 // PG 승인이 확정된 직후부터는 어떤 후속 예외라도 자동 취소 대상이다.
                 $approvedTid = $tid;
             }
@@ -235,7 +320,7 @@ class CbtCallbackController
             $selectedPaymentMethod = $this->resolveSelectedCbtPaymentMethod($request, $payMethod);
             $selectionMeta = $this->buildCbtSelectionPaymentMeta($selectedPaymentMethod);
 
-            if ($this->isCbtCvsPayMethod($payMethod)) {
+            if ($isCvs) {
                 $this->handleCbtCvsIssued($order, $pgResponse, $tid, $sid, $approvedAmount, $authResponse, $approveResponse, $selectedPaymentMethod);
                 $this->queueReceiptCookie($oid);
 
@@ -303,6 +388,12 @@ class CbtCallbackController
         }
     }
 
+    /**
+     * 콜백 요청에서 orderID·orderId·oid 순으로 주문번호를 꺼냅니다.
+     *
+     * @param  CbtCallbackRequest  $request  CBT 인증 콜백 요청
+     * @return string 주문번호 (없으면 빈 문자열)
+     */
     private function resolveOrderId(CbtCallbackRequest $request): string
     {
         return (string) (
@@ -313,11 +404,24 @@ class CbtCallbackController
         );
     }
 
+    /**
+     * CBT 결과 코드가 성공(OK·00·0000)인지 판정합니다.
+     *
+     * @param  string  $resultCode  CBT 결과 코드
+     * @return bool 성공 코드이면 true
+     */
     private function isCbtSuccessCode(string $resultCode): bool
     {
         return in_array($resultCode, ['OK', '00', '0000'], true);
     }
 
+    /**
+     * 인증 결과가 사용자 취소인지 결과 코드와 메시지 패턴으로 판정합니다.
+     *
+     * @param  string  $resultCode  CBT 결과 코드
+     * @param  string  $resultMsg  CBT 결과 메시지
+     * @return bool 사용자 취소이면 true
+     */
     private function isCbtAuthUserCancel(string $resultCode, string $resultMsg): bool
     {
         if (in_array($resultCode, self::CBT_USER_CANCEL_RESULT_CODES, true)) {
@@ -333,6 +437,15 @@ class CbtCallbackController
         return false;
     }
 
+    /**
+     * 실패 결과 페이지로 넘길 쿼리 파라미터를 만듭니다. PayPay 처리 실패는 전용 오류로 바꿉니다.
+     *
+     * @param  string  $resultCode  CBT 결과 코드
+     * @param  string  $resultMsg  CBT 결과 메시지
+     * @param  string  $payMethod  결제수단
+     * @param  string  $orderId  주문번호
+     * @return array<string,string> 실패 리다이렉트 쿼리 파라미터
+     */
     private function buildCbtFailureRedirectParams(
         string $resultCode,
         string $resultMsg,
@@ -354,6 +467,14 @@ class CbtCallbackController
         ];
     }
 
+    /**
+     * PayPay 결제의 상류 처리 실패(processing_failure)인지 판정합니다.
+     *
+     * @param  string  $resultCode  CBT 결과 코드
+     * @param  string  $resultMsg  CBT 결과 메시지
+     * @param  string  $payMethod  결제수단
+     * @return bool PayPay 처리 실패이면 true
+     */
     private function isPayPayProcessingFailure(string $resultCode, string $resultMsg, string $payMethod): bool
     {
         $normalizedPayMethod = strtoupper($payMethod);
@@ -368,6 +489,14 @@ class CbtCallbackController
             );
     }
 
+    /**
+     * 주문이 결제 전 상태이고 JPY 통화인지 확인하고, 아니면 예외를 던집니다.
+     *
+     * @param  Order  $order  결제 대상 주문
+     * @return void 반환값 없음
+     *
+     * @throws \RuntimeException 결제할 수 없는 주문이거나 JPY 주문이 아닐 때
+     */
     private function assertPayableCbtOrder(Order $order): void
     {
         if (! $order->order_status->isBeforePayment()) {
@@ -427,6 +556,17 @@ class CbtCallbackController
         return $approvedAmount;
     }
 
+    /**
+     * 승인 응답의 주문번호·MID·통화·결제수단이 주문과 요청에 맞는지 확인하고, 어긋나면 예외를 던집니다.
+     *
+     * @param  Order  $order  결제 대상 주문
+     * @param  array<string,mixed>  $pgResponse  CBT 승인 응답
+     * @param  CbtCallbackRequest  $request  CBT 인증 콜백 요청
+     * @param  string  $approvedPayMethod  승인 응답의 결제수단
+     * @return void 반환값 없음
+     *
+     * @throws \RuntimeException 승인 응답 값이 주문과 어긋날 때
+     */
     private function assertCbtApproveResponseMatchesOrder(
         Order $order,
         array $pgResponse,
@@ -457,8 +597,11 @@ class CbtCallbackController
     }
 
     /**
-     * @param  array<string,mixed>  $source
-     * @param  array<int,string>  $keys
+     * 지정한 키 순서대로 찾아 처음으로 비어 있지 않은 값을 trim 한 문자열로 돌려줍니다.
+     *
+     * @param  array<string,mixed>  $source  조회할 배열
+     * @param  array<int,string>  $keys  우선순위 순 키 목록
+     * @return string|null 처음 발견한 비어 있지 않은 값 (없으면 null)
      */
     private function firstNonEmptyString(array $source, array $keys): ?string
     {
@@ -476,6 +619,12 @@ class CbtCallbackController
         return null;
     }
 
+    /**
+     * 요청의 선택 결제수단(없으면 인증 paymethod)으로 승인 응답에서 기대할 CBT 결제수단을 정합니다.
+     *
+     * @param  CbtCallbackRequest  $request  CBT 인증 콜백 요청
+     * @return string|null 기대 결제수단 (CARD·PAYPAY·CVS 등, 알 수 없으면 null)
+     */
     private function resolveExpectedCbtPayMethod(CbtCallbackRequest $request): ?string
     {
         $selectedPaymentMethod = (string) $request->input('selectedPaymentMethod', '');
@@ -494,6 +643,13 @@ class CbtCallbackController
         return $authPayMethod !== '' ? $authPayMethod : null;
     }
 
+    /**
+     * 허용된 선택 결제수단을 돌려주고, 없으면 CBT 결제수단을 쇼핑몰 결제수단 키로 바꿉니다.
+     *
+     * @param  CbtCallbackRequest  $request  CBT 인증 콜백 요청
+     * @param  string  $payMethod  CBT 결제수단
+     * @return string|null 쇼핑몰 결제수단 키 (매핑할 수 없으면 null)
+     */
     private function resolveSelectedCbtPaymentMethod(CbtCallbackRequest $request, string $payMethod): ?string
     {
         $selectedPaymentMethod = (string) $request->input('selectedPaymentMethod', '');
@@ -515,6 +671,12 @@ class CbtCallbackController
         };
     }
 
+    /**
+     * 선택 결제수단을 결제 메타에 넣을 배열로 만듭니다.
+     *
+     * @param  string|null  $selectedPaymentMethod  쇼핑몰 결제수단 키
+     * @return array<string,string> selected_payment_method 메타 (값이 없으면 빈 배열)
+     */
     private function buildCbtSelectionPaymentMeta(?string $selectedPaymentMethod): array
     {
         if ($selectedPaymentMethod === null || $selectedPaymentMethod === '') {
@@ -526,11 +688,23 @@ class CbtCallbackController
         ];
     }
 
+    /**
+     * CBT 결제수단 문자열의 공백을 없애고 대문자로 맞춥니다.
+     *
+     * @param  string  $payMethod  CBT 결제수단
+     * @return string 정규화한 결제수단
+     */
     private function normalizeCbtPayMethod(string $payMethod): string
     {
         return strtoupper(trim($payMethod));
     }
 
+    /**
+     * 할부 개월 값을 정수로 바꿉니다. 비어 있으면 null 입니다.
+     *
+     * @param  mixed  $value  승인 응답의 할부 개월 값
+     * @return int|null 할부 개월 수 (값이 없으면 null)
+     */
     private function normalizeInstallmentMonths(mixed $value): ?int
     {
         if ($value === null || $value === '') {
@@ -540,11 +714,19 @@ class CbtCallbackController
         return (int) $value;
     }
 
-    private function isCbtCvsPayMethod(string $payMethod): bool
-    {
-        return strtoupper($payMethod) === 'CVS';
-    }
-
+    /**
+     * 편의점(CVS) 결제번호 발급 결과를 주문 결제에 입금 대기 상태로 기록합니다.
+     *
+     * @param  Order  $order  결제 대상 주문
+     * @param  array<string,mixed>  $pgResponse  CBT 승인 응답
+     * @param  string  $tid  PG 거래번호
+     * @param  string  $sid  CBT 세션 ID
+     * @param  int  $amount  결제 금액 (결제 통화 단위)
+     * @param  array<string,mixed>  $authResponse  정제한 인증 응답
+     * @param  array<string,mixed>  $approveResponse  정제한 승인 응답
+     * @param  string|null  $selectedPaymentMethod  쇼핑몰 결제수단 키
+     * @return void 반환값 없음
+     */
     private function handleCbtCvsIssued(
         Order $order,
         array $pgResponse,
@@ -600,6 +782,15 @@ class CbtCallbackController
         ], fn ($value) => $value !== null));
     }
 
+    /**
+     * 로컬 처리에 실패한 CBT 승인 건을 환불하고 대사 상태를 기록합니다. 환불이 실패하면 수동 환불 필요로 남깁니다.
+     *
+     * @param  string|null  $tid  PG 거래번호 (없으면 아무것도 하지 않음)
+     * @param  string  $oid  주문번호
+     * @param  int  $amount  승인 금액 (결제 통화 단위)
+     * @param  string  $reason  로컬 처리 실패 사유
+     * @return void 반환값 없음
+     */
     private function refundApprovedCbtPaymentOrFlagManualReconciliation(
         ?string $tid,
         string $oid,
@@ -669,11 +860,25 @@ class CbtCallbackController
         ]);
     }
 
+    /**
+     * 주문의 CBT 대사 상태를 대사 서비스에 기록합니다.
+     *
+     * @param  string  $oid  주문번호
+     * @param  array<string,mixed>  $attributes  기록할 대사 속성
+     * @return void 반환값 없음
+     */
     private function recordCbtReconciliationStatus(string $oid, array $attributes): void
     {
         $this->reconciliationService->record($oid, $attributes);
     }
 
+    /**
+     * PG 응답에서 허용 키만 남기고, 스칼라가 아닌 값은 JSON 문자열로 바꿉니다.
+     *
+     * @param  array<string,mixed>  $response  PG 응답
+     * @param  array<int,string>  $allowedKeys  남길 키 목록
+     * @return array<string,mixed> 정제한 응답
+     */
     private function sanitizePgResponse(array $response, array $allowedKeys): array
     {
         $allowed = array_flip($allowedKeys);
@@ -692,18 +897,30 @@ class CbtCallbackController
         return $sanitized;
     }
 
+    /**
+     * 플러그인 설정의 성공 URL 템플릿에 주문번호를 넣어 절대 URL 로 만듭니다.
+     *
+     * @param  string  $orderId  주문번호
+     * @return string 결제 성공 페이지 절대 URL
+     */
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
+    /**
+     * 플러그인 설정의 실패 URL 을 절대 URL 로 만들고, 비어 있지 않은 쿼리 파라미터를 붙입니다.
+     *
+     * @param  array<string,mixed>  $queryParams  실패 페이지에 붙일 쿼리 파라미터
+     * @return string 결제 실패 페이지 절대 URL
+     */
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;
@@ -713,25 +930,5 @@ class CbtCallbackController
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         return $baseUrl.$separator.$query;
-    }
-
-    /**
-     * 상대 경로면 APP_URL 기준으로 절대 URL 화.
-     *
-     * PG가 브라우저 POST 로 콜백을 보내는 동안 Apache 가 ProxyPreserveHost Off 등
-     * 으로 Host 헤더를 localhost 로 바꿔서 PHP 에 전달하는 경우, Laravel 의
-     * redirect('/path') 가 http://localhost/path 를 생성해버린다. config('app.url')
-     * (.env 의 APP_URL)을 명시적 base 로 사용하여 도메인을 보존한다.
-     */
-    private function absolutize(string $url): string
-    {
-        if (preg_match('#^https?://#i', $url) === 1) {
-            return $url;
-        }
-
-        $base = rtrim((string) config('app.url'), '/');
-        $path = $url === '' ? '/' : ($url[0] === '/' ? $url : '/'.$url);
-
-        return $base.$path;
     }
 }

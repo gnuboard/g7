@@ -20,33 +20,47 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('identity_verified_at')
-                ->nullable()
-                ->after('email_verified_at')
-                ->comment('최종 성공 본인인증 시각');
+            if (! Schema::hasColumn('users', 'identity_verified_at')) {
+                $table->timestamp('identity_verified_at')
+                    ->nullable()
+                    ->after('email_verified_at')
+                    ->comment('최종 성공 본인인증 시각');
+            }
 
-            $table->string('identity_verified_provider', 64)
-                ->nullable()
-                ->after('identity_verified_at')
-                ->comment('최근 본인인증에 사용한 프로바이더 식별자');
+            if (! Schema::hasColumn('users', 'identity_verified_provider')) {
+                $table->string('identity_verified_provider', 64)
+                    ->nullable()
+                    ->after('identity_verified_at')
+                    ->comment('최근 본인인증에 사용한 프로바이더 식별자');
+            }
 
-            $table->string('identity_verified_purpose_last', 32)
-                ->nullable()
-                ->after('identity_verified_provider')
-                ->comment('최근 본인인증 목적 (signup|password_reset|self_update|sensitive_action|...)');
+            if (! Schema::hasColumn('users', 'identity_verified_purpose_last')) {
+                $table->string('identity_verified_purpose_last', 32)
+                    ->nullable()
+                    ->after('identity_verified_provider')
+                    ->comment('최근 본인인증 목적 (signup|password_reset|self_update|sensitive_action|...)');
+            }
 
-            $table->char('identity_hash', 64)
-                ->nullable()
-                ->after('identity_verified_purpose_last')
-                ->comment('프로바이더 교체 시 동일인 매칭용 정규화 식별자 (SHA256)');
+            if (! Schema::hasColumn('users', 'identity_hash')) {
+                $table->char('identity_hash', 64)
+                    ->nullable()
+                    ->after('identity_verified_purpose_last')
+                    ->comment('프로바이더 교체 시 동일인 매칭용 정규화 식별자 (SHA256)');
+            }
 
-            $table->timestamp('mobile_verified_at')
-                ->nullable()
-                ->after('identity_hash')
-                ->comment('휴대전화 인증 시각 (email_verified_at 과 대칭)');
-
-            $table->index('identity_hash', 'idx_users_identity_hash');
+            if (! Schema::hasColumn('users', 'mobile_verified_at')) {
+                $table->timestamp('mobile_verified_at')
+                    ->nullable()
+                    ->after('identity_hash')
+                    ->comment('휴대전화 인증 시각 (email_verified_at 과 대칭)');
+            }
         });
+
+        if (! Schema::hasIndex('users', 'idx_users_identity_hash')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->index('identity_hash', 'idx_users_identity_hash');
+            });
+        }
     }
 
     public function down(): void

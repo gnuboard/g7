@@ -1,0 +1,27 @@
+feature: 가상계좌 계좌 만료 기간 — 주문의 입금 기한으로 정한다
+
+description: |
+  가상계좌 주문의 입금 기한은 쇼핑몰 설정(이커머스 「주문 자동취소」 기한, order_settings.auto_cancel_days)이 정하고,
+  주문서도 그 기한으로 안내한다. KCP 는 플러그인 자체 설정(vbank_expire_days, 기본 3일)으로 계좌를 열어
+  두 설정이 따로 놀았고, 승인 콜백이 KCP 기한으로 주문 기한을 덮어써 자동취소도 플러그인 설정을 따랐다.
+
+  수정 이력 (이커머스 전수 실측 S2 — S2-D7, 제품 결정 「쇼핑몰 설정을 단일 기한으로」):
+    - PC 결제창·모바일 승인 모두 주문 입금 기한(한국 시각)까지의 한국 날짜 일수를 vcnt_expire_term, 그날 시각을
+      vcnt_expire_term_time(HHMMSS)으로 넘긴다. 플러그인 일수 설정은 「사용 안 함」으로 표시하고, 주문에 입금 기한이
+      없거나 오늘 이전인 예외 경우의 예비값으로만 쓴다.
+
+axes:
+  surface: [pc, mobile]
+  due: [present, absent]
+
+effects:
+  - vcnt_expire_term_carries_order_vbank_due           # PC: 한국 날짜 일수 + HHMMSS
+  - mobile_vcnt_expire_term_follows_the_order_vbank_due # 모바일 승인(서버)도 같은 규칙
+  - missing_due_falls_back_to_the_plugin_days           # 기한 없음: 플러그인 일수(없으면 3일), 시각 없음
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/handlers/requestPayment.test.ts
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/MobileApprovalControllerTest.php
+
+validation:
+  browser_check: 전용 Chrome 실측 — 테스트 상점 KCP 가상계좌 발급 후 주문 상세 「입금 기한」이 주문 시각 + 자동취소 일수와 같은지

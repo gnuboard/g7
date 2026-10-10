@@ -34,6 +34,8 @@ sub_flows:
 
 effects:
   - attachment_takes_precedence_over_content_image
+  # 미리보기를 막은 SVG 는 목록 썸네일로 고르지 않는다(2026-10-07 실측 K4)
+  - svg_attachment_skipped_for_list_thumbnail
   - content_internal_image_fills_list_thumbnail
   - external_only_content_yields_null
   - secret_post_thumbnail_stays_null

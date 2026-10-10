@@ -1,6 +1,6 @@
 # 컴포넌트 개발 규칙
 
-> **참조**: [프론트엔드 가이드 인덱스](./index.md)
+> **참조**: [프론트엔드 가이드 인덱스](./README.md)
 
 ---
 
@@ -12,6 +12,8 @@
 3. 집합 컴포넌트 재사용 우선 (새로 만들기 전 기존 확인)
 4. G7Core.t() 함수로 다국어 처리
 5. 다크 모드: light/dark variant 함께 지정
+6. 배열 props 는 fallback 필수 (Select options={{options ?? []}})
+7. 폼 안의 Button 은 type="button" 명시 (기본 submit 동작 방지)
 ```
 
 ---
@@ -139,7 +141,7 @@ import { Icon, IconName } from '../basic/Icon';
 
 ### 레이아웃 편집기 capability 선언 의무
 
-새 draggable 컴포넌트(레이아웃 편집기 팔레트/캔버스에 노출)는 위 4개 파일에 더해 호스트 템플릿 `editor-spec/componentCapabilities.json` 에 capability 를 선언해야 편집기에서 "편집 불가(no-editable)"가 되지 않는다. 표시 텍스트/아이콘/select/목록·배열·표 데이터 prop 별로 `propControls`(속성 탭) / `dataProps`(데이터 연결) / `nodeEditor`·`canvasOverlay`(구조 에디터) / `styleControls`(스타일 탭) / `events`(동작 탭) 를 선언한다. 데이터 표면을 가진 컴포넌트가 편집 슬롯도 비대상 allowlist 도 없으면 정적 검사가 차단한다. composite/layout 컴포넌트는 `editorAttrs` spread + `id` 패스스루도 필요하다.
+새 draggable 컴포넌트(레이아웃 편집기 팔레트/캔버스에 노출)는 위 4개 파일에 더해 호스트 템플릿 `editor-spec/componentCapabilities.json` 에 capability 를 선언해야 편집기에서 "편집 불가(no-editable)"가 되지 않는다. 표시 텍스트/아이콘/select/목록·배열·표 데이터 prop 별로 `propControls`(속성 탭) / `dataProps`(데이터 연결) / `nodeEditor`·`canvasOverlay`(구조 에디터) / `styleControls`(스타일 탭) / `events`(동작 탭) 를 선언한다. 데이터 표면을 가진 컴포넌트가 편집 슬롯도 비대상 allowlist 도 없으면 자동 검증이 차단한다. composite/layout 컴포넌트는 `editorAttrs` spread + `id` 패스스루도 필요하다.
 
 상세: [editor-spec.md "componentCapabilities"](../extension/editor-spec.md) · [components-types.md "편집기 attribute 패스스루"](components-types.md)
 
@@ -154,3 +156,19 @@ import { Icon, IconName } from '../basic/Icon';
 - [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md) - User 컴포넌트 목록 (확장 소유)
 - [다크 모드](./dark-mode.md) - 컴포넌트 다크 모드 지원 가이드
 - [상태 관리](./state-management.md) - 전역/로컬 상태 관리 및 동기화 패턴
+
+## 확장이 제공하는 컴포넌트
+
+마크업 어휘는 대상 템플릿의 `components.json` 단독이 아니라 **템플릿 + 활성 모듈 + 활성 플러그인 3계통**이다. 확장이 제공한 컴포넌트는 확장 식별자 프리픽스가 붙은 태그로 쓴다.
+
+```html
+<sirsoft-ecommerce-product-card title="{{product.name}}" :featured="true"/>
+```
+
+- 노드 `name` 은 `{확장식별자}.{이름}` (예: `sirsoft-ecommerce.ProductCard`)
+- 태그 프리픽스는 식별자의 `_` 를 `-` 로 접은 것 (`gnuboard7-hello_module` → `<gnuboard7-hello-module-...>`)
+- 템플릿 컴포넌트는 종전대로 프리픽스 없이 쓴다
+
+"미등록 컴포넌트 확인" 규율의 대상이 3계통으로 넓어졌다. 어떤 판본이 실제로 쓰이는지(확장 원본 / 템플릿 대체본 / 템플릿 전용 판본)는 작성자가 알 필요가 없다 — 셋 다 같은 태그·같은 이름이다.
+
+규약 전문: [../extension/extension-components.md](../extension/extension-components.md)

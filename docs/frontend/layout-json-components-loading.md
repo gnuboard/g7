@@ -32,6 +32,12 @@
 
 데이터 소스 로딩 중 또는 페이지 전환 중 blur 효과 적용:
 
+```html
+<data-grid data-ref="users_data_grid" :data-blur-until-loaded="true" data="{{users.data.data}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "users_data_grid",
@@ -47,6 +53,12 @@
 #### 2. 표현식 문자열 (engine-v1.5.0+)
 
 특정 상태 값에 따라 blur 효과 적용:
+
+```html
+<form data-ref="menu_form" data-blur-until-loaded="{{_global.isSaving}}" id="menu_form"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -68,6 +80,14 @@
 #### 3. 객체 형태 (engine-v1.6.0+)
 
 특정 데이터 소스에 따라 개별 컴포넌트의 blur 효과를 제어:
+
+```html
+<stat-card data-ref="stats_widget" data="{{dashboard_stats.data}}">
+  <blur-until-loaded sources="dashboard_stats"/>
+</stat-card>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -93,6 +113,24 @@
 
 **data_sources 사용 패턴**:
 
+```html
+<!-- 단일 데이터 소스 -->
+<div>
+  <blur-until-loaded sources="dashboard_stats"/>
+  본문
+</div>
+<!-- 다중 데이터 소스 (모든 소스가 로드되어야 blur 해제) -->
+<div>
+  <blur-until-loaded>
+    <item>users</item>
+    <item>roles</item>
+  </blur-until-loaded>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 단일 데이터 소스
 "blur_until_loaded": {
@@ -108,6 +146,23 @@
 ```
 
 **실제 사용 예시 (대시보드 위젯)**:
+
+```html
+<data-source id="dashboard_stats" endpoint="/api/admin/dashboard/stats" loading_strategy="progressive"/>
+<data-source id="dashboard_resources" endpoint="/api/admin/dashboard/resources" loading_strategy="progressive"/>
+<data-source id="dashboard_activities" endpoint="/api/admin/dashboard/activities" loading_strategy="progressive"/>
+<stat-card data-ref="stats_widget" data="{{dashboard_stats.data}}">
+  <blur-until-loaded sources="dashboard_stats"/>
+</stat-card>
+<div data-ref="resources_widget" class="rounded-xl p-4 bg-slate-100 dark:bg-slate-800">
+  <blur-until-loaded sources="dashboard_resources"/>
+</div>
+<div data-ref="activities_widget" class="rounded-xl p-4 bg-slate-100 dark:bg-slate-800">
+  <blur-until-loaded sources="dashboard_activities"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -126,17 +181,17 @@
     },
     {
       "id": "resources_widget",
-      "type": "composite",
-      "name": "ResourceCard",
+      "type": "basic",
+      "name": "Div",
       "blur_until_loaded": { "enabled": true, "data_sources": "dashboard_resources" },
-      "props": { "data": "{{dashboard_resources.data}}" }
+      "props": { "className": "rounded-xl p-4 bg-slate-100 dark:bg-slate-800" }
     },
     {
       "id": "activities_widget",
-      "type": "composite",
-      "name": "ActivityList",
+      "type": "basic",
+      "name": "Div",
       "blur_until_loaded": { "enabled": true, "data_sources": "dashboard_activities" },
-      "props": { "data": "{{dashboard_activities.data}}" }
+      "props": { "className": "rounded-xl p-4 bg-slate-100 dark:bg-slate-800" }
     }
   ]
 }
@@ -280,6 +335,12 @@
 
 #### 1. 축약 (기본 opaque 스타일)
 
+```html
+<transition-overlay enabled/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "transition_overlay": true,
@@ -288,6 +349,12 @@
 ```
 
 #### 2. 상세 설정
+
+```html
+<transition-overlay enabled style="blur"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -302,6 +369,12 @@
 #### 3. 타겟 컨테이너 지정
 
 특정 영역만 오버레이로 가리려면 `target`에 컴포넌트 ID를 지정합니다.
+
+```html
+<transition-overlay enabled target="main_content_area"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -323,6 +396,20 @@
 ### wait_for — 데이터소스 가드 (engine-v1.34.0+)
 
 `blocking` 데이터소스가 없는 페이지에서도 명시된 progressive 데이터소스가 fetch 완료될 때까지 오버레이가 표시되도록 한다. 베이스 레이아웃에 spinner 설정을 두고, 자식 레이아웃이 `wait_for` 만 추가하는 패턴이 권장된다.
+
+앞은 베이스 레이아웃(`_admin_base`), 뒤는 자식 레이아웃(`admin_settings` — `wait_for` 만 명시)이다.
+
+```html
+<transition-overlay enabled style="spinner" target="main_content">
+  <spinner component="PageLoading"/>
+</transition-overlay>
+
+<transition-overlay>
+  <wait-for>settings</wait-for>
+</transition-overlay>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 베이스 레이아웃 (_admin_base.json)
@@ -365,6 +452,24 @@
 #### 동적 target override (engine-v1.36.0+)
 
 `replace: true` navigate 의 `params.transition_overlay_target` 으로 호출별 target 을 override 할 수 있다. 탭 속 서브 탭(환경설정 > 알림 탭 > 채널 탭 등)에서 서브 탭 콘텐츠 영역에만 spinner 를 표시하고 싶을 때 사용.
+
+앞은 상위 탭 전환(베이스 `transition_overlay.target` = `settings_tab_content` 사용),
+뒤는 채널 서브 탭 전환(채널 콘텐츠 영역에만 spinner)이다.
+
+```html
+<on type="click">
+  <navigate path="/admin/settings" :replace="true">
+    <query tab="notification_definitions"/>
+  </navigate>
+</on>
+<on type="click">
+  <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
+    <query channel="{{ch.id}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 상위 탭 전환: 베이스 transition_overlay.target 사용 (settings_tab_content)
@@ -440,6 +545,14 @@
 `style: "skeleton"`을 지정하면, CSS 오버레이 대신 레이아웃 JSON의 컴포넌트 트리를 파싱하여 **동적 스켈레톤 UI**를 렌더링합니다.
 
 #### 설정 예시
+
+```html
+<transition-overlay enabled style="skeleton" target="main_content_area">
+  <skeleton component="PageSkeleton" animation="pulse" :iteration_count="5"/>
+</transition-overlay>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -518,6 +631,14 @@ interface SkeletonComponentProps {
 
 #### 설정 예시
 
+```html
+<transition-overlay enabled style="spinner" target="main_content_area">
+  <spinner component="PageLoading"/>
+</transition-overlay>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "transition_overlay": {
@@ -532,6 +653,14 @@ interface SkeletonComponentProps {
 ```
 
 #### 3단계 fallback chain (skeleton과 동일)
+
+```html
+<transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+  <spinner component="PageLoading"/>
+</transition-overlay>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -602,6 +731,22 @@ interface LoadingComponentProps {
 
 ### 구조
 
+```html
+<form data-ref="user_form">
+  <on type="submit">
+    <action handler="submitForm"/>
+  </on>
+  <on event="mount">
+    <action handler="loadSavedData" target="{{_local.formId}}"/>
+  </on>
+  <on event="unmount">
+    <action handler="cleanup"/>
+  </on>
+</form>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "user_form",
@@ -610,14 +755,12 @@ interface LoadingComponentProps {
   "lifecycle": {
     "onMount": [
       {
-        "type": "click",
         "handler": "loadSavedData",
-        "target": "{{_local.formId}}"
+        "params": { "target": "{{_local.formId}}" }
       }
     ],
     "onUnmount": [
       {
-        "type": "click",
         "handler": "cleanup"
       }
     ]
@@ -657,6 +800,16 @@ lifecycle 핸들러에서는 다음 데이터에 접근할 수 있습니다:
 
 ### 실제 사용 예시
 
+```html
+<div data-ref="analytics_wrapper">
+  <on event="mount">
+    <action handler="trackPageView" page="{{route.layout}}" userId="{{_global.user.id}}"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "analytics_wrapper",
@@ -665,7 +818,6 @@ lifecycle 핸들러에서는 다음 데이터에 접근할 수 있습니다:
   "lifecycle": {
     "onMount": [
       {
-        "type": "click",
         "handler": "trackPageView",
         "params": {
           "page": "{{route.layout}}",

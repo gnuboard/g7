@@ -1,0 +1,212 @@
+feature: 쇼핑몰 설정 클레임 탭 (#599 S10 — D23·D26)
+
+description: |
+  클레임 탭에 **정책 스칼라 축의 저장 경로**를 신설하고, 사유 카탈로그를 환불 1종에서
+  교환/반품/환불 3종으로 넓힌다. 이 화면에서 조용히 깨지는 지점은 다섯이다.
+
+  ① **설정에 통로가 없으면** 그 값은 소비 쪽만 있고 운영자가 바꿀 수단이 영구히 없다.
+     `claim.max_images`·`instant_cancel_statuses`·`auto_approve_*` 등 13개 스칼라는
+     `defaults.json` 에만 있었고 검증 규칙도 화면 필드도 없었다 — 저장을 시도하면 조용히
+     버려지고, 소비 쪽은 기본값으로 정상 동작하므로 어디에도 드러나지 않는다.
+
+  ② **세 카탈로그가 같은 상태 키를 읽으면** 한 표를 고칠 때 나머지 둘이 함께 바뀐다. 세
+     블록은 환불 정본을 복제한 것이라 `refund_reasons` 가 한 곳이라도 남으면 그렇게 된다.
+     파일 단위 구조 검사는 통과하고, 세 표가 같은 화면에 함께 놓였을 때만 드러난다.
+
+  ③ **한 유형만 보낸 저장이 다른 유형을 비우면** 운영자는 교환 사유를 고치다 반품 사유를
+     통째로 잃는다. 응답은 200 이고 화면은 저장 성공으로 보인다.
+
+  ④ **설정 화면의 삭제 경로가 상세 삭제보다 약하면** 그 경로가 우회로가 된다. 설정 저장은
+     `syncReasons()` 를 타는데 그 가드가 취소 한 표만 세면, 교환·반품에서 사용 중인 사유가
+     이 경로로만 지워지고 그 순간 해당 신청서 전건의 사유 라벨이 원시 코드로 노출된다.
+     가드는 **파일 쓰기 전에** 판정한다 — 설정 저장은 JSON 파일 쓰기라 트랜잭션으로 되돌릴
+     수 없어, 뒤에서 거절되면 스칼라만 반영된 반쪽 상태가 남는다.
+
+  ⑤ **사유명이 단일 Input 으로 돌아가면** (D23) ko 만 남고 나머지 언어가 조용히 사라진다.
+     목록 행은 `MultilingualInput` 의 `compact` 레이아웃이다.
+
+  완료 처리 기본값 2종(D26)은 **모달의 초기 선택값**일 뿐이며 실행값이 아니다. 화면이 그
+  사실을 밝히지 않으면 운영자는 여기서 끈 재고 복구가 실행되지 않는다고 읽는다.
+
+# axis 의미:
+#   reason_type — 사유 카탈로그 3종. 세 블록이 정본 복제라 유형이 유일한 직교 축이다.
+#
+# 정책 스칼라 13축·읽기전용 권한·다국어는 유형과 직교하지 않아 axis 로 세우지 않고 이름 붙은
+# effect 가 덮는다 — 유형마다 스칼라 13개를 다시 곱하면 조합만 늘고 검증되는 사실은 같다.
+axes:
+  reason_type: [exchange, return, refund]
+
+effects:
+  # 설정 경로 후속: 전체/카테고리/내부 개별 읽기·쓰기의 결과와 정규화가 같아야 한다.
+  - settings_all_categories_match_full_response
+  - settings_single_catalog_writes_database_and_reads_same_catalog
+  - settings_single_value_normalizes_and_rejects_invalid_status
+  - settings_claim_seeder_preserves_used_and_removes_unused_reasons
+  # 탭 구성
+  - settings_claim_tab_composes_policy_and_three_catalogs
+  # 사유 카탈로그 3종은 하위 탭으로 한 번에 하나만 보인다. 어느 하위 탭인지는 URL `sub_tab` 이 정해
+  # 새로고침·링크 공유 뒤에도 같은 하위 탭이 서고, 탭 강조와 보이는 표가 같은 판정을 한다. 하위 탭을
+  # 옮기면 열린 추가 폼을 비운다 — 저장 가드가 하위 탭과 무관하게 그 플래그를 읽기 때문이다.
+  - settings_claim_reason_sub_tab_follows_url
+  - settings_claim_policy_exposes_every_scalar_axis
+  - settings_claim_policy_limits_come_from_server
+  - settings_claim_complete_defaults_declared_as_modal_seed
+  # 카탈로그 격리 (②)
+  - settings_claim_reason_catalog_reads_and_writes_own_type
+  - settings_claim_reason_name_is_multilingual
+  - settings_claim_catalogs_render_independently
+  # 서버 왕복 (①·③·④)
+  - settings_claim_policy_scalars_persist
+  - settings_claim_numeric_axes_stored_as_integers
+  - settings_claim_invalid_vocabulary_rejected
+  - settings_claim_response_carries_three_catalogs
+  - settings_claim_save_syncs_each_catalog_to_its_type
+  - settings_claim_save_of_one_catalog_keeps_others
+  - settings_claim_delete_guard_counts_own_type_usage
+  - settings_claim_delete_guard_precedes_the_write
+  # 카탈로그만 담긴 저장이 정책 스칼라를 지우지 않는다 — 마킹은 있었는데 이 목록에 없었다.
+  # 커버리지 검사는 선언→마킹 한 방향만 보므로 역방향 누락은 여기서만 닫힌다.
+  - settings_claim_catalog_only_save_keeps_scalars
+  # 사용 중인 사유의 코드 변경 차단 — 삭제만 막으면 같은 피해가 수정 경로로 그대로 난다.
+  - settings_claim_code_change_blocked_while_in_use
+  # 유형 잠금 — 라벨 해석이 (code, type) 쌍이라 유형만 옮겨도 코드 변경과 피해가 같고,
+  # 옮겨진 뒤에는 사용량을 새 유형의 표에서 세어 삭제 가드까지 연쇄로 뚫린다.
+  - settings_claim_type_change_blocked_while_in_use
+  # 잠그는 것은 코드·유형 둘뿐 — 가드가 넓으면 사용 중인 사유의 오타조차 못 고친다.
+  - settings_claim_reason_remains_editable_except_code_and_type
+  # 배지 색 어휘는 Enum 이 단일 출처이고 소비 화면이 둘이다. 사전이 어휘를 못 덮으면
+  # 관리자는 무색 뱃지, 구매자는 default 색으로 조용히 뭉개진다.
+  - claim_status_variant_vocabulary_covered_by_both_screens
+  # 15차: 화면 사본(프론트 partial enums.json)과 API 정본(백엔드 enums.php)이 같은 Enum 값을
+  # 두 파일에 갖는다. 키 파리티 검사는 값을 대조하지 않으므로 갈리면 오류 없이 화면마다 다른 말이 나간다.
+  - claim_enum_labels_agree_between_screen_and_api
+  - settings_claim_reason_name_requires_current_locale
+  # 10차 B1 의 회귀 증명 — 기존 행(id 보유)은 현재 로케일 이름 필수를 면제받는다.
+  - settings_claim_reason_name_required_locale_is_current_locale
+  # 11차: `id` 는 그 면제의 유일한 근거다. 실재하지 않는 id(다른 유형의 id 포함)는 면제만 받고 sync 에서
+  # create 로 흘러 이름 없는 사유를 만든다 — 422 로 거절한다.
+  - settings_claim_reason_unknown_id_is_rejected
+  # 11차: 기존 행끼리 코드를 맞바꾸면 페이로드 안에서는 유일해도 행 단위 update 가 DB unique 에서 죽고,
+  # 그 시점엔 설정 파일이 이미 기록돼 반쪽 상태 + 500 이 남는다 — 파일 쓰기 전에 422 로 거절한다.
+  - settings_claim_reason_code_swap_is_rejected_before_the_write
+  # 19차: 위 거절의 **음성 대조군**(200). 맞바꾸기 거절이 "같은 저장에서 지워지는 행의 코드를
+  # 물려받기" 까지 막으면 안 된다 — 삭제가 update 보다 먼저다. 이 200 케이스가 거절 effect 를
+  # 마킹하고 있어 그 셀이 200 단언만으로 채워졌다(400/422 가드가 회귀해도 초록). 자기 계약을
+  # 말하는 effect 로 분리한다.
+  - settings_claim_reason_code_takeover_from_a_deleted_row_is_allowed
+  # 11차: 추가 폼이 코드 형식(서버 `ClaimReasonCodeFormat` 과 같은 규칙)을 미리 본다 — 형식 위반 코드가
+  # 행으로 들어가면 저장 422 가 행 번호 없이 배너로만 뜨고 코드 칸은 읽기 전용이라 그 자리에서 못 고친다.
+  - settings_claim_reason_code_format_checked_before_add
+  # 15차: 인라인 추가 폼의 이름 시드가 활성 언어팩 전체에서 파생돼야 한다 — ko/en 리터럴이면
+  # 그 밖의 로케일 운영자는 입력칸도 언어 추가 버튼도 없어 폼을 확정할 수 없고, 그동안 [저장]은
+  # 인라인 폼 가드에 막힌다(안내가 지시하는 동작이 수행 불가능해진다).
+  - settings_inline_form_name_seed_derives_from_active_locales
+  # 15차: 경고 문구의 라벨 토큰과 사전 키가 같은 집합이어야 한다 — 개수 비교로는 개명이 통과하고
+  # 그때 운영자 화면에 키 원문이 뜬다. ja 팩도 모집단이다.
+  - settings_save_pending_form_labels_match_dictionary_keys
+  # 12차: 추가 폼이 길이 50·유형 내 중복도 미리 보고, 서버가 행의 code 를 거절하면 표·카드가 그 행을 지목한다
+  - settings_claim_reason_row_code_error_is_pointed_at_the_row
+  # 12차: 사유·배송사·배송유형 추가 폼을 연 채 페이지 [저장] 을 누르면 막고 경고한다 (통화 2축과 같은 가드)
+  - settings_save_is_blocked_while_an_inline_add_form_is_open
+  - settings_claim_requires_update_permission
+  # DoD 축 — 저장이 화면 밖에 도달하는지 (§7 S10)
+  - settings_claim_reason_reaches_user_catalog_of_its_own_type
+  - settings_claim_reason_label_follows_viewer_locale
+  - settings_claim_charge_payment_methods_accept_extension_ids
+  - settings_claim_charge_payment_method_options_derive_from_order_settings
+  # 3차 실측 T1-D1: 선택지를 주문 카탈로그의 is_active 로 거르면 이미 저장된 비활성 수단이
+  # 라벨을 잃고(원문 키 노출) 한 번 지우면 이 화면에서 다시 고를 수 없다.
+  - settings_claim_charge_payment_method_options_do_not_filter_by_order_catalog_active
+  - settings_claim_status_vocabulary_matches_server_gate
+  # 9차: 저장 한 번에 '꺼둔 것이 켜지는' 축과, 두 경로로 갈렸던 코드 형식.
+  # 셋 다 예외도 로그도 없이 운영자 의도와 반대로 동작하거나 탭을 영구 저장 불가로 만든다.
+  - settings_claim_completion_defaults_reject_partial_map
+  - settings_claim_reason_visibility_flags_reject_null
+  - settings_claim_reason_code_format_unified_with_detail_path
+  - settings_claim_reason_existing_code_is_exempt_from_format
+  # 브라우저 실측 (E2E)
+  - settings_claim_tab_renders_three_reason_catalogs
+  - settings_claim_policy_persists_across_reentry
+
+
+  # ── #599 후속 — 클레임 정책 설정 키 2종 (D8·D10) ─────────────────────────
+  - instant_cancel_statuses_accepts_pending_states          # 미결제 2종을 자동 전이 목록에 지정할 수 있다 (D10)
+  - instant_cancel_statuses_default_includes_pending_states # 기본값에 미결제 2종이 들어 있다
+  - auto_approve_refund_statuses_is_editable                # 자동승인 대상 상태 MultiSelect 가 화면에 있다 (D8)
+  - auto_approve_refund_statuses_is_disabled_when_toggle_off # 토글이 꺼져 있으면 비활성
+  # 같은 축의 브라우저 실측(E2E) — 레이아웃 JSON 만 봐서는 두 노드가 같은 화면에서 어떤 상태로 서는지 알 수 없다.
+  - settings_claim_auto_approve_statuses_disabled_until_toggle_on
+  - auto_approve_refund_statuses_rejects_unknown_values      # 허용 어휘 밖 값은 422
+  - instant_cancel_hint_describes_auto_advance               # 문구가 D2 의미(자동 전이)를 말한다
+
+  # ── 구조 검사가 스스로를 지키는 축 ─────────────────────────────────────────
+  # 이 탭의 구조 테스트는 대부분 `defaults.json`·파셜 디렉터리에서 모집단을 **파생**한다.
+  # 파생이 비면 `it.each([])` 는 케이스를 0개 등록하고 초록이다 — 오류도 경고도 없다.
+  # 그래서 파생 자체의 하한이 독립된 계약이다.
+  - settings_claim_derivations_are_not_empty                 # 스칼라 축·완료 기본값·인라인 폼·사유 카탈로그 파생의 하한
+  - settings_claim_tab_renders_only_on_its_own_tab           # 탭 블록의 `if` 가 claim 탭으로 좁혀져 있다
+  - settings_claim_inputs_all_locked_for_read_only_operator  # 7 파셜의 입력형 노드마다 isReadOnly 잠금 표현식
+  # 모바일 카드의 error 바인딩이 선언되지 않은 반복 변수를 읽으면 표현식은 조용히 빈 문자열이 되고,
+  # 모바일에서만 어느 카드가 422 인지 표시되지 않는다 (10차 배송유형 카드 `$type` 오타).
+  - settings_card_error_binding_uses_the_declared_item_var
+  # 탭을 옮겼다 돌아오면 이전 입력이 안내 없이 되살아나던 자리 — 정리 범위가 각 폼의 [취소] 와 같아야 한다.
+  - settings_tab_switch_clears_the_same_scope_as_each_form_cancel
+  # 저장 실행(setState·apiCall) 자체가 같은 플래그 전부에 막힌다 — 경고만 띄우고 나가면 입력이 버려진다.
+  - settings_save_execution_is_gated_by_every_inline_form_flag
+  # 저장 차단 안내가 인용하는 컨트롤 이름이 실제 확정 버튼 라벨과 같다 (ko·en·ja).
+  - settings_save_pending_wording_matches_the_real_confirm_button
+  # 배송가능국가 폼만 자기 플래그 외의 게이트를 갖는다 — 폼이 도달 불가가 되는 지점에서 표시도 함께
+  # 내리지 않으면 이후 어느 탭에서도 [저장]이 영구히 막힌다.
+  - settings_unreachable_inline_form_never_locks_save_forever
+  # 확인 모달을 여는 분기는 입력 버퍼를 보관하고 [취소]·[확인] 양쪽이 비운다.
+  - settings_disable_intl_modal_stashes_and_restores_the_country_buffer
+  # 게이트가 `_global.locale` 을 읽어도 그것을 **쓰는 쪽**이 없으면 값이 언제나 비어 조용히 ko 로 굳는다.
+  - settings_server_field_error_keys_follow_the_current_locale
+  # 이름 입력칸 placeholder 는 한 폼의 모든 언어 칸이 공유하는 단일 prop 이다 — 어떤 언어명도 값이 될 수 없다.
+  - settings_name_placeholder_never_names_a_language
+  - settings_charge_payment_method_options_are_not_literal_builtins
+  # 사유 상세 관리 API (설정 탭의 형제 경로) — 목록·조회는 유형별 카탈로그를 돌려주고 무타입은 환불로 해석한다.
+  - claim_reason_api_lists_catalog_by_type
+  # 읽기·수정 권한이 없으면 각 엔드포인트가 403 이다.
+  - claim_reason_api_requires_permission
+  # 생성은 설정 탭과 같은 코드 형식·필수·유일성 검사를 거치고, 확장의 도메인 거절은 400 + 전용 문구다.
+  - claim_reason_api_creates_and_validates
+  # 수정은 저장되고, 이미 저장된 코드는 형식 검사를 면제받는다.
+  - claim_reason_api_updates_reason
+  # 신청서가 쓰는 사유는 지울 수 없고(사용 건수 안내), 쓰지 않는 사유는 지워진다.
+  - claim_reason_api_deletes_only_unused
+  # 사용 여부 토글과 대상 부재 시 400 + 전용 문구.
+  - claim_reason_api_toggles_status
+  # 회원용 목록은 회원이 고를 수 있는 활성 사유만 보인다.
+  - claim_reason_user_list_shows_selectable_only
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaim.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsClaimRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsClaimTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ClaimReasonControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/ClaimReasonRepositoryTypeContractTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/ClaimStatusVariantVocabularyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-settings-claim-tab.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/ClaimSettingsStatusVocabularyTest.php
+
+notes: |
+  **신청 가능 상태 4축은 Enum 전체가 아니라 축마다 다른 부분집합이다.** 그래서 Enum 이
+  단일 출처가 될 수 없고, 화면(레이아웃 JSON)과 게이트(FormRequest)가 각자 목록을 갖는다 —
+  어긋나면 화면에만 있는 값은 저장 시 422, 게이트에만 있는 값은 화면으로 만들 수 없는
+  조합을 API 경로로 통과시킨다. 둘 다 예외도 로그도 남기지 않는다.
+
+  **추가결제 수단 선택지는 주문 설정에서 파생한다.** 서버 허용 어휘가 확장 결제수단까지
+  포함하므로, 화면이 기본 7종을 리터럴로 박으면 서버는 받아들이는데 운영자는 고를 수 없고,
+  API 로 심어 둔 확장 ID 도 이 탭을 한 번 저장하면 사라진다.
+
+  **`_meta.limits` 가 경계값의 단일 출처다.** 화면이 리터럴을 재기입하면 서버 규칙이 바뀔 때
+  화면만 옛 경계로 남는다 — 더 좁으면 저장 가능한 값을 입력조차 못 하고, 더 넓으면 저장
+  단계에서만 실패한다. 클레임 축은 리뷰 축(`max_images_*`)과 이름이 겹치므로 `claim_` 접두사를
+  쓴다.
+
+  **사유 카탈로그는 DB 관리 대상이라 JSON 설정에 남지 않는다.** 남으면 같은 목록의 출처가
+  둘이 되고, 그 뒤로는 어느 쪽이 정본인지가 호출 순서에 좌우된다.
+
+  **읽기전용 축(`_computed.isReadOnly`)은 셸 레이아웃의 computed 다.** `createLayoutTest` 는
+  레이아웃 computed 를 dataContext 에 싣지 않으므로(S9c 인계 ①) 렌더 테스트로는 볼 수 없고
+  구조 검사가 "모든 입력에 disabled 가 붙었는지" 로 대신 고정한다.

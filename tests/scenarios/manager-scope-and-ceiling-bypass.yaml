@@ -1,0 +1,76 @@
+feature: 위임 관리자 스코프 보조 경로 우회 차단 (KVE-2026-2368 · KVE-2026-2374 + 형제)
+
+description: |
+  배포 기본 역할 `manager` 는 `core.users.read`·`core.notification-logs.read` 를 self 스코프로
+  가진다. 주 경로(회원 목록·발송 이력 목록)는 스코프를 걸었지만 같은 권한 하나로 열리는 보조
+  경로가 스코프를 다시 걸지 않아, 본인만 보도록 제한된 위임 관리자가 전체 회원의 개인정보·회원
+  수·알림 이력을 받았다.
+
+  - 회원 조회: 최근 가입·uuid/id 검색·통계(언어 분포 포함)·대시보드 회원 수 카드가 모두 회원
+    목록과 같은 스코프를 따른다. 스코프는 UserRepository 의 한 자리(scopedUserQuery)에서 건다.
+    한 건 조회(uuid·id)는 찾은 뒤 판정하고, 범위 밖이면 「없음」 으로 답한다.
+  - 사용자와 무관하게 캐시하는 사이트 전체 집계(게시판 통계 캐시)는 스코프를 끄고 센다 —
+    스코프를 건 숫자가 공용 캐시에 앉으면 다른 방문자에게 그 사람 기준 숫자가 나간다.
+  - 발송 이력: 대시보드 최근 알림이 목록과 같은 쿼리 스코프(발신·수신 당사자)를 따르고, role
+    스코프 부여도 전체 접근으로 흘러가지 않는다.
+  - 정합성: 스코프를 거는 권한은 라우트 스코프 메타(resource_route_key+owner_key)를 갖거나 쿼리
+    스코프 정본 목록에 있어야 한다. 배포 역할 정의는 테스트로 잠그고, DB 부여는 시드·코어
+    업데이트 때 경고로 드러낸다.
+  - 슈퍼관리자는 모든 경로에서 전체를 그대로 본다(무회귀).
+
+test_files:
+  - tests/Feature/Security/UserScopeBypassTest.php
+  - tests/Feature/Security/DashboardNotificationScopeTest.php
+  - tests/Feature/Console/PlaywrightIssueTokenScopeTest.php
+  - tests/Playwright/specs/admin/manager-scope-bypass.spec.ts
+
+axes:
+  case:
+    - user_list_control
+    - recent_users_scoped
+    - user_search_uuid_scoped
+    - user_search_uuid_self_allowed
+    - user_lookup_id_scoped
+    - user_statistics_scoped
+    - dashboard_user_count_scoped
+    - super_admin_all_user_paths
+    - global_user_count_unscoped
+    - notification_list_control
+    - dashboard_recent_notifications_scoped
+    - dashboard_recent_notifications_role_scoped
+    - dashboard_recent_notifications_super_admin
+    - config_scope_integrity
+    - db_scope_integrity
+    # E2E — 범위(self)로 부여된 실제 세션으로 실서버 경로를 잠근다
+    - e2e_token_scope_suffix
+    - e2e_token_scope_suffix_invalid
+    - e2e_manager_user_paths_scoped
+    - e2e_manager_notifications_scoped
+    - e2e_super_admin_unscoped
+
+effects:
+  # 대조군 — 주 경로가 이미 스코프를 건다는 전제를 잠근다.
+  - user_list_is_self_only_for_scoped_manager
+  - notification_list_is_party_only_for_scoped_manager
+  # 보조 경로가 주 경로와 같은 범위를 따른다.
+  - recent_users_follow_list_scope
+  - uuid_search_hides_out_of_scope_user
+  - id_lookup_hides_out_of_scope_user
+  - user_statistics_follow_list_scope
+  - dashboard_user_count_follows_list_scope
+  - dashboard_recent_notifications_follow_list_scope
+  - role_scope_limits_notifications_to_role_members
+  # 과차단 회귀 축 — 범위 안의 조회와 공용 캐시 집계는 그대로다.
+  - uuid_search_still_returns_in_scope_user
+  - unscoped_global_count_for_shared_cache
+  - super_admin_sees_all_users_on_every_path
+  - super_admin_sees_all_recent_notifications
+  # 재발 방지 — 강제 수단 없는 스코프 부여를 드러낸다.
+  - configured_scopes_are_enforced_somewhere
+  - unenforced_scoped_grant_is_reported
+  # E2E — 토큰 발급 도구의 범위 접미사와 실서버 경로
+  - e2e_token_grants_requested_scope
+  - e2e_token_rejects_unknown_scope
+  - e2e_scoped_manager_sees_only_self_on_every_user_path
+  - e2e_scoped_manager_sees_only_party_notifications
+  - e2e_super_admin_sees_all_users

@@ -20,9 +20,11 @@ class DashboardModuleListener implements HookListenerInterface
      */
     public static function getSubscribedHooks(): array
     {
+        // 훅 이름은 복수형(core.modules.*)이다 — 종전 단수형(core.module.*)은 발화처가 없어
+        // 이 리스너가 한 번도 실행되지 않았다(#138).
         return [
-            'core.module.after_activate' => ['method' => 'handleModuleUpdate', 'priority' => 10],
-            'core.module.after_deactivate' => ['method' => 'handleModuleUpdate', 'priority' => 10],
+            'core.modules.after_activate' => ['method' => 'handleModuleUpdate', 'priority' => 10],
+            'core.modules.after_deactivate' => ['method' => 'handleModuleUpdate', 'priority' => 10],
         ];
     }
 
@@ -39,6 +41,7 @@ class DashboardModuleListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러)
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -49,6 +52,7 @@ class DashboardModuleListener implements HookListenerInterface
      * 대시보드 모듈 통계 업데이트를 브로드캐스트합니다.
      *
      * @param  mixed  ...$args  훅에서 전달된 인자
+     * @return void 반환값 없음
      */
     public function handleModuleUpdate(...$args): void
     {

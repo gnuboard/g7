@@ -5,6 +5,13 @@
  * kind-agnostic 디스패치: 코어는 종류를 모르고 kind 로만 핸들러를 찾는다. 코어 빌트인도
  * 특권 없이 동일 레지스트리에 등록되고, 템플릿이 신규 kind 추가 + 기존 kind 대체를 할 수
  * 있다. 미등록 kind 는 안전 디그레이드(null).
+ *
+ * @effects array_editor_registered_via_registercoreeditors_kind_agnostic,
+ *   children_editor_registered_via_registercoreeditors_kind_agnostic,
+ *   table_editor_registered_via_registercoreeditors_kind_agnostic,
+ *   table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic,
+ *   array_group_editor_registered_via_registercoreeditors_kind_agnostic,
+ *   array_cell_tree_editor_registered_via_registercoreeditors_kind_agnostic
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';

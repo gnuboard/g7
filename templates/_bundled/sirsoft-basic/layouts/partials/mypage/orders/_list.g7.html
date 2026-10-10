@@ -1,0 +1,278 @@
+<!-- 주문 내역 목록 본체. 상태 필터가 상태와 URL 을 **둘 다** 건드린다 — 목록은 URL 쿼리를 읽는 `orders`
+     소스가 채우고 셀렉트의 현재 값은 `_local` 을 읽는다. `replace` 로 이동해 필터를 여러 번 눌러도
+     뒤로가기 이력이 쌓이지 않는다. -->
+<partial description="마이페이지 주문내역 탭">
+  <div class="mt-6">
+    <blur-until-loaded sources="orders"/>
+    <responsive on="portable" class="mt-4"/>
+    <!-- 주문상태별 통계 섹션 — 상세 화면 진행단계와 같은 생김새(원 64px·아이콘·꺾쇠·균일 칸·모바일 줄바꿈)의 건수 칸. -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm"/>
+      <!-- 상태별 건수 칸. 배열(키·라벨·아이콘 토큰·색·건수)은 서버(`OrderService::getUserStatusSummary`)가 만든다 — 키는 통계·클릭 필터와 같은 어휘라 '상품준비중' 칸은 배송준비중을 합산한다(필터 규칙과 같은 집합). 칸 폭은 균일하고 모바일은 3칸/줄. 선택된 칸은 현재 칸 스타일, 건수 0 은 회색. -->
+      <div data-ref="order_summary_steps" class="grid grid-cols-6 gap-x-2 gap-y-6">
+        <responsive on="portable" class="grid grid-cols-3 gap-x-2 gap-y-5"/>
+        <!-- 상태 칸은 셀렉트와 같은 필터다 — 누르면 셀렉트가 읽는 값과 목록이 읽는 주소 쿼리를 함께 그 상태로 바꾸고 쪽수를 1로 되돌린다. 같은 칸을 다시 눌러도 전체 보기로 돌아가지 않으므로 해제는 셀렉트의 '전체'로 한다. -->
+        <div data-ref="order_summary_step_{{stepIdx}}" data-each="step, stepIdx in {{orders.data?.status_summary ?? []}}" class="relative flex flex-col items-center gap-2 min-w-0 cursor-pointer" role="button" data-summary-key="{{step.key ?? ''}}" data-summary-count="{{step.count ?? 0}}">
+          <on type="click">
+            <set-state target="local" ordersStatus="{{step.key}}" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :mergeQuery="true" :replace="true">
+              <query status="{{step.key}}" page="1"/>
+            </navigate>
+          </on>
+          <!-- 원 + 건수 배지. 원 크기와 아이콘 크기는 이 래퍼가 정한다(아이콘은 부모 font-size 상속). 배지는 원 오른쪽 위에 겹친다. -->
+          <div class="relative w-16 h-16 text-2xl">
+            <responsive on="portable" class="relative w-14 h-14 text-xl"/>
+            <!-- 선택된 칸은 현재 칸 스타일(옅은 바탕·테두리·그림자), 건수가 있는 칸은 그 상태 색으로 채우고, 0 건은 회색. -->
+          <div>
+              <class-map base="flex items-center justify-center w-full h-full rounded-full border-2 transition-colors" key="{{((_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')) + ':' + (step.variant ?? 'secondary')}}" default="border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500">
+                <variant when="done:success">border-transparent bg-green-600 text-white dark:bg-green-500</variant>
+                <variant when="current:success">border-green-600 bg-green-100 text-green-800 shadow-md dark:bg-green-900/30 dark:text-green-400</variant>
+                <variant when="off_path:success">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="done:warning">border-transparent bg-yellow-600 text-white dark:bg-yellow-500</variant>
+                <variant when="current:warning">border-yellow-600 bg-yellow-100 text-yellow-800 shadow-md dark:bg-yellow-900/30 dark:text-yellow-400</variant>
+                <variant when="off_path:warning">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="done:info">border-transparent bg-blue-600 text-white dark:bg-blue-500</variant>
+                <variant when="current:info">border-blue-600 bg-blue-100 text-blue-800 shadow-md dark:bg-blue-900/30 dark:text-blue-400</variant>
+                <variant when="off_path:info">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="done:primary">border-transparent bg-indigo-600 text-white dark:bg-indigo-500</variant>
+                <variant when="current:primary">border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                <variant when="off_path:primary">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="done:secondary">border-transparent bg-gray-600 text-white dark:bg-gray-500</variant>
+                <variant when="current:secondary">border-gray-600 bg-gray-100 text-gray-700 shadow-md dark:bg-gray-700 dark:text-gray-300</variant>
+                <variant when="off_path:secondary">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="done:danger">border-transparent bg-red-600 text-white dark:bg-red-500</variant>
+                <variant when="current:danger">border-red-500 bg-red-100 text-red-800 shadow-md dark:bg-red-900/30 dark:text-red-400</variant>
+                <variant when="off_path:danger">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="done:dark">border-transparent bg-slate-600 text-white dark:bg-slate-500</variant>
+                <variant when="current:dark">border-slate-600 bg-slate-200 text-slate-800 shadow-md dark:bg-slate-800 dark:text-slate-200</variant>
+                <variant when="off_path:dark">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+            </class-map>
+              <icon name="{{step.icon ?? 'circle'}}"/>
+          </div>
+            <!-- 건수 배지 — 0 건이면 그리지 않는다(원이 회색으로 이미 말한다). -->
+            <span data-if="{{(step.count ?? 0) > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white dark:bg-red-600 dark:text-white text-xs font-bold leading-none flex items-center justify-center ring-2 ring-white dark:ring-gray-800" data-summary-badge="{{step.key ?? ''}}">{{step.count ?? 0}}</span>
+        </div>
+          <!-- 라벨은 칸 폭 안에서 띄어쓰기 기준으로 줄바꿈한다. -->
+            <span>
+            <class-map base="w-full text-xs text-center break-words leading-tight" key="{{(_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')}}" default="text-gray-400 dark:text-gray-500">
+              <variant when="done">text-gray-700 dark:text-gray-300</variant>
+              <variant when="current">font-bold text-gray-900 dark:text-gray-100</variant>
+              <variant when="upcoming">text-gray-400 dark:text-gray-500</variant>
+              </class-map>
+            {{step.label ?? ''}}
+            </span>
+          <!-- 칸 사이 꺾쇠 (PC) — 마지막 칸에는 없다. 칸이 10개 이상이면 PC 도 한 줄 6칸으로 줄바꿈하므로 그때는 줄 끝(6n번째)에도 세우지 않는다. 칸 오른쪽 경계에서 그리드 간격의 절반(-mr-1 = 4px)만큼 밀고 자기 폭의 절반을 되돌려(translate-x-1/2) 두 원 사이 정중앙에 세운다 — 칸 폭이 몇이든 양쪽 원과의 거리가 같다. 숨김은 래퍼 Div 가 맡는다: Icon 에 직접 `hidden` 을 주면 Font Awesome 의 `display` 규칙(레이어 밖)이 Tailwind 유틸리티(레이어 안)를 이겨 숨겨지지 않는다. -->
+          <div data-if="{{stepIdx < (orders.data?.status_summary ?? []).length - 1 &amp;&amp; ((orders.data?.status_summary ?? []).length <= 9 || stepIdx % 6 !== 5)}}" class="absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-300 dark:text-gray-600" data-step-chevron="pc">
+            <responsive on="portable" class="hidden" data-step-chevron="pc"/>
+            <icon name="chevron-right"/>
+          </div>
+          <!-- 칸 사이 꺾쇠 (모바일) — 한 줄 3칸이라 줄 끝(3n번째) 칸에는 세우지 않는다. -->
+          <div data-if="{{stepIdx < (orders.data?.status_summary ?? []).length - 1 &amp;&amp; stepIdx % 3 !== 2}}" class="hidden" data-step-chevron="mobile">
+            <responsive on="portable" class="absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600" data-step-chevron="mobile"/>
+            <icon name="chevron-right"/>
+        </div>
+        </div>
+          </div>
+        </div>
+    <!-- 상태 필터 (셀렉트박스) -->
+    <div class="flex justify-end mb-4">
+      <responsive on="portable" class="flex justify-end mb-3"/>
+      <select value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <responsive on="portable" value="{{_local.ordersStatus || ''}}" class="min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"/>
+        <on type="change">
+          <!-- 주문 상태 필터. 셀렉트가 읽는 폼 값과 목록이 읽는 주소를 함께 맞춘다 -->
+          <sequence>
+            <!-- 셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면
+                 3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다 -->
+            <set-state target="local" ordersStatus="{{$event.target.value}}" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :mergeQuery="true" :replace="true">
+              <query status="{{$event.target.value}}" page="1"/>
+            </navigate>
+          </sequence>
+        </on>
+        <option value="">$t:mypage.orders.filter.all</option>
+        <option value="pending_payment">$t:mypage.orders.filter.pending</option>
+        <option value="payment_complete">$t:mypage.orders.filter.paid</option>
+        <option value="preparing">$t:mypage.orders.filter.preparing</option>
+        <option value="shipping">$t:mypage.orders.filter.shipped</option>
+        <option value="delivered">$t:mypage.orders.filter.delivered</option>
+        <option value="confirmed">$t:mypage.orders.filter.confirmed</option>
+        <option value="cancelled">$t:mypage.orders.filter.cancelled</option>
+      </select>
+    </div>
+    <!-- 주문 목록 컨테이너 -->
+    <div class="space-y-4">
+      <responsive on="portable" class="space-y-3"/>
+      <!-- 주문 카드 반복 -->
+      <div data-if="{{orders.data.data &amp;&amp; orders.data.data.length > 0}}" data-each="order in {{orders.data.data ?? []}}">
+        <!-- 주문 카드 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"/>
+          <!-- 주문 헤더 (날짜/번호 + 상태) -->
+          <div class="flex items-start justify-between mb-3">
+            <responsive on="portable" class="flex items-start justify-between mb-2"/>
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+                {{order.ordered_at_formatted ?? ''}}
+              </p>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                <responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white"/>
+                {{order.order_number}}
+              </p>
+            </div>
+            <!-- 주문상태 배지 묶음 — 상태 배지 아래에 부분취소 보조 배지를 세로로 배치 -->
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+              <!-- 주문상태 배지 -->
+              <span>
+                <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{order.status}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  <variant when="pending_payment">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
+                  <variant when="payment_complete">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                  <variant when="preparing">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                  <variant when="shipping_ready">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                  <variant when="shipping">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                  <variant when="delivered">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+                  <variant when="confirmed">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+                  <variant when="cancelled">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
+                </class-map>
+                <icon data-if="{{!!order.status_icon}}" name="{{order.status_icon ?? ''}}" class="text-xs"/>
+                <span>{{order.status_label}}</span>
+              </span>
+              <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그 is_partially_cancelled) -->
+              <span data-if="{{order.is_partially_cancelled}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">$t:mypage.orders.partial_cancelled_badge</span>
+              <!-- 클레임 배지 (D22) — 이 주문에 접수된 교환·반품·환불·취소의 유형별 최신 상태. 서버가 유형별 최신 1건만 요약해 내려주므로(claim_summary) 접수 건이 있는 유형만 그린다. status_label 이 유형 접두를 포함한다(예: '교환회수중'). -->
+              <div data-if="{{(order.claim_summary ?? []).length > 0}}" class="flex flex-col items-end gap-1">
+                <!-- 반복은 배지 자신에 건다 — 래퍼에 걸면 래퍼가 유형 수만큼 복제돼 배지 사이 gap 이 적용되지 않는다 (관리자 목록 `_partial_order_datagrid` 와 같은 형태). -->
+                <span data-each="claim in {{order.claim_summary ?? []}}">
+                  <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{claim.status_variant}}" default="bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                    <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+                    <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
+                    <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
+                    <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                    <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                    <variant when="secondary">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+                    <variant when="dark">bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200</variant>
+                  </class-map>
+                  <span>{{claim.status_label ?? claim.type_label ?? ''}}</span>
+                  <!-- 같은 유형이 2건 이상이면 건수를 함께 보인다 — 배지는 최신 1건의 상태라 건수가 없으면 나머지가 없는 것처럼 읽힌다. -->
+                  <span data-if="{{(claim.count ?? 0) > 1}}" class="opacity-70">{{'(' + claim.count + ')'}}</span>
+                </span>
+              </div>
+              <!-- 배송국가 칩 (D9 — 항상 표시, KR 포함) -->
+              <span data-if="{{order.recipient_country_code}}" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                <span class="{{'fi fi-' + (order.recipient_country_code ?? 'kr').toLowerCase()}}"/>
+                <span>{{$localized(order.recipient_country_name) || order.recipient_country_code}}</span>
+              </span>
+            </div>
+          </div>
+          <!-- 주문 상품 목록 -->
+          <div data-each="item in {{order.items ?? []}}" class="space-y-3">
+            <responsive on="portable" class="space-y-2"/>
+            <div class="flex gap-3">
+              <!-- 상품 이미지 -->
+              <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                <responsive on="portable" class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"/>
+                <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name}}" class="w-full h-full object-cover"/>
+                <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+                  <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+                </div>
+              </div>
+              <!-- 상품 정보 -->
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white truncate"/>
+                  {{item.product_name}}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{item.product_option_name}}</p>
+                <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) -->
+                <p data-if="{{item.additional_options_summary}}" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  <span>{{item.additional_options_summary?.label}}</span>
+                  <!-- 「외 N건」 은 번역 키로 — 한국어를 이어 붙이면 다른 언어 화면에 한국어가 섞인다. -->
+                  <span data-if="{{(item.additional_options_summary?.extra_count ?? 0) > 0}}" class="ml-1">$t:mypage.orders.additional_options_more|count={{item.additional_options_summary?.extra_count ?? 0}}</span>
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"/>
+                  {{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit
+                </p>
+                <!-- 옵션 소계 -->
+                <p class="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
+                  <responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white mt-0.5"/>
+                  {{item.subtotal_price_formatted}}
+                </p>
+                <!-- 보조 통화들 (선택된 통화 제외) -->
+                <div data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 mt-0.5">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 배송비 + 결제금액 + 상세보기 -->
+          <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <responsive on="portable" class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700"/>
+            <div>
+              <!-- 배송비 -->
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.shipping_fee</span>
+                <span data-if="{{order.total_shipping_amount > 0}}" class="text-xs text-gray-600 dark:text-gray-300">+{{order.total_shipping_amount_formatted}}</span>
+                <span data-if="{{!order.total_shipping_amount || order.total_shipping_amount == 0}}" class="text-xs text-green-600 dark:text-green-400">$t:mypage.orders.free_shipping</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.total_amount</p>
+              <p class="text-lg font-bold text-gray-900 dark:text-white">
+                <responsive on="portable" class="text-base font-bold text-gray-900 dark:text-white"/>
+                {{order.total_amount_formatted}}
+              </p>
+              <!-- 보조 통화들 (선택된 통화 제외) -->
+              <div data-each="currency in {{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+              </div>
+              <!-- 마일리지 사용 (있을 때만) — base_currency 단일 정산 -->
+              <p data-if="{{(order.total_points_used_amount ?? 0) > 0}}" class="text-xs text-red-500 dark:text-red-400 mt-0.5">$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}</p>
+              <!-- 적립 예정 마일리지 (있을 때만) -->
+              <p data-if="{{(order.total_earned_points_amount ?? 0) > 0 &amp;&amp; order.status !== 'cancelled' &amp;&amp; !order.is_partially_cancelled}}" class="text-xs text-blue-600 dark:text-blue-400">$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}</p>
+            </div>
+            <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+              <responsive on="portable" type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"/>
+              <on type="click">
+                <!-- 주문 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
+                <navigate path="/mypage/orders/{{order.order_number}}" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+              <icon name="eye" size="sm"/>
+              <span>$t:mypage.orders.view_detail</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- 주문 없음 -->
+      <div data-if="{{!orders.data.data || orders.data.data.length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+        <icon name="package" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3">
+          <responsive on="portable" name="package" size="2x" class="mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
+        </icon>
+        <p class="text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>
+          $t:mypage.orders.empty
+        </p>
+        <button type="button" class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer">
+          <responsive on="portable" type="button" class="inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"/>
+          <on type="click">
+            <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다. -->
+            <navigate path="{{_global.shopBase}}/products"/>
+          </on>
+          $t:mypage.orders.go_shopping
+        </button>
+      </div>
+      <!-- 페이지네이션 -->
+      <pagination data-type="composite" data-if="{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-4">
+        <responsive on="portable" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-3"/>
+        <on event="onPageChange">
+          <set-state target="local" ordersPage="{{$args[0]}}"/>
+          <navigate path="/mypage/orders" :mergeQuery="true" :replace="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </pagination>
+    </div>
+  </div>
+</partial>

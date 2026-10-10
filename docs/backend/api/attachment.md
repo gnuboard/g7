@@ -44,7 +44,9 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | 응답 헤더 | 값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `image/png` 등 | 첨부파일의 MIME 타입 (`attachments.mime_type`) |
-| Content-Disposition | `attachment; filename="원본파일명.pdf"` | 이미지가 아닌 파일에만 부여 — 원본 파일명으로 다운로드 |
+| Content-Disposition | `inline; filename=원본파일명.png` / `attachment; filename=원본파일명.pdf` | 래스터 이미지(JPEG·PNG·GIF·WebP·AVIF·BMP)만 `inline`. 그 밖의 파일은 **SVG 를 포함해** `attachment`(다운로드) — SVG 는 스크립트를 품을 수 있어 앱 오리진에서 열리면 안 된다(KVE-2026-2366) |
+| X-Content-Type-Options | `nosniff` | 모든 파일 응답 — 브라우저가 내용을 추측해 다른 형식으로 렌더하지 않게 한다 |
+| Content-Security-Policy | `default-src 'none'; style-src 'unsafe-inline'; sandbox` | 래스터 이미지가 아닌 파일에만 — 다운로드를 무시하고 렌더하는 환경에서도 스크립트·외부 로드를 막는다 |
 | Cache-Control | `public, max-age=86400, immutable` (프로덕션) / `no-cache` (그 외) | 이미지 응답의 캐싱 정책. max-age 는 환경설정 `cache.layout_ttl` (기본 86400초) |
 | Expires | `Wed, 15 Jul 2026 00:00:00 GMT` | 이미지 응답의 만료 시각 (현재 시각 + max-age) |
 | ETag | `9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d` | 이미지 응답의 검증자 (파일 수정시각 + 크기의 MD5). 요청의 `If-None-Match` 와 일치하면 `304 Not Modified` |
@@ -54,6 +56,8 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 ```http
 HTTP/1.1 200 OK
 Content-Type: image/png
+Content-Disposition: inline; filename=photo.png
+X-Content-Type-Options: nosniff
 Cache-Control: public, max-age=86400, immutable
 Expires: Wed, 15 Jul 2026 00:00:00 GMT
 ETag: 9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d
@@ -61,12 +65,14 @@ ETag: 9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d
 <파일 바이너리>
 ```
 
-이미지가 아닌 파일:
+이미지가 아닌 파일 (SVG 포함 — 2026-09-27 실측: 내용이 SVG 인 `evil.png` 행):
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/pdf
-Content-Disposition: attachment; filename="manual.pdf"
+Content-Type: image/svg+xml
+Content-Disposition: attachment; filename=evil.png
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox
 
 <파일 바이너리>
 ```

@@ -1,0 +1,28 @@
+<!-- 공통정보 본문을 위지윅에서 일반 텍스트로 되돌리기 전 확인받는 창 — 서식이 사라지므로 되돌릴 수
+  없는 변환이다.
+  확인 쪽이 두 `<on>` 으로 갈려 있다 — 모드를 바꾸는 것과 창을 닫는 것. 한 블록에 두 액션으로 적어도
+  같은 결과지만, 여기서는 나뉜 채로 두었다.
+  이 창은 **한 방향만 확인한다** — 텍스트에서 위지윅으로 가는 쪽은 잃을 것이 없어 곧바로 바뀐다. -->
+<partial description="Common Info Content Mode Change Confirm Modal">
+  <modal data-type="composite" data-ref="modal_content_mode_change" title="$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.title" size="sm">
+    <footer>
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button type="button" class="btn btn-primary">
+        <on type="click">
+          <!-- 일반 텍스트로 전환 — 서식이 사라진다. 목적지가 `text` 로 고정이라 이 창은 위지윅→텍스트 한 방향 전용이다. -->
+          <set-state target="_local" contentMode="text"/>
+        </on>
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.confirm
+      </button>
+    </footer>
+    <p class="text-body">$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.message</p>
+  </modal>
+</partial>

@@ -1,0 +1,332 @@
+<!-- 글 본문 카드 — 제목 줄의 배지들(공지·분류·비밀·가려짐·신규·삭제됨)은 상태를 겹쳐 보여줄 수 있어 각자 따로 뜬다. 본문은 가려진 글이면 안내로 바뀌고 「원문 보기」로만 펼친다. 답글이면 원글 요약이 위에 함께 실린다 -->
+<partial description="Admin Board Post Detail - Main Post Content (uses post?.data)">
+  <div>
+    <div data-ref="card_header" class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div data-ref="title_row" class="flex-start flex-row justify-between gap-4 mb-4">
+        <responsive on="portable" class="row-stack mb-4"/>
+        <div data-ref="title_with_badges" class="flex-1 min-w-0">
+          <h2 data-ref="title_with_prefix" class="text-primary text-xl font-semibold flex-center gap-2 flex-wrap">
+            <responsive on="portable" class="section-heading flex-center gap-2 flex-wrap"/>
+            <!-- 공지 배지 -->
+            <span data-ref="notice_prefix" data-if="{{post?.data?.is_notice}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">$t:sirsoft-board.admin.posts.detail.notice</span>
+            <!-- 카테고리 배지 -->
+            <span data-ref="category_badge_prefix" data-if="{{post?.data?.category}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{post?.data?.category}}</span>
+            <!-- 비밀글 아이콘 -->
+            <icon data-ref="secret_icon" data-if="{{post?.data?.is_secret}}" name="lock" class="text-xl text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+            <!-- 블라인드 배지 -->
+            <span data-ref="status_badge_blinded" data-if="{{post?.data?.status === 'blinded'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.detail.status_blinded</span>
+            <!-- 제목 -->
+            <span data-ref="title_text">{{post?.data?.title}}</span>
+            <!-- 신규 배지 -->
+            <span data-ref="new_badge" data-if="{{post?.data?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white">N</span>
+            <!-- 삭제됨 배지 -->
+            <span data-ref="status_badge_deleted" data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
+          </h2>
+        </div>
+        <div data-ref="card_actions" class="flex-center gap-2">
+          <responsive on="portable" class="flex-center gap-2 ml-auto"/>
+          <button data-ref="reply_button" data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="text-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write !== true}}">
+            <on type="click">
+              <!-- 답변 작성 폼으로 이동 — parent_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75). -->
+              <navigate path="/admin/board/{{route.slug}}/create" :mergeQuery="true">
+                <query parent_id="{{post?.data?.id}}"/>
+              </navigate>
+            </on>
+            <icon name="comment" class="text-xs"/>
+            <span>$t:sirsoft-board.admin.posts.detail.reply_button</span>
+          </button>
+          <!-- 신고 버튼 — 미신고 상태 (모달 오픈) -->
+          <button data-ref="report_button" data-if="{{post?.data?.board?.use_report &amp;&amp; post?.data?.author?.uuid !== current_user?.data?.uuid &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at &amp;&amp; !post?.data?.is_already_reported}}" class="text-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors">
+            <on type="click">
+              <open-modal target="report_modal">
+                <field name="data">
+                  <field name="post_id" value="{{post?.data?.id}}"/>
+                  <field name="slug" value="{{route.slug}}"/>
+                  <field name="type" value="post"/>
+                </field>
+              </open-modal>
+            </on>
+            <icon name="flag" class="text-xs"/>
+            <span>$t:sirsoft-board.admin.posts.detail.report</span>
+          </button>
+          <!-- 신고 버튼 — 이미 신고한 상태 (클릭 불가) -->
+          <button data-if="{{post?.data?.board?.use_report &amp;&amp; post?.data?.author?.uuid !== current_user?.data?.uuid &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at &amp;&amp; post?.data?.is_already_reported}}" :disabled="true" class="text-hint inline-flex items-center gap-1 px-3 py-1.5 font-medium bg-gray-100 dark:bg-gray-700 rounded cursor-not-allowed opacity-60">
+            <icon name="flag" class="text-xs"/>
+            <span>$t:sirsoft-board.admin.posts.detail.reported</span>
+          </button>
+          <action-menu data-type="composite" data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" items="{{post?.data?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.actions.edit', iconName: 'edit', disabled: !(post?.data?.abilities?.can_write === true &amp;&amp; (post?.data?.is_author || post?.data?.abilities?.can_manage === true))}, ...((post?.data?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: post?.data?.abilities?.can_manage !== true}] : []), ...((post?.data?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}]}}">
+            <on type="action" event="onItemClick">
+              <!-- 글 점 메뉴 — 편집은 그냥 이동이고, 가리기·되살리기·삭제 셋은 대상을 전역에 실은 뒤 부모 화면의 확인 창을 연다. 메뉴 항목 자체가 글 상태에 따라 다르게 조립되므로(지워졌으면 「되살리기」 하나뿐) 여기 갈래는 그때 있을 수 있는 것만 받는다 -->
+              <switch>
+                <case when="edit">
+                  <navigate path="/admin/board/{{route.slug}}/{{post?.data?.id}}/edit" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </case>
+                <case when="blind">
+                  <set-state target="global">
+                    <field name="blind_modal_data">
+                      <field name="id" value="{{post?.data?.id}}"/>
+                      <field name="slug" value="{{route.slug}}"/>
+                      <field name="type" value="post"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="blind_modal"/>
+                </case>
+                <case when="restore">
+                  <set-state target="global">
+                    <field name="restore_modal_data">
+                      <field name="id" value="{{post?.data?.id}}"/>
+                      <field name="slug" value="{{route.slug}}"/>
+                      <field name="type" value="post"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="restore_modal"/>
+                </case>
+                <case when="delete">
+                  <set-state target="global">
+                    <field name="modal_data">
+                      <field name="id" value="{{post?.data?.parent_id ? post?.data?.id : route.id}}"/>
+                      <field name="type" value="{{post?.data?.parent_id ? 'reply' : 'post'}}"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="delete_modal"/>
+                </case>
+              </switch>
+            </on>
+          </action-menu>
+        </div>
+      </div>
+      <div data-ref="card_meta" class="flex-center flex-wrap gap-2 text-label">
+        <action-menu data-type="composite" data-ref="author_name_menu" data-if="{{!post?.data?.author?.is_guest}}" triggerLabel="{{post?.data?.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
+          <prop name="items">
+            <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
+          </prop>
+          <on type="click" event="onItemClick">
+            <!-- 글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원 글은 이 메뉴 대신 이름만 나온다 -->
+            <switch>
+              <case when="view_user_info">
+                <navigate path="/admin/users/{{post?.data?.author?.uuid}}"/>
+              </case>
+            </switch>
+          </on>
+        </action-menu>
+        <span data-if="{{post?.data?.author?.is_guest}}" class="text-heading">{{post?.data?.author?.name}}</span>
+        <span data-if="{{post?.data?.author?.email}}" class="text-label-subtle">({{post?.data?.author?.email}})</span>
+        <span data-if="{{post?.data?.author?.is_guest}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
+        <span>·</span>
+        <span>{{post?.data?.created_at}}</span>
+        <span data-if="{{post?.data?.board?.show_view_count}}">·</span>
+        <span data-if="{{post?.data?.board?.show_view_count}}">$t:sirsoft-board.admin.posts.detail.view_count|count={{post?.data?.view_count}}</span>
+        <span data-if="{{post?.data?.board?.use_comment}}">·</span>
+        <div data-if="{{post?.data?.board?.use_comment}}" class="flex-center gap-1">
+          <icon name="comment" class="text-base"/>
+          <span>$t:sirsoft-board.admin.posts.detail.comments_title|count={{post?.data?.comment_count ?? 0}}</span>
+        </div>
+        <!-- 반응 — 읽기 전용. 게시판이 반응을 끄면 백엔드가 reaction_type_options 를 빈 배열로 내리므로 이 줄 전체가 사라진다. 유형별 개수를 아이콘(업로드 이미지 우선)과 함께 편다 -->
+        <span data-if="{{post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0}}">·</span>
+        <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0}}" class="flex-center gap-2">
+          <div data-each="adminReactionType, adminReactionIdx in {{post?.data?.board?.reaction_type_options ?? []}}">
+            <span class="flex-center gap-1" title="{{adminReactionType.name ?? ''}}">
+              <img data-if="{{adminReactionType.icon_url}}" src="{{adminReactionType.icon_url}}" alt="{{adminReactionType.name ?? ''}}" class="w-4 h-4 object-contain"/>
+              <icon data-if="{{!adminReactionType.icon_url}}" name="{{adminReactionType.icon_name ?? 'fa-thumbs-up'}}" class="text-base"/>
+              <span>{{post?.data?.reaction_counts?.[adminReactionType.id] ?? 0}}</span>
+            </span>
+          </div>
+        </div>
+        <span data-if="{{post?.data?.ip_address}}">·</span>
+        <span data-if="{{post?.data?.ip_address}}" class="text-tertiary">IP: {{post?.data?.ip_address}}</span>
+      </div>
+    </div>
+    <div data-ref="attachments_section" data-if="{{post?.data?.has_attachment}}" class="panel-header-row">
+      <button data-ref="attachments_toggle" type="button" class="flex-between w-full text-left cursor-pointer" aria-expanded="{{!!_local.showAttachments}}" aria-controls="post_attachments_list">
+        <on type="click">
+          <!-- 첨부 목록을 폈다 접었다 한다 — 기본은 접힘이라 첨부가 많아도 본문이 밀리지 않는다 -->
+          <set-state target="local" showAttachments="{{!_local.showAttachments}}"/>
+        </on>
+        <span class="flex-center gap-2 text-body font-medium">
+          <icon name="paperclip" class="text-base"/>
+          <span>$t:sirsoft-board.admin.posts.detail.attachments|count={{post?.data?.attachment_count ?? 0}}</span>
+        </span>
+        <icon name="{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}" class="text-base text-gray-500 dark:text-gray-400"/>
+      </button>
+      <!-- 펼침 토글의 aria-controls 가 가리키는 목록 묶음 — 접혀 있어도 자리는 남아 가리키는 대상이 사라지지 않는다 -->
+      <div data-ref="post_attachments_list">
+        <div data-ref="attachments_list_{{index}}" data-if="{{_local.showAttachments}}" data-each="attachment, index in post?.data?.attachments ?? []" class="mt-3 ml-4 space-y-2">
+          <div data-ref="attachment_card_{{index}}" class="group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+            <on type="click">
+              <!-- 첨부 내려받기 — 관리자 화면이라 관리자 다운로드 라우트(admin.attachments.download)로 받고, 그 권한이 없으면 실행하지 않는다(사용자 라우트를 쓰면 화면 권한과 다른 사용자 권한으로 판정됐다). 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다 -->
+              <action if="{{post?.data?.abilities?.can_download === true}}" handler="sirsoft-board.downloadAttachment" url="{{'/api/modules/sirsoft-board/admin/board/' + route?.slug + '/attachments/download/' + attachment?.hash}}" filename="{{attachment?.original_filename}}">
+                <fail>
+                  <toast type="error" message="$t:sirsoft-board.admin.posts.detail.download_failed"/>
+                </fail>
+              </action>
+            </on>
+            <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
+            <div data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700">
+              <img src="{{attachment?.preview_url}}" alt="{{attachment?.original_filename}}" class="w-full h-full object-cover"/>
+            </div>
+            <!-- 파일 아이콘 (일반 파일인 경우) -->
+            <div data-if="{{!attachment?.is_image}}" class="flex-center flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 justify-center">
+              <icon name="file" class="text-lg text-gray-400 dark:text-gray-500"/>
+            </div>
+            <!-- 파일 정보 -->
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{{attachment?.original_filename}}</div>
+              <div class="text-[10px] text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</div>
+            </div>
+            <!-- 다운로드 아이콘 -->
+            <div class="flex-shrink-0">
+              <icon name="download" class="text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 board-attachment-icon transition-colors"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 원글 정보 (답글인 경우에만 표시) - 인용 스타일, 첨부파일 아래에 위치 -->
+    <div data-ref="parent_post_card" data-if="{{post?.data?.parent}}" class="mx-6 mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 border-l-4 border-gray-400 dark:border-gray-500 rounded-r-lg">
+      <!-- 1줄: 원글 아이콘 + 라벨 (왼쪽) / 작성자 + 날짜 (오른쪽) -->
+      <div class="flex-between mb-2 text-sm">
+        <!-- 왼쪽: 아이콘 + 라벨 -->
+        <div class="flex-center gap-2">
+          <icon name="comment" size="sm" class="text-gray-500 dark:text-gray-400"/>
+          <span class="font-semibold text-gray-700 dark:text-gray-300">$t:sirsoft-board.board.parent_post</span>
+        </div>
+        <!-- 오른쪽: 작성자 (ActionMenu) + 날짜 -->
+        <div class="flex-center gap-2">
+          <action-menu data-type="composite" data-ref="parent_author_name_menu" data-if="{{!post?.data?.parent?.author?.is_guest}}" triggerLabel="{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}" triggerIconName="" triggerClassName="text-gray-500 dark:text-gray-400" position="right">
+            <prop name="items">
+              <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
+            </prop>
+            <on type="click" event="onItemClick">
+              <!-- 원글 쓴 사람의 관리자 상세로 — 위 글쓴이 메뉴와 같은 짜임이지만 대상이 «원글» 쪽이다(이 화면은 답글이다) -->
+              <switch>
+                <case when="view_user_info">
+                  <navigate path="/admin/users/{{post?.data?.parent?.author?.uuid}}"/>
+                </case>
+              </switch>
+            </on>
+          </action-menu>
+          <span data-if="{{post?.data?.parent?.author?.is_guest}}" class="text-label-subtle">{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
+          <span data-if="{{post?.data?.parent?.author?.is_guest}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
+          <span class="text-gray-400 dark:text-gray-500">{{post?.data?.parent?.created_at ?? ''}}</span>
+        </div>
+      </div>
+      <!-- 2줄: 제목 (클릭 시 원글로 이동) -->
+      <div class="flex-center gap-2 mb-2">
+        <!-- 비밀글 아이콘 -->
+        <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400"/>
+        <!-- 카테고리 배지 -->
+        <span data-if="{{post?.data?.parent?.category}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{post?.data?.parent?.category ?? ''}}</span>
+        <!-- 공지 배지 -->
+        <span data-if="{{post?.data?.parent?.is_notice}}" class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">$t:sirsoft-board.admin.posts.badge.notice</span>
+        <!-- 제목 + 링크 아이콘 (클릭 가능, 굵게) -->
+        <a href="/admin/board/{{route.slug}}/post/{{post?.data?.parent?.id ?? ''}}" class="flex-center text-primary font-bold hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 transition-colors gap-1">
+          <span>{{post?.data?.parent?.title ?? ''}}</span>
+          <icon name="arrow-up-right-from-square" size="xs" class="text-blue-500 dark:text-blue-400 ml-2"/>
+        </a>
+        <!-- 블라인드 배지 -->
+        <span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="px-2 py-0.5 text-xs rounded bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
+        <!-- 삭제됨 배지 -->
+        <span data-if="{{post?.data?.parent?.status === 'deleted'}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
+      </div>
+      <!-- 3줄: 내용 (토글로 접기/펼치기) -->
+      <div class="text-label mb-3 {{_local?.parentPostExpanded ? '' : 'line-clamp-2'}}">
+        <!-- 비밀글인 경우 -->
+        <span data-if="{{post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:sirsoft-board.admin.posts.detail.reply_secret_content</span>
+        <!-- 일반 글인 경우 - 내용 -->
+        <extension-point name="html_content" data-if="{{!(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : 'board-collapsed-content'}}">
+          <default>
+            <html-content data-type="composite" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : 'board-collapsed-content'}}"/>
+          </default>
+        </extension-point>
+      </div>
+      <!-- 4줄: 더보기/접기 토글 버튼 (왼쪽 정렬, 화살표 아이콘) - 200자 이상일 때만 표시 -->
+      <div data-if="{{(post?.data?.parent?.content ?? '').length > 200}}" class="flex justify-start">
+        <button type="button" class="flex-center text-label-subtle hover:text-gray-700 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer gap-1">
+          <on type="click">
+            <!-- 원글 요약을 두 줄에서 전문으로 펼친다 — 접힌 동안에는 이미지·표까지 감춰 두므로 이 토글이 글자 수뿐 아니라 무엇이 보이는지도 함께 바꾼다. 버튼 자체는 원글이 200자를 넘을 때만 나온다 -->
+            <set-state target="local" parentPostExpanded="{{!_local?.parentPostExpanded}}"/>
+          </on>
+          <icon name="{{_local?.parentPostExpanded ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
+          <span>{{_local?.parentPostExpanded ? '$t:sirsoft-board.board.show_less' : '$t:sirsoft-board.board.show_more'}}</span>
+        </button>
+      </div>
+    </div>
+    <div data-ref="card_content" class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div data-ref="blinded_content_admin" data-if="{{post?.data?.status === 'blinded'}}">
+        <div class="flex-center flex-col justify-center py-8 p-6 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md">
+          <div class="flex-center gap-3 mb-2">
+            <icon name="eye-slash" class="text-xl text-gray-500 dark:text-gray-400"/>
+            <span class="text-primary text-lg font-medium">$t:sirsoft-board.admin.posts.detail.blinded_notice</span>
+          </div>
+          <p class="text-label-subtle mb-2">$t:sirsoft-board.admin.posts.detail.blinded_description</p>
+          <div data-if="{{post?.data?.abilities?.can_manage &amp;&amp; (post?.data?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}" class="flex-center gap-2 text-label-subtle mb-4">
+            <icon name="exclamation-triangle" class="text-base text-amber-500 dark:text-amber-400"/>
+            <span class="font-medium">$t:sirsoft-board.admin.posts.detail.blind_reason_label</span>
+            <span>{{(post?.data?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}}</span>
+          </div>
+          <button class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_manage !== true}}">
+            <on type="click">
+              <!-- 가려진 글의 원문을 폈다 접었다 한다 — 버튼 자체가 관리 권한이 없으면 잠기므로, 가려진 글은 관리자에게만 원문이 열린다 -->
+              <set-state target="local" showBlindedContent="{{!_local.showBlindedContent}}"/>
+            </on>
+            {{_local.showBlindedContent ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}
+          </button>
+        </div>
+        <div data-if="{{_local.showBlindedContent}}" class="pt-4">
+          <div class="flex-center gap-2 text-label-subtle mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+            <icon name="file-alt" class="text-base text-blue-500 dark:text-blue-400"/>
+            <span class="font-medium">$t:sirsoft-board.admin.posts.detail.original_content_label</span>
+          </div>
+          <extension-point name="html_content" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="text-secondary prose dark:prose-invert max-w-none">
+            <default>
+              <html-content data-type="composite" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="text-secondary prose dark:prose-invert max-w-none"/>
+            </default>
+          </extension-point>
+        </div>
+      </div>
+      <extension-point name="html_content" data-ref="normal_content" data-if="{{post?.data?.status !== 'blinded'}}" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100">
+        <default>
+          <html-content data-type="composite" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"/>
+        </default>
+      </extension-point>
+    </div>
+    <div data-ref="post_navigation" data-if="{{post?.data?.navigation?.prev || post?.data?.navigation?.next}}" class="border-b border-gray-200 dark:border-gray-700">
+      <div class="flex flex-row divide-x divide-gray-200 dark:divide-gray-700">
+        <responsive on="portable" class="divider-list flex flex-col"/>
+        <div data-ref="prev_post" data-if="{{post?.data?.navigation?.prev}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+          <on type="click">
+            <!-- 이 글의 수정 화면으로. 보던 목록 상태를 이고 간다 -->
+            <navigate path="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.prev?.id}}" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <div class="flex-center gap-2">
+            <icon name="chevron-left" class="text-base text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <span class="text-tertiary font-medium mr-2">$t:sirsoft-board.admin.posts.detail.prev</span>
+            <span data-if="{{post?.data?.navigation?.prev?.is_notice}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mr-2">$t:sirsoft-board.admin.posts.list.notice</span>
+            <span class="text-primary text-sm truncate">{{post?.data?.navigation?.prev?.title}}</span>
+          </div>
+        </div>
+        <div data-ref="next_post" data-if="{{post?.data?.navigation?.next}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+          <on type="click">
+            <!-- 작성자의 회원 상세로. 신고 처리를 하려면 그 사람의 다른 활동을 함께 봐야 한다 -->
+            <navigate path="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <div class="flex-center justify-end gap-2">
+            <span data-if="{{post?.data?.navigation?.next?.is_notice}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mr-2">$t:sirsoft-board.admin.posts.list.notice</span>
+            <span class="text-primary text-sm truncate">{{post?.data?.navigation?.next?.title}}</span>
+            <span class="text-tertiary font-medium ml-2">$t:sirsoft-board.admin.posts.detail.next</span>
+            <icon name="chevron-right" class="text-base text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="comments_section_in_post" data-if="{{post?.data?.id == route.id}}">
+      <include src="_comments.g7.html"/>
+    </div>
+  </div>
+</partial>

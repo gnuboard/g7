@@ -1,0 +1,24 @@
+feature: 확장 의존성 목록은 설치·활성·버전 충족 상태를 싣고, 이름이 비면 식별자를 이름으로 보여 준다
+
+description: |
+  모듈·플러그인·템플릿 목록과 정보 창은 manifest 의 dependencies 를 DependencyEnricher 로 보강해
+  식별자·이름·요구 버전·설치 버전·활성 여부·충족 여부를 싣는다. 관리자 화면은 그 이름을 카드·정보 창·
+  설치 확인 창·비활성화 경고 창에 그대로 그린다.
+
+  7.1.0 CHANGELOG 는 「이름이 비면 식별자를 보여 줍니다」라고 약속했지만, 서버는 다국어가 아닌 빈 문자열 이름을
+  그대로 내려보냈고 화면은 `name ?? identifier` 로 null 만 걸러 이름 없는 칸이 남았다(#736 F 영역 실측 O-F10).
+  모듈·플러그인 카드는 대체 자체가 없었다. 서버와 화면 두 겹에서 빈 이름을 식별자로 대체한다.
+
+axes:
+  case: [empty, missing_type_keys, not_installed, installed_active, installed_inactive, version_unmet, type_order, localized_name, blank_name]
+
+effects:
+  - dependency_status_reported
+  - blank_dependency_name_falls_back_to_identifier
+
+notes:
+  - 화면 쪽 대체(카드·정보 창·확인 창)는 admin-extension-dependency-name-fallback 이 맡는다.
+  - 템플릿 카드가 의존성 객체를 글자 자리에 넣어 목록이 그려지지 않던 결함은 admin-template-list-dependency-names 가 맡는다.
+
+test_files:
+  - tests/Unit/Extension/Helpers/DependencyEnricherTest.php

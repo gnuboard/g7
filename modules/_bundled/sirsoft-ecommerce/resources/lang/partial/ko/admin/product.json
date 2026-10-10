@@ -26,6 +26,7 @@
     "category": "카테고리",
     "no_category": "카테고리 미등록",
     "date": "날짜",
+    "date_type_select": "날짜 기준",
     "date_type": {
       "created_at": "등록일",
       "updated_at": "수정일"
@@ -63,6 +64,7 @@
       "tax_free": "비과세"
     },
     "price": "가격",
+    "price_type_select": "가격 기준",
     "price_type": {
       "selling_price": "판매가",
       "supply_price": "공급가",
@@ -500,8 +502,7 @@
     },
     "modal": {
       "add_language": {
-        "title": "언어 추가",
-        "description": "추가할 언어를 선택하세요."
+        "title": "언어 추가"
       },
       "label_period": {
         "title": "라벨 기간 설정",
@@ -540,13 +541,11 @@
     "multilingual_tag_edit_editor_label": "다국어 태그 편집",
     "preset_manage": {
       "title": "프리셋 관리",
-      "description": "검색 프리셋을 관리합니다.",
       "add_new": "새 프리셋 추가",
       "empty": "저장된 프리셋이 없습니다."
     },
     "preset_save": {
       "title": "프리셋 저장",
-      "description": "현재 검색 조건을 프리셋으로 저장합니다.",
       "placeholder": "프리셋 이름을 입력하세요",
       "save": "저장"
     },
@@ -559,21 +558,20 @@
     },
     "bulk_price": {
       "title": "판매가 일괄 변경",
-      "description": "선택한 {{count}}개 상품의 판매가를 변경합니다.",
       "method": "변경 방식",
       "method_increase": "인상",
       "method_decrease": "인하",
       "method_fixed": "으로 변경",
       "value": "변경 금액/비율",
+      "unit": "변경 단위",
       "unit_won": "원",
       "unit_percent": "%",
       "preview_increase": "판매가를 {{value}}{{unit}} 인상합니다.",
       "preview_decrease": "판매가를 {{value}}{{unit}} 인하합니다.",
-      "preview_fixed": "판매가를 {{value}}{{unit}}(으)로 변경합니다."
+      "preview_fixed": "판매가를 다음 값으로 변경합니다: {{value}}{{unit}}"
     },
     "bulk_stock": {
       "title": "재고 일괄 변경",
-      "description": "선택한 {{count}}개 상품의 재고를 변경합니다.",
       "method": "변경 방식",
       "method_increase": "증가",
       "method_decrease": "감소",
@@ -581,7 +579,7 @@
       "value": "변경 수량",
       "preview_increase": "재고를 {{value}}개 증가합니다.",
       "preview_decrease": "재고를 {{value}}개 감소합니다.",
-      "preview_set": "재고를 {{value}}개(으)로 변경합니다."
+      "preview_set": "재고를 {{value}}개로 변경합니다."
     },
     "bulk_confirm": {
       "title": "일괄 변경 확인",
@@ -589,8 +587,8 @@
       "bulk_changes_section": "일괄 변경 조건",
       "products_section": "변경될 상품 ({{count}}개)",
       "options_section": "변경될 옵션 ({{count}}개)",
-      "sales_status": "판매 상태를 {{value}}(으)로 변경합니다.",
-      "display_status": "전시 상태를 {{value}}(으)로 변경합니다.",
+      "sales_status": "판매 상태를 다음으로 변경합니다: {{value}}",
+      "display_status": "전시 상태를 다음으로 변경합니다: {{value}}",
       "price": "판매가를 {{value}} 변경합니다.",
       "stock": "재고를 {{value}} 변경합니다.",
       "price_change": "판매가 일괄 변경",
@@ -605,7 +603,6 @@
     },
     "excel_download": {
       "title": "엑셀 다운로드",
-      "description": "다운로드할 주문서 범위를 선택하세요.",
       "option_search": "현재 검색 조건으로 다운로드",
       "option_search_desc": "총 {{count}}개의 상품이 다운로드됩니다.",
       "option_selected": "선택한 상품만 다운로드",
@@ -869,6 +866,8 @@
       "active": "사용",
       "required": "필수"
     },
+    "mileage_value_label": "마일리지 적립값",
+    "mileage_type_label": "마일리지 적립 단위",
     "mileage_type": {
       "fixed": "원",
       "percent": "%"
@@ -1148,7 +1147,6 @@
     "modal_title_create": "라벨 등록",
     "modal_title_edit": "라벨 수정",
     "create_success": "라벨이 등록되었습니다.",
-    "modal_description": "라벨의 이름, 색상, 적용 기간을 설정합니다.",
     "name": "라벨명",
     "color": "색상",
     "color_reset": "색상 초기화",
@@ -1169,7 +1167,7 @@
     "preview": "미리보기",
     "delete_modal": {
       "title": "라벨 삭제",
-      "message": "을(를) 삭제하시겠습니까?",
+      "message": " 라벨을 삭제하시겠습니까?",
       "description": "삭제된 라벨은 모든 상품에서 제거됩니다.",
       "deleting": "삭제 중..."
     },
@@ -1206,5 +1204,14 @@
     "manage_common_info": "공통정보 관리",
     "manage_notice_template": "상품정보제공고시 관리",
     "create_shipping_policy": "배송정책 생성"
+  },
+  "selector_forbidden": {
+    "categories": "분류 조회 권한이 없어 분류를 고를 수 없습니다.",
+    "brands": "브랜드 조회 권한이 없어 브랜드를 고를 수 없습니다.",
+    "notice_templates": "상품정보제공고시 템플릿 조회 권한이 없어 템플릿을 불러올 수 없습니다. 고시 항목은 직접 입력할 수 있습니다.",
+    "common_infos": "공통정보 조회 권한이 없어 공통정보를 고를 수 없습니다.",
+    "shipping_policies": "배송정책 조회 권한이 없어 배송정책을 고를 수 없습니다. 새로 지정하지 않고 저장하면 이미 지정된 배송정책이, 지정된 것이 없으면 기본 배송정책이 적용됩니다.",
+    "product_labels": "상품 라벨 조회 권한이 없어 라벨을 고를 수 없습니다.",
+    "roles": "회원 등급 목록을 불러올 권한이 없어 등급을 고를 수 없습니다."
   }
 }

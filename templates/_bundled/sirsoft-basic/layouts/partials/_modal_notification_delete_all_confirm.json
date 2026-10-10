@@ -1,147 +1,157 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "알림 전체 삭제 확인 모달 (User)",
-    "editor_label": "$t:user.modal_label.notification_delete_all_confirm_modal"
-  },
-  "id": "notification_delete_all_confirm_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:mypage.notifications.delete_all_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-gray-700 dark:text-gray-300"
-      },
-      "text": "$t:mypage.notifications.delete_all_confirm"
+    "comment": "알림 전체 삭제 확인 창 — 헤더 드롭다운과 모바일 드로어, 마이페이지 알림함이 모두 이 하나를 연다.",
+    "meta": {
+        "is_partial": true,
+        "description": "알림 전체 삭제 확인 모달 (User)",
+        "editor_label": "$t:user.modal_label.notification_delete_all_confirm_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-3 mt-6"
-      },
-      "children": [
+    "id": "notification_delete_all_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:mypage.notifications.delete_all_title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isDeletingAllNotifications}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal",
-              "target": "notification_delete_all_confirm_modal"
-            }
-          ],
-          "text": "$t:common.cancel"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:mypage.notifications.delete_all_confirm"
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isDeletingAllNotifications}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isDeletingAllNotifications": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "notification_delete_all_confirm_modal"
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isDeletingAllNotifications}}",
+                        "type": "button"
+                    },
+                    "text": "$t:common.cancel"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/user/notifications/all",
-                  "params": { "method": "DELETE" },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDeletingAllNotifications": false,
-                        "notificationsCurrentPage": 1,
-                        "notificationsHasMore": null,
-                        "notificationsLoadingMore": false
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "전체 삭제 — 알림을 보여 주는 곳이 셋이라(헤더·드로어·마이페이지 알림함) 셋의 데이터소스를 모두 다시 받아야 한 곳만 비고 나머지가 남는 일이 없다. 마이페이지 것(userNotifications)은 그 화면에서만 실재하고 없으면 조용히 지나간다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isDeletingAllNotifications": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications/all",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeletingAllNotifications": false,
+                                                "notificationsCurrentPage": 1,
+                                                "notificationsHasMore": null,
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:mypage.notifications.delete_all_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notification_unread_count"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "userNotifications"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "notification_delete_all_confirm_modal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeletingAllNotifications": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? $t:mypage.notifications.delete_all_failed}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isDeletingAllNotifications}}",
+                        "type": "button"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:mypage.notifications.delete_all_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": { "dataSourceId": "notifications" }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": { "dataSourceId": "notification_unread_count" }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": { "dataSourceId": "userNotifications" }
-                    },
-                    {
-                      "handler": "closeModal",
-                      "target": "notification_delete_all_confirm_modal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDeletingAllNotifications": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message ?? $t:mypage.notifications.delete_all_failed}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isDeletingAllNotifications}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "text-base animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isDeletingAllNotifications ? $t:common.deleting : $t:common.delete}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isDeletingAllNotifications}}",
-              "props": {
-                "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isDeletingAllNotifications ? $t:common.deleting : $t:common.delete}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

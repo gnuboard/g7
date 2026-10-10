@@ -1,0 +1,39 @@
+<!-- 쇼핑몰 설정 — 본인인증 정책 삭제 확인 창. 지울 정책은 정책 목록이 `_global` 에 담아 둔 것을
+  읽는다(창은 별도 컨텍스트라 목록의 `_local` 을 보지 못한다).
+  정책을 지우면 그 정책을 쓰던 지점은 인증 없이 지나가게 되므로 되묻는 자리다. API 는 이커머스 모듈 경로이고,
+  수정 권한이 없으면(목록 abilities.can_delete) [삭제]가 잠긴다. -->
+<partial description="이커머스 본인인증 정책 삭제 확인 모달">
+  <modal data-type="composite" data-ref="ecommerce_identity_policy_delete_modal" title="$t:admin.identity.policies.delete_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.identity.policies.delete_confirm</p>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerceIdentityPolicyDeleting}}">
+        <on type="click">
+          <close-modal target="ecommerce_identity_policy_delete_modal"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerceIdentityPolicyDeleting || ecommerceIdentityPolicies?.data?.abilities?.can_delete !== true}}">
+        <on type="click">
+          <!-- 삭제. 성공하면 정책 목록을 다시 불러 지워진 줄을 걷어낸다. -->
+          <sequence>
+            <set-state target="global" :ecommerceIdentityPolicyDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/identity-policies/{{_global.ecommerceIdentityPolicyDeleteId}}" method="DELETE">
+              <success>
+                <set-state target="global" :ecommerceIdentityPolicyDeleting="false" :ecommerceIdentityPolicyDeleteId="null"/>
+                <toast type="success" message="$t:admin.identity.policies.delete_success"/>
+                <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
+                <close-modal target="ecommerce_identity_policy_delete_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :ecommerceIdentityPolicyDeleting="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.identity.policies.delete_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.ecommerceIdentityPolicyDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.ecommerceIdentityPolicyDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

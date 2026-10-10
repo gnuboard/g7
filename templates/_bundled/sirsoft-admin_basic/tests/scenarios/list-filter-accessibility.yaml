@@ -1,0 +1,22 @@
+feature: 목록 필터의 키보드·화면 읽기 접근성 — 빠른 기간 버튼·검색편집 체크박스·태그 입력 안내문
+
+description: |
+  7.1.0 영역 C 실측 O-C5:
+    - 회원 목록 빠른 기간(오늘·1주일 …)이 div 라 Tab·Enter·Space 로 쓸 수 없었다 → type="button" 인 button
+    - 검색편집 「기본 검색에 표시」 체크박스에 접근 가능한 이름이 없었다 → 필터 이름이 든 aria-label
+    - 태그 입력(react-select)의 라이브 영역 안내문·태그 지우기 버튼 이름이 영어 고정이었다 → common.tag_input.*
+  O-C2 같은 결함군: 스케줄 목록 빠른 기간이 toISOString()(UTC 날짜)으로 오늘을 만들어 서버의 보는 사람 하루와
+  어긋났다 → 브라우저 달력 날짜(toLocaleDateString('sv-SE')).
+
+axes:
+  control: [quick_date, edit_visibility_checkbox, tag_input]
+
+effects:
+  - quick_date_buttons_are_keyboard_buttons
+  - quick_date_uses_local_calendar_day
+  - filter_edit_checkboxes_have_accessible_name
+  - tag_input_screen_reader_text_localized
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-filter-controls-a11y.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.a11yMessages.test.tsx

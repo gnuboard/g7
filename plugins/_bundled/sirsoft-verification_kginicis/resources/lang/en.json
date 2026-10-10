@@ -93,5 +93,6 @@
             "label": "Adult Verification (KG Inicis identity verification only)",
             "description": "Map this purpose only to the KG Inicis provider. Mail/SMS providers do not return date of birth and cannot determine adult status. Incorrect mapping may expose adult content to minors."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

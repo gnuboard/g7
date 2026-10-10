@@ -1,0 +1,21 @@
+feature: 관리자 다국어 입력 컴포넌트 (MultilingualInput)
+
+description: |
+  설정·폼 화면의 다국어 입력 칸. 저장값에 기본 언어 키가 없을 때(꺼진 언어팩의 번역만 남은 값 등)
+  기본 언어 칸과 「언어 추가」 버튼이 함께 사라져 기본 언어를 다시 입력할 수 없던 문제와,
+  tabs 레이아웃에서 언어 삭제 버튼이 선택 버튼 안에 들어가 버튼 안에 버튼이 생기던 문제를 막는다
+  (#703 브라우저 실측). 기존 계약(타입·기본값·레이아웃 prop)과 입력 버퍼 보존도 함께 잠근다.
+
+  축 aspect 는 검증 관점이다 — 컴포넌트 계약, 입력 버퍼, 기본 언어 키 누락, tabs 버튼 구조.
+
+axes:
+  aspect: [component_contract, local_input_buffer, default_locale_missing, tabs_button_structure]
+
+effects:
+  - component_contract_exposed
+  - local_input_preserved_until_parent_syncs
+  - default_locale_field_always_first
+  - tab_remove_button_not_nested
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MultilingualInput.test.tsx

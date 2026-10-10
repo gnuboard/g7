@@ -1,0 +1,66 @@
+<!-- 주문 완료 화면에 KCP 매출전표 보기를 덧붙이는 조각
+     e2e:allow S4-D13 — 자동 취소 경고에 입금 전 조건만 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다. -->
+<extension target-layout="shop/order_complete">
+  <inject target-id="order_complete_payment_summary" position="append_child">
+    <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
+      <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.user.vbank_title</p>
+      <div class="space-y-1.5">
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_bank_name</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.vbank_name}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_account</span>
+          <span class="text-gray-900 dark:text-white font-medium font-mono tracking-wide">{{orderData?.data?.payment?.vbank_number}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_holder</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.vbank_holder}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_due</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.due_date_formatted}}</span>
+        </div>
+      </div>
+      <p data-if="{{!orderData?.data?.payment?.paid_at}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
+    </div>
+    <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.transaction_id &amp;&amp; !orderData?.data?.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex-between">
+        <span class="text-gray-600 dark:text-gray-400 text-sm">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
+        <div class="flex items-center gap-3">
+          <button data-if="{{!_local._kcpOcReceiptLoaded}}" type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50" disabled="{{_local._kcpOcReceiptLoading === true}}">
+            <on type="click">
+              <!-- 매출전표 불러오기 — 받아 온 전표를 팝업으로 띄우고, 한 번 불러온 뒤에는 버튼을 감춘다 -->
+              <sequence>
+                <set-state target="local" :_kcpOcReceiptLoading="true"/>
+                <!-- 주문 완료 화면은 회원·비회원이 함께 쓴다 — 회원은 토큰(선택 인증), 비회원은 조회 토큰 헤더로 같은 주소를 부른다(전역 헤더는 이 플러그인 주소에 조회 토큰을 붙이지 않는다) -->
+                <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.id}}/receipt" method="GET">
+                  <field name="headers">
+                    <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+                  </field>
+                  <success>
+                    <set-state target="local" :_kcpOcReceiptLoading="false" :_kcpOcReceiptLoaded="true" _kcpOcReceiptUrl="{{response.data.receipt_url}}" _kcpOcCashReceiptUrl="{{response.data.cash_receipt_url}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :_kcpOcReceiptLoading="false"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local._kcpOcReceiptLoading === true}}" name="spinner" class="text-sm animate-spin"/>
+            <icon data-if="{{!_local._kcpOcReceiptLoading}}" name="file-text" class="text-sm"/>
+            <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
+          </button>
+          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcReceiptUrl}}" href="{{_local._kcpOcReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <icon name="file-text" class="text-sm"/>
+            <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
+          </a>
+          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcCashReceiptUrl}}" href="{{_local._kcpOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline">
+            <icon name="receipt" class="text-sm"/>
+            <span>$t:sirsoft-pay_nhnkcp.user.cash_receipt_view</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

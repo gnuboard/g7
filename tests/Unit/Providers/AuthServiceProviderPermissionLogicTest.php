@@ -24,6 +24,11 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
 
     private User $user;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
      * 사용자에게 지정된 권한을 부여합니다.
      *
      * @param  array<string>  $identifiers  권한 식별자 배열
+     * @return void 반환값 없음
      */
     private function grantPermissions(array $identifiers): void
     {
@@ -64,7 +70,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-1. 기본 동작 (하위 호환)
     // ================================================================
 
-    /** @test #1 빈 배열은 권한 불필요 */
+    /**
+     * #1 빈 배열은 권한 불필요
+     *
+     * @scenario checker=grant_logic, permission_shape=empty, held_permissions=satisfying
+     *
+     * @effects a1_empty_array_passes
+     *
+     * @return void 반환값 없음
+     */
     public function test_a1_empty_array_passes(): void
     {
         $this->assertTrue(
@@ -72,7 +86,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #2 단일 권한 보유 시 통과 */
+    /**
+     * #2 단일 권한 보유 시 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=flat, held_permissions=satisfying
+     *
+     * @effects a1_single_permission_with_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_a1_single_permission_with_permission(): void
     {
         $this->grantPermissions(['a']);
@@ -81,7 +103,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #3 단일 권한 미보유 시 실패 */
+    /**
+     * #3 단일 권한 미보유 시 실패
+     *
+     * @scenario checker=grant_logic, permission_shape=flat, held_permissions=not_satisfying
+     *
+     * @effects a1_single_permission_without_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_a1_single_permission_without_permission(): void
     {
         $this->assertFalse(
@@ -89,7 +119,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #4 복수 AND 모두 보유 시 통과 */
+    /**
+     * #4 복수 AND 모두 보유 시 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=flat, held_permissions=satisfying
+     *
+     * @effects a1_multiple_and_all_granted
+     *
+     * @return void 반환값 없음
+     */
     public function test_a1_multiple_and_all_granted(): void
     {
         $this->grantPermissions(['a', 'b']);
@@ -98,7 +136,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #5 복수 AND 일부만 보유 시 실패 */
+    /**
+     * #5 복수 AND 일부만 보유 시 실패
+     *
+     * @scenario checker=grant_logic, permission_shape=flat, held_permissions=not_satisfying
+     *
+     * @effects a1_multiple_and_partial
+     *
+     * @return void 반환값 없음
+     */
     public function test_a1_multiple_and_partial(): void
     {
         $this->grantPermissions(['a']);
@@ -107,7 +153,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #6 복수 AND 없음 시 실패 */
+    /**
+     * #6 복수 AND 없음 시 실패
+     *
+     * @scenario checker=grant_logic, permission_shape=flat, held_permissions=not_satisfying
+     *
+     * @effects a1_multiple_and_none
+     *
+     * @return void 반환값 없음
+     */
     public function test_a1_multiple_and_none(): void
     {
         $this->assertFalse(
@@ -119,7 +173,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-2. OR 로직
     // ================================================================
 
-    /** @test #7 OR: 첫 번째만 보유 */
+    /**
+     * #7 OR: 첫 번째만 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a2_or_first_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a2_or_first_only(): void
     {
         $this->grantPermissions(['a']);
@@ -128,7 +190,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #8 OR: 두 번째만 보유 */
+    /**
+     * #8 OR: 두 번째만 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a2_or_second_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a2_or_second_only(): void
     {
         $this->grantPermissions(['b']);
@@ -137,7 +207,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #9 OR: 모두 보유 */
+    /**
+     * #9 OR: 모두 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a2_or_both
+     *
+     * @return void 반환값 없음
+     */
     public function test_a2_or_both(): void
     {
         $this->grantPermissions(['a', 'b']);
@@ -146,7 +224,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #10 OR: 없음 */
+    /**
+     * #10 OR: 없음
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
+     *
+     * @effects a2_or_none
+     *
+     * @return void 반환값 없음
+     */
     public function test_a2_or_none(): void
     {
         $this->assertFalse(
@@ -154,7 +240,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #11 OR: 3개 중 1개 보유 */
+    /**
+     * #11 OR: 3개 중 1개 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a2_or_three_items_one_match
+     *
+     * @return void 반환값 없음
+     */
     public function test_a2_or_three_items_one_match(): void
     {
         $this->grantPermissions(['b']);
@@ -163,7 +257,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #12 OR: 3개 중 0개 */
+    /**
+     * #12 OR: 3개 중 0개
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
+     *
+     * @effects a2_or_three_items_none
+     *
+     * @return void 반환값 없음
+     */
     public function test_a2_or_three_items_none(): void
     {
         $this->assertFalse(
@@ -175,7 +277,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-3. AND 로직 (명시적)
     // ================================================================
 
-    /** @test #13 명시적 AND: 모두 보유 */
+    /**
+     * #13 명시적 AND: 모두 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=and_group, held_permissions=satisfying
+     *
+     * @effects a3_explicit_and_all
+     *
+     * @return void 반환값 없음
+     */
     public function test_a3_explicit_and_all(): void
     {
         $this->grantPermissions(['a', 'b']);
@@ -184,7 +294,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #14 명시적 AND: 일부만 */
+    /**
+     * #14 명시적 AND: 일부만
+     *
+     * @scenario checker=grant_logic, permission_shape=and_group, held_permissions=not_satisfying
+     *
+     * @effects a3_explicit_and_partial
+     *
+     * @return void 반환값 없음
+     */
     public function test_a3_explicit_and_partial(): void
     {
         $this->grantPermissions(['a']);
@@ -193,7 +311,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #15 명시적 AND: 3개 중 2개 */
+    /**
+     * #15 명시적 AND: 3개 중 2개
+     *
+     * @scenario checker=grant_logic, permission_shape=and_group, held_permissions=not_satisfying
+     *
+     * @effects a3_explicit_and_three_partial
+     *
+     * @return void 반환값 없음
+     */
     public function test_a3_explicit_and_three_partial(): void
     {
         $this->grantPermissions(['a', 'b']);
@@ -206,7 +332,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-4. 2단계 중첩 (AND > OR, OR > AND)
     // ================================================================
 
-    /** @test #16 AND>OR: a + b 보유 */
+    /**
+     * #16 AND>OR: a + b 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a4_and_or_a_and_b
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_and_or_a_and_b(): void
     {
         $this->grantPermissions(['a', 'b']);
@@ -218,7 +352,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #17 AND>OR: a + c 보유 */
+    /**
+     * #17 AND>OR: a + c 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a4_and_or_a_and_c
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_and_or_a_and_c(): void
     {
         $this->grantPermissions(['a', 'c']);
@@ -230,7 +372,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #18 AND>OR: a만 보유 (or 미충족) */
+    /**
+     * #18 AND>OR: a만 보유 (or 미충족)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a4_and_or_a_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_and_or_a_only(): void
     {
         $this->grantPermissions(['a']);
@@ -242,7 +392,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #19 AND>OR: b만 보유 (a 미충족) */
+    /**
+     * #19 AND>OR: b만 보유 (a 미충족)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a4_and_or_b_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_and_or_b_only(): void
     {
         $this->grantPermissions(['b']);
@@ -254,7 +412,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #20 OR>AND: 첫 AND 통과 (a,b) */
+    /**
+     * #20 OR>AND: 첫 AND 통과 (a,b)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a4_or_and_first_group
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_or_and_first_group(): void
     {
         $this->grantPermissions(['a', 'b']);
@@ -266,7 +432,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #21 OR>AND: 둘째 AND 통과 (c,d) */
+    /**
+     * #21 OR>AND: 둘째 AND 통과 (c,d)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a4_or_and_second_group
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_or_and_second_group(): void
     {
         $this->grantPermissions(['c', 'd']);
@@ -278,7 +452,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #22 OR>AND: 어느 AND도 미통과 (a,c) */
+    /**
+     * #22 OR>AND: 어느 AND도 미통과 (a,c)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a4_or_and_cross_partial
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_or_and_cross_partial(): void
     {
         $this->grantPermissions(['a', 'c']);
@@ -290,7 +472,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #23 OR>AND: 없음 */
+    /**
+     * #23 OR>AND: 없음
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a4_or_and_none
+     *
+     * @return void 반환값 없음
+     */
     public function test_a4_or_and_none(): void
     {
         $this->assertFalse(
@@ -305,7 +495,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-5. 3단계 중첩 (최대 허용 깊이)
     // ================================================================
 
-    /** @test #24 3단계: a + or의 b 통과 */
+    /**
+     * #24 3단계: a + or의 b 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=satisfying
+     *
+     * @effects a5_depth3_a_and_b
+     *
+     * @return void 반환값 없음
+     */
     public function test_a5_depth3_a_and_b(): void
     {
         $this->grantPermissions(['a', 'b']);
@@ -317,7 +515,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #25 3단계: a + or의 and(c,d) 통과 */
+    /**
+     * #25 3단계: a + or의 and(c,d) 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=satisfying
+     *
+     * @effects a5_depth3_a_and_cd
+     *
+     * @return void 반환값 없음
+     */
     public function test_a5_depth3_a_and_cd(): void
     {
         $this->grantPermissions(['a', 'c', 'd']);
@@ -329,7 +535,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #26 3단계: a + c만 (and 미통과) */
+    /**
+     * #26 3단계: a + c만 (and 미통과)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=not_satisfying
+     *
+     * @effects a5_depth3_a_and_c_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a5_depth3_a_and_c_only(): void
     {
         $this->grantPermissions(['a', 'c']);
@@ -341,7 +555,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #27 3단계: c,d만 (a 없음) */
+    /**
+     * #27 3단계: c,d만 (a 없음)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=not_satisfying
+     *
+     * @effects a5_depth3_cd_without_a
+     *
+     * @return void 반환값 없음
+     */
     public function test_a5_depth3_cd_without_a(): void
     {
         $this->grantPermissions(['c', 'd']);
@@ -357,7 +579,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-6. 4단계 중첩 (초과 → 거부)
     // ================================================================
 
-    /** @test #28 4단계 중첩 초과 → false + Log::warning */
+    /**
+     * #28 4단계 중첩 초과 → false + Log::warning
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_too_deep, held_permissions=not_satisfying
+     *
+     * @effects a6_depth4_exceeds_max
+     *
+     * @return void 반환값 없음
+     */
     public function test_a6_depth4_exceeds_max(): void
     {
         // 'b'를 부여하지 않아 OR 단축 평가를 방지 → 깊은 분기(depth 4)까지 평가 강제
@@ -381,7 +611,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-7. 복수 OR/AND 조합
     // ================================================================
 
-    /** @test #29 AND[OR,OR]: or1+or2 모두 통과 (a,c) */
+    /**
+     * #29 AND[OR,OR]: or1+or2 모두 통과 (a,c)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a7_and_or_or_ac
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_and_or_or_ac(): void
     {
         $this->grantPermissions(['a', 'c']);
@@ -393,7 +631,17 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #30 AND[OR,OR]: (b,d) */
+    /**
+     * AND 안의 두 OR 묶음에서 b 와 d 를 가진 경우를 판정한다.
+     *
+     * #30 AND[OR,OR]: (b,d)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a7_and_or_or_bd
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_and_or_or_bd(): void
     {
         $this->grantPermissions(['b', 'd']);
@@ -405,7 +653,17 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #31 AND[OR,OR]: (a,d) */
+    /**
+     * AND 안의 두 OR 묶음에서 a 와 d 를 가진 경우를 판정한다.
+     *
+     * #31 AND[OR,OR]: (a,d)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a7_and_or_or_ad
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_and_or_or_ad(): void
     {
         $this->grantPermissions(['a', 'd']);
@@ -417,7 +675,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #32 AND[OR,OR]: a만 (or2 미통과) */
+    /**
+     * #32 AND[OR,OR]: a만 (or2 미통과)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a7_and_or_or_a_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_and_or_or_a_only(): void
     {
         $this->grantPermissions(['a']);
@@ -429,7 +695,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #33 AND[OR,OR]: c만 (or1 미통과) */
+    /**
+     * #33 AND[OR,OR]: c만 (or1 미통과)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a7_and_or_or_c_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_and_or_or_c_only(): void
     {
         $this->grantPermissions(['c']);
@@ -441,7 +715,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #34 OR[OR,OR]: a만 (or1 통과) */
+    /**
+     * #34 OR[OR,OR]: a만 (or1 통과)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a7_or_or_or_a
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_or_or_or_a(): void
     {
         $this->grantPermissions(['a']);
@@ -453,7 +735,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #35 OR[OR,OR]: d만 (or2 통과) */
+    /**
+     * #35 OR[OR,OR]: d만 (or2 통과)
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a7_or_or_or_d
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_or_or_or_d(): void
     {
         $this->grantPermissions(['d']);
@@ -465,7 +755,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #36 OR[OR,OR]: 없음 */
+    /**
+     * #36 OR[OR,OR]: 없음
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a7_or_or_or_none
+     *
+     * @return void 반환값 없음
+     */
     public function test_a7_or_or_or_none(): void
     {
         $this->assertFalse(
@@ -480,7 +778,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-8. admin 역할 (전권)
     // ================================================================
 
-    /** @test #37 admin: OR 구조 통과 (admin은 시더에서 모든 권한 할당) */
+    /**
+     * #37 admin: OR 구조 통과 (admin은 시더에서 모든 권한 할당)
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a8_admin_or
+     *
+     * @return void 반환값 없음
+     */
     public function test_a8_admin_or(): void
     {
         $adminRole = Role::create(['name' => '관리자', 'identifier' => 'admin']);
@@ -501,7 +807,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #38 admin: AND>OR 중첩 통과 */
+    /**
+     * #38 admin: AND>OR 중첩 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a8_admin_nested
+     *
+     * @return void 반환값 없음
+     */
     public function test_a8_admin_nested(): void
     {
         $adminRole = Role::create(['name' => '관리자', 'identifier' => 'admin']);
@@ -524,7 +838,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #39 admin: 3단계 복잡 구조 통과 */
+    /**
+     * #39 admin: 3단계 복잡 구조 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=satisfying
+     *
+     * @effects a8_admin_depth3
+     *
+     * @return void 반환값 없음
+     */
     public function test_a8_admin_depth3(): void
     {
         $adminRole = Role::create(['name' => '관리자', 'identifier' => 'admin']);
@@ -551,7 +873,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-9. Guest (미인증)
     // ================================================================
 
-    /** @test #40 Guest: flat 권한 보유 */
+    /**
+     * #40 Guest: flat 권한 보유
+     *
+     * @scenario checker=grant_logic, permission_shape=flat, held_permissions=satisfying
+     *
+     * @effects a9_guest_flat_with_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_a9_guest_flat_with_permission(): void
     {
         AuthServiceProvider::clearGuestRoleCache();
@@ -568,7 +898,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #41 Guest: OR 구조에서 보유한 권한 있음 */
+    /**
+     * #41 Guest: OR 구조에서 보유한 권한 있음
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a9_guest_or_with_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_a9_guest_or_with_permission(): void
     {
         AuthServiceProvider::clearGuestRoleCache();
@@ -585,7 +923,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #42 Guest: OR 구조에서 미보유 */
+    /**
+     * #42 Guest: OR 구조에서 미보유
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
+     *
+     * @effects a9_guest_or_without_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_a9_guest_or_without_permission(): void
     {
         AuthServiceProvider::clearGuestRoleCache();
@@ -600,7 +946,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // A-10. 실제 사용 사례
     // ================================================================
 
-    /** @test #43 user_form: create만 보유 → 통과 */
+    /**
+     * #43 user_form: create만 보유 → 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a10_user_form_create_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a10_user_form_create_only(): void
     {
         $this->grantPermissions(['core.users.create']);
@@ -612,7 +966,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #44 user_form: update만 보유 → 통과 */
+    /**
+     * #44 user_form: update만 보유 → 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
+     *
+     * @effects a10_user_form_update_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a10_user_form_update_only(): void
     {
         $this->grantPermissions(['core.users.update']);
@@ -624,7 +986,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #45 user_form: read만 보유 → 실패 */
+    /**
+     * #45 user_form: read만 보유 → 실패
+     *
+     * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
+     *
+     * @effects a10_user_form_read_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a10_user_form_read_only(): void
     {
         $this->grantPermissions(['core.users.read']);
@@ -636,7 +1006,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #46 menu_form: read+create → 통과 */
+    /**
+     * #46 menu_form: read+create → 통과
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
+     *
+     * @effects a10_menu_form_read_create
+     *
+     * @return void 반환값 없음
+     */
     public function test_a10_menu_form_read_create(): void
     {
         $this->grantPermissions(['core.menus.read', 'core.menus.create']);
@@ -648,7 +1026,15 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
         );
     }
 
-    /** @test #47 menu_form: read만 → 실패 */
+    /**
+     * #47 menu_form: read만 → 실패
+     *
+     * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
+     *
+     * @effects a10_menu_form_read_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_a10_menu_form_read_only(): void
     {
         $this->grantPermissions(['core.menus.read']);

@@ -102,6 +102,10 @@ effects:
   # config 캐시 부팅 자식 (2026-09-06 전수조사) — 부모는 spawn 전에 캐시를 비우고, 자식은 캐시 부팅이면 디스크 config 를 읽는다
   - spawnUpgradeStepsProcess_clears_config_cache_before_proc_open
   - execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
+  # 부모 프로세스 stale config 우회 — Step 9 재동기화는 디스크 config 를 다시 읽은 뒤 수행한다
+  - reloadCoreConfigAndResync_restores_stale_memory_config_from_disk
+  - reloadCoreConfigAndResync_invokes_all_core_domain_seeders
+  - CoreUpdateCommand_resyncs_via_reloadCoreConfigAndResync_not_direct_sync
   - route_cache_rebuild_preserves_container_instance
   - runUpgradeSteps_resume_command_format_matches_execute_upgrade_steps_signature
   # §1 symlink 보존 (CoreBackupHelper 위임 경로 포함)
@@ -139,6 +143,7 @@ effects:
   - spawnUpgradeStepsProcess_logs_manifest_files_it_could_not_remove
   - getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree
   - getCoreVersion_ignores_env_APP_VERSION_outside_update_tree
+  - extension_required_core_version_is_validated
   - getCoreVersion_falls_back_to_config_when_env_absent_inside_update_tree
   # #658 상주 큐 워커 재시작 신호
   - core_update_step11_signals_queue_restart
@@ -147,7 +152,9 @@ test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
   - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php
   - tests/Unit/Services/CoreUpdateServiceFreshDiskConfigTest.php
+  - tests/Unit/Services/CoreUpdateServiceReloadResyncTest.php
   - tests/Unit/Support/RouteCacheHelperContainerTest.php
+  - tests/Unit/Support/ConfigCacheHelperContainerTest.php
   - tests/Feature/Console/CoreUpdateCommandHandoffTest.php
   - tests/Feature/Console/CoreUpdateResumeGuidanceTest.php
   - tests/Feature/Upgrades/MultiVersionUpgradePathTest.php
@@ -158,6 +165,7 @@ test_files:
   - tests/Unit/Support/PackageManifestCacheHelperTest.php
   - tests/Unit/Support/CoreUpdateContextTest.php
   - tests/Unit/Extension/CoreVersionCheckerEnvPriorityTest.php
+  - tests/Unit/Extension/PluginManagerVersionCheckTest.php
   - tests/Unit/Services/CoreUpdateServiceQueueRestartTest.php
 
 # 본 매니페스트의 axes cross product 는 800+ 케이스이나, 실제 회귀 가드는 test_files 의

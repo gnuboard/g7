@@ -131,7 +131,12 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
     /**
      * 수정: valid_type 만 days_from_issue 로 보내도 저장된 valid_days 가 있으면 통과한다.
      *
-     * @effects coupon_update_rejects_days_from_issue_without_valid_days
+     * 이 케이스는 **음성 대조군**(200)이다. 19차 이전에는 거절 effect
+     * (`coupon_update_rejects_days_from_issue_without_valid_days`)를 마킹해, 그 커버리지 셀이
+     * **200 단언만으로도 채워졌다** — 422 가드가 회귀해도 이 테스트가 effect 를 계속 마킹해
+     * 초록이 유지된다. 자기 계약을 말하는 effect 로 옮긴다.
+     *
+     * @effects coupon_update_allows_changes_that_keep_a_usable_validity
      */
     public function test_update_allows_type_change_when_stored_valid_days_exists(): void
     {
@@ -152,7 +157,9 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 이미 valid_days 가 비어 있는 기존 쿠폰이라도, 요청이 유효기간 쌍을 건드리지
      * 않으면 통과해야 한다 — 그렇지 않으면 이름 변경조차 막힌다.
      *
-     * @effects coupon_update_rejects_days_from_issue_without_valid_days
+     * 위 케이스와 같은 **음성 대조군**(200)이라 같은 effect 를 마킹한다.
+     *
+     * @effects coupon_update_allows_changes_that_keep_a_usable_validity
      */
     public function test_update_unrelated_field_is_not_blocked_on_legacy_broken_coupon(): void
     {

@@ -1,0 +1,18 @@
+feature: API 문서 실측 샘플 정리
+
+description: |
+  `api:docgen --seed` 는 상세 GET 실측을 위해 개발 DB 에 완전 샘플(메뉴·역할·사용자·알림 정의와 템플릿·스케줄·활동 로그·
+  언어팩·알림 로그·권한)을 만든다. 종전에는 권한만 지우고 나머지를 다음 실행의 재사용분으로 남겨, 관리자 메뉴·역할·사용자
+  목록에 「API 문서 샘플 메뉴」·`apidoc-sample-role`·`apidoc-sample-user@example.com` 이 실제 데이터처럼 보였다
+  (2026-10-08 실측 O-E-4). 이제 시드 중 만들어진 모든 행(확장 시더가 만든 행 포함)을 기록했다가 실측이 끝나면 만든 역순으로
+  지우고, 앞선 실행이 남긴 코어 샘플도 식별자로 찾아 함께 지운다. 샘플이 아닌 행과 그 연결은 건드리지 않는다.
+
+axes:
+  state: [clean_db, leftover_samples, real_rows_present, extension_seeder]
+
+effects:
+  - apidoc_samples_removed_after_docgen_run
+  - apidoc_sample_cleanup_keeps_real_rows
+
+test_files:
+  - tests/Feature/Console/ApiDocSampleCleanupTest.php

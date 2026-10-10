@@ -19,8 +19,8 @@ class MaintenanceModePage
      * 메인터넌스 모드는 시스템 불안정 시(DB 마이그레이션, 코어 업데이트 등) 사용되므로
      * 외부 의존성 없이 동작해야 합니다.
      *
-     * @param Request $request HTTP 요청
-     * @param Closure $next 다음 미들웨어
+     * @param  Request  $request  HTTP 요청
+     * @param  Closure  $next  다음 미들웨어
      * @return Response HTTP 응답
      */
     public function handle(Request $request, Closure $next): Response
@@ -54,7 +54,7 @@ class MaintenanceModePage
     /**
      * 유효한 bypass 쿠키가 있는지 확인합니다.
      *
-     * @param Request $request HTTP 요청
+     * @param  Request  $request  HTTP 요청
      * @return bool
      */
     protected function hasValidBypassCookie(Request $request): bool

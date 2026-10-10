@@ -1,0 +1,44 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 기존 서비스 단위 테스트의 소유권을 사후 등재한 매니페스트. 축 조합 전수가 아니라 이미 통과 중인 회귀 테스트의 효과를 명시하는 것이 목적이다.
+
+feature: 플러그인 설정 서비스 (설정 조회·저장·레이아웃 해석)
+
+description: |
+  `PluginSettingsService` 의 단위 계약을 고정한다. 이 테스트 파일은 매니페스트 없이 존재해
+  `test-scenario-reverse-mapping` 이 손대는 순간 red 였다 — 2026-09-28 마크업 템플릿 비의존화
+  (설정 화면 레이아웃도 템플릿 없이 컴파일) 작업에서 함께 등재한다.
+
+  레이아웃 엔드포인트가 돌려주는 구조는 `version` · `meta` · (확장 레이아웃이면) `extends`·`slots` 다.
+  `schema` 키는 소비처 없는 사어 키라 #476 에서 걷혔고, 종전 테스트가 그 키를 단언해 red 였다.
+
+axes:
+  layer: [service]
+
+effects:
+  - get_all_active_settings_filters_by_field_expose
+  - get_all_active_settings_filters_by_category_expose
+  - get_all_active_settings_skips_plugins_without_settings
+  - get_all_active_settings_falls_back_to_exclude_sensitive_when_no_defaults
+  - get_all_active_settings_uses_frontend_schema_when_defaults_exists
+  - clear_cache_clears_settings_cache
+  - reset_deletes_settings_file
+  - save_does_not_double_encrypt
+  - get_preserves_value_on_decrypt_failure
+  - get_decrypts_sensitive_fields
+  - save_encrypts_sensitive_fields
+  - get_layout_sanitizes_layout_content
+  - get_layout_returns_null_on_invalid_json
+  - get_layout_returns_layout_for_daum_postcode_plugin
+  - get_layout_returns_null_when_layout_file_not_exists
+  - get_layout_returns_null_when_plugin_instance_not_found
+  - save_merges_with_existing_settings
+  - save_stores_settings_successfully
+  - save_returns_false_when_plugin_not_found
+  - get_returns_nested_key_value
+  - get_returns_default_for_missing_key
+  - get_returns_specific_key_value
+  - get_returns_all_settings_when_key_is_null
+  - get_returns_custom_default_when_plugin_not_found
+  - get_returns_default_when_plugin_not_found
+
+test_files:
+  - tests/Unit/Services/PluginSettingsServiceTest.php

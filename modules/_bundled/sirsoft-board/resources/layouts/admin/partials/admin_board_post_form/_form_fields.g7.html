@@ -1,0 +1,97 @@
+<!-- 글 작성 폼의 입력 칸 전부(글쓴이·분류·제목·본문과 공지·비밀 같은 스위치)를 한 카드에 담는다. 본문 편집기는 확장점이라 위지윅 플러그인이 깔려 있으면 그것으로 갈리고, 없으면 기본 편집기가 선다 -->
+<partial description="Post Form - All Form Fields in One Card">
+  <div data-ref="post_form_fields">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div data-ref="main_form_card" class="admin-card">
+      <div class="row-stack">
+        <div data-ref="author_section" data-if="{{route?.id &amp;&amp; form_meta?.data?.author}}" class="">
+          <div class="grid-2col-responsive">
+            <div data-ref="field_author_name">
+              <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.posts.form.author_info</label>
+              <div class="flex-center gap-2">
+                <span class="text-heading">{{form_meta?.data?.author?.email ? form_meta.data.author.name + ' (' + form_meta.data.author.email + ')' : form_meta?.data?.author?.name}}</span>
+                <span data-if="{{form_meta?.data?.author?.is_guest}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
+              </div>
+            </div>
+            <div data-ref="field_created_at">
+              <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.posts.form.created_at</label>
+              <div class="flex-center gap-2 text-heading">
+                <span>{{form_meta?.data?.created_at}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="post_options_section" data-if="{{form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode !== 'disabled'}}" class="">
+          <h3 class="text-label-subtle font-medium mb-3">$t:sirsoft-board.admin.posts.form.post_options</h3>
+          <div class="grid-2col-responsive">
+            <label data-ref="notice_card" data-if="{{!_local.form?.parent_id}}" disabled="{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
+              <div class="flex-start gap-3">
+                <input type="checkbox" name="is_notice" disabled="{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}" class="mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"/>
+                <div class="flex-1">
+                  <div class="flex-center gap-2 mb-1">
+                    <icon name="bullhorn" class="text-base text-blue-600 dark:text-blue-400"/>
+                    <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.posts.form.is_notice</span>
+                  </div>
+                  <p class="text-tertiary">$t:sirsoft-board.admin.posts.form.notice_description</p>
+                </div>
+              </div>
+            </label>
+            <label data-ref="secret_card" data-if="{{form_meta?.data?.board?.secret_mode !== 'disabled'}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer board-secret-card transition-colors">
+              <div class="flex-start gap-3">
+                <input type="checkbox" name="is_secret" disabled="{{_computed.isReadOnly || form_meta?.data?.board?.secret_mode === 'always'}}" class="mt-0.5 w-4 h-4 text-amber-600 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                <div class="flex-1">
+                  <div class="flex-center gap-2 mb-1">
+                    <icon name="lock" class="text-base text-amber-600 dark:text-amber-400"/>
+                    <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.posts.form.is_secret</span>
+                  </div>
+                  <p class="text-tertiary">$t:sirsoft-board.admin.posts.form.secret_description</p>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div data-ref="category_section" data-if="{{form_meta?.data?.board?.categories &amp;&amp; form_meta.data.board.categories.length > 0}}" class="pb-6">
+        <label class="form-label">$t:sirsoft-board.admin.posts.form.category</label>
+        <select name="category" value="{{_local.form?.category ?? ''}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed">
+          <option value="">$t:sirsoft-board.admin.posts.form.select_category</option>
+          <option data-each="category in form_meta?.data?.board?.categories ?? []" value="{{category}}">{{category}}</option>
+        </select>
+      </div>
+      <div class="row-stack">
+        <div data-ref="title_section" class="">
+          <div>
+            <label class="text-label-subtle block font-medium">$t:sirsoft-board.admin.posts.form.title</label>
+            <input type="text" name="title" value="{{_local.form?.title ?? ''}}" disabled="{{_computed.isReadOnly}}" placeholder="$t:sirsoft-board.admin.posts.form.title_placeholder" class="block focus:ring-1 dark:focus:ring-blue-400"/>
+          </div>
+        </div>
+        <extension-point name="html_editor" data-ref="content_section" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :rows="15" :showHtmlModeToggle="true">
+          <prop name="name">"content"</prop>
+          <default>
+            <html-editor data-type="composite" name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" disabled="{{_computed.isReadOnly}}" readOnly="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :showHtmlModeToggle="true">
+              <on type="change" event="onChange">
+                <!-- 본문 글자를 담는다 — 편집기는 폼 자동 바인딩을 타지 않아 여기서 직접 넣고, 「변경 있음」도 함께 켠다 -->
+                <set-state target="local" :hasChanges="true">
+                  <field name="form">
+                    <field name="content" value="{{$args[0].target.value}}"/>
+                  </field>
+                </set-state>
+              </on>
+              <on type="change" event="onIsHtmlChange">
+                <!-- HTML 모드 토글 — 글자와 따로 저장되는 값이라 이벤트도 따로 받는다. 켜짐/꺼짐(boolean)을 그대로 두지 않고 `html`·`text` 문자열로 바꿔 담는 것은 서버가 그 두 값으로 본문 해석을 가르기 때문이다 -->
+                <set-state target="local" :hasChanges="true">
+                  <field name="form">
+                    <field name="content_mode" value="{{$args[0].target.checked ? 'html' : 'text'}}"/>
+                  </field>
+                </set-state>
+              </on>
+            </html-editor>
+          </default>
+        </extension-point>
+      </div>
+    </div>
+  </div>
+</partial>

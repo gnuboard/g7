@@ -1,0 +1,158 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "서버 페이지네이션과 통화별 상세 실행 이력",
+        "_e2e_allow": "e2e:allow 단일 행 소스를 태그 경계로 접고 S21 주석만 더함 — 굽기 JSON 은 comment 키 외 동일(2026-09-17)"
+    },
+    "comment": "실행 이력 그리드 — 데이터소스 koreaeximRuns 를 서버 페이지네이션으로 그리고, 행을 펼치면 그 실행의 통화별 상세를 따로 받아 보여준다",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card overflow-x-auto"
+    },
+    "children": [
+        {
+            "id": "koreaexim_runs",
+            "type": "composite",
+            "name": "DataGrid",
+            "actions": [
+                {
+                    "comment": "행을 펼칠 때 그 실행의 통화별 상세를 한 번만 받아 전역 캐시(koreaeximRunItems)에 실행 ID 로 쌓는다 — 이미 받은 행은 다시 부르지 않는다",
+                    "type": "change",
+                    "event": "onExpandChange",
+                    "handler": "apiCall",
+                    "target": "/api/plugins/sirsoft-koreaexim/admin/runs/{{$args[0][$args[0].length - 1]}}",
+                    "if": "{{($args[0] ?? []).length > 0 && !_global.koreaeximRunItems?.[$args[0][$args[0].length - 1]]}}",
+                    "auth_required": true,
+                    "params": {
+                        "method": "GET"
+                    },
+                    "onSuccess": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "koreaeximRunItems": "{{Object.assign({}, _global.koreaeximRunItems ?? {}, {[$args[0][$args[0].length - 1]]: response.data.items})}}"
+                        }
+                    },
+                    "onError": {
+                        "handler": "toast",
+                        "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                        }
+                    }
+                },
+                {
+                    "comment": "서버 페이지네이션 — 이력 탭을 유지한 채 page 쿼리만 바꿔 다시 연다(데이터소스가 쿼리에서 페이지를 읽는다)",
+                    "type": "change",
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/plugins/sirsoft-koreaexim/settings",
+                        "mergeQuery": true,
+                        "query": {
+                            "tab": "history",
+                            "page": "{{$args[0]}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "data": "{{(query.date_from && query.date_to && query.date_to < query.date_from) ? [] : (koreaeximRuns?.data?.data ?? [])}}",
+                "pagination": true,
+                "serverSidePagination": true,
+                "serverCurrentPage": "{{koreaeximRuns?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{koreaeximRuns?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{koreaeximRuns?.data?.pagination?.has_more_pages ?? false}}",
+                "pageSize": 20,
+                "alwaysShowPagination": true,
+                "idField": "id",
+                "selectable": false,
+                "expandable": true,
+                "emptyMessage": "$t:sirsoft-koreaexim.empty",
+                "columns": [
+                    {
+                        "field": "search_date",
+                        "header": "$t:sirsoft-koreaexim.date"
+                    },
+                    {
+                        "field": "trigger_label",
+                        "header": "$t:sirsoft-koreaexim.trigger"
+                    },
+                    {
+                        "field": "status_label",
+                        "header": "$t:sirsoft-koreaexim.result",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "{{['success','partial','dry_run'].includes(row.status) ? 'text-green-700 dark:text-green-300' : ['no_data','skipped'].includes(row.status) ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}",
+                                    "title": "{{row.message}}"
+                                },
+                                "text": "{{row.status_label}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "applied_count",
+                        "header": "$t:sirsoft-koreaexim.applied"
+                    },
+                    {
+                        "field": "request_count",
+                        "header": "$t:sirsoft-koreaexim.calls"
+                    }
+                ],
+                "expandChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "p-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "text": "{{row.message}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "iteration": {
+                                    "source": "{{_global.koreaeximRunItems?.[row.id] ?? []}}",
+                                    "item_var": "item"
+                                },
+                                "props": {
+                                    "className": "flex flex-wrap gap-3 py-2 border-b border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{item.currency_code}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{item.previous_rate ?? '-'}} → {{item.new_rate ?? '-'}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{item.status_label}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{item.api_currency_unit}} {{item.source_rate}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -6,6 +6,11 @@
  * - Desktop/Mobile Enter keypress + 검색 버튼 click이 actionRef 참조하는지 검증
  *
  * @vitest-environment jsdom
+ *
+ * @effects search_keyword_propagated_to_url_query,
+ *   search_field_propagated_to_url_query,
+ *   mobile_search_propagates_to_url_query,
+ *   search_input_value_retained_after_navigation
  */
 
 import { describe, it, expect } from 'vitest';

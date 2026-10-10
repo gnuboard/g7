@@ -1,0 +1,11 @@
+<!-- 공지 템플릿 화면 오른쪽 패널의 껍데기. 빈 안내만 스스로 그리고, 보기·편집 두 조각은 각자
+  `_global.panelMode` 를 보고 나타난다(브랜드·분류 화면과 같은 구조). -->
+<partial description="Product Notice Template Detail Panel - View/Form Container">
+  <div data-ref="detail_panel" class="admin-card col-span-2-lg">
+    <div class="row-stack">
+      <empty-state data-type="composite" data-ref="empty_state_panel" data-if="{{!_global.selectedTemplateId &amp;&amp; _global.panelMode !== 'create' &amp;&amp; _global.panelMode !== 'edit'}}" icon="file-alt" title="$t:sirsoft-ecommerce.admin.product_notice_template.empty.title" description="$t:sirsoft-ecommerce.admin.product_notice_template.empty.description" class="py-16"/>
+      <include src="_panel_view.g7.html"/>
+      <include src="_panel_form.g7.html"/>
+    </div>
+  </div>
+</partial>

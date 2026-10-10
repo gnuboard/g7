@@ -1,0 +1,460 @@
+<!-- 상품 목록 — 결과 표. **표 안에서 바로 고치는 화면**이라 다른 목록 표와 성격이 다르다.
+  칸을 고치면 그 자리에서 서버로 나가고(저장 버튼이 없다), 상품 단위는
+  `updateProductField`, 옵션 단위는 `updateOptionField` 가 받는다.
+  
+  숫자·텍스트 칸은 300ms 로 묶고(자릿수를 늘리는 동안 중간값이 저장되지 않게), 선택형
+  (판매상태·전시상태·토글)은 묶지 않는다 — 한 번의 선택이 곧 최종값이라 늦출 이유가 없다.
+  
+  행을 펼치면 옵션 편집이 나오는데 **같은 편집기가 두 벌 있다** — 좁은 화면용 카드와
+  넓은 화면용 표다. 둘은 보이는 형태만 다르고 부르는 핸들러·필드가 같으므로, 한쪽을 고치면
+  다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다). -->
+<partial>
+  <div data-ref="table_card" class="p-0 md:p-0">
+    <data-grid data-type="composite" data-ref="product_datagrid" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
+      <column field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image" width="140px" :sortable="false" :required="true">
+        <cell>
+          <div class="w-full aspect-square md:w-20 md:h-20 flex-shrink-0 {{row.thumbnail_url ? '' : 'bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center'}}">
+            <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.name_localized ?? ''}}" class="w-full h-full aspect-square object-cover rounded"/>
+            <icon data-if="{{!row.thumbnail_url}}" name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+          </div>
+        </cell>
+      </column>
+      <column field="name" header="$t:sirsoft-ecommerce.admin.product.table.column.product_name" :sortable="true" :required="true" width="200px">
+        <cell>
+          <div class="row-stack">
+            <div>
+              <multilingual-input data-type="composite" value="{{row.name}}" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" layout="tabs" inputType="text" :compact="true" class="w-full" :showCodeOnMobile="true" disabled="{{row.abilities?.can_update !== true}}">
+                <on type="change">
+                  <!-- 상품명은 언어별로 들어가므로 전용 입력기를 쓴다 — 값 하나가 아니라 언어 묶음이 통째로 서버에 간다. -->
+                  <action handler="sirsoft-ecommerce.updateProductField" :debounce="300" productId="{{row.id}}" field="name" value="{{$event.target.value}}"/>
+                </on>
+              </multilingual-input>
+              <div class="text-tertiary">{{row.product_code}}</div>
+            </div>
+          </div>
+        </cell>
+      </column>
+      <column field="categories" header="$t:sirsoft-ecommerce.admin.product.table.column.category" width="180px" :sortable="false">
+        <cell>
+          <div class="stack-flush gap-0.5">
+            <div data-if="{{row.categories_with_path &amp;&amp; row.categories_with_path.length > 0}}" data-each="cat in row.categories_with_path" class="text-xs text-gray-600 dark:text-gray-400 truncate">{{cat.path_string}}</div>
+            <span data-if="{{!row.categories_with_path || row.categories_with_path.length === 0}}" class="text-xs text-gray-400 dark:text-gray-500">-</span>
+          </div>
+        </cell>
+      </column>
+      <column field="list_price_formatted" header="$t:sirsoft-ecommerce.admin.product.table.column.original_price" width="120px" :sortable="true">
+        <cell>
+          <input type="number" min="0" step="100" value="{{row.list_price}}" class="w-24 px-2 rounded text-right disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
+            <on type="change">
+              <!-- 정가. 할인 표시의 기준선이라 판매가보다 낮아도 막지 않는다(판정은 서버가 한다). -->
+              <action handler="sirsoft-ecommerce.updateProductField" :debounce="300" productId="{{row.id}}" field="list_price" value="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </cell>
+      </column>
+      <column field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.product.table.column.selling_price" width="140px" :sortable="true" :required="true">
+        <cell>
+          <div class="flex flex-col">
+            <input type="number" min="0" step="100" max="{{row.list_price || ''}}" value="{{row.selling_price}}" disabled="{{row.abilities?.can_update !== true}}" class="{{(_local.productFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.field === 'selling_price') ? 'input-error w-24 px-2 border-2 dark:border-red-400 rounded text-right font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed' : 'w-24 px-2 rounded text-right font-medium disabled:opacity-50 disabled:cursor-not-allowed'}}">
+              <on type="change">
+                <!-- 판매가. 실제로 결제되는 값이다. 옵션이 있는 상품은 옵션 가격이 우선하므로 이 칸이 최종가가 아닐 수 있다. -->
+                <action handler="sirsoft-ecommerce.updateProductField" :debounce="300" productId="{{row.id}}" field="selling_price" value="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span data-if="{{(_local.productFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-500 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
+            <!-- 다통화 환산값 (읽기전용 — base 판매가 기준 환율 자동 계산, 장바구니 패턴) -->
+            <div data-if="{{(_computed.currencyDisplayColumns ?? []).length > 0}}" class="flex flex-col gap-0.5 mt-1">
+              <span data-each="currencyCol in {{_computed.currencyDisplayColumns}}" class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{row.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
+            </div>
+          </div>
+        </cell>
+      </column>
+      <column field="stock_quantity" header="$t:sirsoft-ecommerce.admin.product.table.column.stock" width="120px" :sortable="true" :required="true">
+        <cell>
+          <div class="flex items-center gap-1">
+            <input type="number" min="0" value="{{row.stock_quantity}}" disabled="{{row.has_options || row.abilities?.can_update !== true}}" class="{{row.has_options ? (row.stock_quantity !== row.option_stock_sum ? 'w-16 px-2 py-1 border border-orange-400 dark:border-orange-500 rounded text-sm text-right text-orange-600 dark:text-orange-400 font-medium bg-orange-50 dark:bg-orange-900/20 cursor-not-allowed opacity-60' : 'w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-right bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed') : (row.is_below_safe_stock ? 'w-16 px-2 py-1 border border-red-300 dark:border-red-600 rounded text-sm text-right text-red-500 dark:text-red-400 font-medium bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed' : 'w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-right bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed')}}" title="{{row.has_options ? '$t:sirsoft-ecommerce.admin.product.stock_options_hint' : ''}}">
+              <on type="change">
+                <!-- 재고. 옵션이 있는 상품은 옵션별 재고가 정본이고 이 칸은 그 합계 자리다. -->
+                <action handler="sirsoft-ecommerce.updateProductField" :debounce="300" productId="{{row.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <div data-ref="stock_mismatch_warning_{{row.id}}" data-if="{{row.has_options &amp;&amp; row.stock_quantity !== row.option_stock_sum}}" class="relative group">
+              <icon name="exclamation-triangle" class="text-base text-orange-500 dark:text-orange-400 cursor-help"/>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity z-10">$t:sirsoft-ecommerce.admin.product.stock_mismatch_warning</div>
+            </div>
+          </div>
+        </cell>
+      </column>
+      <column field="sales_status" header="$t:sirsoft-ecommerce.admin.product.table.column.sales_status" width="120px" :sortable="false" :required="true">
+        <cell>
+          <select name="salesStatus_{{row.id}}" class="w-full text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed" value="{{row.sales_status}}" disabled="{{row.abilities?.can_update !== true}}">
+            <options>
+              <option value="on_sale">$t:sirsoft-ecommerce.enums.sales_status.on_sale</option>
+              <option value="suspended">$t:sirsoft-ecommerce.enums.sales_status.suspended</option>
+              <option value="sold_out">$t:sirsoft-ecommerce.enums.sales_status.sold_out</option>
+              <option value="coming_soon">$t:sirsoft-ecommerce.enums.sales_status.coming_soon</option>
+            </options>
+            <on type="change">
+              <!-- 판매상태. 선택형이라 묶지 않는다 — 한 번의 선택이 곧 최종값이다. -->
+              <action handler="sirsoft-ecommerce.updateProductField" productId="{{row.id}}" field="sales_status" value="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </cell>
+      </column>
+      <column field="display_status" header="$t:sirsoft-ecommerce.admin.product.table.column.display_status" width="100px" :sortable="false" :required="true">
+        <cell>
+          <select name="displayStatus_{{row.id}}" class="w-full text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed" value="{{row.display_status}}" disabled="{{row.abilities?.can_update !== true}}">
+            <options>
+              <option value="visible">$t:sirsoft-ecommerce.enums.display_status.visible</option>
+              <option value="hidden">$t:sirsoft-ecommerce.enums.display_status.hidden</option>
+            </options>
+            <on type="change">
+              <!-- 전시상태. 쇼핑몰에서 보이는지만 정하고 살 수 있는지는 판매상태가 정한다(둘은 독립). -->
+              <action handler="sirsoft-ecommerce.updateProductField" productId="{{row.id}}" field="display_status" value="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </cell>
+      </column>
+      <column field="brand_name" header="$t:sirsoft-ecommerce.admin.product.table.column.brand" width="100px" :sortable="false">
+        <cell>
+          <span class="text-body">{{row.brand_name || '-'}}</span>
+        </cell>
+      </column>
+      <column field="min_purchase_qty" header="$t:sirsoft-ecommerce.admin.product.table.column.min_purchase_qty" width="80px" :sortable="false">
+        <cell>
+          <span class="text-body">{{row.min_purchase_qty ? row.min_purchase_qty : '-'}}</span>
+        </cell>
+      </column>
+      <column field="max_purchase_qty" header="$t:sirsoft-ecommerce.admin.product.table.column.max_purchase_qty" width="80px" :sortable="false">
+        <cell>
+          <span class="text-body">{{row.max_purchase_qty ? row.max_purchase_qty : '-'}}</span>
+        </cell>
+      </column>
+      <column field="shipping_policy_name" header="$t:sirsoft-ecommerce.admin.product.table.column.shipping_policy" width="130px" :sortable="false">
+        <cell>
+          <a data-if="{{row.shipping_policy_id}}" href="#" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <on type="click">
+              <!-- 배송정책 이름을 누르면 그 정책으로 목록을 거른다 — 화면의 필터 입력값과 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다). -->
+              <sequence>
+                <set-state target="_local" filter.shippingPolicy="{{String(row.shipping_policy_id)}}"/>
+                <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+                  <query shipping_policy_id="{{row.shipping_policy_id}}" :page="1"/>
+                </navigate>
+              </sequence>
+            </on>
+            {{row.shipping_policy_name}}
+          </a>
+          <span data-if="{{!row.shipping_policy_id}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+        </cell>
+      </column>
+      <column field="created_at" header="$t:sirsoft-ecommerce.admin.product.table.column.created_at" width="100px" :sortable="true" :required="true">
+        <cell>
+          <span class="text-label">{{row.created_at}}</span>
+        </cell>
+      </column>
+      <column field="updated_at" header="$t:sirsoft-ecommerce.admin.product.table.column.updated_at" width="100px" :sortable="true">
+        <cell>
+          <span class="text-label">{{row.updated_at}}</span>
+        </cell>
+      </column>
+      <prop name="rowActions">
+        <item id="edit" label="$t:sirsoft-ecommerce.admin.product.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+        <item id="copy" label="$t:sirsoft-ecommerce.admin.product.action.copy" iconName="fa-regular fa-copy" disabled="{{products?.data?.abilities?.can_create !== true}}"/>
+        <item id="divider" :divider="true"/>
+        <item id="delete" label="$t:sirsoft-ecommerce.admin.product.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
+      </prop>
+      <prop name="expandContext">
+        <field name="currencyDisplayColumns" value="{{_computed.currencyDisplayColumns || []}}"/>
+        <field name="selectedOptionIds" value="{{_local.selectedOptionIds || []}}"/>
+        <field name="visibleColumns" value="{{_local.visibleColumns || []}}"/>
+        <field name="optionFieldErrors" value="{{_local.optionFieldErrors || []}}"/>
+        <field name="optionsLoadingIds" value="{{_local.optionsLoadingIds ?? []}}"/>
+        <field name="optionsErrorIds" value="{{_local.optionsErrorIds ?? []}}"/>
+      </prop>
+      <expand>
+        <div class="admin-page-content-fluid-compact">
+          <div data-ref="options_loading_{{row.id}}" data-if="{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}" class="text-center py-4 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.loading</div>
+          <div data-ref="options_error_{{row.id}}" data-if="{{(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="flex items-center justify-center gap-3 py-4">
+            <span class="text-red-500 dark:text-red-400">$t:sirsoft-ecommerce.admin.product.table.options.load_failed</span>
+            <!-- 옵션 목록을 다시 불러온다. 실패한 행만 다시 시도하므로 나머지 행의 펼침 상태는 건드리지 않는다 -->
+            <button type="button" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <on type="click" event="onClick">
+                <action handler="sirsoft-ecommerce.retryExpandedOptions" productId="{{row.id}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.table.options.retry
+            </button>
+          </div>
+          <div data-if="{{!(optionsLoadingIds || []).some(id => id + '' === row.id + '') &amp;&amp; !(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="overflow-x-auto">
+            <responsive on="portable" class="stack-flush">
+              <div data-each="option in row.options || []" data-testid="option-row-{{option.id}}" class="admin-card mb-3">
+                <div data-ref="option_checkbox_portable_{{option.id}}" class="flex-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  <checkbox checked="{{(selectedOptionIds || []).includes(row.id + '-' + option.id)}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded">
+                    <on type="change">
+                      <!-- 좁은 화면 카드 — 옵션 선택. 선택 id 는 `상품id-옵션id` 형태라 다른 상품의 같은 옵션 번호와 섞이지 않는다. -->
+                      <action handler="sirsoft-ecommerce.toggleOption" productId="{{row.id}}" optionId="{{option.id}}" checked="{{$event.target.checked}}"/>
+                    </on>
+                  </checkbox>
+                  <div class="flex items-center gap-1">
+                    <input type="radio" name="default_option_portable_{{row.id}}" checked="{{option.is_default}}" disabled="{{row.abilities?.can_update !== true}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 dark:focus:ring-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 좁은 화면 카드 — 대표 옵션 지정. 상품마다 하나뿐이라 켜는 동작만 있고 끄는 동작은 없다. -->
+                        <action handler="sirsoft-ecommerce.setDefaultOption" productId="{{row.id}}" optionId="{{option.id}}"/>
+                      </on>
+                    </input>
+                    <span class="text-tertiary">$t:sirsoft-ecommerce.admin.product.table.options.column.is_default</span>
+                  </div>
+                  <span class="flex-1 text-body font-medium">{{option.option_name_localized ?? option.option_name?.ko ?? ''}}</span>
+                </div>
+                <div class="mb-2">
+                  <label class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.product.table.options.column.name</label>
+                  <multilingual-input data-type="composite" value="{{option.option_name ?? {} }}" layout="compact" inputType="text" disabled="{{row.abilities?.can_update !== true}}">
+                    <on type="change">
+                      <!-- 좁은 화면 카드 — 옵션명. 상품명과 같이 언어별 입력이다. -->
+                      <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="option_name" value="{{$event.target.value}}"/>
+                    </on>
+                  </multilingual-input>
+                </div>
+                <div data-if="{{(visibleColumns || []).includes('list_price_formatted') || (visibleColumns || []).includes('selling_price_formatted')}}" class="grid grid-cols-2 gap-2 mb-2">
+                  <div data-if="{{(visibleColumns || []).includes('list_price_formatted')}}">
+                    <label class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.product.table.options.column.list_price</label>
+                    <input type="number" value="{{option.list_price}}" min="0" step="100" disabled="{{row.abilities?.can_update !== true}}" class="px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 좁은 화면 카드 — 옵션 정가. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="list_price" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </div>
+                  <div data-if="{{(visibleColumns || []).includes('selling_price_formatted')}}">
+                    <label class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.product.table.options.column.selling_price</label>
+                    <input type="number" value="{{option.selling_price}}" min="0" step="100" max="{{option.list_price || ''}}" disabled="{{row.abilities?.can_update !== true}}" class="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price') ? 'input-error px-2 border-2 dark:border-red-400 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed'}}">
+                      <on type="change">
+                        <!-- 좁은 화면 카드 — 옵션 판매가. 이 값이 있으면 상품 판매가보다 우선한다. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="selling_price" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                    <span data-if="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-500 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <label class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.product.table.options.column.sku</label>
+                  <input type="text" value="{{option.sku}}" placeholder="-" disabled="{{row.abilities?.can_update !== true}}" class="px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="change">
+                      <!-- 좁은 화면 카드 — SKU. 재고 관리용 코드라 몰 안에서 겹치지 않아야 한다(중복 판정은 서버가 한다). -->
+                      <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="sku" value="{{$event.target.value}}"/>
+                    </on>
+                  </input>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.product.table.options.column.stock</label>
+                    <input type="number" value="{{option.stock_quantity}}" min="0" disabled="{{row.abilities?.can_update !== true}}" class="px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 좁은 화면 카드 — 옵션 재고. 실제로 팔리는 수량의 정본이다. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </div>
+                  <div>
+                    <label class="block text-tertiary mb-1">$t:sirsoft-ecommerce.admin.product.table.options.column.safe_stock</label>
+                    <input type="number" value="{{option.safe_stock_quantity}}" min="0" disabled="{{row.abilities?.can_update !== true}}" class="px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 좁은 화면 카드 — 안전재고. 이 수 아래로 떨어지면 알림 대상이 되고, 판매를 막지는 않는다. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="safe_stock_quantity" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </div>
+                </div>
+                <div class="flex-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <label class="text-tertiary">$t:sirsoft-ecommerce.admin.product.table.options.column.active</label>
+                  <toggle data-type="composite" checked="{{option.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                    <on type="change">
+                      <!-- 좁은 화면 카드 — 옵션 사용 여부. 끄면 그 옵션만 고를 수 없게 되고 상품 자체는 계속 팔린다. -->
+                      <action handler="sirsoft-ecommerce.updateOptionField" productId="{{row.id}}" optionId="{{option.id}}" field="is_active" value="{{$event.target.checked}}"/>
+                    </on>
+                  </toggle>
+                </div>
+              </div>
+            </responsive>
+            <table class="w-full text-sm">
+              <thead class="bg-gray-100 dark:bg-gray-800">
+                <tr>
+                  <th data-ref="option_select_all_header" class="px-3 py-2 w-10">
+                    <checkbox checked="{{(row.options || []).length > 0 &amp;&amp; (row.options || []).every(opt => (selectedOptionIds || []).includes(row.id + '-' + opt.id))}}" indeterminate="{{(row.options || []).some(opt => (selectedOptionIds || []).includes(row.id + '-' + opt.id)) &amp;&amp; !(row.options || []).every(opt => (selectedOptionIds || []).includes(row.id + '-' + opt.id))}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 머리글 전체선택. 이 상품의 옵션 전부를 한 번에 켜고 끈다(다른 상품의 선택은 건드리지 않는다). -->
+                        <action handler="sirsoft-ecommerce.toggleProductOptions" productId="{{row.id}}" options="{{row.options}}" checked="{{$event.target.checked}}"/>
+                      </on>
+                    </checkbox>
+                  </th>
+                  <th data-ref="option_default_header" class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-14">$t:sirsoft-ecommerce.admin.product.table.options.column.is_default</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.name</th>
+                  <th data-if="{{(visibleColumns || []).includes('list_price_formatted')}}" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.list_price</th>
+                  <th data-if="{{(visibleColumns || []).includes('selling_price_formatted')}}" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.selling_price</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.sku</th>
+                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.stock</th>
+                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.safe_stock</th>
+                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.active</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tr data-each="option in row.options || []" data-testid="option-row-{{option.id}}" class="align-top">
+                  <td data-ref="option_checkbox_cell_{{option.id}}" class="px-3 py-2">
+                    <checkbox checked="{{(selectedOptionIds || []).includes(row.id + '-' + option.id)}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 옵션 선택. 위 카드 판본과 같은 핸들러를 부른다. -->
+                        <action handler="sirsoft-ecommerce.toggleOption" productId="{{row.id}}" optionId="{{option.id}}" checked="{{$event.target.checked}}"/>
+                      </on>
+                    </checkbox>
+                  </td>
+                  <td data-ref="option_default_cell_{{option.id}}" class="px-3 py-2 text-center">
+                    <input type="radio" name="default_option_{{row.id}}" checked="{{option.is_default}}" disabled="{{row.abilities?.can_update !== true}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 dark:focus:ring-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 대표 옵션 지정. -->
+                        <action handler="sirsoft-ecommerce.setDefaultOption" productId="{{row.id}}" optionId="{{option.id}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td class="px-3 py-2">
+                    <multilingual-input data-type="composite" value="{{option.option_name ?? {} }}" layout="compact" inputType="text" disabled="{{row.abilities?.can_update !== true}}">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 옵션명(언어별). -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="option_name" value="{{$event.target.value}}"/>
+                      </on>
+                    </multilingual-input>
+                  </td>
+                  <td data-if="{{(visibleColumns || []).includes('list_price_formatted')}}" class="px-3 py-2">
+                    <input type="number" min="0" step="100" value="{{option.list_price}}" disabled="{{row.abilities?.can_update !== true}}" class="w-24 px-2 text-right rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 옵션 정가. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="list_price" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td data-if="{{(visibleColumns || []).includes('selling_price_formatted')}}" class="px-3 py-2">
+                    <div class="flex flex-col">
+                      <div class="flex-center gap-2">
+                        <input type="number" min="0" step="100" max="{{option.list_price || ''}}" value="{{option.selling_price}}" disabled="{{row.abilities?.can_update !== true}}" class="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price') ? 'input-error w-24 px-2 text-right font-medium border-2 dark:border-red-400 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed' : 'w-24 px-2 text-right font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed'}}">
+                          <on type="change">
+                            <!-- 넓은 화면 표 — 옵션 판매가. -->
+                            <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="selling_price" value="{{$event.target.value}}"/>
+                          </on>
+                        </input>
+                        <span data-if="{{option.price_adjustment !== undefined &amp;&amp; option.price_adjustment !== 0}}" class="{{option.price_adjustment > 0 ? 'text-xs font-medium text-red-500 dark:text-red-400' : 'text-xs font-medium text-blue-500 dark:text-blue-400'}}">{{option.price_adjustment_formatted}}</span>
+                      </div>
+                      <span data-if="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-500 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
+                      <!-- 다통화 환산값 (읽기전용 — base 판매가 기준 환율 자동 계산, 장바구니 패턴) -->
+                      <div data-if="{{(currencyDisplayColumns ?? []).length > 0}}" class="flex flex-col gap-0.5 mt-1">
+                        <span data-each="currencyCol in currencyDisplayColumns" class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{option.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2">
+                    <input type="text" value="{{option.sku}}" placeholder="-" disabled="{{row.abilities?.can_update !== true}}" class="px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — SKU. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="sku" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td class="px-3 py-2">
+                    <input type="number" min="0" value="{{option.stock_quantity}}" data-testid="option-stock-{{option.id}}" disabled="{{row.abilities?.can_update !== true}}" class="w-16 px-2 py-1 text-sm text-center border {{option.is_below_safe_stock ? 'border-red-300 dark:border-red-600 text-red-500 dark:text-red-400 font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'}} rounded bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 옵션 재고. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td class="px-3 py-2">
+                    <input type="number" min="0" value="{{option.safe_stock_quantity}}" disabled="{{row.abilities?.can_update !== true}}" class="w-16 px-2 text-center rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 안전재고. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="safe_stock_quantity" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td class="px-3 py-2 text-center">
+                    <toggle data-type="composite" checked="{{option.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                      <on type="change">
+                        <!-- 넓은 화면 표 — 옵션 사용 여부. -->
+                        <action handler="sirsoft-ecommerce.updateOptionField" productId="{{row.id}}" optionId="{{option.id}}" field="is_active" value="{{$event.target.checked}}"/>
+                      </on>
+                    </toggle>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div data-ref="no_options_message_{{row.id}}" data-if="{{Array.isArray(row.options) &amp;&amp; row.options.length === 0}}" class="text-center py-4 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.no_options</div>
+        </div>
+      </expand>
+      <on type="change" event="onSelectionChange">
+        <!-- 체크한 상품이 바뀔 때. 일괄변경·복사 창이 읽을 수 있도록 핸들러가 목록을 정리해 둔다. -->
+        <action handler="sirsoft-ecommerce.syncProductSelection" selectedIds="{{$args[0]}}"/>
+      </on>
+      <on type="change" event="onExpandChange">
+        <!-- 다른 페이지의 상품으로 교체되므로 펼침 상태를 초기화한다. 남겨 두면 같은 ID 가 새 페이지에 있을 때 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다. -->
+        <action handler="sirsoft-ecommerce.loadExpandedOptions" expandedRows="{{$args[0]}}"/>
+      </on>
+      <on type="change" event="onPageChange">
+        <!-- 페이지 이동. 펼쳐 둔 옵션 행과 그 선택을 먼저 비운다 — 페이지가 바뀌면 그 행들은 더 이상 화면에 없는 상품이고, 남겨 두면 보이지도 않는 옵션이 일괄 처리 대상에 실린다 -->
+        <sequence>
+          <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
+          <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </sequence>
+      </on>
+      <on type="action" event="onRowAction">
+        <!-- 행 액션. 상품은 주문과 달리 내부 id 로 이동한다 — 사람이 읽는 상품코드는 따로 있고 그것은 바뀔 수 있다. -->
+        <switch>
+          <case when="edit">
+            <navigate path="/admin/ecommerce/products/{{$args[1].product_code ?? $args[1].id}}/edit" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </case>
+          <case when="copy">
+            <set-state target="local" productList.copyTargetProduct="{{$args[1]}}">
+              <field name="ui.copyOptions">
+                <field name="images" :value="true"/>
+                <field name="options" :value="true"/>
+                <field name="categories" :value="true"/>
+                <field name="sales_info" :value="true"/>
+                <field name="description" :value="true"/>
+                <field name="notice" :value="true"/>
+                <field name="common_info" :value="true"/>
+                <field name="other_info" :value="true"/>
+                <field name="shipping" :value="true"/>
+                <field name="seo" :value="false"/>
+                <field name="identification" :value="true"/>
+              </field>
+            </set-state>
+            <open-modal target="modal_copy_product"/>
+          </case>
+          <case when="delete">
+            <set-state target="global">
+              <field name="deleteProduct">
+                <field name="target" value="{{$args[1]}}"/>
+                <field name="canDelete" :value="null"/>
+                <field name="reason" :value="null"/>
+                <field name="relatedData" :value="null"/>
+              </field>
+            </set-state>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{$args[1].id}}/can-delete" method="GET">
+              <success>
+                <set-state target="global" deleteProduct.canDelete="{{result.data.canDelete}}" deleteProduct.reason="{{result.data.reason}}" deleteProduct.relatedData="{{result.data.relatedData}}"/>
+                <open-modal target="modal_delete_confirm"/>
+              </success>
+              <fail>
+                <toast type="error" message="$t:sirsoft-ecommerce.admin.product.messages.delete_check_error"/>
+              </fail>
+            </api-call>
+          </case>
+        </switch>
+      </on>
+      <on type="columnVisibilityChange">
+        <!-- 표 자체에서 연 열 선택. 화면 상태만 바꾼다 — 주문 목록은 같은 자리에서 저장 핸들러(`saveVisibleColumns`)를 함께 부르는데 여기에는 그것이 없어, 표에서 고른 열은 새로고침하면 사라진다(위 필터의 열 선택기는 컴포넌트가 브라우저에 남긴다). -->
+        <set-state target="local" visibleColumns="{{$event}}"/>
+      </on>
+    </data-grid>
+  </div>
+</partial>

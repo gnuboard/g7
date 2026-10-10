@@ -1,304 +1,477 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부",
-    "editor_label": "$t:user.modal_label.mypage_orders.modal_write_review"
-  },
-  "type": "composite",
-  "name": "Modal",
-  "id": "modal_write_review",
-  "props": {
-    "width": "560px",
-    "title": "$t:mypage.order_detail.review_modal.title"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "p-5 space-y-5" },
-      "children": [
+    "comment": "리뷰 작성 창 — 주문한 **항목 하나**에 대해 쓴다. 첨부 장수·용량 한도는 화면에 적지 않고 운영자 설정\n     (`reviewSettings`)을 그대로 읽어 컴포넌트에 넘긴다. 사진은 곧바로 올리지 않고(`autoUpload=false`)\n     리뷰 등록과 함께 보낸다 — 쓰다 만 리뷰의 사진이 서버에 남지 않게 하기 위해서다.",
+    "meta": {
+        "is_partial": true,
+        "description": "리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부",
+        "editor_label": "$t:user.modal_label.mypage_orders.modal_write_review"
+    },
+    "id": "modal_write_review",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "width": "560px",
+        "title": "$t:mypage.order_detail.review_modal.title"
+    },
+    "children": [
         {
-          "comment": "상품 정보",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Img",
-                  "props": {
-                    "src": "{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}",
-                    "alt": "{{$parent._local.reviewTarget?.product_name ?? ''}}",
-                    "className": "w-full h-full object-cover"
-                  }
-                }
-              ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-5 space-y-5"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex-1 min-w-0" },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": { "className": "text-sm font-medium text-gray-900 dark:text-white line-clamp-1" },
-                  "text": "{{$parent._local.reviewTarget?.product_name ?? ''}}"
+                    "comment": "상품 정보",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{$parent._local.reviewTarget?.thumbnail_url}}",
+                                    "props": {
+                                        "src": "{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}",
+                                        "alt": "{{$parent._local.reviewTarget?.product_name ?? ''}}",
+                                        "className": "w-full h-full object-cover"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!$parent._local.reviewTarget?.thumbnail_url}}",
+                                    "props": {
+                                        "className": "w-full h-full flex items-center justify-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "image",
+                                                "size": "lg",
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1 min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white line-clamp-1"
+                                    },
+                                    "text": "{{$parent._local.reviewTarget?.product_name ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{$parent._local.reviewTarget?.option_name}}",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                    },
+                                    "text": "{{$parent._local.reviewTarget?.option_name ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{$parent._local.reviewTarget?.option_name}}",
-                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
-                  "text": "{{$parent._local.reviewTarget?.option_name ?? ''}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "별점 선택 — _local에 저장 (취소 모달 패턴과 동일)",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
-              "text": "$t:mypage.order_detail.review_modal.rating_label"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex gap-1" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
-                  },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 1 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
+                    "comment": "별점 선택 — _local에 저장 (취소 모달 패턴과 동일)",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:mypage.order_detail.review_modal.rating_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "별 1점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "reviewRating": 1
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=1",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 1}}",
+                                        "type": "button",
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "star",
+                                                "prefix": "fas",
+                                                "size": "lg"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "별 2점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "reviewRating": 2
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=2",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 2}}",
+                                        "type": "button",
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "star",
+                                                "prefix": "fas",
+                                                "size": "lg"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "별 3점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "reviewRating": 3
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=3",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 3}}",
+                                        "type": "button",
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "star",
+                                                "prefix": "fas",
+                                                "size": "lg"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "별 4점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "reviewRating": 4
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=4",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 4}}",
+                                        "type": "button",
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "star",
+                                                "prefix": "fas",
+                                                "size": "lg"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "별 5점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "reviewRating": 5
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=5",
+                                        "aria-pressed": "{{(_local.reviewRating ?? 5) === 5}}",
+                                        "type": "button",
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "star",
+                                                "prefix": "fas",
+                                                "size": "lg"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
-                  },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 2 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
+                    "comment": "리뷰 내용 — _local에 저장 (취소 모달 패턴과 동일)",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:mypage.order_detail.review_modal.content_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "comment": "본문. 글자수 상한은 컴포넌트가 막고 아래 카운터가 남은 수를 보여 준다",
+                                    "type": "input",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "reviewContent": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_local.reviewContent ?? ''}}",
+                                "placeholder": "$t:mypage.order_detail.review_modal.content_placeholder",
+                                "rows": 5,
+                                "maxLength": 2000,
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between mt-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "$t:mypage.order_detail.review_modal.content_min_length"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "{{(_local.reviewContent ?? '').length}}/2000"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
-                  },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 3 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
+                    "comment": "이미지 첨부 (리뷰 정책 max_images=0 이면 숨김)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(reviewSettings?.data?.review_settings?.max_images ?? 5) > 0}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "FileUploader",
+                            "actions": [
+                                {
+                                    "comment": "고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "reviewImages": "{{$event.target.files ?? []}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "autoUpload": false,
+                                "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                                "maxFiles": "{{reviewSettings?.data?.review_settings?.max_images ?? 5}}",
+                                "maxSize": "{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}"
+                            }
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
-                  },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 4 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
+                    "comment": "에러 메시지",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_local.reviewError}}",
+                    "props": {
+                        "className": "flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg p-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-red-600 dark:text-red-400 flex-shrink-0",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{_local.reviewError ?? ''}}"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
-                  },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 5 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
+                    "comment": "버튼 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-3 pt-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "comment": "등록 버튼 — 데이터를 params로 핸들러에 직접 전달 (취소 모달 패턴과 동일)",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.submitReview",
+                                    "params": {
+                                        "orderId": "{{$parent._local.reviewTarget?.orderId ?? ''}}",
+                                        "optionId": "{{$parent._local.reviewTarget?.id ?? ''}}",
+                                        "productId": "{{$parent._local.reviewTarget?.product_id ?? ''}}",
+                                        "rating": "{{_local.reviewRating ?? 5}}",
+                                        "content": "{{_local.reviewContent ?? ''}}",
+                                        "images": "{{_local.reviewImages ?? []}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                "disabled": "{{_local.isSubmittingReview === true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.isSubmittingReview}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "animate-spin",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_local.isSubmittingReview ? '$t:common.processing' : '$t:mypage.order_detail.review_modal.submit_button'}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "리뷰 내용 — _local에 저장 (취소 모달 패턴과 동일)",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
-              "text": "$t:mypage.order_detail.review_modal.content_label"
-            },
-            {
-              "type": "basic",
-              "name": "Textarea",
-              "props": {
-                "value": "{{_local.reviewContent ?? ''}}",
-                "placeholder": "$t:mypage.order_detail.review_modal.content_placeholder",
-                "rows": 5,
-                "maxLength": 2000,
-                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-              },
-              "actions": [
-                {
-                  "type": "input",
-                  "handler": "setState",
-                  "params": {
-                    "target": "_local",
-                    "reviewContent": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex justify-between mt-1" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                  "text": "$t:mypage.order_detail.review_modal.content_min_length"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
-                  "text": "{{(_local.reviewContent ?? '').length}}/2000"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "이미지 첨부 (리뷰 정책 max_images=0 이면 숨김)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(reviewSettings?.data?.review_settings?.max_images ?? 5) > 0}}",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
-              "text": "$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}"
-            },
-            {
-              "type": "composite",
-              "name": "FileUploader",
-              "props": {
-                "autoUpload": false,
-                "accept": ".jpg,.jpeg,.png,.gif,.webp",
-                "maxFiles": "{{reviewSettings?.data?.review_settings?.max_images ?? 5}}",
-                "maxSize": "{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "_local",
-                    "reviewImages": "{{$event.target.files ?? []}}"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "에러 메시지",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!!_local.reviewError}}",
-          "props": { "className": "flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg p-3" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "circle-exclamation", "className": "text-red-600 dark:text-red-400 flex-shrink-0", "size": "sm" }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm text-red-600 dark:text-red-400" },
-              "text": "{{_local.reviewError ?? ''}}"
-            }
-          ]
-        },
-        {
-          "comment": "버튼 영역",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex gap-3 pt-2" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-              },
-              "text": "$t:common.cancel",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "closeModal"
-                }
-              ]
-            },
-            {
-              "comment": "등록 버튼 — 데이터를 params로 핸들러에 직접 전달 (취소 모달 패턴과 동일)",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                "disabled": "{{_local.isSubmittingReview === true}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sirsoft-ecommerce.submitReview",
-                  "params": {
-                    "orderId": "{{$parent._local.reviewTarget?.orderId ?? ''}}",
-                    "optionId": "{{$parent._local.reviewTarget?.id ?? ''}}",
-                    "productId": "{{$parent._local.reviewTarget?.product_id ?? ''}}",
-                    "rating": "{{_local.reviewRating ?? 5}}",
-                    "content": "{{_local.reviewContent ?? ''}}",
-                    "images": "{{_local.reviewImages ?? []}}"
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "if": "{{_local.isSubmittingReview}}",
-                  "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "{{_local.isSubmittingReview ? '$t:common.processing' : '$t:mypage.order_detail.review_modal.submit_button'}}"
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

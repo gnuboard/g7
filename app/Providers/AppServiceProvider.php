@@ -18,8 +18,11 @@ use App\Services\GeoIpService;
 use App\Support\Routing\DualExtensionRoute;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Filesystem\FilesystemManager;
+use Illuminate\Filesystem\LocalFilesystemAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\ChannelManager;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -27,12 +30,23 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 use Laravel\Boost\BoostServiceProvider;
+use League\Flysystem\Filesystem as Flysystem;
+use League\Flysystem\FilesystemAdapter as FlysystemAdapter;
+use League\Flysystem\Local\LocalFilesystemAdapter as LocalAdapter;
+use League\Flysystem\PathPrefixing\PathPrefixedAdapter;
+use League\Flysystem\ReadOnly\ReadOnlyFilesystemAdapter;
+use League\Flysystem\UnixVisibility\PortableVisibilityConverter;
+use League\Flysystem\Visibility;
+use League\Flysystem\WhitespacePathNormalizer;
 
 class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
+     *
+     * @return void
      */
     public function register(): void
     {
@@ -82,6 +96,12 @@ class AppServiceProvider extends ServiceProvider
         // GeoIpService 싱글톤 등록
         $this->app->singleton(GeoIpService::class);
 
+        // 상대경로 순회를 거부하는 로컬 디스크 드라이버 (config/filesystems.php 의 driver: local-safe).
+        // 디스크 해석보다 먼저 등록돼야 하므로 boot() 가 아니라 register() 에서 건다.
+        $this->callAfterResolving('filesystem', function (FilesystemManager $manager) {
+            $manager->extend('local-safe', fn ($app, array $config) => $this->createTraversalSafeLocalDisk($config));
+        });
+
         // Laravel Boost (개발 전용 - dont-discover 대상, 클래스 존재 시에만 등록)
         if (class_exists(BoostServiceProvider::class)) {
             $this->app->register(BoostServiceProvider::class);
@@ -90,6 +110,8 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
+     *
+     * @return void
      */
     public function boot(): void
     {
@@ -111,11 +133,84 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * 상대경로 순회(`..`)를 거부하는 로컬 디스크를 생성합니다.
+     *
+     * 표준 `local` 드라이버는 Flysystem 을 `WhitespacePathNormalizer` 기본값
+     * (allowRelativePathTraversal=true)으로 만들어 `a/b/../..` 를 조용히 상위 경로로 축약하고,
+     * 디스크 설정의 `allow_relative_path_traversal` 키도 Flysystem 에 넘기지 않는다.
+     * 사용자 입력이 경로에 섞일 수 있는 디스크는 이 드라이버로 바꿔, 스토리지 드라이버의
+     * 경로 가드가 뚫리더라도 `..` 가 어댑터에 닿기 전에 PathTraversalDetected 로 막는다.
+     *
+     * 생성 절차는 FilesystemManager::createLocalDriver() 와 같고 정규화기만 다르다.
+     * 사용자 정의 드라이버에는 디스크 이름이 전달되지 않으므로 `serve` 서명 URL 서빙은
+     * 지원하지 않는다 — 이 드라이버를 쓰는 디스크는 serve=false 여야 한다.
+     *
+     * @param  array<string, mixed>  $config  디스크 설정
+     * @return LocalFilesystemAdapter 로컬 디스크
+     */
+    private function createTraversalSafeLocalDisk(array $config): LocalFilesystemAdapter
+    {
+        $visibility = PortableVisibilityConverter::fromArray(
+            $config['permissions'] ?? [],
+            $config['directory_visibility'] ?? $config['visibility'] ?? Visibility::PRIVATE
+        );
+
+        $links = ($config['links'] ?? null) === 'skip'
+            ? LocalAdapter::SKIP_LINKS
+            : LocalAdapter::DISALLOW_LINKS;
+
+        $adapter = new LocalAdapter($config['root'], $visibility, $config['lock'] ?? LOCK_EX, $links);
+
+        $filesystem = new Flysystem(
+            $this->wrapLocalSafeAdapter($adapter, $config),
+            Arr::only($config, ['directory_visibility', 'disable_asserts', 'retain_visibility', 'temporary_url', 'url', 'visibility']),
+            new WhitespacePathNormalizer((bool) ($config['allow_relative_path_traversal'] ?? false))
+        );
+
+        return new LocalFilesystemAdapter($filesystem, $adapter, $config);
+    }
+
+    /**
+     * local-safe 디스크에 Laravel 기본 local 드라이버와 같은 `read-only`·`prefix` 옵션을 적용합니다.
+     *
+     * 기본 드라이버(`FilesystemManager::createFlysystem`)는 두 옵션을 어댑터 래퍼로 처리하는데, 사용자 정의
+     * 드라이버는 그 경로를 타지 않아 옵션이 조용히 무시됐다. 같은 래퍼로 감싸고, 래퍼 패키지가 없으면
+     * (Laravel 도 선택 의존성으로 두는 league/flysystem-read-only · league/flysystem-path-prefixing)
+     * 무시하지 않고 설정 오류로 알린다 — 읽기 전용이라 믿은 디스크에 쓰기가 되는 일을 막는다.
+     *
+     * @param  FlysystemAdapter  $adapter  로컬 어댑터
+     * @param  array<string, mixed>  $config  디스크 설정
+     * @return FlysystemAdapter 옵션을 반영한 어댑터
+     *
+     * @throws InvalidArgumentException 옵션에 필요한 래퍼 패키지가 없을 때
+     */
+    private function wrapLocalSafeAdapter(FlysystemAdapter $adapter, array $config): FlysystemAdapter
+    {
+        if ($config['read-only'] ?? false) {
+            if (! class_exists(ReadOnlyFilesystemAdapter::class)) {
+                throw new InvalidArgumentException(__('exceptions.storage.local_safe_option_package', ['option' => 'read-only', 'package' => 'league/flysystem-read-only']));
+            }
+            $adapter = new ReadOnlyFilesystemAdapter($adapter);
+        }
+
+        if (! empty($config['prefix'])) {
+            if (! class_exists(PathPrefixedAdapter::class)) {
+                throw new InvalidArgumentException(__('exceptions.storage.local_safe_option_package', ['option' => 'prefix', 'package' => 'league/flysystem-path-prefixing']));
+            }
+            $adapter = new PathPrefixedAdapter($adapter, $config['prefix']);
+        }
+
+        return $adapter;
+    }
+
+    /**
      * 로그인 엔드포인트(`/api/auth/login`, `/api/auth/admin/login`) 의 per-IP RateLimiter 를 등록합니다.
      *
      * 보안 환경설정 `security.max_login_attempts` 에 비례하여 분당 허용량을 산출하되
      * 최소 30 회/분 을 보장 (정상 사용자 오타/타이핑 실수에 대비). 설정 조회 실패 시
      * 기본값 60 회/분 으로 폴백 — 부팅 안전성 (마이그레이션 전 진입) 확보.
+     *
+     * @return void
      */
     private function configureLoginRateLimiter(): void
     {
@@ -136,7 +231,8 @@ class AppServiceProvider extends ServiceProvider
                         'auth.too_many_attempts',
                         429,
                         null,
-                        ['seconds' => (int) ($headers['Retry-After'] ?? 60)]
+                        // `count` 로 「1 second」/「2 seconds」 를 고른다.
+                        ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
                     )->withHeaders($headers);
                 });
         });
@@ -153,6 +249,8 @@ class AppServiceProvider extends ServiceProvider
      * 소비합니다 — 디버그 모드 게이트를 여기서 다시 검사하지 않는 이유입니다.
      *
      * 개별 요청이 `withOptions(['proxy' => ...])` 로 지정한 값은 전역 옵션보다 우선합니다.
+     *
+     * @return void
      */
     private function configureOutboundProxy(): void
     {
@@ -170,6 +268,8 @@ class AppServiceProvider extends ServiceProvider
      *
      * 환경설정에서 sql_query_log가 활성화된 경우
      * 모든 SQL 쿼리를 storage/logs/query.log에 기록합니다.
+     *
+     * @return void
      */
     private function configureSqlQueryLogging(): void
     {

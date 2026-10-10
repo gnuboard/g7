@@ -1,0 +1,55 @@
+{
+    "_meta": {
+        "version": "1.0.0"
+    },
+    "defaults": {
+        "auth_key": "",
+        "auto_manage": false,
+        "update_time": "11:30",
+        "run_days": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "retry_max": 3,
+        "rate_type": "deal_bas_r",
+        "rate_decimal_places": 6,
+        "lookback_days": 7,
+        "history_retention_days": 365,
+        "notify_on_failure": true
+    },
+    "frontend_schema": {
+        "auth_key": {
+            "expose": false
+        },
+        "auto_manage": {
+            "expose": true
+        },
+        "update_time": {
+            "expose": false
+        },
+        "run_days": {
+            "expose": false
+        },
+        "retry_max": {
+            "expose": false
+        },
+        "rate_type": {
+            "expose": false
+        },
+        "rate_decimal_places": {
+            "expose": false
+        },
+        "lookback_days": {
+            "expose": false
+        },
+        "history_retention_days": {
+            "expose": false
+        },
+        "notify_on_failure": {
+            "expose": false
+        }
+    }
+}

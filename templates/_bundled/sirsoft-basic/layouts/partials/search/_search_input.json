@@ -1,59 +1,87 @@
 {
-  "meta": { "is_partial": true, "description": "검색 입력 영역" },
-  "type": "basic",
-  "name": "Div",
-  "props": { "className": "flex gap-2 mb-6" },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex-1 relative" },
-      "children": [
+    "comment": "검색 입력 줄 — 검색어는 화면 상태가 아니라 URL 로 나간다(그래야 결과 주소를 그대로 공유할 수 있다). 입력칸에 담아 두는 _local.q 는 버튼으로 눌러 보낼 때 쓰는 사본이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "검색 입력 영역"
+    },
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "flex gap-2 mb-6"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Icon",
-          "props": { "name": "search", "size": "sm", "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-1 relative"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "search",
+                        "size": "sm",
+                        "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "actions": [
+                        {
+                            "comment": "입력값 사본 — 엔터는 이벤트에서 값을 바로 꺼내 쓰지만 옆 버튼은 그럴 수 없어 여기에 담아 둔 값을 읽는다.",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "q": "{{$event.target.value}}"
+                            }
+                        },
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 페이지·필터를 물려받지 않는다.",
+                            "type": "keydown",
+                            "key": "Enter",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/search",
+                                "query": {
+                                    "q": "{{$event.target.value}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "text",
+                        "name": "q",
+                        "value": "{{query?.q ?? ''}}",
+                        "placeholder": "$t:search.placeholder",
+                        "className": "w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    }
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "text",
-            "name": "q",
-            "value": "{{query?.q ?? ''}}",
-            "placeholder": "$t:search.placeholder",
-            "className": "w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": { "target": "local", "q": "{{$event.target.value}}" }
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 탭·정렬·페이지·커서를 물려받지 않는다. mergeQuery 가 없으므로 q 만 남고 나머지 키는 주소에서 사라진다.",
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "query": {
+                            "q": "{{_local.q ?? ''}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "className": "px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer"
             },
-            {
-              "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 페이지·필터를 물려받지 않는다.",
-              "type": "keydown",
-              "key": "Enter",
-              "handler": "navigate",
-              "params": { "path": "/search", "query": { "q": "{{$event.target.value}}" } }
-            }
-          ]
+            "text": "$t:search.button"
         }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": { "className": "px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer" },
-      "text": "$t:search.button",
-      "actions": [
-        {
-          "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 탭·정렬·페이지·커서를 물려받지 않는다. mergeQuery 가 없으므로 q 만 남고 나머지 키는 주소에서 사라진다.",
-          "type": "click",
-          "handler": "navigate",
-          "params": { "path": "/search", "query": { "q": "{{_local.q ?? ''}}" } }
-        }
-      ]
-    }
-  ]
+    ]
 }

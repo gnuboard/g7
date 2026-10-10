@@ -11,6 +11,9 @@
  * 키는 예외 없이 조용히 `undefined` 가 되어 항상 폴백으로 떨어진다. 그러면 바인딩이 있어도
  * 리터럴을 쓴 것과 결과가 같아지고, 이 계약이 막으려던 결함이 그대로 재현된다.
  * 그래서 세 지점(설정 파일 · 서버 규칙 · 화면 바인딩)이 같은 키·같은 값을 가리키는지 대조한다.
+ *
+ * #736 에서 비밀번호 칸들이 보안 설정 카드에서 「비밀번호 정책」·「비밀번호 만료」 조각(`_tab_security_password_policy`)으로
+ * 옮겨졌고(data-ref 유지), 같은 계약을 새 정수 칸 7개(반복·연속 글자 수, 재사용 개수, 만료 기간·안내일·연기일·상한)로 넓혔다.
  */
 
 import fs from 'node:fs';
@@ -19,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import tabSecurity from '../../layouts/partials/admin_settings/_tab_security.json';
+import passwordPolicy from '../../layouts/partials/admin_settings/_tab_security_password_policy.json';
 
 /**
  * 저장소 루트를 위로 훑어 찾는다 (`_bundled` 여부로 깊이가 달라지므로 상대경로 고정 금지).
@@ -111,53 +115,103 @@ function parseBinding(expression: string): { limitKey: string; fallback: number 
 }
 
 /**
+ * 정수 입력 칸 — 서버 저장 규칙 키 · 한계값 접두.
+ * 서버 규칙은 최소 길이만 배열 리터럴이고, 신규 칸은 `securityIntegerRules('<키>')` 헬퍼가 같은 접두로 한계값을 읽는다.
+ */
+const INTEGER_FIELDS = [
+    'password_min_length',
+    'password_repeated_chars_length',
+    'password_sequential_chars_length',
+    'password_reuse_count',
+    'password_expiry_days',
+    'password_expiry_notice_days',
+    'password_expiry_remind_days',
+    'password_expiry_batch_size',
+] as const;
+
+/**
+ * 서버 저장 규칙이 그 칸의 한계값 키를 읽는지 — 배열 리터럴이거나 공용 헬퍼 호출이다.
+ *
+ * @param field 설정 키(security. 접두 없이)
+ * @param limitKey 화면 바인딩이 가리키는 한계값 키
+ * @returns 규칙 원문이 그 키를 읽으면 true
+ */
+function ruleReadsLimit(field: string, limitKey: string): boolean {
+    const literal = new RegExp(String.raw`'security\.${field}'\s*=>\s*\[([\s\S]*?)\],`).exec(requestSource);
+    if (literal && literal[1].includes(`core.settings_limits.${limitKey}`)) {
+        return true;
+    }
+
+    const helper = new RegExp(String.raw`'security\.${field}'\s*=>\s*\$this->securityIntegerRules\('${field}'\)`).test(requestSource);
+
+    // 헬퍼는 `security_{$key}_min|max` 를 읽는다 — 화면 키가 그 이름 규칙과 같아야 같은 값을 읽는다.
+    return helper && /config\("core\.settings_limits\.security_\{\$key\}_(min|max)"\)/.test(requestSource)
+        && limitKey === `security_${field}_${limitKey.endsWith('_min') ? 'min' : 'max'}`;
+}
+
+/**
  * @scenario entry_point=admin_update_user, min_length_setting=raised, special_char_setting=required
  * @effects admin_screen_min_length_bounds_follow_settings_limits
  */
-describe('보안 설정 — 비밀번호 최소 길이', () => {
+describe('보안 설정 — 비밀번호 정수 칸 한계값 3곳 정합', () => {
     const limits = configuredLimits();
-    const input = findByName(tabSecurity, 'security.password_min_length');
 
-    it('입력 필드가 존재한다', () => {
-        expect(input).not.toBeNull();
+    /** @effects admin_screen_min_length_bounds_follow_settings_limits */
+    it.each(INTEGER_FIELDS)('%s 입력이 비밀번호 정책 조각에 숫자 칸으로 있다', (field) => {
+        const input = findByName(passwordPolicy, `security.${field}`);
+
+        expect(input, `security.${field} 입력이 없습니다`).not.toBeNull();
         expect(input.props.type).toBe('number');
     });
 
-    it.each([
-        ['min', 'security_password_min_length_min'],
-        ['max', 'security_password_min_length_max'],
-    ])('%s 이 서버가 실제로 내려주는 한계값 키를 가리킨다', (bound, expectedKey) => {
-        const { limitKey } = parseBinding(String(input.props[bound]));
+    /** @effects admin_screen_min_length_bounds_follow_settings_limits */
+    it.each(INTEGER_FIELDS.flatMap((field) => [[field, 'min'], [field, 'max']] as const))(
+        '%s 의 %s 이 서버가 내려주는 한계값 키·같은 폴백을 가리킨다',
+        (field, bound) => {
+            const input = findByName(passwordPolicy, `security.${field}`);
+            const { limitKey, fallback } = parseBinding(String(input.props[bound]));
 
-        // 오타난 키는 응답에 없어 항상 undefined → 영구 폴백. 바인딩 존재만으로는 못 잡는다.
-        expect(limits, `config/core.php 에 '${limitKey}' 가 없습니다 — 화면이 영구히 폴백으로 떨어집니다.`)
-            .toHaveProperty(limitKey);
-        expect(limitKey).toBe(expectedKey);
-    });
+            // 오타난 키는 응답에 없어 항상 undefined → 영구 폴백. 바인딩 존재만으로는 못 잡는다.
+            expect(limitKey).toBe(`security_${field}_${bound}`);
+            expect(limits, `config/core.php 에 '${limitKey}' 가 없습니다 — 화면이 영구히 폴백으로 떨어집니다.`)
+                .toHaveProperty(limitKey);
+            expect(fallback).toBe(limits[limitKey]);
+        },
+    );
 
-    it.each([
-        ['min', 'security_password_min_length_min'],
-        ['max', 'security_password_min_length_max'],
-    ])('%s 의 폴백이 설정 파일 값과 같다', (bound, key) => {
-        const { fallback } = parseBinding(String(input.props[bound]));
-
-        expect(fallback).toBe(limits[key]);
-    });
-
-    it('서버 저장 규칙이 화면과 같은 한계값 키를 읽는다', () => {
-        const rule = /'security\.password_min_length'\s*=>\s*\[([\s\S]*?)\],/.exec(requestSource);
-        expect(rule, 'SaveSettingsRequest 에서 password_min_length 규칙을 찾지 못했습니다.').not.toBeNull();
+    /** @effects admin_screen_min_length_bounds_follow_settings_limits */
+    it.each(INTEGER_FIELDS)('%s 의 서버 저장 규칙이 화면과 같은 한계값 키를 읽는다', (field) => {
+        const input = findByName(passwordPolicy, `security.${field}`);
 
         for (const bound of ['min', 'max'] as const) {
             const { limitKey } = parseBinding(String(input.props[bound]));
-            expect(rule![1]).toContain(`core.settings_limits.${limitKey}`);
+            expect(ruleReadsLimit(field, limitKey), `SaveSettingsRequest 가 ${field} 의 ${limitKey} 를 읽지 않습니다`).toBe(true);
         }
     });
+});
 
-    it('특수문자 필수 토글이 함께 노출된다', () => {
-        const toggle = findByName(tabSecurity, 'security.require_password_special_char')
-            ?? JSON.stringify(tabSecurity).includes('security.require_password_special_char');
+/**
+ * @scenario entry_point=admin_update_user, min_length_setting=raised, special_char_setting=required
+ * @effects admin_screen_min_length_bounds_follow_settings_limits
+ */
+describe('보안 설정 — 비밀번호 칸 이동(#736 A14)', () => {
+    /** @effects admin_screen_min_length_bounds_follow_settings_limits */
+    it('보안 탭이 비밀번호 정책 조각을 접근 제한 카드 앞에 포함한다', () => {
+        const json = JSON.stringify(tabSecurity);
+        const policyAt = json.indexOf('_tab_security_password_policy');
+        const ipAt = json.indexOf('_tab_security_ip_restriction');
 
-        expect(toggle).toBeTruthy();
+        expect(policyAt).toBeGreaterThan(-1);
+        expect(policyAt).toBeLessThan(ipAt);
+    });
+
+    /** @effects admin_screen_min_length_bounds_follow_settings_limits */
+    it('옮긴 두 칸은 보안 설정 카드에 남지 않고 같은 data-ref 로 조각에 선다', () => {
+        expect(findByName(tabSecurity, 'security.password_min_length')).toBeNull();
+
+        const json = JSON.stringify(passwordPolicy);
+        expect(json).toContain('"id":"field_password_min_length"');
+        expect(json).toContain('"id":"field_require_password_special_char"');
+        expect(json).toContain('security.require_password_special_char');
     });
 });

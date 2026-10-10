@@ -1,11 +1,11 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
-
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
+use App\Helpers\ResponseHelper;
+use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ use Plugins\Sirsoft\PayNhnkcp\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 
-class UserReceiptController
+class UserReceiptController extends PublicBaseController
 {
     use IssuesReceiptCookie;
     use ResolvesEasyPayDisplay;
@@ -34,24 +34,30 @@ class UserReceiptController
 
     private const CASH_URL_LIVE = 'https://admin.kcp.co.kr/Modules/Service/Cash/Cash_Bill_Common_View.jsp?term_id=PGNW';
 
+    /**
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스(테스트 모드 판정)
+     * @param  NhnKcpApiService  $apiService  KCP API 서비스(현금영수증 주소의 사이트 코드)
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly NhnKcpApiService $apiService,
         private readonly GuestOrderAuthService $guestOrderAuthService,
-    ) {}
+    ) {
+        parent::__construct();
+    }
 
     /**
-     * GET /api/plugins/sirsoft-pay_nhnkcp/user/orders/{orderNumber}/receipt
-     */
-    /**
-     * 사용자 마이페이지 KCP 영수증 정보 조회
+     * 사용자 마이페이지 KCP 영수증 정보 조회 — GET /api/plugins/sirsoft-pay_nhnkcp/user/orders/{orderNumber}/receipt
      *
      * 결제 영수증 URL(신용카드)과 현금영수증 URL(현금/계좌이체)을 반환한다.
      * receipt_url 이 비어있으면 transaction_id (tno) 로 KCP 영수증 URL 을 동적 생성.
      *
+     * 응답은 공통 형식(`ResponseHelper`)이며 영수증 정보는 `data` 에 담는다. 대상이 없으면 404(`ResponseHelper::notFound`).
+     *
      * @param  Request  $request  회원 또는 비회원 영수증 요청
      * @param  string  $orderNumber  주문번호
-     * @return JsonResponse receipt_url / cash_receipt_url 또는 404
+     * @return JsonResponse 영수증 정보(data) 또는 404
      */
     // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
@@ -77,7 +83,7 @@ class UserReceiptController
                         $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
                     });
             } else {
-                return response()->json(['error' => 'Not found'], 404);
+                return ResponseHelper::notFound();
             }
         }
 
@@ -94,7 +100,7 @@ class UserReceiptController
             ->first();
 
         if (! $payment || ! $payment->transaction_id) {
-            return response()->json(['error' => 'Not found'], 404);
+            return ResponseHelper::notFound();
         }
 
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -136,7 +142,7 @@ class UserReceiptController
                 .'&authno='.urlencode((string) $authNo);
         }
 
-        return response()->json([
+        return ResponseHelper::success('common.success', [
             'receipt_url' => $receiptUrl,
             'cash_receipt_url' => $cashReceiptUrl,
             'is_test_mode' => $isTest,

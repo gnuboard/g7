@@ -1,0 +1,153 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
+#   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
+#   green 이다.
+
+feature: 방문자 통계 확장 기여 표면 (이슈 #682 S4)
+
+description: |
+  확장이 방문자 통계에 전환·차원·집계 행·판정표·제외 규칙·개인정보 처리·출력 열을 보태는 길.
+
+  배경:
+    - 확장은 기여하기 전에 선언한다(진입 클래스의 getAnalyticsGoals()·getAnalyticsDimensions()).
+      선언이 없으면 오타 하나가 새 목표로 쌓이고, 어느 확장이 준 전환인지 가릴 수 없다.
+    - 선언은 DB 에 적재하지 않고 활성 확장에서 매번 모은다 — 확장이 꺼지면 선언도 사라지고
+      이미 쌓인 데이터는 남는다.
+    - 잘못된 선언은 그 항목만 사유와 함께 버린다. 조용히 버리면 그것이 곧 통계의 사각이다.
+    - 확장은 코어 방어(봇·DNT·수집 거부)를 뒤집거나 코어 열·섹션을 덮지 못한다. 판정표 필터는
+      반환값이 그대로 쓰이므로 받은 목록에 보태서 돌려준다.
+    - 개인정보 경로(정보주체 삭제·전체 삭제)는 확장이 같은 트랜잭션 또는 코어보다 먼저 참여해,
+      한쪽만 지워지고 완료로 보이는 일이 없다.
+
+  적용 지점:
+    - `app/Services/Analytics/GoalRegistry`·`DimensionRegistry` 가 선언을 모아 정규화한다.
+    - `app/Services/Analytics/VisitService` 가 등록부로 목표·차원을 판정하고 중복 규칙을 적용한다.
+    - `app/Services/Analytics/ConversionRecorder` 가 서버 측 전환을 같은 판정으로 넘긴다.
+    - `app/Services/Analytics/ArchiveService` 가 등록 차원을 `ext:` 행으로 집계하고 수집기 훅을 쏜다.
+    - `app/Analytics/AnalyticsTables`·`VisitExclusionPipeline` 이 판정표·제외 필터를 건다.
+    - `DataSubjectService`·`PurgeService`·`AnonymizeService` 가 개인정보 필터를 건다.
+    - `ReportController`·`DiagnosticsService`·`RealtimeService`·`StorageStatsService` 가 출력 필터를 건다.
+
+coverage_strategy: pairwise
+
+axes:
+  point: [goal, dimension, archive, judgment, gdpr, output]
+  extension_state: [active, inactive]
+  input: [registered, unregistered]
+
+exclusions:
+  - { point: judgment, extension_state: inactive, reason: "판정·제외 필터는 확장이 꺼지면 구독 자체가 사라진다 — 코어 기본값과 같다" }
+  - { point: output, extension_state: inactive, reason: "출력 필터도 같은 이유 — 구독이 없으면 코어 출력 그대로다" }
+  - { point: gdpr, extension_state: inactive, reason: "개인정보 필터는 구독한 확장만 참여한다 — 꺼진 확장의 표는 확장 제거 정리(analytics-retention)가 다룬다" }
+  - { point: archive, extension_state: inactive, reason: "집계 훅 구독이 없으면 수집기는 비어 있고 코어 집계만 남는다" }
+
+effects:
+  # 선언 — 목표 등록부
+  - core_goals_are_registered_under_core_prefix
+  - extension_goals_are_qualified_with_identifier
+  - goal_owner_type_is_recorded
+  - inactive_extension_goals_disappear
+  - malformed_goal_declaration_is_rejected_with_reason
+  - declaration_warnings_are_shown_in_diagnostics
+  - registered_dimensions_filter_can_hide_dimensions
+  - beacon_dims_reach_the_ledger_over_http
+  - valid_goals_survive_a_malformed_sibling
+  - malformed_field_types_never_stop_the_registries
+  - collector_merges_dimension_names_equal_under_the_column_collation
+  - goal_getter_failure_is_isolated
+  - registered_goals_filter_can_hide_goals
+  - goal_attributes_are_validated_against_the_declared_schema
+  - declaration_getters_are_listed_in_extension_docs
+  - abstract_extensions_default_to_empty_declarations
+  # 기록 — 전환
+  - registered_goal_records_conversion_with_owner_type
+  - goal_attribute_schema_passes_declared_values
+  - unregistered_goal_is_rejected_as_unknown_goal
+  - inactive_extension_goal_is_rejected
+  - goal_dedupe_once_per_visit
+  - goal_dedupe_once_per_visitor
+  - server_recorder_attaches_to_the_current_visit
+  - server_recorder_uses_same_site_referer_as_page
+  - server_recorder_never_throws
+  - beacon_cannot_forge_core_goals
+  # 코어 목표 2건
+  - core_login_goal_is_recorded_on_successful_login
+  - core_goal_dedupe_once_per_visit
+  - login_visit_takes_browser_values_from_the_next_beacon
+  - server_recorder_obeys_every_core_exclusion
+  - failed_login_records_no_goal
+  - core_signup_goal_is_recorded_on_registration
+  # 차원 — 등록·주입·판정·집계·조회
+  - registered_dimension_is_stored_under_qualified_name
+  - dimension_scope_decides_visit_or_action_row
+  - unregistered_dimension_is_dropped_and_logged
+  - dimension_value_type_violation_is_logged
+  - other_dimensions_survive_a_rejected_sibling
+  - ambiguous_short_dimension_key_is_rejected
+  - pii_dimension_is_not_stored_in_anonymous_mode
+  - pii_dimension_is_never_archived
+  - server_filter_can_inject_dimension_values
+  - extension_dimension_is_archived_as_ext_row
+  - dimension_max_cardinality_keeps_top_labels
+  - ext_dimension_report_is_readable
+  - ext_dimension_label_resolver_fills_display
+  - unknown_ext_dimension_report_is_404
+  - inactive_extension_dimension_stays_readable
+  - inactive_extension_dimension_is_listed
+  - inactive_extension_rows_are_kept
+  - registered_list_api_returns_dimensions_and_goals
+  - malformed_dimension_declaration_is_rejected_with_reason
+  # 집계 기여
+  - archive_day_hook_passes_collector_and_context
+  - sync_collector_rows_are_written_with_core_rows
+  - collector_rows_are_replaced_on_reaggregation
+  - collector_rejects_core_dimension_names_with_warning
+  - queued_archive_subscription_is_warned
+  - longest_declarable_ext_dimension_fits_the_column
+  - collector_merges_duplicate_labels
+  - collector_drops_overlong_dimension_names
+  - one_collector_row_does_not_fail_the_day
+  - collector_counts_fit_the_columns
+  - collector_row_colliding_with_core_row_is_dropped
+  # 판정·제외
+  - search_engine_table_accepts_extension_entries
+  - campaign_param_names_accept_extension_override
+  - stripped_query_params_accept_extension_entries
+  - ua_rules_accept_extension_patterns_in_order
+  - judgment_table_names_fit_the_ledger_columns
+  - extension_exclusion_rule_excludes_with_registered_reason
+  - extension_exclusion_reason_is_counted_and_labeled
+  - unregistered_exclusion_reason_does_not_exclude
+  - extension_hook_failure_is_isolated_as_listener_exception
+  - judgment_and_registry_filter_failures_are_isolated
+  - extension_exclusion_runs_after_core_defenses
+  # 개인정보 경로
+  - subject_delete_filter_runs_inside_the_core_transaction
+  - subject_delete_returns_extension_counts
+  - subject_delete_rolls_back_when_extension_fails
+  - subject_delete_reaches_extensions_without_core_visits
+  - subject_filters_receive_the_requested_period
+  - subject_export_includes_custom_dimensions
+  - subject_export_merges_extension_data
+  - purge_all_runs_extension_step_first
+  - purge_all_aborts_before_core_when_extension_fails
+  - anonymize_removes_pii_dimensions_everywhere
+  - anonymize_attributes_filter_receives_each_visit
+  # 출력
+  - csv_columns_filter_appends_extension_extra_columns
+  - csv_row_filter_can_format_values
+  - csv_filename_is_safe_for_ext_dimensions
+  - diagnostics_sections_filter_adds_extension_sections
+  - realtime_fields_filter_adds_extension_values
+  - storage_tables_filter_adds_extension_tables
+
+test_files:
+  - tests/Feature/Analytics/ExtensionPoints/GoalRegistryTest.php
+  - tests/Feature/Analytics/ExtensionPoints/DimensionRegistryTest.php
+  - tests/Feature/Analytics/ExtensionPoints/ConversionRecorderTest.php
+  - tests/Feature/Analytics/ExtensionPoints/CoreGoalsTest.php
+  - tests/Feature/Analytics/ExtensionPoints/ArchiveHookTest.php
+  - tests/Feature/Analytics/ExtensionPoints/JudgmentFiltersTest.php
+  - tests/Feature/Analytics/ExtensionPoints/GdprParticipationTest.php
+  - tests/Feature/Analytics/ExtensionPoints/OutputSurfacesTest.php
+  - tests/Unit/Analytics/DailyAccumulatorTest.php

@@ -1,0 +1,26 @@
+feature: file_uploader_mount_no_change
+
+description: >
+  파일 업로더(FileUploader, admin_basic·basic)가 처음 그려질 때 빈 대기 목록으로 onFilesChange 를 불러,
+  그 이벤트로 「변경 있음」(hasChanges)을 켜는 게시판 레이아웃이 게시글 수정·글쓰기 화면을 열자마자
+  저장 버튼을 켜던 결함(트러블슈팅 state-global 사례 9). 첨부 카드가 폼 데이터 초기화 뒤에 그려질 때만
+  드러나는 경합이라, 단위 테스트는 훅의 발화 시점을 잠그고 E2E 가 실제 화면의 저장 버튼을 잠근다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderMountNoChange.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/FileUploaderMountNoChange.test.ts
+  - tests/Playwright/specs/admin/file-uploader-mount-no-change.spec.ts
+
+axes:
+  # 대기 목록이 바뀐 계기 — 마운트(바뀐 것 없음)와 사용자가 파일을 더하거나 뺀 경우
+  trigger: [mount, user_change]
+
+effects:
+  - no_files_change_on_mount                     # 훅: 마운트·리렌더에 onFilesChange 미발화
+  - files_change_on_add_and_remove               # 훅: 파일 추가·제거에는 발화 (마지막 파일 제거 포함)
+  - admin_post_edit_save_disabled_on_entry       # E2E: 관리자 게시글 수정 진입 시 저장 버튼 꺼짐
+  - picking_file_enables_save                    # E2E 대조군: 파일을 고르면 저장 버튼 켜짐
+  - user_post_write_has_no_changes_on_entry      # E2E: 사용자 글쓰기 진입 시 hasChanges 꺼짐 (이탈 경고 대상 아님)
+
+notes: |
+  E2E 는 저장하지 않는다 — 게시판 업로더는 autoUpload=false 라 고른 파일이 서버에 올라가지 않는다.

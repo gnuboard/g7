@@ -1,0 +1,187 @@
+<!-- 본인인증 정책을 만들고 고치는 폼 — 추가와 편집을 한 창이 겸한다(`isNew`). 값·오류·모드가 전부 `_global.identity_policy_form_modal` 한 객체에 모여 있고 목록이 열 때마다 통째로 갈아 끼운다. 확장이 심어 둔 정책(`source_type` 이 admin 이 아닌 것)은 키·범위·대상을 잠가, 코드가 기대하는 자리를 화면에서 바꾸지 못하게 한다 -->
+<partial description="게시판 환경설정 > 본인인증 정책 탭 내 정책 추가/편집 모달. _global.identity_policy_form_modal 단일 진실 패턴 — list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피)" editor_label="$t:sirsoft-board.admin.settings.identity.policy_form_editor_label">
+  <modal data-type="composite" data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
+    <div class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
+      <div data-ref="policy_form_body" class="flex-1 overflow-y-auto space-y-4 px-4 py-4 pr-2">
+        <div data-if="{{_global.identity_policy_form_modal?.errors}}" class="alert-danger items-start">
+          <div class="flex items-start gap-2">
+            <icon name="triangle-exclamation" class="text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
+            <div class="flex-1">
+              <p class="text-error-strong">{{_global.identity_policy_form_modal?.errors?.message ?? '$t:common.validation_error'}}</p>
+              <ul data-if="{{_global.identity_policy_form_modal?.errors?.errors &amp;&amp; Object.keys(_global.identity_policy_form_modal.errors.errors).length > 0}}" data-each="msg in Object.entries(_global.identity_policy_form_modal?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])" class="mt-1 list-disc list-inside space-y-0.5">
+                <li class="text-danger-soft">{{msg}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">$t:admin.identity.policies.form.key</label>
+          <input type="text" value="{{_global.identity_policy_form_modal?.form?.key ?? ''}}" disabled="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.key ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}">
+            <on type="change">
+              <!-- 정책을 가리키는 키 — 코드가 이 이름으로 정책을 찾으므로 새로 만들 때만 손댈 수 있다 -->
+              <set-state target="global" identity_policy_form_modal.form.key="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.key}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.key?.[0] ?? ''}}</span>
+        </div>
+        <div class="grid-2col-responsive">
+          <div>
+            <label class="form-label">$t:admin.identity.policies.form.scope</label>
+            <select value="{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}" disabled="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'input-error disabled:bg-gray-100 dark:disabled:bg-gray-900' : ' disabled:bg-gray-100 dark:disabled:bg-gray-900'}}">
+              <options>
+                <option value="route">$t:admin.identity.policies.scope.route</option>
+                <option value="hook">$t:admin.identity.policies.scope.hook</option>
+                <option value="custom">$t:admin.identity.policies.scope.custom</option>
+              </options>
+              <on type="change">
+                <!-- 정책이 걸리는 «자리의 종류» — 라우트냐 훅이냐 직접 지정이냐. 아래 「대상」 칸에 무엇을 적어야 하는지가 이 값으로 갈린다 -->
+                <set-state target="global" identity_policy_form_modal.form.scope="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.scope}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.scope?.[0] ?? ''}}</span>
+          </div>
+          <div>
+            <label class="form-label">$t:admin.identity.policies.form.target</label>
+            <input type="text" value="{{_global.identity_policy_form_modal?.form?.target ?? ''}}" disabled="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}">
+              <on type="change">
+                <!-- 그 종류 안에서 정확히 어느 자리인지(라우트 이름·훅 이름 등) -->
+                <set-state target="global" identity_policy_form_modal.form.target="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.target}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.target?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div class="grid-2col-responsive">
+          <div>
+            <label class="form-label">$t:admin.identity.policies.form.purpose</label>
+            <select value="{{_global.identity_policy_form_modal?.form?.purpose ?? 'sensitive_action'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'input-error' : ''}}" options="{{(boardIdentityPurposes?.data ?? []).map(function(p) { return {value: p.id, label: p.label ?? p.id}; })}}">
+              <on type="change">
+                <!-- 무엇을 위해 인증을 요구하는지 — 선택지는 코어가 아는 목적 전부다. 이 값이 `signup` 일 때만 아래에 가입 단계를 고르는 칸이 나타난다 -->
+                <set-state target="global" identity_policy_form_modal.form.purpose="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.purpose}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.purpose?.[0] ?? ''}}</span>
+          </div>
+          <div>
+            <label class="form-label">$t:admin.identity.policies.form.provider_id</label>
+            <select value="{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}" class="" options="{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}">
+              <on type="change">
+                <!-- 어느 인증 수단을 쓸지 — 빈 값이면 시스템 기본 수단을 따르므로 목록 맨 앞에 그 뜻의 항목을 하나 끼워 둔다 -->
+                <set-state target="global" identity_policy_form_modal.form.provider_id="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2col-responsive">
+          <div>
+            <label class="form-label">$t:admin.identity.policies.form.grace_minutes</label>
+            <input type="number" value="{{_global.identity_policy_form_modal?.form?.grace_minutes ?? 0}}" :min="0" :max="1440" class="{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'input-error' : ''}}">
+              <on type="change">
+                <!-- 한 번 인증한 뒤 몇 분 동안 다시 묻지 않을지 — 입력칸이 주는 값은 문자열이라 숫자로 바꿔 담는다(그대로 두면 서버 검증에서 걸린다) -->
+                <set-state target="global" identity_policy_form_modal.form.grace_minutes="{{Number($event.target.value)}}"/>
+              </on>
+            </input>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes?.[0] ?? ''}}</span>
+          </div>
+          <div>
+            <label class="form-label">$t:admin.identity.policies.form.applies_to</label>
+            <select value="{{_global.identity_policy_form_modal?.form?.applies_to ?? 'both'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.applies_to ? 'input-error' : ''}}">
+              <options>
+                <option value="self">$t:admin.identity.policies.applies_to.self</option>
+                <option value="admin">$t:admin.identity.policies.applies_to.admin</option>
+                <option value="both">$t:admin.identity.policies.applies_to.both</option>
+              </options>
+              <on type="change">
+                <!-- 누구에게 걸지 — 본인이 자기 일을 할 때만인지, 관리자가 남의 일을 대신할 때만인지, 둘 다인지 -->
+                <set-state target="global" identity_policy_form_modal.form.applies_to="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.applies_to}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.applies_to?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">$t:admin.identity.policies.form.priority</label>
+          <input type="number" value="{{_global.identity_policy_form_modal?.form?.priority ?? 100}}" :min="0" :max="65535" class="{{_global.identity_policy_form_modal?.errors?.errors?.priority ? 'input-error' : ''}}">
+            <on type="change">
+              <!-- 같은 자리에 정책이 여럿일 때 어느 것이 이기는지 — 숫자로 바꿔 담는 이유는 유예 시간 칸과 같다 -->
+              <set-state target="global" identity_policy_form_modal.form.priority="{{Number($event.target.value)}}"/>
+            </on>
+          </input>
+          <p class="text-hint mt-1">$t:admin.identity.policies.form.priority_desc</p>
+          <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.priority}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.priority?.[0] ?? ''}}</span>
+        </div>
+        <div class="grid-2col-responsive">
+          <div>
+            <label class="form-label">$t:admin.identity.policies.form.fail_mode</label>
+            <select value="{{_global.identity_policy_form_modal?.form?.fail_mode ?? 'block'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'input-error' : ''}}">
+              <options>
+                <option value="block">$t:admin.identity.policies.fail_mode.block</option>
+                <option value="log_only">$t:admin.identity.policies.fail_mode.log_only</option>
+              </options>
+              <on type="change">
+                <!-- 인증에 실패했을 때 막을지, 아니면 통과시키고 기록만 남길지 — 정책을 새로 넣을 때 기록만 켜 두고 영향을 먼저 살펴볼 수 있다 -->
+                <set-state target="global" identity_policy_form_modal.form.fail_mode="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode?.[0] ?? ''}}</span>
+          </div>
+          <div class="flex items-end justify-between gap-2 pb-2">
+            <span class="form-label">$t:admin.identity.policies.form.enabled</span>
+            <toggle data-type="composite" checked="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" size="md">
+              <on type="change">
+                <!-- 정책을 켜고 끈다 — 지우지 않고 잠시 멈춰 둘 수 있게 하려는 자리다 -->
+                <set-state target="global" identity_policy_form_modal.form.enabled="{{!_global.identity_policy_form_modal?.form?.enabled}}"/>
+              </on>
+            </toggle>
+          </div>
+        </div>
+        <div data-if="{{_global.identity_policy_form_modal?.form?.purpose === 'signup'}}">
+          <label class="form-label">$t:admin.identity.policies.form.signup_stage</label>
+          <select value="{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}" class="">
+            <options>
+              <option value="">$t:admin.identity.policies.form.signup_stage_unset</option>
+              <option value="before_submit">$t:admin.identity.policies.form.signup_stage_before_submit</option>
+              <option value="after_create">$t:admin.identity.policies.form.signup_stage_after_create</option>
+            </options>
+            <on type="change">
+              <!-- 가입 목적일 때만 나오는 칸 — 가입을 «보내기 전»에 막을지 «계정을 만든 뒤»에 물을지. 비워 두면 이 조건을 걸지 않는다 -->
+              <set-state target="global" identity_policy_form_modal.form.conditions.signup_stage="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <p class="text-hint mt-1">$t:admin.identity.policies.form.signup_stage_desc</p>
+        </div>
+        <div data-if="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="alert-warning text-warning-soft">$t:admin.identity.policies.form.declared_policy_notice</div>
+      </div>
+      <div data-ref="policy_form_footer" class="flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <close-modal target="identity_policy_form_modal"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving || boardIdentityPolicies?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg">
+          <on type="click">
+            <!-- 저장 — 새 정책은 만들고(POST) 기존 것은 고친다(PUT). 새로 만드는 것은 언제나 게시판 소유(`source_type=admin` · `source_identifier=sirsoft-board`)로 찍고, 편집일 때는 원래 출처를 그대로 지킨다. 성공하면 폼 객체를 통째로 비워 다음에 열릴 때 지난 값이 남지 않게 한다 -->
+            <sequence>
+              <set-state target="global" :identity_policy_form_modal.isSaving="true" :identity_policy_form_modal.errors="null"/>
+              <api-call :auth_required="true" target="{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-board/admin/identity-policies' : '/api/modules/sirsoft-board/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}" method="{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}">
+                <success>
+                  <toast message="$t:admin.identity.policies.save_success" type="success"/>
+                  <close-modal target="identity_policy_form_modal"/>
+                  <refetch-data-source dataSourceId="boardIdentityPolicies"/>
+                  <set-state target="global" :identity_policy_form_modal="null"/>
+                </success>
+                <fail>
+                  <set-state target="global" :identity_policy_form_modal.isSaving="false" identity_policy_form_modal.errors="{{error}}"/>
+                </fail>
+                <body key="{{_global.identity_policy_form_modal?.form?.key}}" scope="{{_global.identity_policy_form_modal?.form?.scope}}" target="{{_global.identity_policy_form_modal?.form?.target}}" purpose="{{_global.identity_policy_form_modal?.form?.purpose}}" provider_id="{{_global.identity_policy_form_modal?.form?.provider_id || null}}" grace_minutes="{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}" applies_to="{{_global.identity_policy_form_modal?.form?.applies_to}}" fail_mode="{{_global.identity_policy_form_modal?.form?.fail_mode}}" enabled="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" priority="{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}" conditions="{{_global.identity_policy_form_modal?.form?.conditions ?? null}}" source_type="{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}" source_identifier="{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-board' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-board')}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.identity_policy_form_modal?.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
+          <span>{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

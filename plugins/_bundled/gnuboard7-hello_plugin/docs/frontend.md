@@ -5,7 +5,7 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 1개 (루트: `resources/layouts`).
+레이아웃 1개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -20,7 +20,7 @@
 설정 화면(`plugin_settings`) 하나뿐입니다. **플러그인은 완전한 페이지 레이아웃을 등록할 수
 없습니다** — 설정 화면과 `layout_extensions`(다른 화면에 끼워 넣는 조각)만 허용됩니다.
 
-`plugin_settings.json` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
+`plugin_settings.g7.html` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면 자체가 사라집니다.
 
 이 레이아웃은 설정 자동 바인딩 패턴의 예시이기도 합니다 — 입력 항목의 `name` 이 설정 키와
@@ -62,7 +62,11 @@ _프론트 엔트리포인트가 없습니다._
 ## 에셋
 
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_프론트 에셋이 없습니다._
+| 경로 | 구분 |
+|---|---|
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
+
+로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->

@@ -1,0 +1,25 @@
+<partial description="글쓰기 버튼 (권한/로그인 체크 포함)">
+  <!-- 글쓰기 버튼 - 로그인했는데 권한이 없으면 비활성화. 비로그인은 눌러서 로그인 화면으로 간다(로그인하면 쓸 수 있는 게시판이 있다) -->
+  <button disabled="{{!!_global.currentUser?.uuid &amp;&amp; posts?.data?.abilities?.can_write !== true}}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-100 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+    <on type="click">
+      <switch on="{{posts?.data?.abilities?.can_write ? 'allowed' : (_global.currentUser?.uuid ? 'no_permission' : 'not_logged_in')}}">
+        <case when="allowed">
+          <navigate path="/board/{{route.slug}}/write" :mergeQuery="true">
+            <query/>
+          </navigate>
+        </case>
+        <case when="no_permission">
+          <toast type="warning" message="$t:board.no_write_permission"/>
+        </case>
+        <case when="not_logged_in">
+          <toast type="info" message="$t:board.login_required_to_write"/>
+          <navigate path="/login">
+            <query redirect="/board/{{route.slug}}/write"/>
+          </navigate>
+        </case>
+      </switch>
+    </on>
+    <icon name="pencil" size="sm"/>
+    <span>$t:board.write</span>
+  </button>
+</partial>

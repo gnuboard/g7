@@ -17,7 +17,10 @@ class UninstallTemplateCommand extends Command
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'template:uninstall {identifier : 템플릿 식별자}';
+    protected $signature = 'template:uninstall
+        {identifier : 템플릿 식별자}
+        {--force : 확인 없이 삭제}
+        {--delete-data : 「데이터도 삭제」를 선택한 것으로 제거 (활동 로그·제거 구독 확장에 전달)}';
 
     /**
      * The console command description.
@@ -26,6 +29,9 @@ class UninstallTemplateCommand extends Command
 
     /**
      * 템플릿 관리자 및 리포지토리
+     *
+     * @param  TemplateManager  $templateManager  템플릿 관리자
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -35,7 +41,9 @@ class UninstallTemplateCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 템플릿 제거를 실행합니다.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -54,15 +62,20 @@ class UninstallTemplateCommand extends Command
                 return Command::FAILURE;
             }
 
-            // 삭제 확인 프롬프트
-            $this->warn(__('templates.commands.uninstall.confirm_prompt', ['template' => $identifier]));
-            $this->warn(__('templates.commands.uninstall.confirm_details.layouts', ['count' => $template->layouts()->count()]));
-            $this->warn(__('templates.commands.uninstall.confirm_details.versions'));
+            // 삭제 확인 프롬프트 (--force 면 묻지 않는다 — 모듈·플러그인 제거 명령과 같은 옵션, #138 실측 ⑤)
+            if (! $this->option('force')) {
+                $this->warn(__('templates.commands.uninstall.confirm_prompt', ['template' => $identifier]));
+                $this->warn(trans_choice('templates.commands.uninstall.confirm_details.layouts', $template->layouts()->count()));
+                $this->warn(__('templates.commands.uninstall.confirm_details.versions'));
+                if ($this->option('delete-data')) {
+                    $this->warn(__('templates.commands.uninstall.delete_data_notice'));
+                }
 
-            if (! $this->unifiedConfirm(__('templates.commands.uninstall.confirm_question'), false)) {
-                $this->info(__('templates.commands.uninstall.aborted'));
+                if (! $this->unifiedConfirm(__('templates.commands.uninstall.confirm_question'), false)) {
+                    $this->info(__('templates.commands.uninstall.aborted'));
 
-                return Command::SUCCESS;
+                    return Command::SUCCESS;
+                }
             }
 
             // 레이아웃 및 버전 개수 조회
@@ -71,7 +84,13 @@ class UninstallTemplateCommand extends Command
             // 템플릿 삭제
             $onProgress = $this->createProgressCallback(TemplateManager::UNINSTALL_STEPS);
             try {
-                $result = $this->templateManager->uninstallTemplate($identifier, $onProgress, $preservedBackups);
+                // 관리자 화면의 「데이터도 삭제」와 같은 값 — 템플릿 제거 동작은 바꾸지 않고 after_uninstall 훅 인자로 전달된다
+                $result = $this->templateManager->uninstallTemplate(
+                    $identifier,
+                    $onProgress,
+                    $preservedBackups,
+                    (bool) $this->option('delete-data'),
+                );
                 $this->finishProgress();
             } catch (\Exception $e) {
                 $this->finishProgress();
@@ -81,7 +100,7 @@ class UninstallTemplateCommand extends Command
             if ($result) {
                 // 성공 메시지
                 $this->info('✅ '.__('templates.commands.uninstall.success', ['template' => $identifier]));
-                $this->info('   - '.__('templates.commands.uninstall.layouts_deleted', ['count' => $layoutsCount]));
+                $this->info('   - '.trans_choice('templates.commands.uninstall.layouts_deleted', $layoutsCount));
 
                 // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 알리지 않으면
                 // 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.

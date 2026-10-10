@@ -1,114 +1,119 @@
 {
-  "version": "1.0.0",
-  "layout_name": "mypage/addresses",
-  "extends": "_user_base",
-  "permissions": [],
-  "initLocal": {},
-  "transition_overlay": {
-    "enabled": true,
-    "style": "spinner",
-    "target": "mypage_tab_content",
-    "fallback_target": "main_content_area",
-    "spinner": {
-      "component": "PageLoading"
-    }
-  },
-  "computed": {
-    "currentTab": "addresses"
-  },
-  "data_sources": [
-    {
-      "id": "addresses",
-      "label_key": "$t:editor.data_source.addresses",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_mode": "required",
-      "loading_strategy": "progressive"
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
-        },
-        "children": [
-          {
-            "type": "layout",
-            "name": "Container",
-            "props": {
-              "className": "py-8"
-            },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "py-4"
-                }
-              }
-            },
-            "children": [
-              {
-                "comment": "페이지 제목",
+    "comment": "마이페이지 «배송지» 탭. 마이페이지의 탭들은 한 화면이 아니라 **각각 독립 레이아웃**이고,\n     `currentTab` 계산값으로 공통 탭 줄이 지금 어디인지 안다. 로그인 전용(auth_mode required).",
+    "version": "1.0.0",
+    "layout_name": "mypage/addresses",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "addresses",
+            "label_key": "$t:editor.data_source.addresses",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "progressive",
+            "comment": "저장된 배송지 전량. 쪽 나눔이 없어 조건 없이 한 번 받고, 등록·수정·삭제 뒤에는 다시 받는다"
+        }
+    ],
+    "initLocal": {},
+    "computed": {
+        "currentTab": "addresses"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-2 mb-6"
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user",
-                      "size": "xl",
-                      "className": "text-gray-900 dark:text-white"
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "배송지 관리",
+                                        "partial": "partials/mypage/addresses/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                    },
-                    "text": "$t:mypage.title"
-                  }
                 ]
-              },
-              {
-                "comment": "탭 네비게이션",
-                "partial": "partials/mypage/_tab_navigation.json"
-              },
-              {
-                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
-                "type": "basic",
-                "name": "Div",
-                "id": "mypage_tab_content",
-                "children": [
-                  {
-                    "comment": "배송지 관리",
-                    "partial": "partials/mypage/addresses/_list.json"
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "배송지 등록·수정 폼 창(한 창이 두 모드)",
+            "partial": "partials/mypage/addresses/_modal_address.json"
+        },
+        {
+            "comment": "저장 자리가 꽉 찼을 때 어느 것을 덮어쓸지 묻는다",
+            "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
+        },
+        {
+            "comment": "삭제 확인 — 기본 배송지는 지울 수 없어 그 카드에는 버튼이 없다",
+            "partial": "partials/mypage/addresses/_modal_confirm_delete.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/mypage/addresses/_modal_address.json"
-    },
-    {
-      "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
-    },
-    {
-      "partial": "partials/mypage/addresses/_modal_confirm_delete.json"
-    }
-  ]
 }

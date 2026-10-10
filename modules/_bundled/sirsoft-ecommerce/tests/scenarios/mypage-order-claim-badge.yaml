@@ -1,0 +1,50 @@
+feature: 구매자 마이페이지 주문내역 클레임 배지 (#599 S10 — 7차 확정 Q2)
+
+description: |
+  관리자 주문목록의 클레임 요약을 **구매자 주문내역에도** 표시한다. 조용히 깨지는 지점은 셋이다.
+
+  ① **적재는 하는데 그리지 않으면** 값이 왕복만 하고 버려진다. 요약 opt-in 을 없앤 뒤
+     `getListWithFilters()` 는 관리자·구매자 양쪽에서 관계 4벌과 집계 4개를 항상 싣는데,
+     `UserOrderListResource` 에 `claim` 참조가 한 건도 없어 그대로 버리고 있었다. 응답은
+     정상이고 화면도 정상이라 어디에서도 드러나지 않는다.
+
+  ② **두 화면이 배지 형태를 각자 만들면** 같은 주문이 화면마다 다른 상태로 보인다. 그래서
+     요약 산출은 `SummarizesClaims` 트레이트 한 곳이 맡는다. 그런데 **색 사전은 여전히 둘**
+     이다 — 관리자는 `StatusBadge` 의 `statusStyles`, 구매자는 `classMap.variants` 다. 어느
+     한쪽이 Enum 어휘를 못 덮으면 관리자는 무색 뱃지(className 에 리터럴 `undefined`),
+     구매자는 default 색으로 뭉개진다. 레이아웃 JSON 은 TS 타입 검사 밖이라 컴파일에도
+     걸리지 않는다.
+
+  ③ **화면이 유형·상태를 조합해 라벨을 만들면** Enum 이 늘 때 화면이 뒤처진다. 라벨은
+     서버가 열람자 로케일에 맞춰 내려준 `status_label` 을 그대로 쓴다 — 그래서 이 기능의
+     신규 다국어 키는 0건이다.
+
+# axis 의미:
+#   claim_presence — 클레임이 달린 주문 / 없는 주문. 없는 주문은 빈 배열이어야 하며
+#                    객체 `{}` 가 되면 화면 반복이 깨진다.
+axes:
+  claim_presence: [with_claim, without_claim]
+
+effects:
+  # 서버가 실어 보낸다
+  - mypage_order_list_serializes_claim_summary
+  - mypage_order_without_claim_serializes_empty_array
+  # 화면이 그린다
+  - mypage_order_card_renders_claim_badge
+  - mypage_order_claim_badge_uses_server_status_label
+  - mypage_order_claim_badge_shows_count_only_when_multiple
+  # 두 화면의 색 사전이 같은 어휘를 덮는다
+  - claim_status_variant_vocabulary_covered_by_both_screens
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypageOrderClaimBadge.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserOrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/ClaimStatusVariantVocabularyTest.php
+
+notes: |
+  **라벨은 서버가 정한다.** 배지 문구는 전부 서버 Enum 라벨(`status_label`)이므로 이 기능은
+  신규 다국어 키를 만들지 않는다. 화면이 유형·상태를 조합해 문구를 만들면 Enum 이 늘 때마다
+  화면을 따라 고쳐야 하고, 안 고치면 새 상태가 빈 배지로 나간다.
+
+  **빈 값은 배열이어야 한다.** 클레임이 없는 주문의 `claim_summary` 는 JSON `[]` 다. 연관
+  배열이 비면 PHP 가 `{}` 로 직렬화하는데, 그러면 화면의 `iteration` 이 돌지 않는다.

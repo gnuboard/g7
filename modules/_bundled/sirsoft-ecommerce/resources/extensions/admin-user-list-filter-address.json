@@ -1,0 +1,254 @@
+{
+    "comment": "회원관리 목록 필터에 덧붙이는 「배송지」 행 (#705 예제 E2). 마일리지 행(priority 200) 바로 뒤에 선다.\n  e2e:allow 값 조립 핸들러의 소유만 관리자 템플릿에서 이 모듈로 옮겼다 — 조립 규칙은 그대로이고 모듈 Vitest 가 같은 계약을 고정한다.\n  두 조건을 한 행에 둔다 — 배송지 국가(그 나라 배송지를 하나라도 가진 회원)와 배송지 등록 여부.\n  「없음」을 고르면 국가는 무시된다(배송지가 없는 회원은 어느 나라 배송지도 없다) — 그래서 「없음」일 때\n  국가 칸을 잠근다.\n  값 채널은 마일리지 행과 같다 — 이 모듈의 핸들러 `sirsoft-ecommerce.setUserFilterExt` 로 `_local.userFilterExtraQuery` 에\n  넣고, 확장점을 연 관리자 템플릿의 검색 버튼이 `ext_filters[]` 로 보낸다. 서버 쪽은 `UserListAddressFilterListener` 가 맡는다.\n  국가 선택지는 쇼핑몰 설정의 배송 가능 국가다(회원 편집 화면의 배송국가 칸과 같은 출처).",
+    "extension_point": "admin_user_list_filters",
+    "mode": "append",
+    "priority": 201,
+    "components": [
+        {
+            "id": "ext_ecommerce_address_filter_row",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex flex-col gap-2 items-start"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex flex-col gap-2 md:flex-row md:items-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.user_filter.shipping_country"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center flex-wrap gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "배송지 국가. 고르면 그 나라 배송지를 하나라도 가진 회원만 남는다 — 기본 배송지만 보지 않는다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.setUserFilterExt",
+                                            "params": {
+                                                "key": "sirsoft-ecommerce.shipping_country",
+                                                "value": "{{$event.target.value}}",
+                                                "current": "{{_local.userFilterExtraQuery || []}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "userFilterExtraQuery": "{{$prev}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "name": "ecommerceShippingCountry",
+                                "className": "w-40",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.user_filter.shipping_country",
+                                "disabled": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=0')}}",
+                                "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.shipping_country=')) || '').slice('sirsoft-ecommerce.shipping_country='.length)}}",
+                                "options": "{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.user_filter.shipping_country_all' }, ...((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) })))]}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.user_filter.has_address"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-1 cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "배송지 등록 — 전체(조건 없음).",
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "sirsoft-ecommerce.setUserFilterExt",
+                                                    "params": {
+                                                        "key": "sirsoft-ecommerce.has_address",
+                                                        "value": "",
+                                                        "current": "{{_local.userFilterExtraQuery || []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "userFilterExtraQuery": "{{$prev}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ecommerceHasAddress",
+                                        "value": "",
+                                        "checked": "{{!(_local.userFilterExtraQuery || []).some(e => e.startsWith('sirsoft-ecommerce.has_address='))}}",
+                                        "className": "radio"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:common.all"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-1 cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "배송지가 하나라도 있는 회원.",
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "sirsoft-ecommerce.setUserFilterExt",
+                                                    "params": {
+                                                        "key": "sirsoft-ecommerce.has_address",
+                                                        "value": "1",
+                                                        "current": "{{_local.userFilterExtraQuery || []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "userFilterExtraQuery": "{{$prev}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ecommerceHasAddress",
+                                        "value": "1",
+                                        "checked": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=1')}}",
+                                        "className": "radio"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.user_filter.has_address_yes"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-1 cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "배송지가 하나도 없는 회원. 국가 조건과 함께 참일 수 없으므로 서버가 국가를 무시하고, 화면도 국가 칸을 잠근다.",
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "sirsoft-ecommerce.setUserFilterExt",
+                                                    "params": {
+                                                        "key": "sirsoft-ecommerce.has_address",
+                                                        "value": "0",
+                                                        "current": "{{_local.userFilterExtraQuery || []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "userFilterExtraQuery": "{{$prev}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ecommerceHasAddress",
+                                        "value": "0",
+                                        "checked": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=0')}}",
+                                        "className": "radio"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.user_filter.has_address_no"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "ExtensionBadge",
+                            "props": {
+                                "type": "module",
+                                "identifier": "sirsoft-ecommerce",
+                                "installedModules": "{{_global.installedModules}}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "permissions": [
+                "sirsoft-ecommerce.user-addresses.read"
+            ]
+        }
+    ]
+}

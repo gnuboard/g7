@@ -53,6 +53,7 @@ class LayoutResolverService
      *
      * @param  string  $layoutName  예: sirsoft-ecommerce_admin_products_index
      * @param  int  $templateId  현재 활성 템플릿 ID
+     * @return TemplateLayout|null 해석된 레이아웃, 없으면 null
      */
     public function resolve(string $layoutName, int $templateId): ?TemplateLayout
     {
@@ -248,6 +249,9 @@ class LayoutResolverService
 
     /**
      * 특정 레이아웃의 해석 캐시를 무효화합니다.
+     *
+     * @param  string  $layoutName  대상 레이아웃 이름
+     * @param  int  $templateId  대상 템플릿 ID
      */
     public function clearResolutionCache(string $layoutName, int $templateId): void
     {
@@ -269,6 +273,8 @@ class LayoutResolverService
 
     /**
      * 특정 템플릿의 모든 레이아웃 해석 캐시를 무효화합니다.
+     *
+     * @param  int  $templateId  대상 템플릿 ID
      */
     public function clearAllResolutionCacheByTemplate(int $templateId): void
     {
@@ -294,6 +300,8 @@ class LayoutResolverService
 
     /**
      * 특정 모듈의 모든 레이아웃 해석 캐시를 무효화합니다.
+     *
+     * @param  string  $moduleIdentifier  대상 모듈 식별자
      */
     public function clearResolutionCacheByModule(string $moduleIdentifier): void
     {
@@ -348,6 +356,10 @@ class LayoutResolverService
 
     /**
      * 특정 레이아웃이 오버라이드되었는지 확인
+     *
+     * @param  string  $layoutName  확인할 레이아웃 이름
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return bool 템플릿 오버라이드가 존재하면 true
      */
     public function isOverridden(string $layoutName, int $templateId): bool
     {
@@ -356,6 +368,9 @@ class LayoutResolverService
 
     /**
      * 특정 템플릿에서 오버라이드된 모든 레이아웃 목록 조회
+     *
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return Collection 오버라이드된 레이아웃 컬렉션
      */
     public function getOverriddenLayouts(int $templateId): Collection
     {
@@ -364,6 +379,10 @@ class LayoutResolverService
 
     /**
      * 특정 모듈의 레이아웃 중 오버라이드된 것들 조회
+     *
+     * @param  string  $moduleIdentifier  대상 모듈 식별자
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return Collection 오버라이드된 레이아웃 컬렉션
      */
     public function getModuleLayoutOverrides(string $moduleIdentifier, int $templateId): Collection
     {

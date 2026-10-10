@@ -138,30 +138,14 @@
       "actions": "작업"
     }
   },
-  "mobile": {
-    "benefit_label": "혜택금액",
-    "target_type_label": "적용대상",
-    "issue_label": "발급",
-    "validity_period_label": "유효기간",
-    "issue_period_label": "발급기간",
-    "issue_count_label": "발급수량",
-    "status_label": "상태",
-    "creator_label": "등록자",
-    "target_type:": "적용대상:",
-    "issue:": "발급:",
-    "valid_period: ": "유효기간: ",
-    "issue_period: ": "발급기간: ",
-    "issue_count: ": "발급수량: ",
-    "status:": "상태:"
-  },
   "modal": {
     "status_change": {
       "title": "발급상태를 변경하시겠습니까?",
-      "message": "선택된 {{count}}개 쿠폰의 발급상태가 {{status}}(으)로 변경됩니다."
+      "message": "선택된 {{count}}개 쿠폰의 발급상태가 다음으로 변경됩니다: {{status}}"
     },
     "delete": {
       "title": "쿠폰을 삭제하시겠습니까?",
-      "message": "이 작업은 되돌릴 수 없습니다. 쿠폰과 모든 게시글이 영구적으로 삭제됩니다.",
+      "message": "이 작업은 되돌릴 수 없습니다. 쿠폰과 이 쿠폰의 적용 상품·카테고리 지정이 함께 삭제됩니다.",
       "warning": "삭제된 쿠폰은 복구할 수 없습니다.",
       "delete": "삭제"
     },
@@ -290,7 +274,7 @@
     "title_create": "쿠폰 등록",
     "title_edit": "쿠폰 수정",
     "description_create": "새로운 쿠폰을 등록합니다.",
-    "description_edit": "쿠폰 #{id}을(를) 수정합니다.",
+    "description_edit": "쿠폰 #{id}의 내용을 수정합니다.",
     "section": {
       "basic_info": "기본 정보",
       "benefit_settings": "혜택 설정",
@@ -304,6 +288,7 @@
       "coupon_name": "쿠폰명",
       "coupon_description": "쿠폰설명",
       "benefit_amount": "혜택금액",
+      "discount_unit": "할인 단위",
       "max_discount": "최대할인금액",
       "min_order_amount": "최소주문금액",
       "validity_period": "유효기간",

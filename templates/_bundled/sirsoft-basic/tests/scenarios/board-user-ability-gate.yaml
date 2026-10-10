@@ -1,0 +1,41 @@
+feature: 사용자 화면 abilities 게이트 — 게시판·알림·공개 페이지 (7.1.0 abilities 게이트 basic-board-user·G27·G28)
+
+description: |
+  - G27: 헤더 알림센터의 읽음·삭제 API 호출과 마이페이지 알림함 버튼이 목록 응답 abilities(can_update·can_delete)로 잠긴다.
+  - G28: 공개 페이지 [편집]·버전 배지는 can_update, 없는 페이지 [페이지 만들기]는 404 응답의 can_create 로 연다.
+  - #5 글쓰기 버튼: 비로그인은 눌러서 로그인 화면으로, 로그인했는데 권한이 없으면 잠금.
+  - #6 카드·갤러리 비밀글 잠금 오버레이: 목록 행에 없는 키 대신 컬렉션의 비밀글 열람·관리 권한.
+    작성자 본인(is_author)은 서버가 원문·썸네일을 내주므로 잠금을 씌우지 않는다.
+  - #9 홈·인기글, #10 비회원 비밀번호 확인 두 창: 선택 인증으로 로그인 회원의 권한을 반영.
+  - #11 글쓰기 폼 401: 목록·상세와 같게 로그인 유도.
+  - #12 답글 비밀글: 서버가 원문을 가렸을 때(content null)만 안내하고 열람 권한자에게는 본문.
+  - #13 첨부 권한 없음 카드: 비회원은 로그인 유도.
+  - basic-board-user #1·#2(비회원 글·댓글 수정/삭제 OR)는 제품 결정 「현행 유지」로 고치지 않는다.
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-user-ability-gate.test.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-secret-lock-overlay.test.ts
+
+axes:
+  case:
+    - notification_abilities_false
+    - page_links_by_abilities
+    - write_button_guest
+    - secret_overlay_reader
+    - secret_overlay_author
+    - optional_auth_sources
+    - form_unauthenticated
+    - secret_reply_viewer
+    - attachment_guest
+
+effects:
+  - header_notification_calls_gated
+  - mypage_notification_buttons_locked
+  - page_admin_links_follow_abilities
+  - write_button_guides_guest_to_login
+  - secret_overlay_follows_collection_ability
+  - secret_overlay_skips_author
+  - optional_auth_sends_member_token
+  - form_401_redirects_to_login
+  - secret_reply_body_for_authorized
+  - attachment_guest_login_redirect

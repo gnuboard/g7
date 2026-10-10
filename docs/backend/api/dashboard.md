@@ -124,7 +124,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.admin.dashboard.alerts -->
 - **라우트명**: `api.admin.dashboard.alerts`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\DashboardController@alerts`
-- **인증/권한**: `auth:sanctum` + `permission:core.dashboard.read`
+- **인증/권한**: `auth:sanctum` + `permission:core.dashboard.alerts`
 
 **요청 파라미터**
 
@@ -214,12 +214,13 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.dashboard.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.dashboard.alerts`)이 없는 경우 |
 
 <!-- @generated:end -->
 
-**설명** 시스템 업데이트·경고 등 관리자에게 알릴 시스템 알림 목록을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.read` 권한이 필요합니다. 알릴 항목이 없으면 빈 목록을 반환하며(위 실측이 빈 상태였던 이유), 대시보드 상단 시스템 알림 영역을 렌더링할 때 사용합니다.
+**설명** 시스템 업데이트·경고 등 관리자에게 알릴 시스템 알림 목록을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.alerts` 권한이 필요합니다(7.1.0 — 화면의 시스템 알림 블록과 같은 권한). 알릴 항목이 없으면 빈 목록을 반환하며(위 실측이 빈 상태였던 이유), 대시보드 상단 시스템 알림 영역을 렌더링할 때 사용합니다.
 
+**권한 값(7.1.0)** 각 알림 항목에 `abilities.can_recover`·`abilities.can_dismiss` 가 실린다. 값은 그 알림이 실어 온 복구 주소(`recover_endpoint`)와 닫기 주소(`/api/admin/extensions/{type}/{identifier}/dismiss`)를 부를 때 라우트 권한 미들웨어가 요구하는 권한을 현재 사용자가 모두 가졌는지로 계산한다(확장 복구·닫기 = 그 종류의 활성화 권한, 초기 화면 재발행 = `core.settings.update`). 대시보드는 이 값으로 [복구]·[닫기]를 잠그고 「권한이 있는 관리자에게 요청하세요」를 보인다. 라우트를 찾지 못하면 false 다.
 
 ### GET /api/admin/dashboard/recent-notifications
 <!-- @generated:start:api.admin.dashboard.recent-notifications -->
@@ -334,7 +335,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.admin.dashboard.resources -->
 - **라우트명**: `api.admin.dashboard.resources`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\DashboardController@resources`
-- **인증/권한**: `auth:sanctum` + `permission:core.dashboard.read`
+- **인증/권한**: `auth:sanctum` + `permission:core.dashboard.resources`
 
 **요청 파라미터**
 
@@ -395,11 +396,11 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.dashboard.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.dashboard.resources`)이 없는 경우 |
 
 <!-- @generated:end -->
 
-**설명** 서버의 CPU·메모리·디스크 사용량을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.read` 권한이 필요합니다. 각 항목은 사용률(`percentage`)과 상태 색상(`color`), 메모리·디스크의 경우 사용량/총량 문자열을 포함하며, 대시보드 시스템 리소스 게이지를 렌더링할 때 사용합니다.
+**설명** 서버의 CPU·메모리·디스크 사용량을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.resources` 권한이 필요합니다(7.1.0 — 전용 권한 정의에 맞춤). 각 항목은 사용률(`percentage`)과 상태 색상(`color`), 메모리·디스크의 경우 사용량/총량 문자열을 포함하며, 대시보드 시스템 리소스 게이지를 렌더링할 때 사용합니다.
 
 
 ### GET /api/admin/dashboard/stats

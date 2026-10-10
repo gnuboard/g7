@@ -37,7 +37,7 @@
 // @scenario array_value=static_array, field_widget=icon, operation=edit_icon, template=sirsoft-basic
 // @scenario array_value=static_array, field_widget=icon, operation=edit_icon, template=sirsoft-admin_basic
 //
-// effects 검증 마킹은 아래 jsdoc 블록(@effects 연속 라인) — 매니페스트 effects 전수 커버.
+// effects 검증 마킹은 아래 jsdoc 블록의 연속 라인 — 매니페스트 effects 전수 커버.
 /**
  * @scenario array_value=static_array, field_widget=text, operation=add, template=sirsoft-basic
  * @effects array_capability_declared_on_p1_components_both_templates,

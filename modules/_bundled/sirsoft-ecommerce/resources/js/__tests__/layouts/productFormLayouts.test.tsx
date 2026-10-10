@@ -27,6 +27,7 @@ import categoryIndexLayout from '../../../layouts/admin/admin_ecommerce_category
 import brandIndexLayout from '../../../layouts/admin/admin_ecommerce_brand_index.json';
 import commonInfoListPanel from '../../../layouts/admin/partials/admin_ecommerce_product_common_info_index/_panel_list.json';
 import noticeListPanel from '../../../layouts/admin/partials/admin_ecommerce_product_notice_index/_panel_list.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 중첩 children 트리에서 id 로 노드를 찾습니다.
@@ -46,11 +47,11 @@ const findNodeById = (node: any, id: string): any => {
  */
 const findRestrictionRadioParams = (root: any, value: string): any => {
     const group = findNodeById(root, 'restriction_radio_group');
-    const stack = [...(group?.children ?? [])];
+    const stack = [...asArray(group?.children)];
     while (stack.length) {
         const node = stack.shift();
         if (node?.name === 'Input' && node?.props?.name === 'purchase_restriction' && node?.props?.value === value) {
-            const changeAction = (node.actions ?? []).find((a: any) => a.type === 'change' && a.handler === 'setState');
+            const changeAction = asArray(node?.actions).find((a: any) => a.type === 'change' && a.handler === 'setState');
             return changeAction?.params ?? null;
         }
         if (node?.children) stack.push(...node.children);
@@ -204,8 +205,8 @@ describe('productFormLayouts', () => {
                 const cancelButton = buttonContainer.children[0];
 
                 expect(cancelButton.text).toBe('$t:sirsoft-ecommerce.common.cancel');
-                expect(cancelButton.actions[0].handler).toBe('sequence');
-                const cancelInner = cancelButton.actions[0].params.actions;
+                expect(asArray(cancelButton?.actions)[0].handler).toBe('sequence');
+                const cancelInner = callbacksOf(asArray(cancelButton?.actions)[0], 'actions');
                 const setStateAction = cancelInner.find((a: any) => a.handler === 'setState');
                 expect(setStateAction.params.target).toBe('global');
                 expect(setStateAction.params.pendingNoticeTemplateId).toBe(null);
@@ -218,9 +219,9 @@ describe('productFormLayouts', () => {
                 const confirmButton = buttonContainer.children[1];
 
                 expect(confirmButton.text).toBe('$t:sirsoft-ecommerce.admin.product.notice.confirm_change_button');
-                expect(confirmButton.actions[0].handler).toBe('sequence');
+                expect(asArray(confirmButton?.actions)[0].handler).toBe('sequence');
 
-                const sequenceActions = confirmButton.actions[0].params.actions;
+                const sequenceActions = callbacksOf(asArray(confirmButton?.actions)[0], 'actions');
                 expect(sequenceActions).toHaveLength(3);
 
                 // 1. 모달 닫기 (showNoticeTemplateConfirmModal 키 제거됨)
@@ -268,8 +269,8 @@ describe('productFormLayouts', () => {
             const walk = (node: any) => {
                 if (!node || typeof node !== 'object') return;
                 if (Array.isArray(node)) { node.forEach(walk); return; }
-                if (Array.isArray(node.onSuccess)) {
-                    for (const act of node.onSuccess) {
+                if (asArray(node?.onSuccess).length > 0) {
+                    for (const act of asArray(node?.onSuccess)) {
                         if (act?.handler === 'navigate') collect.push(act);
                     }
                 }
@@ -300,9 +301,9 @@ describe('productFormLayouts', () => {
             const buttonContainer = content.children[1];
             const cancelButton = buttonContainer.children[0];
 
-            const cancelAction = cancelButton.actions[0];
+            const cancelAction = asArray(cancelButton?.actions)[0];
             expect(cancelAction.handler).toBe('sequence');
-            const setStateAction = cancelAction.params.actions.find((a: any) => a.handler === 'setState');
+            const setStateAction = callbacksOf(cancelAction, 'actions').find((a: any) => a.handler === 'setState');
             expect(setStateAction.params).toEqual({
                 target: 'global',
                 pendingNoticeTemplateId: null,
@@ -314,7 +315,7 @@ describe('productFormLayouts', () => {
         // 날짜 범위 섹션 / 프리셋 flex wrap 검증은 라벨 모달 섹션 제거에 따라 함께 제거
         it('라벨 모달은 이름/색상/미리보기 섹션만 가지며 기간 섹션을 포함하지 않는다', () => {
             const labelFormContent = labelFormModal.children[0];
-            const ids = (labelFormContent.children ?? []).map((c: any) => c.id);
+            const ids = asArray(labelFormContent?.children).map((c: any) => c.id);
             expect(ids).toContain('label_preview_section');
             expect(ids).toContain('label_name_section');
             expect(ids).toContain('label_color_section');
@@ -485,7 +486,7 @@ describe('productFormLayouts', () => {
          */
         const findQtyInput = (root: any, fieldId: string): any => {
             const field = findNodeById(root, fieldId);
-            const stack = [...(field?.children ?? [])];
+            const stack = [...asArray(field?.children)];
             while (stack.length) {
                 const node = stack.shift();
                 if (node?.name === 'Input' && node?.props?.type === 'number') return node;
@@ -500,7 +501,7 @@ describe('productFormLayouts', () => {
             expect(input.props.name).toBe('min_purchase_qty');
 
             // 회귀 가드: 값을 직접 쓰는 setState 가 다시 붙으면 자동바인딩과 충돌 → 저장 미반영
-            const valueSetState = (input.actions ?? []).find(
+            const valueSetState = asArray(input?.actions).find(
                 (a: any) => a.handler === 'setState'
                     && a.params
                     && Object.keys(a.params).some((k) => k.startsWith('form.min_purchase_qty')),
@@ -513,7 +514,7 @@ describe('productFormLayouts', () => {
             expect(input).not.toBeNull();
             expect(input.props.name).toBe('max_purchase_qty');
 
-            const valueSetState = (input.actions ?? []).find(
+            const valueSetState = asArray(input?.actions).find(
                 (a: any) => a.handler === 'setState'
                     && a.params
                     && Object.keys(a.params).some((k) => k.startsWith('form.max_purchase_qty')),
@@ -603,7 +604,7 @@ describe('productFormLayouts', () => {
             // 동작한다. page_header_section(mb-6) 같은 짧은 래퍼 안에 중첩되면
             // 그 래퍼 영역만큼만 sticky 되어 헤더와 함께 스크롤되어 사라진다 (게시판 폼 레퍼런스 동일 구조).
             const scrollContent = findNodeById(contentRoot, 'product_form_content');
-            const directChildIds = (scrollContent?.children ?? []).map((c: any) => c.id);
+            const directChildIds = asArray(scrollContent?.children).map((c: any) => c.id);
             expect(directChildIds).toContain('tab_navigation');
         });
 
@@ -617,7 +618,7 @@ describe('productFormLayouts', () => {
             expect(header.props.className).not.toContain('group-stack');
             expect(header.props.className).toContain('card-header');
             // 카드 제목(card-title)이 헤더의 직계 자식으로 존재한다
-            const title = (header.children ?? []).find(
+            const title = asArray(header?.children).find(
                 (c: any) => typeof c?.props?.className === 'string'
                     && c.props.className.includes('card-title'),
             );
@@ -626,7 +627,7 @@ describe('productFormLayouts', () => {
 
         it('옵션 목록 제목/토글 헤더 행이 group-stack 없이 flex-between 으로 좌우 정렬된다', () => {
             const optionsSection = findNodeById(productOptionsPartial, 'option_table_section');
-            const titleRow = (optionsSection?.children ?? []).find(
+            const titleRow = asArray(optionsSection?.children).find(
                 (c: any) => typeof c?.props?.className === 'string'
                     && c.props.className.includes('flex-between'),
             );
@@ -647,7 +648,7 @@ describe('productFormLayouts', () => {
             const preview = findNodeById(productOptionsPartial, 'option_currency_preview_{{optIdx}}');
             expect(preview).not.toBeNull();
             expect(preview.props.className).toContain('flex flex-col');
-            const previewSpan = (preview.children ?? [])[0];
+            const previewSpan = asArray(preview?.children)[0];
             expect(previewSpan?.iteration?.source).toContain('currencyColumns');
             // 환산값은 formatted(읽기전용 표기)를 그대로 출력한다 (입력 Input 아님)
             expect(previewSpan?.name).toBe('Span');
@@ -677,7 +678,7 @@ describe('productFormLayouts', () => {
 
         it('추가옵션 헤더 래퍼가 base flex/gap 을 가져 좁은 폭에서도 제목과 토글 사이 간격이 유지된다', () => {
             const addSection = findNodeById(productOptionsPartial, 'additional_options_section');
-            const headerRow = (addSection?.children ?? []).find(
+            const headerRow = asArray(addSection?.children).find(
                 (c: any) => typeof c?.props?.className === 'string'
                     && c.props.className.includes('sm:justify-between'),
             );
@@ -742,11 +743,16 @@ describe('productFormLayouts', () => {
                 // 회귀 가드: items-start 는 양쪽 셀 stretch 정렬을 깨 좌측 리스트 컨테이너 잘림 유발
                 expect(panel.props.className).not.toContain('items-start');
 
-                // 회귀 가드: 좌/우 패널의 col-span 누락 → 우측 빈공간 + 컨텐츠 축소
-                const left = findNodeByIdDeep(panel, 'left_panel');
-                const right = findNodeByIdDeep(panel, 'right_panel');
-                expect(left).not.toBeNull();
-                expect(right).not.toBeNull();
+                // 회귀 가드: 좌/우 패널의 col-span 누락 → 우측 빈공간 + 컨텐츠 축소.
+                // 좌/우 패널은 `partial` 노드이고, `resolveAllPartials` 가 그 노드를 조각 내용으로
+                // **통째 치환**하므로 형제 `id`(left_panel/right_panel)는 설치 시점에 사라진다 —
+                // 즉 id 로 찾는 가드는 DOM 에 도달하지 않는 표식을 보고 있었다. col-span 을 실제로
+                // 들고 있는 것은 조각의 루트이므로 그쪽을 확인한다.
+                const partials = asArray(panel?.children).filter((child: any) => typeof child?.partial === 'string');
+                expect(partials).toHaveLength(2);
+                partials.forEach((child: any) => {
+                    expect(Object.keys(child)).toEqual(['partial']);
+                });
             },
         );
     });
@@ -803,7 +809,7 @@ describe('productFormLayouts', () => {
             expect(node.props.layout).toBe('tabs');
             expect(node.props.inputType).toBe('text');
             // 회귀 가드: keystroke 마다 리렌더하던 수동 setState change 액션이 없어야 한다(타이핑 지연 차단)
-            const setStateChange = (node.actions ?? []).find(
+            const setStateChange = asArray(node?.actions).find(
                 (a: any) => a.type === 'change' && a.handler === 'setState',
             );
             expect(setStateChange).toBeUndefined();
@@ -815,7 +821,7 @@ describe('productFormLayouts', () => {
             expect(node.name).toBe('MultilingualInput');
             expect(node.props.name).toBe('meta_description');
             expect(node.props.inputType).toBe('textarea');
-            const setStateChange = (node.actions ?? []).find(
+            const setStateChange = asArray(node?.actions).find(
                 (a: any) => a.type === 'change' && a.handler === 'setState',
             );
             expect(setStateChange).toBeUndefined();

@@ -24,7 +24,7 @@ use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
 use App\Support\PackageManifestCacheHelper;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
+use App\Support\ScopedPermissionEnforcement;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Dotenv\Dotenv;
@@ -321,6 +321,7 @@ class CoreUpdateService
      *
      * @param  string  $githubUrl  GitHub 저장소 URL
      * @param  string  $version  최신 버전 (태그명)
+     * @return void 반환값 없음
      */
     protected function cacheRemoteChangelog(string $githubUrl, string $version): void
     {
@@ -476,7 +477,7 @@ class CoreUpdateService
                 return ['version' => ltrim($data['tag_name'], 'v'), 'error' => null];
             }
 
-            return ['version' => null, 'error' => __('settings.core_update.no_releases_found')];
+            return ['version' => null, 'error' => __('settings.core_update.no_releases_found', ['status' => $statusCode, 'message' => $apiMessage])];
         } catch (\Exception $e) {
             Log::channel('upgrade')->error(__('settings.core_update.log_version_check_error'), ['error' => $e->getMessage()]);
 
@@ -685,6 +686,7 @@ class CoreUpdateService
      *
      * @param  string  $zipPath  ZIP 파일 경로
      * @param  string  $extractDir  추출 대상 디렉토리
+     * @return void 반환값 없음
      */
     protected function extractWithZipArchive(string $zipPath, string $extractDir): void
     {
@@ -702,6 +704,7 @@ class CoreUpdateService
      *
      * @param  string  $zipPath  ZIP 파일 경로
      * @param  string  $extractDir  추출 대상 디렉토리
+     * @return void 반환값 없음
      */
     protected function extractWithUnzip(string $zipPath, string $extractDir): void
     {
@@ -720,6 +723,8 @@ class CoreUpdateService
 
     /**
      * 시스템에 unzip 명령어가 사용 가능한지 확인합니다.
+     *
+     * @return bool unzip 명령을 쓸 수 있으면 true
      */
     protected function isUnzipAvailable(): bool
     {
@@ -732,6 +737,7 @@ class CoreUpdateService
      * 다운로드된 업데이트 패키지를 검증합니다.
      *
      * @param  string  $pendingPath  검증할 경로
+     * @return void 반환값 없음
      *
      * @throws CoreUpdateOperationException 검증 실패 시
      */
@@ -908,6 +914,7 @@ class CoreUpdateService
      * @param  bool  $prune  true 면 전체 덮어쓰기 + orphan 삭제(기존 동작), false 면 증분 적용
      * @param  array<int, string>|null  $applyList  적용 대상 상대경로 목록(target 접두사 포함).
      *                                              `CoreBackupHelper::computeApplyList()` 산출물. null 이면 증분 불가로 판단해 전체 덮어쓰기.
+     * @return void 반환값 없음
      */
     public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null): void
     {
@@ -1003,6 +1010,7 @@ class CoreUpdateService
      * @param  array<string, bool>  $applied  이미 처리된 normalize 된 상대 경로 맵
      * @param  array<int, string>  $excludes  copyDirectory 내부 제외 목록
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      */
     private function applyDiscoveredTopLevelPaths(string $sourcePath, array $applied, array $excludes, ?\Closure $onProgress): void
     {
@@ -1059,6 +1067,9 @@ class CoreUpdateService
 
     /**
      * 상대 경로를 normalize 합니다 (선행/후행 슬래시 제거 + DIRECTORY_SEPARATOR 통일).
+     *
+     * @param  string  $path  정규화할 상대 경로
+     * @return string 정규화된 상대 경로
      */
     private function normalizeRelativePath(string $path): string
     {
@@ -1098,7 +1109,9 @@ class CoreUpdateService
      *  - 방향 2 — path 가 applied 의 부모: applied=['templates/_bundled'], path='templates'
      *    (부모 통째로 복사 시 활성 서브디렉토리 orphan 판정 회피)
      *
-     * @param  array<string, bool>  $applied
+     * @param  string  $path  검사할 정규화 경로
+     * @param  array<string, bool>  $applied  이미 처리된 경로 맵
+     * @return bool 이미 처리된 경로와 겹치면 true
      */
     private function isCoveredByApplied(string $path, array $applied): bool
     {
@@ -1126,6 +1139,7 @@ class CoreUpdateService
      *
      * @param  string  $pendingPath  _pending 내 소스 경로
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      *
      * @throws CoreUpdateOperationException 실행 실패 시
      */
@@ -1237,6 +1251,7 @@ class CoreUpdateService
      * 운영 디렉토리에서 composer install을 실행합니다 (파일 덮어쓰기 후 autoload 갱신용).
      *
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      *
      * @throws CoreUpdateOperationException 실행 실패 시
      */
@@ -1253,6 +1268,7 @@ class CoreUpdateService
      *
      * @param  string  $pendingPath  _pending 또는 소스 디렉토리 경로
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      *
      * @throws CoreUpdateOperationException vendor 디렉토리가 없을 경우
      */
@@ -1286,6 +1302,7 @@ class CoreUpdateService
      * @param  string  $workingDir  작업 디렉토리
      * @param  \Closure|null  $onProgress  진행 콜백
      * @param  bool  $noScripts  post-autoload-dump 등 스크립트 건너뛰기 (_pending용)
+     * @return void 반환값 없음
      *
      * @throws CoreUpdateOperationException 실행 실패 시
      */
@@ -1343,6 +1360,8 @@ class CoreUpdateService
 
     /**
      * 데이터베이스 마이그레이션을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function runMigrations(): void
     {
@@ -1360,6 +1379,8 @@ class CoreUpdateService
      * - 신규 역할: 생성
      * - 기존 역할: user_overrides에 없는 필드만 갱신
      * - 역할-권한 매핑: user_overrides에 기록된 개별 권한 식별자는 보호
+     *
+     * @return void 반환값 없음
      */
     public function syncCoreRolesAndPermissions(): void
     {
@@ -1506,6 +1527,13 @@ class CoreUpdateService
             'stale_permissions_deleted' => $deletedPerms,
             'stale_roles_deleted' => $deletedRoles,
         ]);
+
+        // 스코프가 붙었지만 어디서도 강제되지 않는 부여를 드러낸다 — 운영자가 역할 편집으로
+        // 만든 부여일 수 있어 업데이트를 막지는 않는다(ScopedPermissionEnforcement 참고).
+        $unenforced = app(ScopedPermissionEnforcement::class)->findUnenforcedScopedGrants();
+        if ($unenforced !== []) {
+            Log::channel('upgrade')->warning('스코프가 강제되지 않는 권한 부여가 있습니다', ['grants' => $unenforced]);
+        }
     }
 
     /**
@@ -1516,6 +1544,8 @@ class CoreUpdateService
      *
      * - 신규 메뉴: 생성
      * - 기존 메뉴: user_overrides에 없는 필드(name, icon, order, url)만 갱신
+     *
+     * @return void 반환값 없음
      */
     public function syncCoreMenus(): void
     {
@@ -1551,9 +1581,8 @@ class CoreUpdateService
      * Repository 에 주입한 뒤 다음 도메인 동기화를 일괄 수행한다:
      *
      *   - syncCoreRolesAndPermissions / syncCoreMenus  ← config('core.permissions|roles|menus')
-     *   - NotificationDefinitionSeeder                  ← config('core.notification_definitions')
+     *   - NotificationDefinitionSeeder                  ← config('core.notification_definitions') (본인인증 알림 포함)
      *   - IdentityPolicySeeder                          ← config('core.identity_policies')
-     *   - IdentityMessageDefinitionSeeder               ← config('core.identity_messages')
      *
      * 모든 시더는 멱등 upsert + user_overrides 보존 패턴이라 정상 환경에서 재실행해도 무해.
      * 각 도메인은 독립 try/catch + Log::warning 으로 격리 — 한 도메인 실패가 다른 도메인을
@@ -1573,6 +1602,8 @@ class CoreUpdateService
      * ⚠ 경로 A(beta.1 → beta.2) 에서는 직접 호출 금지. beta.1 메모리에는
      * 본 메서드가 존재하지 않으므로 Fatal 발생. 해당 경로의 upgrade step 은
      * 파일 내부 로컬 로직으로 config 재로드 + sync 재호출을 직접 구현해야 한다.
+     *
+     * @return void 반환값 없음
      */
     public function reloadCoreConfigAndResync(): void
     {
@@ -1620,13 +1651,8 @@ class CoreUpdateService
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
         }
 
-        try {
-            if (Schema::hasTable('identity_message_definitions') && Schema::hasTable('identity_message_templates')) {
-                (new IdentityMessageDefinitionSeeder)->run();
-            }
-        } catch (\Throwable $e) {
-            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 메시지 정의 재시딩 실패', ['error' => $e->getMessage()]);
-        }
+        // 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity)로 선언되어 위 NotificationDefinitionSeeder 가
+        // 함께 동기화한다 — 옛 IDV 메시지 시더 호출은 없어졌다(7.0.x 부모 프로세스용 호환 심은 시더 클래스에 남아 있다).
     }
 
     /**
@@ -1685,6 +1711,7 @@ class CoreUpdateService
      * @param  \Closure|null  $onStep  각 스텝 실행 시 콜백 (버전 문자열 전달)
      * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
      * @param  \Closure|null  $onDiscovered  범위 내 발견된 스텝 파일 수를 실행 전 1회 통지 (int 전달)
+     * @return void 반환값 없음
      */
     public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null, bool $force = false, ?\Closure $onDiscovered = null): void
     {
@@ -1818,6 +1845,7 @@ class CoreUpdateService
      * .env 파일의 APP_VERSION을 갱신합니다.
      *
      * @param  string  $version  새 버전
+     * @return void 반환값 없음
      */
     public function updateVersionInEnv(string $version): void
     {
@@ -1892,6 +1920,8 @@ class CoreUpdateService
 
     /**
      * Maintenance 모드를 비활성화합니다.
+     *
+     * @return void 반환값 없음
      */
     public function disableMaintenanceMode(): void
     {
@@ -1930,6 +1960,7 @@ class CoreUpdateService
      * 그래서 격리 디렉토리 루트로 올라가서 지운다.
      *
      * @param  string  $pendingPath  삭제할 pending 경로 (격리 디렉토리 또는 그 하위 소스 경로)
+     * @return void 반환값 없음
      */
     public function cleanupPending(string $pendingPath): void
     {
@@ -2021,6 +2052,7 @@ class CoreUpdateService
      * 디렉토리를 지우지 않기 위해서다.
      *
      * @param  string  $dir  판정할 디렉토리
+     * @return bool 파일·링크가 하나도 없으면 true
      */
     private function isDirectoryTreeEmpty(string $dir): bool
     {
@@ -2092,6 +2124,8 @@ class CoreUpdateService
      * services.php/packages.php 삭제 후 package:discover로 재생성합니다
      * (`PackageManifestCacheHelper::rebuild()` — spawn 직전 선정리와 같은 삭제 로직을 공유).
      * 이는 composer install의 post-autoload-dump 후속 작업(clearCompiled + package:discover)을 재현합니다.
+     *
+     * @return void 반환값 없음
      */
     public function clearAllCaches(): void
     {
@@ -2347,6 +2381,9 @@ class CoreUpdateService
      * 입력 경로를 절대 경로로 정규화합니다.
      *
      * 절대 경로(/ 또는 Windows 드라이브) 는 그대로, 상대 경로는 base_path 적용.
+     *
+     * @param  string  $path  입력 경로 (절대 또는 base_path 기준 상대)
+     * @return string 절대 경로
      */
     private function resolveAbsolutePath(string $path): string
     {
@@ -2367,8 +2404,12 @@ class CoreUpdateService
     /**
      * 트리를 재귀 stat 하여 snapshot 배열에 누적합니다.
      *
+     * @param  string  $path  stat 을 시작할 경로
      * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $snapshot
+     * @param  int  $maxItems  누적 항목 상한
+     * @param  bool  $truncated  상한 도달 여부 (참조로 갱신)
      * @param  array<int, string>  $excludePrefixes  제외 경로(슬래시 정규화, 끝 슬래시 없음) — 일치하거나 그 하위면 건너뛴다
+     * @return void 반환값 없음
      */
     private function collectStatRecursively(string $path, array &$snapshot, int $maxItems, bool &$truncated, array $excludePrefixes = []): void
     {
@@ -2432,6 +2473,8 @@ class CoreUpdateService
      *
      * 비-root 프로세스는 chown 자체가 불가능하고 필요도 없으므로 즉시 no-op.
      * 기준 디렉토리 자체가 root 소유(비정상 배포)면 상속 근거가 없어 스킵한다.
+     *
+     * @return void 반환값 없음
      */
     public function normalizeRuntimeOwnershipAfterRootRun(): void
     {
@@ -2499,6 +2542,7 @@ class CoreUpdateService
      * @param  array<string, array{owner:int|false, group:int|false}>  $snapshot  snapshotOwnership() 결과
      * @param  \Closure|null  $onProgress  진행 콜백
      * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot  snapshotOwnershipDetailed() 결과 (선택)
+     * @return void 반환값 없음
      */
     public function restoreOwnership(array $snapshot, ?\Closure $onProgress = null, array $detailedSnapshot = []): void
     {
@@ -2645,6 +2689,8 @@ class CoreUpdateService
      * - 실패 항목 누적 → `lastPermissionWarnings` 에 'kind' => 'detailed' 로 기록
      *
      * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot
+     * @param  \Closure|null  $onProgress  항목별 진행 콜백 (선택)
+     * @return void 반환값 없음
      */
     private function restoreFromDetailedSnapshot(array $detailedSnapshot, ?\Closure $onProgress = null): void
     {

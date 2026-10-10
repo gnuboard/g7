@@ -1,0 +1,44 @@
+feature: SPA 레이아웃 전환 시 보존 컴포넌트 저장소 A 격리 (engine-v1.72.1)
+
+description: |
+  extends 기반 관리자 화면은 base 의 admin_layout_root(_fromBase, stable key)가 _local 의 상태
+  소유자다. 이 인스턴스는 페이지 전환에도 unmount 되지 않으므로 React 내부 상태(저장소 A)에
+  이전 페이지의 _local 전체가 남는다. engine-v1.24.8 은 layoutKey 변경을 useEffect 에서 감지해
+  A 를 비웠지만, useEffect 는 새 페이지의 첫 렌더와 자식 마운트 콜백 뒤에 실행된다. 첫 렌더는
+  _localInit 이 없는 목록 화면에서 stale A 를 새 _local 위에 병합한 컨텍스트를 자식에게 주고,
+  ColumnSelector·FilterVisibilitySelector 의 init 콜백이 그 값을 setState 로 되쓴다.
+  engine-v1.50.0 부터 COMPONENT 경로 setState 가 _global._local 을 동기화하므로 되쓴 값이 저장소
+  B 에 영구 고정된다 — 주문 목록 → 쿠폰 목록 이동 시 visibleColumns 가 주문 컬럼으로 남아 표에
+  체크박스·작업 열만 남는다(7.0.7 이후 릴리스 전부 잠복, 시크릿 창에서 재현).
+
+  수정: 초기화를 렌더 단계(appliedLayoutKey useState + 렌더 중 조건부 setState)로 옮기고, 버려지는
+  첫 패스도 dynamicState 를 빈 값으로 파생시켜 stale A 를 한 번도 평가하지 않게 한다. 발동 조건
+  (_fromBase && layoutKey 변경)은 종전과 같다.
+
+axes:
+  transition: [layout_switch, same_layout_rerender]
+  origin: [order_list, coupon_list, product_list]
+
+exclusions:
+  - { transition: same_layout_rerender, origin: coupon_list, reason: "같은 레이아웃 안 리렌더는 출발 화면과 무관한 렌더러 경계 — 단위 테스트 1건(order_list)으로 고정" }
+  - { transition: same_layout_rerender, origin: product_list, reason: "동일" }
+
+effects:
+  - first_render_context_uses_destination_local
+  - mount_callback_echoes_destination_value
+  - previous_page_keys_absent_in_global_local
+  - destination_visible_columns_kept
+  - datagrid_header_not_collapsed
+  - store_a_kept_on_same_layout_rerender
+  - no_page_errors
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.fromBaseLayoutKeyReset.test.tsx
+  - tests/Playwright/specs/admin/spa-list-navigation-local-isolation.spec.ts
+
+validation:
+  manual: |
+    시크릿 창(목록 컬럼·필터 저장값 없음)에서 /admin/ecommerce/orders → 사이드바 「쿠폰 관리」 클릭.
+    쿠폰 목록 표에 데이터 컬럼(11개)이 그려지고, g7-state 의 _local 에 주문 목록 전용 키
+    (ordererSearchResults·bulkCourier·excelDownloadType)가 없어야 한다. 역방향(쿠폰 → 주문)과
+    상품 → 쿠폰도 같다. 저장값이 있는 브라우저는 표가 정상이라도 _local 유출 여부를 g7-state 로 본다.

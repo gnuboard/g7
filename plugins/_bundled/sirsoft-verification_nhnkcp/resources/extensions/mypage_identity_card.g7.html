@@ -1,0 +1,62 @@
+<!-- 마이페이지 프로필에 NHN KCP 본인인증 결과 카드를 덧붙인다. 인증 기록이 있을 때만 보이므로 미인증 회원 화면은 그대로다 -->
+<extension target-layout="mypage/profile" priority="120">
+  <inject target-id="profile_view_bio_card" position="append">
+    <div data-ref="profile_view_nhnkcp_identity_card" data-if="{{nhnkcpRecord?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+      <!-- 카드 헤더 — 좌측 제목 + 우측 제공사 배지 (와이어프레임 §4.4) -->
+      <div class="flex-between gap-3 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-verification_nhnkcp.card.title</h3>
+        <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300">$t:sirsoft-verification_nhnkcp.card.provider_badge</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.method</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{nhnkcpRecord?.data?.method ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.verified_at</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{nhnkcpRecord?.data?.verified_at ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.name</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{nhnkcpRecord?.data?.name_masked ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.birthday</span>
+          <span data-if="{{nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-900 dark:text-white font-medium">{{nhnkcpRecord?.data?.birthday_masked ?? ''}}</span>
+          <!-- 생년월일 미제공 — 인증기관이 값을 내려주지 않은 경우 (빈칸으로 두면 오류로 오해된다) -->
+          <span data-if="{{!nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-verification_nhnkcp.card.not_provided</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.phone</span>
+          <span class="text-gray-900 dark:text-white font-medium">{{nhnkcpRecord?.data?.phone_masked ?? ''}}</span>
+        </div>
+        <div class="flex-between gap-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.is_adult.label</span>
+          <!-- 성인 확인됨 — 표현식 안에서 $t: 를 반환하면 번역이 해석되지 않으므로 if 분기로 나눈다 -->
+          <span data-if="{{nhnkcpRecord?.data?.is_adult}}" class="text-gray-900 dark:text-white font-medium inline-flex items-center gap-1">
+            <icon name="circle-check" class="text-sm text-green-600 dark:text-green-400"/>
+            <span>$t:sirsoft-verification_nhnkcp.card.is_adult.true</span>
+          </span>
+          <!-- 성인 미확인 (만 19세 미만) — 생년월일을 받은 경우에만 이 판정이 성립한다 -->
+          <span data-if="{{!nhnkcpRecord?.data?.is_adult &amp;&amp; nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-900 dark:text-white font-medium">$t:sirsoft-verification_nhnkcp.card.is_adult.false</span>
+          <!-- 생년월일 미제공 — 성인 여부를 계산할 수 없다. '미성년'과 반드시 구분해 표시한다 -->
+          <span data-if="{{!nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-verification_nhnkcp.card.is_adult.unknown</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="profile_view_nhnkcp_identity_pending_card" data-if="{{!nhnkcpRecord?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">$t:sirsoft-verification_nhnkcp.card.title</h3>
+      <div class="flex items-start gap-3">
+        <icon name="circle-info" class="text-xl text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5"/>
+        <div class="space-y-1">
+          <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-verification_nhnkcp.card.pending.title</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.pending.hint</p>
+        </div>
+      </div>
+    </div>
+  </inject>
+  <!-- 이 회원의 NHN KCP 인증 기록. 기록이 없으면 응답이 비어 위 카드가 통째로 렌더되지 않는다 -->
+  <data-source id="nhnkcpRecord" label_key="$t:sirsoft-verification_nhnkcp.editor.data_source.nhnkcpRecord" type="api" endpoint="/api/plugins/sirsoft-verification_nhnkcp/me/identity/nhnkcp" method="GET" :auto_fetch="true" :auth_required="true"/>
+</extension>

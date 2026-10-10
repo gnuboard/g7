@@ -1,0 +1,474 @@
+{
+    "comment": "클레임 신청서 상세 셸 (§6-2). 유형은 클레임 번호로 서버가 해석하므로(ClaimNumberResolver) 라우트에 :type 이 없다 — 유형별 접두사(EX/RT/RF/CN)는 운영자가 채번 설정에서 바꿀 수 있어 화면이 접두사로 판정하면 그 설정을 바꾼 상점에서만 조용히 어긋난다.\n주문자·배송지·결제 정보는 주문 상세의 정본 partial 을 그대로 재사용한다(order.data 바인딩). 주문번호는 신청서 응답이 알려 주므로 order 는 claim 응답 뒤에 불린다 — 그래서 첫 호출은 주문 ID 자리가 0 이라 404 이고, 그 404 는 화면을 세우지 않는다(정상 경로). 실제로 열 수 없는 신청서는 claim 데이터소스의 404 가 오류 화면을 세운다.\n공유 partial 은 회원/비회원을 스스로 판단하지 않는다. 셸이 isGuest / claimWithdrawApiBase / withdrawRefreshDataSourceId 를 세우고 partial 은 그것만 읽는다. 비회원 셸(shop/guest_claim_show.json, S14)은 같은 partial 을 재사용하며 이 세 값과 데이터소스 endpoint 만 바꾼다.",
+    "version": "1.0.0",
+    "layout_name": "mypage/claims/show",
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:user.mypage.claim_detail_title",
+        "description": "$t:user.mypage.claim_detail_description"
+    },
+    "data_sources": [
+        {
+            "id": "claim",
+            "label_key": "$t:editor.data_source.claim",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/claims/{{route.claim_number}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "cache": false,
+            "refetchOnMount": true,
+            "onSuccess": [
+                {
+                    "comment": "주문번호를 세운 뒤 주문 상세를 부른다. 두 액션은 반드시 같은 sequence 안에 있어야 한다 — refetchDataSource 가 읽는 로컬 상태는 직전 setState 의 pending 값이다.",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "_local",
+                                "claimOrderNumber": "{{response.data.data.claim.order_number}}"
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "order"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "errorHandling": {
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "철회·수정 뒤 이 화면으로 돌아오므로 캐시된 응답을 쓰면 방금 바꾼 내용이 보이지 않는다. 상태는 운영자 쪽에서도 바뀌므로 진입할 때마다 다시 읽는다."
+        },
+        {
+            "id": "order",
+            "label_key": "$t:editor.data_source.order",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{_local.claimOrderNumber ?? 0}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "cache": false,
+            "errorHandling": {
+                "404": {
+                    "comment": "주문을 읽지 못해도 신청서 화면은 선다 — 주문 쪽 카드(주문자·결제 정보)만 비고, 신청서 자신의 값은 claim 데이터소스가 갖는다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "원 주문 — 주문자/배송지/결제 정보 정본 partial 이 읽는 데이터소스다. 주문번호는 신청서가 알려 주므로 **스스로 부르지 않는다**(auto_fetch: false) — claim 응답의 체인이 번호를 세운 뒤 refetch 로만 부른다. auto_fetch 를 켜 두면 주문번호를 모르는 첫 호출이 나가고, 그 404 가 체인의 200 **뒤에** 해소되면서 이미 받아 둔 주문을 덮어 쓴다(2026-09-01 브라우저 실측: 대비표의 '원 주문' 열과 결제 정보 금액이 통째로 비었다. 404 는 억제돼 있어 오류도 남지 않았다). refetchDataSource 는 auto_fetch 를 무시하고 부르므로 체인은 그대로 동작한다."
+        }
+    ],
+    "initLocal": {
+        "comment": "미수납 추가결제 주소의 앞부분. 회원은 주문 스코프가 **없고**(/user/claim-payments) 비회원은 있다(/guest/orders/{주문번호}/claim-payments) — 철회와 같은 이유로 셸이 통째로 준다. 공유 partial 이 회원/비회원을 스스로 판단하지 않는다.\n배송지 카드를 조회 전용으로 연다 — 이 화면에는 changeAddressModal 이 없어 [배송지 변경] 버튼을 그대로 두면 눌리지 않는 버튼이 생긴다. 정본 partial 을 복제하지 않고 이 값 하나로 가르는 것은, 복제하면 주문 상세가 바뀔 때 이 화면만 낡기 때문이다.",
+        "isGuest": false,
+        "claimWithdrawApiBase": "/api/modules/sirsoft-ecommerce/user/claims",
+        "withdrawRefreshDataSourceId": "claim",
+        "claimPayApiBase": "/api/modules/sirsoft-ecommerce/user/claim-payments",
+        "orderShippingReadonly": true
+    },
+    "permissions": [],
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "뒤로가기 — 신청내역 목록으로. 같은 목록 클러스터 안의 이동이므로 서브탭·페이지를 그대로 물려준다.",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "comment": "회원 신청내역 목록으로 돌아가는 버튼이다. 비회원 상세는 목록 대신 주문 상세로 돌아가므로 이 버튼은 공유 partial 이 아니라 셸마다 따로 둔다.",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/mypage/claims",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chevron-left",
+                                                    "className": "text-base"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-base font-medium"
+                                                },
+                                                "text": "$t:claim.detail.back"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "클레임 추가결제 결과 안내 — 결제창에서 돌아온 직후에만 선다. 서버(ClaimPaymentRedirect)가 성공·실패·사용자 중단 셋을 `?claim_payment=` 로 구분해 실어 보낸다. 이 자리가 없으면 구매자는 결제창에서 돌아온 뒤 돈이 나갔는지 알 방법이 없고 실패도 사유 없이 지나간다. S12 는 이 신청서 상세가 아직 없어 주문 상세가 대신 받았고, 화면이 선 지금 원래 자리로 되돌렸다.",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{['success', 'failed', 'cancelled'].includes(query.claim_payment ?? '')}}",
+                                "props": {
+                                    "className": "{{query.claim_payment === 'success' ? 'flex items-start gap-2 p-4 mb-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800' : (query.claim_payment === 'failed' ? 'flex items-start gap-2 p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'flex items-start gap-2 p-4 mb-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700')}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "{{query.claim_payment === 'success' ? 'circle-check' : (query.claim_payment === 'failed' ? 'circle-exclamation' : 'circle-info')}}",
+                                            "className": "{{query.claim_payment === 'success' ? 'text-base text-green-600 dark:text-green-400 flex-shrink-0' : (query.claim_payment === 'failed' ? 'text-base text-red-600 dark:text-red-400 flex-shrink-0' : 'text-base text-gray-500 dark:text-gray-400 flex-shrink-0')}}"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "{{query.claim_payment === 'success' ? 'text-sm font-medium text-green-800 dark:text-green-200' : (query.claim_payment === 'failed' ? 'text-sm font-medium text-red-800 dark:text-red-200' : 'text-sm font-medium text-gray-800 dark:text-gray-200')}}"
+                                                },
+                                                "text": "{{query.claim_payment === 'success' ? $t('claim.payment_result.success') : (query.claim_payment === 'failed' ? $t('claim.payment_result.failed') : $t('claim.payment_result.cancelled'))}}"
+                                            },
+                                            {
+                                                "comment": "어느 신청서의 결제였는지 — 상세 화면 자신의 번호와 같은 것이 정상이나, 다른 신청서의 결제를 마치고 돌아온 경우를 구분할 수 있어야 한다.",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(query.claim_number ?? '') !== ''}}",
+                                                "props": {
+                                                    "className": "text-xs text-gray-600 dark:text-gray-400 mt-0.5"
+                                                },
+                                                "text": "$t:claim.payment_result.claim_number|number={{query.claim_number ?? ''}}"
+                                            },
+                                            {
+                                                "comment": "실패 코드 — 코드가 실린 실패에만. 구매자가 고객센터에 말할 것도, 운영자가 어느 실패인지 볼 것도 이 값이다.",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{query.claim_payment === 'failed' && (query.error ?? '') !== ''}}",
+                                                "props": {
+                                                    "className": "text-xs text-red-600 dark:text-red-400 mt-0.5"
+                                                },
+                                                "text": "$t:claim.payment_result.error_code|code={{query.error ?? ''}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{query.claim_payment === 'failed'}}",
+                                                "props": {
+                                                    "className": "text-xs text-red-600 dark:text-red-400 mt-0.5"
+                                                },
+                                                "text": "$t:claim.payment_result.retry_hint"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "상태 헤더 — 클레임번호·유형·상태·신청일 + [수정][철회]. 액션 노출 조건은 서버 판정(is_editable / is_withdrawable)이며 목록의 것과 같은 값을 쓴다.",
+                                "type": "basic",
+                                "name": "Div",
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 rounded-lg p-4 mb-3"
+                                        }
+                                    }
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-lg p-6 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-start justify-between gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "min-w-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "H1",
+                                                                "props": {
+                                                                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{claim.data?.claim?.claim_type_label ?? ''}}"
+                                                            },
+                                                            {
+                                                                "comment": "e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 4건이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 2026-09-16 브라우저로 3종 전건 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — **운영자 접수 건에만** 세운다. 자기가 낸 신청서에 「고객 신청」을 붙이면 모든 줄에 같은 뱃지가 서서 정보가 되지 않는다(관리자 목록의 `direct` 무표기와 같은 규칙). 운영자 대리 접수는 [수정]·[철회] 가 서지 않는 유일한 경우라, 뱃지가 없으면 구매자는 버튼이 왜 사라졌는지 알 수 없다.",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{claim.data?.claim?.request_source === 'admin'}}",
+                                                                "props": {
+                                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                                },
+                                                                "text": "{{claim.data?.claim?.request_source_label ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "classMap": {
+                                                                    "base": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                                                                    "key": "{{claim.data?.claim?.status_variant}}",
+                                                                    "variants": {
+                                                                        "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                                                                        "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+                                                                        "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                                                                        "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                                                        "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                                        "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                                                                        "dark": "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                                                    },
+                                                                    "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "comment": "상태 아이콘 — 서버가 상태 Enum 에서 실어 준 값(status_icon). 진행 단계 스텝퍼와 같은 그림이다.",
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "if": "{{!!claim.data?.claim?.status_icon}}",
+                                                                        "props": {
+                                                                            "name": "{{claim.data?.claim?.status_icon}}",
+                                                                            "className": "text-xs"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "{{claim.data?.claim?.status_label ?? ''}}"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                                        },
+                                                        "text": "{{claim.data?.claim?.claim_number ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        },
+                                                        "text": "$t:claim.list.requested_at|at={{claim.data?.claim?.requested_at_formatted ?? ''}}"
+                                                    },
+                                                    {
+                                                        "comment": "원 주문으로 — 신청서에서 주문을 되짚어 볼 수 있어야 한다. 주문 상세는 다른 목록(주문내역)의 클러스터이므로 이 목록의 서브탭·페이지를 물려주지 않는다.",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{!!claim.data?.claim?.order_number}}",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "audit:allow layout-list-context-navigate-merge-query 주문내역 클러스터로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 주문 상세가 알지 못하는 파라미터가 실린다.",
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/mypage/orders/{{claim.data?.claim?.order_number}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 cursor-pointer"
+                                                        },
+                                                        "text": "$t:claim.list.order_number|number={{claim.data?.claim?.order_number ?? ''}}"
+                                                    },
+                                                    {
+                                                        "comment": "판매자 접수 안내(D8) — 판매자가 접수한 신청은 고객이 고치거나 철회할 수 없다. 버튼이 사라진 이유를 알려 주고 문의 경로를 남긴다. 끝난 신청서에는 더 할 일이 없으므로 세우지 않는다.",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{claim.data?.claim?.request_source === 'admin' && claim.data?.claim?.is_final !== true}}",
+                                                        "props": {
+                                                            "className": "text-xs text-yellow-700 dark:text-yellow-400 mt-1"
+                                                        },
+                                                        "text": "$t:claim.detail.admin_requested_notice"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{claim.data?.claim?.is_editable === true || claim.data?.claim?.is_withdrawable === true}}",
+                                                "props": {
+                                                    "className": "flex items-center gap-2 flex-shrink-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "comment": "[수정] — 작성 화면을 수정 모드로 연다. 주소에는 신청번호만 싣고 유형·주문번호는 그 화면이 신청서를 읽어 세우며, 목록 쿼리를 물려주어 수정·상세를 거쳐 목록으로 돌아와도 보던 서브탭이 남는다.",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{claim.data?.claim?.is_editable === true}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/mypage/claims/{{claim.data?.claim?.claim_number}}/edit",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                        },
+                                                        "text": "$t:claim.list.edit"
+                                                    },
+                                                    {
+                                                        "comment": "[철회] — 누르는 즉시 철회하지 않고 신청번호를 넘겨 확인 모달을 연다. 되돌릴 수 없는 조작이라 실제 요청은 모달의 확인 버튼만 보낸다.",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{claim.data?.claim?.is_withdrawable === true}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "sirsoft-ecommerce.openClaimWithdraw",
+                                                                "params": {
+                                                                    "claimNumber": "{{claim.data?.claim?.claim_number}}",
+                                                                    "claimLabel": "{{claim.data?.claim?.claim_type_label ?? ''}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                                                        },
+                                                        "text": "$t:claim.list.withdraw"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "본문 섹션 — 신청상품 → 배송(교환·반품) → 클레임정보 → 사유 → 주문자 → 결제정보(원 주문). 주문자·결제정보는 주문 상세의 정본 partial 을 그대로 재사용한다(무수정 — 주문상세가 바뀌면 이 화면도 함께 바뀐다).",
+                                "type": "basic",
+                                "name": "Div",
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "space-y-3"
+                                        }
+                                    }
+                                },
+                                "props": {
+                                    "className": "space-y-4"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/mypage/claims/_detail_progress.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/claims/_detail_items.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/claims/_detail_shipping.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/claims/_detail_claim_info.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/claims/_detail_reason.json"
+                                    },
+                                    {
+                                        "comment": "주문자 정보 — 주문 상세 정본 재사용(order.data.orderer_* 바인딩, 액션 0개).",
+                                        "partial": "partials/mypage/orders/_orderer.json"
+                                    },
+                                    {
+                                        "comment": "배송지 정보 — 주문 상세 정본 재사용(§6-2). 조회 전용으로 열린다(initLocal.orderShippingReadonly) — 이 화면에는 배송지 변경 모달이 없다. 원 주문이 어디로 갔는지는 회수·재발송지(위 _detail_shipping)와 다른 값이라, 환불·취소처럼 회수가 없는 유형에서도 서야 한다.",
+                                        "partial": "partials/mypage/orders/_shipping.json"
+                                    },
+                                    {
+                                        "comment": "결제 정보 — 주문 상세 정본 재사용(order.data 금액 바인딩, 액션 0개). 클레임 추가결제 합계 행도 이 파일이 이미 그린다.",
+                                        "partial": "partials/mypage/orders/_payment.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "철회 확인 — 목록과 같은 파일. 철회 뒤에는 이 화면의 신청서를 다시 읽어 상태가 바뀐 것이 보이게 한다(withdrawRefreshDataSourceId).",
+            "partial": "partials/mypage/claims/_modal_withdraw.json"
+        },
+        {
+            "comment": "첨부 확대 — 사유 카드(공유 partial)의 사진을 누르면 뜨는 창이다. 여는 쪽은 partial 이지만 창은 셸이 마운트하므로 회원·비회원 상세 셸이 모두 이 줄을 가져야 한다.",
+            "partial": "partials/mypage/claims/_modal_image_viewer.json"
+        }
+    ]
+}

@@ -24,8 +24,9 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 이 템플릿으로 바꿔 보면 그 규칙을 지키지 않은 화면이 드러납니다 — **모듈 호환성 확인용
 실험 도구**로 쓸 수 있습니다.
 
-컴포넌트를 추가할 때는 소스(`src/components/{분류}/`) · `template.json` 의 레지스트리 ·
-`components.json` 을 함께 갱신합니다. 하나라도 빠지면 레이아웃이 그 이름을 찾지 못해 그
-컴포넌트만 조용히 렌더되지 않습니다. TSX 를 고쳤으면 `template:build --production` 후
+컴포넌트를 추가할 때는 소스(`src/components/{분류}/`), `src/index.ts` 의 export,
+`template.json` 의 레지스트리, `components.json` 을 함께 갱신합니다. 코어는 `components.json` 에
+선언된 `name` 으로 번들의 export 를 찾아 등록하므로, 선언이 없거나 export 이름이 다르면
+레이아웃이 그 이름을 찾지 못해 그 컴포넌트만 조용히 렌더되지 않습니다. TSX 를 고쳤으면 `template:build --production` 후
 `dist/` 를 함께 커밋합니다.
 <!-- @intent END -->

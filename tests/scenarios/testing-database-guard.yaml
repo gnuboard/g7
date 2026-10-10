@@ -1,0 +1,20 @@
+feature: 테스트 앱의 테스트 전용 DB 판정
+
+description: |
+  테스트 앱이 테스트 전용 DB 가 아닌 DB 에 붙으면, RefreshDatabase 등 트레이트가 DB 를 만지기 전에 멈춘다.
+  같은 클론에서 확장을 반영하면 config 캐시가 다시 구워지고, 그 뒤 부팅한 테스트 앱이 개발 DB 설정으로 붙을 수 있다.
+  그 경로로 코어 테스트가 만든 권한 행(`admin.access`)이 개발 DB 권한 트리에 남았고(O-D2), 다른 클론에서는 개발 DB 전체가
+  초기화됐다(2026-10-08). 판정은 연결 설정 배열만 보며 DB 를 열지 않는다. test_case_wiring 은 테스트 기반 클래스의 앱 생성이 판정을 실제로
+  거치는지(DB 이름 환경 변수를 개발 DB 처럼 바꾼 채 앱을 다시 만든다) 본다.
+
+axes:
+  database: [testing_name, development_write, development_read, missing, sqlite_file, test_case_wiring]
+
+effects:
+  - testing_database_guard_allows_testing_db
+  - testing_database_guard_blocks_development_db
+  - testing_database_guard_blocks_unknown_db
+
+test_files:
+  - tests/Unit/Testing/TestingDatabaseGuardTest.php
+  - tests/Feature/Testing/TestCaseDatabaseGuardWiringTest.php

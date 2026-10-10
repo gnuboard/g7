@@ -1,0 +1,301 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "자동 관리·인증키·갱신 결과와 호출 예산"
+    },
+    "comment": "상태 카드 — 데이터소스 koreaeximStatus 를 그대로 보여주고, 연결 테스트(모의 실행)·지금 갱신(실제 실행) 두 버튼을 둔다. 권한이 없거나 실행 중이면 둘 다 잠긴다",
+    "id": "koreaexim_status_card",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-4"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center gap-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "font-semibold"
+                    },
+                    "text": "$t:sirsoft-koreaexim.status"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "badge bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    },
+                    "text": "{{koreaeximStatus?.data?.auto_manage ? $t('sirsoft-koreaexim.enabled') : $t('sirsoft-koreaexim.disabled')}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "badge bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    },
+                    "text": "{{koreaeximStatus?.data?.auth_key_set ? $t('sirsoft-koreaexim.key_set') : $t('sirsoft-koreaexim.key_missing')}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-koreaexim.last_success {{koreaeximStatus?.data?.last_success_run?.finished_at ?? '-'}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-koreaexim.last_attempt {{koreaeximStatus?.data?.last_run?.finished_at ?? '-'}} · {{koreaeximStatus?.data?.last_run?.status_label ?? '-'}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-koreaexim.calls {{koreaeximStatus?.data?.today_request_count ?? 0}}/{{koreaeximStatus?.data?.quota_limit ?? 1000}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at_kst ?? '-'}} / {{koreaeximStatus?.data?.next_run_at ?? '-'}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ml-auto flex flex-wrap gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "test_connection",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "연결 테스트 — dry_run 으로 실행을 요청한다. 실행 결과 status 에 따라 토스트 색을 가르고(성공·부분·모의=success, 자료 없음·건너뜀=info, 그 외=error) 상태·최근 실행·이력을 다시 받는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "busy": "test"
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-koreaexim/admin/runs",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "dry_run": true
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "busy": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "koreaeximStatus"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "koreaeximRecentRuns"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "koreaeximRuns"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "{{['success','partial','dry_run'].includes(response.data?.status) ? 'success' : ['no_data','skipped'].includes(response.data?.status) ? 'info' : 'error'}}",
+                                                        "message": "{{response.data?.message ?? response.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "busy": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_local.busy || _computed.isReadOnly}}",
+                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.busy === 'test'}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-koreaexim.connection_test"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "update_now",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "지금 갱신 — 실제 실행(dry_run=false)을 요청한다. 자동 관리가 꺼져 있으면 버튼이 잠기므로 여기서는 켜진 상태만 온다. 결과 처리는 연결 테스트와 같다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "busy": "update"
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-koreaexim/admin/runs",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "dry_run": false
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "busy": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "koreaeximStatus"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "koreaeximRecentRuns"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "koreaeximRuns"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "{{['success','partial','dry_run'].includes(response.data?.status) ? 'success' : ['no_data','skipped'].includes(response.data?.status) ? 'info' : 'error'}}",
+                                                        "message": "{{response.data?.message ?? response.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "busy": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_local.busy || _computed.isReadOnly || !koreaeximStatus?.data?.auto_manage}}",
+                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.busy === 'update'}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-koreaexim.update_now"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "form-hint"
+            },
+            "text": "{{koreaeximStatus?.data?.scheduler_hint}}"
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "if": "{{koreaeximStatus?.data?.last_run?.message}}",
+            "props": {
+                "role": "status",
+                "className": "badge"
+            },
+            "text": "{{koreaeximStatus?.data?.last_run?.message ?? ''}}"
+        }
+    ]
+}

@@ -46,66 +46,92 @@ function findNode(node: any, predicate: (n: any) => boolean): any | null {
 describe('admin language pack list — 드리프트(files_missing) 배선', () => {
   const layout = JSON.parse(fs.readFileSync(CONTENT_PATH, 'utf8'));
 
-  it('files_missing 배지 노드가 존재한다', () => {
-    const badge = findNode(
-      layout,
-      (n) =>
-        typeof n.if === 'string' &&
-        n.if.includes('row.files_missing === true') &&
-        n.text === '$t:admin.language_packs.badge.files_missing',
-    );
-    expect(badge).not.toBeNull();
+  /** 그리드가 카드 데이터를 계산하는 식 — 배지·버튼 조건이 모두 여기 적혀 있다. */
+  const itemsExpr = (): string => {
+    const grid = findNode(layout, (n) => n.name === 'ExtensionCardGrid');
+    expect(grid, 'ExtensionCardGrid 가 없습니다').not.toBeNull();
+    return String(grid.props?.items ?? '');
+  };
+
+  /** 그리드에 달린 콜백 하나를 집는다. */
+  const handler = (event: string) => {
+    const grid = findNode(layout, (n) => n.name === 'ExtensionCardGrid');
+    return (grid.actions ?? []).find((a: Json) => a.event === event) ?? null;
+  };
+
+  // @scenario pack_state=drifted_missing_files, scope=extension
+  // @effects admin_list_shows_drift_badge_and_reinstall
+  it('files_missing 배지가 드리프트 행에만 붙는다', () => {
+    const items = itemsExpr();
+
+    expect(items).toContain('files_missing === true');
+    expect(items).toContain('$t:admin.language_packs.badge.files_missing');
   });
 
-  it('재설치 버튼이 번들 드리프트 행 조건으로 배선되어 install-bundled 모달을 재사용한다', () => {
-    const button = findNode(
-      layout,
-      (n) =>
-        n.name === 'Button' &&
-        typeof n.if === 'string' &&
-        n.if.includes('row.files_missing === true') &&
-        n.if.includes('row.bundled_source_available === true') &&
-        n.if.includes('row.abilities?.can_install === true'),
-    );
-    expect(button).not.toBeNull();
+  // @scenario pack_state=drifted_missing_files, scope=extension
+  // @effects admin_list_shows_drift_badge_and_reinstall, bundled_source_availability_flagged_independently_of_source_type
+  it('재설치가 번들 드리프트 행 조건으로 배선되어 install-bundled 모달을 재사용한다', () => {
+    const items = itemsExpr();
 
-    // 재설치 액션이 selectedBundledLanguagePack 설정 + install-bundled 모달 오픈으로 배선됨
+    // 세 조건이 모두 맞을 때만 재설치를 연다 — 하나라도 빠지면 동봉본이 없는 팩까지
+    // 재설치를 권하게 된다.
+    expect(items).toContain('files_missing === true');
+    expect(items).toContain('bundled_source_available === true');
+    expect(items).toContain('abilities?.can_install === true');
+    expect(items).toContain('$t:admin.language_packs.actions.reinstall');
+
+    const secondary = handler('onSecondaryAction');
+    expect(secondary, '보조 버튼 처리가 없습니다').not.toBeNull();
+
     const opensBundledModal = findNode(
-      button,
+      secondary,
       (n) => n.handler === 'openModal' && n.target === 'language_pack_install_bundled_modal',
     );
     expect(opensBundledModal).not.toBeNull();
 
-    const setsSelected = findNode(
-      button,
+    // 재설치는 "복구" 이므로 활성 상태를 유지해야 한다 → 재설치 모드 플래그 ON.
+    // 이 플래그가 빠지면 모달이 auto_activate=false 로 보내 팩이 강등되고,
+    // 파일은 복구됐는데 해당 로케일은 계속 서빙되지 않는 상태가 된다.
+    const setsReinstall = findNode(
+      secondary,
       (n) =>
         n.handler === 'setState' &&
         n.params &&
         n.params.target === 'global' &&
-        n.params.selectedBundledLanguagePack === '{{row}}',
+        n.params.languagePackReinstallMode === true,
     );
-    expect(setsSelected).not.toBeNull();
-
-    // 재설치는 "복구" 이므로 활성 상태를 유지해야 한다 → 재설치 모드 플래그 ON.
-    // 이 플래그가 빠지면 모달이 auto_activate=false 로 보내 팩이 강등되고,
-    // 파일은 복구됐는데 해당 로케일은 계속 서빙되지 않는 상태가 된다.
-    expect(setsSelected.params.languagePackReinstallMode).toBe(true);
+    expect(setsReinstall, '재설치 모드 ON 시드가 없습니다').not.toBeNull();
+    expect(String(setsReinstall.params.selectedBundledLanguagePack)).toContain('$args[');
   });
 
-  it('신규 설치 버튼은 재설치 모드를 끈다 (활성화 여부는 운영자 결정)', () => {
-    const installButton = findNode(
-      layout,
-      (n) => n.name === 'Button' && n.if === "{{row.status === 'uninstalled'}}",
-    );
-    expect(installButton).not.toBeNull();
+  // @scenario pack_state=uninstalled, scope=extension
+  // @effects admin_list_shows_drift_badge_and_reinstall
+  it('신규 설치는 재설치 모드를 끈다 (활성화 여부는 운영자 결정)', () => {
+    const items = itemsExpr();
+    expect(items).toContain('$t:admin.language_packs.actions.install');
+
+    const primary = handler('onPrimaryAction');
+    expect(primary, '주 버튼 처리가 없습니다').not.toBeNull();
 
     const setsSelected = findNode(
-      installButton,
-      (n) => n.handler === 'setState' && n.params?.selectedBundledLanguagePack === '{{row}}',
+      primary,
+      (n) =>
+        n.handler === 'setState' &&
+        n.params &&
+        n.params.languagePackReinstallMode === false,
     );
-    expect(setsSelected.params.languagePackReinstallMode).toBe(false);
+    expect(setsSelected, '재설치 모드 OFF 시드가 없습니다').not.toBeNull();
+    expect(String(setsSelected.params.selectedBundledLanguagePack)).toContain('$args[');
+
+    const opensBundledModal = findNode(
+      primary,
+      (n) => n.handler === 'openModal' && n.target === 'language_pack_install_bundled_modal',
+    );
+    expect(opensBundledModal).not.toBeNull();
   });
 
+  // @scenario pack_state=drifted_missing_files, scope=extension
+  // @effects admin_list_shows_drift_badge_and_reinstall
   it('설치 모달이 재설치 모드와 활성화 권한을 함께 보고 auto_activate 를 보낸다', () => {
     const modal = JSON.parse(
       fs.readFileSync(
@@ -263,6 +289,8 @@ describe('admin language pack list — 드리프트 렌더 평가 (createLayoutT
     setupRegistry();
   });
 
+  // @scenario pack_state=drifted_missing_files, scope=extension
+  // @effects admin_list_shows_drift_badge_and_reinstall
   it('files_missing=true 행에만 "파일 없음" 배지가 렌더된다', async () => {
     const utils = createLayoutTest(driftLayout(true));
     utils.mockApi('language_packs', {
@@ -280,6 +308,8 @@ describe('admin language pack list — 드리프트 렌더 평가 (createLayoutT
     utils.cleanup();
   });
 
+  // @scenario pack_state=drifted_missing_files, scope=extension
+  // @effects bundled_source_availability_flagged_independently_of_source_type
   it('재설치 버튼은 드리프트 + 번들 소스 실재 + can_install 인 행에만 렌더된다', async () => {
     const utils = createLayoutTest(driftLayout(true));
     utils.mockApi('language_packs', {
@@ -300,6 +330,8 @@ describe('admin language pack list — 드리프트 렌더 평가 (createLayoutT
     utils.cleanup();
   });
 
+  // @scenario pack_state=install_blocked, scope=extension
+  // @effects third_party_pack_without_bundle_source_not_offered_for_reinstall
   it('행 권한 can_install=false 면 드리프트 번들 행이어도 재설치 버튼이 렌더되지 않는다', async () => {
     // 게이트는 행 단위 권한(row.abilities)이다 — 컬렉션 권한은 행 컨텍스트에서 해석되지 않으므로
     // 그쪽에 걸면 조건이 상시 false 가 되어 버튼이 영영 뜨지 않는다(브라우저 실측에서 확인).

@@ -82,6 +82,10 @@ return [
             'description' => ['ko' => '비밀글 조회', 'en' => 'View secret posts'],
             'scope' => ['resource_route_key' => 'post', 'owner_key' => 'user_id'],
         ],
+        'posts.write-notice' => [
+            'name' => ['ko' => '공지 등록', 'en' => 'Create Notice Posts'],
+            'description' => ['ko' => '게시글을 공지로 등록/해제', 'en' => 'Set and unset posts as notice'],
+        ],
         'comments.read' => [
             'name' => ['ko' => '댓글 조회', 'en' => 'View Comments'],
             'description' => ['ko' => '댓글 목록 조회', 'en' => 'View comment list'],
@@ -158,6 +162,14 @@ return [
         // 삭제 첨부 영구 정리 보존기간 (일)
         'attachment_purge_retention_days_min' => 1,
         'attachment_purge_retention_days_max' => 3650,
+
+        // 개인정보 보유기간 (일) — 게시물·댓글 작성 IP / 비회원 작성자 정보 (이슈 #636)
+        // IP 하한 1일: 0 은 「작성 즉시 파기」가 되어 스팸·분쟁 대응 근거가 사라진다.
+        // 비회원 하한 0: 0 은 「비회원 축 미적용」을 뜻한다(파기하지 않음).
+        'privacy_ip_retention_days_min' => 1,
+        'privacy_ip_retention_days_max' => 3650,
+        'privacy_guest_retention_days_min' => 0,
+        'privacy_guest_retention_days_max' => 3650,
 
         // 신고 정책
         'auto_hide_threshold_min' => 0,

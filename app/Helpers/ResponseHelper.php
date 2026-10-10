@@ -212,7 +212,8 @@ class ResponseHelper
         // 도메인별로 다른 경로에서 번역 파일 로드
         $translationKey = $domain === 'core' ? $key : "{$domain}::{$key}";
 
-        return __($translationKey, $params, $locale);
+        // 치환값에 수(`count`)가 있으면 `단수|복수` 문구를 그 수로 고른다 (trans_count 참조).
+        return trans_count($translationKey, $params, $locale);
     }
 
     /**

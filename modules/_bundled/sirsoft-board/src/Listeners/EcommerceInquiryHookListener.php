@@ -5,11 +5,14 @@ namespace Modules\Sirsoft\Board\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\PostService;
 
 /**
@@ -19,6 +22,11 @@ use Modules\Sirsoft\Board\Services\PostService;
  * - sirsoft-ecommerce.inquiry.create       → Post 생성 후 post_id/inquirable_type 반환
  * - sirsoft-ecommerce.inquiry.get_by_ids   → ID 목록으로 Post 배열 반환
  * - sirsoft-ecommerce.inquiry.get_settings → 게시판 slug로 게시판 설정 전체 반환
+ * - sirsoft-ecommerce.inquiry.seed_sample_post / purge_sample_posts → 이커머스 샘플 시더의
+ *   문의 글 생성·정리 (이커머스가 게시판 모델을 직접 만지지 않도록 게시판이 대신 답한다)
+ *
+ * 훅에 답하다 실패하면 게시판 자기 문구(sirsoft-board::messages.inquiry.*)로 예외를 던진다 —
+ * 이커머스는 그 예외를 자기 실패 응답으로 바꿔 사용자에게 보여 준다(서로의 번역 키를 쓰지 않는다).
  */
 class EcommerceInquiryHookListener implements HookListenerInterface
 {
@@ -28,11 +36,13 @@ class EcommerceInquiryHookListener implements HookListenerInterface
      * @param  PostService  $postService  게시글 서비스
      * @param  PostRepositoryInterface  $postRepository  게시글 저장소
      * @param  BoardRepositoryInterface  $boardRepository  게시판 저장소
+     * @param  AttachmentService  $attachmentService  첨부 서비스 (샘플 정리 때 첨부 파일 삭제)
      */
     public function __construct(
         protected PostService $postService,
         protected PostRepositoryInterface $postRepository,
         protected BoardRepositoryInterface $boardRepository,
+        protected AttachmentService $attachmentService,
     ) {}
 
     /**
@@ -91,6 +101,18 @@ class EcommerceInquiryHookListener implements HookListenerInterface
                 'priority' => 10,
                 'type' => 'filter',
             ],
+            // 이커머스 샘플 시더 → 게시판: 샘플 문의 글(+답변) 생성 (Filter 훅)
+            'sirsoft-ecommerce.inquiry.seed_sample_post' => [
+                'method' => 'seedSamplePost',
+                'priority' => 10,
+                'type' => 'filter',
+            ],
+            // 이커머스 샘플 시더 → 게시판: 재시드 전 기존 샘플 문의 글 정리 (Filter 훅)
+            'sirsoft-ecommerce.inquiry.purge_sample_posts' => [
+                'method' => 'purgeSamplePosts',
+                'priority' => 10,
+                'type' => 'filter',
+            ],
         ];
     }
 
@@ -124,11 +146,13 @@ class EcommerceInquiryHookListener implements HookListenerInterface
                 $data['user_id'] = null;
             }
 
-            // ip_address: board_posts.ip_address NOT NULL 제약 충족.
-            // 클라이언트 IP 는 요청 경계(호출 서비스 ProductInquiryService)가 payload 로
+            // ip_address: 클라이언트 IP 는 요청 경계(호출 서비스 ProductInquiryService)가 payload 로
             // 주입한다 — Listener 는 request() 를 직접 참조하지 않는다(입력 우회 방지).
+            // 없으면 NULL 로 둔다: board_posts.ip_address 는 nullable 이고(이슈 #636), 예전처럼
+            // '0.0.0.0' 을 채우면 「모름」이 실제 IP 처럼 남아 보유기간 파기가 그 행을 개인정보가
+            // 남은 행으로 센다.
             if (empty($data['ip_address'])) {
-                $data['ip_address'] = '0.0.0.0';
+                $data['ip_address'] = null;
             }
 
             // 2차 방어(게시판 실데이터): 이미 살아있는 답변이 있는 부모에는 자식 Post 생성 거부.
@@ -327,7 +351,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_changed')
+                __('sirsoft-board::messages.inquiry.board_changed')
             );
         } catch (\Exception $e) {
             Log::error('EcommerceInquiryHookListener: Post 수정 실패', [
@@ -336,7 +360,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.update_failed')
+                __('sirsoft-board::messages.inquiry.update_failed')
             );
         }
 
@@ -378,7 +402,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_changed')
+                __('sirsoft-board::messages.inquiry.board_changed')
             );
         } catch (\Exception $e) {
             Log::error('EcommerceInquiryHookListener: Post 삭제 실패', [
@@ -387,7 +411,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.delete_failed')
+                __('sirsoft-board::messages.inquiry.delete_failed')
             );
         }
 
@@ -413,7 +437,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
 
             if (! $reply) {
                 throw new \RuntimeException(
-                    __('sirsoft-ecommerce::messages.inquiries.reply_not_found')
+                    __('sirsoft-board::messages.inquiry.reply_not_found')
                 );
             }
 
@@ -431,7 +455,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_changed')
+                __('sirsoft-board::messages.inquiry.board_changed')
             );
         } catch (\Exception $e) {
             Log::error('EcommerceInquiryHookListener: Reply Post 수정 실패', [
@@ -440,7 +464,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.reply_update_failed')
+                __('sirsoft-board::messages.inquiry.reply_update_failed')
             );
         }
 
@@ -465,7 +489,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
 
             if (! $reply) {
                 throw new \RuntimeException(
-                    __('sirsoft-ecommerce::messages.inquiries.reply_not_found')
+                    __('sirsoft-board::messages.inquiry.reply_not_found')
                 );
             }
 
@@ -488,7 +512,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.board_changed')
+                __('sirsoft-board::messages.inquiry.board_changed')
             );
         } catch (\Exception $e) {
             Log::error('EcommerceInquiryHookListener: Reply Post 삭제 실패', [
@@ -497,7 +521,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             ]);
 
             throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.inquiries.reply_delete_failed')
+                __('sirsoft-board::messages.inquiry.reply_delete_failed')
             );
         }
 
@@ -529,6 +553,122 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             // 판정 불가(null)를 그대로 흘려보낸다.
             return is_numeric($carry) ? (int) $carry : null;
         }
+    }
+
+    /**
+     * 샘플 문의 글(과 선택적 답변 글)을 생성합니다 (`sirsoft-ecommerce.inquiry.seed_sample_post` 필터 훅).
+     *
+     * 이커머스 샘플 시더 전용 계약입니다. 시더가 게시판 모델을 직접 만들지 않도록 게시판이
+     * 대신 글을 만들어 `inquiry.create` 와 같은 모양(post_id·inquirable_type)으로 돌려줍니다.
+     * 운영 경로(`createAndReturn`)와 달리 서비스 훅·알림·활동 기록을 거치지 않고 저장소로
+     * 바로 만듭니다 — 샘플은 작성 시각을 과거로 흩뿌려야 하고, 시딩이 알림을 보내면 안 됩니다.
+     * 그 훅 리스너가 맡던 건수(게시판 글 수, 질문의 답변 수)는 여기서 다시 셉니다.
+     *
+     * $question 키: title, content, user_id, author_name, password(평문 — 여기서 해시),
+     * is_secret, created_at. $reply 키: content, user_id, created_at (없으면 답변 없음).
+     *
+     * @param  mixed  $carry  이전 필터 결과 (초기값: null)
+     * @param  string  $slug  문의 게시판 슬러그
+     * @param  array<string, mixed>  $question  문의 글 데이터
+     * @param  array<string, mixed>|null  $reply  답변 글 데이터 (없으면 null)
+     * @return array|null 성공 시 ['post_id' => int, 'inquirable_type' => string], 게시판이 없으면 이전 결과
+     */
+    public function seedSamplePost(mixed $carry, string $slug, array $question, ?array $reply = null): ?array
+    {
+        $board = $this->boardRepository->findBySlug($slug);
+
+        if (! $board) {
+            return is_array($carry) ? $carry : null;
+        }
+
+        $post = $this->postRepository->create($slug, [
+            'board_id' => $board->id,
+            'title' => (string) ($question['title'] ?? __('sirsoft-board::messages.inquiry.default_title')),
+            'content' => (string) ($question['content'] ?? ''),
+            'content_mode' => 'text',
+            'user_id' => $question['user_id'] ?? null,
+            'author_name' => $question['author_name'] ?? null,
+            'password' => ! empty($question['password']) ? Hash::make((string) $question['password']) : null,
+            'ip_address' => '127.0.0.1',
+            'is_secret' => (bool) ($question['is_secret'] ?? false),
+            'status' => PostStatus::Published,
+            'created_at' => $question['created_at'] ?? now(),
+        ]);
+
+        if ($reply !== null) {
+            $this->postRepository->create($slug, [
+                'board_id' => $board->id,
+                'title' => 'Re: '.$post->title,
+                'content' => (string) ($reply['content'] ?? ''),
+                'content_mode' => 'text',
+                'user_id' => $reply['user_id'] ?? null,
+                'ip_address' => '127.0.0.1',
+                'is_secret' => false,
+                'status' => PostStatus::Published,
+                'parent_id' => $post->id,
+                'depth' => 1,
+                'created_at' => $reply['created_at'] ?? now(),
+            ]);
+
+            $this->postRepository->recalculateRepliesCount($post->id);
+        }
+
+        // 서비스 훅(post.after_create)을 거치지 않으므로 그 훅 리스너가 맡는 게시판 글 수도 여기서 다시 센다 —
+        // 빠뜨리면 상품 문의 게시판 목록·관리자 게시판 목록의 글 수가 0 으로 남는다
+        $this->boardRepository->recalculatePostsCount($board->id);
+
+        return [
+            'post_id' => $post->id,
+            'inquirable_type' => Post::class,
+        ];
+    }
+
+    /**
+     * 재시드 전 기존 샘플 문의 글을 영구 삭제합니다 (`sirsoft-ecommerce.inquiry.purge_sample_posts` 필터 훅).
+     *
+     * 이커머스는 정리할 샘플 문의의 `inquirable_type => [inquirable_id, ...]` 묶음을 넘기고,
+     * 게시판은 자기 글 타입(Post) 묶음만 지웁니다 — 다른 타입은 게시판의 것이 아니므로 건드리지
+     * 않습니다. 넘겨받은 글에 달린 답변(parent_id 로 이어진 글)과 그 글들의 댓글·첨부(파일 포함)·반응·스크랩도
+     * 함께 지우고, 게시판의 글·댓글 수를 다시 셉니다. 같은 게시판의 다른 글(운영자가 실제 문의에 단
+     * 답변 포함)은 지우지 않습니다(SB-1).
+     *
+     * @param  mixed  $carry  이전 필터 결과 (초기값: 0)
+     * @param  string  $slug  문의 게시판 슬러그
+     * @param  array<string, array<int, int>>  $inquirables  타입별 글 ID 묶음
+     * @return int 삭제한 글 수 (게시판이 없으면 이전 결과)
+     */
+    public function purgeSamplePosts(mixed $carry, string $slug, array $inquirables): int
+    {
+        $board = $this->boardRepository->findBySlug($slug);
+
+        if (! $board) {
+            return is_numeric($carry) ? (int) $carry : 0;
+        }
+
+        $ids = array_values(array_filter(
+            array_map('intval', $inquirables[Post::class] ?? []),
+            fn (int $id) => $id > 0
+        ));
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        // 운영자가 샘플 문의 답변에 첨부를 달았을 수 있다 — 행만 지우면 파일이 저장소에 고아로 남으므로
+        // 첨부 서비스로 파일과 행을 먼저 정리한다
+        $postIds = $this->postRepository->collectWithRepliesIds($board->id, $ids);
+        if ($postIds === []) {
+            return 0;
+        }
+        $this->attachmentService->purgeByPostIds($postIds);
+
+        $deleted = $this->postRepository->forceDeleteWithRepliesByIds($board->id, $ids);
+
+        // 원시 삭제라 모델 이벤트의 건수 동기화를 거치지 않는다 — 게시판 캐시 컬럼을 다시 센다
+        $this->boardRepository->recalculatePostsCount($board->id);
+        $this->boardRepository->recalculateCommentsCount($board->id);
+
+        return $deleted;
     }
 
     // ─── 내부 유틸리티 ────────────────────────────────────────

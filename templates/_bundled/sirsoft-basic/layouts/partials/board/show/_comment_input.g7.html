@@ -1,0 +1,60 @@
+<!-- 댓글 입력창 — 쓸 수 없는 상태(권한 없음·블라인드·삭제된 글)면 통째로 그려지지 않는다. 비회원이면 이름·비밀번호 줄이 함께 나타나고, 그 비밀번호가 나중에 자기 댓글을 고치거나 지울 때의 열쇠가 된다. -->
+<partial description="새 댓글 입력 폼 (댓글 작성 권한 있을 때만 표시)">
+  <div data-if="{{post?.data?.abilities?.can_write_comments &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="p-4 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex gap-3">
+      <!-- 아바타 (로그인 시: 사용자 아바타, 비회원 시: 기본 아바타) -->
+      <avatar data-type="composite" name="{{_global.currentUser?.name ?? _local.guest_comment_author_name ?? ''}}" avatar="{{_global.currentUser?.avatar}}" size="sm"/>
+      <div class="flex-1 flex flex-col gap-3">
+        <!-- 비회원 작성자 정보 입력 (이름/비밀번호) -->
+        <div data-if="{{!_global.currentUser?.uuid}}" class="flex flex-col sm:flex-row gap-3">
+          <input type="text" name="guest_author_name" value="{{_local.guest_comment_author_name ?? ''}}" placeholder="$t:board.guest_author_name" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <on type="input">
+              <!-- 비회원 이름 — 폼 자동바인딩이 아니라 손으로 담는다(이 조각은 form 안이 아니라서 이름만으로는 모이지 않는다). 위 아바타의 표시 이름도 이 값을 본다. -->
+              <set-state target="local" guest_comment_author_name="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <input type="password" name="guest_password" value="{{_local.guest_comment_password ?? ''}}" placeholder="$t:board.guest_password" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <on type="input">
+              <!-- 비회원 비밀번호 — 이 댓글을 나중에 고치거나 지울 때 확인 창이 물어볼 값이다. 등록에 성공하면 곧바로 비운다. -->
+              <set-state target="local" guest_comment_password="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <!-- 댓글 내용 입력 -->
+        <textarea name="comment_content" value="{{_local.new_comment_content ?? ''}}" placeholder="$t:board.comment_placeholder" :rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
+          <on type="input">
+            <set-state target="local" new_comment_content="{{$event.target.value}}"/>
+          </on>
+        </textarea>
+        <!-- 등록 버튼 (우측 정렬) -->
+        <div class="flex justify-end">
+          <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.commentSubmitting === true}}">
+            <on type="click">
+              <!-- 댓글 등록 — 보내는 중이면 통째로 건너뛰어 연타로 같은 댓글이 두 번 달리는 것을 막는다(버튼 비활성화만으로는 이미 눌린 클릭을 못 막는다). 성공하면 입력칸과 답글 대상까지 비우고 글을 다시 받는다 — 댓글 목록이 글 응답에 실려 오기 때문이다. -->
+              <sequence if="{{_local.commentSubmitting !== true}}">
+                <set-state target="local" :commentSubmitting="true"/>
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments" method="POST">
+                  <success>
+                    <set-state target="local" new_comment_content="" guest_comment_author_name="" guest_comment_password="" :replyToCommentId="null" :commentSubmitting="false"/>
+                    <refetch-data-source dataSourceId="post"/>
+                    <toast type="success" message="$t:board.comment_added"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :commentSubmitting="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                  <body content="{{_local.new_comment_content}}" author_name="{{_local.guest_comment_author_name}}" password="{{_local.guest_comment_password}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <div class="flex items-center gap-2">
+              <icon data-if="{{!_local.commentSubmitting}}" name="paper-plane" size="sm"/>
+              <icon data-if="{{_local.commentSubmitting}}" name="spinner" size="sm" class="animate-spin"/>
+              <span>{{_local.commentSubmitting ? '$t:board.comment_submitting' : '$t:board.comment_submit'}}</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

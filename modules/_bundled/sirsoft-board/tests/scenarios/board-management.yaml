@@ -1,0 +1,78 @@
+feature: 게시판 관리 API — 활성 상태·스크랩 토글·slug 라우팅·역할 동기화
+
+description: |
+  관리자 게시판 CRUD 의 계약 중 다른 매니페스트가 소유하지 않던 축을 모은다 — develop-7.1.0 2차 병합이
+  들여온 test-scenario-reverse-mapping 룰 개정(테스트별 @scenario/@effects 매핑 의무)이 BoardManagementTest
+  의 20개 테스트를 「소유 매니페스트에 계약 없음」으로 잡았고, 그 계약을 여기 정의한다(2026-09-17).
+
+  - 활성 상태(is_active): 생성 기본값 true · 명시 false 존중 · 수정(on/off) 저장과 응답 노출 ·
+    목록/상세/폼 데이터에 필드 노출 · 부분 수정은 다른 필드를 건드리지 않는다
+  - 스크랩 토글(use_scrap): 수정이 저장되고 조회 응답에 노출된다(#524 — 미노출이면 편집 화면 토글이 DB 값을 못 받는다)
+  - slug 라우팅(#450): 상세·수정·폼 데이터(board_slug)·관리자 메뉴 추가 모두 숫자 id 대신 slug 로 게시판을 해석한다
+  - 폼 데이터 _meta: limits(답글·댓글 깊이 최소/최대)와 depth 필드가 함께 실린다
+  - 역할 동기화: 생성 시 board_manager_ids·board_step_ids 의 사용자가 `sirsoft-board.{slug}.manager|step`
+    역할에 연결되고, 권한 기본값은 manager·step 을 posts_read 에 넣되 step 은 admin.manage 에서 뺀다.
+    관리자가 권한을 직접 지정해도 manager·step 은 자동 포함된다. 폼 데이터 생성 모드는 요청한 관리자를
+    기본 관리자로 채운다. 게시판명을 바꾸면 두 역할의 이름이 따라 바뀌고, 이름을 안 바꾸면 역할명도 그대로다
+
+axes:
+  case:
+    # 활성 상태
+    - create_default_active
+    - create_inactive
+    - update_active_off
+    - update_active_on
+    - partial_update_is_active_only
+    - list_exposes_is_active
+    - detail_exposes_is_active
+    - form_data_default_active
+    # 스크랩 토글
+    - update_scrap_toggle
+    # slug 라우팅 (#450)
+    - detail_by_slug
+    - update_by_slug
+    - form_data_edit_by_slug
+    - add_to_menu_by_slug
+    # 폼 데이터 메타
+    - form_data_meta_limits
+    # 역할 동기화
+    - create_assigns_role_users
+    - create_default_permissions_include_roles
+    - custom_permissions_keep_roles
+    - form_data_default_manager
+    - name_update_syncs_roles
+    - update_without_name_keeps_roles
+
+effects:
+  # 활성 상태
+  - board_is_active_defaults_true_on_create
+  - board_is_active_false_honoured_on_create
+  - board_is_active_update_persists_and_is_exposed
+  - partial_update_leaves_other_fields_untouched
+  - admin_list_rows_carry_is_active
+  - detail_carries_is_active
+  - form_data_create_mode_is_active_true
+  # 스크랩 토글
+  - board_use_scrap_update_persists_and_is_exposed
+  # slug 라우팅
+  - slug_resolves_board_in_admin_routes
+  # 폼 데이터 메타
+  - form_data_meta_carries_limits_and_depth_fields
+  # 역할 동기화
+  - create_links_manager_and_step_users_to_board_roles
+  - default_permissions_grant_manager_and_step_except_admin_manage
+  - custom_permissions_still_include_manager_and_step
+  - form_data_default_manager_is_requesting_admin
+  - name_update_syncs_board_role_names
+  - update_without_name_leaves_role_names_untouched
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagementTest.php
+
+validation:
+  note: |
+    - 케이스 20 = BoardManagementTest 의 마킹 없던 테스트 20건과 1:1. 같은 파일의 나머지 테스트는
+      board-reaction · board-admin-list-role-payload-pruning · board-conditional-validation ·
+      board-form-restriction-fields 매니페스트가 소유한다.
+    - slug 라우팅 4케이스는 하나의 effect(slug_resolves_board_in_admin_routes)를 나눠 검증한다 —
+      경로마다 바인딩이 다르므로 케이스는 나누되 계약은 하나다.

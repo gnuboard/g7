@@ -18,9 +18,10 @@
     "bulk_stock_update_failed": "Failed to bulk update product stock.",
     "bulk": {
       "no_selection": "No items selected.",
-      "update_success": "{products} products and {options} options have been updated.",
+      "update_success": "Updated — products {products} · options {options}.",
       "update_error": "Bulk update failed.",
       "option_update_success": "{count} options have been updated.",
+      "option_update_success_one": "{count} option has been updated.",
       "option_update_error": "Option bulk update failed.",
       "overwrite_warning": "When bulk change options (sales status, display status, price change, stock change) are selected, individual modifications will be ignored."
     }
@@ -31,6 +32,7 @@
     "bulk_stock_updated": "Stock updated for :count options.",
     "bulk_stock_update_failed": "Failed to bulk update option stock.",
     "bulk_update_success": "{count} options have been updated.",
+    "bulk_update_success_one": "{count} option has been updated.",
     "bulk_update_error": "Option bulk update failed.",
     "has_order_history": "Options with order history cannot be deleted."
   },

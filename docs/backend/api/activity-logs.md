@@ -73,8 +73,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | changes | array | `[{"field":"stock_quantity","label_key":"sirsoft-ecommerce…` | 구조화된 변경 이력 (필드별 label_key, old, new, type) |
 | bulk_changes | null | `null` | 일괄 수정 로그의 모델별 변경 이력 배열 (원소: model_id + changes[]). 단일 수정 로그이면 null이고 대신 changes 필드가 채워짐 |
 | has_changes | boolean | `false` | changes 여부 |
-| actor_name | string | `최고관리자` | 행위를 수행한 주체(사용자/시스템)의 이름 |
-| user | object | `{"uuid":"a26219fc-94a0-4f63-9404-04c2a6ac99e4","name":"최고…` | 행위를 수행한 사용자 정보 (uuid/name/email). 시스템 발생 로그로 사용자가 없으면 name 에 "시스템" 라벨만 담김 |
+| actor_name | string | `최고관리자` | 행위를 수행한 주체의 이름. 회원이 없으면 "시스템", 그중 Artisan 커맨드·스케줄러(CLI)에서 남은 로그(`properties.via` = `cli`)는 "시스템(CLI)" |
+| user | object | `{"uuid":"a26219fc-94a0-4f63-9404-04c2a6ac99e4","name":"최고…` | 행위를 수행한 사용자 정보 (uuid/name/email). 회원이 없는 로그(시스템·CLI)는 `uuid` 가 `null` 이고 name 에 `actor_name` 과 같은 라벨("시스템" 또는 "시스템(CLI)")이 담긴다 — 화면은 `uuid` 유무로 회원 메뉴 노출을 가른다 |
 | ip_address | string | `127.0.0.1` | IP 주소 (IPv6 대응) |
 | created_at | string | `2026-08-04 19:00:10` | 생성 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |

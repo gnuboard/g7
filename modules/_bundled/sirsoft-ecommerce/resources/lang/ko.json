@@ -1,211 +1,529 @@
 {
-  "editor": {
-    "action": {
-      "request_pg_payment": {
-        "label": "결제 진입",
-        "param_handler": "결제 핸들러",
-        "param_data": "결제 데이터"
-      }
+    "editor": {
+        "action": {
+            "request_pg_payment": {
+                "label": "결제 진입",
+                "param_handler": "결제 핸들러",
+                "param_data": "결제 데이터"
+            }
+        },
+        "action_chip": {
+            "response_pg_handler": "결제 핸들러(응답)",
+            "response_pg_data": "결제 데이터(응답)"
+        },
+        "data_source": {
+            "active_carriers": "활성 택배사",
+            "activity_logs": "활동 로그",
+            "availableChannels": "사용 가능 채널",
+            "brands": "브랜드 목록",
+            "carriers": "택배사 목록",
+            "categories": "카테고리 목록",
+            "commonInfos": "공통정보 목록",
+            "common_infos": "공통정보 목록",
+            "copy_source": "복사 원본",
+            "coupon": "쿠폰",
+            "coupon_abilities": "쿠폰 권한",
+            "couponIssues": "쿠폰 발급 내역",
+            "coupons": "쿠폰 목록",
+            "ecommerceIdentityPolicies": "쇼핑몰 본인인증 정책",
+            "ecommerceIdentityPurposes": "쇼핑몰 본인인증 목적",
+            "ecommerceNotificationDefinitions": "쇼핑몰 알림 정의",
+            "ecommercePrivacyRetentionPreview": "이커머스 개인정보 보유기간 대상 건수",
+            "ecommerce_settings": "쇼핑몰 설정",
+            "extra_fee_templates": "추가 배송비 템플릿",
+            "policy_abilities": "배송정책 권한",
+            "product_abilities": "상품 권한",
+            "identityProviders": "본인인증 제공자",
+            "notice_templates": "상품정보고시 템플릿",
+            "order": "주문",
+            "order_logs": "주문 로그",
+            "orders": "주문 목록",
+            "paymentSettings": "결제 환경설정",
+            "policy": "배송 정책",
+            "presets": "프리셋 목록",
+            "product": "상품",
+            "product_labels": "상품 라벨",
+            "products": "상품 목록",
+            "refundReasons": "환불 사유",
+            "reviews": "상품 후기",
+            "roles": "역할 목록",
+            "seoStats": "SEO 통계",
+            "settings": "설정",
+            "shipping_policies": "배송 정책 목록",
+            "templates": "템플릿 목록",
+            "wishlists": "찜 목록",
+            "carts": "장바구니 목록",
+            "addresses": "회원 배송지 목록",
+            "inquiries": "상품문의 목록",
+            "privacyTargets": "보유기간 처리 대상 주문 목록",
+            "privacyManualRuns": "개인정보 조치 직권 실행 상태",
+            "claim_detail": "취소/반품/교환 상세",
+            "claim_logs": "취소/반품/교환 활동 로그",
+            "claim_reasons": "취소/반품/교환 사유",
+            "claim_settings": "배송정책 클레임 설정",
+            "claims": "취소/반품/교환 목록",
+            "orderClaims": "주문 클레임 내역",
+            "claimRequestContext": "직권 접수 문맥"
+        }
     },
-    "action_chip": {
-      "response_pg_handler": "결제 핸들러(응답)",
-      "response_pg_data": "결제 데이터(응답)"
+    "common": {
+        "$partial": "partial/ko/common.json"
     },
-    "data_source": {
-      "active_carriers": "활성 택배사",
-      "activity_logs": "활동 로그",
-      "availableChannels": "사용 가능 채널",
-      "brands": "브랜드 목록",
-      "carriers": "택배사 목록",
-      "categories": "카테고리 목록",
-      "commonInfos": "공통정보 목록",
-      "common_infos": "공통정보 목록",
-      "copy_source": "복사 원본",
-      "coupon": "쿠폰",
-      "couponIssues": "쿠폰 발급 내역",
-      "coupons": "쿠폰 목록",
-      "ecommerceIdentityPolicies": "쇼핑몰 본인인증 정책",
-      "ecommerceIdentityPurposes": "쇼핑몰 본인인증 목적",
-      "ecommerceNotificationDefinitions": "쇼핑몰 알림 정의",
-      "ecommerce_settings": "쇼핑몰 설정",
-      "extra_fee_templates": "추가 배송비 템플릿",
-      "identityProviders": "본인인증 제공자",
-      "notice_templates": "상품정보고시 템플릿",
-      "order": "주문",
-      "order_logs": "주문 로그",
-      "orders": "주문 목록",
-      "paymentSettings": "결제 환경설정",
-      "policy": "배송 정책",
-      "presets": "프리셋 목록",
-      "product": "상품",
-      "product_labels": "상품 라벨",
-      "products": "상품 목록",
-      "refundReasons": "환불 사유",
-      "reviews": "상품 후기",
-      "roles": "역할 목록",
-      "seoStats": "SEO 통계",
-      "settings": "설정",
-      "shipping_policies": "배송 정책 목록",
-      "templates": "템플릿 목록"
-    }
-  },
-  "common": {
-    "$partial": "partial/ko/common.json"
-  },
-  "currency": {
-    "$partial": "partial/ko/currency.json"
-  },
-  "admin": {
-    "dashboard": {
-      "$partial": "partial/ko/admin/dashboard.json"
+    "currency": {
+        "$partial": "partial/ko/currency.json"
     },
-    "locale": {
-      "$partial": "partial/ko/admin/locale.json"
+    "admin": {
+        "dashboard": {
+            "$partial": "partial/ko/admin/dashboard.json"
+        },
+        "locale": {
+            "$partial": "partial/ko/admin/locale.json"
+        },
+        "settings": {
+            "$partial": "partial/ko/admin/settings.json"
+        },
+        "order_settings": {
+            "$partial": "partial/ko/admin/order_settings.json"
+        },
+        "product": {
+            "$partial": "partial/ko/admin/product.json"
+        },
+        "brand": {
+            "$partial": "partial/ko/admin/brand.json"
+        },
+        "category": {
+            "$partial": "partial/ko/admin/category.json"
+        },
+        "promotion_coupon": {
+            "$partial": "partial/ko/admin/promotion_coupon.json"
+        },
+        "order": {
+            "$partial": "partial/ko/admin/order.json"
+        },
+        "main_banner": {
+            "$partial": "partial/ko/admin/main_banner.json"
+        },
+        "product_review": {
+            "$partial": "partial/ko/admin/product_review.json"
+        },
+        "payment_failure_history": {
+            "$partial": "partial/ko/admin/payment_failure_history.json"
+        },
+        "excel_download": {
+            "$partial": "partial/ko/admin/excel_download.json"
+        },
+        "personal_payment": {
+            "$partial": "partial/ko/admin/personal_payment.json"
+        },
+        "personal_payment_create": {
+            "$partial": "partial/ko/admin/personal_payment_create.json"
+        },
+        "personal_payment_detail": {
+            "$partial": "partial/ko/admin/personal_payment_detail.json"
+        },
+        "mileage_settings": {
+            "$partial": "partial/ko/admin/mileage_settings.json"
+        },
+        "mileage_transactions": {
+            "$partial": "partial/ko/admin/mileage_transactions.json"
+        },
+        "user_mileage": {
+            "tab_label": "마일리지",
+            "title": "마일리지",
+            "available": "사용 가능",
+            "pending": "적립 예정",
+            "total_earned": "누적 적립",
+            "expiring_soon": "소멸 예정",
+            "view_history": "이 회원 내역 보기",
+            "disabled_notice": "마일리지 기능이 비활성화되어 있습니다. 환경설정에서 활성화할 수 있습니다."
+        },
+        "user_currency": {
+            "title": "결제 통화",
+            "description": "이 회원의 주문·결제 시 사용할 통화를 지정합니다.",
+            "save_button": "저장",
+            "saved": "회원 결제 통화가 변경되었습니다.",
+            "save_failed": "회원 결제 통화 변경에 실패했습니다."
+        },
+        "user_shipping_country": {
+            "title": "배송국가",
+            "description": "이 회원의 기본 배송국가를 지정합니다.",
+            "save_button": "저장",
+            "saved": "회원 배송국가가 변경되었습니다.",
+            "save_failed": "회원 배송국가 변경에 실패했습니다."
+        },
+        "user_filter": {
+            "title": "쇼핑몰 조건",
+            "mileage": "마일리지 잔액",
+            "mileage_min": "최소",
+            "mileage_max": "최대",
+            "shipping_country": "배송지 국가",
+            "shipping_country_all": "국가 무관",
+            "has_address": "배송지 등록",
+            "has_address_yes": "있음",
+            "has_address_no": "없음"
+        },
+        "product_notice_template": {
+            "$partial": "partial/ko/admin/product_notice_template.json"
+        },
+        "deposit": {
+            "$partial": "partial/ko/admin/deposit.json"
+        },
+        "promotion_discount_code": {
+            "$partial": "partial/ko/admin/promotion_discount_code.json"
+        },
+        "common_info": {
+            "$partial": "partial/ko/admin/common_info.json"
+        },
+        "shipping_policy": {
+            "$partial": "partial/ko/admin/shipping_policy.json"
+        },
+        "wishlists": {
+            "title": "찜 관리",
+            "description": "전 회원이 담아 둔 찜을 조회하고 정리합니다.",
+            "search_fields": {
+                "member": "회원",
+                "member_id": "회원 ID",
+                "email": "이메일",
+                "product": "상품명"
+            },
+            "filters": {
+                "search_label": "검색 대상",
+                "keyword_label": "검색어",
+                "keyword_placeholder": "검색어 입력",
+                "date_label": "등록일",
+                "search": "검색",
+                "reset": "초기화",
+                "member_filter_notice": "특정 회원의 찜만 표시 중",
+                "member_filter_clear": "회원 필터 해제"
+            },
+            "columns": {
+                "created_at": "등록일",
+                "member": "회원",
+                "product": "상품"
+            },
+            "badges": {
+                "withdrawn": "탈퇴",
+                "guest": "비회원"
+            },
+            "actions": {
+                "delete": "삭제",
+                "view_member": "회원 정보"
+            },
+            "bulk": {
+                "selected_count": "{{count}}개 선택됨",
+                "delete": "선택 삭제"
+            },
+            "sort": {
+                "created_at_desc": "최신순",
+                "created_at_asc": "오래된순"
+            },
+            "table": {
+                "total_count": "총 {{count}}건",
+                "empty": "찜이 없습니다."
+            },
+            "modal": {
+                "delete": {
+                    "title": "이 찜을 삭제할까요?",
+                    "message": "회원의 찜 목록에서 사라집니다. 상품 자체는 삭제되지 않습니다."
+                },
+                "bulk_delete": {
+                    "title": "선택한 찜을 삭제할까요?",
+                    "message": "선택한 {{count}}개의 찜을 삭제하시겠습니까?",
+                    "deleting": "삭제 중..."
+                }
+            }
+        },
+        "carts": {
+            "title": "장바구니 관리",
+            "description": "전 회원과 비회원 세션의 장바구니를 조회하고 정리합니다.",
+            "search_fields": {
+                "member": "회원",
+                "member_id": "회원 ID",
+                "email": "이메일",
+                "product": "상품명"
+            },
+            "filters": {
+                "search_label": "검색 대상",
+                "keyword_label": "검색어",
+                "keyword_placeholder": "검색어 입력",
+                "date_label": "담은 날짜",
+                "search": "검색",
+                "reset": "초기화",
+                "owner_label": "구분",
+                "owner_all": "전체",
+                "owner_member": "회원",
+                "owner_guest": "비회원",
+                "member_filter_notice": "특정 회원의 장바구니만 표시 중",
+                "member_filter_clear": "회원 필터 해제"
+            },
+            "columns": {
+                "created_at": "담은 날짜",
+                "member": "회원",
+                "product": "상품",
+                "option": "옵션",
+                "quantity": "수량"
+            },
+            "badges": {
+                "withdrawn": "탈퇴",
+                "guest": "비회원"
+            },
+            "actions": {
+                "delete": "삭제",
+                "view_member": "회원 정보"
+            },
+            "bulk": {
+                "selected_count": "{{count}}개 선택됨",
+                "delete": "선택 삭제"
+            },
+            "sort": {
+                "created_at_desc": "최신순",
+                "created_at_asc": "오래된순"
+            },
+            "table": {
+                "total_count": "총 {{count}}건",
+                "empty": "장바구니 항목이 없습니다."
+            },
+            "modal": {
+                "delete": {
+                    "title": "이 장바구니 항목을 삭제할까요?",
+                    "message": "회원의 장바구니에서 사라집니다. 상품 자체는 삭제되지 않습니다."
+                },
+                "bulk_delete": {
+                    "title": "선택한 장바구니 항목을 삭제할까요?",
+                    "message": "선택한 {{count}}개의 항목을 삭제하시겠습니까?",
+                    "deleting": "삭제 중..."
+                }
+            }
+        },
+        "user_addresses": {
+            "title": "회원 배송지",
+            "description": "전 회원이 저장해 둔 배송지를 조회하고 정리합니다.",
+            "search_fields": {
+                "member": "회원",
+                "member_id": "회원 ID",
+                "email": "이메일",
+                "recipient": "수령인",
+                "address": "주소"
+            },
+            "search": {
+                "placeholder": "수령인·주소로 검색",
+                "column_select": "컬럼 선택"
+            },
+            "filter": {
+                "member": "회원",
+                "member_select": "회원 선택",
+                "member_selected_count": "{count}명 선택됨",
+                "member_search_placeholder": "이름·이메일로 검색",
+                "member_search_initial": "이름이나 이메일을 입력하세요",
+                "created_at": "등록일",
+                "is_default": "기본 배송지",
+                "is_default_only": "기본만",
+                "is_default_except": "기본 제외",
+                "search": "검색",
+                "reset": "초기화"
+            },
+            "columns": {
+                "created_at": "등록일",
+                "member": "회원",
+                "recipient": "수령인",
+                "contact": "연락처",
+                "address": "주소"
+            },
+            "badges": {
+                "withdrawn": "탈퇴",
+                "guest": "비회원",
+                "is_default": "기본"
+            },
+            "actions": {
+                "delete": "삭제",
+                "view_member": "회원 정보",
+                "search_member": "이 회원으로 검색"
+            },
+            "bulk": {
+                "delete": "선택 삭제"
+            },
+            "sort": {
+                "created_at_desc": "최신순",
+                "created_at_asc": "오래된순"
+            },
+            "table": {
+                "total_count": "총 {{count}}건",
+                "selected_count": "{{count}}개 선택됨",
+                "empty": "배송지가 없습니다."
+            },
+            "modal": {
+                "delete": {
+                    "title": "이 배송지를 삭제할까요?",
+                    "message": "{{member}} 회원의 배송지(수령인 {{recipient}})를 삭제합니다.",
+                    "warning": "회원의 배송지 목록에서 사라집니다. 이미 접수된 주문의 배송지에는 영향이 없습니다."
+                },
+                "bulk_delete": {
+                    "title": "선택한 배송지를 삭제할까요?",
+                    "message": "선택한 {{count}}개의 배송지를 삭제합니다."
+                }
+            }
+        },
+        "inquiries": {
+            "title": "상품문의 관리",
+            "description": "전 회원의 상품문의를 조회하고 정리합니다.",
+            "search_fields": {
+                "member": "회원",
+                "member_id": "회원 ID",
+                "email": "이메일",
+                "product": "상품명",
+                "content": "문의 내용"
+            },
+            "filters": {
+                "search_label": "검색 대상",
+                "keyword_label": "검색어",
+                "keyword_placeholder": "검색어 입력",
+                "date_label": "문의일",
+                "search": "검색",
+                "reset": "초기화",
+                "is_answered_label": "답변 상태",
+                "is_answered_all": "전체",
+                "is_answered_yes": "답변완료",
+                "is_answered_no": "미답변",
+                "member_filter_notice": "특정 회원의 문의만 표시 중",
+                "member_filter_clear": "회원 필터 해제"
+            },
+            "columns": {
+                "created_at": "문의일",
+                "member": "회원",
+                "product": "상품",
+                "content": "문의 내용",
+                "status": "답변 상태"
+            },
+            "badges": {
+                "withdrawn": "탈퇴",
+                "guest": "비회원"
+            },
+            "status": {
+                "answered": "답변완료",
+                "pending": "미답변"
+            },
+            "content_unavailable": "본문을 불러올 수 없습니다",
+            "actions": {
+                "reply": "답변",
+                "delete": "삭제",
+                "view_member": "회원 정보"
+            },
+            "bulk": {
+                "selected_count": "{{count}}개 선택됨",
+                "delete": "선택 삭제"
+            },
+            "sort": {
+                "created_at_desc": "최신순",
+                "created_at_asc": "오래된순"
+            },
+            "table": {
+                "total_count": "총 {{count}}건",
+                "empty": "상품문의가 없습니다."
+            },
+            "modal": {
+                "delete": {
+                    "title": "이 문의를 삭제할까요?",
+                    "message": "문의와 답변이 함께 사라집니다."
+                },
+                "bulk_delete": {
+                    "title": "선택한 문의를 삭제할까요?",
+                    "message": "선택한 {{count}}개의 문의를 삭제하시겠습니까?",
+                    "deleting": "삭제 중..."
+                },
+                "reply": {
+                    "title": "문의에 답변하기",
+                    "content_label": "답변 내용",
+                    "content_placeholder": "회원에게 보일 답변을 입력하세요 (최대 5000자)",
+                    "submit": "답변 등록",
+                    "already_answered": "이미 답변된 문의입니다. 등록하면 답변이 추가됩니다."
+                }
+            }
+        },
+        "user_ecommerce_data": {
+            "tab_label": "쇼핑 데이터",
+            "title": "회원 쇼핑 데이터",
+            "count_unit": "{{count}}건",
+            "wishlist": "찜",
+            "cart": "장바구니",
+            "address": "배송지",
+            "inquiry": "상품문의",
+            "inquiry_pending": "미답변 {{count}}건",
+            "view_wishlists": "찜 목록",
+            "view_carts": "장바구니",
+            "view_addresses": "배송지",
+            "view_inquiries": "상품문의",
+            "saved_addresses": "저장된 배송지",
+            "address_empty": "등록한 배송지가 없습니다.",
+            "address_default": "기본",
+            "address_more": "외 {{count}}건은 배송지 관리에서 봅니다."
+        },
+        "claim": {
+            "$partial": "partial/ko/admin/claim.json"
+        }
     },
-    "settings": {
-      "$partial": "partial/ko/admin/settings.json"
+    "user": {
+        "$partial": "partial/ko/user.json"
     },
-    "order_settings": {
-      "$partial": "partial/ko/admin/order_settings.json"
-    },
-    "product": {
-      "$partial": "partial/ko/admin/product.json"
-    },
-    "brand": {
-      "$partial": "partial/ko/admin/brand.json"
-    },
-    "category": {
-      "$partial": "partial/ko/admin/category.json"
-    },
-    "promotion_coupon": {
-      "$partial": "partial/ko/admin/promotion_coupon.json"
-    },
-    "order": {
-      "$partial": "partial/ko/admin/order.json"
-    },
-    "main_banner": {
-      "$partial": "partial/ko/admin/main_banner.json"
-    },
-    "product_review": {
-      "$partial": "partial/ko/admin/product_review.json"
-    },
-    "payment_failure_history": {
-      "$partial": "partial/ko/admin/payment_failure_history.json"
-    },
-    "excel_download": {
-      "$partial": "partial/ko/admin/excel_download.json"
-    },
-    "personal_payment": {
-      "$partial": "partial/ko/admin/personal_payment.json"
-    },
-    "personal_payment_create": {
-      "$partial": "partial/ko/admin/personal_payment_create.json"
-    },
-    "personal_payment_detail": {
-      "$partial": "partial/ko/admin/personal_payment_detail.json"
-    },
-    "mileage_settings": {
-      "$partial": "partial/ko/admin/mileage_settings.json"
-    },
-    "mileage_transactions": {
-      "$partial": "partial/ko/admin/mileage_transactions.json"
+    "auth": {
+        "register_currency": {
+            "label": "결제 통화",
+            "hint": "주문·결제 시 사용할 통화입니다. 가입 후 내 정보에서 변경할 수 있습니다."
+        },
+        "register_shipping_country": {
+            "label": "배송국가",
+            "hint": "기본 배송국가입니다. 가입 후 내 정보에서 변경할 수 있습니다."
+        }
     },
     "user_mileage": {
-      "tab_label": "마일리지",
-      "title": "마일리지",
-      "available": "사용 가능",
-      "pending": "적립 예정",
-      "total_earned": "누적 적립",
-      "expiring_soon": "소멸 예정",
-      "view_history": "이 회원 내역 보기",
-      "disabled_notice": "마일리지 기능이 비활성화되어 있습니다. 환경설정에서 활성화할 수 있습니다."
+        "title": "내 마일리지",
+        "available": "사용 가능",
+        "expiring_soon": "소멸 예정 {{amount}} P",
+        "view_history": "마일리지 내역",
+        "disabled_notice": "마일리지 기능이 비활성화되어 있습니다.",
+        "withdraw_refund_credit_warning": "환불로 받은 마일리지 {{amount}} P 도 탈퇴하면 소멸되어 되돌릴 수 없습니다. 필요하면 탈퇴 전에 사용하거나 고객센터에 문의하세요."
     },
-    "user_currency": {
-      "title": "결제 통화",
-      "description": "이 회원의 주문·결제 시 사용할 통화를 지정합니다.",
-      "save_button": "저장",
-      "saved": "회원 결제 통화가 변경되었습니다.",
-      "save_failed": "회원 결제 통화 변경에 실패했습니다."
+    "user_address_card": {
+        "title": "기본 배송지",
+        "manage": "배송지 관리",
+        "default_badge": "기본",
+        "empty_notice": "등록한 배송지가 없습니다. 배송지를 등록하면 주문서에 자동으로 채워집니다."
     },
-    "user_shipping_country": {
-      "title": "배송국가",
-      "description": "이 회원의 기본 배송국가를 지정합니다.",
-      "save_button": "저장",
-      "saved": "회원 배송국가가 변경되었습니다.",
-      "save_failed": "회원 배송국가 변경에 실패했습니다."
+    "product": {
+        "$partial": "partial/ko/product.json"
     },
-    "product_notice_template": {
-      "$partial": "partial/ko/admin/product_notice_template.json"
+    "order": {
+        "$partial": "partial/ko/order.json"
     },
-    "deposit": {
-      "$partial": "partial/ko/admin/deposit.json"
+    "category": {
+        "$partial": "partial/ko/category.json"
     },
-    "promotion_discount_code": {
-      "$partial": "partial/ko/admin/promotion_discount_code.json"
+    "enums": {
+        "$partial": "partial/ko/enums.json"
     },
-    "common_info": {
-      "$partial": "partial/ko/admin/common_info.json"
+    "messages": {
+        "$partial": "partial/ko/messages.json"
     },
-    "shipping_policy": {
-      "$partial": "partial/ko/admin/shipping_policy.json"
+    "exceptions": {
+        "$partial": "partial/ko/exceptions.json"
+    },
+    "validation": {
+        "$partial": "partial/ko/validation.json"
+    },
+    "shop": {
+        "$partial": "partial/ko/shop.json"
+    },
+    "checkout": {
+        "cash_receipt": {
+            "request": "현금영수증 신청",
+            "purpose": "용도",
+            "purpose_income": "소득공제용",
+            "purpose_expense": "지출증빙용",
+            "identifier_phone": "휴대폰번호",
+            "identifier_card": "현금영수증 카드번호",
+            "identifier_business": "사업자등록번호",
+            "identifier_placeholder": "- 없이 숫자만 입력",
+            "purpose_help": "소득공제용은 연말정산에, 지출증빙용은 사업자 매입세액공제에 사용됩니다.",
+            "immutable_help": "발급 후에는 용도를 변경할 수 없습니다."
+        }
     }
-  },
-  "user": {
-    "$partial": "partial/ko/user.json"
-  },
-  "auth": {
-    "register_currency": {
-      "label": "결제 통화",
-      "hint": "주문·결제 시 사용할 통화입니다. 가입 후 내 정보에서 변경할 수 있습니다."
-    },
-    "register_shipping_country": {
-      "label": "배송국가",
-      "hint": "기본 배송국가입니다. 가입 후 내 정보에서 변경할 수 있습니다."
-    }
-  },
-  "user_mileage": {
-    "title": "내 마일리지",
-    "available": "사용 가능",
-    "expiring_soon": "소멸 예정 {{amount}} P",
-    "view_history": "마일리지 내역",
-    "disabled_notice": "마일리지 기능이 비활성화되어 있습니다."
-  },
-  "product": {
-    "$partial": "partial/ko/product.json"
-  },
-  "order": {
-    "$partial": "partial/ko/order.json"
-  },
-  "category": {
-    "$partial": "partial/ko/category.json"
-  },
-  "enums": {
-    "$partial": "partial/ko/enums.json"
-  },
-  "messages": {
-    "$partial": "partial/ko/messages.json"
-  },
-  "exceptions": {
-    "$partial": "partial/ko/exceptions.json"
-  },
-  "validation": {
-    "$partial": "partial/ko/validation.json"
-  },
-  "shop": {
-    "$partial": "partial/ko/shop.json"
-  },
-  "checkout": {
-    "cash_receipt": {
-      "request": "현금영수증 신청",
-      "purpose": "용도",
-      "purpose_income": "소득공제용",
-      "purpose_expense": "지출증빙용",
-      "identifier_phone": "휴대폰번호",
-      "identifier_card": "현금영수증 카드번호",
-      "identifier_business": "사업자등록번호",
-      "identifier_placeholder": "- 없이 숫자만 입력",
-      "purpose_help": "소득공제용은 연말정산에, 지출증빙용은 사업자 매입세액공제에 사용됩니다.",
-      "immutable_help": "발급 후에는 용도를 변경할 수 없습니다."
-    }
-  }
 }

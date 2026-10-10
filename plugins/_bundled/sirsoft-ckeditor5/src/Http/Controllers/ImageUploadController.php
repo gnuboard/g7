@@ -11,16 +11,21 @@ use Plugins\Sirsoft\Ckeditor5\Services\ImageUploadService;
 /**
  * CKEditor5 이미지 업로드 컨트롤러
  *
- * CKEditor5 SimpleUploadAdapter가 요구하는 형식으로 이미지를 저장하고
+ * 플러그인 업로드 어댑터(resources/js/handlers/uploadAdapter.ts)가 요구하는 형식으로 이미지를 저장하고
  * 공개 URL을 반환합니다.
  *
  * 응답 형식: { "url": "https://..." } / 실패 시 { "error": { "message": "..." } }
- * ResponseHelper 사용 불가 — 응답을 파싱하는 SimpleUploadAdapter 가 CDN 으로 로드되는
- * CKEditor5 43.3.1 상위 코드라 봉투 구조를 해석하지 못합니다 (파싱 규약 변경 불가).
- * 이 사유로 각 응답 지점에 audit:allow response-helper-bypass 를 명시했습니다.
+ * ResponseHelper 를 쓰지 않는다 — 어댑터는 CKEditor5 의 SimpleUploadAdapter 응답 규약(최상위 url,
+ * error.message)을 그대로 읽도록 만들어졌고, 이미 저장된 글·외부 연동이 같은 규약에 기대므로
+ * 봉투 구조로 바꾸지 않습니다. 이 사유로 각 응답 지점에 audit:allow response-helper-bypass 를 명시했습니다.
  */
 class ImageUploadController extends AdminBaseController
 {
+    /**
+     * 이미지 업로드 서비스를 주입합니다.
+     *
+     * @param  ImageUploadService  $imageUploadService  이미지 저장·URL 생성 서비스
+     */
     public function __construct(
         private ImageUploadService $imageUploadService
     ) {
@@ -49,14 +54,14 @@ class ImageUploadController extends AdminBaseController
                 $user?->id
             );
 
-            // audit:allow response-helper-bypass reason: CDN 상위 SimpleUploadAdapter 가 최상위 url 을 읽는다 (봉투 불가)
+            // audit:allow response-helper-bypass reason: 플러그인 업로드 어댑터가 SimpleUploadAdapter 규약대로 최상위 url 을 읽는다
             return response()->json(['url' => $image->download_url], 201);
         } catch (\Exception $e) {
             Log::error('[sirsoft-ckeditor5] 이미지 업로드 실패', [
                 'error' => $e->getMessage(),
             ]);
 
-            // audit:allow response-helper-bypass reason: CDN 상위 SimpleUploadAdapter 가 최상위 error.message 를 읽는다 (봉투 불가)
+            // audit:allow response-helper-bypass reason: 플러그인 업로드 어댑터가 SimpleUploadAdapter 규약대로 최상위 error.message 를 읽는다
             return response()->json([
                 'error' => ['message' => __('sirsoft-ckeditor5::messages.upload.failed')],
             ], 500);

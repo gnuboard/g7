@@ -42,16 +42,29 @@ effects:
   - not_shippable_blocks_purchase                 # D1 — 미지원 상품 구매 차단(카트/체크아웃/주문생성)
   - mixed_cart_blocks_all                         # D1 — 혼재 시 주문 전체 차단(부분주문 없음)
   - intl_address_persisted_on_order               # B2 — 해외 주소 필드 OrderAddress 보존
+  - order_priced_by_submitted_country             # 주문 생성은 제출한 배송지(국가·우편번호)로 임시 주문을 맞춘 뒤 재계산(직접 입력 해외 주소 422 방지)
+  - foreign_address_domestic_amount_rejected      # 해외 주소 + 국내 배송비 금액 제출은 금액 불일치로 차단
   - addressbook_intl_mapping_on_select            # B3 — 주소록 해외주소 선택 시 체크아웃 폼 intl_* 매핑
   - snapshot_preserves_shipping_country           # B5 — 취소/환불 스냅샷에 배송국가/우편번호 보존
   - notification_includes_shipping_country        # B6 — 주문 알림에 배송지(국가) 변수 노출
   - country_shown_on_order_detail_and_list        # D9 — 주문상세·목록·주소록 국가 표시(KR 포함)
   - admin_country_change_fires_activity_log       # 관리자 변경 시 활동로그 훅 발화
   - resolve_priority_saved_geoip_default          # D2 — 저장>GeoIP>default 우선순위(각 활성 검증)
+  # 레이아웃 구조 잠금(Vitest shippingCountryLayouts) — 케이스별 매핑용
+  - header_selector_render_stability              # 헤더 셀렉터 루트 항상 마운트 + className hidden 토글(깜빡임 방지)
+  - header_selector_portable_layout               # portable(0~1023px) 드로어 안 아코디언·칩 배치
+  - header_label_is_country_code                  # 트리거 라벨 = 국가 코드 텍스트(flag-icons 비의존)
+  - header_selector_uses_derived_state            # 헤더 옵션이 init_actions 파생 상태(현지화 완료)를 참조
+  - shipping_country_sent_as_request_header       # X-Shipping-Country 전역 헤더
+  - mypage_view_shows_saved_country               # 마이페이지 보기 화면 읽기전용 배송국가 카드
+  - addressbook_country_branch_domestic_intl      # 주소록 추가/수정 폼 국가 Select + 국내/해외 입력 분기
+  - country_name_localized_per_locale             # #459 — 국가명 $localized + fallbackKey 현지화
+  - country_name_input_per_locale                 # #459 — 국가 추가 폼 이름 입력칸 $locales 순회
+  - admin_order_detail_country_branch             # D7 — 관리자 주문상세 국내/해외 분기 폼
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserShippingCountryControllerTest.php
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminUserShippingCountryControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserPreferenceCoreSaveTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/ShippingCountryResolverTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/ShippingCountryListenersTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/ShippingCountryNotificationAndFreeShippingTest.php

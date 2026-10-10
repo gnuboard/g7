@@ -30,8 +30,9 @@
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 | extension_type | query | string | 아니오 | `core`, `module`, `plugin` | 확장 유형 (core/module/plugin/template) |
 | extension_identifier | query | string | 아니오 | max 100 | 확장 식별자 |
+| category | query | string | 아니오 | `general`, `identity` | 분류 필터 — `identity` 는 본인인증 메일 문구(7.1.0~), `general` 은 그 밖의 알림(분류 값이 비어 있는 정의 포함). 생략하면 전체 |
 | channel | query | string | 아니오 | max 50 | 채널 필터 — 활성 채널(`channels`) 배열에 이 채널을 포함하는 정의만 조회 (mail, database 등) |
-| template_channel | query | string | 아니오 | max 50 | 목록에 실을 템플릿을 한 채널로 좁힙니다. `channel` 과 달리 정의 행은 그대로 두고 각 행의 `templates` 만 좁힙니다. **지정하지 않으면 `templates` 키 자체가 응답에 없습니다** — 정의 하나당 채널 × 로케일만큼의 제목·본문이 실리는 것을 막기 위한 기본값이며, 전 채널이 필요하면 단건 조회를 이용하세요 |
+| template_channel | query | string | 아니오 | max 50 | 목록에 실을 템플릿을 한 채널로 좁힙니다. `channel` 과 달리 정의 행은 그대로 두고 각 행의 `templates` 만 좁힙니다. **지정하지 않으면 `templates` 키 자체가 응답에 없습니다** — 정의 하나당 채널 × 로케일만큼의 제목·본문이 실리는 것을 막기 위한 기본값입니다. `all` 을 주면 좁히지 않고 전 채널 템플릿을 싣습니다. 켠 채널을 한 목록에 함께 그리는 화면(확장 설정 등)을 위한 값이며, 응답이 커지므로 정의를 좁혀 부르는 호출자만 쓰세요. 정의 한 건의 전 채널 템플릿만 필요하면 단건 조회가 더 낫습니다 |
 | is_active | query | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | sort_by | query | string | 아니오 | `id`, `type`, `extension_type`, `is_active`, `created_at`, `updated_at` | 정렬 기준 필드명 |
@@ -42,7 +43,7 @@
 **요청 예시**
 
 ```http
-GET /api/admin/notification-definitions?search=%EC%98%88%EC%8B%9C%EA%B0%92&extension_type=core&extension_identifier=example-key&channel=%EC%98%88%EC%8B%9C%EA%B0%92&template_channel=%EC%98%88%EC%8B%9C%EA%B0%92&is_active=1&per_page=1&sort_by=id&sort_order=asc HTTP/1.1
+GET /api/admin/notification-definitions?search=%EC%98%88%EC%8B%9C%EA%B0%92&extension_type=core&extension_identifier=example-key&category=identity&channel=%EC%98%88%EC%8B%9C%EA%B0%92&template_channel=%EC%98%88%EC%8B%9C%EA%B0%92&is_active=1&per_page=1&sort_by=id&sort_order=asc HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -59,19 +60,21 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type | string | `new_comment` | 알림 타입 (welcome, order_confirmed 등) |
 | hook_prefix | string | `sirsoft-board` | 훅 접두사 (core.auth, sirsoft-ecommerce 등) |
 | extension_type | string | `module` | 확장 타입: core, module, plugin |
-| extension_identifier | string | `sirsoft-board` | 확장 식별자: core, sirsoft-board 등 |
+| extension_identifier | string | `sirsoft-board` | 확장 식별자: core, sirsoft-board 등. 운영자가 추가한 본인인증 정책별 문구는 `core` 유형의 `admin` |
+| category | string\|null | `identity` | 분류 — `identity`(본인인증 메일 문구) 또는 null(일반 알림) |
+| policy_key | string\|null | `admin.withdraw_confirm` | 본인인증 정책별 문구(`identity.policy.*`)가 붙은 정책 키. 100자를 넘어 type 이 해시(`identity.policy.~…`)로 줄어도 원래 키를 싣는다 — 화면의 「이미 문구가 있는 정책」 판정용. 그 밖의 정의는 null |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 다국어 이름 ({"ko": "회원가입 환영", "en": "Welcome"}) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 다국어 설명 |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
-| hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
+| hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]). 본인인증 정의는 훅으로 발송하지 않으므로 빈 배열 |
 | is_active | boolean | `true` | active 여부 |
 | is_default | boolean | `true` | default 여부 |
 | templates | array | `[{"id":1,"definition_id":1,"channel":"mail","subject":{"k…` | 채널별 알림 템플릿 목록 (templates 관계 로드 시 NotificationTemplateResource 배열, 미로드 시 null) |
 | has_customized_templates | boolean | `false` | 기본값에서 수정된 템플릿이 하나라도 있는지. `template_channel` 로 좁혀도 **모든 채널**을 기준으로 판정하므로, 지금 보고 있지 않은 채널만 수정된 경우에도 true 다 (되돌리기 버튼 노출 조건) |
 | created_at | string | `2026-07-30 18:45:11` | 생성 일시 |
 | updated_at | string | `2026-07-30 18:45:11` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+| abilities | object | `{"can_update":true,"can_delete":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵. `can_delete` 는 권한(`core.settings.update`)에 더해 **운영자가 추가한 본인인증 정의**(`category=identity` · `extension_identifier=admin` · 기본 아님)일 때만 true — 목록 행과 상세가 같은 값을 준다(목록 행이 늘 false 이던 결함 수정, 7.1.0) |
 
 **응답 예시**
 
@@ -112,7 +115,8 @@ HTTP/1.1 200
             "...": "(2개 키 생략, 총 7개)"
         },
         "abilities": {
-            "can_update": true
+            "can_update": true,
+            "can_create": true
         }
     }
 }
@@ -128,7 +132,69 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 등록된 알림 정의 목록을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요합니다. `search`, `extension_type`, `extension_identifier`, `channel`, `is_active` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_definition.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 관리자 알림 정의 관리 목록 화면을 렌더링할 때 사용합니다.
+**설명** 등록된 알림 정의 목록을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요합니다. `search`, `extension_type`, `extension_identifier`, `category`, `channel`, `is_active` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_definition.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 관리자 알림 정의 관리 목록 화면을 렌더링할 때 사용합니다.
+
+
+### POST /api/admin/notification-definitions
+<!-- @generated:start:api.admin.notification-definitions.store -->
+- **라우트명**: `api.admin.notification-definitions.store`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\NotificationDefinitionController@store`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| category | body | string | 예 | `identity` | 분류 — 지금은 본인인증 정책별 문구만 추가할 수 있습니다 |
+| policy_key | body | string | 예 | max 120 | 문구를 붙일 **운영자 추가** 본인인증 정책 키(`identity_policies.source_type=admin`). 같은 정책에 이미 문구가 있으면 422 |
+| name | body | object | 예 | 로케일별 max 200 | 다국어 이름 (`{"ko": "...", "en": "..."}`, 기본 로케일 필수) |
+| description | body | object | 아니오 | 로케일별 max 1000 | 다국어 설명 |
+| templates | body | object | 예 | — | 채널별 템플릿 — 지금은 `mail` 만 |
+| templates.mail.subject | body | object | 예 | 로케일별 max 500 | 메일 제목 |
+| templates.mail.body | body | object | 예 | 로케일별 max 65535 | 메일 본문(HTML). 변수 `{code}`·`{action_url}`·`{expire_minutes}`·`{purpose_label}`·`{app_name}`·`{site_url}`·`{recipient_email}` |
+
+> 이 엔드포인트는 확장이 검증 규칙을 추가할 수 있습니다 (`core.notification_definition.store_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/notification-definitions HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{
+    "category": "identity",
+    "policy_key": "admin.withdraw_confirm",
+    "name": {"ko": "탈퇴 확인 인증", "en": "Withdrawal Confirmation"},
+    "templates": {
+        "mail": {
+            "subject": {"ko": "[{app_name}] 탈퇴 확인 인증번호", "en": "[{app_name}] Withdrawal Verification Code"},
+            "body": {"ko": "<p>인증번호: <strong>{code}</strong></p>", "en": "<p>Code: <strong>{code}</strong></p>"}
+        }
+    }
+}
+```
+
+**응답 필드** (`data` 내부)
+
+단건 조회(`GET /api/admin/notification-definitions/{definition}`)와 같은 형태입니다. `type` 은 `identity.policy.{policy_key}`
+(100자를 넘으면 `identity.policy.~{sha1 앞 20자}`), `extension_type=core`, `extension_identifier=admin`, `category=identity`,
+`channels=["mail"]`, `hooks=[]`, `is_default=false` 로 만들어집니다.
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 검증 실패 — 운영자 정책이 아닌 키(`validation.identity_notification.policy_key_not_admin_policy`), 이미 문구가 있는 정책(`validation.identity_notification.definition_already_exists`) 등 |
+| 500 | Internal Server Error | 저장 실패 (`notification.definition_create_failed`) |
+
+<!-- @generated:end -->
+
+**설명** 운영자가 등록한 본인인증 정책에 전용 메일 문구를 붙입니다(201). 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 붙인 문구는 그 정책으로 인증할 때 인증 목적별 문구·공통 기본 문구보다 먼저 쓰입니다(3단 폴백 — `docs/backend/notification-system.md` 「본인인증 알림」). 훅 `core.notification_definition.before_create`·`filter_create_data`·`after_create` 가 발화합니다.
 
 
 ### GET /api/admin/notification-definitions/{definition}
@@ -165,7 +231,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 확장 식별자: core, sirsoft-board 등 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 다국어 이름 ({"ko": "회원가입 환영", "en": "Welcome"}) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 다국어 설명 |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -380,7 +446,7 @@ _단건 응답: `data` 객체의 필드. 수정된 알림 정의를 `templates` 
 | extension_identifier | string | `` | 이 정의를 소유한 확장의 식별자 (코어는 빈 문자열) |
 | name | object | `{"ko":"API 문서 샘플 알림","en":"API Doc Sample Notification"}` | 다국어 이름 (로케일별 값 객체) |
 | description | object | `{"ko":"문서 실측용 알림 정의","en":"Sample notification"}` | 다국어 설명 (로케일별 값 객체) |
-| variables | array | `[]` | 사용 가능 변수 메타데이터 ([{key, description}]) |
+| variables | array | `[]` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
 | channels | array | `["database","mail"]` | 수정 후의 활성 채널 (["mail", "database"]) |
 | hooks | array | `[]` | 수정 후의 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -473,6 +539,43 @@ HTTP/1.1 200
 **설명** 알림 정의의 활성 채널(`channels`), 트리거 훅(`hooks`), 활성 상태(`is_active`)를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. Service 계층에서 수정 후 템플릿을 다시 로드해 반환하며, 확장이 `core.notification_definition.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 발송 채널 구성이나 훅 연결을 변경할 때 사용합니다.
 
 
+### DELETE /api/admin/notification-definitions/{definition}
+<!-- @generated:start:api.admin.notification-definitions.destroy -->
+- **라우트명**: `api.admin.notification-definitions.destroy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\NotificationDefinitionController@destroy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| definition | path | integer | 예 | — | 삭제할 알림 정의 ID |
+
+**요청 예시**
+
+```http
+DELETE /api/admin/notification-definitions/42 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `notification.definition_deleted`)._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우, 또는 대상이 운영자가 추가한 본인인증 정의가 아닌 경우 — 코어·확장 선언 정의와 일반 알림은 지울 수 없습니다 (`notification.definition_delete_forbidden`) |
+| 404 | Not Found | 해당 ID 의 정의가 없는 경우 |
+| 500 | Internal Server Error | 삭제 실패 (`notification.definition_delete_failed`) |
+
+<!-- @generated:end -->
+
+**설명** 운영자가 추가한 본인인증 정책별 문구를 지웁니다(200). 템플릿이 함께 지워지고, 그 정책의 인증 메일은 다음 발송부터 인증 목적별 문구 → 공통 기본 문구로 돌아갑니다. 지울 수 있는지는 응답 항목의 `abilities.can_delete` 와 같은 기준입니다.
+
+
 ### POST /api/admin/notification-definitions/{definition}/reset
 <!-- @generated:start:api.admin.notification-definitions.reset -->
 - **라우트명**: `api.admin.notification-definitions.reset`
@@ -507,7 +610,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 이 리소스를 소유한 확장의 식별자 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 설명 (다국어 필드는 로케일별 값 객체) |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -706,7 +809,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 이 리소스를 소유한 확장의 식별자 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 설명 (다국어 필드는 로케일별 값 객체) |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `false` | active 여부 |

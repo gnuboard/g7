@@ -1,0 +1,120 @@
+<partial description="환율 실패 알림의 발송 수단 복수 지정과 채널별 템플릿 활성화">
+<!-- 실패 알림 카드 — 이 플러그인 소유 알림 정의마다 발송 채널(복수)을 고르고, 켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다 -->
+<div class="admin-card mb-4">
+  <h3 class="card-title">$t:sirsoft-koreaexim.notifications</h3>
+  <p data-ref="koreaexim_notifications_forbidden" data-if="{{_local.koreaeximNotificationsForbidden === true}}" class="form-hint">$t:sirsoft-koreaexim.notifications_forbidden</p>
+  <div data-each="def, defIdx in {{koreaeximNotificationDefinitions?.data?.data ?? []}}" data-ref="koreaexim_notification_definition_{{defIdx}}">
+    <p class="text-heading">{{$localized(def.name)}}</p>
+
+    <!-- 발송 수단 — 코어가 core.notification.filter_available_channels 로 런타임에 정하는 목록을
+         그대로 깔고 복수로 켠다. 화면에 채널을 적어 두면 확장이 들인 채널에 도달할 수 없다.
+         켠 값은 폼에만 두고 저장 버튼을 눌러야 서버에 반영한다(코어 알림 정의 탭과 같은 규약). -->
+    <p class="form-label mt-3">$t:sirsoft-koreaexim.notification_channels</p>
+    <div data-each="ch, chIdx in {{koreaeximNotificationChannels?.data?.channels ?? []}}" data-ref="koreaexim_channel_row_{{defIdx}}_{{chIdx}}" class="flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg my-2">
+      <div class="flex-center gap-2">
+        <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-gray-500 dark:text-gray-400"/>
+        <div>
+          <span class="text-heading">{{ch.name ?? ch.id}}</span>
+          <span data-if="{{ch.source && ch.source !== 'core'}}" class="text-hint block">{{ch.source_label ?? ch.source}}</span>
+          <!-- 켰는데 그 채널 템플릿이 없으면 발송 때 조용히 건너뛴다(코어가 로그에만 남긴다).
+               화면이 그 사실을 말해 주지 않으면 "켰는데 안 온다" 로만 보인다. -->
+          <span data-if="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="text-hint block text-amber-600 dark:text-amber-400">$t:sirsoft-koreaexim.channel_template_missing</span>
+        </div>
+      </div>
+      <toggle data-type="composite" label="{{(ch.name ?? ch.id)}}" checked="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
+        <on type="change">
+          <!-- 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
+          <set-state target="local" koreaeximChannels="{{({...(_local.koreaeximChannels ?? {}), [def.id]: ((_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) ? (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).filter(c => c !== ch.id) : [...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []), ch.id])})}}"/>
+        </on>
+      </toggle>
+    </div>
+    <div class="flex-center gap-2 my-2">
+      <!-- 채널을 모두 끄면 알림이 사라지므로 코어가 min:1 로 거절한다 — 버튼에서 먼저 막는다. -->
+      <button type="button" data-ref="koreaexim_save_channels_{{defIdx}}" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isNotificationReadOnly || _local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined || !(JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).length === 0}}">
+        <on type="click">
+          <sequence>
+            <set-state target="local" koreaeximSavingChannels="{{def.id}}"/>
+            <api-call target="/api/admin/notification-definitions/{{def.id}}" method="PUT" :auth_required="true">
+              <body channels="{{_local.koreaeximChannels?.[def.id] ?? def.channels ?? []}}"/>
+              <success>
+                <sequence>
+                  <!-- 폼의 임시 값은 **비우지 않는다**. 목록 재조회가 끝나기 전에 비우면 화면이
+                       낡은 `def.channels` 로 되돌아가, 방금 끈 스위치가 켜졌다가 다시 꺼진다
+                       (제보 2026-09-15). 「고칠 것 없음」 판정은 저장값과의 비교가 하므로,
+                       재조회가 도착하면 버튼은 저절로 가라앉는다. -->
+                  <set-state target="local" :koreaeximSavingChannels="null"/>
+                  <refetch-data-source dataSourceId="koreaeximNotificationDefinitions"/>
+                  <toast type="success" message="{{response.message}}"/>
+                </sequence>
+              </success>
+              <fail>
+                <sequence>
+                  <!-- 실패하면 고친 값은 남긴다 — 다시 누를 수 있어야 한다. -->
+                  <set-state target="local" :koreaeximSavingChannels="null"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </sequence>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_local.koreaeximSavingChannels === def.id}}" name="spinner" class="spinner-sm"/>
+        <span>$t:sirsoft-koreaexim.save_channels</span>
+      </button>
+      <button type="button" data-ref="koreaexim_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined}}">
+        <on type="click">
+          <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다) -->
+          <set-state target="local" :koreaeximChannels="{}"/>
+        </on>
+        <span>$t:sirsoft-koreaexim.cancel</span>
+      </button>
+    </div>
+
+    <!-- 템플릿 — 채널을 나눠 그리지 않는다. 목록을 template_channel=all 로 받아 켠 채널 전부를
+         한 번에 보여주므로 채널을 바꾸려고 화면을 다시 부를 일이 없다. -->
+    <div data-each="template, tplIdx in {{def.templates ?? []}}" data-ref="koreaexim_template_row_{{defIdx}}_{{tplIdx}}" class="flex flex-wrap items-center gap-3 my-3">
+      <span>{{((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}</span>
+      <toggle data-type="composite" label="{{$localized(def.name) + ' / ' + ((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
+        <on type="change">
+          <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
+          <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">
+            <success><refetch-data-source dataSourceId="koreaeximNotificationDefinitions"/></success>
+            <fail><toast type="error" message="{{error.message}}"/></fail>
+          </api-call>
+        </on>
+      </toggle>
+      <button type="button" class="btn btn-secondary" disabled="{{_computed.isNotificationReadOnly}}">
+        <on type="click">
+          <!-- 템플릿 편집 창 열기 — 템플릿·수신자를 깊은 복사로 전역 폼에 실어, 창 안의 편집이 목록 데이터를 건드리지 않게 한다 -->
+          <sequence>
+            <set-state target="global">
+              <field name="koreaexim_notification_template_form_modal">
+                <field name="template" value="{{JSON.parse(JSON.stringify(template))}}"/>
+                <field name="definition" value="{{def}}"/>
+                <field name="recipients" value="{{JSON.parse(JSON.stringify(template.recipients ?? []))}}"/>
+                <field name="editLang" value="{{$locale}}"/>
+                <field name="errors" :value="null"/>
+                <field name="isSaving" :value="false"/>
+                <field name="roleSearchResults" :value="[]"/>
+                <field name="userSearchResults" :value="[]"/>
+              </field>
+            </set-state>
+            <open-modal target="modal_koreaexim_notification_template_edit"/>
+          </sequence>
+        </on>
+        <span>$t:sirsoft-koreaexim.edit_template</span>
+      </button>
+    </div>
+
+    <button type="button" class="btn btn-secondary" disabled="{{_computed.isNotificationReadOnly}}">
+      <on type="click">
+        <!-- 정의 초기화 창 열기 — 대상 ID·이름을 전역에 두고 확인 창에서 실제 초기화를 보낸다 -->
+        <sequence>
+          <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/>
+          <open-modal target="modal_koreaexim_notification_definition_reset"/>
+        </sequence>
+      </on>
+      <span>$t:sirsoft-koreaexim.reset</span>
+    </button>
+  </div>
+</div>
+</partial>

@@ -1,0 +1,19 @@
+feature: Hello 모듈 사용자 메모 목록 — 제목 서식과 카드 반복
+
+description: |
+  사용자 메모 목록(/memos)의 제목이 관리자 템플릿 전용 의미 클래스(text-page-heading, section-heading)를 써서
+  사용자 템플릿에서 정의가 없어 쪽 제목 16px, 메모 제목 굵기 400 으로 나왔고, 반복(data-each)이 space-y-3 묶음 쪽에
+  붙어 카드 사이 간격이 0px 이었다(7.1.0 전수 실측 M3). 사용자 화면은 템플릿과 무관한 유틸리티 클래스를 쓰고
+  반복은 카드에 둔다. Hello 사용자 템플릿에서는 메모 본문 P 가 없는 컴포넌트라 빠졌다 — 가장 작은 사용자 템플릿에도 있는
+  기본 컴포넌트만 쓴다. 축 part 는 확인 부분(제목 서식, 반복 위치, 컴포넌트)이다.
+
+axes:
+  part: [headings, iteration, components]
+
+effects:
+  - user_layout_uses_template_neutral_heading_classes
+  - memo_cards_repeat_inside_single_spaced_list
+  - user_layout_uses_components_every_user_template_provides
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/tests/Unit/Layouts/UserMemoListMarkupTest.php

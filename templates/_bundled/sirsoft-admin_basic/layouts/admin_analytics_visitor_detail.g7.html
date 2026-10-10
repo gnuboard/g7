@@ -1,0 +1,279 @@
+<!-- 방문자 상세 — 왼쪽 카드(키·유형·환경·첫/마지막 방문), 오른쪽 방문 아코디언. 방문을 펼치면 액션 타임라인
+  (페이지뷰·내려받기·외부 링크·검색어·전환)이 시간순으로 나온다. 화면 녹화가 아니라 이미 모은 액션을 늘어놓은
+  것뿐이다. 익명 모드에서는 키가 날마다 새로 만들어져 서버가 당일로 좁힌다 — 그 안내를 카드에 띄운다.
+  「이 방문자 데이터 삭제」는 정보주체 삭제 창을 방문자 키로 연다. -->
+<layout name="admin_analytics_visitor_detail" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.visitor_detail.title"/>
+  <!-- 한 방문자의 카드 정보와 방문 목록(경로의 방문자 키). 기간은 달력으로 고른 `from`·`to` 만 읽고 프리셋은 쓰지 않는다.
+       없는 키(404)도 권한 없음(403)처럼 에러 화면으로 보낸다. -->
+  <data-source id="analytics_visitor" label_key="$t:editor.data_source.analytics_visitor" type="api" endpoint="/api/admin/analytics/visitors/{{route?.key}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params from="{{query.from}}" to="{{query.to}}"/>
+    <fallback>
+      <field name="data">
+        <field name="visitor" :value="null"/>
+        <field name="visits" :value="[]"/>
+        <field name="mode" value="full"/>
+        <field name="mode_notice" :value="null"/>
+        <field name="ip_mask_octets" :value="0"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 공통 상단 경고(수집 꺼짐·동의 폴백·큐 적체)용 진단 상태. 목록 화면과 같은 조각을 쓰므로 같은 소스를
+       background 로 함께 받는다 — 첫 그림을 늦추지 않되 경고가 이 화면에서만 빠지지 않게. -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="openVisits" :value="{}"/>
+  </init-local>
+  <computed name="csvUrl">{{'/api/admin/analytics/visitors/' + (route?.key ?? '') + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '')}}</computed>
+  <computed name="csvFilename">{{'analytics-visitor-' + (route?.key ?? '') + (query.from ? '-' + query.from + '_' + (query.to || query.from) : '') + '.csv'}}</computed>
+  <permissions>
+    <permission>core.analytics.privacy</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_visitor</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="analytics_visitor_detail_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
+        <div class="flex-center gap-3">
+          <button data-ref="back_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.visitor_detail.back">
+            <on type="click">
+              <!-- 목록으로 — 질의를 병합해 돌아가므로 목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다. -->
+              <navigate path="/admin/analytics/visitors" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="arrow-left" class="text-xl"/>
+          </button>
+          <div>
+            <h1 class="page-title">$t:admin.analytics.visitor_detail.title</h1>
+            <p class="text-label-subtle mt-1 font-mono break-all">{{route?.key ?? ''}}</p>
+          </div>
+        </div>
+        <div class="flex-center gap-2">
+          <!-- blob 저장은 응답 헤더의 파일명을 쓰지 못해 화면이 준 이름이 이긴다 — 서버 규약
+               (`analytics-visitor-{key}-{from}_{to}.csv`, 기간이 없으면 접미 없음)을 주소와 같은 값으로
+               따르는 `csvFilename` 을 넘긴다. 기간을 빼면 같은 사람을 두 기간으로 받은 파일이 같은 이름이
+               된다(#682 S3 라운드 13). -->
+          <button data-ref="visitor_csv_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5">
+            <on type="click">
+              <action handler="downloadAttachment" url="{{_computed.csvUrl}}" filename="{{_computed.csvFilename}}"/>
+            </on>
+            <icon name="download" size="sm"/>
+            <span>$t:admin.analytics.common.csv_download</span>
+          </button>
+          <button data-ref="visitor_delete_button" type="button" class="btn btn-danger btn-sm flex-center gap-1.5">
+            <on type="click">
+              <!-- 정보주체 삭제 창을 방문자 키로 연다. 끝나면 목록으로 돌아간다(analyticsSubjectAfter). -->
+              <sequence>
+                <set-state target="global" analyticsSubjectAfter="visitors" :analyticsSubjectConfirm="false">
+                  <field name="analyticsSubject">
+                    <field name="visitor_key" value="{{route?.key ?? ''}}"/>
+                  </field>
+                </set-state>
+                <open-modal target="analytics_subject_delete_modal"/>
+              </sequence>
+            </on>
+            <icon name="trash" size="sm"/>
+            <span>$t:admin.analytics.visitor_detail.delete_button</span>
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <div data-ref="anonymous_mode_alert" data-if="{{analytics_visitor?.data?.mode === 'anonymous'}}" class="alert-info mb-4">
+        <div class="flex-center gap-3">
+          <icon name="user-secret" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft">{{analytics_visitor?.data?.mode_notice ?? $t('admin.analytics.alerts.anonymous_mode')}}</p>
+        </div>
+      </div>
+      <div data-ref="detail_grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <blur-until-loaded sources="analytics_visitor"/>
+        <div data-ref="visitor_card" class="admin-card">
+          <h2 class="section-heading mb-3">$t:admin.analytics.visitor_detail.card.title</h2>
+          <div class="space-y-2 text-sm">
+            <div class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.type</span>
+              <div>
+                <badge data-type="composite" color="{{analytics_visitor?.data?.visitor?.visitor_type === 'admin' ? 'red' : (analytics_visitor?.data?.visitor?.visitor_type === 'member' ? 'blue' : (analytics_visitor?.data?.visitor?.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (analytics_visitor?.data?.visitor?.visitor_type ?? 'guest'))}}" size="sm"/>
+              </div>
+            </div>
+            <div class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.visits</span>
+              <span class="text-heading">{{(analytics_visitor?.data?.visitor?.visits ?? (analytics_visitor?.data?.visits ?? []).length) | number}}</span>
+            </div>
+            <!-- 회원 칸. 목록 화면과 같은 값을 같은 모양으로 — 이름을 보고 들어왔는데 카드에서
+                 그 사람을 잃지 않게 한다. 가명화 구간은 번호·이름이 없고 해시만 남는다(계획서 §4.11). -->
+            <div data-ref="card_member_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.member</span>
+              <span data-if="{{!!analytics_visitor?.data?.visitor?.user?.name}}" class="text-body">{{analytics_visitor.data.visitor.user.name}}{{analytics_visitor?.data?.visitor?.user?.email ? ' (' + analytics_visitor.data.visitor.user.email + ')' : ''}}</span>
+              <span data-if="{{!analytics_visitor?.data?.visitor?.user?.name &amp;&amp; !!analytics_visitor?.data?.visitor?.user_hash}}" class="text-body font-mono text-sm">{{String(analytics_visitor.data.visitor.user_hash).slice(0, 12)}}</span>
+              <span data-if="{{!analytics_visitor?.data?.visitor?.user?.name &amp;&amp; !analytics_visitor?.data?.visitor?.user_hash &amp;&amp; !!analytics_visitor?.data?.visitor?.user_id}}" class="text-body">#{{analytics_visitor.data.visitor.user_id}}</span>
+              <span data-if="{{!analytics_visitor?.data?.visitor?.user?.name &amp;&amp; !analytics_visitor?.data?.visitor?.user_hash &amp;&amp; !analytics_visitor?.data?.visitor?.user_id}}" class="text-body">-</span>
+            </div>
+            <!-- 재방문 여부. 익명 모드에서는 키가 날마다 바뀌어 하루 안에서만 묶이므로 위쪽
+                 `mode_notice` 안내가 그 한계를 함께 말한다(계획서 §4.11). -->
+            <div data-ref="card_returning_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.returning</span>
+              <badge data-type="composite" color="{{analytics_visitor?.data?.visitor?.is_returning ? 'blue' : 'gray'}}" text="{{analytics_visitor?.data?.visitor?.is_returning ? $t('admin.analytics.visitor_detail.card.returning_yes') : $t('admin.analytics.visitor_detail.card.returning_no')}}" size="sm"/>
+            </div>
+            <!-- 방문자 정보는 원장이 아는 부수정보를 모두 보인다 — 가장 최근 방문 기준(방문마다 다를 수 있는 값은
+                 오른쪽 방문 이력을 펼치면 방문별로 보인다). #682 S4 라운드 8. -->
+            <div data-ref="card_country_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.country</span>
+              <span class="text-body text-right break-all">{{analytics_visitor?.data?.visitor?.country_name ?? analytics_visitor?.data?.visitor?.country_code ?? '-'}}</span>
+            </div>
+            <div data-ref="card_region_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.region</span>
+              <span class="text-body text-right break-all">{{[analytics_visitor?.data?.visitor?.region_code, analytics_visitor?.data?.visitor?.city].filter(Boolean).join(' · ') || '-'}}</span>
+            </div>
+            <div data-ref="card_device_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.device</span>
+              <span class="text-body text-right break-all">{{analytics_visitor?.data?.visitor?.device_type_label ?? analytics_visitor?.data?.visitor?.device_type ?? '-'}}</span>
+            </div>
+            <div data-ref="card_browser_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.browser</span>
+              <span class="text-body text-right break-all">{{([analytics_visitor?.data?.visitor?.browser_name, analytics_visitor?.data?.visitor?.browser_version].filter(Boolean).join(' ') || '-') + ' / ' + ([analytics_visitor?.data?.visitor?.os_name, analytics_visitor?.data?.visitor?.os_version].filter(Boolean).join(' ') || '-')}}</span>
+            </div>
+            <div data-ref="card_resolution_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.resolution</span>
+              <span class="text-body text-right break-all">{{analytics_visitor?.data?.visitor?.screen_resolution ?? '-'}}</span>
+            </div>
+            <div data-ref="card_browser_language_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.browser_language</span>
+              <span class="text-body text-right break-all">{{analytics_visitor?.data?.visitor?.browser_language_label ?? analytics_visitor?.data?.visitor?.browser_language ?? '-'}}</span>
+            </div>
+            <div data-ref="card_locale_row" class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.locale</span>
+              <span class="text-body text-right break-all">{{analytics_visitor?.data?.visitor?.locale_label ?? analytics_visitor?.data?.visitor?.locale ?? '-'}}</span>
+            </div>
+            <div class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.ip</span>
+              <!-- 설정이 뒤 옥텟을 지운 주소를 원본으로 읽으면 정보주체 요청에 그 주소로 잘못 답한다
+                   — 서버가 내려준 마스킹 옥텟 수를 배지로 함께 보인다(§4.10 「IP(마스킹 표시)」). -->
+              <div class="flex-center gap-2">
+                <span class="text-body font-mono">{{(analytics_visitor?.data?.visits ?? [])[0]?.ip ?? '-'}}</span>
+                <!-- 배지는 설정이 아니라 **이 주소**가 가려졌는지를 말한다 — 마스킹을 켜며 소급을 건너뛴 기존 방문은
+                     원래 주소 그대로라, 설정만 보고 「마스킹」을 붙이면 원래 주소를 가려진 값으로 읽는다(7.1.0 실측 O-E8).
+                     서버가 방문마다 `ip_masked`(지금 설정대로 가려졌는가)를 싣는다. -->
+                <badge data-type="composite" data-if="{{(analytics_visitor?.data?.ip_mask_octets ?? 0) &gt; 0 &amp;&amp; (analytics_visitor?.data?.visits ?? [])[0]?.ip_masked !== false}}" color="gray" text="$t:admin.analytics.visitor_detail.card.ip_masked|count={{analytics_visitor?.data?.ip_mask_octets ?? 0}}|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}" size="sm"/>
+                <badge data-type="composite" data-if="{{(analytics_visitor?.data?.visits ?? [])[0]?.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>
+              </div>
+            </div>
+            <div class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.first_visit</span>
+              <span class="text-body">{{analytics_visitor?.data?.visitor?.first_action_at | datetime | default('-')}}</span>
+            </div>
+            <div class="flex-between gap-3">
+              <span class="text-label-subtle">$t:admin.analytics.visitor_detail.card.last_visit</span>
+              <span class="text-body">{{analytics_visitor?.data?.visitor?.last_action_at | datetime | default('-')}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="visits_column" class="lg:col-span-2 space-y-3">
+          <h2 class="section-heading">$t:admin.analytics.visitor_detail.visits_title</h2>
+          <empty-state data-type="composite" data-ref="visits_empty" data-if="{{!analytics_visitor?.loading &amp;&amp; (analytics_visitor?.data?.visits ?? []).length === 0}}" iconName="clock-rotate-left" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-10"/>
+          <div data-ref="visit_item_{{$idx}}" data-each="visit, $idx in {{analytics_visitor?.data?.visits ?? []}}" class="admin-card">
+            <button type="button" class="w-full flex-between gap-3 text-left">
+              <on type="click">
+                <!-- 방문 아코디언 — 방문 id 를 키로 여러 개를 함께 펼 수 있다. -->
+                <set-state target="local" openVisits="{{Object.assign({}, _local.openVisits ?? {}, {[visit.visit_id]: !(_local.openVisits ?? {})[visit.visit_id]})}}"/>
+              </on>
+              <!-- 방문 요약은 앞의 가운뎃점을 붙인 채 둔다 — `$t:defer:` 토큰이 글자의 전부이면 반복 안에서
+                   해소되지 않고 키가 그대로 보인다(브라우저 실측 M12). 앞에 고정 글자가 하나라도 있으면 해소된다. -->
+              <div class="flex-center gap-3 flex-wrap">
+                <span class="text-heading">{{visit.first_action_at | datetime | default('-')}}</span>
+                <span class="text-label-subtle">· $t:defer:admin.analytics.visitor_detail.visit_summary|count={{visit.pageviews ?? 0}}|pages={{visit.pageviews ?? 0}}|minutes={{Math.floor((visit.total_time_seconds ?? 0) / 60)}}|seconds={{(visit.total_time_seconds ?? 0) % 60}}</span>
+                <badge data-type="composite" data-if="{{!!visit.referrer_name}}" color="gray" text="{{visit.referrer_name}}" size="sm"/>
+                <!-- 미룬 번역 토큰이 값의 **전부**이면 반복 서브트리에서 풀리지 않아 키가 그대로 보인다
+                  (#682 S3 라운드 8 실측: 전환이 든 방문에서 `$t:defer:…conversions_badge|count=1` 노출).
+                  바로 위 방문 요약(`· $t:defer:…`)처럼 앞에 고정 글자를 두면 값까지 채워 해소된다 —
+                  그래서 라벨을 정적 `$t:` 로 앞세우고 토큰은 건수만 맡는다. -->
+                <badge data-type="composite" data-if="{{(visit.conversions ?? []).length > 0}}" color="green" text="$t:admin.analytics.visitor_detail.conversions_badge_label $t:defer:admin.analytics.visitor_detail.conversions_badge|count={{((visit.conversions ?? []).length) | number}}" size="sm"/>
+              </div>
+              <icon name="{{(_local.openVisits ?? {})[visit.visit_id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm" class="text-gray-400 dark:text-gray-500"/>
+            </button>
+            <div data-ref="visit_timeline_{{$idx}}" data-if="{{(_local.openVisits ?? {})[visit.visit_id] === true}}" class="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3 space-y-2">
+              <!-- 이 방문의 부수정보 — 원장이 아는 환경·지역·언어·유입 값 전부(#682 S4 라운드 8). -->
+              <div data-ref="visit_info_{{$idx}}" class="kv-list-2 text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700">
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.type</span><span class="text-body break-all">{{$t('admin.analytics.visitors.types.' + (visit.visitor_type ?? 'guest'))}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.ip</span><div class="flex-center flex-wrap gap-1"><span class="text-body break-all">{{visit.ip ?? '-'}}</span><badge data-type="composite" data-if="{{visit.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/></div></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.last_action</span><span class="text-body break-all">{{visit.last_action_at | datetime | default('-')}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.source</span><span class="text-body break-all">{{visit.source === 'server' ? $t('admin.analytics.visitor_detail.visit_info.source_server') : (visit.source === 'beacon' ? $t('admin.analytics.visitor_detail.visit_info.source_beacon') : '-')}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.device</span><span class="text-body break-all">{{visit.device_type_label ?? visit.device_type ?? '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.browser</span><span class="text-body break-all">{{([visit.browser_name, visit.browser_version].filter(Boolean).join(' ') || '-') + ' / ' + ([visit.os_name, visit.os_version].filter(Boolean).join(' ') || '-')}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.resolution</span><span class="text-body break-all">{{visit.screen_resolution ?? '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.browser_language</span><span class="text-body break-all">{{visit.browser_language_label ?? visit.browser_language ?? '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.locale</span><span class="text-body break-all">{{visit.locale_label ?? visit.locale ?? '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.country</span><span class="text-body break-all">{{[visit.country_name ?? visit.country_code, visit.region_code, visit.city].filter(Boolean).join(' · ') || '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.referrer</span><span class="text-body break-all">{{[visit.referrer_type_label ?? visit.referrer_type, visit.referrer_name].filter(Boolean).join(' · ') || '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.keyword</span><span class="text-body break-all">{{visit.referrer_keyword ?? '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.campaign</span><span class="text-body break-all">{{[visit.campaign_name, visit.campaign_source, visit.campaign_medium].filter(Boolean).join(' · ') || '-'}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.bounce</span><span class="text-body break-all">{{visit.is_bounce === true ? $t('admin.analytics.visitor_detail.visit_info.bounce_yes') : (visit.is_bounce === false ? $t('admin.analytics.visitor_detail.visit_info.bounce_no') : '-')}}</span></div>
+                <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.returning</span><span class="text-body break-all">{{visit.is_returning === true ? $t('admin.analytics.visitor_detail.card.returning_yes') : (visit.is_returning === false ? $t('admin.analytics.visitor_detail.card.returning_no') : '-')}}</span></div>
+              </div>
+              <!-- 전체 유입 URL. 머리의 뱃지와 유입 경로 화면은 호스트(`referrer_name`)까지만 보여 줘 어느 글에서
+                왔는지 말해 주지 못하는데, 원장에는 처음부터 전체 URL 이 있었다. 익명화(`referrer_anonymization`)를
+                켠 구간은 저장 시점에 이미 도메인까지만 남아 여기서도 도메인만 보인다(#682 라운드 4, 검수 지적 ⑥).
+                바깥 주소라 `noopener noreferrer nofollow` 로 연다. -->
+              <div data-ref="visit_referrer_{{$idx}}" data-if="{{!!visit.referrer_url}}" class="flex items-start gap-3 text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700">
+                <span class="text-hint whitespace-nowrap w-20">$t:admin.analytics.visitor_detail.referrer_label</span>
+                <a href="{{visit.referrer_url}}" target="_blank" rel="noopener noreferrer nofollow" class="text-link break-all flex-1" title="{{visit.referrer_url}}">{{visit.referrer_url}}</a>
+              </div>
+              <div data-each="action, $aidx in {{visit.actions ?? []}}" class="flex items-start gap-3 text-sm">
+                <span class="text-hint font-mono whitespace-nowrap w-20">{{action.occurred_at | datetime('HH:mm:ss') | default('-')}}</span>
+                <badge data-type="composite" color="{{action.action_type === 'pageview' ? 'blue' : (action.action_type === 'download' ? 'indigo' : (action.action_type === 'outlink' ? 'cyan' : (action.action_type === 'site_search' ? 'yellow' : (action.action_type === 'goal' ? 'green' : 'gray'))))}}" text="{{$t('admin.analytics.visitor_detail.timeline.' + (action.action_type ?? 'event'))}}" size="sm"/>
+                <span class="text-body break-all flex-1" title="{{action.name ?? ''}}">{{action.name_display ?? action.name ?? '-'}}</span>
+                <!-- 검색 액션만 결과 건수를 덧붙인다(§4.11 「검색 "그누보드" 결과 12건」). 0 건도 보여야
+                     한다 — 빈손으로 돌아간 검색이 이 화면에서 가려낼 값이다. 검색이 아닌 액션은 응답에
+                     null 이라 뜨지 않는다. -->
+                <span data-ref="timeline_search_result_count_{{$aidx}}" data-if="{{action.action_type === 'site_search' &amp;&amp; action.search_result_count !== null &amp;&amp; action.search_result_count !== undefined}}" class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.timeline.search_result_count|count={{action.search_result_count}}</span>
+                <span data-if="{{(action.time_spent_seconds ?? 0) > 0}}" class="text-hint whitespace-nowrap">{{Math.floor((action.time_spent_seconds ?? 0) / 60)}}:{{String((action.time_spent_seconds ?? 0) % 60).padStart(2, '0')}}</span>
+              </div>
+              <div data-if="{{(visit.conversions ?? []).length > 0}}" class="pt-2 border-t border-dashed border-gray-200 dark:border-gray-700">
+                <p class="text-label-subtle mb-1">$t:admin.analytics.visitor_detail.conversions_title</p>
+                <div data-each="conv, $cidx in {{visit.conversions ?? []}}" class="flex items-start gap-3 text-sm">
+                  <span class="text-hint font-mono whitespace-nowrap w-20">{{conv.occurred_at | datetime('HH:mm:ss') | default('-')}}</span>
+                  <badge data-type="composite" color="green" text="$t:admin.analytics.visitor_detail.timeline.goal" size="sm"/>
+                  <!-- 목표 이름은 서버가 등록부에서 푼 `goal_label`(전환 탭과 같은 이름). `label` 은 목표
+                       이름이 아니라 전환 속성(주문번호 등)이라 옆에 덧붙인다. -->
+                  <span class="text-body flex-1 min-w-0 break-all">{{conv.goal_label ?? conv.goal_key ?? '-'}}</span>
+                  <span data-if="{{conv.label}}" class="text-hint min-w-0 break-all">{{conv.label}}</span>
+                  <span data-if="{{conv.revenue !== null &amp;&amp; conv.revenue !== undefined}}" class="text-heading whitespace-nowrap">{{conv.revenue | number}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 정보주체 기록 삭제 창 — 정보주체 요청 화면과 같은 조각. -->
+  <modal src="partials/admin_analytics/_modal_subject_delete.g7.html"/>
+</layout>

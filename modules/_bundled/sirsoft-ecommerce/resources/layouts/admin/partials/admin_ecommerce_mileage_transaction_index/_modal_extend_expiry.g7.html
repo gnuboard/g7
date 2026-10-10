@@ -1,0 +1,76 @@
+<!-- 고른 적립건들의 유효기간을 한꺼번에 며칠씩 미루는 창.
+  대상을 여기서 고르지 않는다 — 표에서 체크한 적립건 id 묶음을 `_global.mileageExtend` 에 담아
+  넘겨받는다. 회원은 보내지 않는다 — 여러 회원의 적립건을 함께 고를 수 있고, 서버가 적립건별
+  주인 회원을 찾아 전부 연장한다(한 회원만 지정하면 다른 회원의 적립건이 조용히 빠진다).
+  실행 버튼의 잠금 조건은 셋이다 — 저장 중이거나, 일수가 1 미만이거나, 고른 적립건이 없으면
+  눌리지 않는다. 셋 다 서버에 가기 전에 거를 수 있는 것들이다.
+  바깥을 눌러도 닫히지 않는다 — 입력 중 실수로 사라지는 것을 막는다. -->
+<partial description="마일리지 일괄 유효기간 연장 모달 (지급계 lot 대상 + G7 표준 검증 피드백 + 로딩 상태). 회원 미지정 — 여러 회원의 적립건을 함께 연장.">
+  <modal data-type="composite" data-ref="modal_extend_expiry" title="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.title" size="sm" :closeOnOverlayClick="false">
+    <div class="space-y-4">
+      <div data-ref="extend_error_banner" data-if="{{_global.mileageExtend?.errors}}" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+        <div class="flex gap-2">
+          <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-red-800 dark:text-red-200">{{_global.mileageExtend?.errors?.message ?? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.validation_error')}}</p>
+            <ul data-if="{{_global.mileageExtend?.errors?.errors &amp;&amp; Object.keys(_global.mileageExtend.errors.errors).length > 0}}" data-each="msg in Object.entries(_global.mileageExtend?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])" class="mt-1 list-disc list-inside space-y-0.5">
+              <li class="text-xs text-red-700 dark:text-red-300">{{msg}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.selected_lots|count={{(_global.mileageExtend?.lotIds ?? []).length}}</p>
+      <div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days</label>
+          <input type="number" value="{{_global.mileageExtend?.days ?? 30}}" min="1" class="{{_global.mileageExtend?.errors?.errors?.days ? 'input w-24 text-center input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-24 text-center'}}">
+            <on type="input">
+              <!-- 연장 일수. 입력칸이 주는 값은 글자라, 실행 액션이 보낼 때 숫자로 바꾼다(잠금 조건도 마찬가지). 여기서 바꾸지 않는 것은 입력 중 빈 칸을 0 으로 만들지 않기 위해서다. -->
+              <set-state target="global" mileageExtend.days="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days_suffix|count={{_global.mileageExtend?.days ?? 30}}</span>
+        </div>
+        <span data-if="{{_global.mileageExtend?.errors?.errors?.days}}" class="form-error">{{_global.mileageExtend?.errors?.errors?.days?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 mt-6">
+      <button type="button" disabled="{{_global.mileageExtend?.isSaving ?? false}}" class="btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.mileage_transactions.cancel</span>
+      </button>
+      <button data-ref="extend_submit_button" type="button" disabled="{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0}}" class="flex items-center gap-2 btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 일괄 연장 실행. 적립건 묶음·일수 둘을 그대로 보낸다(회원은 서버가 적립건에서 찾는다).
+            성공 갈래에서 `mileageExtend` 와 목록 화면의 표 선택(`$parent._local.selectedItems`)을 함께
+            비우는 것은 다음 연장에 이전 선택이 남지 않게 하기 위해서다 — 표 선택이 남으면 체크가 켜진 채
+            버튼이 다시 눌려 같은 적립건이 한 번 더 연장된다. 실패 갈래는 창을 닫지 않고 서버 응답을
+            통째로 담아 위 배너에 넘기며, 선택은 고쳐서 다시 시도할 수 있게 그대로 둔다. -->
+          <sequence>
+            <set-state target="global" :mileageExtend.isSaving="true" :mileageExtend.errors="null"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/mileage-transactions/extend-expiry" method="POST" body="{{({ lot_ids: _global.mileageExtend?.lotIds ?? [], days: Number(_global.mileageExtend?.days ?? 0) })}}">
+              <success>
+                <!-- 표 선택 해제는 창을 닫기 **전에** 한다 — 창이 닫히면 `$parent` 가 가리킬 레이아웃 문맥이 사라져 쓰기가 버려진다.
+                  두 자리에 같은 값을 쓴다(docs/frontend/modal-usage.md 「부모 폼 커밋」): 창의 `$parent._local` 쓰기는 액션이 읽는
+                  `_global._local` 미러에서 빠지므로, 화면 쪽만 비우면 다음 [일괄 연장]이 옛 선택을 실어 보낼 수 있다. -->
+                <set-state target="global" :_local.selectedItems="[]"/>
+                <set-state target="$parent._local" :selectedItems="[]"/>
+                <close-modal/>
+                <refetch-data-source dataSourceId="transactions"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.mileage_transactions.message.extend_success"/>
+                <set-state target="global" :mileageExtend="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :mileageExtend.isSaving="false" mileageExtend.errors="{{error}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.mileageExtend?.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>{{_global.mileageExtend?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.submit')}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

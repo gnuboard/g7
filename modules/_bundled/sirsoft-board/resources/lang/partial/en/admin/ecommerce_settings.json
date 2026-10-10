@@ -10,6 +10,7 @@
     "go_to_posts": "Manage Inquiries",
     "go_to_posts_desc": "View and respond to product inquiries submitted by customers. Add this board to the admin sidebar menu for quicker access.",
     "add_to_admin_menu": "Add to Admin Menu",
-    "add_to_admin_menu_desc": "Adds a posts management item for this board to the sidebar admin menu."
+    "add_to_admin_menu_desc": "Adds a posts management item for this board to the sidebar admin menu.",
+    "add_to_admin_menu_no_permission": "You cannot add this board to the admin menu because you do not have permission to update it."
   }
 }

@@ -1,0 +1,67 @@
+<!-- 개인정보 조치 직권 실행 확인 창 (#636 후속) — 게시판 환경설정의 작성 IP·비회원 글 보유기간 「지금 실행」이 연다(두 대상이 창 하나를 함께 쓴다).
+  e2e:allow develop-7.1.0 1차 병합 후속 — 유입·기존 레이아웃 34개에 S21 주석만 채웠다. 굽기 JSON 은 comment 키 외 무변경(서빙 시 strip)이라 동작 변화 없음. 관련 확장 Vitest 레이아웃 테스트 통과.
+  코어 환경설정 개인정보 탭의 같은 창과 동작이 같다(`_global.privacyRun` 에 대상 키·이름을 넣고 연 뒤 건수를 받아 온다,
+  실행은 코어 직권 실행 API 로 큐에 접수만 하고 닫는다, 결과는 화면의 상태 줄이 주기 조회로 보여 준다).
+  문구는 이 확장의 다국어 키를 쓴다 — 확장 화면이 특정 관리자 템플릿의 문구에 기대지 않게 한다. -->
+<partial description="게시판 환경설정 개인정보 보유기간 - 직권 실행 확인 모달" editor_label="$t:sirsoft-board.admin.settings.privacy_retention.manual_run.editor_label">
+  <modal data-type="composite" data-ref="privacy_run_modal" title="$t:sirsoft-board.admin.settings.privacy_retention.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}" size="md">
+    <div data-ref="privacy_run_content" class="space-y-3">
+      <p class="text-body">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.confirm_desc</p>
+      <div data-ref="privacy_run_summary" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2">
+        <div class="flex-center gap-2">
+          <span class="text-label-subtle">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.count_label</span>
+          <loading-spinner data-type="composite" data-if="{{_global.privacyRun?.loading}}" size="sm" text="$t:sirsoft-board.admin.settings.privacy_retention.manual_run.loading" color="text-blue-600 dark:text-blue-400"/>
+          <span data-ref="privacy_run_count" data-if="{{!_global.privacyRun?.loading &amp;&amp; _global.privacyRun?.preview}}" class="text-primary font-medium tabular-nums">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.count_value|count={{_global.privacyRun?.preview?.count ?? 0}}</span>
+        </div>
+        <div data-ref="privacy_run_mode" data-if="{{['anonymize', 'delete', 'erase_ip'].includes(_global.privacyRun?.preview?.mode ?? '')}}" class="flex-center gap-2">
+          <span class="text-label-subtle">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.mode_label</span>
+          <span class="text-primary font-medium">{{$t('sirsoft-board.admin.settings.privacy_retention.manual_run.modes.' + (_global.privacyRun?.preview?.mode ?? 'anonymize'))}}</span>
+        </div>
+      </div>
+      <p data-ref="privacy_run_disabled_notice" data-if="{{_global.privacyRun?.preview &amp;&amp; _global.privacyRun?.preview?.enabled === false}}" class="alert-info">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.disabled_notice</p>
+      <p data-ref="privacy_run_delete_warning" data-if="{{_global.privacyRun?.preview?.mode === 'delete'}}" class="text-error-soft">$t:sirsoft-board.admin.settings.privacy_retention.delete_warning</p>
+      <p class="text-error-soft">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.irreversible</p>
+      <p class="text-hint">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.queue_hint</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.privacyRun?.submitting}}">
+        <on type="click">
+          <!-- 취소 — 아무것도 접수하지 않고 닫는다. 작성 IP·비회원 두 축이 이 창을 함께 쓰므로 창이 들고 있던
+               `_global.privacyRun`(대상 키·건수·진행 표시)도 실행 성공 때와 똑같이 비워, 어떻게 닫든 지난 축의 값이 전역에 남지 않게 한다. -->
+          <sequence>
+            <set-state target="global" :privacyRun="null"/>
+            <close-modal target="privacy_run_modal"/>
+          </sequence>
+        </on>
+        $t:sirsoft-board.admin.settings.privacy_retention.manual_run.cancel
+      </button>
+      <button data-ref="privacy_run_execute" type="button" :lockRepeatClick="true" class="btn btn-danger flex-center gap-2" disabled="{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}">
+        <on type="click">
+          <!-- 접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로
+               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가
+               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을
+               알리고 상태를 다시 받는다. -->
+          <sequence>
+            <set-state target="global" :privacyRun.submitting="true"/>
+            <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}" method="POST">
+              <success>
+                <set-state target="global" :privacyRun="null"/>
+                <close-modal target="privacy_run_modal"/>
+                <toast type="success" message="$t:sirsoft-board.admin.settings.privacy_retention.manual_run.queued_toast"/>
+                <refetch-data-source dataSourceId="privacyManualRuns"/>
+                <refetch-data-source dataSourceId="boardPrivacyRetentionPreview"/>
+              </success>
+              <fail>
+                <set-state target="global" :privacyRun.submitting="false"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.privacy_retention.manual_run.queue_failed'}}"/>
+                <refetch-data-source dataSourceId="privacyManualRuns"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.privacyRun?.submitting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.privacyRun?.submitting ? '$t:sirsoft-board.admin.settings.privacy_retention.manual_run.executing' : '$t:sirsoft-board.admin.settings.privacy_retention.manual_run.execute'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,1186 @@
+{
+    "comment": "전 회원 반응 목록(전 게시판). 스크랩 관리 화면과 같은 짜임이다 — 검색 줄은 좁은 화면용과 넓은 화면용 두 벌이 나란히 있고(`responsive` 가 하나만 세운다) 같은 지역 상태를 공유하며, 검색 조립은 명명 액션 `searchBoardReactions` 한 자리에 모여 세 진입점(검색 버튼·PC 엔터·모바일 엔터)이 같은 규칙을 쓴다. 회원 상세에서 「이 회원 반응 보기」로 들어오면 `user_uuid` 가 붙고, 그때만 상단에 필터 배너가 선다.\n\n  유형·게시판 필터의 선택지는 별도 데이터소스가 아니라 **목록 응답 메타**(`reactions.data.reaction_types`·`reactions.data.boards`)에서 온다 — 반응 조회 권한만 가진 매니저는 환경설정·게시판 관리 권한이 없어 유형 API·게시판 목록 API 를 부를 수 없기 때문이다. 이미 비활성으로 돌린 유형도 선택지에 남는다(그 유형으로 쌓인 과거 반응을 찾아야 한다).\n\n  이 화면은 삭제된 글·댓글에 달린 반응도 보여준다 — 정리할 대상을 찾는 자리이기 때문이다.",
+    "version": "1.0.0",
+    "layout_name": "admin_board_reactions_index",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-board.admin.reactions.page_title",
+        "description": "$t:sirsoft-board.admin.reactions.page_description"
+    },
+    "data_sources": [
+        {
+            "id": "reactions",
+            "label_key": "$t:sirsoft-board.editor.data_source.reactions",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reactions",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "sort_order": "{{query.sort_order || 'desc'}}",
+                "board_id": "{{query.board_id}}",
+                "user_id": "{{query.user_id}}",
+                "user_uuid": "{{query.user_uuid}}",
+                "reaction_type_id": "{{query.reaction_type_id}}",
+                "target_type": "{{query.target_type}}",
+                "reacted_at_from": "{{query.reacted_at_from}}",
+                "reacted_at_to": "{{query.reacted_at_to}}",
+                "filters[0][field]": "{{query['filters[0][field]'] || 'all'}}",
+                "filters[0][value]": "{{query['filters[0][value]']}}",
+                "filters[0][operator]": "{{query['filters[0][operator]']}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "반응 목록 본체 — 정렬은 반응일 하나뿐이라 sort_by 를 받지 않고 방향만 받는다"
+        }
+    ],
+    "initLocal": {
+        "searchField": "all",
+        "searchQuery": ""
+    },
+    "permissions": [
+        "sirsoft-board.reactions.view"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "reactions"
+        ]
+    },
+    "named_actions": {
+        "searchBoardReactions": {
+            "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 페이지당 개수·정렬 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다. 회원 필터(user_id·user_uuid)는 여기서 건드리지 않는다 — 「이 회원의 반응 안에서 검색」이 자연스러운 동작이고, 해제는 전용 버튼이 한다",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/boards/reactions",
+                "mergeQuery": true,
+                "query": {
+                    "page": "",
+                    "filters[0][field]": "{{_local.searchField || 'all'}}",
+                    "filters[0][value]": "{{_local.searchQuery || ''}}",
+                    "filters[0][operator]": "like",
+                    "board_id": "{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}",
+                    "reaction_type_id": "{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}",
+                    "target_type": "{{_global.reactionTargetFilter !== undefined ? _global.reactionTargetFilter : (query.target_type || '')}}",
+                    "reacted_at_from": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reacted_at_from || '')}}",
+                    "reacted_at_to": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}"
+                }
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
+                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "board_reactions_content",
+                "type": "basic",
+                "name": "Div",
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "admin-page-content-fluid-compact"
+                        }
+                    }
+                },
+                "props": {
+                    "className": "admin-page-content-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-board.admin.reactions.page_title",
+                            "description": "$t:sirsoft-board.admin.reactions.page_description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reactions",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:sirsoft-board.admin.reactions.refresh"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrows-rotate",
+                                            "className": "text-xl"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "회원 필터 배너 — 회원 상세에서 건너온 상태라는 것을 화면이 말해 주지 않으면, 운영자는 전체 목록을 보고 있다고 믿고 건수를 읽는다",
+                        "id": "member_filter_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!!(query.user_id || query.user_uuid)}}",
+                        "props": {
+                            "data-testid": "admin-reaction-member-banner",
+                            "className": "admin-card flex-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "circle-info",
+                                    "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body flex-1"
+                                },
+                                "text": "$t:sirsoft-board.admin.reactions.filters.member_filter_notice"
+                            },
+                            {
+                                "id": "member_filter_clear",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "회원 필터만 떼고 검색어·기간은 유지한다 — 배너가 말하는 것이 회원 한정뿐이므로 그것만 되돌린다.\n                 쪽수를 건드리는 이동이라 목록을 다시 세우는 셈이다 — 표 본문만 대기 표시로 덮고 이력에는 쌓지 않는다(쪽 이동·정렬과 같은 규칙)",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reactions",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "reactions_data_grid__body",
+                                            "query": {
+                                                "user_id": "",
+                                                "user_uuid": "",
+                                                "page": ""
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "data-testid": "admin-reaction-member-banner-clear",
+                                    "className": "px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.reactions.filters.member_filter_clear"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_board_reactions_index/_partial_filter.json"
+                    },
+                    {
+                        "comment": "일괄 처리 줄은 **항상 세운다** — 저장소의 관리자 목록 21곳이 그렇게 하고, 버튼만\n        잠가 둔다. 고를 것이 있다는 사실 자체를 먼저 알려야 하고, 골랐다 풀 때마다 줄이\n        생겼다 사라지면 그 아래 표가 위아래로 흔들린다. 노출 여부는 권한으로 가른다\n        (형제 화면 회원 목록과 같은 규칙).",
+                        "id": "bulk_actions_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{reactions?.data?.abilities?.can_manage === true}}",
+                        "props": {
+                            "className": "bulk-actions-bar"
+                        },
+                        "children": [
+                            {
+                                "id": "selected_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body font-medium"
+                                },
+                                "text": "$t:sirsoft-board.admin.reactions.selected_count|count={{(_global.selectedIds || []).length}}"
+                            },
+                            {
+                                "id": "bulk_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2 ml-auto"
+                                },
+                                "children": [
+                                    {
+                                        "id": "bulk_delete",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "선택 삭제 — 확인 모달로 넘긴다. 삭제 권한이 없으면 버튼 자체가 잠겨 있어 여기까지 오지 않는다",
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "admin_reaction_bulk_delete_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "data-testid": "admin-reaction-bulk-delete",
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{reactions?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reactions.actions.bulk_delete"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "건수 줄 — 형제 관리자 목록 11곳이 표 바로 위에 총 건수를 세운다. 필터를 걸었을 때\n        「지금 몇 건이 남았는가」를 표를 세지 않고 알 수 있어야 한다.",
+                        "id": "table_header_bar",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between flex-wrap gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-label"
+                                },
+                                "text": "$t:sirsoft-board.admin.reactions.total_count|count={{reactions?.data?.pagination?.total ?? 0}}"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "reactions_data_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "actions": [
+                            {
+                                "comment": "체크한 행들을 전역에 모은다 — 위 일괄 삭제 버튼이 이 목록을 보고 잠기거나 풀린다",
+                                "type": "change",
+                                "event": "onSelectionChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "comment": "정렬 변경. 정렬 축이 반응일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다",
+                                "type": "change",
+                                "event": "onSortChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "comment": "순서가 달라지면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reactions",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "reactions_data_grid__body",
+                                            "query": {
+                                                "sort_order": "{{$args[1]}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "페이지 이동. 걸려 있던 검색·필터는 그대로 두고 번호만 바꾼다",
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "comment": "다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 삭제에 실린다 — 먼저 비운다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reactions",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "reactions_data_grid__body",
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "행 메뉴 세 갈래 — 원글로, 회원 상세로, 또는 이 반응 한 건만 삭제",
+                                "event": "onRowAction",
+                                "handler": "switch",
+                                "cases": {
+                                    "go_to_post": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{$args[1]?.board?.slug}}/post/{{$args[1]?.post_id}}"
+                                        }
+                                    },
+                                    "go_to_member": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/{{$args[1]?.member?.uuid}}"
+                                        }
+                                    },
+                                    "delete": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteTarget": "{{$args[1]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "admin_reaction_delete_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "data": "{{reactions?.data?.data}}",
+                            "sortable": true,
+                            "sortField": "created_at",
+                            "sortDirection": "{{query.sort_order || 'desc'}}",
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 20,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{reactions?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{reactions?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{reactions?.data?.pagination?.has_more_pages ?? false}}",
+                            "selectable": "{{reactions?.data?.abilities?.can_manage === true}}",
+                            "selectionScope": "page",
+                            "selectedIds": "{{_global.selectedIds || []}}",
+                            "idField": "id",
+                            "showColumnSelector": false,
+                            "responsiveBreakpoint": 768,
+                            "showFirstLast": true,
+                            "emptyMessage": "$t:sirsoft-board.admin.reactions.table_empty",
+                            "actionsColumnHeader": "$t:common.actions",
+                            "selectedCountText": "",
+                            "rowActions": [
+                                {
+                                    "id": "go_to_post",
+                                    "label": "$t:sirsoft-board.admin.reactions.actions.go_to_post",
+                                    "iconName": "file-lines",
+                                    "disabledField": "board.slug"
+                                },
+                                {
+                                    "id": "go_to_member",
+                                    "label": "$t:sirsoft-board.admin.reactions.actions.go_to_member",
+                                    "iconName": "user"
+                                },
+                                {
+                                    "id": "delete",
+                                    "label": "$t:sirsoft-board.admin.reactions.actions.delete",
+                                    "iconName": "trash",
+                                    "disabledField": "abilities.can_delete"
+                                }
+                            ],
+                            "columns": [
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-board.admin.reactions.columns.reacted_at",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "comment": "반응 시각은 «언제 눌렀나» 를 초까지 밝힌다 — 「2시간 전」 같은 상대 표기는 지울 대상을\n                 고를 때 두 반응의 선후를 가리지 못한다. 값은 UTC 로 저장돼 있고 `created_at` 이\n                 회원 표시 시간대로 환산된 절대 시각이다(`reacted_at` 은 상대 표기라 쓰지 않는다).",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-900 dark:text-white whitespace-nowrap"
+                                            },
+                                            "text": "{{row.created_at}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "member",
+                                    "header": "$t:sirsoft-board.admin.reactions.columns.member",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "ActionMenu",
+                                                            "if": "{{!!row.member?.uuid}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "회원 이름 메뉴 — 형제 목록(이커머스 마일리지 내역)과 같은 두 갈래다. 상세는 **새 창**으로\n                         열어 이 목록의 검색 조건을 잃지 않게 하고, 「이 회원으로 검색」은 같은 창에서 회원 조건만\n                         갈아끼운다(user_uuid — 목록이 이미 읽는 필터라 배너도 그대로 선다).",
+                                                                    "event": "onItemClick",
+                                                                    "handler": "switch",
+                                                                    "cases": {
+                                                                        "view_member": {
+                                                                            "handler": "openWindow",
+                                                                            "params": {
+                                                                                "path": "/admin/users/{{row.member?.uuid}}"
+                                                                            }
+                                                                        },
+                                                                        "search_member": {
+                                                                            "handler": "navigate",
+                                                                            "params": {
+                                                                                "path": "/admin/boards/reactions",
+                                                                                "mergeQuery": true,
+                                                                                "replace": true,
+                                                                                "query": {
+                                                                                    "user_uuid": "{{row.member?.uuid}}",
+                                                                                    "page": 1
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "position": "right",
+                                                                "items": [
+                                                                    {
+                                                                        "id": "view_member",
+                                                                        "label": "$t:sirsoft-board.admin.reactions.cell.view_member",
+                                                                        "iconName": "user"
+                                                                    },
+                                                                    {
+                                                                        "id": "search_member",
+                                                                        "label": "$t:sirsoft-board.admin.reactions.cell.search_member",
+                                                                        "iconName": "magnifying-glass"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading cursor-pointer hover:underline"
+                                                                    },
+                                                                    "text": "{{row.member?.name}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!row.member?.uuid}}",
+                                                            "props": {
+                                                                "className": "text-heading"
+                                                            },
+                                                            "text": "{{row.member?.name}}"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{row.member?.is_withdrawn}}",
+                                                            "props": {
+                                                                "color": "gray",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reactions.badges.withdrawn"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.member?.email}}",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "({{row.member?.email}})"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "target_title",
+                                    "header": "$t:sirsoft-board.admin.reactions.columns.target",
+                                    "cellClassName": "max-w-xs",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col gap-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "props": {
+                                                                "color": "{{row.target_type === 'comment' ? 'purple' : 'blue'}}",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "{{row.target_type_label}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!row.is_target_deleted && !!row.board}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "살아 있는 대상이고 게시판도 남아 있을 때만 원글로 건너뛴다 — 삭제된 대상·게시판 삭제 행은 갈 곳이 없다",
+                                                                    "type": "click",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "className": "font-medium truncate cursor-pointer hover:underline"
+                                                            },
+                                                            "text": "{{row.target_title}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{row.is_target_deleted || !row.board}}",
+                                                            "props": {
+                                                                "className": "font-medium truncate line-through text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "{{row.target_title}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "댓글 반응은 어느 댓글이었는지가 제목만으로는 드러나지 않아 발췌를 함께 싣는다",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!row.target_excerpt}}",
+                                                    "props": {
+                                                        "className": "text-tertiary truncate"
+                                                    },
+                                                    "text": "{{row.target_excerpt}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "board",
+                                    "header": "$t:sirsoft-board.admin.reactions.columns.board_name",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 flex-wrap"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!row.board}}",
+                                                    "props": {
+                                                        "className": "text-sm"
+                                                    },
+                                                    "text": "{{row.board?.name}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{!row.board}}",
+                                                    "props": {
+                                                        "color": "gray",
+                                                        "size": "sm"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.reactions.badges.board_deleted"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{row.board && (!row.board.use_reaction || !row.board.is_active)}}",
+                                                    "props": {
+                                                        "color": "yellow",
+                                                        "size": "sm"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.reactions.badges.reaction_off"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "reaction_type",
+                                    "header": "$t:sirsoft-board.admin.reactions.columns.reaction_type",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Img",
+                                                    "if": "{{!!row.reaction_type?.icon_url}}",
+                                                    "props": {
+                                                        "src": "{{row.reaction_type?.icon_url}}",
+                                                        "alt": "",
+                                                        "className": "w-5 h-5 object-contain"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{!row.reaction_type?.icon_url}}",
+                                                    "props": {
+                                                        "name": "{{row.reaction_type?.icon_name ?? 'fa-thumbs-up'}}",
+                                                        "size": "sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm"
+                                                    },
+                                                    "text": "{{row.reaction_type?.name ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{row.reaction_type && row.reaction_type.is_active === false}}",
+                                                    "props": {
+                                                        "color": "gray",
+                                                        "size": "sm"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.reactions.badges.type_inactive"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "target_status",
+                                    "header": "$t:sirsoft-board.admin.reactions.columns.target_status",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{row.target_status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.target_status === 'blinded' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : row.target_status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                                    },
+                                                    "text": "{{row.target_status_label}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{row.is_target_deleted}}",
+                                                    "props": {
+                                                        "color": "red",
+                                                        "size": "sm"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.reactions.badges.deleted_target"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "pagination_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-4 text-label text-center"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-board.admin.reactions.pagination_info|total={{reactions?.data?.pagination?.total ?? 0}}|from={{reactions?.data?.pagination?.from ?? 0}}|to={{reactions?.data?.pagination?.to ?? 0}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "단건 삭제 확인 — 지우는 것은 「그 회원이 누른 표시」이지 글이나 댓글이 아니다. 그 사실을 본문이 분명히 말한다",
+            "id": "admin_reaction_delete_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-board.admin.reactions.modals.delete_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.reactions.modals.delete_confirm"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "modal-footer-buttons"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reactionDeleteLoading": true
+                                    }
+                                },
+                                {
+                                    "comment": "반응 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다",
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-board/admin/reactions/{{_global.deleteTarget?.id}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactionDeleteLoading": false
+                                            }
+                                        },
+                                        {
+                                            "comment": "지운 행이 선택 목록에 남아 있으면 다음 일괄 삭제가 없는 ID 를 싣는다",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedIds": "{{(_global.selectedIds || []).filter(v => v !== _global.deleteTarget?.id)}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "reactions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{result.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactionDeleteLoading": false,
+                                                "errorMessage": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "error_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "admin-reaction-delete-confirm",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.reactionDeleteLoading}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.reactionDeleteLoading}}",
+                                    "text": "$t:common.confirm"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.reactionDeleteLoading}}",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.reactions.modals.processing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.reactions.modals.delete_editor_label"
+            }
+        },
+        {
+            "comment": "선택 삭제 확인 — 건수를 본문에 싣고, 회원 쪽 목록에서도 사라진다는 것을 알린다",
+            "id": "admin_reaction_bulk_delete_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "data-testid": "admin-reaction-bulk-delete-modal",
+                "title": "$t:sirsoft-board.admin.reactions.modals.bulk_delete_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-board.admin.reactions.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "modal-footer-buttons"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 지우므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reactionBulkDeleteLoading": true
+                                    }
+                                },
+                                {
+                                    "comment": "실행 ②  DELETE 본문에 ID 목록을 싣는다. 실패는 토스트가 아니라 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-board/admin/reactions/bulk",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE",
+                                        "body": {
+                                            "ids": "{{_global.selectedIds}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactionBulkDeleteLoading": false,
+                                                "selectedIds": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "reactions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{result.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactionBulkDeleteLoading": false,
+                                                "errorMessage": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "error_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "admin-reaction-bulk-delete-confirm",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.reactionBulkDeleteLoading}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.reactionBulkDeleteLoading}}",
+                                    "text": "$t:common.confirm"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.reactionBulkDeleteLoading}}",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.reactions.modals.processing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.reactions.modals.bulk_delete_editor_label"
+            }
+        },
+        {
+            "comment": "삭제 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다",
+            "id": "error_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:common.error",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.errorMessage || $t:common.error_occurred}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

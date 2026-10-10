@@ -1,0 +1,260 @@
+<!-- SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.
+  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다). -->
+<partial description="환경설정 SEO 탭 콘텐츠">
+  <div data-ref="tab_content_seo" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}">
+    <div data-ref="card_meta_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.seo.meta_settings</h3>
+      <div class="card-description">$t:admin.settings.seo.meta_settings_desc</div>
+      <div class="row-stack">
+        <div data-ref="field_meta_title_suffix">
+          <label class="form-label">$t:admin.settings.seo.meta_title_suffix</label>
+          <input type="text" name="seo.meta_title_suffix" placeholder=" | 그누보드7" disabled="{{_computed.isReadOnly}}" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.meta_title_suffix_hint</p>
+        </div>
+        <div data-ref="field_meta_description">
+          <label class="form-label">$t:admin.settings.seo.meta_description</label>
+          <textarea name="seo.meta_description" :rows="3" :maxLength="160" placeholder="$t:admin.settings.seo.meta_description_placeholder" disabled="{{_computed.isReadOnly}}" class="resize-none"/>
+          <p class="form-hint">$t:admin.settings.seo.meta_description_hint</p>
+        </div>
+        <div data-ref="field_meta_keywords">
+          <label class="form-label">$t:admin.settings.seo.meta_keywords</label>
+          <input type="text" name="seo.meta_keywords" placeholder="CMS, 그누보드7, 오픈소스" disabled="{{_computed.isReadOnly}}" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.meta_keywords_hint</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_generator_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.seo.generator_settings</h3>
+      <div class="card-description">$t:admin.settings.seo.generator_settings_desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_generator_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.generator_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.generator_enabled_desc</p>
+          </div>
+          <toggle data-type="composite" name="seo.generator_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
+        </div>
+        <div data-ref="field_generator_content" class="{{_local.form?.seo?.generator_enabled ? '' : 'opacity-50'}}">
+          <label class="form-label">$t:admin.settings.seo.generator_content</label>
+          <input type="text" name="seo.generator_content" :maxLength="200" placeholder="GnuBoard7 {{_global.appConfig?.version ?? ''}}" disabled="{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.generator_content_hint</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_og_twitter_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.seo.og_twitter_settings</h3>
+      <div class="card-description">$t:admin.settings.seo.og_twitter_settings_desc</div>
+      <div class="row-stack">
+        <div>
+          <label class="form-label">$t:admin.settings.seo.og_default_site_name</label>
+          <input type="text" name="seo.og_default_site_name" placeholder="GNUBOARD.NET" disabled="{{_computed.isReadOnly}}" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.og_default_site_name_hint</p>
+        </div>
+        <div class="grid-2col">
+          <div>
+            <label class="form-label">$t:admin.settings.seo.og_image_default_width</label>
+            <input type="number" name="seo.og_image_default_width" min="{{_local?.form?._meta?.limits?.seo_og_image_default_width_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_width_max ?? 8000}}" placeholder="1200" disabled="{{_computed.isReadOnly}}" class=""/>
+          </div>
+          <div>
+            <label class="form-label">$t:admin.settings.seo.og_image_default_height</label>
+            <input type="number" name="seo.og_image_default_height" min="{{_local?.form?._meta?.limits?.seo_og_image_default_height_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_height_max ?? 8000}}" placeholder="630" disabled="{{_computed.isReadOnly}}" class=""/>
+          </div>
+        </div>
+        <p class="text-tertiary">$t:admin.settings.seo.og_image_default_size_hint</p>
+        <div>
+          <label class="form-label">$t:admin.settings.seo.og_image_default</label>
+          <p class="text-tertiary mb-2">$t:admin.settings.seo.og_image_default_desc</p>
+          <file-uploader data-type="composite" data-ref="og_image_default_uploader" collection="og_image_default" disabled="{{_computed.isReadOnly}}" :maxFiles="1" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.seo?.og_image_default ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:og_image_default" :confirmBeforeRemove="true">
+            <prop name="imageCompression">
+              <field name="maxSizeMB" :value="1"/>
+              <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"/>
+            </prop>
+            <on type="change" event="onFilesChange">
+              <!-- 파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다. -->
+              <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
+            </on>
+            <on type="change" event="onUploadComplete">
+              <!-- 업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다. -->
+              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"/>
+            </on>
+            <on type="custom" event="onUploadComplete">
+              <!-- 업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+              <toast type="success" message="$t:attachment.upload_success"/>
+            </on>
+            <on type="custom" event="onUploadError">
+              <!-- 업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다. -->
+              <toast type="error" message="{{$args[0]}}"/>
+            </on>
+            <on type="change" event="onRemove">
+              <!-- 목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다). -->
+              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+            </on>
+            <on type="custom" event="onRemove">
+              <!-- 제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+              <toast type="info" message="$t:attachment.deleted"/>
+            </on>
+          </file-uploader>
+        </div>
+        <div>
+          <label class="form-label">$t:admin.settings.seo.twitter_default_card</label>
+          <select name="seo.twitter_default_card" disabled="{{_computed.isReadOnly}}" class="">
+            <options>
+              <option value="summary_large_image">summary_large_image</option>
+              <option value="summary">summary</option>
+              <option value="app">app</option>
+              <option value="player">player</option>
+            </options>
+          </select>
+          <p class="form-hint">$t:admin.settings.seo.twitter_default_card_hint</p>
+        </div>
+        <div>
+          <label class="form-label">$t:admin.settings.seo.twitter_default_site</label>
+          <input type="text" name="seo.twitter_default_site" placeholder="@gnuboard" disabled="{{_computed.isReadOnly}}" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.twitter_default_site_hint</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_bot_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.seo.bot_settings</h3>
+      <div class="card-description">$t:admin.settings.seo.bot_settings_desc</div>
+      <div class="row-stack">
+        <div data-ref="notice_bot_library" class="alert-info">
+          <icon name="info-circle" class="flex-shrink-0 mt-0.5"/>
+          <div>
+            <p class="font-semibold">$t:admin.settings.seo.bot_library_notice_title</p>
+            <p class="mt-1">$t:admin.settings.seo.bot_library_notice_body</p>
+          </div>
+        </div>
+        <div data-ref="toggle_bot_detection_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.bot_detection_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.bot_detection_enabled_desc</p>
+          </div>
+          <toggle data-type="composite" name="seo.bot_detection_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
+        </div>
+        <div data-ref="toggle_bot_detection_library_enabled" class="flex-between {{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50'}}">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.bot_detection_library_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.bot_detection_library_enabled_desc</p>
+          </div>
+          <toggle data-type="composite" name="seo.bot_detection_library_enabled" size="md" disabled="{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"/>
+        </div>
+        <div data-ref="field_bot_user_agents" class="{{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50 pointer-events-none'}}">
+          <label class="form-label">$t:admin.settings.seo.bot_user_agents</label>
+          <tag-input data-type="composite" name="seo.bot_user_agents" :creatable="true" placeholder="$t:admin.settings.seo.bot_user_agents_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"/>
+          <p class="form-hint">$t:admin.settings.seo.bot_user_agents_hint</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_seo_cache_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.seo.seo_cache_settings</h3>
+      <div class="card-description">$t:admin.settings.seo.seo_cache_settings_desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_seo_cache_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.cache_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.cache_enabled_desc</p>
+          </div>
+          <toggle data-type="composite" name="seo.cache_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
+        </div>
+        <div data-ref="field_seo_cache_ttl">
+          <label class="form-label">$t:admin.settings.seo.cache_ttl</label>
+          <input type="number" name="seo.cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}" placeholder="7200" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.cache_ttl_hint</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_sitemap_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.seo.sitemap_settings</h3>
+      <div class="card-description">$t:admin.settings.seo.sitemap_settings_desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_sitemap_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.sitemap_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.sitemap_enabled_desc</p>
+          </div>
+          <toggle data-type="composite" name="seo.sitemap_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
+        </div>
+        <div data-ref="field_sitemap_schedule">
+          <label class="form-label">$t:admin.settings.seo.sitemap_schedule</label>
+          <select name="seo.sitemap_schedule" disabled="{{_computed.isReadOnly}}" class="w-full">
+            <options>
+              <option value="hourly">$t:admin.settings.seo.sitemap_schedule_hourly</option>
+              <option value="daily">$t:admin.settings.seo.sitemap_schedule_daily</option>
+              <option value="weekly">$t:admin.settings.seo.sitemap_schedule_weekly</option>
+            </options>
+          </select>
+        </div>
+        <div data-ref="field_sitemap_schedule_time" data-if="{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}">
+          <label class="form-label">$t:admin.settings.seo.sitemap_schedule_time</label>
+          <input type="text" name="seo.sitemap_schedule_time" disabled="{{_computed.isReadOnly}}" placeholder="02:00" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.sitemap_schedule_time_hint</p>
+        </div>
+        <div data-ref="field_sitemap_cache_ttl">
+          <label class="form-label">$t:admin.settings.seo.sitemap_cache_ttl</label>
+          <input type="number" name="seo.sitemap_cache_ttl" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}" placeholder="86400" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.sitemap_cache_ttl_hint</p>
+        </div>
+        <div data-ref="field_sitemap_urls_per_file">
+          <label class="form-label">$t:admin.settings.seo.sitemap_urls_per_file</label>
+          <input type="number" name="seo.sitemap_urls_per_file" disabled="{{_computed.isReadOnly}}" min="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}" placeholder="50000" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.sitemap_urls_per_file_hint</p>
+        </div>
+        <div data-ref="field_sitemap_gzip" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.sitemap_gzip</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.sitemap_gzip_desc</p>
+          </div>
+          <toggle data-type="composite" name="seo.sitemap_gzip" disabled="{{_computed.isReadOnly}}" size="md"/>
+        </div>
+        <div data-ref="field_sitemap_hreflang_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.sitemap_hreflang_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.sitemap_hreflang_enabled_desc</p>
+          </div>
+          <toggle data-type="composite" name="seo.sitemap_hreflang_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
+        </div>
+        <div data-ref="sitemap_progress_block" data-if="{{['queued','running','writing','completed','failed'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
+          <div class="flex items-center gap-2">
+            <span class="text-heading">$t:admin.settings.seo.sitemap_progress</span>
+            <span class="px-2 py-0.5 rounded text-xs font-medium">
+              <class-map key="{{sitemap_status?.data?.progress?.status ?? ''}}">
+                <variant when="queued">bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200</variant>
+                <variant when="running">bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200</variant>
+                <variant when="writing">bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200</variant>
+                <variant when="completed">bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200</variant>
+                <variant when="failed">bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200</variant>
+              </class-map>
+              {{(sitemap_status?.data?.progress?.status === 'queued' &amp;&amp; $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' &amp;&amp; $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' &amp;&amp; $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' &amp;&amp; $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; $t('admin.settings.seo.sitemap_status_failed')) || ''}}
+            </span>
+          </div>
+          <p data-if="{{sitemap_status?.data?.progress?.status === 'running' &amp;&amp; (sitemap_status?.data?.progress?.phase ?? '') !== ''}}" class="text-label-subtle text-sm">$t:admin.settings.seo.sitemap_progress_phase|phase={{sitemap_status?.data?.progress?.phase ?? ''}}</p>
+          <p data-if="{{Number(sitemap_status?.data?.progress?.urls ?? 0) > 0}}" class="text-label-subtle text-sm">$t:admin.settings.seo.sitemap_progress_urls|count={{sitemap_status?.data?.progress?.urls ?? 0}}</p>
+          <p data-if="{{sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; (sitemap_status?.data?.progress?.message ?? '') !== ''}}" class="text-red-600 dark:text-red-400 text-sm break-words">{{sitemap_status?.data?.progress?.message ?? ''}}</p>
+          <p class="text-label-subtle text-xs">{{sitemap_status?.data?.realtime_enabled === true ? $t('admin.settings.seo.sitemap_realtime_connected') : $t('admin.settings.seo.sitemap_polling')}}</p>
+        </div>
+        <div data-ref="sitemap_last_updated_block" class="space-y-2">
+          <span class="text-heading block">$t:admin.settings.seo.sitemap_last_updated_at</span>
+          <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
+            <input type="text" :disabled="true" value="{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+            <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다 -->
+            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+              <on type="click">
+                <api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST">
+                  <success>
+                    <refetch-data-source dataSourceId="sitemap_status"/>
+                    <toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              {{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

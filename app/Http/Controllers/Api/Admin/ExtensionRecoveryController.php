@@ -10,6 +10,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Extension\CoreVersionChecker;
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Extension\AutoDeactivatedListRequest;
@@ -57,6 +58,14 @@ class ExtensionRecoveryController extends AdminBaseController
         $result = [];
         foreach ($repos as $type => $repo) {
             $singular = rtrim($type, 's');
+
+            // 그 종류의 활성화 권한이 없으면 목록을 비운다 — 복구·닫기를 할 수 없는 항목을 보이지 않는다.
+            if (! PermissionHelper::check("core.{$type}.activate", $request->user())) {
+                $result[$type] = collect();
+
+                continue;
+            }
+
             $result[$type] = $repo->findAutoDeactivated()
                 ->reject(fn ($record) => $this->isHiddenExtension($singular, $record->identifier))
                 ->reject(fn ($record) => in_array("compat_{$type}_{$record->identifier}", $dismissedIds, true))

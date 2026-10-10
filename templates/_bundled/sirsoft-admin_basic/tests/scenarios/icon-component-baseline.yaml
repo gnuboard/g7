@@ -1,0 +1,29 @@
+feature: sirsoft-admin_basic Icon 과 아이콘을 그리는 공통 컴포넌트의 기본 계약 — 꾸밈 아이콘 숨김 뒤 렌더·상호작용 유지
+
+description: |
+  Icon 이 이름·스타일·크기·애니메이션·고정폭·색·사용자 속성을 Font Awesome 클래스로 반영하고, 라이브러리 중립 상태 토큰을
+  템플릿 글리프로 그린다. 꾸밈 아이콘을 접근성 트리에서 숨기면서(7.1.0 O-C3b-3) 종전 「기본 aria-label 생성」 단언을 빼고
+  남은 렌더 계약을 이 매니페스트가 소유한다. 아이콘을 `i[role="img"]` 로 찾던 칩 체크박스·탭 내비게이션·토스트 단위 테스트와
+  유형 아이콘 영문 이름(「info icon」)을 단언하던 경고(Alert) 테스트도 선택자가 함께 바뀌어, 소유 매니페스트가 없던 그 파일들을
+  컴포넌트 축으로 묶는다. 접근 이름 계약은 `icon-only-control-names.yaml` 이 따로 잠근다.
+
+axes:
+  component: [icon, chip_checkbox, tab_navigation, toast, alert]
+
+effects:
+  - icon_renders_fontawesome_classes_from_props
+  - status_tokens_map_to_template_glyphs
+  - chip_checkbox_contract_with_decorative_icon        # 라벨·아이콘·숨은 입력·변형 스타일·변경 전달이 아이콘 숨김 뒤에도 그대로다
+  - tab_navigation_contract_with_decorative_icon       # 탭 렌더·아이콘·배지·비활성·클릭·모바일 선택 상자가 그대로다
+  - toast_contract_with_decorative_icon                # 위치·유형 스타일·수동/시간 제거·아이콘이 그대로다
+  - alert_contract_with_decorative_icon                # 유형별 스타일·닫기 단추·아이콘 숨김(영문 유형 이름 없음)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Icon.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ChipCheckbox.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigation.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toast.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Alert.test.tsx
+
+notes: |
+  e2e_browser=not_applicable — 컴포넌트 단위 렌더 계약이라 jsdom(Vitest)으로 잠근다.

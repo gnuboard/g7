@@ -21,7 +21,7 @@
 <!-- @generated:start:api.plugins.sirsoft-verification_nhnkcp.me.identity.nhnkcp.show -->
 - **라우트명**: `api.plugins.sirsoft-verification_nhnkcp.me.identity.nhnkcp.show`
 - **컨트롤러**: `Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers\MyKcpIdentityShowController@show`
-- **인증/권한**: `auth:sanctum` + `check.user_status:active` (로그인 + 활성 상태 필수)
+- **인증/권한**: `auth:sanctum` + `check.user_status` (로그인 + 활성 상태 필수 — 비활성·차단·휴면·탈퇴는 403)
 
 **요청 파라미터**
 
@@ -61,7 +61,7 @@ CI/DI 및 그 해시, 평문 이름·휴대폰·생년월일은 응답에 **포�
 ```json
 {
   "success": true,
-  "message": "요청이 성공적으로 처리되었습니다.",
+  "message": "본인확인 정보를 불러왔습니다.",
   "data": {
     "method": "NHN KCP 휴대폰 본인확인",
     "verified_at": "2026-07-28 14:32:09",
@@ -80,7 +80,7 @@ CI/DI 및 그 해시, 평문 이름·휴대폰·생년월일은 응답에 **포�
 ```json
 {
   "success": true,
-  "message": "요청이 성공적으로 처리되었습니다.",
+  "message": "본인확인 정보를 불러왔습니다.",
   "data": {
     "method": "NHN KCP 휴대폰 본인확인",
     "verified_at": "2026-07-29 01:45:36",
@@ -99,7 +99,7 @@ CI/DI 및 그 해시, 평문 이름·휴대폰·생년월일은 응답에 **포�
 ```json
 {
   "success": true,
-  "message": "요청이 성공적으로 처리되었습니다.",
+  "message": "본인확인 정보를 불러왔습니다.",
   "data": null
 }
 ```
@@ -109,7 +109,7 @@ CI/DI 및 그 해시, 평문 이름·휴대폰·생년월일은 응답에 **포�
 | 상태 | 조건 | 비고 |
 | --- | --- | --- |
 | 401 | 비로그인 요청 | 코어 인증 미들웨어가 차단 |
-| 403 | 정지·탈퇴 등 비활성 사용자 | `check.user_status:active` |
+| 403 | 비활성·차단·휴면·탈퇴 사용자 | `check.user_status` |
 
 <!-- @generated:end -->
 
@@ -156,7 +156,8 @@ CI/DI 및 그 해시, 평문 이름·휴대폰·생년월일은 응답에 **포�
 | `identity_error_message` | string | 실패 시 사유 메시지 (콜백 Resolver 가 발신 — kginicis 브리지에는 없는 본 플러그인 고유 필드) |
 
 네 쿼리 파라미터는 모두 `KcpBridgeRequest` 가 string 형식으로 검증한다 — 배열 주입
-(`?verification_token[]=x`)은 422 로 차단된다. 종전에는 `(string)` 캐스팅이 배열을 `"Array"`
+(`?verification_token[]=x`)은 차단된다 — JSON 을 요구한 요청은 422, 브라우저 요청은 직전 페이지(Referer)·요청 Host
+로 돌아가지 않고 사이트 주소의 같은 브리지 `?identity_error=UNKNOWN` 으로 이동해 본인확인 실패로 끝난다. 종전에는 `(string)` 캐스팅이 배열을 `"Array"`
 문자열로 바꿔 브리지 payload 에 유입시킬 수 있었다. 길이 상한은 두지 않는다 (토큰 길이가
 코어 발급 정책에 종속되기 때문).
 

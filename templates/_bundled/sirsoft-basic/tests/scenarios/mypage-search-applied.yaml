@@ -1,0 +1,22 @@
+feature: 마이페이지 목록 검색어 — 친 값과 적용된 값
+
+description: |
+  마이페이지 목록 5곳(내 글, 내 댓글, 내 반응, 내 신고, 스크랩)은 입력칸이 타이핑마다 검색어 상태를 바꾸고
+  조회는 검색 버튼(스크랩은 Enter 도)이 한다. 0건 안내와 조회 주소가 친 값을 읽어, 치기만 해도 「검색 결과가
+  없습니다」가 뜨고 게시판·정렬을 바꿀 때 검색하지 않은 검색어가 함께 실렸다. 검색 실행이 친 값을
+  `*SearchApplied` 로 옮기고, 조회 주소와 0건 안내가 그 값을 읽는다. 초기화와 화면 진입은 두 값을 함께 비운다.
+
+axes:
+  list: [all]
+  trigger: [search_button, typing, reset]
+
+exclusions: []
+
+effects:
+  - mypage_list_query_reads_applied_search
+  - mypage_search_trigger_applies_typed_search
+  - mypage_reset_clears_applied_search
+  - mypage_empty_state_follows_applied_search
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-search-applied-empty-state.test.tsx

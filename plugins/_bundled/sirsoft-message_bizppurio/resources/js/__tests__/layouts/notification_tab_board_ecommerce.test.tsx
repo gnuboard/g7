@@ -24,6 +24,7 @@ import { describe, it, expect } from 'vitest';
 import coreOverlay from '../../../extensions/notification_tab_core.json';
 import boardOverlay from '../../../extensions/notification_tab_board.json';
 import ecommerceOverlay from '../../../extensions/notification_tab_ecommerce.json';
+import sections from '../../../extensions/notification_template_form_sections.json';
 import { type AnyNode } from './helpers';
 
 type OverlayFixture = {
@@ -93,9 +94,9 @@ describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, over
         expect(normalized, `${label} 오버레이가 코어와 구조 불일치`).toBe(normalizedCore);
     });
 
-    it('데이터소스 id 3종이 코어와 완전 동일하다(순서 포함 — 행 footer 공유 참조)', () => {
+    it('데이터소스는 오버레이가 아니라 [편집] 모달 섹션 확장점이 싣는다(오버레이 선언 0, 코어와 같음)', () => {
         const ids = ((overlay as { data_sources?: Array<{ id: string }> }).data_sources ?? []).map((d) => d.id);
-        expect(ids).toEqual(SHARED_DATA_SOURCE_IDS);
+        expect(ids).toEqual([]);
     });
 
     it('오버레이는 모달을 등록하지 않고, 면 전용 전역 상태(bz_board_* 등)도 만들지 않는다', () => {
@@ -107,9 +108,10 @@ describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, over
 });
 
 describe('3면 패리티 — 공유 축 교차 검증', () => {
-    it('코어 오버레이도 동일한 공유 데이터소스 id 집합을 갖고 모달은 없다(패리티 기준점 고정)', () => {
+    it('코어 오버레이도 데이터소스·모달이 없고, 공유 데이터소스 3종은 섹션 확장점이 싣는다(패리티 기준점 고정)', () => {
         const dsIds = ((coreOverlay as { data_sources?: Array<{ id: string }> }).data_sources ?? []).map((d) => d.id);
-        expect(dsIds).toEqual(SHARED_DATA_SOURCE_IDS);
+        expect(dsIds).toEqual([]);
+        expect(((sections as { data_sources?: Array<{ id: string }> }).data_sources ?? []).map((d) => d.id)).toEqual(SHARED_DATA_SOURCE_IDS);
         expect((coreOverlay as { modals?: AnyNode[] }).modals).toBeUndefined();
     });
 

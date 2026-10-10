@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\PayNhnkcp\Controllers\AdminEscrowDeliveryController;
 use Plugins\Sirsoft\PayNhnkcp\Controllers\AdminOrderListController;
@@ -22,12 +23,15 @@ use Plugins\Sirsoft\PayNhnkcp\Controllers\UserVbankMockDepositController;
 |
 */
 
-// PC 결제창 닫힘 보고 — 주문 컨텍스트 검증 후 결제 실패/취소 이력 기록
+// PC 결제창 닫힘 보고 — 주문 소유자(회원 Sanctum / 비회원 X-Guest-Order-Token) 확인 후 결제 실패/취소 이력 기록.
+// optional.sanctum 이 있어야 Bearer 토큰이 회원으로 인식된다 (주문자 연락처 대조는 소유 증명이 아니다).
 Route::post('/payment/close-report', [PaymentCloseReportController::class, 'store'])
+    ->middleware('optional.sanctum')
     ->name('payment.close-report');
 
-// 결제 재시도 준비 — 이전 실패/취소 주문을 검증 후 같은 주문번호로 재결제 가능 상태로 복구
+// 결제 재시도 준비 — 주문 소유자 확인 후 이전 실패/취소 주문을 같은 주문번호로 재결제 가능 상태로 복구
 Route::post('/payment/retry', [PaymentRetryController::class, 'store'])
+    ->middleware('optional.sanctum')
     ->name('payment.retry');
 
 Route::get('/user/orders/{orderNumber}/receipt', [UserReceiptController::class, 'show'])
@@ -49,8 +53,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/vbank-notify-url', fn () => response()->json([
         'success' => true,
         'data' => [
-            'url' => url('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'),
-            'escrow_common_notify_url' => url('/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'),
+            // 운영자가 PG 관리자에 등록할 주소 — 접속한 주소가 아니라 사이트 주소로 안내한다.
+            'url' => SiteUrl::absolute('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'),
+            'escrow_common_notify_url' => SiteUrl::absolute('/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'),
         ],
     ]))->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('vbank.notify.url');
@@ -63,11 +68,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/orders/test-mode-map', [AdminOrderListController::class, 'testModeMap'])
         ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.test-mode-map');
-
-    // 간편결제 원 결제수단 표시 맵 (관리자 주문목록 보강용)
-    Route::get('/orders/easy-pay-display-map', [AdminOrderListController::class, 'easyPayDisplayMap'])
-        ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
-        ->name('orders.easy-pay-display-map');
 
     // 주문번호로 거래 정보 조회 (레이아웃 확장 자동 로드용)
     Route::get('/orders/{orderNumber}/transaction-status', [AdminTransactionController::class, 'queryByOrder'])
@@ -82,8 +82,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
         ->name('orders.escrow-delivery.register');
 
-    // 시스템 점검 (PC/모바일 결제 사전조건 진단 + 자동 chmod +x 복구)
+    // 시스템 점검 (PC/모바일 결제 사전조건 진단 + 자동 chmod +x 복구) — 플러그인 설정 화면 카드라 화면 권한으로도 읽는다(OR).
+    // 실행 권한 자동 복구는 컨트롤러가 플러그인 설정 수정 권한(core.plugins.update)일 때만 한다
     Route::get('/health', [HealthCheckController::class, 'check'])
-        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read|core.plugins.update,false')
         ->name('health');
 });

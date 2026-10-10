@@ -1,0 +1,38 @@
+feature: 옵션 행 병합이 클레임 신청상품을 잃지 않는다
+
+description: |
+  부분 수량 전이는 주문 옵션 행을 분할하고, 같은 상태의 형제 행이 생기면 다시 **병합**한다.
+  병합은 피흡수 행을 삭제하는데, 클레임 신청상품 4종은 모두 `order_option_id` 에
+  `cascadeOnDelete()` 가 걸려 있다.
+
+    ecommerce_order_refund_options
+    ecommerce_order_cancel_options
+    ecommerce_order_return_options
+    ecommerce_order_exchange_options
+
+  `mergeOptions()` 는 의존 레코드를 옮긴 뒤에 삭제한다는 계약을 이미 갖고 있었고
+  (주석 「1. 의존 레코드 이전 (cascade 삭제 방지)」 · 「4. … cascade 안전」),
+  배송·리뷰·마일리지 3종은 옮기고 있었다. 그러나 **클레임 신청상품 4종이 목록에서 빠져**
+  있어, 병합이 일어나면 접수 때 기록한 신청상품이 함께 지워졌다.
+
+  금액·상태·사유는 신청서 **헤더**에 남으므로 화면 어디에도 오류가 뜨지 않는다.
+  사라지는 것은 「무엇을 신청했는가」 하나뿐이라 조용히 지나간다.
+
+  실측(#599 통합실측 세션1 · 주문 20260915-0604289654): 순차 부분환불 5회 중
+  **4건의 신청상품이 0행**이 되어 회원 클레임 상세가 「신청 상품이 없습니다.」,
+  관리자 클레임 목록의 신청상품 칸이 `-` 로 떴다. 분할을 겪지 않은 1건(텀블러 전량 취소)만
+  신청상품이 남았다.
+
+  계약: 피흡수 행을 삭제하기 전에 클레임 신청상품 4종의 `order_option_id` 를 생존 행으로
+  옮긴다. 배송·리뷰·마일리지와 같은 규칙이며, 같은 자리에서 함께 처리한다.
+
+axes:
+  claim_kind:
+    - refund   # 환불 신청상품
+    - cancel   # 취소 신청상품
+
+effects:
+  - claim_option_rows_survive_option_merge   # 병합 후에도 신청상품 행이 살아남고 살아 있는 옵션을 가리킨다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionMergeClaimOptionsTest.php

@@ -5,10 +5,11 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 17개 (정의: `src/handlers/index.ts`).
+핸들러 23개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
+| `rememberIdentityClaim` | (템플릿 전용 — 네임스페이스 없음) |
 | `detectAssetUrlMode` | (템플릿 전용 — 네임스페이스 없음) |
 | `checkAssetUrlModeDrift` | (템플릿 전용 — 네임스페이스 없음) |
 | `setTheme` | (템플릿 전용 — 네임스페이스 없음) |
@@ -23,9 +24,14 @@
 | `cancelMultilingualTag` | (템플릿 전용 — 네임스페이스 없음) |
 | `updateMultilingualTagValue` | (템플릿 전용 — 네임스페이스 없음) |
 | `setDateRange` | (템플릿 전용 — 네임스페이스 없음) |
+| `loadVisibleFilters` | (템플릿 전용 — 네임스페이스 없음) |
+| `setUserFilterExt` | (템플릿 전용 — 네임스페이스 없음) |
+| `setAnalyticsPeriod` | (템플릿 전용 — 네임스페이스 없음) |
 | `toggleSidebar` | (템플릿 전용 — 네임스페이스 없음) |
 | `initSidebar` | (템플릿 전용 — 네임스페이스 없음) |
 | `downloadAttachment` | (템플릿 전용 — 네임스페이스 없음) |
+| `downloadMarkupFile` | (템플릿 전용 — 네임스페이스 없음) |
+| `copyMarkupToClipboard` | (템플릿 전용 — 네임스페이스 없음) |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
@@ -48,6 +54,14 @@
 두 핸들러 모두 테마 값을 액션 **top-level `target`** 으로 받습니다. `params.theme` 으로 넘기면
 엔진에 상호 폴백이 없어 조용히 no-op 이 됩니다 — 콘솔 경고 한 줄 외에는 아무 흔적이 없습니다.
 
+```html
+<on type="click">
+  <action handler="setTheme" target="{{_global.theme === 'dark' ? 'light' : 'dark'}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 { "type": "click", "handler": "setTheme", "target": "{{_global.theme === 'dark' ? 'light' : 'dark'}}" }
 ```
@@ -61,6 +75,14 @@
 아니라 `getElementById` 대상이므로 `#` 이나 클래스 선택자를 넣지 않습니다. `params.offset`
 (기본 `120`)은 고정 헤더 높이를 보상하는 여백이고, `params.delay`(기본 `100`)는 조건부 렌더링
 요소를 기다리는 재시도 간격, `params.scrollContainerId` 는 스크롤 컨테이너를 명시할 때 씁니다.
+
+```html
+<on type="click">
+  <action handler="scrollToSection" targetId="features" :offset="80"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 { "type": "click", "handler": "scrollToSection", "params": { "targetId": "features", "offset": 80 } }
@@ -107,11 +129,86 @@ params 없이 그 화면의 `init_actions` 에서 호출합니다.
 `YYYY-MM-DDTHH:mm:ss` 형식으로 계산해 **반환**합니다(자체적으로 상태를 갱신하지 않음) — 레이아웃
 JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하는 필드에 반영합니다.
 
+`format="date"` 를 주면 `YYYY-MM-DD` 로 돌려줍니다 — `<input type="date">` 칸은 시각이 붙은 값을 받지
+못해 빈칸이 되므로, 날짜 칸에 담을 때는 반드시 이 인자를 씁니다(회원관리 목록 필터). 인자를 생략하면
+종전대로 날짜·시각 형식이라 기존 호출처(활동 로그 필터 등)는 그대로입니다.
+
+「오늘」은 **계정 시간대**(로그인한 회원의 시간대 → 없으면 사이트 기본 시간대 `settings.general.timezone`)의
+날짜입니다. 서버가 목록 날짜 필터를 같은 시간대의 하루로 해석하므로, 브라우저 시간대로 만들면 둘의 날짜가 다른
+시간에 하루 어긋납니다(`src/utils/timezoneDate.ts`). 레이아웃 식으로 날짜를 만들 때도 같은 기준을 씁니다 —
+`toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })`.
+
+```html
+<on type="click">
+  <action handler="setDateRange" preset="today"/>
+  <set-state target="local" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 { "type": "click", "handler": "sequence", "actions": [
   { "handler": "setDateRange", "params": { "preset": "today" } },
   { "handler": "setState", "params": { "target": "local", "filter.dateFrom": "{{$prev.startDate}}", "filter.dateTo": "{{$prev.endDate}}" } }
 ] }
+```
+
+### loadVisibleFilters
+
+목록 필터의 기본/상세 배치(「검색편집」 결과)를 되읽어 **반환**합니다. 저장은 `FilterVisibilitySelector`
+컴포넌트가 스스로 하고(키 `g7_filters_{id}_{사용자uuid}`), 이 핸들러는 같은 키 규칙으로 읽기만 합니다.
+저장값이 배열이면서 비어 있지 않을 때만 채택하고, 아니면 `defaultFilters` 를 돌려줍니다. 이커머스
+모듈의 `sirsoft-ecommerce.loadVisibleFilters` 와 계약이 같지만, 코어 화면이 모듈 핸들러를 부르면 모듈이
+꺼졌을 때 화면이 깨지므로 코어 템플릿이 자기 핸들러를 둡니다.
+
+```html
+<action handler="loadVisibleFilters" id="admin_user_filters">
+  <field name="defaultFilters"><item>status</item><item>role</item><item>createdAt</item></field>
+  <field name="resultTo"><field name="target" value="_local"/><field name="key" value="visibleFilters"/></field>
+</action>
+```
+
+### setUserFilterExt
+
+회원관리 목록의 확장 필터 값 채널(`ext_filters[]`)에 들어갈 배열을 조립해 **반환**합니다. 원소 형식은
+`{확장id}.{키}={값}` — 같은 키는 교체하고 빈 값·`null`·`false` 는 그 키를 지운 **새 배열**을 돌려주므로,
+결과를 `$prev` 로 받아 `_local.userFilterExtraQuery` 에 담습니다. 키가 형식(`[a-z0-9_-]+\.[a-z0-9_.-]+`)에
+맞지 않으면 기존 배열을 그대로 돌려줍니다. 값의 `&` 는 걷고 255자로 자릅니다(서버 검증과 같은 경계).
+
+이 템플릿의 핸들러입니다. 모듈·플러그인이 확장점 `admin_user_list_filters` 에 붙이는 조각은 어느 관리자
+템플릿에 주입될지 모르므로 이 핸들러를 부르지 않고, 같은 계약의 핸들러를 자기 네임스페이스로 등록해
+부릅니다(예: `sirsoft-ecommerce.setUserFilterExt`). 템플릿과 확장 조각이 공유하는 것은 상태 칸
+`_local.userFilterExtraQuery` 와 코어 API 의 `ext_filters[]` 원소 형식뿐입니다.
+
+```html
+<sequence>
+  <action handler="setUserFilterExt" key="vendor-module.score_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
+  <set-state target="_local" userFilterExtraQuery="{{$prev}}"/>
+</sequence>
+```
+
+### setAnalyticsPeriod
+
+방문자 통계 화면의 기간 바 프리셋(`today`/`yesterday`/`7d`/`30d`/`90d`/`this_month`/`last_month`/`this_year`)을
+시작일·종료일 **날짜 문자열(`YYYY-MM-DD`)** 로 계산해 반환합니다. `setDateRange` 는 시각까지 붙인 값을 주어
+통계 API 가 422 로 거절하므로 재사용하지 않고 따로 둡니다. 계산 규칙은 서버(`PeriodRequest::resolvedRange`)와
+같아 달력에 보이는 값과 서버가 실제로 조회한 구간이 어긋나지 않습니다. 「오늘」은 서버(`AnalyticsClock`)와 같은
+**사이트 기본 시간대**의 날짜입니다(보는 사람·브라우저 시간대가 아님). 모르는 프리셋은 `7d` 로 떨어집니다.
+
+통계 화면은 처음 열릴 때(`<init>`) 주소의 프리셋으로 한 번 부르고, 결과를 `resultTo` 로 `_local.periodComputed` 에
+담아 첫 응답 전의 달력 두 칸과 CSV 저장 이름을 채웁니다. 프리셋 버튼은 이 핸들러를 부르지 않고 주소(`preset`)만
+바꿉니다 — 서버가 그 프리셋을 푼 구간을 응답에 되돌려 주므로 그 뒤의 날짜는 응답이 출처입니다.
+
+```html
+<init>
+  <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+    <field name="resultTo">
+      <field name="target" value="_local"/>
+      <field name="key" value="periodComputed"/>
+    </field>
+  </action>
+</init>
 ```
 
 ### 사이드바 접힘 핸들러 2종
@@ -132,9 +229,21 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 헤더가 실리지 않아 요청이 guest 로 통과하고 활동이력의 행위자(`user_id`)가 비게 되므로, 코어
 ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리자 본인 이력으로 정확히 남습니다.
 
+```html
+<on type="click">
+  <action handler="downloadAttachment" url="{{attachment.download_url}}" filename="{{attachment.original_name}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 { "type": "click", "handler": "downloadAttachment", "params": { "url": "{{attachment.download_url}}", "filename": "{{attachment.original_name}}" } }
 ```
+
+`method="POST"` 와 `<field name="body">` 를 주면 POST 본문으로 요청해 응답 파일을 받습니다 — 방문자 통계의
+정보주체 내보내기(`POST /api/admin/analytics/privacy/subjects/export`)처럼 서버가 파일을 POST 응답으로
+흘려보내는 경로용입니다. `method` 를 생략하면 종전대로 GET 입니다.
 
 ### 자산 URL 방식 재감지 2종
 
@@ -159,10 +268,10 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 | 항목 | 값 |
 |---|---|
 | 엔트리 파일 | `src/index.ts` |
-| 전역 객체 | **미노출** |
+| 전역 객체 | `window.G7TemplateHandlers` |
 | 재등록 진입점 | `initTemplate()` |
 
-재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).
+템플릿 핸들러는 `window.G7TemplateHandlers` 맵으로 노출되어, 로케일 전환 시 코어가 그 맵을 다시 등록합니다.
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
@@ -195,6 +304,14 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 
 **소스**: 엔진 빌트인 (`resources/js/core/template-engine/ActionDispatcher.ts`) — 이 템플릿에는 소스 파일이 없습니다.
 
+```html
+<on type="click">
+  <set-locale locale="en"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -213,20 +330,29 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 
 ```text
 1. 로케일 변경 → 번역 파일 다시 로드
-2. _global.locale 자동 업데이트
+2. 전역 변수 $locale 갱신
 3. 모든 $t: 표현식 재평가
 ```
 
 #### 사용 예시
+
+```html
+<button data-ref="lang_en_btn">
+  <on type="click">
+    <set-locale locale="en"/>
+  </on>
+  English
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
   "id": "lang_en_btn",
   "type": "basic",
   "name": "Button",
-  "props": {
-    "text": "English"
-  },
+  "text": "English",
   "actions": [
     {
       "type": "click",
@@ -246,6 +372,14 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 다크/라이트 모드를 전환합니다.
 
 **소스**: `src/handlers/setThemeHandler.ts`
+
+```html
+<on type="click">
+  <action handler="setTheme" target="dark"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -276,6 +410,14 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 
 앱 시작 시 저장된 테마 설정을 적용합니다. 주로 `init_actions`에서 사용합니다.
 
+```html
+<init>
+  <action handler="initTheme"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -299,6 +441,16 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 
 #### 사용 예시
 
+```html
+<theme-toggle data-ref="theme_toggle">
+  <on type="click">
+    <action handler="setTheme" target="{{_global.theme === 'dark' ? 'light' : 'dark'}}"/>
+  </on>
+</theme-toggle>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "theme_toggle",
@@ -321,6 +473,14 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 특정 섹션으로 스크롤합니다. 고정 헤더 보상 오프셋과 조건부 렌더링 대기에 특화되어 있습니다.
 
 **소스**: `src/handlers/scrollToSectionHandler.ts`
+
+```html
+<on type="click">
+  <action handler="scrollToSection" targetId="features" :offset="80"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -353,15 +513,26 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 
 #### 사용 예시
 
+```html
+<a data-ref="nav_features" class="cursor-pointer">
+  <on type="click">
+    <action handler="scrollToSection" targetId="features" :offset="80"/>
+  </on>
+  $t:common.features
+</a>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "nav_features",
   "type": "basic",
   "name": "A",
   "props": {
-    "text": "$t:common.features",
     "className": "cursor-pointer"
   },
+  "text": "$t:common.features",
   "actions": [
     {
       "type": "click",
@@ -382,6 +553,14 @@ undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면의 선택 메뉴와 편집 모드를 초기화합니다. 그 화면의 `init_actions`에서 사용합니다.
 
 **소스**: `src/handlers/initMenuFromUrlHandler.ts`
+
+```html
+<init>
+  <action handler="initMenuFromUrl"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -409,6 +588,14 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 #### 사용 예시 (메뉴 관리 화면)
 
+```html
+<init>
+  <action handler="initMenuFromUrl"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -429,6 +616,19 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 저장된 필터 가시성 상태를 `_local`에 복원합니다. `storageKey` 가 없으면 경고 후 조기 반환합니다.
 
+```html
+<init>
+  <action handler="initFilterVisibility" storageKey="product_index_filters" stateKey="visibleFilters">
+    <field name="defaultFilters">
+      <item>category</item>
+      <item>date</item>
+    </field>
+  </action>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -448,6 +648,14 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 현재 필터 가시성 상태를 localStorage에 저장합니다.
 
+```html
+<on type="click">
+  <action handler="saveFilterVisibility" storageKey="product_index_filters" filters="{{_local.visibleFilters}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "saveFilterVisibility",
@@ -463,6 +671,14 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 특정 필터의 가시성을 토글하고 즉시 localStorage 에 저장합니다. `storageKey` 와 `filterId` 가
 모두 있어야 하며, 하나라도 없으면 경고 후 조기 반환합니다.
 
+```html
+<on type="click">
+  <action handler="toggleFilterVisibility" storageKey="product_index_filters" filterId="category"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -477,6 +693,19 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 #### resetFilterVisibility
 
 모든 필터 가시성을 `defaultFilters` 로 되돌립니다.
+
+```html
+<on type="click">
+  <action handler="resetFilterVisibility" storageKey="product_index_filters">
+    <field name="defaultFilters">
+      <item>category</item>
+      <item>date</item>
+    </field>
+  </action>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -504,6 +733,28 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 #### 사용 예시 (목록 페이지)
 
+```html
+<init>
+  <action handler="initFilterVisibility" storageKey="product_index_filters">
+    <field name="defaultFilters">
+      <item>advancedFilters</item>
+    </field>
+  </action>
+</init>
+<button data-ref="filter_toggle_btn">
+  <on type="click">
+    <action handler="toggleFilterVisibility" storageKey="product_index_filters" filterId="advancedFilters"/>
+  </on>
+  $t:common.toggle_filters
+</button>
+<div data-ref="filter_section" data-if="{{_local.visibleFilters?.includes('advancedFilters')}}">
+  <!-- 필터 컴포넌트들 -->
+  <div class="space-y-2"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -517,9 +768,7 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
       "id": "filter_toggle_btn",
       "type": "basic",
       "name": "Button",
-      "props": {
-        "text": "$t:common.toggle_filters"
-      },
+      "text": "$t:common.toggle_filters",
       "actions": [
         {
           "type": "click",
@@ -534,7 +783,7 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
       "name": "Div",
       "if": "{{_local.visibleFilters?.includes('advancedFilters')}}",
       "children": [
-        { "comment": "필터 컴포넌트들" }
+        { "type": "basic", "name": "Div", "comment": "필터 컴포넌트들", "props": { "className": "space-y-2" } }
       ]
     }
   ]
@@ -555,6 +804,14 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 읽는 값은 전역 상태 `_global.multilingualTagEdit`(필드명·편집 인덱스·로케일별 값·상태 경로)
 뿐입니다.
 
+```html
+<on type="click">
+  <action handler="saveMultilingualTag" field="tags" locale="{{$locale}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "saveMultilingualTag"
@@ -564,6 +821,14 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 #### cancelMultilingualTag
 
 다국어 태그 편집을 취소합니다.
+
+```html
+<on type="click">
+  <action handler="cancelMultilingualTag"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -575,6 +840,14 @@ URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면
 
 편집 중인 다국어 태그의 특정 로케일 값을 갱신합니다. 값은 액션 인자가 아니라
 `context.event`(입력 이벤트)에서 읽으므로 `params` 에는 `locale` 만 넘깁니다.
+
+```html
+<on type="click">
+  <action handler="updateMultilingualTagValue" field="tags" locale="ko" value="{{$event.target.value}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

@@ -1,546 +1,556 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Notification Log List Filter Section"
-  },
-  "id": "filter_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "id": "search_row",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "searchType",
-                "className": "select-composite w-36",
-                "value": "{{_local.filter.searchType || 'all'}}",
-                "options": [
-                  {
-                    "value": "all",
-                    "label": "$t:admin.notification_log.filter.search_type_all"
-                  },
-                  {
-                    "value": "recipient",
-                    "label": "$t:admin.notification_log.filter.search_type_recipient"
-                  },
-                  {
-                    "value": "subject",
-                    "label": "$t:admin.notification_log.filter.search_type_subject"
-                  }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.searchType": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "relative flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "fa-solid fa-search",
-                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "name": "search",
-                    "type": "text",
-                    "placeholder": "$t:admin.notification_log.search_placeholder",
-                    "className": "input pl-10",
-                    "value": "{{_local.filter.search || ''}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.search": "{{$event.target.value}}"
-                      }
-                    },
-                    {
-                      "type": "keydown",
-                      "key": "Enter",
-                      "actionRef": "searchNotificationLogs"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "알림 발송 기록의 검색 조건 영역. 다른 목록 화면과 같은 흐름이다 — 고른 값은 로컬 `filter` 에\n  쌓였다가 검색 버튼이나 Enter 가 주소 질의로 옮길 때 조회된다.\n  조건은 둘뿐이고 둘 다 코드에 박힌 고정 목록이다: 발송 결과(보냄·실패·건너뜀)와 그 알림을\n  낸 쪽(코어·모듈·플러그인). 어느 모듈·플러그인인지까지는 여기서 못 좁히고 표에서 읽는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Notification Log List Filter Section"
     },
-    {
-      "id": "filter_grid",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "filter-grid"
-      },
-      "children": [
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "id": "status_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.notification_log.filter.status_label"
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-2"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{!_local.filter.statuses || _local.filter.statuses.length === 0}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.statuses": "{{[]}}"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.filter.status_all"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.statuses || []).includes('sent')}}"
-                      },
-                      "actions": [
+                    "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'sent'), 'sent'] : (_local.filter.statuses || []).filter(s => s !== 'sent')}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.status_sent"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.statuses || []).includes('failed')}}"
-                      },
-                      "actions": [
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "검색어를 받는 사람 쪽에서 찾을지 제목에서 찾을지 정한다 — 본문은 대상이 아니다(길어서 목록 질의에 태우지 않는다).",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "searchType",
+                                "className": "select-composite w-36",
+                                "value": "{{_local.filter.searchType || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:admin.notification_log.filter.search_type_all"
+                                    },
+                                    {
+                                        "value": "recipient",
+                                        "label": "$t:admin.notification_log.filter.search_type_recipient"
+                                    },
+                                    {
+                                        "value": "subject",
+                                        "label": "$t:admin.notification_log.filter.search_type_subject"
+                                    }
+                                ]
+                            }
+                        },
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'failed'), 'failed'] : (_local.filter.statuses || []).filter(s => s !== 'failed')}}"
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "받는 사람으로 찾을 때는 회원 이름뿐 아니라 비회원에게 보낸 주소·번호도 걸린다(그쪽은 회원 연결 없이 식별자만 남는다).",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keydown",
+                                            "key": "Enter",
+                                            "actionRef": "searchNotificationLogs"
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:admin.notification_log.search_placeholder",
+                                        "className": "input pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    }
+                                }
+                            ]
                         }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.status_failed"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.statuses || []).includes('skipped')}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'skipped'), 'skipped'] : (_local.filter.statuses || []).filter(s => s !== 'skipped')}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.status_skipped"
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "extension_type_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.notification_log.filter.extension_type_label"
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-grid"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-2"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{!_local.filter.extensionTypes || _local.filter.extensionTypes.length === 0}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.extensionTypes": "{{[]}}"
-                          }
-                        }
-                      ]
+                    "id": "status_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.filter.extension_type_all"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.notification_log.filter.status_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "결과 「전체」 = 고른 것 없음. 아래 셋을 다 켜는 것과 결과는 같지만 질의에서 조건이 아예 빠진다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{[]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.statuses || _local.filter.statuses.length === 0}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.filter.status_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "채널로 넘긴 데까지 성공한 것. 상대가 실제로 받아 읽었는지까지는 이 기록이 알지 못한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'sent'), 'sent'] : (_local.filter.statuses || []).filter(s => s !== 'sent')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes('sent')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.status_sent"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "보내려다 실패한 것 — 줄을 펼치면 사유가 나온다. 설정 점검의 출발점이 되는 갈래다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'failed'), 'failed'] : (_local.filter.statuses || []).filter(s => s !== 'failed')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes('failed')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.status_failed"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "**보내려는 시도조차 없었던** 갈래다. 발송 직전 걸러진 것으로, 사유는 넷 중 하나다 —\n                  비회원에게 열어 두지 않은 채널 · 그 확장이 채널을 꺼 둠 · 채널 설정이 덜 됨 ·\n                  그 알림 종류에 쓸 활성 템플릿 없음. 「보낸 적 없는데 기록만 있다」로 보이는 줄이\n                  대개 여기라, 알림이 안 온다는 문의는 이 갈래부터 본다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'skipped'), 'skipped'] : (_local.filter.statuses || []).filter(s => s !== 'skipped')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes('skipped')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.status_skipped"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.extensionTypes || []).includes('core')}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'core'), 'core'] : (_local.filter.extensionTypes || []).filter(m => m !== 'core')}}"
-                          }
-                        }
-                      ]
+                    "id": "extension_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.extension_core"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.extensionTypes || []).includes('module')}}"
-                      },
-                      "actions": [
+                    "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'module'), 'module'] : (_local.filter.extensionTypes || []).filter(m => m !== 'module')}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.extension_module"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.extensionTypes || []).includes('plugin')}}"
-                      },
-                      "actions": [
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.notification_log.filter.extension_type_label"
+                        },
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'plugin'), 'plugin'] : (_local.filter.extensionTypes || []).filter(m => m !== 'plugin')}}"
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "낸 쪽 「전체」도 비우기다 — 위 결과 조건과 서로 독립이라 둘을 함께 걸 수 있다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{[]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.extensionTypes || _local.filter.extensionTypes.length === 0}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.filter.extension_type_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "코어가 낸 알림(가입·비밀번호 등). 채널을 켜고 끄는 자리도 낸 쪽 단위라 이 구분이 곧 설정 단위와 같다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'core'), 'core'] : (_local.filter.extensionTypes || []).filter(m => m !== 'core')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.extensionTypes || []).includes('core')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.extension_core"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "모듈이 낸 알림 전부를 한 덩이로 본다 — 어느 모듈인지는 표의 「낸 쪽」 칸에 식별자로 따로 붙는다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'module'), 'module'] : (_local.filter.extensionTypes || []).filter(m => m !== 'module')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.extensionTypes || []).includes('module')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.extension_module"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "플러그인이 낸 알림. 플러그인을 지운 뒤에도 지난 기록은 남으므로 지금 설치돼 있지 않은 식별자가 보일 수 있다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'plugin'), 'plugin'] : (_local.filter.extensionTypes || []).filter(m => m !== 'plugin')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.extensionTypes || []).includes('plugin')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.notification_log.extension_plugin"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.notification_log.extension_plugin"
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "filter_actions",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-center gap-3 mt-6"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": "flex gap-3 mt-6"
-          }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-primary px-6"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "btn btn-primary flex-1"
-              }
-            }
-          },
-          "text": "$t:admin.notification_log.filter.search_button",
-          "actions": [
-            {
-              "type": "click",
-              "actionRef": "searchNotificationLogs"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-secondary px-6"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "btn btn-secondary flex-1"
-              }
-            }
-          },
-          "text": "$t:admin.notification_log.filter.reset_button",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "params": {
-                "actions": [
-                  {
-                    "handler": "setState",
-                    "params": {
-                      "target": "local",
-                      "filter": {
-                        "searchType": "all",
-                        "search": "",
-                        "extensionTypes": [],
-                        "statuses": []
-                      }
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
                     }
-                  },
-                  {
-                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "/admin/notification-logs",
-                      "mergeQuery": false
-                    }
-                  }
-                ]
-              }
-            }
-          ]
+                }
+            },
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchNotificationLogs"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "text": "$t:admin.notification_log.filter.search_button"
+                },
+                {
+                    "comment": "검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter": {
+                                            "searchType": "all",
+                                            "search": "",
+                                            "extensionTypes": [],
+                                            "statuses": []
+                                        }
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/notification-logs",
+                                        "mergeQuery": false
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "text": "$t:admin.notification_log.filter.reset_button"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

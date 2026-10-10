@@ -22,10 +22,13 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 class HookIntegrationTest extends ModuleTestCase
 {
     private User $adminUser;
+
     private BoardService $boardService;
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -53,6 +56,8 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 테스트 종료 후 훅 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -62,6 +67,8 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * HookManager의 정적 속성과 Laravel Event 리스너를 초기화합니다.
+     *
+     * @return void 반환값 없음
      */
     private function clearHooks(): void
     {
@@ -94,6 +101,11 @@ class HookIntegrationTest extends ModuleTestCase
     /**
      * HookManager의 정적 배열에만 직접 훅을 등록합니다.
      * (Laravel Event 중복 실행 방지용)
+     *
+     * @param  string  $hookName  훅 이름
+     * @param  callable  $callback  실행할 콜백
+     * @param  int  $priority  실행 우선순위 (작을수록 먼저)
+     * @return void 반환값 없음
      */
     private function addHookDirectly(string $hookName, callable $callback, int $priority = 10): void
     {
@@ -103,11 +115,11 @@ class HookIntegrationTest extends ModuleTestCase
 
         $hooks = $hooksProperty->getValue(null) ?? [];
 
-        if (!isset($hooks[$hookName])) {
+        if (! isset($hooks[$hookName])) {
             $hooks[$hookName] = [];
         }
 
-        if (!isset($hooks[$hookName][$priority])) {
+        if (! isset($hooks[$hookName][$priority])) {
             $hooks[$hookName][$priority] = [];
         }
 
@@ -117,6 +129,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 생성 전 before_create 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=create
+     *
+     * @effects before_hook_fires
      */
     public function test_before_create_hook_is_called(): void
     {
@@ -141,6 +159,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 생성 시 filter_create_data 훅으로 데이터를 변형할 수 있는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=create
+     *
+     * @effects filter_hook_modifies_payload
      */
     public function test_filter_create_data_hook_modifies_data(): void
     {
@@ -166,6 +190,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 생성 후 after_create 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=create
+     *
+     * @effects after_hook_fires
      */
     public function test_after_create_hook_is_called(): void
     {
@@ -192,6 +222,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 권한 생성 후 permissions.after_create 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=create
+     *
+     * @effects permission_hook_fires
      */
     public function test_permissions_after_create_hook_is_called(): void
     {
@@ -201,9 +237,9 @@ class HookIntegrationTest extends ModuleTestCase
             $hookCalled = true;
             $this->assertInstanceOf(Board::class, $board);
 
-            // 권한이 실제로 생성되었는지 확인 (board_permission_definitions 키 수 = 16개)
+            // 권한이 실제로 생성되었는지 확인 (board_permission_definitions 키 수 = 17개)
             $permissions = Permission::where('identifier', 'like', "sirsoft-board.{$board->slug}.%")->get();
-            $this->assertCount(16, $permissions);
+            $this->assertCount(17, $permissions);
         });
 
         $board = $this->boardService->createBoard([
@@ -218,6 +254,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 수정 시 before_update 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=update
+     *
+     * @effects before_hook_fires
      */
     public function test_before_update_hook_is_called(): void
     {
@@ -241,6 +283,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 수정 시 filter_update_data 훅으로 데이터를 변형할 수 있는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=update
+     *
+     * @effects filter_hook_modifies_payload
      */
     public function test_filter_update_data_hook_modifies_data(): void
     {
@@ -266,6 +314,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 수정 후 after_update 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=update
+     *
+     * @effects after_hook_fires
      */
     public function test_after_update_hook_is_called(): void
     {
@@ -289,6 +343,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 삭제 전 before_delete 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=delete
+     *
+     * @effects before_hook_fires
      */
     public function test_before_delete_hook_is_called(): void
     {
@@ -308,6 +368,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 삭제 전 before_delete 훅에서 예외를 던져 삭제를 차단할 수 있는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=delete
+     *
+     * @effects before_delete_hook_can_veto
      */
     public function test_before_delete_hook_can_prevent_deletion(): void
     {
@@ -326,6 +392,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 권한 삭제 후 permissions.after_delete 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=delete
+     *
+     * @effects permission_hook_fires
      */
     public function test_permissions_after_delete_hook_is_called(): void
     {
@@ -352,6 +424,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 삭제 후 after_delete 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=delete
+     *
+     * @effects after_hook_fires
      */
     public function test_after_delete_hook_is_called(): void
     {
@@ -371,6 +449,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 복사 전 before_copy 훅이 실행되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=copy
+     *
+     * @effects before_hook_fires
      */
     public function test_before_copy_hook_is_called(): void
     {
@@ -391,6 +475,12 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 게시판 복사 시 filter_copy_data 훅으로 데이터를 변형할 수 있는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=copy
+     *
+     * @effects filter_hook_modifies_payload
      */
     public function test_filter_copy_data_hook_modifies_data(): void
     {
@@ -415,6 +505,12 @@ class HookIntegrationTest extends ModuleTestCase
      *
      * 참고: HookManager::addAction은 정적 배열과 Laravel Event 양쪽에 등록하여
      * doAction에서 2번 실행되므로, 이 테스트에서는 정적 배열에만 직접 등록합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario lifecycle=priority
+     *
+     * @effects hooks_run_in_priority_order
      */
     public function test_multiple_hooks_execute_in_priority_order(): void
     {
@@ -445,6 +541,9 @@ class HookIntegrationTest extends ModuleTestCase
 
     /**
      * 테스트용 게시판 생성 헬퍼 메서드
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return Board 생성된 게시판
      */
     private function createTestBoard(string $slug): Board
     {

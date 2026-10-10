@@ -7,8 +7,9 @@ namespace Modules\Sirsoft\Ecommerce\Enums;
  */
 enum ClaimReasonTypeEnum: string
 {
-    case REFUND = 'refund';      // 환불/취소
-    // 추후 확장: case EXCHANGE = 'exchange'; case RETURN = 'return';
+    case REFUND = 'refund';        // 환불/취소
+    case EXCHANGE = 'exchange';    // 교환
+    case RETURN = 'return';        // 반품
 
     /**
      * 다국어 라벨을 반환합니다.

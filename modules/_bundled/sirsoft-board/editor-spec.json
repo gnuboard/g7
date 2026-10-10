@@ -12,12 +12,140 @@
   "sampleData": {
     "comment": "실제 ID(admin): boards/posts/post/reports/report_detail + 사용자 게시판 페이지 byEndpointPattern(api/modules/sirsoft-board/boards/*). 계획서 추정(board_activity/user_comments 등 미존재) 정정.",
     "byDataSourceId": {
+      "reactionTypes": {
+        "data": {
+          "reaction_types": [
+            {
+              "id": 1,
+              "code": "like",
+              "name": "추천",
+              "icon": "fas fa-thumbs-up",
+              "icon_name": "thumbs-up"
+            },
+            {
+              "id": 2,
+              "code": "dislike",
+              "name": "비추천",
+              "icon": "fas fa-thumbs-down",
+              "icon_name": "thumbs-down"
+            }
+          ]
+        }
+      },
+      "scraps": {
+        "data": {
+          "data": [
+            {
+              "id": 501,
+              "post_id": 1201,
+              "board_id": 1,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "board": {
+                "slug": "free",
+                "name": "자유게시판",
+                "is_active": true,
+                "use_scrap": true
+              },
+              "post_title": "맛집 추천해요",
+              "post_status": "published",
+              "post_status_label": "게시됨",
+              "is_deleted": false,
+              "author_name": "이도현",
+              "scrapped_at": "2026-09-12 10:22",
+              "abilities": {
+                "can_delete": true
+              }
+            },
+            {
+              "id": 502,
+              "post_id": 1202,
+              "board_id": 2,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "board": {
+                "slug": "notice",
+                "name": "공지사항",
+                "is_active": true,
+                "use_scrap": false
+              },
+              "post_title": "[필독] 게시판 이용 규칙 안내",
+              "post_status": "published",
+              "post_status_label": "게시됨",
+              "is_deleted": false,
+              "author_name": "운영자",
+              "scrapped_at": "2026-09-11 18:05",
+              "abilities": {
+                "can_delete": true
+              }
+            },
+            {
+              "id": 503,
+              "post_id": 1203,
+              "board_id": 3,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000103",
+                "name": "탈퇴한 회원",
+                "email": null,
+                "is_withdrawn": true
+              },
+              "board": null,
+              "post_title": null,
+              "post_status": "deleted",
+              "post_status_label": "삭제됨",
+              "is_deleted": true,
+              "author_name": null,
+              "scrapped_at": "2026-09-03 09:47",
+              "abilities": {
+                "can_delete": true
+              }
+            }
+          ],
+          "boards": [
+            {
+              "id": 3,
+              "slug": "temp",
+              "name": "임시게시판"
+            },
+            {
+              "id": 2,
+              "slug": "notice",
+              "name": "공지사항"
+            },
+            {
+              "id": 1,
+              "slug": "free",
+              "name": "자유게시판"
+            }
+          ],
+          "abilities": {
+            "can_manage": true
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "from": 1,
+            "to": 3,
+            "has_more_pages": false
+          }
+        }
+      },
       "posts": {
         "data": {
           "board": {
             "slug": "free",
             "name": "자유게시판",
-            "description": "<p>회원 자유 소통 공간</p>",
+            "description": "회원 자유 소통 공간",
             "type": "normal",
             "categories": [
               "일상",
@@ -108,7 +236,7 @@
               "reply_count": 2,
               "attachment_count": 3,
               "has_attachment": true,
-              "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "parent_id": null,
               "depth": 0,
               "is_reply": false,
@@ -323,7 +451,7 @@
           "reply_count": 1,
           "attachment_count": 3,
           "has_attachment": true,
-          "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+          "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "parent_id": null,
           "depth": 0,
           "is_reply": false,
@@ -393,7 +521,7 @@
               "collection": "attachments",
               "order": 0,
               "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
-              "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "is_image": true,
               "meta": null
             },
@@ -1268,7 +1396,7 @@
               "collection": "attachments",
               "order": 0,
               "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
-              "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "is_image": true,
               "meta": null
             }
@@ -1308,7 +1436,8 @@
             "user_abilities": {
               "can_manage": true,
               "can_write": true,
-              "can_upload": true
+              "can_upload": true,
+              "can_write_notice": true
             }
           },
           "author": {
@@ -1358,10 +1487,73 @@
           ],
           "basic_defaults": {
             "default_board_permissions": {
-              "read": "all",
-              "write": "member",
-              "comment": "member"
+              "admin.posts.read": [
+                "admin"
+              ],
+              "admin.posts.write": [
+                "admin"
+              ],
+              "admin.posts.read-secret": [
+                "admin"
+              ],
+              "admin.comments.read": [
+                "admin"
+              ],
+              "admin.comments.write": [
+                "admin"
+              ],
+              "admin.attachments.upload": [
+                "admin"
+              ],
+              "admin.attachments.download": [
+                "admin"
+              ],
+              "admin.manage": [
+                "admin"
+              ],
+              "posts.read": [
+                "admin",
+                "user",
+                "guest"
+              ],
+              "posts.write": [
+                "admin",
+                "user"
+              ],
+              "posts.read-secret": [
+                "admin"
+              ],
+              "posts.write-notice": [
+                "admin"
+              ],
+              "comments.read": [
+                "admin",
+                "user",
+                "guest"
+              ],
+              "comments.write": [
+                "admin",
+                "user"
+              ],
+              "attachments.upload": [
+                "admin",
+                "user"
+              ],
+              "attachments.download": [
+                "admin",
+                "user",
+                "guest"
+              ],
+              "manager": [
+                "admin"
+              ]
             }
+          },
+          "abilities": {
+            "can_update": true,
+            "can_bulk_apply": true,
+            "can_clear_seo_cache": true,
+            "can_manage_board_types": true
           }
         }
       },
@@ -1453,8 +1645,20 @@
             "per_page": 20
           },
           "abilities": {
-            "can_create": true
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
           }
+        }
+      },
+      "boardPrivacyRetentionPreview": {
+        "data": {
+          "ip": 128,
+          "guest": 12,
+          "guest_mode": "anonymize",
+          "ip_enabled": false,
+          "guest_enabled": false,
+          "can_view_targets": true
         }
       },
       "boardNotificationDefinitions": {
@@ -1462,7 +1666,7 @@
           "data": [
             {
               "id": 1,
-              "type": "board.post.created",
+              "type": "new_comment",
               "is_active": true,
               "is_default": true,
               "variables": [
@@ -1477,12 +1681,12 @@
                   "is_active": true,
                   "is_default": true,
                   "subject": {
-                    "ko": "게시글 등록 알림",
-                    "en": "New post"
+                    "ko": "새 댓글 알림",
+                    "en": "New comment"
                   },
                   "body": {
-                    "ko": "<p>새 게시글이 등록되었습니다.</p>",
-                    "en": "<p>A new post has been created.</p>"
+                    "ko": "<p>게시글에 새 댓글이 등록되었습니다.</p>",
+                    "en": "<p>A new comment was added to the post.</p>"
                   },
                   "recipients": [
                     {
@@ -1709,6 +1913,220 @@
           },
           "unread_count": 2
         }
+      },
+      "reactions": {
+        "data": {
+          "data": [
+            {
+              "id": 701,
+              "reacted_at": "2026-09-14 09:31",
+              "created_at": "2026-09-14 09:31:02",
+              "target_type": "post",
+              "target_type_label": "게시글",
+              "target_id": 1201,
+              "post_id": 1201,
+              "comment_id": null,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "board": {
+                "id": 1,
+                "slug": "free",
+                "name": "자유게시판",
+                "is_active": true,
+                "use_reaction": true,
+                "use_comment_reaction": true
+              },
+              "target_title": "맛집 추천해요",
+              "target_excerpt": null,
+              "target_status": "published",
+              "target_status_label": "게시됨",
+              "is_target_deleted": false,
+              "author_name": "이도현",
+              "reaction_type": {
+                "id": 1,
+                "code": "like",
+                "name": "추천",
+                "icon_name": "fa-thumbs-up",
+                "icon_url": null,
+                "is_active": true
+              },
+              "abilities": {
+                "can_delete": true
+              }
+            },
+            {
+              "id": 702,
+              "reacted_at": "2026-09-13 20:04",
+              "created_at": "2026-09-13 20:04:47",
+              "target_type": "comment",
+              "target_type_label": "댓글",
+              "target_id": 3301,
+              "post_id": 1202,
+              "comment_id": 3301,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "board": {
+                "id": 2,
+                "slug": "notice",
+                "name": "공지사항",
+                "is_active": true,
+                "use_reaction": true,
+                "use_comment_reaction": false
+              },
+              "target_title": "[필독] 게시판 이용 규칙 안내",
+              "target_excerpt": "규칙 잘 봤습니다. 감사합니다.",
+              "target_status": "published",
+              "target_status_label": "게시됨",
+              "is_target_deleted": false,
+              "author_name": "운영자",
+              "reaction_type": {
+                "id": 2,
+                "code": "dislike",
+                "name": "비추천",
+                "icon_name": "fa-thumbs-down",
+                "icon_url": null,
+                "is_active": false
+              },
+              "abilities": {
+                "can_delete": true
+              }
+            }
+          ],
+          "pagination": {
+            "total": 2,
+            "count": 2,
+            "per_page": 20,
+            "current_page": 1,
+            "last_page": 1,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false
+          },
+          "reaction_types": [
+            {
+              "id": 1,
+              "code": "like",
+              "name": "추천",
+              "icon_name": "fa-thumbs-up",
+              "icon_url": null,
+              "is_active": true
+            },
+            {
+              "id": 2,
+              "code": "dislike",
+              "name": "비추천",
+              "icon_name": "fa-thumbs-down",
+              "icon_url": null,
+              "is_active": false
+            }
+          ],
+          "boards": [
+            {
+              "id": 3,
+              "slug": "temp",
+              "name": "임시게시판"
+            },
+            {
+              "id": 2,
+              "slug": "notice",
+              "name": "공지사항"
+            },
+            {
+              "id": 1,
+              "slug": "free",
+              "name": "자유게시판"
+            }
+          ],
+          "abilities": {
+            "can_view": true,
+            "can_manage": true
+          }
+        }
+      },
+      "privacyManualRuns": {
+        "data": {
+          "targets": {
+            "retention:sirsoft-board.ip": {
+              "key": "retention:sirsoft-board.ip",
+              "label": "게시판 작성 IP",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": {
+                "id": 7,
+                "target": "retention:sirsoft-board.ip",
+                "status": "completed",
+                "status_label": "완료",
+                "is_active": false,
+                "skip_waiting": false,
+                "processed_count": 134,
+                "remaining_count": null,
+                "mode": "mask",
+                "error": null,
+                "requester_name": "관리자",
+                "queued_at": "2026-09-25 14:02:11",
+                "started_at": "2026-09-25 14:02:12",
+                "finished_at": "2026-09-25 14:02:15"
+              }
+            },
+            "retention:sirsoft-board.guest": {
+              "key": "retention:sirsoft-board.guest",
+              "label": "게시판 비회원 작성자 정보",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": null
+            }
+          },
+          "has_active": false,
+          "finished_since": false,
+          "checked_at": "2026-09-25T14:02:20+09:00"
+        }
+      },
+      "privacyTargets": {
+        "data": {
+          "data": [
+            {
+              "id": "post-2761",
+              "title": "오래된 비회원 글",
+              "subtitle": "홍길동",
+              "context": "자유게시판 · 글",
+              "date": "2015-06-01",
+              "url": "/board/free/2761"
+            },
+            {
+              "id": "comment-904",
+              "title": "오래된 비회원 글",
+              "subtitle": "김철수",
+              "context": "자유게시판 · 댓글",
+              "date": "2015-06-02",
+              "url": "/board/free/2761"
+            }
+          ],
+          "columns": {
+            "title": "제목",
+            "subtitle": "작성자",
+            "context": "게시판 · 구분",
+            "date": "작성일"
+          },
+          "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 2
+          }
+        }
       }
     },
     "byEndpointPattern": {
@@ -1855,7 +2273,7 @@
                     "reply_count": 0,
                     "attachment_count": 0,
                     "has_attachment": false,
-                    "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+                    "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                     "parent_id": null,
                     "depth": 0,
                     "is_reply": false,
@@ -1935,7 +2353,7 @@
           },
           {
             "id": "replies_expanded",
-            "label": "답글 펼침",
+            "label": "$t:editor.state.replies_expanded",
             "comment": "대댓글(depth>0) 은 collapsedReplies 기본 접힘이라 캔버스 미렌더. collapsedReplies:{501:false} 로 댓글 502(대댓글) 본체를 표시. 첨부는 `!== false` 라 기본 펼침.",
             "initialState": {
               "local": {
@@ -1968,7 +2386,7 @@
                     "board": {
                       "slug": "free",
                       "name": "자유게시판",
-                      "description": "<p>회원 자유 소통 공간</p>",
+                      "description": "회원 자유 소통 공간",
                       "type": "normal",
                       "categories": [
                         "일상",
@@ -2091,7 +2509,7 @@
           },
           {
             "id": "validation_failed",
-            "label": "검증 실패",
+            "label": "$t:editor.state.validation_failed",
             "comment": "게시글 작성 폼 검증 실패 — _post_form partial 이 _local.errors.{title,...} 인라인 에러를 if/className 으로 표시(본문 line 17/552).",
             "formErrors": {
               "_local.errors.title": [
@@ -2240,7 +2658,7 @@
         ]
       },
       {
-        "comment": "admin 게시판 설정 — {{_global.activeBoardSettingsTab || query.tab || 'general'}} 으로 7개 탭 화면을 if 분기한다(각 _tab_*.json partial, 본문 line 488/674~). query.tab + 우선 키 _global.activeBoardSettingsTab 함께 주입.",
+        "comment": "admin 게시판 설정 — {{_global.activeBoardSettingsTab || query.tab || 'general'}} 으로 8개 탭 화면을 if 분기한다(각 _tab_*.json partial, 본문 line 488/674~). query.tab + 우선 키 _global.activeBoardSettingsTab 함께 주입.",
         "scope": {
           "kind": "route",
           "match": "*/admin/boards/settings"
@@ -2291,9 +2709,13 @@
                     "rejection_limit_days": 7,
                     "notify_admin_on_report": true,
                     "notify_admin_on_report_scope": "report_manager",
-                    "notify_admin_on_report_channels": ["in_app"],
+                    "notify_admin_on_report_channels": [
+                      "in_app"
+                    ],
                     "notify_author_on_report_action": true,
-                    "notify_author_on_report_action_channels": ["in_app"]
+                    "notify_author_on_report_action_channels": [
+                      "in_app"
+                    ]
                   }
                 }
               }
@@ -2346,6 +2768,18 @@
                 "activeBoardSettingsTab": "identity_policies"
               }
             }
+          },
+          {
+            "id": "tab_privacy_retention",
+            "label": "$t:editor.state.tab.privacy_retention",
+            "initialState": {
+              "query": {
+                "tab": "privacy_retention"
+              },
+              "global": {
+                "activeBoardSettingsTab": "privacy_retention"
+              }
+            }
           }
         ]
       },
@@ -2368,7 +2802,7 @@
           },
           {
             "id": "attachments_replies_open",
-            "label": "첨부·답글 펼침",
+            "label": "$t:editor.state.attachments_replies_open",
             "comment": "첨부파일 목록(image/non-image 분기) + 대댓글(depth>0) 펼침. showAttachments:true + collapsedReplies:{501:false}(댓글 502 의 root=501).",
             "initialState": {
               "local": {
@@ -2379,6 +2813,1049 @@
               },
               "route": {
                 "id": 142
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(reactionBulkDeleteLoading, selectedIds) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "admin_reaction_bulk_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "reactionBulkDeleteLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget, reactionDeleteLoading, selectedIds) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "admin_reaction_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "reactionDeleteLoading": false,
+                "deleteTarget": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(blindModalLoading, blindReason, blind_modal_data) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "blind_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "blind_modal_data": {
+                  "id": 1,
+                  "type": "comment"
+                },
+                "blindModalLoading": false,
+                "blindReason": "샘플 사유입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(boardIdentityPolicyDeleteId, boardIdentityPolicyDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "board_identity_policy_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "boardIdentityPolicyDeleting": false,
+                "boardIdentityPolicyDeleteId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(boardTypesList, btDeletingId, btEditingItem, btFormErrors, btFormMode, btFormName, btFormSlug, btSaving) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "board_type_manage_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "boardTypesList": [
+                  {
+                    "id": 1,
+                    "name": "일반 게시판",
+                    "slug": "general"
+                  },
+                  {
+                    "id": 2,
+                    "name": "공지 게시판",
+                    "slug": "notice"
+                  },
+                  {
+                    "id": 3,
+                    "name": "갤러리 게시판",
+                    "slug": "gallery"
+                  }
+                ],
+                "btEditingItem": {
+                  "id": 1
+                },
+                "btSaving": false,
+                "btDeletingId": 1,
+                "btFormMode": "edit",
+                "btFormSlug": "sample-slug",
+                "btFormErrors": {
+                  "slug": [
+                    "샘플 안내 문구입니다."
+                  ]
+                },
+                "btFormName": {
+                  "ko": "샘플 한국어 문구"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkApplySnapshot) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_apply_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkApplySnapshot": {
+                  "applyAll": false,
+                  "boardIds": [
+                    1
+                  ],
+                  "fields": [
+                    "type",
+                    "use_comment",
+                    "per_page",
+                    "max_file_size",
+                    "notify_author",
+                    "posts.write"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(scrapBulkDeleteLoading, selectedIds) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "scrapBulkDeleteLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkPostAction, bulkPostLoading, bulkPostReason, selectedIds_board_posts) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_post_action_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds_board_posts": [
+                  11,
+                  12,
+                  13
+                ],
+                "bulkPostAction": "restore",
+                "bulkPostReason": "샘플 사유입니다.",
+                "bulkPostLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_post_error_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkPostSkipped) — 일괄 처리 응답의 건너뛴 글 목록이 담는 값이라, 편집기에서는 이 상태로 담아야 「0개 게시글」 빈 목록으로 열리지 않는다. 항목 모양은 응답 skipped 와 같다(id, title, reason, reason_label).",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_post_skipped_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkPostSkipped": [
+                  {
+                    "id": 101,
+                    "title": "샘플 게시글 제목",
+                    "reason": "already_blinded",
+                    "reason_label": "이미 블라인드된 글"
+                  },
+                  {
+                    "id": 102,
+                    "title": "답글이 달린 샘플 게시글",
+                    "reason": "has_replies",
+                    "reason_label": "답글이 달린 글 (답글 삭제 정책상 삭제할 수 없음)"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(modal_data) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "copy_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "modal_data": {
+                  "author": "홍길동",
+                  "id": 1,
+                  "name": "샘플 제목",
+                  "posts_count": 3,
+                  "slug": "sample-slug",
+                  "type": "reply"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteModalLoading, isDeleting, modal_data) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "modal_data": {
+                  "author": "홍길동",
+                  "id": 1,
+                  "name": "샘플 제목",
+                  "posts_count": 3,
+                  "slug": "sample-slug",
+                  "type": "reply"
+                },
+                "isDeleting": false,
+                "deleteModalLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteModalLoading, deleteTarget, modal_data, scrapDeleteLoading, selectedIds) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "modal_data": {
+                  "author": "홍길동",
+                  "id": 1,
+                  "name": "샘플 제목",
+                  "posts_count": 3,
+                  "slug": "sample-slug",
+                  "type": "reply"
+                },
+                "deleteModalLoading": false,
+                "selectedIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "deleteTarget": {
+                  "id": 1
+                },
+                "scrapDeleteLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "error_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(identity_policy_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "identity_policy_form_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "identity_policy_form_modal": {
+                  "errors": {
+                    "errors": {
+                      "applies_to": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "fail_mode": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "grace_minutes": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "key": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "priority": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "purpose": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "scope": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "target": [
+                        "샘플 안내 문구입니다."
+                      ]
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "form": {
+                    "applies_to": "샘플 값",
+                    "conditions": {
+                      "signup_stage": "샘플 값"
+                    },
+                    "enabled": true,
+                    "fail_mode": "sample",
+                    "grace_minutes": 0,
+                    "id": 1,
+                    "key": "sample",
+                    "priority": 100,
+                    "provider_id": 1,
+                    "purpose": "signup",
+                    "scope": "sample",
+                    "source_identifier": "샘플 값",
+                    "source_type": "admin",
+                    "target": "샘플 값"
+                  },
+                  "isNew": true,
+                  "isSaving": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isResettingNotification, resetTargetId, resetTargetName) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_board_notification_definition_reset"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "resetTargetName": "샘플 제목",
+                "isResettingNotification": false,
+                "resetTargetId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(board_notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_board_notification_template_edit"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "board_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "new_comment",
+                    "relations": [
+                      "post_author"
+                    ],
+                    "relation_labels": {
+                      "post_author": "게시글 작성자"
+                    },
+                    "name": {
+                      "ko": "샘플 알림 정의",
+                      "en": "Sample notification"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      },
+                      {
+                        "key": "subject_title"
+                      },
+                      {
+                        "key": "target_url"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/sample",
+                    "subject": {
+                      "ko": "[{app_name}] {subject_title} 알림",
+                      "en": "[{app_name}] {subject_title} notification"
+                    },
+                    "body": {
+                      "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                      "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "related_user",
+                      "relation": "post_author"
+                    },
+                    {
+                      "type": "role",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "[샘플 사이트] 새 소식 알림",
+                    "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(board_notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_board_notification_template_preview"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "board_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "new_comment",
+                    "relations": [
+                      "post_author"
+                    ],
+                    "relation_labels": {
+                      "post_author": "게시글 작성자"
+                    },
+                    "name": {
+                      "ko": "샘플 알림 정의",
+                      "en": "Sample notification"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      },
+                      {
+                        "key": "subject_title"
+                      },
+                      {
+                        "key": "target_url"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/sample",
+                    "subject": {
+                      "ko": "[{app_name}] {subject_title} 알림",
+                      "en": "[{app_name}] {subject_title} notification"
+                    },
+                    "body": {
+                      "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                      "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "related_user",
+                      "relation": "post_author"
+                    },
+                    {
+                      "type": "role",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "[샘플 사이트] 새 소식 알림",
+                    "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(modal_data, reportSubmitting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "report_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "modal_data": {
+                  "author": "홍길동",
+                  "id": 1,
+                  "name": "샘플 제목",
+                  "posts_count": 3,
+                  "slug": "sample-slug",
+                  "type": "reply"
+                },
+                "reportSubmitting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(restoreModalLoading, restore_modal_data) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "restore_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "restore_modal_data": {
+                  "id": 1,
+                  "type": "comment"
+                },
+                "restoreModalLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(actionReason, actionType, isSaving) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "status_action_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "actionType": "pending",
+                "actionReason": "샘플 사유입니다.",
+                "isSaving": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkActionReason, bulkActionType, bulkStatusLoading, selectedIds, statusCountsData, statusCountsLoading) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "status_change_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds": [
+                  11,
+                  12,
+                  13,
+                  14,
+                  15
+                ],
+                "bulkActionType": "suspended",
+                "statusCountsLoading": false,
+                "statusCountsData": {
+                  "changeable_count": 3,
+                  "changeable_status_counts": {
+                    "pending": {
+                      "count": 2,
+                      "label": "접수"
+                    },
+                    "review": {
+                      "count": 1,
+                      "label": "검토"
+                    }
+                  },
+                  "deleted_count": 1,
+                  "restorable_blind_count": 0,
+                  "same_status_count": 1,
+                  "target_status_label": "게시중단",
+                  "unchangeable_count": 2
+                },
+                "bulkActionReason": "샘플 사유입니다.",
+                "bulkStatusLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(categoryFilter, dateFrom, dateTo, selectedIds_board_posts, showAdvancedSearch) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/board/:slug"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "showAdvancedSearch": "샘플 값",
+                "selectedIds_board_posts": [
+                  11,
+                  12,
+                  13
+                ],
+                "dateTo": "샘플 값",
+                "dateFrom": "샘플 값",
+                "categoryFilter": "샘플 값"
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(dateFrom, dateQuick, dateTo, reactionBoardFilter, reactionTargetFilter, reactionTypeFilter, scrapBoardFilter, selectedIds) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/boards/reactions"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "reactionTargetFilter": "샘플 값",
+                "dateTo": "샘플 값",
+                "reactionBoardFilter": "샘플 값",
+                "reactionTypeFilter": "샘플 값",
+                "dateFrom": "샘플 값",
+                "selectedIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "dateQuick": "all",
+                "scrapBoardFilter": "샘플 값"
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(dateFrom, dateQuick, dateTo, selectedIds, showAdvancedSearch, statusFilter, targetStatusFilter, typeFilter, visibleColumns_reports) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/boards/reports"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "typeFilter": "샘플 값",
+                "showAdvancedSearch": "샘플 값",
+                "visibleColumns_reports": [
+                  "created_at",
+                  "status",
+                  "target_status",
+                  "target_type",
+                  "snapshot_board_name",
+                  "snapshot_target_title",
+                  "snapshot_author_name",
+                  "reporter_id"
+                ],
+                "dateTo": "샘플 값",
+                "statusFilter": "샘플 값",
+                "targetStatusFilter": "샘플 값",
+                "dateFrom": "샘플 값",
+                "dateQuick": "all",
+                "selectedIds": [
+                  11,
+                  12,
+                  13
+                ]
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(dateFrom, dateQuick, dateTo, reactionBoardFilter, reactionTargetFilter, reactionTypeFilter, scrapBoardFilter, selectedIds) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/boards/scraps"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "scrapBoardFilter": "샘플 값",
+                "dateFrom": "샘플 값",
+                "selectedIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "dateTo": "샘플 값",
+                "reactionTargetFilter": "샘플 값",
+                "reactionBoardFilter": "샘플 값",
+                "reactionTypeFilter": "샘플 값",
+                "dateQuick": "all"
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "게시판 환경설정 「관리자·스텝 일괄 지정」 확인 창. 일괄 지정 패널이 `_global.boardBulkMembers` 에 동작·역할 종류·대상 게시판·회원을 담고 연다 — 상태 없이는 대상 게시판 수·회원 칩 없이 그려진다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_members_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "boardBulkMembers": {
+                  "mode": "add",
+                  "type": "manager",
+                  "all": false,
+                  "boardIds": [
+                    1,
+                    2
+                  ],
+                  "users": [
+                    {
+                      "id": 31,
+                      "uuid": "00000000-0000-4000-8000-000000000031",
+                      "name": "홍길동"
+                    },
+                    {
+                      "id": 32,
+                      "uuid": "00000000-0000-4000-8000-000000000032",
+                      "name": "김철수"
+                    }
+                  ],
+                  "error": null
+                },
+                "isProcessing": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "게시판 환경설정 개인정보 보유기간 탭 「지금 실행」 확인 창. 카드의 버튼이 `_global.privacyRun` 에 대상 키·이름을 담고 건수를 받아 온 뒤 연다 — 상태 없이는 제목이 「{{target}} — 직권 실행」 원문으로 그려진다. 값은 표본 privacyManualRuns 의 것.",
+        "scope": {
+          "kind": "modal",
+          "match": "privacy_run_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "privacyRun": {
+                  "key": "retention:sirsoft-board.ip",
+                  "label": "게시판 작성 IP",
+                  "supportsSkip": false,
+                  "skipWaiting": false,
+                  "preview": {
+                    "count": 128,
+                    "mode": "erase_ip",
+                    "enabled": true
+                  },
+                  "loading": false,
+                  "submitting": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "게시판 환경설정 개인정보 보유기간 탭 「대상 보기」 창. 카드의 버튼이 `_global.privacyTargets` 에 조회 경로와 창 제목을 담고 연다 — 상태 없이는 제목이 빈 칸이다.",
+        "scope": {
+          "kind": "modal",
+          "match": "privacy_targets_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "privacyTargets": {
+                  "path": "retention-targets/sirsoft-board.ip",
+                  "currentPage": 1,
+                  "hasMore": false,
+                  "isLoadingMore": false,
+                  "title": "$t:sirsoft-board.admin.settings.privacy_retention.targets.title_ip"
+                }
               }
             }
           }

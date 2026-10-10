@@ -459,6 +459,25 @@ export interface ComponentCapabilitySpec {
    */
   events?: string[];
   /**
+   * 원시값 콜백 표식 — `events` 중 부품이 DOM 이벤트·`{ target }` 대신 **값을 그대로** 넘기는 칸
+   * (예: SearchableDropdown 의 `onChange(값)`). [동작] 탭은 이 칸에 새로 붙이는 동작을 `type` 이 아니라
+   * `event` 표기로 적는다 — 런타임 `type` 경로는 원시값 호출을 실행하지 않기 때문이다.
+   *
+   * 표식은 그 콜백을 **사용자 조작 때만** 부르는 부품에만 단다. 마운트·리렌더 때도 부르는 부품에 달면
+   * 그때마다 동작이 실행된다(troubleshooting-state-setstate 사례 26).
+   *
+   * @since engine-v1.78.7
+   */
+  rawValueEvents?: string[];
+  /**
+   * 원시값 콜백 칸에서 바뀐 값이 몇 번째 인자인지 — 칸 이름 → `$args` 위치(없으면 0).
+   * 예: FilterGroup 은 `onChange(filterId, value)` 라 `{ "onChange": 1 }`. [동작] 탭이 「바뀐 값은
+   * `{{$args[N]}}` 로 읽는다」 안내에 쓴다.
+   *
+   * @since engine-v1.78.8
+   */
+  rawValueArgIndex?: Record<string, number>;
+  /**
    * "정렬 박스"(flex) 편집 역할 — `container`|`item`|`auto`.
    * 미선언 시 flex 편집 컨트롤을 숨긴다.
    */
@@ -604,6 +623,11 @@ export interface EditorStateGroupSpec {
   scope?: EditorStateScopeSpec;
   /** 본 그룹의 변종 상태 목록 */
   items?: EditorStateItemSpec[];
+  /**
+   * 출처 — 로더가 병합할 때 붙인다(작성자가 적지 않는다). 같은 창 id 를 여러 확장이 쓸 때 창을 연 화면의 주인 확장 묶음을
+   * 고르는 데 쓴다(`matchStateItems` 의 hostLayoutName). @since engine-v1.78.3
+   */
+  __source?: { kind: string; id?: string };
 }
 
 export interface EditorStateScopeSpec {

@@ -5,7 +5,15 @@
 ## 선언 요약
 
 <!-- @generated:editor-spec-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_이 확장은 편집기 스펙(`editor-spec.json`)을 두지 않습니다. 편집기는 코어 기본 팔레트와 활성 템플릿의 스펙만으로 이 확장의 화면을 다룹니다._
+| 항목 | 값 |
+|---|---|
+| manifest | `plugins/_bundled/sirsoft-ckeditor5/editor-spec.json` |
+| 형태 | 단일 파일 (인라인) |
+| 스펙 버전 | `1.0.0` |
+| 스타일 시스템 | - |
+| 다크 모드 전략 | - |
+
+> 단일 파일 · 프리뷰 샘플 1 · 페이지 상태 4
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -20,7 +28,10 @@ _이 확장은 편집기 스펙(`editor-spec.json`)을 두지 않습니다. 편�
 ## 선언 블록
 
 <!-- @generated:editor-spec-blocks START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_선언된 편집기 스펙 블록이 없습니다._
+| 블록 | 역할 | 항목 수 | 출처 |
+|---|---|---|---|
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 1 | `editor-spec.json (인라인)` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 4 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
 <!-- @intent START -->
@@ -32,7 +43,7 @@ _선언된 편집기 스펙 블록이 없습니다._
 ## 컴포넌트 팔레트
 
 <!-- @generated:editor-spec-palette START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_이 확장은 편집기 팔레트에 항목을 추가하지 않습니다._
+_이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 팔레트에 추가되는 항목이 없습니다._
 <!-- @generated:editor-spec-palette END -->
 
 <!-- @intent START -->
@@ -44,11 +55,13 @@ _이 확장은 편집기 팔레트에 항목을 추가하지 않습니다._
 ## 샘플 데이터와 페이지 상태
 
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_이 확장은 편집기 스펙을 두지 않아 선언된 샘플 데이터·페이지 상태가 없습니다._
+| 자리 | 역할 | 개수 | ID |
+|---|---|---|---|
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 1 | `ckeditor5Uploads` |
+| `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 4 | `*/admin/plugins/sirsoft-ckeditor5/uploads` · `delete_confirm_modal` · `bulk_delete_confirm_modal` · `*/admin/plugins/sirsoft-ckeditor5/settings` |
 
-**프리뷰 샘플이 없는 `data_source` 1개** — 편집기 캔버스에서 이 자리만 빈 화면이 됩니다. 실제 화면은 정상이라 오류도 경고도 남지 않습니다.
-
-`ckeditor5Uploads`
+_이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->
 
 <!-- @intent START -->
@@ -62,8 +75,6 @@ _이 확장은 편집기 스펙을 두지 않아 선언된 샘플 데이터·페
 ## 수정 시 동반 의무
 
 <!-- @generated:editor-spec-obligations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_이 확장은 아직 편집기 스펙을 두지 않습니다. 아래 변경이 생기면 `editor-spec.json` 을 신설합니다._
-
 | 이런 변경을 했다면 | 편집기 스펙에서 함께 할 일 |
 |---|---|
 | 컴포넌트를 새로 만들었다 | `componentPalette` 에 항목 추가 · `componentCapabilities` 에 편집 역량 선언 · `nesting` 에 담길 자리 규정 |
@@ -71,6 +82,12 @@ _이 확장은 아직 편집기 스펙을 두지 않습니다. 아래 변경이 
 | `_global.*` 을 새로 읽는다 | `sampleGlobal` 에 baseline 값 추가 |
 | 빈 목록·오류 같은 화면 변종을 추가했다 | `states` 에 변종 추가 · `stateLabels` 에 친화 명칭 |
 | 새 액션·조건 패턴을 도입했다 | `actionRecipes` / `conditionRecipes` 에 친화 명칭 등록 |
+
+편집기 스펙은 JSON 이므로 빌드가 필요 없습니다. 다만 편집기 서빙은 **활성 디렉토리만** 읽으므로(`_bundled` 폴백 없음) 편집 후 반드시 반영합니다:
+
+```bash
+php artisan plugin:update sirsoft-ckeditor5 --force
+```
 <!-- @generated:editor-spec-obligations END -->
 
 <!-- @intent START -->
@@ -82,4 +99,8 @@ _이 확장은 아직 편집기 스펙을 두지 않습니다. 아래 변경이 
 그 ID 를 넣는 것으로 시작합니다. 팔레트·컨트롤은 템플릿의 일이므로 넣지 않습니다.
 파일을 만든 뒤 update 커맨드로 활성 디렉토리에 반영해야 편집기가 읽습니다 —
 `_bundled` 폴백이 없습니다.
+
+업로드 목록은 `download_url` 을 썸네일 `src` 로 쓰므로, 표본의 이 칸에는 서버 경로가 아니라 인라인 그림
+(`data:image/svg+xml,…`)을 둡니다. 실재하지 않는 `/api/plugins/sirsoft-ckeditor5/images/…` 를 적으면 편집기에서
+깨진 그림으로 보입니다(7.1.0 실측, 코어 가드 `BundledStaticImagePathsExist`).
 <!-- @intent END -->

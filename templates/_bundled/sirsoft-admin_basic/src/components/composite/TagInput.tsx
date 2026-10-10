@@ -1,9 +1,83 @@
 // e2e:allow편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import Select, { components, MultiValue, SingleValue, ActionMeta, InputActionMeta } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { Div } from '../basic/Div';
 import type { EditorAttrs } from '../../types';
+
+// G7Core.t() 번역 함수 참조 — 화면 읽기 안내문·태그 지우기 버튼 이름을 화면 언어로 낸다
+const t = (key: string, params?: Record<string, string | number>) =>
+  (window as any).G7Core?.t?.(key, params) ?? key;
+
+/**
+ * react-select 라이브 영역 안내문(기본값은 영어 고정)을 템플릿 다국어 키로 바꾼다.
+ *
+ * 라이브 실측: ko 화면에서도 「1 result available…」 「option X, selected.」 가 읽혔다.
+ * 문구 키는 `common.tag_input.*` (ko·en + 번들 ja 언어팩).
+ */
+const ariaLiveMessages = {
+  guidance: (props: any): string => {
+    switch (props.context) {
+      case 'menu':
+        return t('common.tag_input.guidance_menu');
+      case 'input':
+        if (!props.isInitialFocus) return '';
+        return [
+          t('common.tag_input.guidance_input', { label: props['aria-label'] || t('common.tag_input.default_label') }),
+          props.isMulti ? t('common.tag_input.guidance_input_multi') : '',
+        ].filter(Boolean).join(', ');
+      case 'value':
+        return t('common.tag_input.guidance_value');
+      default:
+        return '';
+    }
+  },
+  onChange: (props: any): string => {
+    const label = props.label ?? '';
+    switch (props.action) {
+      case 'deselect-option':
+      case 'pop-value':
+      case 'remove-value':
+        return t('common.tag_input.deselected', { label });
+      case 'clear':
+        return t('common.tag_input.cleared');
+      case 'initial-input-focus':
+        return t('common.tag_input.selected', { label: (props.labels ?? []).join(', ') });
+      case 'select-option':
+        return props.isDisabled ? t('common.tag_input.disabled_option', { label }) : t('common.tag_input.selected', { label });
+      default:
+        return '';
+    }
+  },
+  onFocus: (props: any): string => {
+    const { context, focused, options, selectValue } = props;
+    const label = props.label ?? '';
+    if (context === 'value' && selectValue) {
+      return t('common.tag_input.focus_value', { label, index: selectValue.indexOf(focused) + 1, total: selectValue.length });
+    }
+    if (context === 'menu' && props.isAppleDevice) {
+      const state = `${props.isSelected ? t('common.tag_input.state_selected') : ''}${props.isDisabled ? t('common.tag_input.state_disabled') : ''}`;
+      return t('common.tag_input.focus_option', { label, state, index: (options ?? []).indexOf(focused) + 1, total: (options ?? []).length });
+    }
+    return '';
+  },
+  onFilter: (props: any): string =>
+    props.inputValue
+      ? t('common.tag_input.filtered', { term: props.inputValue, results: props.resultsMessage })
+      : props.resultsMessage,
+};
+
+/** 검색 결과 수 안내(react-select 기본값 「N results available」). */
+const screenReaderStatus = ({ count }: { count: number }): string => t('common.tag_input.results', { count });
+
+/** 태그 지우기 버튼 — react-select 가 붙이는 영어 이름(「Remove X」)을 화면 언어 이름으로 바꾼다. */
+const LocalizedMultiValueRemove = (props: any) => (
+  <components.MultiValueRemove
+    {...props}
+    innerProps={{ ...props.innerProps, 'aria-label': t('common.tag_input.remove', { label: props.data?.label ?? '' }) }}
+  />
+);
 
 export interface TagOption {
   value: string | number;
@@ -466,6 +540,22 @@ export const TagInput: React.FC<TagInputProps> = ({
     [value]
   );
 
+  // 메뉴 열림 여부 — Enter 를 react-select 에 맡길지 정한다(메뉴는 비제어라 콜백으로만 안다)
+  const menuOpenRef = useRef(false);
+  const handleMenuOpen = useCallback(() => {
+    menuOpenRef.current = true;
+  }, []);
+  const handleMenuClose = useCallback(() => {
+    menuOpenRef.current = false;
+  }, []);
+
+  // 곁 라벨을 입력칸 이름으로 잇는다 — 라벨과 형제로 놓여 이름 없는 combobox 로 읽혔다(7.1.0 J D-J7)
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // react-select 입력칸은 여러 겹 안쪽이라 라벨 탐색은 이 부품의 루트에서 시작한다
+    linkAdjacentLabel(rootRef.current?.querySelector<HTMLInputElement>('input:not([type="hidden"])') ?? null, false, rootRef.current);
+  });
+
   // Enter/Tab 키 처리 (태그 생성 또는 잘못된 동작 방지)
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -490,9 +580,23 @@ export const TagInput: React.FC<TagInputProps> = ({
         return;
       }
 
-      // Enter 키: 빈 입력 또는 중복 값 방지
+      // Enter 키:
+      // 1) 친 값이 이미 태그면 아무것도 하지 않는다 — react-select 는 선택된 옵션을 다시 고르면 해제하므로,
+      //    막지 않으면 같은 값을 한 번 더 입력하는 순간 기존 태그가 사라진다.
+      // 2) 메뉴가 열려 있으면 react-select 가 포커스된 옵션을 고르거나 새 값을 만든다 — 가로채지 않는다.
+      //    비-creatable 모드는 입력값을 제어하지 않아 inputValue 가 늘 빈 값이므로, 이 값만 보고 막으면
+      //    검색어를 친 뒤·화살표로 옮긴 뒤의 Enter 선택이 모두 사라진다.
+      // 3) 메뉴가 닫힌 빈 입력의 Enter 는 폼 제출로 번지지 않게 막는다.
       if (event.key === 'Enter') {
-        if (!currentInput || (value && value.includes(currentInput))) {
+        if (currentInput && value && value.includes(currentInput)) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        if (menuOpenRef.current) {
+          return;
+        }
+        if (!currentInput) {
           event.preventDefault();
           event.stopPropagation();
         }
@@ -551,6 +655,8 @@ export const TagInput: React.FC<TagInputProps> = ({
   const baseProps = {
     options: allOptions,
     onKeyDown: handleKeyDown,
+    onMenuOpen: handleMenuOpen,
+    onMenuClose: handleMenuClose,
     placeholder,
     noOptionsMessage: () => noOptionsMessage,
     isDisabled: disabled,
@@ -558,10 +664,15 @@ export const TagInput: React.FC<TagInputProps> = ({
     menuIsOpen: undefined,
     openMenuOnClick: true,
     openMenuOnFocus: true,
+    // 메뉴가 열린 채 Tab 으로 칸을 떠날 때 포커스된 옵션을 고르지 않는다(react-select 기본값은 고른다).
+    // 회원 역할 칸에서 Tab 한 번에 「관리자」 가 붙을 수 있었다(7.1.0 J D-J6). 만들기 칸의 Tab 태그화는 handleKeyDown 이 따로 처리.
+    tabSelectsValue: false,
     // 드롭다운 메뉴를 body에 포탈로 렌더링하여 부모 컨테이너의 overflow에 의해 잘리지 않도록 함
     menuPortalTarget: typeof document !== 'undefined' ? document.body : null,
     menuPosition: 'fixed' as const,
     classNamePrefix: 'tag-input',
+    ariaLiveMessages,
+    screenReaderStatus,
     unstyled: true,
     classNames: commonClassNames,
     // react-select 는 menuPortal 에 zIndex:1 을 인라인 스타일로 강제 주입한다.
@@ -599,7 +710,7 @@ export const TagInput: React.FC<TagInputProps> = ({
 
     if (creatable) {
       return (
-        <Div id={id} {...editorAttrs}>
+        <Div ref={rootRef} id={id} {...editorAttrs}>
           {name && <input type="hidden" name={name} value={hiddenValue} />}
           <CreatableSelect<TagOption, false>
             {...singleProps}
@@ -613,7 +724,7 @@ export const TagInput: React.FC<TagInputProps> = ({
     }
 
     return (
-      <Div id={id} {...editorAttrs}>
+      <Div ref={rootRef} id={id} {...editorAttrs}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
         <Select<TagOption, false> {...singleProps} />
       </Div>
@@ -634,6 +745,7 @@ export const TagInput: React.FC<TagInputProps> = ({
       Option: CustomOption,
       GroupHeading,
       MultiValueLabel: CustomMultiValueLabel,
+      MultiValueRemove: LocalizedMultiValueRemove,
       ClearIndicator: () => null,
       DropdownIndicator: () => null,
       IndicatorSeparator: () => null,
@@ -642,7 +754,7 @@ export const TagInput: React.FC<TagInputProps> = ({
 
   if (creatable) {
     return (
-      <Div id={id} {...editorAttrs} onPaste={handlePaste}>
+      <Div ref={rootRef} id={id} {...editorAttrs} onPaste={handlePaste}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
         <CreatableSelect<TagOption, true>
           {...multiProps}
@@ -656,7 +768,7 @@ export const TagInput: React.FC<TagInputProps> = ({
   }
 
   return (
-    <Div id={id} {...editorAttrs}>
+    <Div ref={rootRef} id={id} {...editorAttrs}>
       {name && <input type="hidden" name={name} value={hiddenValue} />}
       <Select<TagOption, true> {...multiProps} />
     </Div>

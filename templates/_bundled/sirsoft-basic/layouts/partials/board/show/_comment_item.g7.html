@@ -1,0 +1,341 @@
+<!-- 댓글 한 개 — 읽기·수정·답글쓰기 세 모습을 겸하고, 삭제됨·블라인드 상태도 여기서 갈린다. 답글 깊이는 왼쪽 여백으로만 표현하므로 목록은 평평한 배열 그대로다. 수정 중인 댓글 번호를 전역에 두는 것은 비회원 비밀번호 확인 창(별도 modals 소속)이 확인을 마치고 그 값을 돌려줘야 하기 때문이다. -->
+<partial description="개별 댓글 아이템">
+  <div class="flex gap-3 p-4 rounded-lg">
+    <prop name="style">
+      <field name="marginLeft" value="{{Math.min(comment?.depth ?? 0, 10) * 1}}rem"/>
+    </prop>
+    <!-- 답글 아이콘 (depth > 0일 때만) -->
+    <icon data-if="{{(comment?.depth ?? 0) > 0}}" name="turn-up" size="sm" class="fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0 self-start mt-4"/>
+    <!-- 댓글 작성자 아바타 -->
+    <avatar data-type="composite" author="{{comment?.author}}" size="sm"/>
+    <div class="flex-1">
+      <!-- 작성자 정보 + 버튼 영역 -->
+      <div class="flex items-start justify-between mb-1">
+        <!-- 작성자 정보 -->
+        <div class="flex items-center gap-1">
+          <!-- UserInfo 컴포넌트 (이름 + 작성일시 한 줄) -->
+          <user-info data-type="composite" author="{{comment?.author}}" subText="{{comment?.created_at_formatted ?? ''}}" subTextTitle="{{comment?.created_at ?? ''}}" layout="horizontal"/>
+        </div>
+        <!-- 더보기 드롭다운 메뉴 (답글/수정/삭제/신고) - 삭제/블라인드 댓글에서 숨김, 가능한 액션이 없으면 숨김 -->
+        <div data-if="{{!comment?.deleted_at &amp;&amp; comment?.status !== 'blinded' &amp;&amp; ((comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author) || (post?.data?.abilities?.can_write_comments &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at))}}" class="relative">
+          <!-- 더보기 버튼 (⋮) -->
+          <button type="button" aria-label="$t:common.more" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 cursor-pointer">
+            <on type="click">
+              <set-state target="local" commentDropdownId="{{_local.commentDropdownId === comment?.id ? null : comment?.id}}"/>
+            </on>
+            <icon name="ellipsis-vertical" size="sm"/>
+          </button>
+          <!-- 드롭다운 메뉴 -->
+          <div data-if="{{_local.commentDropdownId === comment?.id}}" class="absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 min-w-[120px] z-10">
+            <!-- 답글 메뉴 아이템 (답글 기능 활성화 + 권한 + depth 제한) -->
+            <button data-if="{{comment?.abilities?.can_write &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+              <on type="click">
+                <set-state target="local" :commentDropdownId="null" :editingCommentId="null" :editingCommentContent="null"/>
+                <set-state target="local" replyToCommentId="{{comment?.id}}" replyToCommentDepth="{{comment?.depth ?? 0}}"/>
+              </on>
+              <icon name="share" size="sm"/>
+              <span>$t:board.reply</span>
+            </button>
+            <!-- 수정 메뉴 아이템 ((본인 + 권한) || 비회원 || manager) -->
+            <button data-if="{{(comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+              <on type="click">
+                <set-state target="local" :commentDropdownId="null"/>
+                <!-- 비회원 댓글 + manager가 아닌 경우에만 비밀번호 확인 모달 -->
+                <set-state if="{{comment?.is_guest_comment &amp;&amp; !post?.data?.abilities?.can_manage}}" target="global">
+                  <field name="guestPasswordModal">
+                    <field name="targetType" value="comment"/>
+                    <field name="action" value="edit"/>
+                    <field name="apiEndpoint" value="/api/modules/sirsoft-board/boards/{{route.slug}}/comments/{{comment?.id}}/verify-password"/>
+                    <field name="storageKey" value="verified_guest_comment_{{comment?.id}}"/>
+                    <field name="redirectPath" :value="null"/>
+                    <field name="commentEdit">
+                      <field name="editingCommentId" value="{{comment?.id}}"/>
+                      <field name="editingCommentContent" value="{{comment?.content}}"/>
+                    </field>
+                    <field name="isVerifying" :value="false"/>
+                  </field>
+                </set-state>
+                <open-modal if="{{comment?.is_guest_comment &amp;&amp; !post?.data?.abilities?.can_manage}}" target="board_guest_password_modal"/>
+                <!-- 회원 댓글이거나, 비회원 댓글이지만 manager인 경우 바로 수정 모드 진입 -->
+                <set-state if="{{!comment?.is_guest_comment || post?.data?.abilities?.can_manage}}" target="global" :replyToCommentId="null" :replyToCommentDepth="null">
+                  <field name="commentEdit">
+                    <field name="editingCommentId" value="{{comment?.id}}"/>
+                    <field name="editingCommentContent" value="{{comment?.content}}"/>
+                  </field>
+                </set-state>
+              </on>
+              <icon name="edit" size="sm"/>
+              <span>$t:common.edit</span>
+            </button>
+            <!-- 삭제 메뉴 아이템 ((본인 + 권한) || 비회원 || manager) -->
+            <button data-if="{{(comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}" class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+              <on type="click">
+                <set-state target="local" :commentDropdownId="null"/>
+                <!-- manager인 경우 isGuest를 false로 설정하여 비밀번호 확인 우회 -->
+                <set-state target="global">
+                  <field name="deleteModal">
+                    <field name="type" value="comment"/>
+                    <field name="isGuest" value="{{comment?.is_guest_comment &amp;&amp; !post?.data?.abilities?.can_manage}}"/>
+                    <field name="apiEndpoint" value="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/comments/{{comment?.id}}"/>
+                  </field>
+                </set-state>
+                <open-modal target="board_delete_modal"/>
+              </on>
+              <icon name="trash" size="sm"/>
+              <span>$t:common.delete</span>
+            </button>
+            <!-- 신고 메뉴 아이템 — 미신고 상태 (모달 오픈) -->
+            <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author &amp;&amp; !comment?.is_already_reported}}" class="w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+              <on type="click">
+                <set-state target="local" :commentDropdownId="null"/>
+                <set-state target="global">
+                  <field name="reportModal">
+                    <field name="type" value="comment"/>
+                    <field name="comment_content" value="{{comment?.content ?? ''}}"/>
+                    <field name="comment_author_name" value="{{comment?.author?.name ?? comment?.guest_name ?? ''}}"/>
+                    <field name="comment_author_avatar" value="{{comment?.author?.avatar ?? ''}}"/>
+                    <field name="comment_created_at" value="{{comment?.created_at ?? ''}}"/>
+                    <field name="apiEndpoint" value="/api/modules/sirsoft-board/boards/{{route.slug}}/comments/{{comment?.id}}/reports"/>
+                  </field>
+                </set-state>
+                <!-- 모달은 modals 섹션이므로 _global로 초기화 -->
+                <set-state target="global">
+                  <field name="reportForm">
+                    <field name="reason_type" value=""/>
+                    <field name="reason_detail" value=""/>
+                  </field>
+                </set-state>
+                <open-modal target="board_report_modal"/>
+              </on>
+              <icon name="flag" size="sm"/>
+              <span>$t:board.post.report</span>
+            </button>
+            <!-- 신고 메뉴 아이템 — 이미 신고한 상태 (클릭 불가) -->
+            <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author &amp;&amp; comment?.is_already_reported}}" :disabled="true" class="w-full px-4 py-2 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed opacity-60">
+              <icon name="flag" size="sm"/>
+              <span>$t:board.post.reported</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- 삭제된 댓글 (게시글 삭제로 함께 숨겨진 cascade 댓글은 제외 — 원문 노출) -->
+      <div data-if="{{comment?.deleted_at &amp;&amp; !comment?.is_cascade_deleted &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="py-3 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-2">
+        <div class="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+          <icon name="trash" size="sm"/>
+          <span class="text-sm font-medium">$t:board.comment.deleted_comment_content</span>
+          <!-- 관리자용 원문 보기 버튼 -->
+          <button data-if="{{post?.data?.abilities?.can_manage === true}}" class="text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer">
+            <on type="click">
+              <set-state target="local" showDeletedContent="{{_local.showDeletedContent === comment?.id ? null : comment?.id}}"/>
+            </on>
+            {{_local.showDeletedContent === comment?.id ? '$t:board.comment.hide_original' : '$t:board.comment.view_original'}}
+          </button>
+        </div>
+        <!-- 관리자용 원문 내용 -->
+        <div data-if="{{_local.showDeletedContent === comment?.id}}" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <p class="text-sm text-gray-700 dark:text-gray-300">{{comment?.content}}</p>
+        </div>
+      </div>
+      <!-- 블라인드 처리된 댓글 -->
+      <div data-if="{{!comment?.deleted_at &amp;&amp; comment?.status === 'blinded' &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="py-3 px-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-2">
+        <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+          <icon name="eye-slash" size="sm"/>
+          <span class="text-sm font-medium">$t:board.comment.blinded_comment</span>
+          <!-- 원글 보기/숨기기 토글 버튼 -->
+          <button data-if="{{comment?.content}}" class="text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer">
+            <on type="click">
+              <set-state target="local" showBlindedCommentContent="{{Object.assign({}, _local.showBlindedCommentContent || {}, {[comment?.id]: !(_local.showBlindedCommentContent?.[comment?.id])})}}"/>
+            </on>
+            {{_local.showBlindedCommentContent?.[comment?.id] ? '$t:board.hide_original' : '$t:board.view_original'}}
+          </button>
+        </div>
+        <!-- 블라인드 댓글 원본 내용 표시 -->
+        <div data-if="{{_local.showBlindedCommentContent?.[comment?.id] &amp;&amp; comment?.content}}" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <p class="text-sm text-gray-700 dark:text-gray-300">{{comment?.content}}</p>
+        </div>
+      </div>
+      <!-- 비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다(비밀글과 같은 규칙) -->
+      <div data-if="{{(!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.status !== 'blinded' &amp;&amp; comment?.is_secret &amp;&amp; comment?.content === null &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+        <icon name="lock" size="sm"/>
+        <span class="text-sm">$t:board.comment.secret_comment</span>
+      </div>
+      <!-- 댓글 내용 (읽기 모드) — cascade 댓글은 삭제되었어도 원문 노출 -->
+      <p data-if="{{(!comment?.deleted_at || comment?.is_cascade_deleted) &amp;&amp; comment?.status !== 'blinded' &amp;&amp; !(comment?.is_secret &amp;&amp; comment?.content === null) &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="text-gray-700 dark:text-gray-300">{{comment?.content}}</p>
+      <!-- 댓글 반응 — 게시판이 「반응 사용」과 「댓글 반응 사용」을 모두 켰을 때만 나온다. 삭제·블라인드
+        댓글에는 새 반응을 달 수 없으므로 그 갈래에서는 이 줄 자체를 내지 않는다(이미 남긴 반응의 해제는
+        마이페이지 「내 반응」이 맡는다).
+
+        글 반응과 달리 한 화면에 댓글이 여럿이라, 네 가지 화면 상태(처리 중 유형·낙관 적용 여부·내 반응
+        유형·개수)를 **댓글 번호로 키를 잡은 맵**으로 들고 있다. 그래야 A 댓글에 누른 것이 B 댓글의
+        하이라이트를 건드리지 않는다.
+
+        비회원 댓글(user_id 없음)에는 본인 판정이 불가능해 서버가 허용한다 — 화면도 막지 않는다. -->
+      <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; post?.data?.board?.use_comment_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; !comment?.deleted_at &amp;&amp; comment?.status !== 'blinded' &amp;&amp; !(comment?.is_secret &amp;&amp; comment?.content === null) &amp;&amp; _global.commentEdit?.editingCommentId !== comment?.id}}" class="mt-2 flex flex-wrap items-center gap-1.5">
+        <div data-each="commentReactionType, commentReactionIdx in {{post?.data?.board?.reaction_type_options ?? []}}">
+          <button data-testid="comment-react-{{comment?.id}}-{{commentReactionType.id}}" type="button" title="{{commentReactionType.name ?? ''}}" disabled="{{(_local?.commentReacting?.[comment?.id] ?? null) !== null}}" aria-pressed="{{(_local?.commentReactionApplied?.[comment?.id] ? _local?.commentMyReaction?.[comment?.id] : comment?.my_reaction_type_id) === commentReactionType.id}}" class="{{(_local?.commentReactionApplied?.[comment?.id] ? _local?.commentMyReaction?.[comment?.id] : comment?.my_reaction_type_id) === commentReactionType.id ? 'px-2 py-1 text-xs border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md flex items-center gap-1 font-medium active:scale-95 transition-transform duration-150 ease-out' : 'px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1 active:scale-95 transition-transform duration-150 ease-out'}}{{(comment?.is_author || (_local?.commentReacting?.[comment?.id] ?? null) !== null) ? ' cursor-not-allowed opacity-60' : ' cursor-pointer'}}">
+            <on type="click">
+              <!-- 본인 댓글은 눌러도 안내만 한다. disabled 를 걸면 클릭 이벤트가 죽어 안내조차 못 하므로 글 반응과 같은 방식으로 분기에서 처리한다 -->
+              <switch on="{{comment?.is_author ? 'self_comment' : (_global.currentUser?.uuid ? 'logged_in' : 'not_logged_in')}}">
+                <case when="self_comment">
+                  <toast type="info" message="$t:board.reaction.self_comment_denied"/>
+                </case>
+                <case when="logged_in">
+                  <!-- 클릭 즉시 — 이 댓글 자리만 낙관 갱신한다(같은 유형 재클릭이면 해제 예측). 개수는 건드리지 않고 응답값으로만 확정 -->
+                  <set-state target="local" commentReacting="{{Object.assign({}, _local?.commentReacting || {}, {[comment?.id]: commentReactionType.id})}}" commentReactionApplied="{{Object.assign({}, _local?.commentReactionApplied || {}, {[comment?.id]: true})}}" commentMyReaction="{{Object.assign({}, _local?.commentMyReaction || {}, {[comment?.id]: (_local?.commentReactionApplied?.[comment?.id] ? _local?.commentMyReaction?.[comment?.id] : comment?.my_reaction_type_id) === commentReactionType.id ? null : commentReactionType.id})}}"/>
+                  <api-call target="/api/modules/sirsoft-board/boards/{{route.slug}}/comments/{{comment?.id}}/react" auth_mode="required" method="POST">
+                    <success>
+                      <!-- 서버 확정값으로 이 댓글 자리만 갱신 (refetch 없이 응답값만) -->
+                      <set-state target="local" commentReacting="{{Object.assign({}, _local?.commentReacting || {}, {[comment?.id]: null})}}" commentReactionApplied="{{Object.assign({}, _local?.commentReactionApplied || {}, {[comment?.id]: true})}}" commentMyReaction="{{Object.assign({}, _local?.commentMyReaction || {}, {[comment?.id]: response.data.my_reaction_type_id ?? null})}}" commentReactionCounts="{{Object.assign({}, _local?.commentReactionCounts || {}, {[comment?.id]: response.data.reaction_counts ?? {}})}}"/>
+                    </success>
+                    <fail>
+                      <!-- 실패 롤백 — 이 댓글 자리의 override 를 걷어내 서버값(comment.*)으로 되돌린다 -->
+                      <set-state target="local" commentReacting="{{Object.assign({}, _local?.commentReacting || {}, {[comment?.id]: null})}}" commentReactionApplied="{{Object.assign({}, _local?.commentReactionApplied || {}, {[comment?.id]: false})}}" commentMyReaction="{{Object.assign({}, _local?.commentMyReaction || {}, {[comment?.id]: null})}}" commentReactionCounts="{{Object.assign({}, _local?.commentReactionCounts || {}, {[comment?.id]: null})}}"/>
+                      <toast type="error" message="$t:board.reaction.failed"/>
+                    </fail>
+                    <body reaction_type_id="{{commentReactionType.id}}"/>
+                  </api-call>
+                </case>
+                <case when="not_logged_in">
+                  <toast type="info" message="$t:board.reaction.login_required"/>
+                  <navigate path="/login">
+                    <query redirect="/board/{{route.slug}}/{{route.id}}"/>
+                  </navigate>
+                </case>
+              </switch>
+            </on>
+            <!-- 올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다 -->
+            <img data-if="{{!!commentReactionType.icon_url &amp;&amp; (_local?.commentReacting?.[comment?.id] ?? null) !== commentReactionType.id}}" src="{{commentReactionType.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+            <icon data-if="{{!commentReactionType.icon_url || (_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id}}" name="{{(_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id ? 'fa-spinner' : (commentReactionType.icon_name ?? 'fa-thumbs-up')}}" spin="{{(_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id}}" size="sm"/>
+            <!-- 아이콘 이미지가 없는 유형은 기본 글리프로 떨어져 서로 구분되지 않는다 — 그때만 이름을 병기한다.
+                 이미지가 있으면 좋은 화면을 위해 아이콘만 두고, 이름은 버튼 title 로만 안내한다 (결정 2026-09-16). -->
+            <span data-if="{{!commentReactionType.icon_url}}">{{commentReactionType.name ?? ''}}</span>
+            <span class="tabular-nums">{{(_local?.commentReactionCounts?.[comment?.id] ?? comment?.reaction_counts)?.[commentReactionType.id] ?? 0}}</span>
+          </button>
+        </div>
+      </div>
+      <!-- 댓글 수정 폼 -->
+      <div data-if="{{_global?.commentEdit?.editingCommentId === comment?.id}}" class="mb-2">
+        <textarea name="editing_comment_content" value="{{_global?.commentEdit?.editingCommentContent ?? comment?.content}}" :rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
+          <on type="input">
+            <!-- 수정 중인 댓글 본문 — 어느 댓글을 고치는 중인지와 한 묶음이라, 본문만 바꿔 담더라도 대상 번호를 함께 다시 실어야 한다. -->
+            <set-state target="global">
+              <field name="commentEdit">
+                <field name="editingCommentId" value="{{_global.commentEdit?.editingCommentId}}"/>
+                <field name="editingCommentContent" value="{{$event.target.value}}"/>
+              </field>
+            </set-state>
+          </on>
+        </textarea>
+        <div class="flex justify-end gap-2 mt-2">
+          <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+            <on type="click">
+              <!-- 수정 취소 — 고치던 내용과 함께 비회원 확인으로 받아 둔 비밀번호도 버린다(그대로 두면 다음 수정이 확인 없이 통과한다). -->
+              <set-state target="global" :commentEdit="null" :verifiedGuestPassword="null">
+                <field name="form">
+                  <field name="editing_comment_content" value=""/>
+                </field>
+              </set-state>
+            </on>
+            $t:common.cancel
+          </button>
+          <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.editingCommentSubmitting === true}}">
+            <on type="click">
+              <!-- 수정 저장 — 비회원 댓글이면 앞서 확인받아 둔 비밀번호를 함께 보낸다(회원이면 아예 싣지 않는다). 성공하면 수정 모드와 그 비밀번호를 함께 비우고 글을 다시 받는다. -->
+              <sequence if="{{_local.editingCommentSubmitting !== true}}">
+                <set-state target="local" :editingCommentSubmitting="true"/>
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments/{{comment?.id}}" method="PUT">
+                  <success>
+                    <set-state target="local" :editingCommentId="null" :editingCommentContent="null" :editingCommentSubmitting="false"/>
+                    <!-- 댓글 수정 상태 초기화 -->
+                    <set-state target="global" :commentEdit="null" :verifiedGuestPassword="null"/>
+                    <refetch-data-source dataSourceId="post"/>
+                    <toast type="success" message="$t:board.comment_updated"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :editingCommentSubmitting="false"/>
+                    <toast type="error" message="{{error?.message ?? '$t:board.comment_update_error'}}"/>
+                  </fail>
+                  <body content="{{_global.commentEdit?.editingCommentContent}}" password="{{comment?.is_guest_comment ? _global.verifiedGuestPassword : undefined}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <div class="flex items-center gap-2">
+              <icon data-if="{{_local.editingCommentSubmitting}}" name="spinner" size="sm" class="animate-spin"/>
+              <span>$t:common.save</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <!-- 답글 입력 폼 (답글 버튼 클릭 시 해당 댓글 아래 표시) -->
+      <div data-if="{{_local.replyToCommentId === comment?.id &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="mt-4 ml-14 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+        <!-- 답글 대상 표시 -->
+        <div class="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium mb-3">
+          <icon name="share" size="sm"/>
+          <span>$t:board.replying_to|name={{comment?.author?.name}}</span>
+        </div>
+        <!-- 비회원 작성자 정보 입력 (이름/비밀번호) -->
+        <div data-if="{{!_global.currentUser?.uuid}}" class="flex gap-3 mb-3">
+          <input type="text" name="guest_reply_author_name" value="{{_local.guest_reply_author_name ?? ''}}" placeholder="$t:board.guest_author_name" class="flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <on type="input">
+              <!-- 답글의 비회원 이름 — 새 댓글 입력창과 다른 칸이다(둘이 동시에 열려 있을 수 있어 값을 나눠 담는다). -->
+              <set-state target="local" guest_reply_author_name="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <input type="password" name="guest_reply_password" value="{{_local.guest_reply_password ?? ''}}" placeholder="$t:board.guest_password" class="flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <on type="input">
+              <!-- 답글의 비회원 비밀번호 — 이 답글을 나중에 고치거나 지울 때 물어볼 값이다. -->
+              <set-state target="local" guest_reply_password="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <!-- 답글 입력 영역 -->
+        <div class="flex gap-3">
+          <!-- 현재 사용자 아바타 (로그인 시만 표시) -->
+          <avatar data-type="composite" data-if="{{_global.currentUser?.uuid}}" name="{{_global.currentUser?.name}}" avatar="{{_global.currentUser?.avatar}}" size="sm"/>
+          <div class="flex-1">
+            <textarea name="reply_content" value="{{_local.reply_content ?? ''}}" placeholder="$t:board.reply_placeholder" :rows="3" class="w-full px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-2">
+              <on type="input">
+                <!-- 답글 본문 — 답글창은 한 번에 하나만 열리므로(대상 댓글 번호 하나) 댓글마다 값을 나눠 둘 필요가 없다. -->
+                <set-state target="local" reply_content="{{$event.target.value}}"/>
+              </on>
+            </textarea>
+            <div class="flex justify-end gap-2">
+              <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                <on type="click">
+                  <!-- 답글 취소 — 대상 댓글을 비우면 이 답글창 자체가 사라진다(열림 여부가 곧 대상 번호다). -->
+                  <set-state target="local" :replyToCommentId="null" :replyToCommentDepth="null"/>
+                </on>
+                $t:common.cancel
+              </button>
+              <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.commentSubmitting === true}}">
+                <on type="click">
+                  <!-- 답글 등록 — 새 댓글과 같은 주소로 보내되 부모 댓글 번호를 얹어 깊이가 한 단 내려간다. 성공하면 답글창을 닫고(대상 비움) 글을 다시 받아 새 답글이 제자리에 끼워지게 한다. -->
+                  <sequence>
+                    <set-state target="local" :commentSubmitting="true"/>
+                    <api-call :auth_required="true" target="/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments" method="POST">
+                      <success>
+                        <set-state target="local" reply_content="" guest_reply_author_name="" guest_reply_password="" :replyToCommentId="null" :replyToCommentDepth="null" :commentSubmitting="false"/>
+                        <refetch-data-source dataSourceId="post"/>
+                        <toast type="success" message="$t:board.reply_submit_success"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :commentSubmitting="false"/>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                      <body content="{{_local.reply_content}}" parent_id="{{_local.replyToCommentId}}" author_name="{{_local.guest_reply_author_name}}" password="{{_local.guest_reply_password}}"/>
+                    </api-call>
+                  </sequence>
+                </on>
+                <div class="flex items-center gap-2">
+                  <icon data-if="{{!_local.commentSubmitting}}" name="paper-plane" size="sm"/>
+                  <icon data-if="{{_local.commentSubmitting}}" name="spinner" size="sm" class="animate-spin"/>
+                  <span>{{_local.commentSubmitting ? '$t:board.comment_submitting' : '$t:board.comment_reply'}}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

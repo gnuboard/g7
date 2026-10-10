@@ -113,10 +113,10 @@ class Plugin extends AbstractPlugin
                 'default' => 3,
                 'min' => 1,
                 'max' => 30,
-                'label' => ['ko' => '가상계좌 입금 만료(일)', 'en' => 'Virtual Account Expiry (days)'],
+                'label' => ['ko' => '가상계좌 입금 만료(일) — 사용 안 함', 'en' => 'Virtual Account Expiry (days) — not used'],
                 'hint' => [
-                    'ko' => '가상계좌 발급 후 입금 가능 기간. 모바일 vcnt_expire_term 값으로 전달.',
-                    'en' => 'Days the virtual account remains payable after issuance.',
+                    'ko' => '계좌 기한은 주문 입금 기한(이커머스 「주문 자동취소」 기한)을 따른다. 주문에 입금 기한이 없는 예외 경우에만 vcnt_expire_term 예비값으로 쓴다.',
+                    'en' => 'The account deadline follows the order deposit deadline (Ecommerce "Auto Cancel Order"). Used as the vcnt_expire_term fallback only when an order has no deposit deadline.',
                 ],
             ],
             'easy_pay_allow_with_other_pg' => ['type' => 'boolean', 'default' => false],
@@ -176,14 +176,18 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
+            Listeners\ValidateRedirectUrlSettingsListener::class,
             Listeners\RegisterPgProviderListener::class,
             Listeners\PaymentRefundListener::class,
+            Listeners\ClaimPaymentApproveListener::class,
+            Listeners\ClaimPaymentRefundListener::class,
             Listeners\CancelActivityLogListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
-            Listeners\EnsureAdminOrderListTestBadgeLayoutListener::class,
+            Listeners\ProvidePaymentMethodDisplayLabelListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
             Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
+            Listeners\ProvideNecessaryStorageKeysListener::class,
         ];
     }
 

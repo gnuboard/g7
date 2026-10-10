@@ -34,7 +34,7 @@
 - **컨트롤러**: 라우트 클로저 (`src/routes/api.php`)
 - **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.settings.read`
 
-가상계좌 **입금통보 수신 URL** 을 반환한다. 운영자가 나이스페이먼츠 상점관리자에 등록할 주소를 설정 화면에 표시하는 용도다. 수신 경로의 동작·IP 제한은 [vbank.md](vbank.md) 참조.
+가상계좌 **입금통보 수신 URL** 을 반환한다. 운영자가 나이스페이먼츠 상점관리자에 등록할 주소를 설정 화면에 표시하는 용도다. 주소는 관리자가 접속한 주소(요청 Host)가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 이다(사이트 주소가 비어 있으면 경로만 내려간다). 수신 경로의 동작·IP 제한은 [vbank.md](vbank.md) 참조.
 
 ```json
 { "success": true, "data": { "url": "https://example.com/plugins/sirsoft-pay_nicepayments/payment/vbank-notify" } }

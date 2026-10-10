@@ -1,0 +1,651 @@
+<!-- 드라이버 탭 — 저장소·캐시·세션·큐·웹소켓을 무엇으로 돌릴지 고른다.
+  이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.
+  판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과
+  지금 값을 견줘 "바뀐 항목인데 시험 성공 기록이 없다" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다. -->
+<partial description="환경설정 드라이버 탭 콘텐츠">
+  <div data-ref="tab_content_drivers" data-if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}">
+    <div data-ref="card_storage_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.storage.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.storage.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_storage_driver" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.storage.driver</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.storage_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full md:w-64">
+            <select name="drivers.storage_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.storage_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.storage ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.storage_driver']}}" class="form-error">{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_storage" data-if="{{!!_local.form?.drivers?.storage_driver &amp;&amp; !(_local.form?.available_drivers?.storage ?? []).some(d => d.id === _local.form?.drivers?.storage_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-storage">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.storage_driver ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <!-- 공개 자산 스토리지만 s3 인 구성(파일 스토리지는 로컬)에서도 접속 정보를 입력해야 하므로 두 축 중 하나라도 s3 면 노출한다 -->
+        <div data-ref="s3_settings" data-if="{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <div class="py-3">
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_bucket</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_bucket'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_bucket" placeholder="my-bucket" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_bucket'] === true}}" class="{{_local.errors?.['drivers.s3_bucket'] ? 'input-error md:w-64' : 'md:w-64'}}"/>
+            <span data-if="{{_local.errors?.['drivers.s3_bucket']}}" class="form-error">{{_local.errors?.['drivers.s3_bucket']?.[0] ?? ''}}</span>
+          </div>
+          <div class="py-3">
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_region</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_region'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_region" placeholder="ap-northeast-2" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_region'] === true}}" class="{{_local.errors?.['drivers.s3_region'] ? 'input-error md:w-64 font-mono' : 'md:w-64 font-mono'}}"/>
+            <span data-if="{{_local.errors?.['drivers.s3_region']}}" class="form-error">{{_local.errors?.['drivers.s3_region']?.[0] ?? ''}}</span>
+            <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_region_desc</p>
+          </div>
+          <div class="py-3">
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_access_key</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_access_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_access_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_access_key'] === true}}" class="{{_local.errors?.['drivers.s3_access_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
+            <span data-if="{{_local.errors?.['drivers.s3_access_key']}}" class="form-error">{{_local.errors?.['drivers.s3_access_key']?.[0] ?? ''}}</span>
+          </div>
+          <div class="py-3">
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_secret_key</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_secret_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="password" name="drivers.s3_secret_key" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_secret_key'] === true}}" class="{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"/>
+            <span data-if="{{_local.errors?.['drivers.s3_secret_key']}}" class="form-error">{{_local.errors?.['drivers.s3_secret_key']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="s3_endpoint_field" class="py-3">
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_endpoint</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_endpoint'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_endpoint" placeholder="https://<account-id>.r2.cloudflarestorage.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_endpoint'] === true}}" class="{{_local.errors?.['drivers.s3_endpoint'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['drivers.s3_endpoint']}}" class="form-error">{{_local.errors?.['drivers.s3_endpoint']?.[0] ?? ''}}</span>
+            <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_endpoint_desc</p>
+          </div>
+          <div data-ref="s3_use_path_style_field" class="py-3">
+            <div class="flex-between">
+              <div>
+                <span class="text-heading">$t:admin.settings.drivers.storage.s3_use_path_style</span>
+                <p class="text-label-subtle">$t:admin.settings.drivers.storage.s3_use_path_style_desc</p>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_use_path_style'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </div>
+              <toggle data-type="composite" name="drivers.s3_use_path_style" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_use_path_style'] === true}}"/>
+            </div>
+          </div>
+          <div class="py-3">
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.storage.s3_url</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.s3_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="drivers.s3_url" placeholder="https://my-bucket.s3.ap-northeast-2.amazonaws.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_url'] === true}}" class="{{_local.errors?.['drivers.s3_url'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['drivers.s3_url']}}" class="form-error">{{_local.errors?.['drivers.s3_url']?.[0] ?? ''}}</span>
+            <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_url_desc</p>
+          </div>
+          <div data-ref="s3_test_section" class="flex-center py-3 gap-4">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 's3')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+              <on type="click">
+                <!-- S3 연결 시험. **직전 결과를 먼저 지운다** — 안 지우면 새 시험이 도는 동안 옛 성공
+                     표시가 남아 저장 버튼이 풀린 것처럼 보인다(잠금 판정이 이 결과를 읽는다).
+                     화면 값을 그대로 보내므로 저장 전에 시험할 수 있다. 아래 redis·memcached·websocket
+                     시험도 대상 이름만 다른 같은 형태다. -->
+                <sequence>
+                  <set-state target="local" testingDriver="s3"/>
+                  <set-state target="local" :driverTestResults.s3="null"/>
+                  <!-- s3_url 은 공개 URL(CDN) base 라 연결 테스트와 무관 — 의도적 미전송 -->
+                  <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
+                    <success>
+                      <set-state target="local" driverTestResults.s3="{{result.data.results.s3}}"/>
+                      <toast type="{{result.data.results.s3.success ? 'success' : 'error'}}" message="{{result.data.results.s3.message}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </success>
+                    <fail>
+                      <set-state target="local">
+                        <field name="driverTestResults.s3">
+                          <field name="success" :value="false"/>
+                          <field name="message" value="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                        </field>
+                      </set-state>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </fail>
+                    <body storage_driver="s3" s3_bucket="{{_local.form.drivers?.s3_bucket}}" s3_region="{{_local.form.drivers?.s3_region}}" s3_access_key="{{_local.form.drivers?.s3_access_key}}" s3_secret_key="{{_local.form.drivers?.s3_secret_key}}" s3_endpoint="{{_local.form.drivers?.s3_endpoint}}" s3_use_path_style="{{!!_local.form.drivers?.s3_use_path_style}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.testingDriver !== 's3'}}" name="plug" class="text-base"/>
+              <icon data-if="{{_local.testingDriver === 's3'}}" name="spinner" class="spinner-sm"/>
+              <span>{{_local.testingDriver === 's3' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
+            </button>
+            <div data-if="{{_local.driverTestResults?.s3}}" class="{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+              <icon name="{{_local.driverTestResults.s3.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
+              <span class="text-sm font-medium">{{_local.driverTestResults.s3.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_public_asset_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.public_asset.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.public_asset.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_public_asset_disk" class="">
+          <label class="form-label">$t:admin.settings.drivers.public_asset.disk</label>
+          <div class="w-full md:w-64">
+            <select name="drivers.public_asset_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.public_asset_disk']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.public_asset ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.public_asset_disk']}}" class="form-error">{{_local.errors?.['drivers.public_asset_disk']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_public_asset" data-if="{{!!_local.form?.drivers?.public_asset_disk &amp;&amp; !(_local.form?.available_drivers?.public_asset ?? []).some(d => d.id === _local.form?.drivers?.public_asset_disk)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-public_asset">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.public_asset_disk ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <div data-ref="public_asset_s3_help" data-if="{{_local.form?.drivers?.public_asset_disk === 's3'}}" class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:admin.settings.drivers.public_asset.s3_help</div>
+      </div>
+    </div>
+    <div data-ref="card_cache_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.cache.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.cache.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_cache_driver" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.cache.driver</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.cache_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full md:w-64">
+            <select name="drivers.cache_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.cache_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.cache ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.cache_driver']}}" class="form-error">{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_cache" data-if="{{!!_local.form?.drivers?.cache_driver &amp;&amp; !(_local.form?.available_drivers?.cache ?? []).some(d => d.id === _local.form?.drivers?.cache_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-cache">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.cache_driver ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <div data-ref="redis_settings" data-if="{{_local.form?.drivers?.cache_driver === 'redis'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <div class="grid-2col-responsive">
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_host</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.redis_host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="drivers.redis_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_host'] === true}}" class="{{_local.errors?.['drivers.redis_host'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.redis_host']}}" class="form-error">{{_local.errors?.['drivers.redis_host']?.[0] ?? ''}}</span>
+            </div>
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_port</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.redis_port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="number" name="drivers.redis_port" placeholder="6379" min="{{_local?.form?._meta?.limits?.drivers_redis_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_redis_port_max ?? 65535}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_port'] === true}}" class="{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.redis_port']}}" class="form-error">{{_local.errors?.['drivers.redis_port']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div class="grid-2col-responsive">
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_password</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.redis_password'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="password" name="drivers.redis_password" placeholder="$t:admin.settings.drivers.common.optional" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_password'] === true}}" class="{{_local.errors?.['drivers.redis_password'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.redis_password']}}" class="form-error">{{_local.errors?.['drivers.redis_password']?.[0] ?? ''}}</span>
+            </div>
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.redis_database</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.redis_database'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="number" name="drivers.redis_database" placeholder="0" min="{{_local?.form?._meta?.limits?.drivers_redis_database_min ?? 0}}" max="{{_local?.form?._meta?.limits?.drivers_redis_database_max ?? 15}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.redis_database'] === true}}" class="{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.redis_database']}}" class="form-error">{{_local.errors?.['drivers.redis_database']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div data-ref="redis_test_section" class="flex-center py-3 gap-4">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+              <on type="click">
+                <!-- Redis 연결 시험 — S3 시험과 같은 형태다. 이 결과 하나를 **캐시·세션·큐 세 자리**가
+                     함께 읽는다(셋 다 redis 를 고를 수 있다). -->
+                <sequence>
+                  <set-state target="local" testingDriver="redis"/>
+                  <set-state target="local" :driverTestResults.redis="null"/>
+                  <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
+                    <success>
+                      <set-state target="local" driverTestResults.redis="{{result.data.results.redis}}"/>
+                      <toast type="{{result.data.results.redis.success ? 'success' : 'error'}}" message="{{result.data.results.redis.message}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </success>
+                    <fail>
+                      <set-state target="local">
+                        <field name="driverTestResults.redis">
+                          <field name="success" :value="false"/>
+                          <field name="message" value="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                        </field>
+                      </set-state>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </fail>
+                    <body cache_driver="redis" redis_host="{{_local.form.drivers?.redis_host}}" redis_port="{{_local.form.drivers?.redis_port}}" redis_password="{{_local.form.drivers?.redis_password}}" redis_database="{{_local.form.drivers?.redis_database}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.testingDriver !== 'redis'}}" name="plug" class="text-base"/>
+              <icon data-if="{{_local.testingDriver === 'redis'}}" name="spinner" class="spinner-sm"/>
+              <span>{{_local.testingDriver === 'redis' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
+            </button>
+            <div data-if="{{_local.driverTestResults?.redis}}" class="{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+              <icon name="{{_local.driverTestResults.redis.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
+              <span class="text-sm font-medium">{{_local.driverTestResults.redis.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="memcached_settings" data-if="{{_local.form?.drivers?.cache_driver === 'memcached'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <div class="grid-2col-responsive">
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.memcached_host</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.memcached_host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="drivers.memcached_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.memcached_host'] === true}}" class="{{_local.errors?.['drivers.memcached_host'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.memcached_host']}}" class="form-error">{{_local.errors?.['drivers.memcached_host']?.[0] ?? ''}}</span>
+            </div>
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.cache.memcached_port</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.memcached_port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="number" name="drivers.memcached_port" placeholder="11211" min="{{_local?.form?._meta?.limits?.drivers_memcached_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_memcached_port_max ?? 65535}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.memcached_port'] === true}}" class="{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.memcached_port']}}" class="form-error">{{_local.errors?.['drivers.memcached_port']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div data-ref="memcached_test_section" class="flex-center py-3 gap-4">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+              <on type="click">
+                <!-- Memcached 연결 시험 — 캐시 드라이버에서만 쓰인다. -->
+                <sequence>
+                  <set-state target="local" testingDriver="memcached"/>
+                  <set-state target="local" :driverTestResults.memcached="null"/>
+                  <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
+                    <success>
+                      <set-state target="local" driverTestResults.memcached="{{result.data.results.memcached}}"/>
+                      <toast type="{{result.data.results.memcached.success ? 'success' : 'error'}}" message="{{result.data.results.memcached.message}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </success>
+                    <fail>
+                      <set-state target="local">
+                        <field name="driverTestResults.memcached">
+                          <field name="success" :value="false"/>
+                          <field name="message" value="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                        </field>
+                      </set-state>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </fail>
+                    <body cache_driver="memcached" memcached_host="{{_local.form.drivers?.memcached_host}}" memcached_port="{{_local.form.drivers?.memcached_port}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.testingDriver !== 'memcached'}}" name="plug" class="text-base"/>
+              <icon data-if="{{_local.testingDriver === 'memcached'}}" name="spinner" class="spinner-sm"/>
+              <span>{{_local.testingDriver === 'memcached' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
+            </button>
+            <div data-if="{{_local.driverTestResults?.memcached}}" class="{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+              <icon name="{{_local.driverTestResults.memcached.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
+              <span class="text-sm font-medium">{{_local.driverTestResults.memcached.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_search_engine_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.search_engine.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.search_engine.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_search_engine_driver" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.search_engine.driver</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.search_engine_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full md:w-64">
+            <select name="drivers.search_engine_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.search_engine_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.search ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.search_engine_driver']}}" class="form-error">{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_search" data-if="{{!!_local.form?.drivers?.search_engine_driver &amp;&amp; !(_local.form?.available_drivers?.search ?? []).some(d => d.id === _local.form?.drivers?.search_engine_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-search">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.search_engine_driver ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+          <p class="text-hint mt-2">$t:admin.settings.drivers.search_engine.driver_desc</p>
+        </div>
+        <div class="alert-info">
+          <icon name="circle-info" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <p class="text-info-soft">$t:admin.settings.drivers.search_engine.plugin_notice</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_session_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.session.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.session.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_session_driver" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.session.driver</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.session_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full md:w-64">
+            <select name="drivers.session_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.session_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.session ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.session_driver']}}" class="form-error">{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_session" data-if="{{!!_local.form?.drivers?.session_driver &amp;&amp; !(_local.form?.available_drivers?.session ?? []).some(d => d.id === _local.form?.drivers?.session_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-session">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.session_driver ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+          <p data-if="{{_local.form?.drivers?.session_driver === 'redis'}}" class="flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1">
+            <icon name="info-circle" class="text-xs"/>
+            <span>$t:admin.settings.drivers.session.redis_shared_notice</span>
+          </p>
+        </div>
+        <div data-ref="field_session_lifetime" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.session.lifetime</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.session_lifetime'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="flex-center gap-2">
+            <input type="number" name="drivers.session_lifetime" placeholder="120" min="{{_local?.form?._meta?.limits?.drivers_session_lifetime_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_session_lifetime_max ?? 43200}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.session_lifetime'] === true}}" class="{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"/>
+            <span class="text-label-subtle">$t:admin.settings.drivers.session.minutes</span>
+          </div>
+          <span data-if="{{_local.errors?.['drivers.session_lifetime']}}" class="form-error">{{_local.errors?.['drivers.session_lifetime']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_queue_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.queue.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.queue.desc</div>
+      <div>
+        <div data-ref="field_queue_driver" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.queue.driver</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.queue_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full md:w-64">
+            <select name="drivers.queue_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.queue_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.queue ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.queue_driver']}}" class="form-error">{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_queue" data-if="{{!!_local.form?.drivers?.queue_driver &amp;&amp; !(_local.form?.available_drivers?.queue ?? []).some(d => d.id === _local.form?.drivers?.queue_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-queue">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.queue_driver ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+          <div data-if="{{_local.form?.drivers?.queue_driver === 'database' || _local.form?.drivers?.queue_driver === 'redis'}}" class="alert-warning">
+            <div class="flex-start gap-2">
+              <icon name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
+              <div>
+                <p class="text-warning-soft">$t:admin.settings.drivers.queue.worker_notice</p>
+                <code class="block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft">php artisan queue:work</code>
+              </div>
+            </div>
+          </div>
+          <p data-if="{{_local.form?.drivers?.queue_driver === 'redis'}}" class="flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1">
+            <icon name="info-circle" class="text-xs"/>
+            <span>$t:admin.settings.drivers.queue.redis_shared_notice</span>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_log_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.log.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.log.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_log_driver" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.log.driver</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.log_driver'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full md:w-64">
+            <select name="drivers.log_driver" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_driver'] === true}}" class="w-full" error="{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.log ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.log_driver']}}" class="form-error">{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_log" data-if="{{!!_local.form?.drivers?.log_driver &amp;&amp; !(_local.form?.available_drivers?.log ?? []).some(d => d.id === _local.form?.drivers?.log_driver)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-log">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.log_driver ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <div data-ref="field_log_level" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.drivers.log.level</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.log_level'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="w-full md:w-64">
+            <select name="drivers.log_level" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_level'] === true}}" class="w-full" error="{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}">
+              <options>
+                <option value="debug">$t:admin.settings.drivers.log.levels.debug</option>
+                <option value="info">$t:admin.settings.drivers.log.levels.info</option>
+                <option value="notice">$t:admin.settings.drivers.log.levels.notice</option>
+                <option value="warning">$t:admin.settings.drivers.log.levels.warning</option>
+                <option value="error">$t:admin.settings.drivers.log.levels.error</option>
+                <option value="critical">$t:admin.settings.drivers.log.levels.critical</option>
+                <option value="alert">$t:admin.settings.drivers.log.levels.alert</option>
+                <option value="emergency">$t:admin.settings.drivers.log.levels.emergency</option>
+              </options>
+            </select>
+            <span data-if="{{_local.errors?.['drivers.log_level']}}" class="form-error">{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}</span>
+          </div>
+          <p class="text-hint mt-1">$t:admin.settings.drivers.log.level_desc</p>
+        </div>
+        <div data-ref="log_days_settings" data-if="{{_local.form?.drivers?.log_driver === 'daily'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <div class="py-3">
+            <label class="form-label">
+              <span>$t:admin.settings.drivers.log.retention_days</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.log_days'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <div class="flex-center gap-2">
+              <input type="number" name="drivers.log_days" placeholder="14" min="{{_local?.form?._meta?.limits?.drivers_log_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_log_days_max ?? 365}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.log_days'] === true}}" class="{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"/>
+              <span class="text-label-subtle">$t:admin.settings.drivers.log.days</span>
+            </div>
+            <span data-if="{{_local.errors?.['drivers.log_days']}}" class="form-error">{{_local.errors?.['drivers.log_days']?.[0] ?? ''}}</span>
+            <p class="text-hint mt-1">$t:admin.settings.drivers.log.retention_desc</p>
+          </div>
+        </div>
+        <p class="flex-center text-tertiary gap-1">
+          <icon name="info-circle" class="text-xs"/>
+          <span>$t:admin.settings.drivers.log.path_info</span>
+        </p>
+      </div>
+    </div>
+    <div data-ref="card_websocket_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.websocket.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.websocket.desc</div>
+      <div class="card-description">$t:admin.settings.drivers.websocket.server_endpoint_desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_websocket_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.drivers.websocket.enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.drivers.websocket.enabled_desc</p>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </div>
+          <toggle data-type="composite" name="drivers.websocket_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_enabled'] === true}}"/>
+        </div>
+        <div data-ref="websocket_settings_detail" data-if="{{_local.form?.drivers?.websocket_enabled}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.websocket.app_id</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_app_id'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="drivers.websocket_app_id" placeholder="my-app-id" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_id'] === true}}" class="{{_local.errors?.['drivers.websocket_app_id'] ? 'input-error font-mono' : 'font-mono'}}"/>
+              <span data-if="{{_local.errors?.['drivers.websocket_app_id']}}" class="form-error">{{_local.errors?.['drivers.websocket_app_id']?.[0] ?? ''}}</span>
+            </div>
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.websocket.app_key</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_app_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="drivers.websocket_app_key" placeholder="my-app-key" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_key'] === true}}" class="{{_local.errors?.['drivers.websocket_app_key'] ? 'input-error font-mono' : 'font-mono'}}"/>
+              <span data-if="{{_local.errors?.['drivers.websocket_app_key']}}" class="form-error">{{_local.errors?.['drivers.websocket_app_key']?.[0] ?? ''}}</span>
+            </div>
+            <div class="py-3">
+              <label class="form-label">
+                <span>$t:admin.settings.drivers.websocket.app_secret</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_app_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="password" name="drivers.websocket_app_secret" placeholder="my-app-secret" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_secret'] === true}}" class="{{_local.errors?.['drivers.websocket_app_secret'] ? 'input-error font-mono' : 'font-mono'}}"/>
+              <span data-if="{{_local.errors?.['drivers.websocket_app_secret']}}" class="form-error">{{_local.errors?.['drivers.websocket_app_secret']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="py-3">
+              <label class="form-label">$t:admin.settings.drivers.websocket.host</label>
+              <input type="text" name="drivers.websocket_host" placeholder="localhost" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_host'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.websocket_host']}}" class="form-error">{{_local.errors?.['drivers.websocket_host']?.[0] ?? ''}}</span>
+            </div>
+            <div class="py-3">
+              <label class="form-label">$t:admin.settings.drivers.websocket.port</label>
+              <input type="number" name="drivers.websocket_port" placeholder="8080" min="{{_local?.form?._meta?.limits?.drivers_websocket_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_websocket_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_port'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['drivers.websocket_port']}}" class="form-error">{{_local.errors?.['drivers.websocket_port']?.[0] ?? ''}}</span>
+            </div>
+            <div class="py-3">
+              <label class="form-label">$t:admin.settings.drivers.websocket.scheme</label>
+              <select name="drivers.websocket_scheme" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.websocket_scheme']?.[0] ?? ''}}">
+                <options>
+                  <option value="https">HTTPS</option>
+                  <option value="http">HTTP</option>
+                </options>
+              </select>
+              <span data-if="{{_local.errors?.['drivers.websocket_scheme']}}" class="form-error">{{_local.errors?.['drivers.websocket_scheme']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div data-ref="websocket_verify_ssl_field" class="flex-center gap-3 mt-4">
+            <input id="input_websocket_verify_ssl" type="checkbox" name="drivers.websocket_verify_ssl" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_verify_ssl'] === true}}" class="h-4 w-4 text-blue-600 rounded"/>
+            <div>
+              <label for="input_websocket_verify_ssl" class="text-body font-medium cursor-pointer">
+                <span>$t:admin.settings.drivers.websocket.verify_ssl</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_verify_ssl'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <p class="text-tertiary">$t:admin.settings.drivers.websocket.verify_ssl_desc</p>
+            </div>
+          </div>
+          <div data-ref="websocket_server_endpoint_section" class="mt-6 pt-4">
+            <h4 class="text-body font-semibold mb-1">$t:admin.settings.drivers.websocket.server_endpoint_title</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="py-3">
+                <label class="form-label">
+                  <span>$t:admin.settings.drivers.websocket.server_host</span>
+                  <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_server_host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <input type="text" name="drivers.websocket_server_host" placeholder="127.0.0.1" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_host'] === true}}" class="{{_local.errors?.['drivers.websocket_server_host'] ? 'input-error' : ''}}"/>
+                <span data-if="{{_local.errors?.['drivers.websocket_server_host']}}" class="form-error">{{_local.errors?.['drivers.websocket_server_host']?.[0] ?? ''}}</span>
+              </div>
+              <div class="py-3">
+                <label class="form-label">
+                  <span>$t:admin.settings.drivers.websocket.server_port</span>
+                  <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_server_port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <input type="number" name="drivers.websocket_server_port" placeholder="8080" min="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_max ?? 65535}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_port'] === true}}" class="{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"/>
+                <span data-if="{{_local.errors?.['drivers.websocket_server_port']}}" class="form-error">{{_local.errors?.['drivers.websocket_server_port']?.[0] ?? ''}}</span>
+              </div>
+              <div class="py-3">
+                <label class="form-label">
+                  <span>$t:admin.settings.drivers.websocket.server_scheme</span>
+                  <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_server_scheme'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <select name="drivers.websocket_server_scheme" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_server_scheme'] === true}}" class="w-full" error="{{_local.errors?.['drivers.websocket_server_scheme']?.[0] ?? ''}}">
+                  <options>
+                    <option value="http">HTTP</option>
+                    <option value="https">HTTPS</option>
+                  </options>
+                </select>
+                <span data-if="{{_local.errors?.['drivers.websocket_server_scheme']}}" class="form-error">{{_local.errors?.['drivers.websocket_server_scheme']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+          <div class="alert-warning">
+            <div class="flex-start gap-2">
+              <icon name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
+              <div>
+                <p class="text-warning-soft">$t:admin.settings.drivers.websocket.reverb_notice</p>
+                <code class="block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft">php artisan reverb:start</code>
+              </div>
+            </div>
+          </div>
+          <div data-ref="websocket_test_section" class="flex-center py-3 gap-4">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+              <on type="click">
+                <!-- 웹소켓 연결 시험 — 다른 셋과 달리 드라이버 선택이 아니라 **켜기/끄기**에 걸린다
+                     (켜 두고 시험을 통과하지 못하면 저장이 잠긴다). -->
+                <sequence>
+                  <set-state target="local" testingDriver="websocket"/>
+                  <set-state target="local" :driverTestResults.websocket="null"/>
+                  <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
+                    <success>
+                      <set-state target="local" driverTestResults.websocket="{{result.data.results.websocket}}"/>
+                      <toast type="{{result.data.results.websocket.success ? 'success' : 'error'}}" message="{{result.data.results.websocket.message}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </success>
+                    <fail>
+                      <set-state target="local">
+                        <field name="driverTestResults.websocket">
+                          <field name="success" :value="false"/>
+                          <field name="message" value="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                        </field>
+                      </set-state>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"/>
+                      <set-state target="local" :testingDriver="null"/>
+                    </fail>
+                    <body :websocket_enabled="true" websocket_host="{{_local.form.drivers?.websocket_host}}" websocket_port="{{_local.form.drivers?.websocket_port}}" websocket_scheme="{{_local.form.drivers?.websocket_scheme}}" websocket_server_host="{{_local.form.drivers?.websocket_server_host}}" websocket_server_port="{{_local.form.drivers?.websocket_server_port}}" websocket_server_scheme="{{_local.form.drivers?.websocket_server_scheme}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.testingDriver !== 'websocket'}}" name="plug" class="text-base"/>
+              <icon data-if="{{_local.testingDriver === 'websocket'}}" name="spinner" class="spinner-sm"/>
+              <span>{{_local.testingDriver === 'websocket' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
+            </button>
+            <div data-if="{{_local.driverTestResults?.websocket}}" class="{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+              <icon name="{{_local.driverTestResults.websocket.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
+              <span class="text-sm font-medium">{{_local.driverTestResults.websocket.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="driver_save_warning" class="alert-warning">
+      <any-of>
+        <all-of>
+          <expr>{{_local.form?.drivers?.storage_driver === 's3'}}</expr>
+          <expr>{{!_local.driverTestResults?.s3?.success}}</expr>
+        </all-of>
+        <all-of>
+          <expr>{{_local.form?.drivers?.cache_driver === 'redis'}}</expr>
+          <expr>{{!_local.driverTestResults?.redis?.success}}</expr>
+        </all-of>
+        <all-of>
+          <expr>{{_local.form?.drivers?.cache_driver === 'memcached'}}</expr>
+          <expr>{{!_local.driverTestResults?.memcached?.success}}</expr>
+        </all-of>
+        <all-of>
+          <expr>{{_local.form?.drivers?.session_driver === 'redis'}}</expr>
+          <expr>{{!_local.driverTestResults?.redis?.success}}</expr>
+        </all-of>
+        <all-of>
+          <expr>{{_local.form?.drivers?.queue_driver === 'redis'}}</expr>
+          <expr>{{!_local.driverTestResults?.redis?.success}}</expr>
+        </all-of>
+        <all-of>
+          <expr>{{_local.form?.drivers?.websocket_enabled}}</expr>
+          <expr>{{!_local.driverTestResults?.websocket?.success}}</expr>
+        </all-of>
+      </any-of>
+      <div class="flex-center gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <p class="text-warning-soft">$t:admin.settings.drivers.test_before_save</p>
+      </div>
+    </div>
+  </div>
+</partial>

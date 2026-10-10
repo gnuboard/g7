@@ -24,6 +24,11 @@ class CoreUpdateControllerTest extends TestCase
 
     private string $token;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -101,7 +106,7 @@ class CoreUpdateControllerTest extends TestCase
     /**
      * 인증된 요청 헬퍼 메서드
      *
-     * @return static
+     * @return static 인증 헤더가 붙은 요청 체인
      */
     private function authRequest(): static
     {
@@ -117,6 +122,12 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 코어 업데이트 확인 시 버전 정보를 반환합니다.
+     *
+     * @scenario area=core_update.check
+     *
+     * @effects check_for_updates_returns_version_info
+     *
+     * @return void 반환값 없음
      */
     public function test_check_for_updates_returns_version_info(): void
     {
@@ -155,6 +166,12 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * GitHub API 호출 실패 시 422 에러와 구체적인 에러 원인을 반환합니다.
+     *
+     * @scenario area=core_update.check
+     *
+     * @effects check_for_updates_returns_error_when_github_check_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_check_for_updates_returns_error_when_github_check_fails(): void
     {
@@ -185,6 +202,12 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 인증 없이 코어 업데이트 확인 시 401을 반환합니다.
+     *
+     * @scenario area=core_update.check
+     *
+     * @effects check_for_updates_requires_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_check_for_updates_requires_authentication(): void
     {
@@ -194,12 +217,49 @@ class CoreUpdateControllerTest extends TestCase
     }
 
     /**
-     * core.settings.update 권한 없이 코어 업데이트 확인 시 403을 반환합니다.
+     * 업데이트 확인은 환경설정 조회 권한(core.settings.read)으로 열린다 (제품 결정 2026-10-09).
+     *
+     * 확인은 버전 정보를 읽기만 하고 설정을 바꾸지 않는다. 정보 탭은 읽기 전용 관리자에게도
+     * [업데이트 확인] 버튼을 열어 두므로, 라우트도 조회 권한으로 맞춘다(전에는 수정 권한이라 눌러도 403).
+     *
+     * @scenario area=core_update.check
+     *
+     * @effects check_for_updates_allows_settings_read_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_check_for_updates_allows_settings_read_only(): void
+    {
+        $this->mock(CoreUpdateService::class, function ($mock) {
+            $mock->shouldReceive('checkForUpdates')->once()->andReturn([
+                'update_available' => false,
+                'current_version' => '1.0.0',
+                'latest_version' => '1.0.0',
+                'github_url' => 'https://github.com/gnuboard/g7',
+            ]);
+        });
+
+        $readOnly = $this->createAdminUser(['core.settings.read']);
+        $token = $readOnly->createToken('test-token')->plainTextToken;
+
+        $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+            'Accept' => 'application/json',
+        ])->postJson('/api/admin/core-update/check')->assertStatus(200);
+    }
+
+    /**
+     * 환경설정 조회 권한도 없으면 업데이트 확인은 403 이다.
+     *
+     * @scenario area=core_update.check
+     *
+     * @effects check_for_updates_requires_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_check_for_updates_requires_permission(): void
     {
-        // core.settings.read 권한만 부여 (core.settings.update 권한 없음)
-        $userWithoutPermission = $this->createAdminUser(['core.settings.read']);
+        $userWithoutPermission = $this->createAdminUser(['core.dashboard.read']);
         $token = $userWithoutPermission->createToken('test-token')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -216,6 +276,12 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 변경사항 조회 시 파싱된 데이터를 반환합니다.
+     *
+     * @scenario area=core_update.changelog
+     *
+     * @effects changelog_returns_parsed_data
+     *
+     * @return void 반환값 없음
      */
     public function test_changelog_returns_parsed_data(): void
     {
@@ -267,6 +333,12 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 버전 범위를 지정하여 변경사항을 조회합니다.
+     *
+     * @scenario area=core_update.changelog
+     *
+     * @effects changelog_with_version_range
+     *
+     * @return void 반환값 없음
      */
     public function test_changelog_with_version_range(): void
     {
@@ -308,6 +380,12 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 인증 없이 변경사항 조회 시 401을 반환합니다.
+     *
+     * @scenario area=core_update.changelog
+     *
+     * @effects changelog_requires_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_changelog_requires_authentication(): void
     {

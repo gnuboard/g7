@@ -28,6 +28,11 @@ class OrderOptionServiceTest extends ModuleTestCase
 
     private \Closure $cb;
 
+    /** @var array<int, array{0: string|null, 1: string|null}> after_status_sync 발화 (전, 후) */
+    private array $syncFired = [];
+
+    private \Closure $syncCb;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,11 +42,17 @@ class OrderOptionServiceTest extends ModuleTestCase
             $this->fired[] = $prev;
         };
         HookManager::addAction('sirsoft-ecommerce.order.after_status_change', $this->cb, 1);
+        $this->syncFired = [];
+        $this->syncCb = function ($order, $prev = null, $new = null) {
+            $this->syncFired[] = [$prev, $new];
+        };
+        HookManager::addAction('sirsoft-ecommerce.order.after_status_sync', $this->syncCb, 1);
     }
 
     protected function tearDown(): void
     {
         HookManager::removeAction('sirsoft-ecommerce.order.after_status_change', $this->cb);
+        HookManager::removeAction('sirsoft-ecommerce.order.after_status_sync', $this->syncCb);
         parent::tearDown();
     }
 
@@ -76,6 +87,50 @@ class OrderOptionServiceTest extends ModuleTestCase
 
         $this->assertContains(OrderStatusEnum::PAYMENT_COMPLETE->value, $this->fired);
         $this->assertEquals(OrderStatusEnum::SHIPPING, $order->fresh()->order_status);
+    }
+
+    /**
+     * 부모 주문이 상품 상태에서 파생 전이하면 이력용 훅(after_status_sync)이 전/후와 함께 발화한다.
+     * 알림 훅(after_status_change)과 별개 축이다 — 그쪽에 로그를 붙이면 단건 수정·일괄 변경에서
+     * 한 전이가 두 줄이 된다.
+     *
+     * @scenario transition_path=bulk_option, parent_outcome=transitions
+     *
+     * @effects order_status_sync_hook_fires_with_before_and_after
+     */
+    public function test_bulk_change_fires_the_sync_hook_with_before_and_after(): void
+    {
+        $order = $this->makePaidOrderWithOptions(2);
+        $items = $order->options->map(fn ($o) => ['option_id' => $o->id, 'quantity' => $o->quantity])->all();
+
+        $this->service->bulkChangeStatusWithQuantity($items, OrderStatusEnum::SHIPPING, $order->id);
+
+        $this->assertSame(
+            [[OrderStatusEnum::PAYMENT_COMPLETE->value, OrderStatusEnum::SHIPPING->value]],
+            $this->syncFired,
+            '파생 전이 한 번에 이력 훅이 정확히 한 번, 전/후 값과 함께 발화해야 합니다.'
+        );
+    }
+
+    /**
+     * 부모가 혼합 상태로 남아 전이하지 않으면 이력 훅도 발화하지 않는다.
+     *
+     * @scenario transition_path=bulk_option, parent_outcome=stays
+     *
+     * @effects order_status_sync_hook_silent_when_parent_stays
+     */
+    public function test_bulk_change_does_not_fire_the_sync_hook_when_parent_stays(): void
+    {
+        $order = $this->makePaidOrderWithOptions(2);
+        $first = $order->options->first();
+
+        $this->service->bulkChangeStatusWithQuantity(
+            [['option_id' => $first->id, 'quantity' => $first->quantity]],
+            OrderStatusEnum::SHIPPING,
+            $order->id
+        );
+
+        $this->assertSame([], $this->syncFired);
     }
 
     /**

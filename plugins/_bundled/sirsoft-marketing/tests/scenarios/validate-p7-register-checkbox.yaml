@@ -1,0 +1,18 @@
+feature: 회원가입 마케팅 동의 체크박스 — boolean 명시 바인딩 (#599 validate P7)
+
+description: |
+  가입 폼 조각의 동의 체크박스 4종이 name 자동바인딩에 기대면서 change 액션으로도 같은 폼 키를 따로 썼다.
+  자동바인딩은 저장값이 boolean 일 때만 checked 로 붙으므로, 회원정보 수정 조각과 같은 규칙
+  (autoBinding:false + checked 바인딩 + change 액션)으로 맞춘다.
+
+axes:
+  case: [register_consents, channel_after_global_consent]
+
+effects:
+  - marketing_register_checkbox_binds_boolean_explicitly
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/marketingRegisterCheckboxBoolean.test.ts
+
+notes: |
+  e2e_browser=not_applicable — 바인딩 선언 수정. 브라우저 실측은 #599 통합 단계에서 한다.

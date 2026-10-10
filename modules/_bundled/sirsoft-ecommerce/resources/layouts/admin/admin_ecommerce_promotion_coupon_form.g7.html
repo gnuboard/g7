@@ -1,0 +1,183 @@
+<!-- 쿠폰 등록·수정 (운영자) — `route.id` 유무 하나로 등록/수정을 겸한다. 기본정보·혜택·발급·사용조건
+  네 구획이 `_local.form` 하나를 나눠 쓰고, 적용 대상 상품·분류는 별도 검색 창에서 골라 담는다. -->
+<layout name="admin_ecommerce_promotion_coupon_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"/>
+  <!-- 수정 진입일 때만 원본을 받아 폼에 심는다. 그대로 옮기지 못하는 것이 둘 있다 — 포함/제외 대상은
+    서버가 두 배열로 주지만 화면은 한 목록에서 구분값으로 다루고, 수량·기간·재발급의 「무제한」은
+    저장 형태에 없는 화면 개념이라 값의 유무를 보고 되살린다. -->
+  <data-source id="coupon" label_key="$t:sirsoft-ecommerce.editor.data_source.coupon" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{route.id}}" method="GET" if="{{!!route.id}}" :auto_fetch="true" auth_mode="required" loading_strategy="blocking">
+    <init-local>
+      <field name="form" value="{{data}}"/>
+      <field name="form.products" value="{{(data.included_products ?? []).map(p => ({...p, type: 'include'})).concat((data.excluded_products ?? []).map(p => ({...p, type: 'exclude'})))}}"/>
+      <field name="form.categories" value="{{(data.included_categories ?? []).map(c => ({...c, type: 'include'})).concat((data.excluded_categories ?? []).map(c => ({...c, type: 'exclude'})))}}"/>
+      <field name="issue_quantity_type" value="{{data.total_quantity != null ? 'limited' : 'unlimited'}}"/>
+      <field name="issue_period_type" value="{{(data.issue_from != null || data.issue_to != null) ? 'limited' : 'unlimited'}}"/>
+      <field name="reissue_type" value="{{data.per_user_limit > 0 ? 'limited' : 'unlimited'}}"/>
+    </init-local>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+  </data-source>
+  <!-- 등록 진입 전용 — 쿠폰 응답이 없는 등록 진입에서 등록 권한(can_create)을 알 곳은 목록 응답의 컬렉션 abilities 뿐이라, 목록을 한 쪽만 받아 그 키만 본다.
+    수정 진입이 수정 권한이 없으면 화면을 403 으로 접는 것과 같은 기준으로, 등록 권한이 없으면(can_create=false) 주소로 바로 들어와도 입력칸이 그려지기 전에 403 화면으로 접는다.
+    응답을 받기 전에는 폼을 그리지 않고(blocking), 조회가 실패해도 오류 화면이다. [저장]은 폼 읽기 전용 계산값(`isReadOnly`)을 따라 응답에 키가 빠져도 잠긴 쪽이다. -->
+  <data-source id="coupon_abilities" label_key="$t:sirsoft-ecommerce.editor.data_source.coupon_abilities" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/promotion-coupons" method="GET" if="{{!route.id}}" :auto_fetch="true" auth_mode="required" loading_strategy="blocking">
+    <params :per_page="10"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_create === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 적용 분류를 고르는 트리. 폼 저장과 무관해 화면을 먼저 띄우고 뒤늦게 채운다 -->
+  <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories/tree" method="GET" :auto_fetch="true" auth_mode="required" loading_strategy="progressive"/>
+  <init-local>
+    <field name="form">
+      <field name="target_type" value="product_amount"/>
+      <field name="issue_method" value="direct"/>
+      <field name="issue_condition" value="manual"/>
+      <field name="name">
+        <field name="ko" value=""/>
+        <field name="en" value=""/>
+      </field>
+      <field name="description">
+        <field name="ko" value=""/>
+        <field name="en" value=""/>
+      </field>
+      <field name="discount_type" value="fixed"/>
+      <field name="discount_value" :value="null"/>
+      <field name="discount_max_amount" :value="null"/>
+      <field name="min_order_amount" :value="null"/>
+      <field name="valid_type" value="period"/>
+      <field name="valid_from" :value="null"/>
+      <field name="valid_to" :value="null"/>
+      <field name="valid_days" :value="null"/>
+      <field name="total_quantity" :value="null"/>
+      <field name="issue_from" :value="null"/>
+      <field name="issue_to" :value="null"/>
+      <field name="per_user_limit" :value="0"/>
+      <field name="is_combinable" :value="true"/>
+      <field name="target_scope" value="all"/>
+      <field name="issue_status" value="issuing"/>
+      <field name="products" :value="[]"/>
+      <field name="categories" :value="[]"/>
+    </field>
+    <field name="isSaving" :value="false"/>
+    <field name="errors" :value="null"/>
+    <field name="issue_quantity_type" value="unlimited"/>
+    <field name="issue_period_type" value="unlimited"/>
+    <field name="reissue_type" value="unlimited"/>
+    <field name="productSearchOpen" :value="false"/>
+    <field name="productSearchField" value="all"/>
+    <field name="productSearchKeyword" value=""/>
+    <field name="productSearchResults" :value="[]"/>
+    <field name="productSearchPage" :value="1"/>
+    <field name="productSearchLastPage" :value="1"/>
+    <field name="productSearchTotal" :value="0"/>
+    <field name="productSearchSelected" :value="[]"/>
+    <field name="productSearchIsLoadingMore" :value="false"/>
+    <field name="categorySearchOpen" :value="false"/>
+    <field name="categorySearchKeyword" value=""/>
+    <field name="categoryExpandedIds" :value="[]"/>
+    <field name="categorySearchSelected" :value="[]"/>
+    <field name="selectedProductIds" :value="[]"/>
+    <field name="selectedCategoryIds" :value="[]"/>
+  </init-local>
+  <computed name="isReadOnly">{{route.id ? coupon?.data?.abilities?.can_update !== true : coupon_abilities?.data?.abilities?.can_create !== true}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.promotion-coupon.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>categories</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="coupon_form_container" class="admin-page-content">
+      <div data-ref="page_header_section" class="mb-6">
+        <div data-ref="page_header" class="page-header-padded">
+          <div class="flex-center gap-3">
+            <button data-ref="back_button" type="button" class="p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors" aria-label="$t:common.back">
+              <on type="click">
+                <!-- 목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다 -->
+                <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+              <icon name="arrow-left" size="sm"/>
+            </button>
+            <div>
+              <h1 class="page-title">{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}</h1>
+              <p data-if="{{!!route.id}}" class="page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_edit|id={{route.id}}</p>
+              <p data-if="{{!route.id}}" class="page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_create</p>
+            </div>
+          </div>
+          <div class="page-actions">
+            <!-- 취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다 -->
+            <button data-ref="cancel_button_top" type="button" class="btn btn-outline">
+              <on type="click">
+                <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel
+            </button>
+            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+              <on type="click">
+                <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
+                <sequence>
+                  <set-state target="_local" :isSaving="true" :errors="null"/>
+                  <api-call auth_mode="required" target="{{route.id ? '/api/modules/sirsoft-ecommerce/admin/promotion-coupons/' + route.id : '/api/modules/sirsoft-ecommerce/admin/promotion-coupons'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                    <success>
+                      <set-state target="_local" :isSaving="false"/>
+                      <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"/>
+                      <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                        <query/>
+                      </navigate>
+                    </success>
+                    <fail>
+                      <set-state target="_local" :isSaving="false" errors="{{error.errors}}"/>
+                      <toast type="error" message="{{error.message || '$t:common.validation_error'}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.isSaving}}" name="spinner" class="animate-spin"/>
+              <span>{{_local.isSaving ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.saving' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.save'}}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div data-ref="validation_error_banner" data-if="{{_local.errors}}" class="alert-danger">
+        <icon name="triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div>
+          <h3 class="text-error-strong">$t:common.validation_error</h3>
+          <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+            <li class="text-error-soft">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+      <div data-ref="form_sections" data-key="form" data-debounce="300" class="space-y-6">
+        <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_basic_info.g7.html"/>
+        <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_benefit_settings.g7.html"/>
+        <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_issue_settings.g7.html"/>
+        <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_usage_conditions.g7.html"/>
+      </div>
+    </div>
+  </slot>
+</layout>

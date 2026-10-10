@@ -1,0 +1,167 @@
+<!-- 행동 리포트 — 내부 검색어·다운로드·외부 링크·전환(목표)·커스텀 차원 다섯 탭. 검색어 행은 부가 값
+  「결과 없음」을, 목표 행은 전환 금액 합을 표의 부가 열에 싣는다(공통 조각이 그린다). 커스텀 차원 탭은
+  확장이 선언한 차원을 등록 목록 API 에서 받아 고르게 한다(꺼진 확장이라도 집계가 남은 차원은 「꺼진
+  확장」 표시로 함께 온다) — 등록도 집계도 없는 이름은 서버가 404 로 막으므로 자유 입력을 두지 않는다. -->
+<layout name="admin_analytics_actions" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.actions.title"/>
+  <!-- 탭 → 리포트 이름. 커스텀 차원 탭은 고른 차원(`query.dimension`)을 `ext:` 접두로 붙여 부르고, 아직 고르지 않았으면
+       부를 대상이 없어 요청하지 않는다. 공통 표가 이 소스를 읽는다. -->
+  <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({search: 'site_search', downloads: 'download', outlinks: 'outlink', goals: 'goal', search_tabs: 'search_tab', events: 'event_name', dimensions: (query.dimension ? 'ext:' + query.dimension : 'goal')})[query.tab || 'search'] || 'site_search'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'search') !== 'dimensions' || !!query.dimension}}">
+    <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="has_more" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 상단 경고 세 줄(수집 꺼짐·익명 폴백·큐 적체)의 근거가 되는 진단 상태. 표보다 늦게 와도 되므로 background 로 받는다 —
+       검색어·전환 행이 비어 보일 때 그것이 수집이 멈춘 탓인지 먼저 알려 주는 자리다. -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 커스텀 차원 탭의 선택지. 활성 확장의 선언에 더해, 꺼진 확장이라도 집계가 남은 차원을 원값 이름으로 싣는다. -->
+  <data-source id="analytics_registered" label_key="$t:editor.data_source.analytics_registered" type="api" endpoint="/api/admin/analytics/registered" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background" if="{{(query.tab || 'search') === 'dimensions'}}">
+    <fallback>
+      <field name="data">
+        <field name="dimensions" :value="[]"/>
+        <field name="goals" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를
+       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다. -->
+  <data-source id="analytics_row_trend" label_key="$t:editor.data_source.analytics_row_trend" type="api" endpoint="/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series" method="GET" :auto_fetch="false" :auth_required="true">
+    <params label="{{_global.analyticsRowTrend?.label ?? ''}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
+    <fallback>
+      <field name="data">
+        <field name="unit" value="day"/>
+        <field name="unit_downgraded" :value="false"/>
+        <field name="points" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <on-code code="422">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="periodPath" value="/admin/analytics/actions"/>
+    <field name="periodSource" value="analytics_report"/>
+    <field name="showUnit" :value="false"/>
+  </init-local>
+  <computed name="reportEmptyHint">{{(query.tab || 'search') === 'events' ? $t('admin.analytics.actions.events_empty') : null}}</computed>
+  <computed name="reportName">{{({search: 'site_search', downloads: 'download', outlinks: 'outlink', goals: 'goal', search_tabs: 'search_tab', events: 'event_name', dimensions: (query.dimension ? 'ext:' + query.dimension : '')})[query.tab || 'search'] || 'site_search'}}</computed>
+  <computed name="csvUrl">{{_computed.reportName ? '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '') : ''}}</computed>
+  <computed name="csvFilename">{{'analytics-' + (_computed.reportName || 'report').replace(':', '-') + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
+  <computed name="periodFrom">{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}</computed>
+  <computed name="periodTo">{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}</computed>
+  <computed name="archiveFreshness">{{analytics_report?.data?.freshness ?? null}}</computed>
+  <permissions>
+    <permission>core.analytics.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_report</wait-for>
+  </transition-overlay>
+  <init>
+    <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="periodComputed"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="analytics_actions_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.actions.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.actions.description</p>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'search'}}" variant="underline">
+        <prop name="tabs">
+          <item id="search" label="$t:admin.analytics.actions.tabs.search"/>
+          <item id="downloads" label="$t:admin.analytics.actions.tabs.downloads"/>
+          <item id="outlinks" label="$t:admin.analytics.actions.tabs.outlinks"/>
+          <item id="search_tabs" label="$t:admin.analytics.actions.tabs.search_tabs"/>
+          <item id="events" label="$t:admin.analytics.actions.tabs.events"/>
+          <item id="goals" label="$t:admin.analytics.actions.tabs.goals"/>
+          <item id="dimensions" label="$t:admin.analytics.actions.tabs.dimensions"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->
+          <navigate path="/admin/analytics/actions" :replace="true">
+            <query tab="{{$args[0]}}" preset="{{query.preset}}" from="{{query.from}}" to="{{query.to}}" unit="{{query.unit}}" exclude="{{query.exclude}}" per_page="{{query.per_page}}" dimension="{{query.dimension}}"/>
+          </navigate>
+        </on>
+      </tab-navigation>
+      <div data-ref="dimensions_picker" data-if="{{(query.tab || 'search') === 'dimensions'}}" class="admin-card mb-4">
+        <div class="flex-center gap-3 flex-wrap">
+          <span class="filter-label">$t:admin.analytics.actions.dimension_label</span>
+          <select data-ref="dimension_select" name="analytics_dimension" class="w-64" value="{{query.dimension || ''}}" aria-label="$t:admin.analytics.actions.dimension_label" options="{{[Object.fromEntries([['value', ''], ['label', '$t:admin.analytics.actions.dimension_placeholder']])].concat((analytics_registered?.data?.dimensions ?? []).map(d => Object.fromEntries([['value', d.key], ['label', d.label + (d.pii ? ' (' + $t('admin.analytics.actions.dimension_pii_suffix') + ')' : '') + ' · ' + d.owner_identifier]])))}}">
+            <on type="change">
+              <!-- audit:allow layout-list-context-navigate-merge-query 차원 전환 — 차원마다 행이 달라 쪽·검색·정렬을 물려받으면 빈 표가 열린다(서브탭과 같은 규칙). 기간과 쪽 크기만 query 로 명시해 잇는다. -->
+              <navigate path="/admin/analytics/actions" :replace="true">
+                <query tab="dimensions" preset="{{query.preset}}" from="{{query.from}}" to="{{query.to}}" unit="{{query.unit}}" exclude="{{query.exclude}}" per_page="{{query.per_page}}" dimension="{{$event.target.value || undefined}}"/>
+              </navigate>
+            </on>
+          </select>
+          <p class="text-label-subtle">$t:admin.analytics.actions.dimensions_hint</p>
+        </div>
+      </div>
+      <empty-state data-type="composite" data-ref="dimensions_empty" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length > 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_empty_title" description="$t:admin.analytics.actions.dimensions_empty_description" class="py-10"/>
+      <empty-state data-type="composite" data-ref="dimensions_none" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length === 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_none_title" description="$t:admin.analytics.actions.dimensions_none_description" class="py-10"/>
+      <!-- 개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4) — 표가 늘 비어 「수집 진단」으로
+           보내면 수집 고장으로 읽힌다. 고르면 표 대신 이유를 보인다(#682 S4 라운드 8). -->
+      <empty-state data-type="composite" data-ref="dimensions_pii" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !!query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii)}}" iconName="user-shield" title="$t:admin.analytics.actions.dimension_pii_title" description="$t:admin.analytics.actions.dimension_pii_description" class="py-10"/>
+      <div data-ref="report_grid_wrap" data-if="{{(query.tab || 'search') !== 'dimensions' || (!!query.dimension &amp;&amp; !(analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii))}}">
+        <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
+      </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_actions_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
+    </div>
+  </slot>
+  <!-- 한 항목 추이 창. -->
+  <modal src="partials/admin_analytics/_modal_row_trend.g7.html"/>
+</layout>

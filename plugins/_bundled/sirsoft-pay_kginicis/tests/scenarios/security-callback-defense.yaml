@@ -61,6 +61,7 @@ exclusions:
   - { caller: unauthenticated_browser, threat: stale_timestamp, reason: "타임스탬프 신선도는 PG 서명 페이로드 축" }
 
 effects:
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전)
   # Replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival
   - replay_response_is_idempotent_ok
@@ -100,10 +101,71 @@ effects:
   - net_cancel_sends_pg_cancel_api_call
   - net_cancel_passes_full_amount
   - cbt_post_approve_failure_logs_for_manual_recon
+  # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
+  - mobile_callback_rejects_approval_for_another_order
+  - vbank_issue_callback_records_pending_order_and_tolerates_replay
+  - vbank_issue_callback_does_not_overwrite_paid_order
+  - auth_callback_uses_pg_approved_amount_not_browser_amount
+  - auth_callback_rejects_approval_issued_for_another_order
+  # 결제 전 주문에만 승인 반영 + 승인 응답 금액 필수 대조 (PC 카드·가상계좌 발급, 모바일 가상계좌 발급)
+  - auth_callback_net_cancels_approval_for_already_paid_order
+  - auth_callback_net_cancels_approval_for_cancelled_order
+  - auth_callback_replay_of_same_tid_still_succeeds_without_net_cancel
+  - vbank_issue_callback_rejects_missing_approved_amount
+  - vbank_issue_callback_rejects_mismatched_approved_amount
+  - mobile_vbank_issue_callback_rejects_missing_approved_amount
+  - vbank_issue_due_at_stored_as_utc_from_kst                # 가상계좌 입금 기한(한국 시각)을 UTC 로 환산해 저장
+  - mobile_vbank_issue_due_at_stored_as_utc_from_kst         # 모바일 가상계좌 입금 기한도 동일
+  - vbank_notify_returns_fail_on_order_not_found
+  - vbank_notify_is_idempotent_on_duplicate_tid
+  - mobile_vbank_notify_does_not_write_depositor_name_to_application_log
+  - mobile_vbank_notify_rejects_unissued_or_mismatched_account_context
+  - mobile_callback_skips_auto_cancel_when_local_payment_was_already_completed_before_exception
+  - mobile_callback_stores_sanitized_pg_response_only
+  - vbank_notify_does_not_write_depositor_name_to_application_log
+  - vbank_notify_rejects_unissued_or_mismatched_account_context
+  - vbank_notify_returns_ok_on_successful_deposit
+  - auth_callback_detects_mobile_device
+  - auth_callback_redirects_to_custom_success_url
+  - auth_callback_redirects_to_fail_on_missing_params
+  - auth_callback_skips_net_cancel_when_local_payment_was_already_completed_before_exception
+  - auth_callback_sends_net_cancel_and_redirects_to_fail_on_authorize_http_error
+  - forged_unauthenticated_callback_cannot_cancel_another_users_order
+  - auth_callback_redirects_to_fail_on_pg_result_code_not_0000
+  - auth_callback_redirects_to_fail_on_order_not_found
+  - auth_callback_real_failure_still_redirects_with_error_query
+  - auth_callback_user_cancel_message_keyword_redirects_without_error_query
+  - auth_callback_user_cancel_2001_redirects_without_error_query
+  - auth_callback_stores_selected_easy_pay_context
+  - auth_callback_redirects_to_complete_page_on_valid_payment
+  - close_report_preserves_easy_pay_context_on_cancelled_order
+  - close_report_ignores_order_when_payment_already_paid
+  - close_report_ignores_order_that_is_no_longer_payable
+  - close_report_rejects_matching_buyer_contact_without_ownership
+  - close_report_rejects_non_krw_order_without_failing_payment
+  - close_report_rejects_unchargeable_payment_currency_without_server_error
+  - close_report_rejects_amount_mismatch
+  - close_report_marks_pending_order_failed_and_payment_cancelled
+  - forged_guest_token_is_rejected
+  - expired_guest_token_is_rejected
+  - guest_token_of_another_order_is_rejected
+  - guest_with_order_token_can_report_close
+  - member_owner_can_report_close
+  - member_order_cannot_be_reported_without_login
+  - other_member_cannot_report_close_of_member_order
+  - order_without_address_is_rejected_without_ownership
+  - unauthenticated_request_with_matching_buyer_contact_is_rejected
+  - close_report_posted_on_failure_return
+  - no_report_without_pending_context
+  - no_report_on_success_return
+  - close_report_omits_buyer_contact
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Concerns/ValidatesTimestampFreshnessTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCloseReportControllerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCloseReportOwnershipTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Playwright/specs/public/payment-failure-close-report.spec.ts
 
 manual_verification:
   - description: "Replay PoC — vbankNotify 두 번 전송"

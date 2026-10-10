@@ -6,12 +6,15 @@
  *
  * - insertVariable: 작성 모달·SMS 모달 본문에 `#{변수}` 커서 삽입 (#597 §4.2)
  * - uploadTemplateImage: 이미지형 템플릿 이미지 업로드 프록시 호출 (multipart — apiCall 미적합)
+ * - copyToClipboard: 설정 화면 리포트 수신 주소 복사 (코어·템플릿에 클립보드 핸들러가 없어 플러그인이 소유)
  */
 
 import { insertVariableHandler } from './insertVariable';
 import { uploadTemplateImageHandler } from './uploadTemplateImage';
+import { copyToClipboardHandler } from './copyToClipboard';
 
 export const handlerMap = {
     insertVariable: insertVariableHandler,
     uploadTemplateImage: uploadTemplateImageHandler,
+    copyToClipboard: copyToClipboardHandler,
 } as const;

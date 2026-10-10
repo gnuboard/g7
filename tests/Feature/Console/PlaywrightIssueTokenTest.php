@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Console;
 
+use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -35,6 +36,11 @@ class PlaywrightIssueTokenTest extends TestCase
     /** 커맨드가 붙이는 테스트 역할 접두사 */
     private const TEST_ROLE_PREFIX = 'playwright_test_';
 
+    /**
+     * 커맨드의 옵트인 가드(G7_PLAYWRIGHT_BYPASS)를 통과하도록 환경 변수를 켭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +51,11 @@ class PlaywrightIssueTokenTest extends TestCase
         $_SERVER['G7_PLAYWRIGHT_BYPASS'] = '1';
     }
 
+    /**
+     * 옵트인 환경 변수를 지워 다른 테스트로 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         putenv('G7_PLAYWRIGHT_BYPASS');
@@ -87,20 +98,36 @@ class PlaywrightIssueTokenTest extends TestCase
     // ========================================================================
 
     /**
-     * 커맨드가 만든 역할/권한의 name·description 이 이중 인코딩되지 않아야 한다.
+     * 커맨드가 만든 역할의 name·description 이 이중 인코딩되지 않아야 한다.
+     *
+     * 권한 행은 더 이상 커맨드가 만들지 않는다(없는 식별자는 발급 때 거절 — 7.1.0 O-D2). 그래서 이 계약은
+     * 커맨드가 여전히 만드는 테스트 역할에만 남는다.
+     *
+     * @scenario case=role_encoding
+     *
+     * @effects e2e_token_role_name_and_description_stored_without_double_encoding
+     *
+     * @return void 반환값 없음
      */
-    public function test_created_role_and_permission_are_not_double_encoded(): void
+    public function test_created_role_is_not_double_encoded(): void
     {
+        Permission::create([
+            'identifier' => 'core.audit.doubleencode',
+            'name' => ['ko' => '이중 인코딩 점검', 'en' => 'Double encode check'],
+            'description' => ['ko' => '이중 인코딩 점검', 'en' => 'Double encode check'],
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'type' => 'admin',
+        ]);
+
         $this->artisan('playwright:issue-token', [
             '--permissions' => ['core.audit.doubleencode'],
             '--gc-hours' => 0,
         ])->assertSuccessful();
 
-        $permission = Permission::where('identifier', 'core.audit.doubleencode')->firstOrFail();
         $role = Role::where('identifier', 'like', self::TEST_ROLE_PREFIX.'%')->firstOrFail();
 
         foreach ([
-            ['permissions', $permission->id, $permission],
             ['roles', $role->id, $role],
         ] as [$table, $id, $model]) {
             foreach (['name', 'description'] as $column) {
@@ -127,6 +154,12 @@ class PlaywrightIssueTokenTest extends TestCase
 
     /**
      * 저장된 한글 값이 화면에서 그대로 읽히는지 (유니코드 이스케이프 원문 미노출).
+     *
+     * @scenario case=role_plain_text
+     *
+     * @effects e2e_token_role_name_reads_back_as_plain_korean_text
+     *
+     * @return void 반환값 없음
      */
     public function test_created_role_name_reads_back_as_plain_text(): void
     {
@@ -146,6 +179,12 @@ class PlaywrightIssueTokenTest extends TestCase
      * 청크 크기를 넘는 규모에서도 오래된 테스트 역할/유저가 하나도 남지 않아야 한다.
      *
      * 250건 시드 → OFFSET 기반 순회면 100건이 남는다(키셋 순회 필요).
+     *
+     * @scenario case=gc_stale_beyond_chunk
+     *
+     * @effects e2e_token_gc_removes_all_stale_roles_and_users_beyond_chunk_size
+     *
+     * @return void 반환값 없음
      */
     public function test_gc_removes_all_stale_artifacts_beyond_chunk_size(): void
     {
@@ -184,6 +223,12 @@ class PlaywrightIssueTokenTest extends TestCase
 
     /**
      * 임계 시간 이내의 아티팩트는 건드리면 안 된다 (동시 실행 중인 다른 워커 보호).
+     *
+     * @scenario case=gc_recent_within_threshold
+     *
+     * @effects e2e_token_gc_keeps_artifacts_within_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_gc_preserves_recent_artifacts(): void
     {
@@ -197,6 +242,12 @@ class PlaywrightIssueTokenTest extends TestCase
 
     /**
      * playwright 테스트 역할이 아닌 역할과 그 소속 회원은 절대 삭제되지 않아야 한다.
+     *
+     * @scenario case=gc_non_test_role
+     *
+     * @effects e2e_token_gc_never_touches_non_test_roles_and_members
+     *
+     * @return void 반환값 없음
      */
     public function test_gc_never_touches_real_roles_and_members(): void
     {
@@ -213,6 +264,12 @@ class PlaywrightIssueTokenTest extends TestCase
      * 오래된 역할을 지우더라도, 아직 유효한 다른 테스트 역할을 가진 계정은 남겨야 한다.
      *
      * 병렬 워커가 같은 계정을 쓰는 상황에서 세션이 끊기는 것을 막는 분기다.
+     *
+     * @scenario case=gc_shared_user
+     *
+     * @effects e2e_token_gc_keeps_user_holding_a_recent_test_role
+     *
+     * @return void 반환값 없음
      */
     public function test_gc_keeps_user_that_still_holds_a_recent_test_role(): void
     {
@@ -244,6 +301,12 @@ class PlaywrightIssueTokenTest extends TestCase
 
     /**
      * `--gc-hours=0` 이면 정리를 수행하지 않는다 (옵트아웃).
+     *
+     * @scenario case=gc_disabled
+     *
+     * @effects e2e_token_gc_skipped_when_hours_is_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_gc_is_skipped_when_disabled(): void
     {

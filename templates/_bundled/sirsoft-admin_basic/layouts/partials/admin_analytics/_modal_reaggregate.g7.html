@@ -1,0 +1,75 @@
+<!-- 구간 재집계 창(진단 화면). 시작·종료일과 「확정된 날도 다시」를 받아 워커에게 넘긴다(202). 응답에는
+  실행 번호가 없다 — 진행 상태의 출처가 실행 이력 행이라, 화면은 이력 표와 방송/폴링으로 진행률을 본다.
+  원장 보존 기간 밖의 날은 서버가 `skipped` 로 남기므로 그 안내를 미리 적는다. -->
+<partial description="방문자 통계 — 구간 재집계 창" editor_label="$t:admin.modal_label.analytics.reaggregate_modal">
+  <modal data-type="composite" data-ref="analytics_reaggregate_modal" title="$t:admin.analytics.modals.reaggregate.title" size="md">
+    <div class="py-2 space-y-4">
+      <p class="text-label-subtle">$t:admin.analytics.modals.reaggregate.hint</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label">$t:admin.analytics.modals.reaggregate.from</label>
+          <input name="analytics_reagg_from" type="date" class="input w-full" value="{{_global.analyticsReagg?.from ?? ''}}">
+            <on type="change">
+              <!-- 시작일 — 전역 입력에 담는다. 두 날짜가 다 차야 실행 버튼이 풀린다. -->
+              <set-state target="global" analyticsReagg.from="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <div>
+          <label class="form-label">$t:admin.analytics.modals.reaggregate.to</label>
+          <input name="analytics_reagg_to" type="date" class="input w-full" value="{{_global.analyticsReagg?.to ?? ''}}">
+            <on type="change">
+              <!-- 종료일 — 원장 보존 기간 밖의 날이 섞여도 막지 않는다. 그날은 서버가 건너뜀으로 남긴다. -->
+              <set-state target="global" analyticsReagg.to="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <label class="inline-clickable">
+        <input type="checkbox" class="checkbox" checked="{{_global.analyticsReagg?.force === true}}">
+          <on type="change">
+            <!-- 「확정된 날도 다시」 — 켜면 이미 확정본이 있는 날까지 다시 집계한다. 끄면 확정된 날은 그대로 둔다. -->
+            <set-state target="global" analyticsReagg.force="{{$event.target.checked}}"/>
+          </on>
+        </input>
+        <span class="text-label">$t:admin.analytics.modals.reaggregate.force</span>
+      </label>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsReaggRunning}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="reaggregate_run_button" type="button" class="btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.analyticsReagg?.from || !_global.analyticsReagg?.to || _global.analyticsReaggRunning}}">
+        <on type="click">
+          <!-- 큐에 넘긴 뒤 이력 표를 다시 받는다 — 새 running 행이 보여야 진행률 폴링이 붙는다.
+               재집계는 늘 워커가 맡으므로(`ArchiveRunController::store`) 응답이 돌아온 순간엔 아직 행이
+               없을 수 있다. 그 공백 동안 진행률이 영영 안 붙는 것을 막으려고 유예 횟수를 세워 둔다 —
+               진단 화면이 이 값이 남아 있는 동안은 행이 없어도 2초 폴링을 건다(#682 S3 라운드 6). -->
+          <sequence>
+            <set-state target="global" :analyticsReaggRunning="true"/>
+            <api-call :auth_required="true" target="/api/admin/analytics/archive-runs" method="POST">
+              <body run_type="reaggregate" from="{{_global.analyticsReagg?.from}}" to="{{_global.analyticsReagg?.to}}" force="{{_global.analyticsReagg?.force === true}}"/>
+              <success>
+                <set-state target="global" :analyticsReaggRunning="false"/>
+                <close-modal/>
+                <toast type="success" message="$t:admin.analytics.diagnostics.queued_toast"/>
+                <set-state target="global" :analyticsReaggWait="15"/>
+                <refetch-data-source dataSourceId="analytics_archive_runs"/>
+                <refetch-data-source dataSourceId="analytics_diagnostics"/>
+              </success>
+              <fail>
+                <set-state target="global" :analyticsReaggRunning="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.analyticsReaggRunning}}" name="spinner" :spin="true" class="text-sm"/>
+        <span>$t:admin.analytics.modals.reaggregate.button</span>
+      </button>
+    </div>
+  </modal>
+</partial>

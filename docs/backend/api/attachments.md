@@ -27,7 +27,7 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| file | body | file | 예 | max 10240 | 업로드 파일 |
+| file | body | file | 예 | max 10240 · 허용 확장자 | 업로드 파일. 파일명 확장자(`extensions:`)와 **내용으로 추론한 확장자**가 모두 허용 목록(`upload.allowed_extensions`)에 들어야 통과한다 — 내용이 SVG 인 `evil.png` 는 422. 원래 텍스트인 형식(md·markdown·log·csv·tsv)은 내용이 txt 로, eps 는 ai 로 추론돼도 통과한다(그 이름의 형식이 허용 목록에 있을 때). 0바이트 파일은 422 |
 | attachmentable_type | body | string | 아니오 | max 255 | 첨부를 연결할 대상 모델의 다형성 타입 (attachmentable morph type, 예 User·Post 등 모델 클래스명). attachmentable_id와 짝을 이뤄 대상을 지정하며 미지정 시 미연결 상태로 저장 |
 | attachmentable_id | body | integer | 아니오 | min 1 | attachmentable 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
@@ -136,6 +136,8 @@ _단건 응답: `data` 객체의 필드 (`AttachmentResource`)._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.attachments.create`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 파일 내용이 허용 형식과 다른 경우 — `file`: "파일 내용이 허용된 형식과 일치하지 않습니다. 허용 형식: …" (파일명 확장자도 어긋나면 확장자 메시지와 함께) |
+| 422 | Unprocessable Entity | 빈 파일(0바이트) — `file`: "빈 파일(0바이트)은 올릴 수 없습니다." |
 | 500 | Internal Server Error | 파일 저장/DB 기록 중 예외 발생 시 (`attachment.upload_failed` — "파일 업로드에 실패했습니다.") |
 
 <!-- @generated:end -->
@@ -154,6 +156,7 @@ _단건 응답: `data` 객체의 필드 (`AttachmentResource`)._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | files | body | array | 예 | min 1 | 업로드 파일 배열 |
+| files.* | body | file | 예 | max 10240 · 허용 확장자 | 각 파일 — 단건 업로드와 같은 규칙(파일명 확장자 + 내용 추론 확장자 모두 허용 목록, 텍스트 계열 대응, 0바이트 거부) |
 | attachmentable_type | body | string | 아니오 | max 255 | 첨부를 연결할 대상 모델의 다형성 타입 (attachmentable morph type, 예 User·Post 등 모델 클래스명). attachmentable_id와 짝을 이뤄 대상을 지정하며 미지정 시 미연결 상태로 저장 |
 | attachmentable_id | body | integer | 아니오 | min 1 | attachmentable 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
@@ -275,6 +278,8 @@ _배열 응답: `data` 는 `AttachmentResource` 객체의 배열입니다 (페�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.attachments.create`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 파일 내용이 허용 형식과 다른 경우 — `files.N`: "파일 내용이 허용된 형식과 일치하지 않습니다. 허용 형식: …" |
+| 422 | Unprocessable Entity | 빈 파일(0바이트) — `files.N`: "빈 파일(0바이트)은 올릴 수 없습니다." |
 | 500 | Internal Server Error | 배치 중 파일 저장/DB 기록 예외 발생 시 (`attachment.upload_failed` — "파일 업로드에 실패했습니다.") |
 
 <!-- @generated:end -->

@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * [case:backend-34] overlay 확장이 주입한 노드의 `__source` 에 `injectionIndex` 가 실린다
+ * [case:backend-35] overlay 확장이 주입한 노드의 `__source` 에 `injectionIndex` 가 실린다
  *
  * 편집기 확장 편집 모드는 호스트 병합 트리(`with_source_meta=1`)에서 현재 확장의 노드를
  * 추출해 `injections[].components` 로 되돌려 저장한다. 어느 injection 에서 왔는지가

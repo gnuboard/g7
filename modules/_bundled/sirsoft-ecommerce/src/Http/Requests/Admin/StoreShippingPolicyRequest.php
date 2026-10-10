@@ -9,10 +9,12 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesSiteLocale;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 
 /**
@@ -20,6 +22,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
  */
 class StoreShippingPolicyRequest extends FormRequest
 {
+    use ResolvesSiteLocale;
+
     /**
      * 권한 검사는 라우트의 permission 미들웨어가 담당하므로 FormRequest 레벨은 통과시킵니다.
      *
@@ -65,7 +69,11 @@ class StoreShippingPolicyRequest extends FormRequest
 
             // 구간별 설정
             'country_settings.*.ranges' => ['nullable', 'array'],
-            'country_settings.*.ranges.type' => ['required_with:country_settings.*.ranges', 'string'],
+            // `type` 은 구간(tiers)의 기준 축을 가리키는 값이라 tiers 가 있을 때만 뜻이 있다.
+            // `ranges` 전체에 걸면 단위당 정책이 저장하는 `{unit_value}` 만 담긴 ranges 가
+            // 조회한 그대로 되돌려도 422 가 된다 — 화면에 이 오류를 그릴 자리도 없어 저장이
+            // 조용히 실패한다(S17 B4).
+            'country_settings.*.ranges.type' => ['required_with:country_settings.*.ranges.tiers', 'string'],
             'country_settings.*.ranges.unit_value' => ['nullable', 'numeric', 'min:0.01'],
             'country_settings.*.ranges.tiers' => ['nullable', 'array', 'min:1'],
             'country_settings.*.ranges.tiers.*.min' => ['required', 'numeric', 'min:0'],
@@ -100,6 +108,11 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.extra_fee_settings.*.fee' => ['required', 'numeric', 'min:0'],
             'country_settings.*.extra_fee_settings.*.region' => ['nullable', 'string', 'max:100'],
             'country_settings.*.extra_fee_multiply' => ['nullable', 'boolean'],
+
+            // 클레임 배송비 (S6c — 미전송 항목은 Service 가 기존 값을 승계한다)
+            'country_settings.*.claim_fee_mode' => ['nullable', Rule::enum(ClaimShippingFeeModeEnum::class)],
+            'country_settings.*.return_fixed_fee' => ['nullable', 'numeric', 'min:0'],
+            'country_settings.*.exchange_fixed_fee' => ['nullable', 'numeric', 'min:0'],
 
             // 사용여부
             'country_settings.*.is_active' => ['required', 'boolean'],
@@ -149,7 +162,27 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.ranges.tiers.array' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tiers_required'),
             'country_settings.*.extra_fee_settings.*.zipcode.required' => __('sirsoft-ecommerce::validation.shipping_policy.extra_fee.zipcode_format'),
             'country_settings.*.extra_fee_settings.*.fee.min' => __('sirsoft-ecommerce::validation.extra_fee_template.fee_min'),
+            'country_settings.*.claim_fee_mode.Illuminate\Validation\Rules\Enum' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.claim_fee_mode.enum'),
+            'country_settings.*.return_fixed_fee.numeric' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.numeric'),
+            'country_settings.*.return_fixed_fee.min' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.min'),
+            'country_settings.*.exchange_fixed_fee.numeric' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.numeric'),
+            'country_settings.*.exchange_fixed_fee.min' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.min'),
             'is_active.required' => __('sirsoft-ecommerce::validation.shipping_policy.is_active_required'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('sirsoft-ecommerce::validation.attributes.shipping_policy_name'),
+            'country_settings.*.claim_fee_mode' => __('sirsoft-ecommerce::validation.request_attributes.claim_fee_mode'),
+            'country_settings.*.return_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.return_fixed_fee'),
+            'country_settings.*.exchange_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.exchange_fixed_fee'),
         ];
     }
 
@@ -161,6 +194,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * - shipping_method=custom 일 때 custom_shipping_name 다국어 필수
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
@@ -185,6 +219,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * - 조건부 무료: free_threshold
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validatePolicyRequiredSettings(Validator $validator): void
     {
@@ -243,6 +278,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * 그 외 형식은 어떤 우편번호에도 매칭되지 않아 추가배송비가 조용히 누락됩니다.
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateExtraFeeZipcodeFormat(Validator $validator): void
     {
@@ -291,6 +327,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * endpoint 저장을 차단하여 silent base_fee 폴백을 방지합니다.
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateApiEndpointRequired(Validator $validator): void
     {
@@ -318,6 +355,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * - custom_header 인증 시 헤더명 필수
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateApiConfig(Validator $validator): void
     {
@@ -358,6 +396,9 @@ class StoreShippingPolicyRequest extends FormRequest
      *   - 이산형(수량): 다음 min === 현재 max + 1
      *   - 연속형(금액/무게/부피): 다음 min === 현재 max (부동소수 오차 허용)
      * - 배송비는 0 이상이어야 합니다.
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateRangeTiersContinuity(Validator $validator): void
     {
@@ -475,6 +516,9 @@ class StoreShippingPolicyRequest extends FormRequest
      * 무료배송이 아닌 정책에서 배송비 0원을 금지합니다.
      *
      * 구간별 배송비(RANGE_*) 정책은 tiers에서 배송비를 관리하므로 예외입니다.
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateNonFreeBaseFee(Validator $validator): void
     {
@@ -505,6 +549,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * custom 배송방법 선택 시 custom_shipping_name 필수 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateCustomShippingName(Validator $validator): void
     {
@@ -514,7 +559,7 @@ class StoreShippingPolicyRequest extends FormRequest
             return;
         }
 
-        $locale = app()->getLocale();
+        $locale = $this->requiredNameLocale();
 
         foreach ($countrySettings as $i => $cs) {
             if (($cs['shipping_method'] ?? '') !== 'custom') {
@@ -538,6 +583,8 @@ class StoreShippingPolicyRequest extends FormRequest
      *
      * country_settings 배열을 순회하며 charge_policy에 따라 불필요한 필드를 정리합니다.
      * KR이 아닌 국가는 도서산간 설정을 강제 비활성화합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {

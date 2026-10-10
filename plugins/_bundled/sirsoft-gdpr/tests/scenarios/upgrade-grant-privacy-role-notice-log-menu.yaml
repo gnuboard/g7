@@ -1,0 +1,18 @@
+feature: 1.1.0 새 「개인정보 통지 이력」 메뉴에 개인정보 담당 역할 부여 업그레이드 스텝
+
+description: |
+  개인정보 담당 역할(sirsoft-gdpr.privacy)의 메뉴 읽기 권한은 활성화(activate) 때만 붙는데, 업데이트 경로는
+  메뉴 행만 만들고(관리자 역할만 부여) activate 를 부르지 않는다. 1.0.x 에서 올린 사이트는 새 메뉴가 개인정보
+  담당자에게 보이지 않았다. 스텝이 활성화 경로와 같은 규칙(운영자가 뗀 역할은 두기)으로 붙인다.
+
+axes:
+  menu_state: [no_privacy_role, operator_removed_role, already_granted, role_or_menu_missing]
+
+effects:
+  - privacy_role_granted_on_notice_log_menu_tree      # 통지 이력 메뉴와 하위 메뉴에 읽기 권한
+  - privacy_role_not_granted_after_operator_removal   # user_overrides 에 역할 식별자가 있으면 두기
+  - privacy_role_grant_is_idempotent                  # 재실행해도 한 행
+  - privacy_role_grant_skips_without_role_or_menu     # 역할·메뉴 없으면 skip
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/GrantPrivacyRoleToNoticeLogMenuTest.php

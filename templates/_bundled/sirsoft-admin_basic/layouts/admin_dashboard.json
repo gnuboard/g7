@@ -1,20 +1,13 @@
 {
+    "comment": "관리자 첫 화면. 8개 소스를 한꺼번에 받아 요약 카드 · 최근 활동 · 확장 3종 요약 · 경고 · 최근 알림을 깐다.\n  소스마다 `fallback` 을 붙인 것이 이 화면의 성격이다 — 한 API 가 실패해도 그 칸만 0/빈 목록으로\n  내려앉고 나머지는 그대로 뜬다. 대시보드가 통째로 하얗게 되는 것이 가장 나쁜 실패이기 때문이다.\n  경고(`dashboard_alerts`)만 `background` 로 받는다 — 첫 그림에 필수가 아니라 진입을 늦추지 않는다.\n  화면 전환 대기(`transition-overlay`)도 그래서 경고를 기다리는 목록에서 빼 두었다.",
     "version": "1.0.0",
     "layout_name": "admin_dashboard",
-    "permissions": [
-        "core.dashboard.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.dashboard.title",
         "description": "$t:admin.dashboard.description",
         "auth_required": true
     },
-    "init_actions": [
-        {
-            "handler": "checkAssetUrlModeDrift"
-        }
-    ],
     "data_sources": [
         {
             "id": "dashboard_stats",
@@ -51,7 +44,8 @@
                         "label": "-"
                     }
                 }
-            }
+            },
+            "comment": "상단 요약 카드용 집계(회원 수·확장 3종·언어팩·시스템 상태). 실패 시 폴백이 0 과 '-' 를 채워\n       카드 자리를 유지한다 — 아래 웹소켓이 같은 소스를 갱신 대상으로 삼는다."
         },
         {
             "id": "dashboard_activities",
@@ -64,7 +58,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "최근 활동 로그. 활동 로그 화면과 달리 필터·페이지 없이 서버가 정한 최근분만 받는다."
         },
         {
             "id": "dashboard_modules",
@@ -86,7 +81,8 @@
                     "per_page": 5,
                     "total": 0
                 }
-            }
+            },
+            "comment": "모듈 요약 5건. 모듈 목록 화면과 **같은 API** 를 쓰되 5건으로 잘라 받는다(요약 전용 API 를 따로\n       두지 않는다). 전체는 모듈 관리 화면으로 넘긴다."
         },
         {
             "id": "dashboard_plugins",
@@ -108,7 +104,8 @@
                     "per_page": 5,
                     "total": 0
                 }
-            }
+            },
+            "comment": "플러그인 요약 5건 — 위 모듈과 같은 형태다."
         },
         {
             "id": "dashboard_templates",
@@ -130,7 +127,8 @@
                     "per_page": 5,
                     "total": 0
                 }
-            }
+            },
+            "comment": "템플릿 요약 5건 — 위 둘과 같은 형태다."
         },
         {
             "id": "dashboard_alerts",
@@ -143,7 +141,13 @@
             "loading_strategy": "background",
             "fallback": {
                 "data": []
-            }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "확장 경고(코어 비호환·복구 가능 등). 유일한 `background` 소스다 — 첫 그림을 막지 않는다.\n       각 경고는 자기 처리 엔드포인트와 그 엔드포인트를 부를 수 있는지(abilities.can_recover·can_dismiss)를\n       응답에 담아 오므로, 아래 버튼은 그 값으로 잠그고 주소를 그대로 호출한다. 시스템 알림 권한이 없으면\n       403 이 정상이라 토스트 없이 빈 목록으로 둔다(경고 블록도 같은 권한으로 숨겨진다)."
         },
         {
             "id": "dashboard_recent_notifications",
@@ -156,7 +160,34 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "최근 알림 요약. 헤더 알림 센터(`notifications`)와는 별개 소스다 — 이쪽은 읽음 여부로 거르지\n       않고 최근분을 그대로 보여 준다."
+        },
+        {
+            "id": "dashboard_analytics",
+            "label_key": "$t:editor.data_source.dashboard_analytics",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/overview",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "preset": "7d"
+            },
+            "fallback": {
+                "data": null,
+                "widget_error": true
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                },
+                "500": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "방문자 통계 카드용 개요(7일). 통계 읽기 권한이 없으면 403 이 오는데, 카드는 데이터 유무로 스스로 빠지므로\n       오류를 삼킨다 — 권한 없는 카드가 대시보드에 토스트를 띄우면 안 된다. 첫 그림에 필수가 아니라 background 다.\n       그 밖의 실패는 `widget_error` 만 남기고 500 토스트도 삼킨다 — 카드가 사라지는 대신 제자리에서 알리고\n       다시 받으므로, 대시보드 전체에 띄울 말이 없다."
         },
         {
             "id": "dashboard_stats_ws",
@@ -165,7 +196,29 @@
             "channel": "core.admin.dashboard",
             "event": "dashboard.stats.updated",
             "channel_type": "private",
-            "target_source": "dashboard_stats"
+            "target_source": "dashboard_stats",
+            "comment": "집계가 서버에서 바뀌면 위 `dashboard_stats` 를 자동으로 다시 받는다(`target_source`).\n       받아서 할 일이 갱신뿐이라 `on-receive` 블록이 없다 — 관리자 공용 채널이다."
+        }
+    ],
+    "computed": {
+        "canReadAnalytics": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}"
+    },
+    "permissions": [
+        "core.dashboard.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "dashboard_stats",
+            "dashboard_activities",
+            "dashboard_modules",
+            "dashboard_plugins",
+            "dashboard_templates",
+            "dashboard_recent_notifications"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "checkAssetUrlModeDrift"
         }
     ],
     "slots": {
@@ -199,69 +252,68 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "새로고침 — 이 화면의 소스 7개를 모두 다시 부른다(웹소켓 소스는 받는 쪽이라 제외).\n                 하나라도 빠뜨리면 그 칸만 옛 값으로 남아, 화면 안에서 시점이 갈린다.",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_stats"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_activities"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_modules"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_plugins"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_templates"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_alerts"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_recent_notifications"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.dashboard.refreshed"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
                                 "props": {
                                     "className": "btn-icon",
                                     "aria-label": "$t:admin.dashboard.refresh"
                                 },
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "sequence",
-                                        "params": {
-                                            "actions": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_stats"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_activities"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_modules"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_plugins"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_templates"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_alerts"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_recent_notifications"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.dashboard.refreshed"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                ],
                                 "children": [
                                     {
                                         "id": "refresh_icon",
@@ -321,14 +373,10 @@
                                         "text": "$t:admin.dashboard.asset_url_mode_drift_description"
                                     },
                                     {
+                                        "comment": "자산 주소 방식이 어긋났다는 경고에서 설정 화면으로 바로 보낸다 — 대시보드에서 문제를 알리고 고칠 자리까지 데려가는 것이 이 링크의 몫이다",
                                         "id": "asset_url_mode_drift_link",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"
-                                        },
-                                        "text": "$t:admin.dashboard.asset_url_mode_drift_action",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -340,7 +388,12 @@
                                                     }
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"
+                                        },
+                                        "text": "$t:admin.dashboard.asset_url_mode_drift_action"
                                     }
                                 ]
                             }
@@ -348,12 +401,9 @@
                     },
                     {
                         "id": "dashboard_alert_banners",
-                        "if": "{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning').length) > 0}}",
-                        "permissions": [
-                            "core.dashboard.alerts"
-                        ],
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning').length) > 0}}",
                         "props": {
                             "className": "space-y-3 mb-6"
                         },
@@ -362,13 +412,13 @@
                                 "id": "top_alert_item_{{$idx}}",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "{{alert.type === 'warning' ? 'flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700')}}"
-                                },
                                 "iteration": {
                                     "source": "{{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning')}}",
                                     "item_var": "alert",
                                     "index_var": "$idx"
+                                },
+                                "props": {
+                                    "className": "{{alert.type === 'warning' ? 'flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700')}}"
                                 },
                                 "children": [
                                     {
@@ -418,6 +468,16 @@
                                                 "text": "{{alert.time ?? ''}}"
                                             },
                                             {
+                                                "id": "top_alert_permission_hint_{{$idx}}",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(!!alert.recover_endpoint && alert.abilities?.can_recover !== true) || (!!alert.extension_type && !!alert.identifier && alert.abilities?.can_dismiss !== true)}}",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:admin.dashboard.alert_action_no_permission"
+                                            },
+                                            {
                                                 "id": "top_alert_actions_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
@@ -430,16 +490,13 @@
                                                         "type": "basic",
                                                         "name": "Button",
                                                         "if": "{{!!alert.recover_endpoint}}",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
-                                                        },
                                                         "actions": [
                                                             {
+                                                                "comment": "복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.\n                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.\n                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다.",
                                                                 "type": "click",
                                                                 "handler": "apiCall",
-                                                                "auth_required": true,
                                                                 "target": "{{alert.recover_endpoint}}",
+                                                                "auth_required": true,
                                                                 "params": {
                                                                     "method": "POST"
                                                                 },
@@ -458,17 +515,20 @@
                                                                         }
                                                                     }
                                                                 ],
-                                                                "onError": [
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message}}"
-                                                                        }
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
                                                                     }
-                                                                ]
+                                                                }
                                                             }
                                                         ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
@@ -493,43 +553,83 @@
                                                         ]
                                                     },
                                                     {
+                                                        "id": "top_alert_navigate_button_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{!alert.recover_endpoint && !!alert.action_url}}",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —\n                       버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.\n                       절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다.",
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "arrow-right",
+                                                                    "size": "xs"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!!alert.action_label}}",
+                                                                "text": "{{alert.action_label}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!alert.action_label}}",
+                                                                "text": "$t:extensions.alerts.open_action"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
                                                         "id": "top_alert_dismiss_button_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Button",
                                                         "if": "{{alert.extension_type && alert.identifier}}",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded",
-                                                            "aria-label": "$t:extensions.alerts.dismiss_action"
-                                                        },
                                                         "actions": [
                                                             {
+                                                                "comment": "닫기는 조치가 아니라 「이 확장의 이 알림을 더 보지 않겠다」는 기록이다 — 서버에 남겨야 새로고침마다 되살아나지 않는다. 그래서 토스트 없이 목록만 다시 받는다.",
                                                                 "type": "click",
                                                                 "handler": "apiCall",
-                                                                "auth_required": true,
                                                                 "target": "/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss",
+                                                                "auth_required": true,
                                                                 "params": {
                                                                     "method": "POST"
                                                                 },
-                                                                "onSuccess": [
-                                                                    {
-                                                                        "handler": "refetchDataSource",
-                                                                        "params": {
-                                                                            "dataSourceId": "dashboard_alerts"
-                                                                        }
+                                                                "onSuccess": {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "dashboard_alerts"
                                                                     }
-                                                                ],
-                                                                "onError": [
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message}}"
-                                                                        }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
                                                                     }
-                                                                ]
+                                                                }
                                                             }
                                                         ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "aria-label": "$t:extensions.alerts.dismiss_action",
+                                                            "disabled": "{{alert.abilities?.can_dismiss !== true}}"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
@@ -552,6 +652,9 @@
                                     }
                                 ]
                             }
+                        ],
+                        "permissions": [
+                            "core.dashboard.alerts"
                         ]
                     },
                     {
@@ -646,10 +749,10 @@
                             {
                                 "type": "extension_point",
                                 "name": "admin_dashboard_quick_menu",
-                                "default": [],
                                 "props": {
                                     "className": "contents"
-                                }
+                                },
+                                "default": []
                             }
                         ]
                     },
@@ -664,200 +767,15 @@
                         "default": []
                     },
                     {
-                        "id": "secondary_stats_badges",
-                        "type": "basic",
-                        "name": "Div",
-                        "blur_until_loaded": {
-                            "enabled": true,
-                            "data_sources": "dashboard_stats"
-                        },
+                        "comment": "방문자 통계 카드 — 확장이 카드 안팎에 자기 지표를 덧붙일 수 있게 확장 지점으로 감싼다.",
+                        "type": "extension_point",
+                        "name": "admin_dashboard_analytics",
                         "props": {
-                            "className": "flex-center flex-wrap gap-2 md:gap-3 mb-2"
+                            "className": "contents"
                         },
-                        "children": [
+                        "default": [
                             {
-                                "id": "modules_badge",
-                                "permissions": [
-                                    "core.modules.read"
-                                ],
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
-                                },
-                                "children": [
-                                    {
-                                        "id": "modules_badge_icon",
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                            "name": "cube",
-                                            "size": "sm"
-                                        }
-                                    },
-                                    {
-                                        "id": "modules_badge_label",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.dashboard.stats.installed_modules"
-                                    },
-                                    {
-                                        "id": "modules_badge_value",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "props": {
-                                            "className": "font-bold"
-                                        },
-                                        "text": "{{dashboard_stats?.data?.installed_modules?.active ?? 0}}/{{dashboard_stats?.data?.installed_modules?.total ?? 0}}"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/modules"
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "plugins_badge",
-                                "permissions": [
-                                    "core.plugins.read"
-                                ],
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
-                                },
-                                "children": [
-                                    {
-                                        "id": "plugins_badge_icon",
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                            "name": "puzzle-piece",
-                                            "size": "sm"
-                                        }
-                                    },
-                                    {
-                                        "id": "plugins_badge_label",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.dashboard.stats.active_plugins"
-                                    },
-                                    {
-                                        "id": "plugins_badge_value",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "props": {
-                                            "className": "font-bold"
-                                        },
-                                        "text": "{{dashboard_stats?.data?.active_plugins?.active ?? 0}}/{{dashboard_stats?.data?.active_plugins?.total ?? 0}}"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "templates_badge",
-                                "permissions": [
-                                    "core.templates.read"
-                                ],
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
-                                },
-                                "children": [
-                                    {
-                                        "id": "templates_badge_icon",
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                            "name": "palette",
-                                            "size": "sm"
-                                        }
-                                    },
-                                    {
-                                        "id": "templates_badge_label",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.dashboard.stats.active_templates"
-                                    },
-                                    {
-                                        "id": "templates_badge_value",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "props": {
-                                            "className": "font-bold"
-                                        },
-                                        "text": "{{dashboard_stats?.data?.installed_templates?.active ?? 0}}/{{dashboard_stats?.data?.installed_templates?.total ?? 0}}"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/templates/admin"
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "language_packs_badge",
-                                "permissions": [
-                                    "core.language_packs.read"
-                                ],
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
-                                },
-                                "children": [
-                                    {
-                                        "id": "language_packs_badge_icon",
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                            "name": "language",
-                                            "size": "sm"
-                                        }
-                                    },
-                                    {
-                                        "id": "language_packs_badge_label",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.dashboard.stats.active_language_packs"
-                                    },
-                                    {
-                                        "id": "language_packs_badge_value",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "props": {
-                                            "className": "font-bold"
-                                        },
-                                        "text": "{{dashboard_stats?.data?.language_packs?.active ?? 0}}/{{dashboard_stats?.data?.language_packs?.total ?? 0}}"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/settings?tab=language_packs"
-                                        }
-                                    }
-                                ]
+                                "partial": "partials/admin_dashboard/_analytics_widget.json"
                             }
                         ]
                     },
@@ -871,9 +789,6 @@
                         "children": [
                             {
                                 "id": "recent_notifications_card",
-                                "permissions": [
-                                    "core.notification-logs.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -920,11 +835,6 @@
                                                 "id": "recent_notifications_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -933,7 +843,12 @@
                                                             "path": "/admin/notification-logs"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -960,13 +875,13 @@
                                                 "id": "recent_notification_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-start gap-3"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_recent_notifications?.data",
                                                     "item_var": "notification",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-start gap-3"
                                                 },
                                                 "children": [
                                                     {
@@ -1018,13 +933,13 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.notification-logs.read"
                                 ]
                             },
                             {
                                 "id": "recent_activity_card",
-                                "permissions": [
-                                    "core.dashboard.activities"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1071,11 +986,6 @@
                                                 "id": "activity_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1084,7 +994,12 @@
                                                             "path": "/admin/activity-logs"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -1092,19 +1007,18 @@
                                         "id": "activity_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "activity_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-start gap-3"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_activities?.data",
                                                     "item_var": "activity",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-start gap-3"
                                                 },
                                                 "children": [
                                                     {
@@ -1156,6 +1070,208 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.dashboard.activities"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "설치 현황 칩 4개(모듈·플러그인·템플릿·언어팩)는 바로 아래 상태 카드 세 장이 세는 것과 같은 것을\n        센다 — 화면 맨 위에 떼어 두면 「3/3」이 무엇의 3인지 알 수 없다. 카드 바로 위에 붙여 둔다\n        (#682 라운드 4, 검수 지적 ⑧). 언어팩은 상태 카드가 없어 칩이 유일한 요약이다.",
+                        "id": "secondary_stats_badges",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "dashboard_stats"
+                        },
+                        "props": {
+                            "className": "flex-center flex-wrap gap-2 md:gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "modules_badge",
+                                "type": "basic",
+                                "name": "Div",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/modules"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "id": "modules_badge_icon",
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "cube",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "id": "modules_badge_label",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.dashboard.stats.installed_modules"
+                                    },
+                                    {
+                                        "id": "modules_badge_value",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-bold"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.installed_modules?.active ?? 0}}/{{dashboard_stats?.data?.installed_modules?.total ?? 0}}"
+                                    }
+                                ],
+                                "permissions": [
+                                    "core.modules.read"
+                                ]
+                            },
+                            {
+                                "id": "plugins_badge",
+                                "type": "basic",
+                                "name": "Div",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "id": "plugins_badge_icon",
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "puzzle-piece",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "id": "plugins_badge_label",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.dashboard.stats.active_plugins"
+                                    },
+                                    {
+                                        "id": "plugins_badge_value",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-bold"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.active_plugins?.active ?? 0}}/{{dashboard_stats?.data?.active_plugins?.total ?? 0}}"
+                                    }
+                                ],
+                                "permissions": [
+                                    "core.plugins.read"
+                                ]
+                            },
+                            {
+                                "id": "templates_badge",
+                                "type": "basic",
+                                "name": "Div",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/templates/admin"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "id": "templates_badge_icon",
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "palette",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "id": "templates_badge_label",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.dashboard.stats.active_templates"
+                                    },
+                                    {
+                                        "id": "templates_badge_value",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-bold"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.installed_templates?.active ?? 0}}/{{dashboard_stats?.data?.installed_templates?.total ?? 0}}"
+                                    }
+                                ],
+                                "permissions": [
+                                    "core.templates.read"
+                                ]
+                            },
+                            {
+                                "id": "language_packs_badge",
+                                "type": "basic",
+                                "name": "Div",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/settings?tab=language_packs"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "id": "language_packs_badge_icon",
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "language",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "id": "language_packs_badge_label",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.dashboard.stats.active_language_packs"
+                                    },
+                                    {
+                                        "id": "language_packs_badge_value",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-bold"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.language_packs?.active ?? 0}}/{{dashboard_stats?.data?.language_packs?.total ?? 0}}"
+                                    }
+                                ],
+                                "permissions": [
+                                    "core.language_packs.read"
                                 ]
                             }
                         ]
@@ -1170,9 +1286,6 @@
                         "children": [
                             {
                                 "id": "module_status_card",
-                                "permissions": [
-                                    "core.modules.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1230,11 +1343,6 @@
                                                 "id": "module_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1243,7 +1351,12 @@
                                                             "path": "/admin/modules"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -1251,19 +1364,18 @@
                                         "id": "module_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "module_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-between py-2"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_modules?.data?.data",
                                                     "item_var": "module",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1304,13 +1416,13 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.modules.read"
                                 ]
                             },
                             {
                                 "id": "plugin_status_card",
-                                "permissions": [
-                                    "core.plugins.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1368,11 +1480,6 @@
                                                 "id": "plugin_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1381,7 +1488,12 @@
                                                             "path": "/admin/plugins"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -1389,19 +1501,18 @@
                                         "id": "plugin_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "plugin_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-between py-2"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_plugins?.data?.data",
                                                     "item_var": "plugin",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1442,13 +1553,13 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.plugins.read"
                                 ]
                             },
                             {
                                 "id": "template_status_card",
-                                "permissions": [
-                                    "core.templates.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1506,11 +1617,6 @@
                                                 "id": "template_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1519,7 +1625,12 @@
                                                             "path": "/admin/templates/admin"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -1527,19 +1638,18 @@
                                         "id": "template_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "template_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-between py-2"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_templates?.data?.data",
                                                     "item_var": "template",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1580,6 +1690,9 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.templates.read"
                                 ]
                             }
                         ]
@@ -1594,12 +1707,9 @@
                         "children": [
                             {
                                 "id": "system_alerts_card",
-                                "if": "{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning').length) > 0}}",
-                                "permissions": [
-                                    "core.dashboard.alerts"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning').length) > 0}}",
                                 "blur_until_loaded": {
                                     "enabled": true,
                                     "data_sources": "dashboard_alerts"
@@ -1648,13 +1758,13 @@
                                                 "id": "alert_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "{{alert.type === 'warning' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}"
-                                                },
                                                 "iteration": {
                                                     "source": "{{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning')}}",
                                                     "item_var": "alert",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "{{alert.type === 'warning' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}"
                                                 },
                                                 "children": [
                                                     {
@@ -1704,6 +1814,16 @@
                                                                 "text": "{{alert.time ?? ''}}"
                                                             },
                                                             {
+                                                                "id": "alert_permission_hint_{{$idx}}",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{(!!alert.recover_endpoint && alert.abilities?.can_recover !== true) || (!!alert.extension_type && !!alert.identifier && alert.abilities?.can_dismiss !== true)}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:admin.dashboard.alert_action_no_permission"
+                                                            },
+                                                            {
                                                                 "id": "alert_actions_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Div",
@@ -1716,16 +1836,13 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "if": "{{!!alert.recover_endpoint}}",
-                                                                        "props": {
-                                                                            "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
-                                                                        },
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —\n                           복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.\n                           같은 이유로 버튼이 뜨는 조건도 경고 종류가 아니라 복구 주소의 유무이고,\n                           버튼 글자·성공 안내도 경고가 실어 오면 그것을 쓴다(없으면 공통 문구).\n                           성공하면 경고 목록만 다시 받는다(그 경고가 사라졌는지가 결과다).",
                                                                                 "type": "click",
                                                                                 "handler": "apiCall",
-                                                                                "auth_required": true,
                                                                                 "target": "{{alert.recover_endpoint}}",
+                                                                                "auth_required": true,
                                                                                 "params": {
                                                                                     "method": "POST"
                                                                                 },
@@ -1744,17 +1861,20 @@
                                                                                         }
                                                                                     }
                                                                                 ],
-                                                                                "onError": [
-                                                                                    {
-                                                                                        "handler": "toast",
-                                                                                        "params": {
-                                                                                            "type": "error",
-                                                                                            "message": "{{error.message}}"
-                                                                                        }
+                                                                                "onError": {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
                                                                                     }
-                                                                                ]
+                                                                                }
                                                                             }
                                                                         ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
+                                                                        },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
@@ -1779,43 +1899,83 @@
                                                                         ]
                                                                     },
                                                                     {
+                                                                        "id": "alert_navigate_button_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "if": "{{!alert.recover_endpoint && !!alert.action_url}}",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —\n                           버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.\n                           절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다.",
+                                                                                "type": "click",
+                                                                                "handler": "navigate",
+                                                                                "params": {
+                                                                                    "path": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "arrow-right",
+                                                                                    "size": "xs"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{!!alert.action_label}}",
+                                                                                "text": "{{alert.action_label}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{!alert.action_label}}",
+                                                                                "text": "$t:extensions.alerts.open_action"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
                                                                         "id": "alert_dismiss_button_{{$idx}}",
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "if": "{{alert.extension_type && alert.identifier}}",
-                                                                        "props": {
-                                                                            "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded",
-                                                                            "aria-label": "$t:extensions.alerts.dismiss_action"
-                                                                        },
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "경고 숨기기. 복구와 달리 확장 종류·식별자로 주소를 조립한다(경고가 그 둘을 실어\n                           오지 않으면 버튼 자체가 렌더되지 않는다). 실패 갈래를 두지 않는다 — 실패하면\n                           경고가 그대로 남는 것이 곧 결과라 따로 알릴 것이 없다.",
                                                                                 "type": "click",
                                                                                 "handler": "apiCall",
-                                                                                "auth_required": true,
                                                                                 "target": "/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss",
+                                                                                "auth_required": true,
                                                                                 "params": {
                                                                                     "method": "POST"
                                                                                 },
-                                                                                "onSuccess": [
-                                                                                    {
-                                                                                        "handler": "refetchDataSource",
-                                                                                        "params": {
-                                                                                            "dataSourceId": "dashboard_alerts"
-                                                                                        }
+                                                                                "onSuccess": {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "dashboard_alerts"
                                                                                     }
-                                                                                ],
-                                                                                "onError": [
-                                                                                    {
-                                                                                        "handler": "toast",
-                                                                                        "params": {
-                                                                                            "type": "error",
-                                                                                            "message": "{{error.message}}"
-                                                                                        }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
                                                                                     }
-                                                                                ]
+                                                                                }
                                                                             }
                                                                         ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                            "aria-label": "$t:extensions.alerts.dismiss_action",
+                                                                            "disabled": "{{alert.abilities?.can_dismiss !== true}}"
+                                                                        },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
@@ -1840,22 +2000,15 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.dashboard.alerts"
                                 ]
                             }
                         ]
                     }
                 ]
             }
-        ]
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "dashboard_stats",
-            "dashboard_activities",
-            "dashboard_modules",
-            "dashboard_plugins",
-            "dashboard_templates",
-            "dashboard_recent_notifications"
         ]
     }
 }

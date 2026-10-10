@@ -6,6 +6,8 @@
  * Messages used when FormRequest validation fails
  */
 return [
+    'exchange_rate_save_failed' => 'Could not save exchange rates.',
+    'exchange_rate_provider_unavailable' => 'This exchange rate provider is unavailable.',
     // Product 1:1 Inquiry validation messages
     'inquiries' => [
         'content' => [
@@ -24,6 +26,9 @@ return [
     'settings' => [
         'key_required' => 'The settings key is required.',
         'value_present' => 'The settings value is required.',
+        'key_unknown' => 'The settings key cannot be saved: :key',
+        'key_server_managed' => 'This setting is recorded by the server and cannot be saved directly.',
+        'empty_payload' => 'There are no settings to save. Refresh the page and save again.',
     ],
 
     // Shipping carrier validation messages
@@ -244,6 +249,7 @@ return [
     'options_min' => 'Please add at least one option.',
     'selling_price_lte_list' => 'Selling price cannot exceed list price.',
     'option_selling_price_lte_list' => 'Option selling price cannot exceed list price.',
+    'claim_reason_code_format' => 'The claim reason code must start with a lowercase letter and may contain lowercase letters, digits, and single underscores as word separators. Codes that are already saved may be left as they are.',
 
     // Product validation messages
     'product' => [
@@ -264,6 +270,12 @@ return [
             'option_stock_quantity' => 'option stock quantity',
             'option_name' => 'option name',
             'option_code' => 'option code',
+            // Multilingual required field names (option groups, additional options, product notice)
+            'option_group_name' => 'option group name',
+            'additional_option_name' => 'additional option group name',
+            'additional_option_value_name' => 'additional option choice name',
+            'notice_item_name' => 'product notice item name',
+            'notice_item_content' => 'product notice content',
         ],
         'name' => [
             'required' => 'Please enter the product name.',
@@ -277,6 +289,7 @@ return [
         'product_code' => [
             'required' => 'Please enter the product code.',
             'unique' => 'This product code is already in use.',
+            'regex' => 'The product code may only contain letters, numbers, hyphens (-) and underscores (_).',
         ],
         'list_price' => [
             'required' => 'Please enter the list price.',
@@ -727,7 +740,7 @@ return [
         // Status transition rules (block reverse / non-sequential transitions)
         'status_transition' => [
             'invalid' => 'Cannot change status from :from to :to.',
-            'bulk_invalid' => ':count item(s) cannot be changed to :to. (current: :from)',
+            'bulk_invalid' => ':count item cannot be changed to :to. (current: :from)|:count items cannot be changed to :to. (current: :from)',
         ],
         // Bulk processing related
         'bulk_update' => [
@@ -753,6 +766,9 @@ return [
         'end_date' => [
             'date' => 'End date must be a valid date.',
             'after_or_equal' => 'End date must be after or equal to start date.',
+        ],
+        'date_basis' => [
+            'in' => 'The date basis must be site (the site time zone).',
         ],
         // Option status
         'option_status' => [
@@ -818,6 +834,29 @@ return [
         'orderer_uuid' => [
             'uuid' => 'Orderer UUID format is invalid.',
         ],
+        // Claim criteria filters (D22)
+        'claim_presence' => [
+            'in' => 'Claim presence filter must be one of none, any or active.',
+        ],
+        'claim_statuses' => [
+            'array' => 'Claim status filter must be an array.',
+            'in' => 'Please select a valid claim status.',
+        ],
+        'claim_cancel_types' => [
+            'array' => 'Cancellation type filter must be an array.',
+            'in' => 'Please select a valid cancellation type.',
+        ],
+        'claim_fault_types' => [
+            'array' => 'Fault type filter must be an array.',
+            'in' => 'Please select a valid fault type.',
+        ],
+        'claim_requested_from' => [
+            'date' => 'Claim requested start date must be a valid date.',
+        ],
+        'claim_requested_to' => [
+            'date' => 'Claim requested end date must be a valid date.',
+            'after_or_equal' => 'Claim requested end date must be on or after the start date.',
+        ],
         // Sorting and pagination
         'sort_by' => [
             'in' => 'Please select a valid sort field.',
@@ -863,6 +902,8 @@ return [
     // Order validation messages (backward compatibility - order.* format)
     'order' => [
         'payment_method_unavailable' => 'This payment method is currently unavailable. Please choose another one.',
+        'payment_method_not_selectable' => 'This payment method cannot be selected.',
+        'payment_method_not_allowed_for_currency' => 'This payment method is not available for payments in :currency.',
         'ids' => [
             'required' => 'Please select orders to update.',
             'array' => 'Order IDs must be an array.',
@@ -920,6 +961,7 @@ return [
         'cash_receipt_identifier_required' => 'Please enter the number to use for the cash receipt.',
         'refund_bank_required_with' => 'The refund account requires the bank, account number, and account holder.',
         'refund_bank_required_for_vbank' => 'A refund account is required for a paid virtual account order.',
+        'refund_bank_required_for_manual_transfer' => 'This refund must be sent by bank transfer. Enter the account to refund to.',
     ],
 
     // Guest order lookup verification validation messages
@@ -952,7 +994,7 @@ return [
 
     // Cart validation messages
     'cart' => [
-        'quantity_limit_exceeded' => 'You can add up to :limit item(s) per product to the cart. (requested: :attempted)',
+        'quantity_limit_exceeded' => 'You can add up to :limit item per product to the cart. (requested: :attempted)|You can add up to :limit items per product to the cart. (requested: :attempted)',
         'ids_required' => 'Please select items to delete.',
         'ids_array' => 'Item IDs must be an array.',
         'ids_min' => 'Please select at least one item.',
@@ -1014,6 +1056,30 @@ return [
     'shipping_policy' => [
         'name' => [
             'required' => 'Please enter the shipping policy name.',
+        ],
+        // Claim settings (collection addresses + per-country claim fees - S6c)
+        'claim_settings' => [
+            'country_code' => [
+                'required' => 'Please enter the country code.',
+                'distinct' => 'Country codes are duplicated.',
+                'exists' => 'The country code does not exist in this shipping policy\'s country settings.',
+            ],
+            'claim_fee_mode' => [
+                'required' => 'Please select the claim shipping fee mode.',
+                'enum' => 'Please select a valid claim shipping fee mode.',
+            ],
+            'fee' => [
+                'numeric' => 'Claim shipping fee must be a number.',
+                'min' => 'Claim shipping fee must be 0 or greater.',
+            ],
+            'recipient_name' => [
+                'required' => 'Please enter the collection address recipient name.',
+                'max' => 'Collection address recipient name may not exceed 100 characters.',
+            ],
+            'address1' => [
+                'required' => 'Please enter the collection address.',
+                'max' => 'Collection address may not exceed 255 characters.',
+            ],
         ],
         'ids_required' => 'Please select shipping policies to update.',
         'ids_array' => 'Shipping policy IDs must be an array.',
@@ -1333,6 +1399,17 @@ return [
 
     // Field name translations (Laravel standard)
     'attributes' => [
+        // Manual paid transition confirm items (Q13·Q14)
+        'apply_stock_deduction' => 'stock deduction',
+        'apply_mileage_deduction' => 'used mileage deduction',
+        'record_paid_amount' => 'paid amount record',
+
+        // Admin user list extension filters (#705)
+        'user_filter_mileage_min' => 'minimum mileage balance',
+        'user_filter_mileage_max' => 'maximum mileage balance',
+        'user_filter_shipping_country' => 'shipping address country',
+        'user_filter_has_address' => 'shipping address registered',
+
         // Public asset storage
         'basic_info.public_asset_disk' => 'Public asset disk',
 
@@ -1362,6 +1439,20 @@ return [
         'review_settings.write_deadline_days' => 'Review write deadline (days)',
         'review_settings.max_images' => 'Max review images',
         'review_settings.max_image_size_mb' => 'Max review image size (MB)',
+
+        // Claim settings
+        'claim.exchange_reasons' => 'Exchange reasons',
+        'claim.exchange_reasons.*.code' => 'Exchange reason code',
+        'claim.exchange_reasons.*.name' => 'Exchange reason name',
+        'claim.exchange_reasons.*.fault_type' => 'Exchange reason fault type',
+        'claim.return_reasons' => 'Return reasons',
+        'claim.return_reasons.*.code' => 'Return reason code',
+        'claim.return_reasons.*.name' => 'Return reason name',
+        'claim.return_reasons.*.fault_type' => 'Return reason fault type',
+        'claim.refund_reasons' => 'Refund reasons',
+        'claim.refund_reasons.*.code' => 'Refund reason code',
+        'claim.refund_reasons.*.name' => 'Refund reason name',
+        'claim.refund_reasons.*.fault_type' => 'Refund reason fault type',
 
         // Basic info
         'basic_info' => 'Basic Information',
@@ -1497,6 +1588,19 @@ return [
         'claim_reason_is_active' => 'Active Status',
         'claim_reason_sort_order' => 'Sort Order',
         'claim_reason_search' => 'Search Term',
+
+        // Multilingual name fields (field name in the current-locale-required message)
+        'category_name' => 'Category Name',
+        'brand_name' => 'Brand Name',
+        'coupon_name' => 'Coupon Name',
+        'common_info_name' => 'Common Info Name',
+        'notice_template_name' => 'Product Group Name',
+        'notice_template_field_name' => 'Item Name',
+        'notice_template_field_content' => 'Item Content',
+        'shipping_carrier_name' => 'Carrier Name',
+        'shipping_policy_name' => 'Shipping Policy Name',
+        'shipping.carriers.*.name' => 'Carrier name',
+        'shipping.types.*.name' => 'Shipping type name',
     ],
 
     // Field-specific custom validation messages
@@ -1583,10 +1687,12 @@ return [
         'user_currency' => [
             'required' => 'Please select a payment currency.',
             'invalid' => 'Only registered currencies can be selected.',
+            'forbidden' => 'You do not have permission to change the payment currency of this member.',
         ],
         'user_shipping_country' => [
             'required' => 'Please select a shipping country.',
             'invalid' => 'Only shippable countries can be selected.',
+            'forbidden' => 'You do not have permission to change the shipping country of this member.',
         ],
         'language_currency' => [
             'base_locked_after_data' => 'The base currency cannot be changed once one or more products or orders have been registered.',
@@ -1595,6 +1701,7 @@ return [
                 'max' => 'Default currency cannot exceed 10 characters.',
             ],
             'currencies' => [
+                'exchange_rate_managed' => ':currency is managed by :provider. Refresh the page.',
                 'duplicate_code' => 'Duplicate currency code found.',
                 'name_required' => 'Currency name must be entered in at least one language.',
                 'code' => [
@@ -1752,6 +1859,7 @@ return [
             ],
             'bank_accounts' => [
                 'at_least_one_active_default' => 'At least one bank account must be both active and set as default.',
+                'dbank_requires_active_account' => 'To use bank transfer, at least one active bank account with an account number is required.',
                 'bank_code' => [
                     'required_with' => 'Bank is required.',
                     'string' => 'Bank code must be a string.',
@@ -1798,9 +1906,20 @@ return [
             ],
         ],
         'claim' => [
+            'exchange_reasons' => [
+                'duplicate_code' => 'Duplicate exchange reason code found.',
+                'name_required' => 'Exchange reason name is required.',
+                'code_swap' => 'Another exchange reason still uses this code. To swap codes, save one of them under a different code first.',
+            ],
+            'return_reasons' => [
+                'duplicate_code' => 'Duplicate return reason code found.',
+                'name_required' => 'Return reason name is required.',
+                'code_swap' => 'Another return reason still uses this code. To swap codes, save one of them under a different code first.',
+            ],
             'refund_reasons' => [
                 'duplicate_code' => 'Duplicate refund reason code found.',
                 'name_required' => 'Refund reason name is required.',
+                'code_swap' => 'Another refund reason still uses this code. To swap codes, save one of them under a different code first.',
             ],
         ],
         'shipping' => [
@@ -1858,6 +1977,7 @@ return [
             ],
             'types' => [
                 'duplicate_code' => 'Duplicate shipping type code found.',
+                'code_swap' => 'Another shipping type still uses this code. To swap codes, save one of them under a different code first.',
                 'name_required' => 'Shipping type name is required.',
                 'code' => [
                     'required_with' => 'Shipping type code is required.',
@@ -1879,6 +1999,7 @@ return [
             ],
             'carriers' => [
                 'duplicate_code' => 'Duplicate carrier code found.',
+                'code_swap' => 'Another carrier still uses this code. To swap codes, save one of them under a different code first.',
                 'name_required' => 'Carrier name is required.',
                 'code' => [
                     'required_with' => 'Carrier code is required.',
@@ -1909,6 +2030,201 @@ return [
                     'boolean' => 'Carrier active status must be true or false.',
                 ],
             ],
+        ],
+    ],
+
+    // Claim (exchange/return) request validation messages
+    'claims' => [
+        'items' => [
+            'required' => 'Please select the items to request.',
+            'array' => 'Items must be an array.',
+            'max' => 'You can request up to :max items at a time.',
+            'order_option_id_required' => 'Please specify the order item to request.',
+            'quantity_required' => 'Please enter the requested quantity.',
+            'quantity_min' => 'The requested quantity must be at least 1.',
+            'new_product_option_id_integer' => 'The exchange option ID must be a number.',
+            'custom_options_array' => 'Custom option inputs must be an array.',
+            'id_integer' => 'The claim item row ID must be a number.',
+            'not_in_claim' => 'The request contains an item that does not belong to this claim.',
+            'entry_object' => 'Each claim item must be an object of the form {id, quantity}.',
+            'duplicate_id' => 'The same item was listed twice. Send each item on a single row.',
+            'not_in_order' => 'The request contains an item that does not belong to this order.',
+            'prohibited_with_refund' => 'The refund-request context and the selected-item context cannot be used together. Send only one of them.',
+        ],
+        // Admin amount updates (D18)
+        'amounts' => [
+            'numeric' => 'The amount must be a number.',
+            'min' => 'The amount must be at least 0.',
+            'prohibited' => 'The request contains a field that cannot be modified for this claim type.',
+        ],
+        'refund_method' => [
+            'in' => 'The selected refund method is not available.',
+        ],
+        // Completion modal preview (D26)
+        'preview_claims' => [
+            'required' => 'Select the claims to preview.',
+            'array' => 'The claims list must be an array.',
+            'max' => 'You can preview up to :max claims at once.',
+            'id_required' => 'Specify the claim ID.',
+            'id_integer' => 'The claim ID must be a number.',
+        ],
+        'reason_code' => [
+            'required' => 'Please select a reason.',
+            'exists' => 'The selected reason is unavailable.',
+        ],
+        'reason_detail' => [
+            'max' => 'The detailed reason may not be longer than :max characters.',
+        ],
+        'charge_method' => [
+            'in' => 'The selected charge method is unavailable.',
+        ],
+        'redelivery_address' => [
+            'array' => 'The redelivery address must be an object of address fields.',
+            'country_code_size' => 'The redelivery country code must be 2 characters.',
+            'country_code_unchanged' => 'The exchange redelivery address must be in the same country as the order shipping address. (International exchange is not supported.)',
+            'changed_by_user_boolean' => 'The redelivery edited flag must be true or false.',
+        ],
+        'type' => [
+            'required' => 'Please specify the claim type.',
+            'in' => 'Unsupported claim type.',
+        ],
+        // The rule owns the limit — the wording carries no number.
+        // Borrowing the order-list wording announced a different cap (100) than the rule enforces (50).
+        'per_page' => [
+            'integer' => 'Items per page must be an integer.',
+            'min' => 'Items per page must be at least :min.',
+            'max' => 'Items per page cannot exceed :max.',
+        ],
+        'page' => [
+            'integer' => 'Page number must be an integer.',
+            'min' => 'Page number must be at least :min.',
+            'max' => 'Page number cannot exceed :max.',
+        ],
+        'status' => [
+            'in' => 'That status does not exist for the selected claim type.',
+        ],
+        'payment_method' => [
+            'in' => 'The selected payment method cannot be used for claim charges.',
+        ],
+        'image_ids' => [
+            'array' => 'The attached image list must be an array.',
+            'max' => 'You can specify up to :max image at once.|You can specify up to :max images at once.',
+            'integer' => 'The attached image ID must be a number.',
+        ],
+        'refund_bank' => [
+            'array' => 'The refund account must be an object with bank, account number and holder.',
+            'incomplete' => 'Please enter the bank, account number and account holder together.',
+            'masked' => 'A masked account number or holder cannot be saved. Please enter the refund account again.',
+        ],
+        'image' => [
+            'required' => 'Please select an image to attach.',
+            'file' => 'The file is not valid.',
+            'image' => 'Only image files can be attached.',
+            'mimes' => 'Supported image formats: jpeg, png, jpg, gif, webp',
+            'max' => 'The image size must be :maxKB or less.',
+        ],
+        'callback' => [
+            'required' => 'Payment approval information is missing.',
+            'array' => 'The payment approval information format is invalid.',
+        ],
+        // Admin claim API (list filters, transitions, tracking)
+        'statuses' => [
+            'array' => 'The status filter must be an array.',
+        ],
+        'search_field' => [
+            'in' => 'Unsupported search field.',
+        ],
+        'search_keyword' => [
+            'max' => 'The search keyword may not be longer than :max characters.',
+        ],
+        'fault_types' => [
+            'array' => 'The fault type filter must be an array.',
+            'prohibited' => 'The fault type filter cannot be used for this claim type.',
+            'in' => 'Unsupported fault type.',
+        ],
+        'charge_methods' => [
+            'array' => 'The charge method filter must be an array.',
+            'prohibited' => 'The charge method filter cannot be used for this claim type.',
+            'in' => 'Unsupported charge method.',
+        ],
+        'requester_type' => [
+            'in' => 'The requester type must be member or guest.',
+        ],
+        'min_amount' => [
+            'numeric' => 'The minimum amount must be a number.',
+        ],
+        'max_amount' => [
+            'numeric' => 'The maximum amount must be a number.',
+            'gte' => 'The maximum amount must be greater than or equal to the minimum amount.',
+        ],
+        'currency_code' => [
+            'in' => 'That currency has never been used.',
+        ],
+        'charge_payment_methods' => [
+            'array' => 'The charge payment method filter must be an array.',
+            'prohibited' => 'The charge payment method filter cannot be used for this claim type.',
+            'in' => 'That charge payment method has never been used.',
+        ],
+        'admin_status' => [
+            'required' => 'Please select a status to assign.',
+            'in' => 'That status cannot be assigned for this claim type.',
+        ],
+        'reject_reason' => [
+            'required' => 'Please enter a reject reason. It is shown to the buyer as is.',
+            'max' => 'The reject reason may not be longer than :max characters.',
+        ],
+        'admin_memo' => [
+            'max' => 'The admin memo may not be longer than :max characters.',
+        ],
+        'ids' => [
+            'required' => 'Please select the claims to process.',
+            'array' => 'The claim ID list must be an array.',
+            'min' => 'Please select at least one claim.',
+            'max' => 'You can process up to :max claims at a time.',
+            'integer' => 'The claim ID must be a number.',
+        ],
+        'completion' => [
+            'required_if' => 'Completion requires the completion options (stock restore and refund request).',
+            'array' => 'The completion options must be an object.',
+            'restore_stock_by_item_array' => 'The stock restore selection must be a per-item map.',
+            'restore_stock_by_item_boolean' => 'The stock restore selection value must be true or false.',
+            'create_refund_request_required' => 'Please choose whether to create a refund request.',
+            'create_refund_request_boolean' => 'The refund request flag must be true or false.',
+        ],
+        'tracking' => [
+            'carrier_id_required' => 'Select a carrier to move this to collecting or shipping.',
+            'tracking_number_required' => 'Enter a tracking number to move this to collecting or shipping.',
+            'per_claim_required' => 'Enter a carrier and tracking number for each selected request to move them to collecting or shipping.',
+            'carrier_id_integer' => 'The carrier ID must be a number.',
+            'carrier_id_exists' => 'The carrier is not registered.',
+            'tracking_number_max' => 'The tracking number may not be longer than :max characters.',
+            'direction_required' => 'Select the tracking direction (collection or redelivery).',
+            'direction_in' => 'The tracking direction must be collection or redelivery.',
+            'deliver_carrier_required' => 'The carrier of the tracking number to mark as arrived is missing.',
+            'deliver_tracking_required' => 'The tracking number to mark as arrived is missing.',
+        ],
+        'withdraw_reason' => [
+            'required' => 'Enter the reason for withdrawing.',
+            'max' => 'The withdrawal reason may not exceed 2000 characters.',
+        ],
+        'request_source' => [
+            'in' => 'The request source must be seller or customer.',
+            'prohibited' => 'The cancellation list cannot be filtered by request source.',
+        ],
+        'collection_overdue' => [
+            'prohibited' => 'The overdue collection filter is available only on the exchange list.',
+        ],
+        'pending_refund' => [
+            'prohibited' => 'The pending refund filter is available only on the exchange and return lists.',
+        ],
+        'exchange_mode' => [
+            'required' => 'Select the exchange mode.',
+            'in' => 'The exchange mode must be standard or advance.',
+        ],
+        'unreturned' => [
+            'array' => 'The not-returned completion instruction is malformed.',
+            'reason_string' => 'The not-returned reason must be text.',
+            'reason_max' => 'The not-returned reason may not be longer than :max characters.',
         ],
     ],
 
@@ -1957,5 +2273,147 @@ return [
             'integer' => 'Product ID must be a number.',
             'item_min' => 'Product ID must be at least 1.',
         ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'section' => 'Privacy Retention Settings',
+        'enabled' => 'Automatic Order Privacy Retention Processing',
+        'retention_years' => 'Order Personal Information Retention Period',
+        'mode' => 'Expired Order Processing Mode',
+    ],
+    // 요청 필드 라벨 (이슈 #599) — 클레임·주문 목록·배송정책·주문서 FormRequest 의 attributes() 가 키별로 읽는다
+    'request_attributes' => [
+        'claim_type' => 'claim type',
+        'items' => 'items',
+        'claim_item' => 'claim item',
+        'order_option' => 'order item',
+        'quantity' => 'quantity',
+        'cancel_quantity' => 'cancel quantity',
+        'new_product_option' => 'exchange option',
+        'custom_options' => 'custom options',
+        'reason_code' => 'reason',
+        'reason_detail' => 'reason details',
+        'reject_reason' => 'rejection reason',
+        'withdraw_reason' => 'withdrawal reason',
+        'admin_memo' => 'admin memo',
+        'charge_method' => 'charge method',
+        'payment_method' => 'payment method',
+        'refund_priority' => 'refund priority',
+        'refund_bank' => 'refund account',
+        'refund_bank_code' => 'refund bank',
+        'refund_bank_account' => 'refund account number',
+        'refund_bank_holder' => 'account holder',
+        'image_ids' => 'attached images',
+        'image_id' => 'attached image',
+        'add_image_ids' => 'images to add',
+        'remove_image_ids' => 'images to remove',
+        'image' => 'image',
+        'redelivery_address' => 'redelivery address',
+        'redelivery_recipient_name' => 'recipient name',
+        'redelivery_phone' => 'recipient phone',
+        'redelivery_zipcode' => 'zip code',
+        'redelivery_address1' => 'address',
+        'redelivery_address2' => 'address details',
+        'redelivery_city' => 'city',
+        'redelivery_state' => 'state / province',
+        'redelivery_country_code' => 'shipping country',
+        'redelivery_changed_by_user' => 'address changed',
+        'full_cancel' => 'full cancellation',
+        'auto_advance' => 'auto advance',
+        'claim_id' => 'claim',
+        'trackings' => 'tracking entries',
+        'tracking' => 'tracking entry',
+        'carrier' => 'carrier',
+        'tracking_number' => 'tracking number',
+        'tracking_direction' => 'tracking direction',
+        'refund_id' => 'refund',
+        'claims' => 'claims to complete',
+        'completion_item_ids' => 'items to complete',
+        'completion_item_id' => 'item to complete',
+        'restore_stock_by_item' => 'restock by item',
+        'restore_stock_item' => 'restock',
+        'unreturned_item_ids' => 'unreturned items',
+        'unreturned_item_id' => 'unreturned item',
+        'create_refund_request' => 'file refund request',
+        'statuses' => 'statuses',
+        'status_item' => 'status',
+        'date_from' => 'start date',
+        'date_to' => 'end date',
+        'search_field' => 'search field',
+        'search_keyword' => 'search keyword',
+        'fault_types' => 'fault types',
+        'fault_type' => 'fault type',
+        'charge_methods' => 'charge methods',
+        'requester_type' => 'requester type',
+        'request_source' => 'request source',
+        'collection_overdue' => 'collection overdue',
+        'pending_refund' => 'pending refund',
+        'min_amount' => 'minimum amount',
+        'max_amount' => 'maximum amount',
+        'currency_code' => 'currency',
+        'charge_payment_methods' => 'additional payment methods',
+        'charge_payment_method' => 'additional payment method',
+        'sort_order' => 'sort order',
+        'refund_amount' => 'refund amount',
+        'refund_points_amount' => 'refund mileage',
+        'refund_method' => 'refund method',
+        'force_without_refund_bank' => 'proceed without refund account',
+        'claim_shipping_fee' => 'claim shipping fee',
+        'exchange_mode' => 'exchange mode',
+        'claim_addresses' => 'return and exchange addresses',
+        'country_settings' => 'country settings',
+        'country_code' => 'country',
+        'claim_fee_mode' => 'return and exchange shipping fee mode',
+        'return_fixed_fee' => 'fixed return shipping fee',
+        'exchange_fixed_fee' => 'fixed exchange shipping fee',
+        'save_shipping_address' => 'shipping address to save',
+        'payment_callback' => 'payment approval response',
+        'claim_number' => 'claim number',
+        'claim_presence' => 'claim presence',
+        'claim_exchange_statuses' => 'exchange statuses',
+        'claim_exchange_status' => 'exchange status',
+        'claim_return_statuses' => 'return statuses',
+        'claim_return_status' => 'return status',
+        'claim_refund_statuses' => 'refund statuses',
+        'claim_refund_status' => 'refund status',
+        'claim_cancel_types' => 'cancel types',
+        'claim_cancel_type' => 'cancel type',
+        'claim_requested_from' => 'claim request start date',
+        'claim_requested_to' => 'claim request end date',
+        'claim_ids' => 'target claims',
+        'claim_status' => 'new status',
+        'approve_on_receipt' => 'approve on receipt',
+        'completion' => 'completion options',
+        'unreturned_reasons' => 'unreturned reasons',
+    ],
+    // 클레임 정책 설정 필드 라벨 (이슈 #599) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    'claim_settings_attributes' => [
+        'cancellable_statuses' => 'cancellable order statuses',
+        'exchange_requestable_statuses' => 'exchange requestable statuses',
+        'return_requestable_statuses' => 'return requestable statuses',
+        'instant_cancel_statuses' => 'auto-advance statuses',
+        'refund_request_statuses' => 'refund request statuses',
+        'allowed_charge_methods' => 'allowed charge methods',
+        'charge_payment_methods' => 'additional payment methods',
+        'auto_approve_zero_charge' => 'auto-approve zero charge',
+        'auto_approve_after_payment' => 'auto-approve after payment',
+        'auto_approve_refund_request' => 'auto-approve refund request',
+        'auto_approve_refund_statuses' => 'auto-approval target statuses',
+        'auto_approve_refund_payment_methods' => 'payment methods eligible for automatic refunds',
+        'auto_approve_refund_payment_methods_decided' => 'automatic refund payment methods decided',
+        'max_images' => 'maximum attachments',
+        'image_max_size_kb' => 'maximum image size (KB)',
+        'request_period_days' => 'request period (days)',
+        'advance_exchange_enabled' => 'use advance exchange',
+        'advance_exchange_collection_due_days' => 'return deadline for the original (days)',
+        'complete_defaults' => 'completion defaults',
+        'complete_defaults_create_refund_request' => 'completion default - file refund request',
+        'complete_defaults_restore_stock' => 'completion default - restore stock',
+    ],
+
+    // Identity policy tab validation messages
+    'identity_policy' => [
+        'target_not_owned' => 'Ecommerce identity policies can only target ecommerce points. Hook and custom scopes must start with "sirsoft-ecommerce.", and the route scope must start with "api.modules.sirsoft-ecommerce.".',
+        'nothing_to_update' => 'There is nothing to update.',
     ],
 ];

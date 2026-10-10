@@ -1,0 +1,313 @@
+{
+    "comment": "배송정책 폼의 클레임 배송비 구역 — 국가 탭이 고른 나라에서 고객 귀책 교환·반품이 생겼을 때 청구할 배송비를 고정 금액으로 둘지 원래 부과 규칙으로 다시 계산할지 정한다.\n  이 값은 주문 시점이 아니라 신청 시점의 현재 정책에서 읽히므로, 바꾸면 이미 들어온 주문에도 이후 신청분부터 새 값이 적용된다.",
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 국가별 클레임 배송비 (반품 편도 / 교환 왕복, 고정액 또는 원래 정책 재계산)"
+    },
+    "id": "claim_country_fee_section",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeCountrySetting}}",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_claim_fee"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-description"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_description"
+        },
+        {
+            "id": "claim_fee_content",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "field_claim_fee_mode",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-4 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "id": "claim_fee_mode_fixed",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "고정 금액 — 아래 두 칸의 값을 배수도 도서산간 추가액도 없이 그대로 청구한다. 폼 자동 바인딩을 끄고 핸들러로 쓰는 것은 이름대로 묶이면 값이 정책 최상위로 가기 때문이다(이 값은 지금 탭 나라의 설정 칸에 속한다).",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateCountryField",
+                                                    "params": {
+                                                        "field": "claim_fee_mode",
+                                                        "value": "fixed"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "claim_fee_mode",
+                                                "autoBinding": false,
+                                                "className": "radio",
+                                                "checked": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.fixed"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "claim_fee_mode_original_policy",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "원래 배송정책 재계산 — 주문이 실제로 받은 부과 규칙으로 편도 배송비를 다시 내어 반품은 한 번, 교환은 두 번 청구하고 도서산간 추가액도 얹는다. 이 방식을 고른 동안 고정 금액 칸은 감춰질 뿐 값은 지워지지 않는다.",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateCountryField",
+                                                    "params": {
+                                                        "field": "claim_fee_mode",
+                                                        "value": "original_policy"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "claim_fee_mode",
+                                                "autoBinding": false,
+                                                "className": "radio",
+                                                "checked": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.claim_shipping_fee_mode.original_policy"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode_hint"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']}}",
+                            "props": {
+                                "className": "form-error-xs mt-0.5"
+                            },
+                            "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']?.[0]}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "claim_fixed_fee_fields",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "id": "field_return_fixed_fee",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee"
+                                },
+                                {
+                                    "comment": "반품 고정 배송비(편도 1회분) — 적은 값이 그대로 청구액이 된다. 판매자·배송사 귀책 반품은 이 값과 무관하게 0원이고, 칸을 비우면 0 으로 들어간다.",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.updateCountryField",
+                                            "params": {
+                                                "field": "return_fixed_fee",
+                                                "value": "{{Number($event.target.value)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "min": "0",
+                                        "step": "1",
+                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "value": "{{_computed.activeCountrySetting?.return_fixed_fee ?? 0}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-0.5"
+                                    },
+                                    "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.return_fixed_fee']?.[0]}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_exchange_fixed_fee",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee"
+                                },
+                                {
+                                    "comment": "교환 고정 배송비 — 회수와 재발송을 합친 왕복 총액을 적는다. 서버가 2 를 곱하지 않으므로 편도 금액을 적으면 절반만 청구된다.",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.updateCountryField",
+                                            "params": {
+                                                "field": "exchange_fixed_fee",
+                                                "value": "{{Number($event.target.value)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "min": "0",
+                                        "step": "1",
+                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "value": "{{_computed.activeCountrySetting?.exchange_fixed_fee ?? 0}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.exchange_fixed_fee_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-0.5"
+                                    },
+                                    "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.exchange_fixed_fee']?.[0]}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "claim_fee_original_policy_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'original_policy'}}",
+                    "props": {
+                        "className": "alert-info"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-info-soft"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_original_policy_notice"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

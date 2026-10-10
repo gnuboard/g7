@@ -1,0 +1,125 @@
+<!-- 쇼핑몰 설정 — SEO 탭. 입력은 폼 자동 바인딩으로 충분하고, 이 탭의 유일한 동작인 캐시
+  비우기는 별도 창(`_modal_clear_seo_cache`)이 맡는다. -->
+<partial description="쇼핑몰 설정 SEO 탭 콘텐츠">
+  <div data-ref="tab_content_seo" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'seo'}}">
+    <div data-ref="meta_settings_header" class="section-header">
+      <h3>$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.title</h3>
+      <p>$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.description</p>
+    </div>
+    <section-layout data-type="layout" data-ref="category_page_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.category_page</h3>
+      <div class="row-stack">
+        <div data-ref="field_category_title" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
+          <input type="text" name="seo.meta_category_title" placeholder="{commerce_name} - {category_name}" class="{{_local.errors?.['seo.meta_category_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_category_title']}}" class="form-error">{{_local.errors?.['seo.meta_category_title']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {category_name}</p>
+        </div>
+        <div data-ref="field_category_description" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
+          <textarea name="seo.meta_category_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.category_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_category_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_category_description']}}" class="form-error">{{_local.errors?.['seo.meta_category_description']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {category_description}</p>
+        </div>
+      </div>
+    </section-layout>
+    <section-layout data-type="layout" data-ref="search_page_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.search_page</h3>
+      <div class="row-stack">
+        <div data-ref="field_search_title" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
+          <input type="text" name="seo.meta_search_title" placeholder="{commerce_name} - {keyword_name}" class="{{_local.errors?.['seo.meta_search_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_search_title']}}" class="form-error">{{_local.errors?.['seo.meta_search_title']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {keyword_name}</p>
+        </div>
+        <div data-ref="field_search_description" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
+          <textarea name="seo.meta_search_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.search_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_search_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_search_description']}}" class="form-error">{{_local.errors?.['seo.meta_search_description']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </section-layout>
+    <section-layout data-type="layout" data-ref="product_page_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.product_page</h3>
+      <div class="row-stack">
+        <div data-ref="field_product_title" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
+          <input type="text" name="seo.meta_product_title" placeholder="{commerce_name} - {product_name}" class="{{_local.errors?.['seo.meta_product_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_product_title']}}" class="form-error">{{_local.errors?.['seo.meta_product_title']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {product_name}</p>
+        </div>
+        <div data-ref="field_product_description" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
+          <textarea name="seo.meta_product_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.product_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_product_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_product_description']}}" class="form-error">{{_local.errors?.['seo.meta_product_description']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {product_description}</p>
+        </div>
+      </div>
+    </section-layout>
+    <section-layout data-type="layout" data-ref="shop_index_page_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.shop_index_page</h3>
+      <div class="row-stack">
+        <div data-ref="field_shop_index_title" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
+          <input type="text" name="seo.meta_shop_index_title" placeholder="{commerce_name}" class="{{_local.errors?.['seo.meta_shop_index_title'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_shop_index_title']}}" class="form-error">{{_local.errors?.['seo.meta_shop_index_title']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}</p>
+        </div>
+        <div data-ref="field_shop_index_description" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description</label>
+          <textarea name="seo.meta_shop_index_description" placeholder="$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.shop_index_description_placeholder" :rows="3" class="{{_local.errors?.['seo.meta_shop_index_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_shop_index_description']}}" class="form-error">{{_local.errors?.['seo.meta_shop_index_description']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </section-layout>
+    <div data-ref="seo_friendly_card" class="admin-card">
+      <h3 data-ref="seo_friendly_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.title</h3>
+      <div data-ref="seo_friendly_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.description</div>
+      <div data-ref="seo_friendly_content" class="row-stack">
+        <div data-ref="provide_pages_section">
+          <div>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.provide_pages</label>
+            <div class="stack-tight">
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="checkbox" name="seo.seo_category" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
+                <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.category</span>
+              </label>
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="checkbox" name="seo.seo_search_result" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
+                <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.search_result</span>
+              </label>
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="checkbox" name="seo.seo_product_detail" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
+                <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.product_detail</span>
+              </label>
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="checkbox" name="seo.seo_shop_index" class="checkbox" :checked="true" disabled="{{_computed.isReadOnly}}"/>
+                <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.shop_index</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div data-ref="cache_section">
+          <div>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.cache_management</label>
+            <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.cache_description</p>
+            <div data-ref="cache_info_row" class="flex-center gap-4">
+              <div class="flex-center gap-2">
+                <icon name="database" class="text-base icon-muted"/>
+                <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.current_cache_size:</span>
+                <span class="text-heading">{{seoStats?.data?.size_formatted ?? '-'}}</span>
+              </div>
+              <!-- 캐시 비우기는 설정 수정 권한의 일이다(서버 settings.update) — 읽기 전용이면 확인 창을 열지 않게 잠근다. -->
+              <button data-ref="seo_clear_cache_button" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+                <on type="click">
+                  <open-modal target="modal_clear_seo_cache"/>
+                </on>
+                $t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

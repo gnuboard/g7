@@ -1,0 +1,22 @@
+feature: 관리자 회원 추가 시 게시판 알림 설정 저장 — 큐 워커 환경
+
+description: |
+  생성 데이터 필터가 알림 설정을 세션에 넣고 생성 후 액션(큐)이 세션에서 꺼내 저장해, 큐 워커(별도 프로세스)에서는
+  설정이 조용히 빠졌다(#138 후속 전수 점검 4번). 생성 후 액션은 원본 요청 데이터를 훅 인자로 받으므로 세션을
+  거치지 않고 그 인자에서 읽는다. 미전송 체크박스는 false 로 채운다.
+
+axes:
+  case: [queued_worker_create, queued_worker_no_fields, subscription_contract, validation_rules, create_filter, update_filter, after_create, resource_filter]
+
+effects:
+  - notification_settings_saved_without_session
+  - no_settings_row_without_notification_fields
+  - subscribes_user_lifecycle_hooks
+  - notification_fields_added_to_rules
+  - notification_fields_stripped_from_create_data
+  - notification_settings_saved_on_update
+  - notification_settings_merged_into_user_resource
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/UserNotificationSettingsQueuedWorkerTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/UserNotificationSettingsListenerTest.php

@@ -1,0 +1,82 @@
+{
+    "id": "panel",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "id": "bulk_btn",
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "_local",
+                                "loading": "true"
+                            }
+                        },
+                        {
+                            "handler": "apiCall",
+                            "target": "/api/admin/bulk",
+                            "params": {
+                                "method": "POST"
+                            },
+                            "errorHandling": {
+                                "403": {
+                                    "handler": "showErrorPage",
+                                    "params": {
+                                        "target": "content"
+                                    }
+                                },
+                                "default": {
+                                    "handler": "toast",
+                                    "params": {
+                                        "message": "{{error.message}}",
+                                        "type": "error"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "opts",
+            "type": "basic",
+            "name": "Div",
+            "actions": [
+                {
+                    "type": "change",
+                    "handler": "sirsoft-ecommerce.toggleArrayValue",
+                    "auth_required": true,
+                    "params": {
+                        "field": "opts"
+                    }
+                },
+                {
+                    "type": "change",
+                    "handler": "parallel",
+                    "actions": [
+                        {
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "opts:changed"
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "preview"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

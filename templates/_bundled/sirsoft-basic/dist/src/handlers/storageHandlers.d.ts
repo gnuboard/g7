@@ -8,8 +8,14 @@
  *
  * G7Core API 사용:
  * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get()._global?.currentUser - 현재 사용자 확인
+ * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
  */
+/**
+ * 백엔드 API를 통해 Cart Key 발급
+ *
+ * @returns 발급된 cart_key 또는 null (실패 시)
+ */
+export declare function issueCartKeyFromApi(): Promise<string | null>;
 /**
  * 장바구니 키 초기화
  *
@@ -77,6 +83,14 @@ export declare function loadFromStorageHandler(action?: any, _context?: any): st
  * 3. `_global.guestOrderToken` 에 토큰 또는 null 설정
  * 4. `_user_base.globalHeaders` 의 `X-Guest-Order-Token: {{_global.guestOrderToken}}` 패턴이
  *    토큰 있을 때만 `guest/orders/*` 호출에 헤더 자동 주입 (엔진이 null/빈값 자동 제외)
+ * 5. `_global.guestOrderNumber` 에 그 토큰이 묶인 주문번호 설정
+ *
+ * 주문번호를 함께 올리는 이유는 비회원 클레임 화면(`{shopBase}/guest/claims/{번호}` · `.../edit`)
+ * 때문이다 — 그 주소에는 주문번호가 없는데 비회원 클레임 API 는 전부 주문 스코프
+ * (`guest/orders/{주문번호}/claims/...`)다. 토큰이 주문 하나에 묶여 있으므로 그 짝인 주문번호가
+ * 곧 스코프이며, 셸이 이 값으로 API 주소 앞부분을 만든다. 토큰과 같은 자리에서 함께 세워야
+ * 한쪽만 남는 상태가 생기지 않는다 — 주문번호만 남으면 셸은 주소를 만들고 요청은 토큰이 없어
+ * 404 가 된다.
  *
  * @param _action 액션 정의 (사용하지 않음)
  * @param _context 액션 컨텍스트 (사용하지 않음)
@@ -85,8 +99,9 @@ export declare function initGuestOrderTokenHandler(_action?: any, _context?: any
 /**
  * 비회원 주문 토큰을 sessionStorage 에 저장하고 _global 에 동기 set 합니다.
  *
- * 토큰/주문번호/만료시각 3개 키를 함께 저장하며, _global.guestOrderToken 도 즉시 갱신해
- * 직후 호출되는 navigate 의 globalHeaders 자동 주입이 동작하도록 한다.
+ * 토큰/주문번호/만료시각 3개 키를 함께 저장하며, _global.guestOrderToken 과
+ * _global.guestOrderNumber 도 즉시 갱신해 직후 호출되는 navigate 의 globalHeaders 자동 주입과
+ * 비회원 클레임 화면의 주문 스코프 주소 조립이 동작하도록 한다.
  *
  * @param action params.token, params.orderNumber, params.expiresAt 필수
  * @param _context 액션 컨텍스트 (사용하지 않음)

@@ -1,0 +1,69 @@
+feature: 코드 편집기의 파일 생성·이름변경·삭제
+
+description: |
+  화면에서 레이아웃 파일을 **새로 만들 수도, 지울 수도, 이름을 바꿀 수도 없었다** — 백엔드에
+  POST/PATCH/DELETE 라우트 자체가 없었다(#476). 파일을 늘리려면 DB 를 직접 열어야 했다.
+
+  이 화면의 "파일" 은 디스크 파일이 아니라 template_layouts 의 **DB 행**이고 이름의 슬래시가
+  폴더처럼 보일 뿐이다. 그래서 여기서 세우는 방어선은 파일시스템 안전이 아니라 **행 조작의 안전**이다.
+
+  파괴적 연산은 되돌릴 수 없는 사고를 만든다. 참조가 걸린 레이아웃을 지우거나 이름을 바꾸면 그것을
+  쓰던 화면이 통째로 깨지고, 그 손상은 판본 이력으로 복구되지 않는다 — 판본은 **본문**의 이력이지
+  파일의 존재 이력이 아니기 때문이다. 그래서 삭제는 softDelete 이고, 참조·소유가 걸린 자리는 막되
+  **무엇이 붙들고 있는지 목록으로** 돌려준다. 참조를 자동으로 고쳐 주지는 않는다 — 표현식 문자열까지
+  치환하면 되돌릴 수 없는 사고가 된다.
+
+axes:
+  operation: [create, rename, delete]
+  target: [layout, module_owned, custom_asset]
+
+exclusions:
+  - operation: create
+    target: module_owned
+    reason: 모듈이 제공한 원본은 편집기가 만들 수 있는 대상이 아니다 — 생성 경로 자체가 없다.
+
+axis_notes:
+  operation: >-
+    `create_folder` 는 뺐다 — 폴더는 **가상**이라(결정 D-2) 서버 연산이 없고 파일이 저장되는
+    순간 이름의 `/` 로 확정된다. 만들 것이 없는 연산을 축으로 세울 수 없다.
+  target: >-
+    layout = 템플릿 소유 레이아웃 행, module_owned = 모듈·플러그인이 제공한 원본(삭제·이름변경 차단),
+    custom_asset = 확장의 `custom/` 파일. `partial`·`referenced_parent` 는 대상 종류가 아니라
+    **차단 사유**라 효과로 옮겼다(`layout_file_delete_blocks_referenced_partial` 등).
+  actor: >-
+    권한은 조합축이 아니라 모든 연산에 공통으로 걸리는 문(gate)이라 효과로 잰다
+    (`layout_file_crud_requires_edit_permission`).
+
+effects:
+  - code_editor_records_file_operations_in_activity_log   # 생성·이름변경·삭제가 활동 로그(layout.create/rename/delete)에 남는다
+  - code_editor_can_create_rename_and_delete_files       # 화면에서 왕복이 끝까지 돈다
+  - code_editor_creates_a_compilable_skeleton            # 빈 본문 대신 곧바로 컴파일되는 골격
+  - code_editor_rejects_invalid_file_names               # 세그먼트 판정 — 상위 이동·선행 슬래시·빈 세그먼트
+  - code_editor_blocks_deleting_module_owned_layouts     # 확장이 준 원본은 지울 수 없다
+  - code_editor_shows_what_blocks_a_delete               # 차단 사유 + 참조 목록
+  - code_editor_asks_again_before_deleting_a_routed_layout # 라우트가 걸린 파일은 경고 뒤 한 번 더 묻는다 (§5.1)
+  - code_editor_deletes_softly                           # 오삭제를 되돌릴 수 있다
+  - code_editor_rename_keeps_version_history             # 새 행을 만들지 않아 이력이 승계된다
+  - code_editor_rename_respects_optimistic_lock          # 낡은 잠금 번호는 409
+  - code_editor_new_folder_is_virtual_until_a_file_is_saved # 폴더는 서버 왕복이 없다
+  - custom_asset_editor_renames_through_the_api          # 커스텀 자산도 이름변경을 얻는다
+  - code_editor_registers_file_modals # 새 파일·이름변경·삭제 창이 화면에 등록돼 있다
+  - layout_save_calls_the_layout_put_endpoint # 저장은 레이아웃 PUT 경로로 나간다
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutFileCrudTest.php
+  - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-file-crud.spec.ts
+
+validation:
+  note: |
+    PHPUnit 이 차단 조건을 전수로 잰다 — 모듈 원본, extends 부모, partial 참조, 이름 규칙 9변종,
+    낙관적 잠금, 권한. 특히 **접두가 겹치는 이름**(_frag 대 _frag_extra)이 참조로 오인되지
+    않는지를 함께 잠근다. 부분 문자열 검사로 구현하면 지울 수 있는 파일이 영영 지워지지 않는다.
+
+    저장된 JSON 은 슬래시를 이스케이프하므로(`a\/b.json`) 참조 사전 검사는 **마지막 세그먼트**로
+    거른다 — 경로 전체로 찾으면 언제나 빗나가 차단이 통째로 무력해진다(실측으로 잡힌 결함).
+
+    브라우저 spec 은 그 판정이 화면까지 이어지는지를 잰다 — 차단되면 창이 닫히지 않고 사유가 남는가,
+    새 폴더가 정말 서버를 부르지 않는가.

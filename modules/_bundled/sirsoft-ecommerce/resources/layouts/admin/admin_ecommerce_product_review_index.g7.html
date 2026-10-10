@@ -1,0 +1,919 @@
+<!-- 상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지
+  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=""` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다
+  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).
+  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를
+  검색 입력값으로 되돌려 담는다. -->
+<layout name="admin_ecommerce_product_review_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.product_review.title" description="$t:sirsoft-ecommerce.admin.product_review.description"/>
+  <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 답글을 달거나 지운 뒤에는 이 소스를 다시 태워 행의 답글 상태를 맞춘다. 조회가 실패해도 표 골격은 서도록 빈 페이지네이션을 fallback 으로 둔다 -->
+  <data-source id="reviews" label_key="$t:sirsoft-ecommerce.editor.data_source.reviews" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/reviews" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort="{{query.sort || 'created_at_desc'}}" search_field="{{query.search_field || 'product_name'}}" search_keyword="{{query.search_keyword || ''}}" rating="{{query.rating || ''}}" reply_status="{{query.reply_status || ''}}" photo="{{query.photo || ''}}" status="{{query.status || ''}}" start_date="{{query.start_date || ''}}" end_date="{{query.end_date || ''}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback>
+      <field name="data" :value="[]"/>
+      <field name="meta">
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="20"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="searchField" value="product_name"/>
+      <field name="searchKeyword" value=""/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="dateQuick" value=""/>
+    </field>
+    <field name="selectedReviews" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="expandedRows" :value="[]"/>
+    <field name="replyText" value=""/>
+    <field name="batchAction" value=""/>
+    <field name="visibleColumns">
+      <item>product_name</item>
+      <item>content</item>
+      <item>rating</item>
+      <item>reviewer</item>
+      <item>order_number</item>
+      <item>created_at</item>
+      <item>reply</item>
+      <item>status</item>
+    </field>
+    <field name="editingReviewId" :value="null"/>
+    <field name="editReplyContent" value=""/>
+  </init-local>
+  <init-global>
+    <field name="reviewImagePreview" :value="null"/>
+    <field name="editReviewId" :value="null"/>
+  </init-global>
+  <permissions>
+    <permission>sirsoft-ecommerce.reviews.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>reviews</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local">
+      <field name="filter">
+        <field name="searchField" value="{{query.search_field || 'product_name'}}"/>
+        <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+        <field name="startDate" value="{{query.start_date || ''}}"/>
+        <field name="endDate" value="{{query.end_date || ''}}"/>
+        <field name="dateQuick" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="product_review_content" class="admin-page-content">
+      <div data-ref="page_header" class="page-header">
+        <div data-ref="page_header_left">
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.product_review.title</h1>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.product_review.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="page-actions">
+          <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+            <on type="click">
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
+              <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="arrows-rotate" size="sm"/>
+          </button>
+        </div>
+      </div>
+      <div data-ref="filter_card" class="admin-card mb-6">
+        <div data-ref="search_row" class="mb-4">
+          <div class="flex-center flex-wrap gap-3 mb-3">
+            <select name="searchField" class="w-36 text-sm" value="{{_local.filter.searchField ?? 'product_name'}}">
+              <options>
+                <option value="order_number">$t:sirsoft-ecommerce.admin.product_review.search.field.order_number</option>
+                <option value="product_name">$t:sirsoft-ecommerce.admin.product_review.search.field.product_name</option>
+                <option value="option_name">$t:sirsoft-ecommerce.admin.product_review.search.field.option_name</option>
+                <option value="reviewer">$t:sirsoft-ecommerce.admin.product_review.search.field.reviewer</option>
+                <option value="content">$t:sirsoft-ecommerce.admin.product_review.search.field.content</option>
+              </options>
+              <on type="change">
+                <!-- 검색 대상만 화면에 담는다 — 위 필터 버튼들과 달리 검색은 「검색」 버튼을 눌러야 주소로 나간다(입력 도중에 목록이 흔들리지 않도록) -->
+                <set-state target="local">
+                  <field name="filter">
+                    <field name="searchField" value="{{$event.target.value}}"/>
+                  </field>
+                </set-state>
+              </on>
+            </select>
+            <div class="flex-1 min-w-64 relative">
+              <input type="text" placeholder="$t:sirsoft-ecommerce.admin.product_review.search.placeholder" class="input pr-10" value="{{_local.filter.searchKeyword ?? ''}}">
+                <on type="change">
+                  <!-- 검색어도 담아만 둔다 -->
+                  <set-state target="local">
+                    <field name="filter">
+                      <field name="searchKeyword" value="{{$event.target.value}}"/>
+                    </field>
+                  </set-state>
+                </on>
+              </input>
+              <icon name="magnifying-glass" size="sm" class="absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+            </div>
+            <column-selector data-type="composite" data-ref="column_selector" id="admin_review_list_columns" visibleColumns="{{_local.visibleColumns ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.product_review.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+              <prop name="columns">
+                <item field="product_name" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.product_name" :required="true"/>
+                <item field="content" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.content"/>
+                <item field="rating" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.rating"/>
+                <item field="reviewer" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reviewer"/>
+                <item field="order_number" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.order_number"/>
+                <item field="created_at" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.created_at"/>
+                <item field="reply" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reply"/>
+                <item field="status" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.status"/>
+              </prop>
+              <prop name="defaultColumns">
+                <item>product_name</item>
+                <item>content</item>
+                <item>rating</item>
+                <item>reviewer</item>
+                <item>order_number</item>
+                <item>created_at</item>
+                <item>reply</item>
+                <item>status</item>
+              </prop>
+              <on type="change" event="onColumnVisibilityChange">
+                <!-- 표에 세울 열 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 설정으로 직접 처리한다 -->
+                <set-state target="local" visibleColumns="{{$args[0]}}"/>
+              </on>
+            </column-selector>
+          </div>
+        </div>
+        <div data-ref="filter_rating_row" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.rating</span>
+          <div class="flex flex-wrap gap-2">
+            <!-- 별점을 가리지 않고 모두. 이 줄 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다. 값을 바꿀 때마다 페이지를 1로 되돌리는 것은 조건이 좁아지면 보던 페이지가 결과 범위를 벗어나기 때문이다 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.rating ?? '') === '' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query rating="" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.all
+            </button>
+            <!-- 5점만 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.rating ?? '') === '5' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query rating="5" :page="1"/>
+                </navigate>
+              </on>
+              ★★★★★
+            </button>
+            <!-- 4점만 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.rating ?? '') === '4' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query rating="4" :page="1"/>
+                </navigate>
+              </on>
+              ★★★★☆
+            </button>
+            <!-- 3점만 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.rating ?? '') === '3' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query rating="3" :page="1"/>
+                </navigate>
+              </on>
+              ★★★☆☆
+            </button>
+            <!-- 2점만 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.rating ?? '') === '2' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query rating="2" :page="1"/>
+                </navigate>
+              </on>
+              ★★☆☆☆
+            </button>
+            <!-- 1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.rating ?? '') === '1' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query rating="1" :page="1"/>
+                </navigate>
+              </on>
+              ★☆☆☆☆
+            </button>
+          </div>
+        </div>
+        <div data-ref="filter_reply_status_row" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.reply_status</span>
+          <div class="flex flex-wrap gap-2">
+            <!-- 답글 여부를 가리지 않고 모두 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.reply_status ?? '') === '' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query reply_status="" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.all
+            </button>
+            <!-- 답글을 이미 단 후기 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.reply_status ?? '') === 'replied' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query reply_status="replied" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.replied
+            </button>
+            <!-- 답글 없는 후기 — 운영자가 손대야 할 몫이다 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.reply_status ?? '') === 'not_replied' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query reply_status="not_replied" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.not_replied
+            </button>
+          </div>
+        </div>
+        <div data-ref="filter_photo_row" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.photo</span>
+          <div class="flex flex-wrap gap-2">
+            <!-- 사진 유무를 가리지 않고 모두 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.photo ?? '') === '' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query photo="" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.all
+            </button>
+            <!-- 사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.photo ?? '') === 'photo' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query photo="photo" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.photo_review
+            </button>
+            <!-- 글만 있는 후기 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.photo ?? '') === 'normal' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query photo="normal" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.text_review
+            </button>
+          </div>
+        </div>
+        <div data-ref="filter_review_status_row" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.review_status</span>
+          <div class="flex flex-wrap gap-2">
+            <!-- 노출 여부를 가리지 않고 모두 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.status ?? '') === '' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query status="" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.all
+            </button>
+            <!-- 상품 화면에 보이는 후기 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.status ?? '') === 'visible' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query status="visible" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.visible
+            </button>
+            <!-- 숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다 -->
+            <button type="button" class="btn btn-sm">
+              <class-map key="{{(query.status ?? '') === 'hidden' ? 'active' : 'inactive'}}">
+                <variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant>
+                <variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant>
+              </class-map>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query status="hidden" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.hidden
+            </button>
+          </div>
+        </div>
+        <div data-ref="filter_date_row" class="flex-center flex-wrap gap-3">
+          <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.date_range</span>
+          <div class="flex-center flex-wrap gap-2">
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}" type="date" class="input w-36" value="{{_local.filter.startDate ?? ''}}">
+              <on type="change">
+                <!-- 날짜를 직접 고르면 빠른 선택 표시를 푼다 — 둘 다 켜져 있으면 어느 쪽이 지금 조건인지 알 수 없다 -->
+                <set-state target="local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
+              </on>
+            </input>
+            <span class="text-secondary">~</span>
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product_review.filter.date_range')}}" type="date" class="input w-36" value="{{_local.filter.endDate ?? ''}}">
+              <on type="change">
+                <!-- 종료일도 같다 -->
+                <set-state target="local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
+              </on>
+            </input>
+            <!-- 기간 빠른 선택 — 핸들러가 오늘 기준으로 시작·종료일을 계산해 돌려주면 그 값($prev)을 폼에 담는다. 직접 고른 날짜와 섞이지 않도록 어느 쪽을 썼는지도 함께 기록한다 -->
+            <div class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
+                <set-state target="local" filter.dateQuick="today" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.today
+            </div>
+            <!-- 최근 3일 -->
+            <div class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.setDateRange" preset="3days"/>
+                <set-state target="local" filter.dateQuick="3days" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3days
+            </div>
+            <!-- 최근 1주일 -->
+            <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+                <set-state target="local" filter.dateQuick="week" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.week
+            </div>
+            <!-- 최근 1개월 -->
+            <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
+                <set-state target="local" filter.dateQuick="month" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.month
+            </div>
+            <!-- 최근 3개월 -->
+            <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+                <set-state target="local" filter.dateQuick="3months" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3months
+            </div>
+            <!-- 기간 제한 없음 — 날짜 입력을 비운다 -->
+            <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.setDateRange" preset="all"/>
+                <set-state target="local" filter.dateQuick="all" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.all
+            </div>
+          </div>
+        </div>
+        <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+          <div class="flex-1">
+            <responsive on="portable" class="hidden"/>
+          </div>
+          <div class="flex-center justify-center gap-2 flex-1">
+            <responsive on="portable" class="flex gap-2 w-full"/>
+            <!-- 검색 — 담아 둔 입력값을 주소로 옮긴다. 위 필터 버튼들이 이미 주소에 올려 둔 조건(별점·답글·사진·노출·정렬·쪽크기)은 그대로 들고 가야 하므로 함께 다시 실어 준다
+                 초기화 — 입력값을 비우고 조건 없는 주소로 옮긴다(주소를 안 바꾸면 화면만 비고 목록은 그대로다) -->
+            <button type="button" class="btn btn-primary text-sm">
+              <responsive on="portable" class="btn btn-primary text-sm flex-1"/>
+              <on type="click">
+                <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                  <query search_field="{{_local.filter.searchField !== 'product_name' ? _local.filter.searchField : ''}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" rating="{{query.rating || ''}}" reply_status="{{query.reply_status || ''}}" photo="{{query.photo || ''}}" status="{{query.status || ''}}" sort="{{query.sort || 'created_at_desc'}}" per_page="{{query.per_page || 20}}" :page="1"/>
+                </navigate>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.search
+            </button>
+            <!-- 필터 초기화. 폼 상태와 주소 양쪽을 비운다 — 한쪽만 비우면 입력칸에 남은 값이 다음 검색에 되살아나거나, 주소에 남은 조건이 화면 표시와 어긋난다 -->
+            <button type="button" class="btn btn-outline text-sm">
+              <responsive on="portable" class="btn btn-outline text-sm flex-1"/>
+              <on type="click">
+                <set-state target="local">
+                  <field name="filter">
+                    <field name="searchField" value="product_name"/>
+                    <field name="searchKeyword" value=""/>
+                    <field name="startDate" value=""/>
+                    <field name="endDate" value=""/>
+                    <field name="dateQuick" value=""/>
+                  </field>
+                </set-state>
+                <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+                <navigate path="/admin/ecommerce/reviews" :replace="true"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product_review.filter.reset
+            </button>
+          </div>
+          <div class="flex-1">
+            <responsive on="portable" class="hidden"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="batch_actions" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-between flex-wrap gap-3">
+        <div class="flex-center flex-wrap gap-3">
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.product_review.batch.selected_count|count={{_local.selectedReviews.length ?? 0}}</span>
+          <select name="batchAction" class="w-48" value="{{_local.batchAction ?? ''}}" disabled="{{reviews.data?.abilities?.can_update !== true}}">
+            <options>
+              <option value="" disabled>$t:sirsoft-ecommerce.admin.product_review.batch.status_change</option>
+              <option value="visible">$t:sirsoft-ecommerce.admin.product_review.filter.visible</option>
+              <option value="hidden">$t:sirsoft-ecommerce.admin.product_review.filter.hidden</option>
+            </options>
+            <on type="change">
+              <!-- 고르기만 하고 보내지 않는다 — 실제 반영은 오른쪽 「적용」이 확인 창을 거쳐 한다 -->
+              <set-state target="local" batchAction="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+        <!-- 일괄 적용. 고른 작업과 대상 id 를 전역에 옮겨 담은 뒤 확인 모달을 연다 — 모달은 별도 컨텍스트라 이 화면의 폼 상태를 그대로 읽지 못한다 -->
+        <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{reviews.data?.abilities?.can_update !== true || !_local.batchAction || (_local.selectedReviews ?? []).length === 0}}">
+          <on type="click">
+            <set-state target="global" reviewBatchAction="{{_local.batchAction}}" reviewBatchIds="{{_local.selectedReviews ?? []}}"/>
+            <open-modal target="modal_status_change"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.product_review.batch.apply
+        </button>
+      </div>
+      <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-4">
+        <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.product_review.table.total_count|count={{reviews.data?.meta?.total ?? 0}}</span>
+        <div class="flex-center gap-3">
+          <select name="sortBy" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+            <options>
+              <option value="created_at_desc">$t:sirsoft-ecommerce.admin.product_review.table.sort.created_at_desc</option>
+              <option value="created_at_asc">$t:sirsoft-ecommerce.admin.product_review.table.sort.created_at_asc</option>
+              <option value="rating_desc">$t:sirsoft-ecommerce.admin.product_review.table.sort.rating_desc</option>
+              <option value="rating_asc">$t:sirsoft-ecommerce.admin.product_review.table.sort.rating_asc</option>
+            </options>
+            <on type="change">
+              <!-- 정렬이 바뀌면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다 -->
+              <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                <query sort="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+          <select name="perPage" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+            <options>
+              <option value="10">$t:sirsoft-ecommerce.admin.product_review.table.per_page.10</option>
+              <option value="20">$t:sirsoft-ecommerce.admin.product_review.table.per_page.20</option>
+              <option value="50">$t:sirsoft-ecommerce.admin.product_review.table.per_page.50</option>
+              <option value="100">$t:sirsoft-ecommerce.admin.product_review.table.per_page.100</option>
+            </options>
+            <on type="change">
+              <!-- 한 쪽에 담는 수가 달라지면 현재 쪽 번호도 뜻을 잃으므로 함께 되돌린다 -->
+              <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="table_container" class="overflow-hidden mb-4">
+        <data-grid data-type="composite" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" selectable="{{reviews.data?.abilities?.can_update === true}}" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty">
+          <blur-until-loaded sources="reviews"/>
+          <prop name="expandContext">
+            <field name="rowId" value="{{row.id}}"/>
+            <field name="rowHasReply" value="{{row.has_reply}}"/>
+            <field name="rowReplyContent" value="{{row.reply_content ?? ''}}"/>
+            <field name="rowImages" value="{{row.images ?? []}}"/>
+            <field name="rowImageCount" value="{{row.image_count ?? 0}}"/>
+          </prop>
+          <column field="product_name" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.product_name" :sortable="false" :required="true">
+            <cell>
+              <div class="flex-center gap-2">
+                <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-10 h-10 rounded object-cover shrink-0 border border-gray-200 dark:border-gray-700"/>
+                <div data-if="{{!row.product?.thumbnail_url}}" class="w-10 h-10 shrink-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <icon name="image" class="text-lg text-gray-400 dark:text-gray-500"/>
+                </div>
+                <div>
+                  <div class="text-primary font-medium">{{row.product?.name ?? ''}}</div>
+                  <div data-if="{{row.option_snapshot_label}}" class="text-secondary text-xs">{{row.option_snapshot_label}}</div>
+                </div>
+              </div>
+            </cell>
+          </column>
+          <column field="content" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.content" width="200px" :sortable="false">
+            <cell>
+              <div class="w-full max-w-[200px] truncate text-primary" title="{{row.content ?? ''}}">{{row.content ?? ''}}</div>
+            </cell>
+          </column>
+          <column field="rating" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.rating" width="100px" :sortable="false">
+            <cell>
+              <div class="flex items-center gap-1">
+                <span class="text-yellow-400 dark:text-yellow-300">{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}</span>
+                <span class="text-primary text-sm ml-1">{{row.rating ?? ''}}</span>
+              </div>
+            </cell>
+          </column>
+          <column field="reviewer" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reviewer" width="120px" :sortable="false">
+            <cell>
+              <div>
+                <a data-if="{{!!row.user_id}}" href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
+                  <on type="click">
+                    <navigate path="/admin/users/{{row.user_id}}"/>
+                  </on>
+                  {{row.user?.name ?? ''}}
+                </a>
+                <span data-if="{{!row.user_id}}" class="text-gray-700 dark:text-gray-300 font-medium">
+                  <span>{{row.user?.name ?? ''}}</span>
+                  <span class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                </span>
+              </div>
+            </cell>
+          </column>
+          <column field="order_number" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.order_number" width="120px" :sortable="false">
+            <cell>
+              <a href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="text-blue-600 hover:underline dark:text-blue-400">{{row.orderOption?.order_number ?? ''}}</a>
+            </cell>
+          </column>
+          <column field="created_at" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.created_at" width="120px" :sortable="false">
+            <cell>
+              <div class="text-primary">{{row.created_at ?? ''}}</div>
+            </cell>
+          </column>
+          <column field="reply" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reply" width="90px" :sortable="false">
+            <cell>
+              <div class="flex justify-center">
+                <badge data-type="composite" color="{{row.has_reply_badge_color}}" text="{{row.has_reply_label}}"/>
+              </div>
+            </cell>
+          </column>
+          <column field="status" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.status" width="90px" :sortable="false">
+            <cell>
+              <div class="flex justify-center">
+                <badge data-type="composite" color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
+              </div>
+            </cell>
+          </column>
+          <expand>
+            <div class="p-4 bg-gray-50 dark:bg-gray-900 p-6">
+              <div class="grid-cols-1-lg-3">
+                <div data-ref="purchase_info" class="admin-card">
+                  <!-- 카드 헤더: 구매 정보 제목 -->
+                  <div class="px-4 panel-header">
+                    <span class="text-label-subtle text-sm font-medium">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.title</span>
+                  </div>
+                  <!-- 카드 본문 -->
+                  <div class="px-4 py-4">
+                    <!-- 상품 이미지 + 상품명/옵션 2단 배치 -->
+                    <div class="flex items-start gap-3 mb-4">
+                      <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-16 h-16 shrink-0 rounded-md object-cover border border-gray-200 dark:border-gray-700"/>
+                      <div data-if="{{!row.product?.thumbnail_url}}" class="w-16 h-16 shrink-0 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+                      </div>
+                      <div class="row-stack min-w-0">
+                        <a href="{{`/admin/ecommerce/products/${row.product?.product_code ?? row.product?.id}/edit`}}" class="text-blue-600 hover:underline dark:text-blue-400 font-medium text-sm leading-snug">{{row.product?.name ?? ''}}</a>
+                        <span data-if="{{row.option_snapshot_label}}" class="text-secondary text-xs">{{row.option_snapshot_label}}</span>
+                      </div>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700 my-4"/>
+                    <div class="space-y-3 text-sm">
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.reviewer</span>
+                        <span data-if="{{!!row.user_id}}" class="text-primary font-medium">{{`${row.user?.name ?? ''} (${row.user?.email ?? ''})`}}</span>
+                        <span data-if="{{!row.user_id}}" class="text-primary font-medium">
+                          <span>{{row.user?.name ?? ''}}</span>
+                          <span class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                        </span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.order_number</span>
+                        <a href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="text-blue-600 hover:underline dark:text-blue-400 font-medium">{{row.orderOption?.order_number ?? ''}}</a>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.quantity</span>
+                        <span class="text-primary">{{row.orderOption?.quantity ?? ''}} 개</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.purchase_date</span>
+                        <span class="text-primary">{{row.orderOption?.created_at ?? ''}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div data-ref="review_reply_section" class="col-span-2-lg space-y-6">
+                  <div data-ref="customer_review" class="admin-card">
+                    <!-- 카드 헤더: 제목 + 별점 + 상태 뱃지 -->
+                    <div class="flex-between px-4 panel-header">
+                      <span class="text-label-subtle text-sm font-medium">$t:sirsoft-ecommerce.admin.product_review.detail.customer_review.title</span>
+                      <div class="flex-center gap-2">
+                        <span class="text-yellow-400 dark:text-yellow-300">{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}</span>
+                        <badge data-type="composite" color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
+                      </div>
+                    </div>
+                    <!-- 카드 본문: 리뷰 내용 + 이미지 -->
+                    <div class="px-4 py-3">
+                      <div class="text-primary mb-4">{{row.content ?? ''}}</div>
+                      <!-- 첨부 이미지 레이블 -->
+                      <div data-if="{{rowImageCount > 0}}" class="flex items-center gap-1 mt-2 text-tertiary">
+                        <icon name="image" size="sm"/>
+                        <span>$t:defer:sirsoft-ecommerce.admin.product_review.detail.customer_review.attached_images_label|count={{row.image_count ?? 0}}</span>
+                      </div>
+                      <!-- 리뷰 이미지 (최대 4개, 초과 시 +N 오버레이) -->
+                      <div data-if="{{rowImageCount > 0}}" class="flex gap-2 mt-1">
+                        <!-- 이미지 1 -->
+                        <img data-if="{{(rowImages ?? []).length > 0}}" src="{{rowImages[0].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                          <on type="click">
+                            <set-state target="global" :reviewImageIndex="0">
+                              <field name="reviewForModal">
+                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="rating" value="{{row.rating}}"/>
+                                <field name="createdAt" value="{{row.created_at}}"/>
+                                <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
+                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="images" value="{{rowImages ?? []}}"/>
+                              </field>
+                            </set-state>
+                            <open-modal target="modal_image_preview"/>
+                          </on>
+                        </img>
+                        <!-- 이미지 2 -->
+                        <img data-if="{{(rowImages ?? []).length > 1}}" src="{{rowImages[1].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                          <on type="click">
+                            <set-state target="global" :reviewImageIndex="1">
+                              <field name="reviewForModal">
+                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="rating" value="{{row.rating}}"/>
+                                <field name="createdAt" value="{{row.created_at}}"/>
+                                <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
+                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="images" value="{{rowImages ?? []}}"/>
+                              </field>
+                            </set-state>
+                            <open-modal target="modal_image_preview"/>
+                          </on>
+                        </img>
+                        <!-- 이미지 3 -->
+                        <img data-if="{{(rowImages ?? []).length > 2}}" src="{{rowImages[2].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                          <on type="click">
+                            <set-state target="global" :reviewImageIndex="2">
+                              <field name="reviewForModal">
+                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="rating" value="{{row.rating}}"/>
+                                <field name="createdAt" value="{{row.created_at}}"/>
+                                <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
+                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="images" value="{{rowImages ?? []}}"/>
+                              </field>
+                            </set-state>
+                            <open-modal target="modal_image_preview"/>
+                          </on>
+                        </img>
+                        <!-- 이미지 4 (4장 정확히일 때 일반 이미지) -->
+                        <img data-if="{{(rowImages ?? []).length == 4}}" src="{{rowImages[3].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                          <on type="click">
+                            <set-state target="global" :reviewImageIndex="3">
+                              <field name="reviewForModal">
+                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="rating" value="{{row.rating}}"/>
+                                <field name="createdAt" value="{{row.created_at}}"/>
+                                <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
+                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="images" value="{{rowImages ?? []}}"/>
+                              </field>
+                            </set-state>
+                            <open-modal target="modal_image_preview"/>
+                          </on>
+                        </img>
+                        <!-- +N 오버레이 (5장 이상일 때 4번째 자리) -->
+                        <div data-if="{{(rowImages ?? []).length >= 5}}" class="relative w-20 h-20 shrink-0 cursor-pointer rounded-md overflow-hidden">
+                          <on type="click">
+                            <set-state target="global" :reviewImageIndex="3">
+                              <field name="reviewForModal">
+                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="rating" value="{{row.rating}}"/>
+                                <field name="createdAt" value="{{row.created_at}}"/>
+                                <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
+                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="images" value="{{rowImages ?? []}}"/>
+                              </field>
+                            </set-state>
+                            <open-modal target="modal_image_preview"/>
+                          </on>
+                          <img src="{{rowImages[3].download_url}}" alt="" class="w-full h-full object-cover"/>
+                          <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span class="text-white font-semibold text-sm">+{{(rowImages ?? []).length - 3}}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- 카드 푸터: 작성일 / 수정일 -->
+                    <div class="flex items-center gap-3 px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 text-xs text-secondary">
+                      <span>
+                        <span>$t:sirsoft-ecommerce.admin.product_review.detail.customer_review.created_at_label</span>
+                        <span>{{row.created_at ?? ''}}</span>
+                      </span>
+                      <span data-if="{{row.updated_at &amp;&amp; row.updated_at !== row.created_at}}">
+                        <span>$t:sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label</span>
+                        <span>{{row.updated_at ?? ''}}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div data-ref="seller_reply" data-if="{{rowHasReply}}" class="admin-card">
+                    <!-- 카드 헤더: 판매자 답변 제목 + 답변여부 배지 -->
+                    <div class="flex-between px-4 panel-header">
+                      <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.title</span>
+                      <badge data-type="composite" color="{{row.has_reply_badge_color}}" text="{{row.has_reply_label}}"/>
+                    </div>
+                    <!-- 카드 본문: 답변 내용 (보기 모드) -->
+                    <div data-if="{{_local.editingReviewId !== row.id}}" class="px-4 py-3">
+                      <div class="text-primary">{{rowReplyContent}}</div>
+                    </div>
+                    <!-- 카드 푸터: 메타(관리자명·답변일) + 수정/삭제 버튼 (보기 모드) -->
+                    <div data-if="{{_local.editingReviewId !== row.id}}" class="flex-between gap-2 px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                      <span class="text-secondary text-xs">{{`${row.reply_admin?.name ?? ''} (${row.reply_admin?.email ?? ''}) · ${row.replied_at ?? ''}${row.reply_updated_at ? ' · 수정: ' + row.reply_updated_at : ''}`}}</span>
+                      <div class="flex gap-2 shrink-0">
+                        <!-- 답글 고치기 — 어느 행이 편집 중인지 id 로 표시하고 지금 답글을 입력칸에 옮겨 담는다(행마다 폼을 따로 두지 않고 한 벌을 돌려 쓴다) -->
+                        <button data-ref="review_reply_edit_button" type="button" class="btn btn-sm btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
+                          <on type="click">
+                            <set-state target="local" editingReviewId="{{row.id}}" editReplyContent="{{rowReplyContent}}"/>
+                          </on>
+                          $t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.edit
+                        </button>
+                        <button data-ref="review_reply_delete_button" type="button" class="btn btn-sm text-red-500 bg-red-50 border border-red-300 hover:bg-red-100 dark:bg-red-900/30 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
+                          <on type="click">
+                            <!-- 답글 삭제 — 지울 대상을 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 행 데이터를 못 본다) -->
+                            <sequence>
+                              <set-state target="global" editReviewId="{{row.id}}"/>
+                              <open-modal target="modal_reply_delete"/>
+                            </sequence>
+                          </on>
+                          $t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.delete
+                        </button>
+                      </div>
+                    </div>
+                    <!-- 카드 본문: 답변 수정 폼 (편집 모드) -->
+                    <div data-if="{{_local.editingReviewId === row.id}}" class="px-4 py-3">
+                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.editReplyContent ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
+                        <on type="change">
+                          <!-- 고치는 중인 답글 본문 -->
+                          <set-state target="local" editReplyContent="{{$event.target.value}}"/>
+                        </on>
+                      </textarea>
+                    </div>
+                    <!-- 카드 푸터: 저장/취소 버튼 (편집 모드) -->
+                    <div data-if="{{_local.editingReviewId === row.id}}" class="flex justify-end gap-2 px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                      <!-- 편집 접기 — 편집 중 표시만 지우면 보기 모드로 돌아간다(입력칸 값은 다음 편집에서 덮어쓰므로 비우지 않는다) -->
+                      <button type="button" class="btn btn-sm btn-outline">
+                        <on type="click">
+                          <set-state target="local" :editingReviewId="null"/>
+                        </on>
+                        $t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.cancel
+                      </button>
+                      <button data-ref="review_reply_update_submit" type="button" class="btn btn-sm btn-primary" disabled="{{_local.isSubmitting || row.abilities?.can_update !== true}}">
+                        <on type="click">
+                          <!-- 고친 답글 저장 — 등록과 같은 엔드포인트다(서버가 덮어쓴다). 성공하면 편집을 접고 목록을 다시 받아 「수정: 날짜」까지 서버 값으로 맞춘다 -->
+                          <sequence>
+                            <set-state target="local" :isSubmitting="true"/>
+                            <api-call target="/api/modules/sirsoft-ecommerce/admin/reviews/{{row.id}}/reply" :auth_required="true" method="POST">
+                              <success>
+                                <set-state target="local" :isSubmitting="false"/>
+                                <set-state target="local" :editingReviewId="null"/>
+                                <refetch-data-source dataSourceId="reviews"/>
+                              </success>
+                              <fail>
+                                <set-state target="local" :isSubmitting="false"/>
+                              </fail>
+                              <body reply_content="{{_local.editReplyContent ?? ''}}"/>
+                            </api-call>
+                          </sequence>
+                        </on>
+                        <span data-if="{{!_local.isSubmitting}}">$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.edit_save</span>
+                        <span data-if="{{_local.isSubmitting}}">$t:common.loading</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div data-ref="reply_form" data-if="{{!rowHasReply}}" class="admin-card">
+                    <!-- 카드 헤더: 판매자 답변 제목 -->
+                    <div class="px-4 panel-header">
+                      <span class="text-label-subtle text-sm font-medium">$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.title</span>
+                    </div>
+                    <!-- 카드 본문: 답변 입력 폼 -->
+                    <div class="px-4 py-3">
+                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.replyText ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
+                        <on type="change">
+                          <!-- 새로 다는 답글 본문 — 고치기용 입력칸과 따로 둔다(둘이 같은 자리를 쓰면 편집 중에 다른 행의 등록 폼이 그 값을 물고 있는다) -->
+                          <set-state target="local" replyText="{{$event.target.value}}"/>
+                        </on>
+                      </textarea>
+                    </div>
+                    <!-- 카드 푸터: 등록 버튼 -->
+                    <div class="flex justify-end px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                      <button data-ref="review_reply_create_submit" type="button" class="btn btn-primary" disabled="{{_local.isSubmittingReply || row.abilities?.can_update !== true}}">
+                        <on type="click">
+                          <!-- 답글 등록 — 성공하면 입력칸을 비우고 목록을 다시 받아 그 행이 답글 있는 모습으로 바뀌게 한다 -->
+                          <sequence>
+                            <set-state target="local" :isSubmittingReply="true"/>
+                            <api-call target="/api/modules/sirsoft-ecommerce/admin/reviews/{{row.id}}/reply" :auth_required="true" method="POST">
+                              <success>
+                                <set-state target="local" :isSubmittingReply="false" replyText=""/>
+                                <refetch-data-source dataSourceId="reviews"/>
+                              </success>
+                              <fail>
+                                <set-state target="local" :isSubmittingReply="false"/>
+                              </fail>
+                              <body reply_content="{{_local.replyText ?? ''}}"/>
+                            </api-call>
+                          </sequence>
+                        </on>
+                        <span data-if="{{!_local.isSubmittingReply}}">$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.submit</span>
+                        <span data-if="{{_local.isSubmittingReply}}">$t:common.loading</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </expand>
+          <on event="onSelectionChange">
+            <!-- 표에서 고른 행 목록 — 위 일괄처리 줄이 이 값을 대상으로 삼는다 -->
+            <set-state target="local" selectedReviews="{{$args[0]}}"/>
+          </on>
+          <on event="onExpandChange">
+            <!-- 펼친 행 목록 — 답글 쓰기 자리가 그 안에 있어 여러 건을 동시에 펼쳐 둘 수 있다 -->
+            <set-state target="local" expandedRows="{{$args[0]}}"/>
+          </on>
+        </data-grid>
+      </div>
+      <pagination data-type="composite" data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
+        <on event="onPageChange">
+          <!-- 쪽 넘김도 주소로 나간다 — 걸어 둔 조건은 그대로 두고 쪽 번호만 갈아 끼운다 -->
+          <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </pagination>
+    </div>
+  </slot>
+  <!-- 선택한 후기들을 노출/숨김으로 한꺼번에 바꾸기 전 확인 -->
+  <modal src="partials/admin_ecommerce_product_review_index/_modal_status_change.g7.html"/>
+  <!-- 답글 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_product_review_index/_modal_reply_delete.g7.html"/>
+  <!-- 후기 사진 원본 확대 -->
+  <modal src="partials/admin_ecommerce_product_review_index/_modal_image_preview.g7.html"/>
+</layout>

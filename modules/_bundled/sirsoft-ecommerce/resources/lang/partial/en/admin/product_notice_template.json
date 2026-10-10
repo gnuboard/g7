@@ -27,6 +27,7 @@
   "view": {
     "title": "Product Group Info",
     "fields_count": "{{count}} items",
+    "fields_count_one": "{{count}} item",
     "status": {
       "active": "Active",
       "inactive": "Inactive"

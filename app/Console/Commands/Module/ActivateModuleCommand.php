@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ModuleManager;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class ActivateModuleCommand extends Command
 {
+    use RendersLayoutSyncResult;
+
     /**
      * The name and signature of the console command.
      */
@@ -22,6 +25,9 @@ class ActivateModuleCommand extends Command
 
     /**
      * 모듈 관리자 및 리포지토리
+     *
+     * @param  ModuleManager  $moduleManager  모듈 활성화를 수행하는 매니저
+     * @param  ModuleRepositoryInterface  $moduleRepository  설치 기록 조회 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -32,6 +38,8 @@ class ActivateModuleCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -89,7 +97,8 @@ class ActivateModuleCommand extends Command
 
             if ($result['success']) {
                 $this->info('✅ '.__('modules.commands.activate.success', ['module' => $identifier]));
-                $this->info('   - '.__('modules.commands.activate.layouts_registered', ['count' => $result['layouts_registered']]));
+                $this->info('   - '.trans_choice('modules.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
+                $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                 Log::info(__('modules.commands.activate.success', ['module' => $identifier]));
 
                 return Command::SUCCESS;

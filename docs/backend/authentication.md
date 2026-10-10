@@ -1,6 +1,6 @@
 # 인증 및 세션 처리
 
-> **관련 문서**: [index.md](index.md) | [middleware.md](middleware.md)
+> **관련 문서**: [README.md](README.md) | [middleware.md](middleware.md) | [password-policy.md](password-policy.md) (비밀번호 작성 규칙·재사용 금지·만료·로그인 변경 단계)
 
 ---
 
@@ -321,12 +321,12 @@ $hashedToken = hash('sha256', $bearerToken); // 잘못됨
 
 ## 참고 자료
 
-- **구현 파일**: [app/Services/AuthService.php](../../../app/Services/AuthService.php)
-- **테스트 파일**: [tests/Feature/Api/Admin/AdminAuthTest.php](../../../tests/Feature/Api/Admin/AdminAuthTest.php)
+- **구현 파일**: [app/Services/AuthService.php](../../app/Services/AuthService.php)
+- **테스트 파일**: [tests/Feature/Api/Admin/AdminAuthTest.php](../../tests/Feature/Api/Admin/AdminAuthTest.php)
 
 ---
 
 ## 관련 문서
 
-- [index.md](index.md) - 백엔드 가이드 인덱스
+- [README.md](README.md) - 백엔드 가이드 인덱스
 - [middleware.md](middleware.md) - 미들웨어 등록 규칙 (OptionalSanctumMiddleware 포함)

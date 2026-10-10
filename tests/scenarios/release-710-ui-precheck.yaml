@@ -1,0 +1,48 @@
+feature: 7.1.0 출시 전 점검 — 확장 관리 툴바 배치, row-stack 테두리 상자, 숫자 배지 자릿수 (#751)
+
+description: |
+  출시 전 점검에서 제보된 4건(숨김 항목 체크박스 위치, 모바일 보기 전환 상자 아래 빈 띠, 이니시스 아이콘, 99+ 배지
+  넘침)과 같은 원리로 전수 조사에서 찾은 결함을 잠근다. 아이콘은 기존 BundledExtensionIconTest 가
+  규격(크기, 정사각, 금지 요소)을 맡는다.
+
+  축 값(defect)별 결함:
+    - extension_toolbar_hidden_toggle_position: 툴바가 justify-between 에 자식 셋이라 체크박스가 남는
+      폭의 정중앙(1440px x=698)에 떴다. 템플릿 화면은 탭 위 별도 줄에 있었다 → 보기 전환에 mr-auto,
+      템플릿은 탭마다 툴바 안으로
+    - extension_toolbar_view_toggle_box_height: 모바일(portable) class 를 row-stack 으로 통째로 바꿔
+      보기 전환 상자 안에 8px 이 들어가 49px(버튼 40px)이었다 → flex-wrap 한 줄 구조
+    - row_stack_boxed_child_padding: row-stack 직속 자식이 테두리 상자이면 py-2 가 테두리 안에 들어가
+      첫 행이 8px 내려앉고 admin-card 패딩이 덮어써진다 → 래퍼 div 또는 stack-tight/stack-flush/flex gap
+      (재발 방지는 audit row-stack-boxed-child)
+    - justify_between_three_children: 클레임 카드 머리줄에 환불 대기 배지가 붙으면 상태 배지가 가운데로
+      떴다 → 배지 둘을 한 묶음으로
+    - count_badge_triple_digit_overflow: 20px 원에 12px `99+`(실제 폭 23.28px)가 넘쳤다 → 관리자 알림 배지는
+      100 이상일 때 9px. 사용자 머리글(sirsoft-basic 알림·장바구니)은 최소 폭 + 좌우 여백으로 늘어나는
+      방식이며 count-badge-and-board-card-i18n.yaml 이 잠근다(develop-7.1.0 리베이스 PO 결정 2026-10-09)
+
+axes:
+  defect:
+    - extension_toolbar_hidden_toggle_position
+    - extension_toolbar_view_toggle_box_height
+    - row_stack_boxed_child_padding
+    - justify_between_three_children
+    - count_badge_triple_digit_overflow
+
+effects:
+  - hidden_toggle_next_to_search_on_desktop
+  - view_toggle_pushes_rest_right_on_desktop
+  - hidden_toggle_inside_template_tab_toolbar
+  - hidden_toggle_visible_only_to_super_admin
+  - view_toggle_box_fits_buttons_on_mobile
+  - boxed_child_has_no_row_stack_padding_inside
+  - admin_card_padding_kept_on_mobile
+  - badges_stay_right_aligned_together
+  - triple_digit_badge_font_shrinks
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-toolbar-layout.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/row-stack-boxed-child-fixes.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NotificationCenter.badgeDigits.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/claim-history-card-header.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/policy-version-row-stack.test.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-extension-view-mode.spec.ts

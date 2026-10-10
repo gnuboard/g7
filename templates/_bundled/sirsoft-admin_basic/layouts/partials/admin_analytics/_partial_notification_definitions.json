@@ -1,0 +1,315 @@
+{
+    "comment": "설정 › 리포트 탭의 알림 정의 카드. 정의의 활성 여부·채널은 **알림 정의 API 를 따로 불러** 읽는다 —\n  설정 응답에 그 값을 얹지 않는 이유는, 이 카드가 같은 API 로 정의를 켜고 끄기 때문이다(편집 직후\n  두 출처가 어긋나면 운영자는 어느 쪽이 맞는지 알 수 없다). 「설정은 켰는데 정의가 꺼져 있어 메일이\n  안 가는」 상태는 카드 머리의 경고로 드러낸다. 템플릿 편집은 환경설정의 알림 정의 탭이 맡는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 설정 — 리포트 알림 정의 카드"
+    },
+    "id": "analytics_notification_definitions_card",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between mb-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "text-body font-medium"
+                            },
+                            "text": "$t:admin.analytics.settings.reports.definitions_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:admin.analytics.settings.reports.definitions_description"
+                        }
+                    ]
+                },
+                {
+                    "id": "definitions_settings_link",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
+                    "actions": [
+                        {
+                            "comment": "템플릿 편집은 환경설정의 알림 정의 탭 몫이다 — 그 탭으로 바로 간다. 환경설정 읽기 권한이 없으면 버튼을 그리지 않는다.",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/settings",
+                                "query": {
+                                    "tab": "notification_definitions"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary btn-sm"
+                    },
+                    "text": "$t:admin.analytics.settings.reports.edit_templates"
+                }
+            ]
+        },
+        {
+            "id": "definition_state_alert",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form?.settings?.report_weekly_enabled === true && (analytics_notification_definitions?.data?.data ?? []).some(d => d.type === 'analytics_weekly_report' && d.is_active !== true)) || (_local.form?.settings?.report_monthly_enabled === true && (analytics_notification_definitions?.data?.data ?? []).some(d => d.type === 'analytics_monthly_report' && d.is_active !== true))}}",
+            "props": {
+                "className": "alert-warning mb-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.analytics.settings.reports.definition_inactive_alert"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "이 카드가 읽는 API 는 알림 설정 권한 소관이다. 통계 설정 권한만 받은 운영자에게는 403 이라\n         목록이 비는데, 「정의가 없다」로 그리면 거짓이 된다 — 권한이 없다고 말한다(#682 S3 라운드 2).",
+            "id": "definitions_permission_notice",
+            "type": "basic",
+            "name": "P",
+            "if": "{{!_computed.canReadDefinitions}}",
+            "props": {
+                "className": "text-hint py-4 text-center"
+            },
+            "text": "$t:admin.analytics.settings.reports.definitions_permission_required"
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "if": "{{_computed.canReadDefinitions && !analytics_notification_definitions?.loading && (analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics').length === 0}}",
+            "props": {
+                "className": "text-label-subtle py-4 text-center"
+            },
+            "text": "$t:admin.analytics.settings.reports.definitions_empty"
+        },
+        {
+            "id": "definition_list",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "divide-y divide-gray-200 dark:divide-gray-700"
+            },
+            "children": [
+                {
+                    "id": "definition_item_{{$idx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{(analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics')}}",
+                        "item_var": "def",
+                        "index_var": "$idx"
+                    },
+                    "props": {
+                        "className": "flex-between flex-wrap gap-3 py-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "min-w-0 flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2 flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{$localized(def.name)}}"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{def.is_active === true}}",
+                                            "props": {
+                                                "color": "green",
+                                                "text": "$t:admin.analytics.settings.reports.definition_active",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{def.is_active !== true}}",
+                                            "props": {
+                                                "color": "gray",
+                                                "text": "$t:admin.analytics.settings.reports.definition_inactive",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "iteration": {
+                                                "source": "{{(def.channels ?? []).map(c => (typeof c === 'string' ? c : (c.id ?? c.channel ?? '')))}}",
+                                                "item_var": "ch"
+                                            },
+                                            "props": {
+                                                "color": "blue",
+                                                "text": "{{ch}}",
+                                                "size": "sm"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle mt-0.5"
+                                    },
+                                    "text": "{{$localized(def.description)}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "actions": [
+                                        {
+                                            "comment": "정의 켜기/끄기 — 즉시 적용되는 값이라 저장 버튼을 거치지 않고, 끝나면 목록을 다시 받아 실제 저장값으로 되맞춘다.",
+                                            "type": "change",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/notification-definitions/{{def.id}}/toggle-active",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PATCH"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "analytics_notification_definitions"
+                                                }
+                                            },
+                                            "onError": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "analytics_notification_definitions"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "checked": "{{def.is_active === true}}",
+                                        "ariaLabel": "{{$localized(def.name)}}",
+                                        "size": "sm",
+                                        "disabled": "{{_computed.isReadOnly || !_computed.canManageDefinitions}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "템플릿 초기화 — 사용자가 고친 본문을 버리고 기본 문안으로 되돌린다. 실행 전 확인을 받는다.",
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/notification-definitions/{{def.id}}/reset",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "confirm": "$t:admin.analytics.settings.reports.reset_confirm",
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.analytics.settings.reports.reset_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "analytics_notification_definitions"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary btn-sm",
+                                        "disabled": "{{_computed.isReadOnly || !_computed.canManageDefinitions}}"
+                                    },
+                                    "text": "$t:admin.analytics.settings.reports.reset_button"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

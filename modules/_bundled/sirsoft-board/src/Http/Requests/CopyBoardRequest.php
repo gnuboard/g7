@@ -3,14 +3,19 @@
 namespace Modules\Sirsoft\Board\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Rules\SlugUniqueRule;
 
 class CopyBoardRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -19,6 +24,8 @@ class CopyBoardRequest extends FormRequest
 
     /**
      * 요청에 적용할 검증 규칙
+     *
+     * @return array<string, array<int, mixed>> 검증 규칙
      */
     public function rules(): array
     {
@@ -29,6 +36,8 @@ class CopyBoardRequest extends FormRequest
 
     /**
      * 검증 오류 메시지 커스터마이징
+     *
+     * @return array<string, string> 규칙 키 => 문구
      */
     public function messages(): array
     {

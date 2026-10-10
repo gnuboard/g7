@@ -3,6 +3,7 @@
 namespace Tests\Unit\Support;
 
 use App\Support\OutboundProxy;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=off, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_not_applied_when_debug_mode_off
+     *
+     * @return void 반환값 없음
      */
     public function test_proxy_is_not_applied_when_debug_mode_is_off(): void
     {
@@ -46,6 +49,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=off, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_not_applied_when_debug_mode_off
+     *
+     * @return void 반환값 없음
      */
     public function test_proxy_is_not_applied_when_mode_key_is_absent(): void
     {
@@ -61,6 +66,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_applied_when_debug_mode_on
+     *
+     * @return void 반환값 없음
      */
     public function test_proxy_is_applied_for_both_schemes_when_debug_mode_is_on(): void
     {
@@ -83,6 +90,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=empty, bypass_list=empty
      *
      * @effects proxy_applied_when_debug_mode_on
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_proxy_value_disables_proxy(): void
     {
@@ -98,8 +107,11 @@ class OutboundProxyTest extends TestCase
      *
      * @effects proxy_rejects_disallowed_scheme
      *
-     * @dataProvider invalidProxyUrls
+     * @param  string  $url  프록시 주소
+     * @param  string  $why  거절 이유
+     * @return void 반환값 없음
      */
+    #[DataProvider('invalidProxyUrls')]
     public function test_invalid_proxy_url_is_not_applied(string $url, string $why): void
     {
         $this->assertNull(
@@ -112,7 +124,7 @@ class OutboundProxyTest extends TestCase
     /**
      * 적용 불가 주소 목록.
      *
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, array{0: string, 1: string}> 주소와 거절 이유
      */
     public static function invalidProxyUrls(): array
     {
@@ -131,6 +143,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_applied_when_debug_mode_on
+     *
+     * @return void 반환값 없음
      */
     public function test_every_allowed_scheme_is_accepted(): void
     {
@@ -148,6 +162,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_bypass_list_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_bypass_list_is_normalized(): void
     {
@@ -173,6 +189,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_bypass_list_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_non_array_bypass_list_becomes_empty(): void
     {
@@ -196,6 +214,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_exposed_as_curl_options
+     *
+     * @return void 반환값 없음
      */
     public function test_resolved_proxy_is_exposed_as_curl_options(): void
     {
@@ -219,6 +239,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=off, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_exposed_as_curl_options
+     *
+     * @return void 반환값 없음
      */
     public function test_curl_options_are_empty_when_proxy_is_not_applied(): void
     {
@@ -241,6 +263,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_bypass_list_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_connection_test_and_applied_config_share_the_same_assembly(): void
     {
@@ -273,6 +297,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
      *
      * @effects self_host_always_bypasses_proxy
+     *
+     * @return void 반환값 없음
      */
     public function test_site_own_host_is_always_bypassed(): void
     {
@@ -297,6 +323,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
      *
      * @effects self_host_always_bypasses_proxy
+     *
+     * @return void 반환값 없음
      */
     public function test_loopback_hosts_are_always_bypassed(): void
     {
@@ -321,6 +349,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects self_host_always_bypasses_proxy
+     *
+     * @return void 반환값 없음
      */
     public function test_operator_bypass_entries_survive_alongside_self_hosts(): void
     {
@@ -347,6 +377,8 @@ class OutboundProxyTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects self_host_always_bypasses_proxy
+     *
+     * @return void 반환값 없음
      */
     public function test_self_hosts_survive_a_non_array_bypass_value(): void
     {

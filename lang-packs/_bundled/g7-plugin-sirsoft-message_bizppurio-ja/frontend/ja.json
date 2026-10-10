@@ -169,7 +169,6 @@
       "emphasize_title": "強調表記タイトル",
       "emphasize_subtitle": "強調表記サブタイトル",
       "image": "画像",
-      "image_hint": "jpg/png · 500KB以下 · 横500px以上 · 横:縦 2:1 (アップロードするとURLが自動入力されます)",
       "image_uploading": "画像をアップロード中...",
       "image_upload_failed": "画像のアップロードに失敗しました。",
       "content": "本文",
@@ -179,8 +178,10 @@
       "buttons": "ボタン (最大5個)",
       "button_add": "ボタン追加",
       "button_name": "ボタン名 (最大14文字)",
+      "button_link_type": "ボタン {index} のリンク種別",
       "quick_replies": "クイックリンク (最大10個)",
       "quick_reply_add": "クイックリンク追加",
+      "quick_reply_link_type": "クイックリンク {index} のリンク種別",
       "link_mo": "モバイルリンク (必須)",
       "link_pc": "PCリンク (任意)",
       "link_and": "Androidスキーム (必須)",
@@ -204,16 +205,19 @@
       "btn_save": "保存",
       "btn_save_request": "保存して審査申請",
       "request_comment": "審査担当者への伝達事項",
-      "request_comment_placeholder": "例: #{name}=山田太郎, #{order_number}=20260823-0001",
+      "request_comment_placeholder": "例: #{name}=山田太郎, #{order_number}=20260823-1043226571",
       "request_comment_hint": "審査申請時にカカオの審査担当者へ一緒に送られます（任意・500文字以内）。カカオの審査ガイドは本文の変数ごとに例示値を求めるため、変数ごとの例を書いておくと差し戻しを減らせます。保存はされず、申請時にのみ送信されます。",
       "saved_toast": "通知テンプレートを保存しました。",
-      "requested_toast": "審査を申請しました。承認されるとアラートトーク送信が開始されます。"
+      "requested_toast": "審査を申請しました。承認されるとアラートトーク送信が開始されます。",
+      "image_hint": "jpg/png · {{max}} KB 以下 · 幅 {{width}} px 以上 · 幅:高さ 2:1 (アップロードすると URL が自動入力されます)",
+      "editor_label": "アラートトークテンプレートの編集"
     },
     "sms": {
       "modal_title": "SMS本文 — {name}",
       "hint": "代替SMSとSMS単独送信に共通で使用する本文です。#{変数} は送信時に自動置換されます。",
       "btn_save": "保存",
-      "saved_toast": "SMS本文を保存しました。"
+      "saved_toast": "SMS本文を保存しました。",
+      "editor_label": "SMS本文の編集"
     },
     "cancel_approval": {
       "modal_title": "承認取り消しの確認",
@@ -223,7 +227,8 @@
     },
     "rejection": {
       "modal_title": "却下理由 — {name}",
-      "btn_close": "閉じる"
+      "btn_close": "閉じる",
+      "editor_label": "アラートトークの差し戻し理由"
     },
     "approval": {
       "approved": "承認済み",
@@ -270,7 +275,9 @@
       "warning": "「{name}」のビズプリオテンプレート設定を削除します。カカオに登録されたテンプレートは削除可能なステータス(登録/却下)の場合のみ一緒に削除されます。",
       "btn_confirm": "削除",
       "done_with_kakao": "テンプレートを削除しました。(カカオ側テンプレートを含む)",
-      "done_db_only": "テンプレート設定を削除しました。カカオ側テンプレートはステータス制約により残っています。"
+      "done_db_only": "テンプレート設定を削除しました。カカオ側テンプレートはステータス制約により残っています。",
+      "done_not_registered": "テンプレート設定を削除しました。",
+      "done_kakao_failed": "テンプレート設定を削除しました。カカオ側テンプレートは削除できませんでした —"
     }
   },
   "templates": {
@@ -300,5 +307,7 @@
       "P2": "個人情報利用",
       "P3": "ワンクリック決済"
     }
-  }
+  },
+  "plugin_read_only": "このプラグイン設定を変更する権限がないため、読み取り専用で表示されます。",
+  "messaging_read_only": "アリムトークテンプレートを管理する権限がないため、登録・審査申請・削除ボタンはロックされています。"
 }

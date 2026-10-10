@@ -1,0 +1,69 @@
+<!-- 이커머스 설정의 「문의 게시판」 자리를 게시판 모듈이 통째로 대체한다(mode=replace) — 게시판이 설치돼 있을 때만 실제 게시판 목록에서 고르게 하고, 고른 게시판으로 바로 넘어가는 경로까지 함께 준다 -->
+<extension extension-point="inquiry_board_setting" mode="replace" priority="100">
+  <div data-ref="inquiry_board_setting_active" class="space-y-4">
+    <p data-ref="inquiry_board_setting_description" class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.ecommerce_settings.inquiry.description</p>
+    <div data-ref="inquiry_board_field" class="flex flex-col gap-2">
+      <div>
+        <label data-ref="inquiry_board_label" class="block text-sm font-medium text-gray-900 mb-1 dark:text-white">$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label</label>
+        <select data-ref="inquiry_board_select" name="inquiry.board_slug" value="{{_local.form?.inquiry?.board_slug ?? ''}}" options="{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}" class="{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <span data-ref="inquiry_board_select_error" data-if="{{_local.errors?.['inquiry.board_slug']}}" class="block text-xs text-red-500 mt-1 dark:text-red-400">{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}</span>
+    </div>
+    <div data-ref="inquiry_board_hints" class="space-y-3">
+      <p data-ref="inquiry_board_hint_secret" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret</p>
+      <p data-ref="inquiry_board_hint_category" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category</p>
+      <div data-ref="inquiry_board_actions" data-if="{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}" class="flex flex-col gap-2 md:flex-row">
+        <div data-ref="inquiry_board_go_edit_card" class="flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <p class="flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <icon name="gear" class="text-xs shrink-0 mt-0.5"/>
+            <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit_desc</span>
+          </p>
+          <button data-ref="inquiry_board_go_edit" type="button" class="self-start inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <on type="click">
+              <navigate path="/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit"/>
+            </on>
+            <icon name="pen-to-square" class="text-xs"/>
+            <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit</span>
+          </button>
+        </div>
+        <div data-ref="inquiry_board_go_posts_card" class="flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <p class="flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <icon name="clipboard-list" class="text-xs shrink-0 mt-0.5"/>
+            <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts_desc</span>
+          </p>
+          <div class="flex gap-2">
+            <button data-ref="inquiry_board_go_posts" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <on type="click">
+                <navigate path="/admin/board/{{settings?.data?.inquiry?.board_slug}}"/>
+              </on>
+              <icon name="list" class="text-xs"/>
+              <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts</span>
+            </button>
+            <!-- 메뉴 추가 API 는 그 게시판의 수정 권한(boards.update)을 요구한다 — 고른 게시판 행의 abilities.can_update 가 true 일 때만 연다(행이 아직 없으면 잠금) -->
+            <button data-ref="inquiry_board_add_menu" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border border-blue-500 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update === true ? '' : '$t:sirsoft-board.admin.ecommerce_settings.inquiry.add_to_admin_menu_no_permission'}}" disabled="{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update !== true}}">
+              <on type="click">
+                <!-- 문의 게시판을 관리자 메뉴에 등록한다 — 성공하면 메뉴 데이터소스를 동기로 다시 읽어 사이드바에 즉시 나타나게 한다 -->
+                <api-call target="/api/modules/sirsoft-board/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/add-to-menu" :auth_required="true" method="POST">
+                  <success>
+                    <toast type="success" message="{{result.message}}"/>
+                    <refetch-data-source dataSourceId="admin_menu" :sync="true"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              <icon name="plus" class="text-xs"/>
+              <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.add_to_admin_menu</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 문의로 쓸 수 있는 게시판 후보 — 셀렉트 하나를 채우는 용도라 200건까지만 받고, 이 확장이 붙는 기본정보 탭이 열렸을 때만 읽는다 -->
+  <data-source id="board_list_for_inquiry" label_key="$t:sirsoft-board.editor.data_source.board_list_for_inquiry" type="api" endpoint="/api/modules/sirsoft-board/admin/boards" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'basic_info'}}" :auto_fetch="true" :auth_required="true">
+    <params per_page="200"/>
+    <fallback>null</fallback>
+  </data-source>
+</extension>

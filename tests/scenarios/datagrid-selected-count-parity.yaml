@@ -1,0 +1,47 @@
+feature: 선택 건수 표기 — DataGrid 내장 줄과 레이아웃 일괄 바가 겹치지 않는다
+
+description: |
+  `DataGrid` 는 `selectable` 이 켜지고 선택된 행이 있으면 **자체 선택 건수 줄**을 그린다
+  (`DataGrid.tsx` 의 카드형·표형 두 렌더 지점). 관리자 목록 화면은 대부분 그 위에 일괄 처리
+  바(`bulk-actions-bar`)를 따로 두고 거기에도 「N개 선택됨」을 적는다. 둘이 겹치면 같은 문장이
+  화면에 **두 번** 뜬다 — PO 제보(2026-09-15, 1:1 문의 게시글 관리).
+
+  해소 관례는 `<data-grid selectedCountText="">` 다. 빈 문자열이면 `selectedCountText ?? t(...)`
+  의 `??` 가 폴백하지 않아 `resolvedSelectedCountText` 가 falsy 가 되고, 두 렌더 지점의
+  `&& resolvedSelectedCountText` 가드가 함께 꺼진다.
+
+  ## 왜 코어 매니페스트인가
+
+  이 계약의 모집단은 한 확장이 아니라 **저장소 전체의 관리자 목록 레이아웃**이다(실측 22벌 —
+  board · ecommerce · page · admin_basic · ckeditor5). 확장별 스위트는 제 확장 안만 보므로
+  이 축을 영영 닫지 못한다. 그래서 코어 계약 묶음에 두고, 레이아웃이 바뀌면
+  `check-extension-vitest-on-layout-change.cjs` 가 함께 태운다.
+
+  ## 모집단을 손으로 적지 않는 이유
+
+  4벌이 빠져 있었는데 나머지 17벌은 이미 관례를 지키고 있었다 — 즉 «아는 화면만 적는» 목록은
+  처음부터 구멍이 난 채로 초록이었다는 뜻이다. 가드는 저작본을 훑어 모집단을 파생하고,
+  파생이 비면(=훑기가 깨지면) 그 자체로 red 가 된다.
+
+axes:
+  surface: [population, parity, admin_list_selection]
+
+effects:
+  - selectable_layout_population_is_derived_from_repository
+  - layout_owned_selected_count_suppresses_datagrid_builtin
+  - selected_count_renders_once_after_selecting_a_row
+
+scenarios:
+  - surface: population
+    effect: selectable_layout_population_is_derived_from_repository
+    description: 저작본을 훑어 선택 가능한 data-grid 레이아웃을 모으고, 모집단이 비면 red 가 된다
+  - surface: parity
+    effect: layout_owned_selected_count_suppresses_datagrid_builtin
+    description: 자체 선택 건수를 적는 레이아웃은 전부 selectedCountText="" 로 내장 줄을 끈다
+  - surface: admin_list_selection
+    effect: selected_count_renders_once_after_selecting_a_row
+    description: 실브라우저에서 행을 하나 고르면 「N개 선택됨」이 정확히 한 번만 렌더된다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DataGrid.selectedCountParity.test.ts
+  - tests/Playwright/specs/admin/selected-count-single-render.spec.ts

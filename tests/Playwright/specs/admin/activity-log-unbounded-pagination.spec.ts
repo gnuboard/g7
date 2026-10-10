@@ -1,7 +1,7 @@
 /**
  * E2E: 총 건수를 정확히 세지 못한 목록의 페이지 번호 목록
  *
- * @scenario activity_log_unbounded_pager_numbers, activity_log_unbounded_pager_no_last
+ * @scenario link=activity_log_unbounded_pager_numbers, link=activity_log_unbounded_pager_no_last
  * @effects page_numbers_visible, last_page_jump_hidden
  *
  * 총 건수 집계 상한(관리자 > 환경설정 > 고급)을 활동 로그 건수보다 작게 낮춰

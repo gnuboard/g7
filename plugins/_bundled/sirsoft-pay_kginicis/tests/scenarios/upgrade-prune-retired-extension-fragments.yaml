@@ -1,0 +1,18 @@
+feature: 걷어낸 조각의 남은 파일·등록 행 정리 업그레이드 스텝 (1.2.0)
+
+description: |
+  코어 7.0.x 업데이트가 번들 디렉토리에 남긴 1.1.x 판 조각(`admin_order_list_test_badge`)이 확장 갱신으로 활성 디렉토리에 다시 옮겨져
+  관리자 주문 목록 열을 1.1.x 판으로 통째 덮었다(실측). 이 스텝이 활성·번들 디렉토리의 옛 조각 파일을 지우고, 이 플러그인이
+  그 조각으로 등록한 행(파일 키 행 + 백필 옛 키 행)을 soft delete 한다. 레이아웃 등록보다 먼저 돌아 다시 등록되지 않는다.
+
+axes:
+  state: [legacy_1_1_x, rerun]
+
+effects:
+  - retired_fragment_files_removed          # 활성·번들 디렉토리의 옛 조각 파일을 지운다
+  - retired_fragment_rows_soft_deleted      # 파일 키 행과 백필 옛 키 행을 soft delete 한다
+  - head_fragments_and_other_rows_kept      # 1.2.0 조각 파일·행과 다른 확장의 행은 남긴다
+  - retired_fragment_prune_is_idempotent    # 두 번 실행해도 같은 결과, 대상 0건 안전
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Upgrades/PruneRetiredExtensionFragmentsTest.php

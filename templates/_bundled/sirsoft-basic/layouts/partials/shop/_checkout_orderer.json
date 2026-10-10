@@ -1,345 +1,485 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "주문자 정보 입력 섹션 (PC/모바일 반응형)"
-  },
-  "type": "basic",
-  "name": "Div",
-  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" },
-  "responsive": {
-    "portable": {
-      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" }
-    }
-  },
-  "children": [
-    {
-      "comment": "섹션 헤더",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
-        }
-      },
-      "children": [
-        { "type": "basic", "name": "Icon", "props": { "name": "user", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" } },
-        {
-          "type": "basic",
-          "name": "H2",
-          "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
-          "responsive": {
-            "portable": {
-              "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
-            }
-          },
-          "text": "$t:shop.checkout.orderer_info"
-        }
-      ]
+    "comment": "주문서의 주문자 칸. 회원은 계정 정보가 초깃값으로 들어오고, 비회원은 여기서 **조회 비밀번호**까지\n     같이 정한다 — 나중에 주문번호·연락처와 함께 본인 확인에 쓰는 값이라 이 자리 말고는 정할 곳이 없다.\n     오류 표시는 서버 검증이 돌려준 `_local.errors` 의 점 표기 키(`orderer.name` 등)를 그대로 읽는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "주문자 정보 입력 섹션 (PC/모바일 반응형)"
     },
-    {
-      "comment": "이름 + 연락처 2컬럼 그리드 (모바일: 1컬럼)",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "grid grid-cols-2 gap-4 mb-4" },
-      "responsive": {
+    "type": "basic",
+    "name": "Div",
+    "responsive": {
         "portable": {
-          "props": { "className": "grid grid-cols-1 gap-3 mb-3" }
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+            }
         }
-      },
-      "children": [
+    },
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+    },
+    "children": [
         {
-          "comment": "이름",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-              "children": [
-                { "type": "basic", "name": "Span", "text": "$t:shop.checkout.orderer_name" },
-                { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "name": "orderer_name",
-                "value": "{{_local.orderer?.name ?? _global.currentUser?.name ?? ''}}",
-                "placeholder": "$t:shop.checkout.orderer_name_placeholder",
-                "className": "{{_local.errors?.['orderer.name'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
-              },
-              "responsive": {
+            "comment": "섹션 헤더",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
                 "portable": {
-                  "props": {
-                    "className": "{{_local.errors?.['orderer.name'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
-                  }
+                    "props": {
+                        "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
+                    }
                 }
-              },
-              "actions": [
+            },
+            "props": {
+                "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": { "target": "local", "orderer.name": "{{$event.target.value}}" }
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "user",
+                        "className": "text-xl text-gray-700 dark:text-gray-300"
+                    }
                 },
                 {
-                  "type": "blur",
-                  "handler": "setState",
-                  "if": "{{_local.sameAsOrderer}}",
-                  "params": { "target": "local", "shipping.recipient_name": "{{_local.orderer?.name ?? ''}}" }
+                    "type": "basic",
+                    "name": "H2",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:shop.checkout.orderer_info"
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.['orderer.name']}}",
-              "props": { "className": "text-red-500 text-xs mt-1 block" },
-              "text": "{{_local.errors?.['orderer.name']?.[0] ?? ''}}"
-            }
-          ]
+            ]
         },
         {
-          "comment": "연락처",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-              "children": [
-                { "type": "basic", "name": "Span", "text": "$t:shop.checkout.orderer_phone" },
-                { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "tel",
-                "name": "orderer_phone",
-                "value": "{{_local.orderer?.phone ?? _global.currentUser?.phone ?? ''}}",
-                "placeholder": "$t:shop.checkout.orderer_phone_placeholder",
-                "className": "{{_local.errors?.['orderer.phone'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
-              },
-              "responsive": {
+            "comment": "이름 + 연락처 2컬럼 그리드 (모바일: 1컬럼)",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
                 "portable": {
-                  "props": {
-                    "className": "{{_local.errors?.['orderer.phone'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
-                  }
+                    "props": {
+                        "className": "grid grid-cols-1 gap-3 mb-3"
+                    }
                 }
-              },
-              "actions": [
+            },
+            "props": {
+                "className": "grid grid-cols-2 gap-4 mb-4"
+            },
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": { "target": "local", "orderer.phone": "{{$event.target.value}}" }
+                    "comment": "이름",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:shop.checkout.orderer_name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-red-500 ml-1"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "{{_local.errors?.['orderer.name'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "주문자 이름",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "orderer.name": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "「주문자와 동일」이 켜져 있으면 배송지 수령인까지 따라 옮긴다. change 가 아니라 blur 인 이유는\n                 타이핑 도중 배송지 칸이 글자마다 흔들리지 않게 하기 위해서다",
+                                    "type": "blur",
+                                    "handler": "setState",
+                                    "if": "{{_local.sameAsOrderer}}",
+                                    "params": {
+                                        "target": "local",
+                                        "shipping.recipient_name": "{{_local.orderer?.name ?? ''}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "orderer_name",
+                                "value": "{{_local.orderer?.name ?? _global.currentUser?.name ?? ''}}",
+                                "placeholder": "$t:shop.checkout.orderer_name_placeholder",
+                                "className": "{{_local.errors?.['orderer.name'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['orderer.name']}}",
+                            "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                            },
+                            "text": "{{_local.errors?.['orderer.name']?.[0] ?? ''}}"
+                        }
+                    ]
                 },
                 {
-                  "type": "blur",
-                  "handler": "setState",
-                  "if": "{{_local.sameAsOrderer}}",
-                  "params": { "target": "local", "shipping.recipient_phone": "{{_local.orderer?.phone ?? ''}}" }
+                    "comment": "연락처",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:shop.checkout.orderer_phone"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-red-500 ml-1"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "{{_local.errors?.['orderer.phone'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "주문자 연락처. 비회원은 나중에 이 번호로 주문을 조회한다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "orderer.phone": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "이름과 같은 이유로 blur 에서만 배송지 연락처로 옮긴다",
+                                    "type": "blur",
+                                    "handler": "setState",
+                                    "if": "{{_local.sameAsOrderer}}",
+                                    "params": {
+                                        "target": "local",
+                                        "shipping.recipient_phone": "{{_local.orderer?.phone ?? ''}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "tel",
+                                "name": "orderer_phone",
+                                "value": "{{_local.orderer?.phone ?? _global.currentUser?.phone ?? ''}}",
+                                "placeholder": "$t:shop.checkout.orderer_phone_placeholder",
+                                "className": "{{_local.errors?.['orderer.phone'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['orderer.phone']}}",
+                            "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                            },
+                            "text": "{{_local.errors?.['orderer.phone']?.[0] ?? ''}}"
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.['orderer.phone']}}",
-              "props": { "className": "text-red-500 text-xs mt-1 block" },
-              "text": "{{_local.errors?.['orderer.phone']?.[0] ?? ''}}"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "이메일",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-          "children": [
-            { "type": "basic", "name": "Span", "text": "$t:shop.checkout.orderer_email" },
-            { "type": "basic", "name": "Span", "if": "{{!_global.currentUser?.uuid}}", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "email",
-            "name": "orderer_email",
-            "value": "{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}",
-            "placeholder": "$t:shop.checkout.orderer_email_placeholder",
-            "className": "{{_local.errors?.['orderer.email'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "{{_local.errors?.['orderer.email'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
-              }
-            }
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": { "target": "local", "orderer.email": "{{$event.target.value}}" }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.['orderer.email']}}",
-          "props": { "className": "text-red-500 text-xs mt-1 block" },
-          "text": "{{_local.errors?.['orderer.email']?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "comment": "비회원 조회 비밀번호 — 비로그인 사용자만 노출. CreateOrderRequest 가 비회원 시 guest_lookup_password(min:8|confirmed) + _confirmation(required) 검증",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!_global.currentUser?.uuid}}",
-      "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700" }
-        }
-      },
-      "children": [
-        {
-          "comment": "섹션 제목 + 안내",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "mb-3" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-1" },
-              "text": "$t:shop.checkout.guest_lookup_section"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-              "text": "$t:shop.checkout.guest_lookup_hint"
-            }
-          ]
-        },
-        {
-          "comment": "비밀번호 + 확인 2컬럼 (모바일 1컬럼)",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "grid grid-cols-2 gap-4" },
-          "responsive": {
-            "portable": {
-              "props": { "className": "grid grid-cols-1 gap-3" }
-            }
-          },
-          "children": [
-            {
-              "comment": "조회 비밀번호",
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "comment": "이메일",
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-                  "children": [
-                    { "type": "basic", "name": "Span", "text": "$t:shop.checkout.guest_lookup_password" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
-                  ]
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:shop.checkout.orderer_email"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_global.currentUser?.uuid}}",
+                            "props": {
+                                "className": "text-red-500 ml-1"
+                            },
+                            "text": "*"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "PasswordInput",
-                  "props": {
-                    "name": "guest_lookup_password",
-                    "value": "{{_local.guestLookupPassword ?? ''}}",
-                    "placeholder": "$t:shop.checkout.guest_lookup_password_placeholder",
-                    "className": "{{_local.errors?.guest_lookup_password ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}",
-                    "showToggle": true,
-                    "showValidation": true,
-                    "enableRules": ["minLength:8"],
-                    "error": "{{_local.errors?.guest_lookup_password?.[0] ?? ''}}"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "props": {
-                        "className": "{{_local.errors?.guest_lookup_password ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
-                      }
+                    "type": "basic",
+                    "name": "Input",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "{{_local.errors?.['orderer.email'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "comment": "주문 확인 메일이 가는 주소. 비회원에게는 필수라 별표가 조건부로 붙는다",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "orderer.email": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "email",
+                        "name": "orderer_email",
+                        "value": "{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}",
+                        "placeholder": "$t:shop.checkout.orderer_email_placeholder",
+                        "className": "{{_local.errors?.['orderer.email'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
                     }
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": { "target": "local", "guestLookupPassword": "{{$event.target.value}}" }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "comment": "비밀번호 확인",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-                  "children": [
-                    { "type": "basic", "name": "Span", "text": "$t:shop.checkout.guest_lookup_password_confirmation" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
-                  ]
                 },
                 {
-                  "type": "basic",
-                  "name": "PasswordInput",
-                  "props": {
-                    "name": "guest_lookup_password_confirmation",
-                    "value": "{{_local.guestLookupPasswordConfirmation ?? ''}}",
-                    "placeholder": "$t:shop.checkout.guest_lookup_password_confirmation_placeholder",
-                    "className": "{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}",
-                    "showToggle": true,
-                    "isConfirmField": true,
-                    "confirmTarget": "{{_local.guestLookupPassword ?? ''}}",
-                    "error": "{{_local.errors?.guest_lookup_password_confirmation?.[0] ?? ''}}"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "props": {
-                        "className": "{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
-                      }
-                    }
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": { "target": "local", "guestLookupPasswordConfirmation": "{{$event.target.value}}" }
-                    }
-                  ]
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.['orderer.email']}}",
+                    "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                    },
+                    "text": "{{_local.errors?.['orderer.email']?.[0] ?? ''}}"
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "comment": "비회원 조회 비밀번호 — 비로그인 사용자만 노출. CreateOrderRequest 가 비회원 시 guest_lookup_password(min:8|confirmed) + _confirmation(required) 검증",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.currentUser?.uuid}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+                    }
+                }
+            },
+            "props": {
+                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "comment": "섹션 제목 + 안내",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mb-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-900 dark:text-white mb-1"
+                            },
+                            "text": "$t:shop.checkout.guest_lookup_section"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:shop.checkout.guest_lookup_hint"
+                        }
+                    ]
+                },
+                {
+                    "comment": "비밀번호 + 확인 2컬럼 (모바일 1컬럼)",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "grid grid-cols-1 gap-3"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-2 gap-4"
+                    },
+                    "children": [
+                        {
+                            "comment": "조회 비밀번호",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:shop.checkout.guest_lookup_password"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-red-500 ml-1"
+                                            },
+                                            "text": "*"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "PasswordInput",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "{{_local.errors?.guest_lookup_password ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "비회원 주문 조회용 비밀번호 — 주문서 상태(`_local.checkout`)가 아니라 따로 담는다.\n                   주문서는 금액 재계산 때마다 서버로 오가는 값이라 비밀번호를 실어 보낼 자리가 아니다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "guestLookupPassword": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "guest_lookup_password",
+                                        "value": "{{_local.guestLookupPassword ?? ''}}",
+                                        "placeholder": "$t:shop.checkout.guest_lookup_password_placeholder",
+                                        "className": "{{_local.errors?.guest_lookup_password ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}",
+                                        "showToggle": true,
+                                        "showValidation": true,
+                                        "error": "{{_local.errors?.guest_lookup_password?.[0] ?? ''}}",
+                                        "enableRules": [
+                                            "minLength:8"
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "비밀번호 확인",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:shop.checkout.guest_lookup_password_confirmation"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-red-500 ml-1"
+                                            },
+                                            "text": "*"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "PasswordInput",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "확인칸. 일치 판정은 컴포넌트가 `confirmTarget` 으로 화면에서 하고, 서버도 다시 본다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "guestLookupPasswordConfirmation": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "guest_lookup_password_confirmation",
+                                        "value": "{{_local.guestLookupPasswordConfirmation ?? ''}}",
+                                        "placeholder": "$t:shop.checkout.guest_lookup_password_confirmation_placeholder",
+                                        "className": "{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}",
+                                        "showToggle": true,
+                                        "isConfirmField": true,
+                                        "confirmTarget": "{{_local.guestLookupPassword ?? ''}}",
+                                        "error": "{{_local.errors?.guest_lookup_password_confirmation?.[0] ?? ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

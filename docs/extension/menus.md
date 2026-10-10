@@ -371,6 +371,22 @@ $role->menus()->wherePivot('permission_type', 'write')->get();
 - 정적 메뉴/권한을 **제거**해야 하는 경우, UpgradeStep에서 cleanup helper를 명시적으로 호출하세요
 - 상세: [extension-update-system.md](./extension-update-system.md) "정적 메뉴/권한 제거 시 cleanup 사용 예시" 참조
 
+### 메뉴 역할 할당 규칙
+
+운영자는 메뉴의 접근 역할을 세 경로로 바꿉니다 — 메뉴 단건 편집, 역할 편집 화면의 「접근 가능 메뉴」(`menu_ids`), 메뉴 관리의 「여러 개 선택」(`PATCH /api/admin/menus/bulk-roles`). 세 경로는 같은 규칙을 따릅니다.
+
+- **관리자(`admin`) 역할은 모든 메뉴에 항상 있습니다.** 메뉴 편집에서 역할을 모두 빼도 관리자 역할은 남고, 관리자 역할을 빼는 요청은 거부(422)됩니다.
+- **상·하위는 함께 움직입니다.** 하위 메뉴에 역할을 주면 상위 메뉴에도 주고, 상위 메뉴에서 빼면 하위 메뉴에서도 뺍니다.
+- **액터가 관리할 수 없는 메뉴(비활성 확장 메뉴 등)의 기존 할당은 건드리지 않습니다.**
+- 바뀐 메뉴마다 `core.menu.after_sync_roles` 가 발화하고, 운영자가 바꾼 역할은 `user_overrides` 에 기록돼 확장 업데이트가 덮어쓰지 않습니다. 일괄 경로는 앞뒤로 `core.menu.before_bulk_update_roles`·`core.menu.after_bulk_update_roles` 도 발화합니다.
+- 관리 목록(`GET /api/admin/menus`)은 메뉴마다 부여된 역할 ID 를 `role_ids` 로 싣습니다. 역할 이름·권한 타입은 단건 조회(`GET /api/admin/menus/{id}`)의 `roles` 를 씁니다.
+
+### 확장 비활성화와 메뉴
+
+모듈의 관리자 메뉴는 코어가 모듈을 제거(uninstall)할 때만 지웁니다. 플러그인은 메뉴 정리를 플러그인 자신이 하므로, **번들 플러그인**은 같은 방식을 관례로 따릅니다 — 관리자 메뉴를 **비활성화할 때 지우지 않고, 제거할 때 지웁니다.** 비활성 확장의 메뉴는 위 「권한 체크 흐름」 3번에 따라 사이드바에 보이지 않으므로 지울 필요가 없고, 지웠다가 재활성화 때 새로 만들면 운영자가 그 메뉴에 지정해 둔 역할이 사라집니다. 번들 플러그인은 활성화 때 기본 역할을 메뉴에 다시 붙이더라도, 운영자가 그 역할을 뺀 메뉴(`user_overrides` 에 역할 식별자가 있는 메뉴)는 건너뜁니다.
+
+제3자 플러그인에는 이 방식을 강제하지 않습니다. 다만 `deactivate()` 에서 메뉴를 지우면 재활성화 때 운영자의 역할 지정이 사라지므로, 메뉴 정리는 `uninstall()` 에서 하고 기본 역할을 다시 붙일 때는 `user_overrides` 를 확인하는 것을 권장합니다.
+
 ### Deprecated 항목
 
 다음 항목들은 더 이상 사용하지 않습니다:
@@ -419,7 +435,7 @@ $role->menus()->wherePivot('permission_type', 'write')->get();
 
 - [permissions.md](./permissions.md) - 권한 시스템 (Role, Permission, 리소스 레벨 권한)
 - [module-basics.md](./module-basics.md) - 모듈 기본 구조
-- [index.md](./index.md) - 확장 시스템 인덱스
+- [README.md](./README.md) - 확장 시스템 인덱스
 - [../backend/core-config.md](../backend/core-config.md#완전-동기화-원칙) - 완전 동기화 원칙
 - [../backend/data-sync-helpers.md](../backend/data-sync-helpers.md) - 데이터 동기화 Helper
 - [../backend/user-overrides.md](../backend/user-overrides.md) - 사용자 수정 보존

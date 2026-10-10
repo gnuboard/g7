@@ -7,6 +7,12 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /**
  * 알림 타입
  */
@@ -120,11 +126,10 @@ export const Alert: React.FC<AlertProps> = ({
       aria-live="polite"
       id={id} {...editorAttrs}
     >
-      {/* 아이콘 */}
+      {/* 아이콘 — 유형은 색과 문구가 전하므로 꾸밈으로 숨긴다(종전 영문 이름 「warning icon」 이 읽혔다, 7.1.0 O-C3b-3) */}
       <Icon
         name={config.icon}
         className={config.iconClass}
-        ariaLabel={`${type} icon`}
       />
 
       {/* 메시지 */}
@@ -137,12 +142,11 @@ export const Alert: React.FC<AlertProps> = ({
         <Button
           onClick={onDismiss}
           className={`alert-dismiss ${config.textClass}`}
-          aria-label="Close alert"
+          aria-label={tOr('common.close_alert', 'Close alert')}
         >
           <Icon
             name={IconName.Times}
             className={config.iconClass}
-            ariaLabel="Close"
           />
         </Button>
       )}

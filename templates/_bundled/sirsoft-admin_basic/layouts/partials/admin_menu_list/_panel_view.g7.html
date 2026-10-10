@@ -1,0 +1,147 @@
+<!-- 고른 메뉴 항목의 내용을 읽기 전용으로 펼치는 패널. 아래 두 버튼이 갈리는 기준이 둘이다 —
+  **권한**(수정·삭제 각각)과 **누가 만든 메뉴인가**.
+  코어가 심은 메뉴는 삭제 버튼 자리에 눌리지 않는 버튼을 두고 그 아래에 이유를 적는다(버튼을
+  감추지 않는 것은 왜 못 지우는지를 알리기 위해서다). 확장이 들고 온 메뉴는 지울 수 있다. -->
+<partial name="panel_view">
+  <div data-ref="view_panel" data-if="{{_global.selectedMenuId &amp;&amp; _global.panelMode === 'view'}}">
+    <div data-ref="view_header" class="px-4 panel-header">
+      <h3 class="text-heading">$t:admin.menus.menu_info_title</h3>
+    </div>
+    <div data-ref="view_content" class="divider-list p-4">
+      <div class="py-4 first:pt-0">
+        <h4 class="text-table-header mb-3">$t:admin.menus.info.basic</h4>
+        <div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.name</span>
+            <span class="text-primary text-sm">{{$localized(_global.selectedMenu?.name)}}</span>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.slug</span>
+            <span class="text-primary text-sm font-mono">{{_global.selectedMenu?.slug}}</span>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.path</span>
+            <span class="text-primary text-sm font-mono">{{_global.selectedMenu?.url}}</span>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.icon</span>
+            <div class="flex-center gap-2">
+              <icon name="{{_global.selectedMenu?.icon || 'file'}}" class="text-base text-secondary"/>
+              <span class="text-primary text-sm">{{_global.selectedMenu?.icon}}</span>
+            </div>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.order</span>
+            <span class="text-primary text-sm">{{_global.selectedMenu?.order ?? '-'}}</span>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.status</span>
+            <span data-if="{{_global.selectedMenu?.is_active}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.menus.info.active</span>
+            <span data-if="{{!_global.selectedMenu?.is_active}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:admin.menus.info.inactive</span>
+          </div>
+        </div>
+      </div>
+      <div class="py-4">
+        <h4 class="text-table-header mb-3">$t:admin.menus.info.affiliation</h4>
+        <div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.module</span>
+            <span data-if="{{_global.selectedMenu?.extension_type === 'core' || _global.selectedMenu?.extension_type == null}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">Core</span>
+            <span data-if="{{_global.selectedMenu?.extension_type != null &amp;&amp; _global.selectedMenu?.extension_type !== 'core'}}" class="text-primary text-sm">{{_global.selectedMenu?.extension_identifier ?? ''}}</span>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.plugin</span>
+            <span data-if="{{_global.selectedMenu?.plugin_id === null || _global.selectedMenu?.plugin_id === undefined}}" class="text-label-subtle">-</span>
+            <span data-if="{{_global.selectedMenu?.plugin_id !== null &amp;&amp; _global.selectedMenu?.plugin_id !== undefined}}" class="text-primary text-sm">{{$localized(_global.selectedMenu?.plugin?.name)}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="py-4">
+        <h4 class="text-table-header mb-3">$t:admin.menus.info.hierarchy</h4>
+        <div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.parent_menu</span>
+            <span data-if="{{_global.selectedMenu?.parent_id === null}}" class="text-label-subtle">$t:admin.menus.info.top_level</span>
+            <span data-if="{{_global.selectedMenu?.parent_id !== null}}" class="text-primary text-sm">{{$localized(_global.selectedMenu?.parent?.name)}}</span>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.child_menus</span>
+            <span data-if="{{!_global.selectedMenu?.children || _global.selectedMenu?.children?.length === 0}}" class="text-label-subtle">$t:admin.menus.info.no_children</span>
+            <span data-if="{{_global.selectedMenu?.children?.length > 0}}" class="text-primary text-sm">$t:admin.menus.info.children_count|count={{_global.selectedMenu?.children?.length}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="py-4">
+        <h4 class="text-table-header mb-3">$t:admin.menus.info.access_permission</h4>
+        <div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.form.roles</span>
+            <span data-each="role in {{_global.selectedMenu?.roles ?? []}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded mr-1">{{$localized(role.name)}}</span>
+            <span data-if="{{Array.isArray(_global.selectedMenu?.roles) &amp;&amp; _global.selectedMenu.roles.length < 1}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.menus.info.no_roles</span>
+          </div>
+        </div>
+      </div>
+      <div class="py-4 last:pb-0">
+        <h4 class="text-table-header mb-3">$t:admin.menus.info.creator_info</h4>
+        <div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.creator</span>
+            <div>
+              <span class="text-primary text-sm font-medium">{{_global.selectedMenu?.creator?.name ?? 'System'}}</span>
+              <span class="block text-tertiary">{{_global.selectedMenu?.creator?.email ?? 'system@g7platform.com'}}</span>
+            </div>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.created_at</span>
+            <div class="flex-center text-primary gap-1.5 text-sm">
+              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+              <span>{{_global.selectedMenu?.created_at}}</span>
+            </div>
+          </div>
+          <div class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.updated_at</span>
+            <div class="flex-center text-primary gap-1.5 text-sm">
+              <icon name="clock" class="text-base text-gray-400 dark:text-gray-500"/>
+              <span>{{_global.selectedMenu?.updated_at}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="view_footer" class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex-center gap-3">
+        <!-- 이 메뉴를 편집 상태로 연다. 트리에서 고른 항목을 오른쪽 패널이 받아 그리는 구조라 선택과 편집 상태를 함께 옮긴다 -->
+        <button disabled="{{menus?.data?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+          <on type="click">
+            <set-state target="global" panelMode="edit">
+              <field name="formData">
+                <field name="name" value="{{_global.selectedMenu?.name}}"/>
+                <field name="slug" value="{{_global.selectedMenu?.slug}}"/>
+                <field name="url" value="{{_global.selectedMenu?.url}}"/>
+                <field name="icon" value="{{_global.selectedMenu?.icon}}"/>
+                <field name="parent_id" value="{{_global.selectedMenu?.parent_id}}"/>
+                <field name="extension_type" value="{{_global.selectedMenu?.extension_type}}"/>
+                <field name="extension_identifier" value="{{_global.selectedMenu?.extension_identifier}}"/>
+                <field name="is_active" value="{{_global.selectedMenu?.is_active}}"/>
+                <field name="roles" value="{{(_global.selectedMenu?.roles ?? []).map(r => r.id)}}"/>
+              </field>
+            </set-state>
+            <!-- 편집 모드 전환만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+            <replace-url :mergeQuery="true">
+              <query menu="{{_global.selectedMenu?.slug}}" mode="edit"/>
+            </replace-url>
+          </on>
+          $t:common.edit
+        </button>
+        <button data-if="{{_global.selectedMenu?.extension_type !== 'core'}}" disabled="{{menus?.data?.abilities?.can_delete !== true}}" class="flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+          <on type="click">
+            <open-modal target="delete_confirm_modal"/>
+          </on>
+          $t:common.delete
+        </button>
+        <button data-if="{{_global.selectedMenu?.extension_type === 'core'}}" class="flex-1 px-4 py-2 text-gray-300 dark:text-gray-600 border border-gray-200 dark:border-gray-700 cursor-not-allowed rounded-lg text-sm" :disabled="true">$t:common.delete</button>
+      </div>
+      <div data-if="{{_global.selectedMenu?.extension_type === 'core'}}" class="mt-3 text-center text-tertiary">$t:admin.menus.modals.delete_core_warning</div>
+    </div>
+  </div>
+</partial>

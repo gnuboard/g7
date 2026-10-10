@@ -138,29 +138,53 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
     // ─── JSON 구조 검증 (렌더링 전) ───
 
     describe('JSON 구조 검증', () => {
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('is_partial 메타데이터가 설정되어 있다', () => {
             expect((tabReviewSettings as any).meta.is_partial).toBe(true);
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('tab_content_review_settings ID를 가진다', () => {
             expect((tabReviewSettings as any).id).toBe('tab_content_review_settings');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('review_settings 탭 활성화 조건이 있다', () => {
             expect((tabReviewSettings as any).if).toContain('review_settings');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('review_settings_card 카드가 1개 있다', () => {
             expect((tabReviewSettings as any).children).toHaveLength(1);
             expect((tabReviewSettings as any).children[0].id).toBe('review_settings_card');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_settings_items_separated_by_row_stack_only
+         */
         it('카드 본문에 3개 설정 섹션이 있다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
-            // 3개 설정 + 2개 구분선 = 5개
-            expect(cardBody.children.length).toBeGreaterThanOrEqual(3);
+            // 설정 3개. 항목 사이 구분선은 row-stack 이 그린다(따로 둔 구분선 div 는 선이 이중이라 걷어냈다).
+            expect(cardBody.children.length).toBe(3);
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_input_binds_server_limits
+         */
         it('write_deadline_days Input 범위가 서버 한계값을 바인딩한다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
             const deadlineSection = cardBody.children[0];
@@ -174,9 +198,13 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
 
         // 경계값은 서버 검증(StoreEcommerceSettingsRequest)이 SSoT — 화면이 더 좁으면 저장 가능한
         // 값을 입력조차 못 하고, 더 넓으면 저장 단계에서만 실패한다.
+        /**
+         * @scenario setting=max_images
+         * @effects review_setting_input_binds_server_limits
+         */
         it('max_images Input 범위가 서버 한계값을 바인딩한다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
-            const maxImagesSection = cardBody.children[2]; // 구분선(index 1) 건너뜀
+            const maxImagesSection = cardBody.children[1];
             const input = maxImagesSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
             expect(String(input.props.min)).toContain('limits?.max_images_min');
@@ -185,9 +213,13 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             expect(String(input.props.max)).toContain('?? 20');
         });
 
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_setting_input_binds_server_limits
+         */
         it('max_image_size_mb Input 범위가 서버 한계값을 바인딩한다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
-            const maxSizeSection = cardBody.children[4]; // 구분선(index 3) 건너뜀
+            const maxSizeSection = cardBody.children[2];
             const input = maxSizeSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
             expect(String(input.props.min)).toContain('limits?.max_image_size_mb_min');
@@ -196,9 +228,13 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             expect(String(input.props.max)).toContain('?? 50');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('모든 Input의 onChange가 setState + hasChanges: true를 사용한다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
-            const inputSections = [cardBody.children[0], cardBody.children[2], cardBody.children[4]];
+            const inputSections = [cardBody.children[0], cardBody.children[1], cardBody.children[2]];
             for (const section of inputSections) {
                 const input = section.children.find((c: any) => c.name === 'Input');
                 if (!input) continue;
@@ -213,11 +249,19 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
     // ─── 렌더링 검증 ───
 
     describe('렌더링 검증', () => {
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_renders_without_validation_errors
+         */
         it('레이아웃이 정상 렌더링된다', async () => {
             const { container } = await testUtils.render();
             expect(container.innerHTML.length).toBeGreaterThan(0);
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('리뷰 설정 제목이 렌더링된다', async () => {
             const { container } = await testUtils.render();
             // i18n 키 치환 결과가 자식 노드로 분리될 수 있어 단순 getByText 매칭이
@@ -227,6 +271,10 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             expect(titleNode?.textContent ?? '').toContain('리뷰 설정');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_renders_without_validation_errors
+         */
         it('레이아웃 검증 오류가 없어야 한다', async () => {
             await testUtils.render();
             expect(() => testUtils.assertNoValidationErrors()).not.toThrow();
@@ -236,6 +284,10 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
     // ─── 상태 변경 검증 ───
 
     describe('상태 변경 검증', () => {
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('write_deadline_days 상태를 변경할 수 있다', async () => {
             await testUtils.render();
             testUtils.setState('form.review_settings.write_deadline_days', 60, 'local');
@@ -243,6 +295,10 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             expect(state._local.form?.review_settings?.write_deadline_days).toBe(60);
         });
 
+        /**
+         * @scenario setting=max_images
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('max_images 상태를 변경할 수 있다', async () => {
             await testUtils.render();
             testUtils.setState('form.review_settings.max_images', 3, 'local');
@@ -250,6 +306,10 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             expect(state._local.form?.review_settings?.max_images).toBe(3);
         });
 
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('max_image_size_mb 상태를 변경할 수 있다', async () => {
             await testUtils.render();
             testUtils.setState('form.review_settings.max_image_size_mb', 5, 'local');

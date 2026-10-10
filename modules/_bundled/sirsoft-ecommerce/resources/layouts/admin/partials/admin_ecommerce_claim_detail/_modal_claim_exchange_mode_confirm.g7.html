@@ -1,0 +1,29 @@
+<partial description="Claim Exchange Mode Confirm Modal (standard ↔ advance) — #599 D1">
+  <!-- 교환 진행 방식 전환 확인 모달 (D1). 선교환은 새 물건을 먼저 보내고 헌 물건은 기한 안에 받는다 — 되돌리기 어려운 운영 약속이라 한 번 더 묻는다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로 여는 핸들러가 `_global.claimExchangeModeContext` 로 값을 넘기고, 표시와 실행 본문이 그 하나를 함께 읽는다. -->
+  <modal data-type="composite" data-ref="modal_claim_exchange_mode_confirm" title="$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_title" size="sm">
+    <div class="space-y-4">
+      <p data-ref="cem_001_advance_message" data-if="{{_global.claimExchangeModeContext?.mode === 'advance'}}" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_advance|count={{_global.claimExchangeModeContext?.dueDays ?? ''}}|days={{_global.claimExchangeModeContext?.dueDays ?? ''}}</p>
+      <p data-ref="cem_002_standard_message" data-if="{{_global.claimExchangeModeContext?.mode === 'standard'}}" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_standard</p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button data-ref="cem_003_cancel" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button data-ref="cem_004_confirm" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingExchangeMode === true}}">
+          <on type="click">
+            <!-- 확인하면 교환 진행 방식을 실제로 바꾼다 — 대상·방식은 창을 연 핸들러가 _global 문맥에 둔 값이다 -->
+            <action handler="sirsoft-ecommerce.setClaimExchangeMode" claimId="{{_global.claimExchangeModeContext?.claimId ?? null}}" mode="{{_global.claimExchangeModeContext?.mode ?? ''}}">
+              <fail>
+                <!-- 실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다. -->
+                <suppress/>
+              </fail>
+            </action>
+          </on>
+          $t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

@@ -4,6 +4,77 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.0] - 2026-10-10
+
+### Added
+
+#### 게시판 설정·검증
+- 게시판 환경설정의 탭 전환 확인 창 문구(`admin/settings.unsaved_tab_modal.*` — 제목, 본문, 「이 탭에 머무르기」, 「저장하지 않고 이동」)의 일본어 번역을 추가했습니다.
+- 게시판 유형 추가·수정 검증 문구의 칸 이름 「掲示板タイプ名」(`validation.attributes.board_type.name`)의 일본어 번역을 추가했습니다.
+- 게시판 생성·복사 화면에서 기본 권한 밖 계정에게 보이는 안내(`admin/form.permissions.members_assign_denied` — 「基本権限設定に含まれていないアカウントは、新しい掲示板の管理者に本人のみ指定できます。…」)의 일본어 번역을 추가했습니다.
+- 반응 유형 아이콘을 지울 때의 확인 창 문구(`admin/settings.reaction_types.icon_remove_confirm_title`·`icon_remove_confirm_message` — 「アイコンの削除」「…元に戻せません。…」)의 일본어 번역을 추가했습니다.
+- 관리자·스텝 일괄 지정의 건너뜀 사유 「このロールを付与できない掲示板（権限不足）」(`admin/settings.bulk_members.reason_not_grantable`)와 게시판 수정 권한이 없을 때의 잠금 안내(`bulk_members.no_permission`)의 일본어 번역을 추가했습니다.
+- 관리자·스텝 일괄 지정의 건너뜀 사유 「掲示板のロール情報がない（データ破損）」(`admin/settings.bulk_members.reason_role_missing`)와 게시판 목록을 불러오지 못했을 때의 잠금 안내(`bulk_members.load_failed`)의 일본어 번역을 추가했습니다.
+- 관리자·스텝 일괄 지정 결과 줄과 완료 안내에 바꿀 것이 없던 게시판 수 「変化なし{{unchanged}}件」을 더했습니다(`admin/settings.bulk_members.result_summary`, `messages.boards.bulk_members_success` 「…(除外 :skipped件、変化なし :unchanged件)」).
+- 게시판 요청 검증 문구의 공용 항목 이름(`validation.fallback_attributes.*` — 「並び順」「掲示板」「検索キーワード」 등 46건)과 게시판 환경설정 저장 검증의 항목 이름(`validation.attributes.settings` — SEO·알림 채널·신고 정책·표시 설정 등 32건)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일의 검증 문구에 `sort`·`board id` 같은 필드 키가 그대로 보입니다.
+- 댓글 상태 조작 거절 문구(`validation.comment.status.in` 「無効なコメントステータスです。」)와 게시판 요청 공용 대체 검증 문구(`validation.fallback.*` — 「選択された :attribute の値は正しくありません。」 등 10건)의 일본어 번역을 추가했습니다.
+- 게시판 생성·수정 검증 문구의 칸 이름 「掲示板名」·「掲示板の説明」(`validation.attributes.board.name`·`description`)의 일본어 번역을 추가했습니다.
+- 게시판 사용자 권한 「공지 등록」(`posts.write-notice`)의 일본어 번역을 추가했습니다 — 권한 설정 화면의 권한 이름·설명(「お知らせ登録」), 게시판 기본 권한 표와 저장 검증의 항목 이름, 권한 없이 공지로 지정할 때의 거부 메시지(`permission.notice_denied`)입니다.
+- 게시판 환경설정 「관리자·스텝 일괄 지정」(「管理者・スタッフ一括指定」) 카드·확인 창·결과 문구(`admin/settings.bulk_members.*`, 탭 라벨 `board_settings_tabs.bulk_members`)와 처리 결과 안내(`messages.boards.bulk_members_*`), 요청 검증 항목명(`validation.attributes.bulk_members.*`)의 일본어 번역을 추가했습니다.
+- 반응 유형 추가 창의 코드 형식 안내(`admin/settings.reaction_types.validation.code_format` 「英小文字で始め、英小文字・数字・アンダースコア(_)のみで2〜50文字で入力してください」)의 일본어 번역을 추가했고, 아이콘 업로드 실패 안내(`admin/settings.reaction_types.messages.icon_upload_failed`)는 원문처럼 올릴 수 있는 형식과 용량(1MB 이하 PNG, JPG, GIF, WEBP)을 함께 알리도록 다시 번역했습니다.
+- 게시판 폼의 댓글 반응 스위치 이름과 설명(`admin/form.fields.use_comment_reaction`, `descriptions.use_comment_reaction`)을 같은 화면의 「リアクション使用」과 같은 용어인 「コメントリアクション使用」「リアクション使用」으로 번역했습니다.
+- 환경설정 반응 유형 표에서 이미 쓰인 유형의 삭제 버튼에 붙는 안내(`admin/settings.reaction_types.delete_blocked_suffix` 「2件の反応があるため…」)의 일본어 번역을 추가했습니다.
+
+#### 게시글·댓글 관리
+- 원글이 삭제된 상태에서 댓글만 복구하려 할 때의 거절 안내(`messages.comment.restore_parent_deleted`「元の投稿が削除されているため、コメントだけを復元できません。…」)의 일본어 번역을 추가했습니다.
+- 삭제된 게시글·댓글을 블라인드하려 할 때의 거절 안내(`messages.posts.blind_deleted_not_allowed`·`messages.comment.blind_deleted_not_allowed` — 「削除された投稿はブラインドできません。先に復元してからブラインドしてください。」)와 관리자 일괄 처리의 건너뜀 사유 「この掲示板に見つからない投稿」(`messages.posts_bulk.skip_reasons.not_found`)의 일본어 번역을 추가했습니다.
+- 관리자 게시글 상세에서 비밀글 조회 권한이 없는 관리자에게 비밀 댓글 자리에 뜨는 안내(`admin/posts.detail.secret_comment_notice` — 「非公開コメントです」)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 안내만 한국어로 보입니다.
+- 관리자 게시글·답변 카드의 첨부파일 내려받기 실패 안내(`admin/posts.detail.download_failed`)의 일본어 번역을 추가했습니다.
+- 관리자 게시글 목록의 일괄 처리(삭제·블라인드·복구) 문구 16건을 추가했습니다.
+  - 선택 건수 표시, 세 가지 확인 모달, 블라인드 사유 입력 라벨, 답글이 함께 지워진다는 안내
+  - 제목·내용을 갈라 찾는 검색 대상 라벨과 그에 딸린 입력 검증 문구
+- 관리자 게시글 일괄 처리에서 건너뛴 글을 사유와 함께 보여 주는 「スキップされた投稿」 창의 제목·안내(`admin/posts.bulk.skipped.*`)와, 글마다 붙는 건너뛴 사유 6종(`messages.posts_bulk.skip_reasons.*` — 「既に削除された投稿」·「返信が付いた投稿（返信削除ポリシーにより削除不可）」 등)의 일본어 번역을 추가했습니다.
+
+#### 개인정보 보유기간
+- 레이아웃 편집기에 쓰이는 개인정보 보유기간 대상·직권 실행 창 이름(`privacy_retention.targets.editor_label`·`manual_run.editor_label`)의 일본어 번역을 추가했습니다.
+- 게시판 환경설정 「개인정보 보유기간」 카드(작성 IP·비회원 글)의 「지금 실행」 버튼과 직권 실행 창 문구의 일본어 번역을 추가했습니다.
+  - 직권 실행 확인 창·진행 상태 줄 문구(`admin/settings.privacy_retention.manual_run.*`)와 편집기 데이터 소스 이름
+  - 두 축을 한 줄씩 정리하면서 줄 이름·대상 건수·공용 「対象を表示」(`privacy_retention.targets.row_ip`·`row_guest`·`count`·`view`)를 더하고, 쓰지 않게 된 축별 건수·보기 문구는 뺐습니다.
+- 게시판 환경설정 「개인정보 보유기간」 카드의 대상 건수(작성 IP·비회원 글)와 「대상 보기」 명단 창 문구(`admin/settings.privacy_retention.targets.*`), 명단 열 이름과 글·댓글 구분(`messages.privacy_retention.target_columns.*`·`target_kinds.*`), 레이아웃 편집기의 데이터 소스 이름(`editor.data_source.privacyTargets`)의 일본어 번역을 추가했습니다.
+- 게시판 환경설정 「개인정보 보유기간」 탭 문구의 일본어 번역을 추가했습니다 — 탭 이름(`tabs.privacy_retention`), 기능 켜기, 작성 IP·비회원 작성자 정보 보유기간, 비회원 글 처리 방식(익명화·삭제)과 삭제 경고, 대상 건수 뱃지, 탈퇴 회원 글 안내, 저장 검증의 항목 이름입니다.
+
+#### 스크랩·반응
+- 게시글 스크랩(북마크) 기능의 일본어 번역을 추가했습니다. 스크랩 활동 로그 문구, 스크랩 처리 안내 메시지, 게시판 설정 화면의 스크랩 사용 토글 라벨이 일본어 로케일에서 자연스럽게 표시됩니다.
+- 관리자 스크랩 관리 화면의 일본어 번역 46건을 추가했습니다.
+  - 목록 제목·검색 대상(제목·내용·게시판·회원·작성자)·게시판과 기간 필터·스크랩 해제 확인 모달
+  - 원글이 지워졌거나 게시판에서 스크랩을 끈 행에 붙는 배지 문구
+  - 좌측 메뉴 「스크랩 관리」와 권한 3종(`sirsoft-board.scraps`·`.view`·`.manage`)도 함께 번역했습니다.
+- 회원 상세의 스크랩 탭 문구 7건을 추가했습니다 — 탭 이름, 스크랩 수와 단위, 마지막 스크랩 시각, 스크랩이 없을 때의 안내, 목록으로 이동하는 링크입니다.
+- 게시글·댓글 반응 관리 권한 3종(`sirsoft-board.reactions`·`.view`·`.manage`)과 좌측 메뉴 「반응 관리」의 일본어 번역을 시드에 추가했습니다 — 모듈 설치·갱신 시 함께 만들어지는 고정 권한과 메뉴인데 시드에 빠져 있어 일본어 로케일의 역할 수정 화면과 관리자 메뉴에 한국어로 남아 있었습니다.
+
+#### 알림·권한·연동
+- 알림 템플릿 편집 창 「사용 가능한 변수」 설명(`messages.notification_variables.*`)의 일본어 번역을 추가했습니다.
+- 상품 문의 연동 실패 문구(문의·답변 수정·삭제 실패, 답변 없음, 게시판 설정 변경으로 글을 찾을 수 없음)와 활동 이력의 비밀글 표기 일본어 번역을 추가했습니다.
+- 게시판 대시보드 권한 2건(`sirsoft-board.dashboard`·`sirsoft-board.dashboard.view`)의 일본어 번역을 추가했습니다 — 모듈 설치 시 함께 만들어지는 고정 권한인데 시드에 빠져 있어 일본어 로케일의 역할 수정 화면에서 한국어로 남아 있었습니다.
+- 알림 수신자 규칙 「관련 사용자」의 관계 이름 네 가지(`messages.notification_relations.*`, 「投稿者」·「元コメントの投稿者」·「元投稿の投稿者」·「掲示板管理者」)를 일본어로 번역했습니다.
+- 게시판 권한 잠금 안내(게시판 생성 권한 없는 읽기 전용 폼, 일괄 적용·게시판 유형 관리·SEO 캐시 초기화·반응 유형 관리·문의 게시판 메뉴 추가·첨부 업로드 권한 없음)의 일본어 번역을 추가했습니다.
+- 환경설정 「본인인증 정책」 탭의 권한 안내 문구(`admin/settings.identity.no_read_permission`·`read_only_notice`)의 일본어 번역을 추가했습니다.
+- 게시판 환경설정 「본인인증 정책」 탭에서 게시판 밖 대상을 거절할 때의 안내(`validation.identity_policy.target_not_owned` — 「掲示板の本人認証ポリシーは掲示板の地点のみを対象にできます。…」)와 고칠 칸이 없을 때의 안내(`validation.identity_policy.nothing_to_update` — 「変更する項目がありません。」)의 일본어 번역을 추가했습니다.
+
+#### 샘플 데이터
+- 샘플 데이터(`--sample`)로 만드는 게시판 9개의 이름과 설명(`seed/sample_boards.json` — 「お知らせ」「自由掲示板」「お問い合わせ」「商品お問い合わせ」 등)의 일본어 번역을 추가했습니다. 일본어 언어팩이 켜진 사이트에서 샘플 데이터를 넣으면 게시판 이름이 일본어로 만들어집니다.
+
+### Removed
+
+- 어디서도 쓰지 않던 「IP 주소는 필수입니다」 검증 문구(`validation.comment.ip_address.required`, 백엔드·프론트 각 1건)를 원본 모듈과 함께 지웠습니다 — 게시글 작성 IP 가 개인정보 보유기간 처리로 비워질 수 있게 되면서 뜻도 틀리게 되었습니다.
+- ko 원본에서 지운 관리자 설정 문구의 **일본어 번역이 남아 있던 것**(반응 유형 2건)을 정리했습니다. 화면에는 쓰이지 않던 문구입니다.
+- 연속 작성·신고 간격 안내에서 「1時間 30分」처럼 두 단위를 한 문구로 두던 키(`validation.cooldown_duration.minutes_seconds`, `hours_minutes`)를 원본 모듈과 함께 지웠습니다 — 이제 단위 문구(`hours`, `minutes`, `seconds`)를 하나씩 읽어 공백으로 잇습니다. 화면 표기(「1 時間 30 分」)는 같습니다.
+
+### Fixed
+
+- 관리자 게시글 상세에서 댓글 아래 대댓글을 펼치는 버튼(`admin/posts.detail.show_replies`·`hide_replies`)이 「返信 N件を表示」로 적혀 글의 답변글을 여는 것처럼 읽히던 것을 원본 모듈과 함께 「返信コメント N件を表示」·「返信コメントを非表示」로 바로잡았습니다.
+- 문자 메시지 플러그인을 쓰는 일본어 사이트에서 댓글·답글·신고 처리 등 게시판 알림의 문자·알림톡 제목과 본문이 일본어 없이 남던 문제를 수정했습니다.
+
 ## [1.0.4] - 2026-09-06
 
 ### Added

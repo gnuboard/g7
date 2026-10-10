@@ -1,0 +1,91 @@
+<!-- 「기본값」 탭의 권한 구획 — 새 게시판이 물려받을 «권한 → 역할» 표다. 관리자용과 사용자용을 키 접두어(`admin.`)로 갈라 두 묶음으로 세우고, 묶음 머리의 체크박스는 그 묶음 전체를 일괄 적용 대상에 한꺼번에 넣고 뺀다 -->
+<partial description="게시판 설정 > 권한 탭">
+  <div data-ref="permissions" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div>
+      <section-layout data-type="layout" data-ref="section_permissions" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.permissions</h3>
+        <div class="card-description">$t:sirsoft-board.admin.settings.permissions_table.description</div>
+        <div class="alert-info">
+          <icon name="circle-info" class="text-blue-500 dark:text-blue-400 flex-shrink-0" size="sm"/>
+          <p class="text-info-soft">$t:sirsoft-board.admin.settings.permissions_table.bulk_apply_notice</p>
+        </div>
+        <div data-ref="permissions_admin_section" class="toggle-group mb-6">
+          <label class="section-header-row">
+            <input type="checkbox" class="checkbox flex-shrink-0" checked="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 &amp;&amp; Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}" disabled="{{!_computed.canBulkApply}}">
+              <on type="change">
+                <!-- 관리자용 권한 «전체»를 일괄 적용 대상에 넣거나 뺀다 — 이미 전부 들어 있으면 그 묶음만 빼고, 아니면 통째로 더한 뒤 중복을 걷어낸다(사용자용 묶음은 건드리지 않는다) -->
+                <set-state target="local" bulkApplyFields="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => !k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"/>
+              </on>
+            </input>
+            <icon name="shield" size="sm" class="text-purple-500 dark:text-purple-400"/>
+            <span class="text-base font-semibold text-gray-800 dark:text-gray-100">$t:sirsoft-board.admin.settings.permissions_table.admin_section</span>
+          </label>
+          <div class="divider-list">
+            <div data-each="perm in $computed.adminPermissions ?? []" class="stack-tight list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'bg-purple-50 dark:bg-purple-900/20' : ''}}">
+              <label class="flex-start gap-2 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 관리자용 권한 «한 줄»을 일괄 적용 대상에 넣었다 뺐다 한다 — 위 묶음 머리 체크박스는 이 줄들이 모두 들어 있을 때만 켜진 것으로 보인다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"/>
+                  </on>
+                </input>
+                <div class="stack-flush gap-0.5">
+                  <span class="text-body font-medium">$t:sirsoft-board.board.permissions.{{perm?.[0]}}</span>
+                  <span class="text-hint">$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc</span>
+                </div>
+              </label>
+              <div class="row-content-indent">
+                <tag-input data-type="composite" data-ref="perm_tag_admin_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="purple" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 이 관리자용 권한에 어떤 역할을 열지 고른다 — 표 전체를 다시 지으면서 건드린 키만 새 값으로 바꾼다(중첩 객체를 통째로 새로 만들어야 변경이 잡힌다) -->
+                    <set-state target="local" form.basic_defaults.default_board_permissions="{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}" :hasChanges="true"/>
+                  </on>
+                </tag-input>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="permissions_user_section" class="toggle-group">
+          <label class="section-header-row">
+            <input type="checkbox" class="checkbox flex-shrink-0" checked="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 &amp;&amp; Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}" disabled="{{!_computed.canBulkApply}}">
+              <on type="change">
+                <!-- 사용자용 권한 «전체»를 일괄 적용 대상에 넣거나 뺀다 — 관리자용 묶음과 대칭이고, 뺄 때 남기는 쪽이 서로 반대다 -->
+                <set-state target="local" bulkApplyFields="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"/>
+              </on>
+            </input>
+            <icon name="users" size="sm" class="text-blue-500 dark:text-blue-400"/>
+            <span class="text-base font-semibold text-gray-800 dark:text-gray-100">$t:sirsoft-board.admin.settings.permissions_table.user_section</span>
+          </label>
+          <div class="divider-list">
+            <div data-each="perm in $computed.userPermissions ?? []" class="stack-tight list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'bg-blue-50 dark:bg-blue-900/20' : ''}}">
+              <label class="flex-start gap-2 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 사용자용 권한 «한 줄»을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"/>
+                  </on>
+                </input>
+                <div class="stack-flush gap-0.5">
+                  <span class="text-body font-medium">$t:sirsoft-board.board.permissions.{{perm?.[0]}}</span>
+                  <span class="text-hint">$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc</span>
+                </div>
+              </label>
+              <div class="row-content-indent">
+                <tag-input data-type="composite" data-ref="perm_tag_user_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 이 사용자용 권한에 어떤 역할을 열지 고른다 — 관리자용 줄과 같은 갱신 규칙을 쓴다 -->
+                    <set-state target="local" form.basic_defaults.default_board_permissions="{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}" :hasChanges="true"/>
+                  </on>
+                </tag-input>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section-layout>
+    </div>
+  </div>
+</partial>

@@ -113,7 +113,8 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
   headerClassName = '',
   rowClassName = '',
   name,
-  readOnly = false,
+  readOnly: readOnlyProp = false,
+  disabled = false,
   createDefaultItem,
   childrenKey: _childrenKey,
   itemIdKey = '_id',
@@ -121,6 +122,8 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
   id,
   editorAttrs,
 }) => {
+  // disabled 도 읽기 전용으로 다룬다 — 항목 입력·추가·삭제·끌기를 모두 막는다(레이아웃 읽기 전용 게이트 계약)
+  const readOnly = readOnlyProp || disabled;
   const formContextRef = useRef<any>(null);
 
   // normalizedItems ref (항상 최신 참조 — stale closure 방지)

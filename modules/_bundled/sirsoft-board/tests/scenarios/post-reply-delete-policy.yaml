@@ -41,6 +41,45 @@ effects:
   - board_delete_fires_bulk_hook        # before_force_delete 훅 chunk 발화 (withTrashed 전체)
   - board_index_sort_whitelisted        # sort_by 화이트리스트 밖 422, per_page 클램프
   - settings_and_form_expose_policy     # 환경설정/게시판 폼에 정책 Select 노출·저장 왕복
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - rejects_unknown_sort_column
+  - rejects_out_of_range_per_page
+  - accepts_full_list_consumer_per_page
+  - sorts_by_whitelisted_column
+  - service_ignores_unlisted_sort_column
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - cascade_policy_soft_deletes_all_descendant_replies
+  - cascade_restore_restores_descendants_and_their_children
+  - user_predeleted_reply_subtree_stays_trashed_after_restore
+  - cascade_skips_already_trashed_descendants
+  - block_policy_returns_422_with_message_when_alive_reply_exists
+  - block_policy_allows_delete_when_replies_all_trashed
+  - user_delete_path_applies_policy
+  - report_trigger_delete_applies_block_policy
+  - orphan_reply_under_trashed_chain_is_swept_on_delete
+  - ecommerce_hook_delete_bypasses_block_policy
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - store_post_fails_without_title
+  - store_post_fails_without_content
+  - store_post_fails_with_title_too_short
+  - store_post_fails_with_invalid_content_mode
+  - store_post_succeeds_with_valid_data
+  - store_comment_fails_without_content
+  - store_comment_fails_without_post_id
+  - store_comment_guest_fails_without_author_name
+  - store_comment_guest_fails_without_password
+  - store_comment_guest_succeeds_with_valid_data
+  - store_report_fails_without_reason_type
+  - store_report_fails_without_reason_detail
+  - store_report_fails_with_invalid_reason_type
+  - store_report_succeeds_with_valid_data
+  - update_post_fails_with_title_too_short
+  - post_update_rejects_array_password
+  - comment_destroy_rejects_array_password
+  - comment_destroy_rejects_too_short_password
+  - member_comment_destroy_without_password_succeeds
+  - post_destroy_rejects_array_verification_token
+  - guest_post_destroy_with_valid_password_succeeds
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReplyDeletePolicyTest.php

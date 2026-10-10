@@ -20,6 +20,10 @@ return [
     'parent_menu_not_found' => '존재하지 않는 부모 메뉴입니다.',
     'cannot_set_self_as_parent' => '자기 자신을 부모로 설정할 수 없습니다.',
     'cannot_delete_menu_with_children' => '자식 메뉴가 있는 메뉴는 삭제할 수 없습니다.',
+    'admin_role_required' => '관리자 역할은 모든 메뉴에 항상 접근합니다. 관리자 역할은 뺄 수 없습니다.',
+    'bulk_roles_success' => '메뉴 :count개의 역할을 변경했습니다.',
+    'bulk_roles_failed' => '메뉴 역할 일괄 변경에 실패했습니다.',
+    'bulk_roles_unmanageable' => '관리할 수 없는 메뉴가 포함되어 있습니다.',
 
     // 검증 메시지
     'validation' => [

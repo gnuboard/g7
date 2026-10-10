@@ -5,11 +5,12 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 1종 / 호출 지점 1곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
+발행 훅 2종 / 호출 지점 2곳. 이 중 2종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `gnuboard7-hello_module.memo.created` | action | — | `src/Services/MemoService.php:62` |
+| `gnuboard7-hello_module.memo.created` | action | — | `src/Services/MemoService.php:69` |
+| `gnuboard7-hello_module.memo.title.filter` | filter | — | `src/Services/MemoService.php:64` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

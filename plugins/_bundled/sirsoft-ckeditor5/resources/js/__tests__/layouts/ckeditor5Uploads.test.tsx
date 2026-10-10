@@ -23,6 +23,7 @@ import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 
 import uploadsLayout from '../../../layouts/admin/ckeditor5_uploads.json';
 import routesJson from '../../../routes.json';
+import { callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ─── 헬퍼 ───
 
@@ -163,7 +164,8 @@ describe('업로드 관리 화면 — 목록 컨텍스트 왕복', () => {
 
     it('필터 초기화는 병합하지 않으며 그 의도를 코드에 남긴다', () => {
         const clear = (uploadsLayout as any).named_actions.clearFilters;
-        const navigate = clear.params.actions.find((a: any) => a.handler === 'navigate');
+        // 굽기는 sequence 의 하위 액션을 top-level `actions` 로 접는다 (params.actions 아님)
+        const navigate = callbacksOf(clear, 'actions').find((a: any) => a.handler === 'navigate');
 
         expect(navigate.params.mergeQuery).toBeUndefined();
         expect(navigate.comment).toContain('audit:allow layout-list-context-navigate-merge-query');

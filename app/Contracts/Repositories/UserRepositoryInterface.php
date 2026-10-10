@@ -4,6 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
@@ -61,16 +62,21 @@ interface UserRepositoryInterface
      * 필터링 및 페이지네이션이 적용된 사용자 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건 배열
+     * @param  array<int, callable(Builder, array): void>  $extensions  확장이 더한 쿼리 조건 클로저 목록
      * @return LengthAwarePaginator 페이지네이션된 사용자 목록
      */
-    public function getPaginatedUsers(array $filters = []): LengthAwarePaginator;
+    public function getPaginatedUsers(array $filters = [], array $extensions = []): LengthAwarePaginator;
 
     /**
      * 사용자 관련 통계 정보를 조회합니다.
      *
+     * 기본은 현재 사용자의 `core.users.read` 조회 스코프 안에서 셉니다. 사용자와 무관하게
+     * 캐시하는 사이트 전체 집계만 `false` 로 스코프를 끕니다.
+     *
+     * @param  bool  $applyPermissionScope  현재 사용자의 조회 스코프 적용 여부
      * @return array 사용자 통계 데이터 배열
      */
-    public function getStatistics(): array;
+    public function getStatistics(bool $applyPermissionScope = true): array;
 
     /**
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
@@ -106,6 +112,17 @@ interface UserRepositoryInterface
     public function findManyByUuidsKeyed(array $uuids): Collection;
 
     /**
+     * 사용자 번호 목록으로 사용자들을 조회하고 번호 키 맵으로 반환합니다.
+     *
+     * 번호만 들고 있는 목록(방문자 통계의 원장 행 등)이 한 쪽에 실린 회원을 한 번에
+     * 읽을 때 씁니다 — 행마다 읽으면 한 쪽에 쪽 크기만큼 질의가 납니다.
+     *
+     * @param  array<int, int>  $ids  사용자 번호 목록
+     * @return Collection<int, User> id => User 매핑
+     */
+    public function findManyByIdsKeyed(array $ids): Collection;
+
+    /**
      * UUID 목록으로 사용자들을 조회합니다.
      *
      * @param  array<int, string>  $uuids  사용자 UUID 목록
@@ -132,11 +149,14 @@ interface UserRepositoryInterface
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
      *
      * `last_failed_login_at` 도 현재 시각으로 갱신하며 새 카운트를 반환합니다.
+     * `$windowMinutes` 가 양수이고 직전 실패가 그보다 오래됐으면 카운터를 1 부터 다시 센다 —
+     * "차단 시간 안의 연속 실패" 만 잠금으로 이어지게 한다. null·0 이하는 기간 제한 없이 누적한다.
      *
      * @param  User  $user  대상 사용자
+     * @param  int|null  $windowMinutes  실패를 연속으로 인정하는 기간(분). null·0 이하는 무기한
      * @return int 증가 후 카운트
      */
-    public function incrementFailedAttempts(User $user): int;
+    public function incrementFailedAttempts(User $user, ?int $windowMinutes = null): int;
 
     /**
      * 사용자의 계정을 지정된 분만큼 잠급니다.
@@ -161,6 +181,7 @@ interface UserRepositoryInterface
      * `last_failed_login_at=null`).
      *
      * @param  User  $user  대상 사용자
+     * @return void 없음
      */
     public function resetLoginAttempts(User $user): void;
 
@@ -218,4 +239,25 @@ interface UserRepositoryInterface
      * @return int 삭제된 토큰 수
      */
     public function deleteTokensByUserIds(array $ids): int;
+
+    /**
+     * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.
+     *
+     * 적용 범위·날짜 조건은 호출자(`PasswordExpiryService`)가 덧붙인다.
+     *
+     * @return Builder<User> 후보 쿼리
+     *
+     * @since 7.1.0
+     */
+    public function passwordExpiryCandidateQuery(): Builder;
+
+    /**
+     * 회원 ID 목록으로 제한한 쿼리를 반환합니다 (배치 상한으로 고른 대상을 청크 처리할 때).
+     *
+     * @param  array<int, int>  $ids  회원 ID 배열
+     * @return Builder<User> 쿼리
+     *
+     * @since 7.1.0
+     */
+    public function queryByIds(array $ids): Builder;
 }

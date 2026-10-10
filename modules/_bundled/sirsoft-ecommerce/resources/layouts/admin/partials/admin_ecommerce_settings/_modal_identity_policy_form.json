@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 본인인증 정책 만들기/고치기 창. **어느 지점에서 · 누구에게 · 무슨 목적으로**\n  인증을 요구할지를 한 줄로 정한다.\n  \n  폼 값이 전부 `_global.identity_policy_form_modal.form` 아래 있는 이유는 창이 별도 컨텍스트라\n  정책 목록의 `_local` 을 보지 못하기 때문이다. 같은 자리에 `isNew`·`isSaving`·`errors` 도\n  함께 있어, 만들기와 고치기가 **한 창을 나눠 쓴다**(보내는 주소와 메서드만 갈린다).\n  \n  숫자 칸(유예 시간·우선순위)은 `Number()` 로 감싸 담는다 — 입력칸이 주는 값은 문자열이고,\n  그대로 보내면 서버 검증이 형을 문제 삼는다.",
     "meta": {
         "is_partial": true,
         "description": "이커머스 환경설정 > 본인인증 정책 탭 내 정책 추가/편집 모달. _global.identity_policy_form_modal 단일 진실 패턴 — list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피)",
@@ -39,7 +40,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "flex gap-2" },
+                                    "props": {
+                                        "className": "flex gap-2"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -52,7 +55,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
-                                            "props": { "className": "flex-1" },
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -66,12 +71,12 @@
                                                     "type": "basic",
                                                     "name": "Ul",
                                                     "if": "{{_global.identity_policy_form_modal?.errors?.errors && Object.keys(_global.identity_policy_form_modal.errors.errors).length > 0}}",
-                                                    "props": {
-                                                        "className": "mt-1 list-disc list-inside space-y-0.5"
-                                                    },
                                                     "iteration": {
                                                         "source": "Object.entries(_global.identity_policy_form_modal?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])",
                                                         "item_var": "msg"
+                                                    },
+                                                    "props": {
+                                                        "className": "mt-1 list-disc list-inside space-y-0.5"
                                                     },
                                                     "children": [
                                                         {
@@ -90,7 +95,6 @@
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
@@ -98,20 +102,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Label",
-                                    "props": { "className": "form-label" },
+                                    "props": {
+                                        "className": "form-label"
+                                    },
                                     "text": "$t:admin.identity.policies.form.key"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "value": "{{_global.identity_policy_form_modal?.form?.key ?? ''}}",
-                                        "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
-                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.key ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "정책 키. 코드가 이 값으로 정책을 찾으므로 만든 뒤 바꾸면 그 지점의 인증이 풀린다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -119,22 +120,31 @@
                                                 "identity_policy_form_modal.form.key": "{{$event.target.value}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_global.identity_policy_form_modal?.form?.key ?? ''}}",
+                                        "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.key ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{_global.identity_policy_form_modal?.errors?.errors?.key}}",
-                                    "props": { "className": "form-error" },
+                                    "props": {
+                                        "className": "form-error"
+                                    },
                                     "text": "{{_global.identity_policy_form_modal?.errors?.errors?.key?.[0] ?? ''}}"
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "grid-2col-responsive" },
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -143,24 +153,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.scope"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
-                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'input-error disabled:bg-gray-100 dark:disabled:bg-gray-900' : ' disabled:bg-gray-100 dark:disabled:bg-gray-900'}}",
-                                                "options": [
-                                                    { "value": "route", "label": "$t:admin.identity.policies.scope.route" },
-                                                    { "value": "hook", "label": "$t:admin.identity.policies.scope.hook" },
-                                                    { "value": "custom", "label": "$t:admin.identity.policies.scope.custom" }
-                                                ]
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "적용 범위. 어느 층(코어·모듈)의 정책인지를 가른다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -168,13 +171,34 @@
                                                         "identity_policy_form_modal.form.scope": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'input-error disabled:bg-gray-100 dark:disabled:bg-gray-900' : ' disabled:bg-gray-100 dark:disabled:bg-gray-900'}}",
+                                                "options": [
+                                                    {
+                                                        "value": "route",
+                                                        "label": "$t:admin.identity.policies.scope.route"
+                                                    },
+                                                    {
+                                                        "value": "hook",
+                                                        "label": "$t:admin.identity.policies.scope.hook"
+                                                    },
+                                                    {
+                                                        "value": "custom",
+                                                        "label": "$t:admin.identity.policies.scope.custom"
+                                                    }
+                                                ]
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.scope}}",
-                                            "props": { "className": "form-error" },
+                                            "props": {
+                                                "className": "form-error"
+                                            },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.scope?.[0] ?? ''}}"
                                         }
                                     ]
@@ -186,20 +210,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.target"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "text",
-                                                "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
-                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "대상. 범위 안에서 구체적으로 무엇에 걸리는지다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -207,24 +228,33 @@
                                                         "identity_policy_form_modal.form.target": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.target}}",
-                                            "props": { "className": "form-error" },
+                                            "props": {
+                                                "className": "form-error"
+                                            },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.target?.[0] ?? ''}}"
                                         }
                                     ]
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "grid-2col-responsive" },
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -233,19 +263,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.purpose"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "value": "{{_global.identity_policy_form_modal?.form?.purpose ?? 'sensitive_action'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'input-error' : ''}}",
-                                                "options": "{{(ecommerceIdentityPurposes?.data ?? []).map(function(p) { return {value: p.id, label: p.label ?? p.id}; })}}"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "목적. 같은 지점이라도 목적이 다르면 인증을 다시 받는다(성인 확인과 본인 확인은 별개다).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -253,13 +281,20 @@
                                                         "identity_policy_form_modal.form.purpose": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.purpose ?? 'sensitive_action'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'input-error' : ''}}",
+                                                "options": "{{(ecommerceIdentityPurposes?.data ?? []).map(function(p) { return {value: p.id, label: p.label ?? p.id}; })}}"
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose}}",
-                                            "props": { "className": "form-error" },
+                                            "props": {
+                                                "className": "form-error"
+                                            },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose?.[0] ?? ''}}"
                                         }
                                     ]
@@ -271,19 +306,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.provider_id"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "value": "{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}",
-                                                "className": "",
-                                                "options": "{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "인증 수단. 비워 두면 활성화된 수단 중 기본이 쓰인다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -291,17 +324,23 @@
                                                         "identity_policy_form_modal.form.provider_id": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}",
+                                                "className": "",
+                                                "options": "{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}"
+                                            }
                                         }
                                     ]
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "grid-2col-responsive" },
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -310,21 +349,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.grace_minutes"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "number",
-                                                "value": "{{_global.identity_policy_form_modal?.form?.grace_minutes ?? 0}}",
-                                                "min": 0,
-                                                "max": 1440,
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'input-error' : ''}}"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "유예 시간(분). 최근에 인증했으면 이 시간 안에는 다시 묻지 않는다 — 0 이면 매번 묻는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -332,13 +367,22 @@
                                                         "identity_policy_form_modal.form.grace_minutes": "{{Number($event.target.value)}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "number",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.grace_minutes ?? 0}}",
+                                                "min": 0,
+                                                "max": 1440,
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'input-error' : ''}}"
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes}}",
-                                            "props": { "className": "form-error" },
+                                            "props": {
+                                                "className": "form-error"
+                                            },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes?.[0] ?? ''}}"
                                         }
                                     ]
@@ -350,23 +394,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.applies_to"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "value": "{{_global.identity_policy_form_modal?.form?.applies_to ?? 'both'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to ? 'input-error' : ''}}",
-                                                "options": [
-                                                    { "value": "self", "label": "$t:admin.identity.policies.applies_to.self" },
-                                                    { "value": "admin", "label": "$t:admin.identity.policies.applies_to.admin" },
-                                                    { "value": "both", "label": "$t:admin.identity.policies.applies_to.both" }
-                                                ]
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "적용 대상. 회원·비회원 등 누구에게 걸지를 정한다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -374,20 +412,39 @@
                                                         "identity_policy_form_modal.form.applies_to": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.applies_to ?? 'both'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to ? 'input-error' : ''}}",
+                                                "options": [
+                                                    {
+                                                        "value": "self",
+                                                        "label": "$t:admin.identity.policies.applies_to.self"
+                                                    },
+                                                    {
+                                                        "value": "admin",
+                                                        "label": "$t:admin.identity.policies.applies_to.admin"
+                                                    },
+                                                    {
+                                                        "value": "both",
+                                                        "label": "$t:admin.identity.policies.applies_to.both"
+                                                    }
+                                                ]
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to}}",
-                                            "props": { "className": "form-error" },
+                                            "props": {
+                                                "className": "form-error"
+                                            },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to?.[0] ?? ''}}"
                                         }
                                     ]
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
@@ -395,21 +452,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Label",
-                                    "props": { "className": "form-label" },
+                                    "props": {
+                                        "className": "form-label"
+                                    },
                                     "text": "$t:admin.identity.policies.form.priority"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "number",
-                                        "value": "{{_global.identity_policy_form_modal?.form?.priority ?? 100}}",
-                                        "min": 0,
-                                        "max": 65535,
-                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.priority ? 'input-error' : ''}}"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "우선순위. 한 지점에 정책이 여럿이면 이 값으로 어느 것을 쓸지 가른다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -417,28 +470,40 @@
                                                 "identity_policy_form_modal.form.priority": "{{Number($event.target.value)}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "value": "{{_global.identity_policy_form_modal?.form?.priority ?? 100}}",
+                                        "min": 0,
+                                        "max": 65535,
+                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.priority ? 'input-error' : ''}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "props": { "className": "text-hint mt-1" },
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
                                     "text": "$t:admin.identity.policies.form.priority_desc"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{_global.identity_policy_form_modal?.errors?.errors?.priority}}",
-                                    "props": { "className": "form-error" },
+                                    "props": {
+                                        "className": "form-error"
+                                    },
                                     "text": "{{_global.identity_policy_form_modal?.errors?.errors?.priority?.[0] ?? ''}}"
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "grid-2col-responsive" },
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -447,22 +512,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.fail_mode"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "value": "{{_global.identity_policy_form_modal?.form?.fail_mode ?? 'block'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'input-error' : ''}}",
-                                                "options": [
-                                                    { "value": "block", "label": "$t:admin.identity.policies.fail_mode.block" },
-                                                    { "value": "log_only", "label": "$t:admin.identity.policies.fail_mode.log_only" }
-                                                ]
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "실패 처리. 인증에 실패했을 때 막을지 통과시킬지다 — 통과를 고르면 인증이 사실상 권고가 된다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -470,13 +530,29 @@
                                                         "identity_policy_form_modal.form.fail_mode": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.fail_mode ?? 'block'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'input-error' : ''}}",
+                                                "options": [
+                                                    {
+                                                        "value": "block",
+                                                        "label": "$t:admin.identity.policies.fail_mode.block"
+                                                    },
+                                                    {
+                                                        "value": "log_only",
+                                                        "label": "$t:admin.identity.policies.fail_mode.log_only"
+                                                    }
+                                                ]
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode}}",
-                                            "props": { "className": "form-error" },
+                                            "props": {
+                                                "className": "form-error"
+                                            },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode?.[0] ?? ''}}"
                                         }
                                     ]
@@ -484,23 +560,24 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "flex items-end justify-between gap-2 pb-2" },
+                                    "props": {
+                                        "className": "flex items-end justify-between gap-2 pb-2"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "form-label" },
+                                            "props": {
+                                                "className": "form-label"
+                                            },
                                             "text": "$t:admin.identity.policies.form.enabled"
                                         },
                                         {
                                             "type": "composite",
                                             "name": "Toggle",
-                                            "props": {
-                                                "checked": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
-                                                "size": "md"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "사용 여부. 끄면 정책이 남아 있되 적용되지 않는다(지우는 것과 다르다).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -508,13 +585,16 @@
                                                         "identity_policy_form_modal.form.enabled": "{{!_global.identity_policy_form_modal?.form?.enabled}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "checked": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
+                                                "size": "md"
+                                            }
                                         }
                                     ]
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
@@ -523,23 +603,17 @@
                                 {
                                     "type": "basic",
                                     "name": "Label",
-                                    "props": { "className": "form-label" },
+                                    "props": {
+                                        "className": "form-label"
+                                    },
                                     "text": "$t:admin.identity.policies.form.signup_stage"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Select",
-                                    "props": {
-                                        "value": "{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}",
-                                        "className": "",
-                                        "options": [
-                                            { "value": "", "label": "$t:admin.identity.policies.form.signup_stage_unset" },
-                                            { "value": "before_submit", "label": "$t:admin.identity.policies.form.signup_stage_before_submit" },
-                                            { "value": "after_create", "label": "$t:admin.identity.policies.form.signup_stage_after_create" }
-                                        ]
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "가입 단계 조건. 가입 과정의 어느 단계에서 물을지이고, 가입과 무관한 정책에서는 쓰이지 않는다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -547,17 +621,36 @@
                                                 "identity_policy_form_modal.form.conditions.signup_stage": "{{$event.target.value}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "value": "{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}",
+                                        "className": "",
+                                        "options": [
+                                            {
+                                                "value": "",
+                                                "label": "$t:admin.identity.policies.form.signup_stage_unset"
+                                            },
+                                            {
+                                                "value": "before_submit",
+                                                "label": "$t:admin.identity.policies.form.signup_stage_before_submit"
+                                            },
+                                            {
+                                                "value": "after_create",
+                                                "label": "$t:admin.identity.policies.form.signup_stage_after_create"
+                                            }
+                                        ]
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "props": { "className": "text-hint mt-1" },
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
                                     "text": "$t:admin.identity.policies.form.signup_stage_desc"
                                 }
                             ]
                         },
-
                         {
                             "type": "basic",
                             "name": "Div",
@@ -580,11 +673,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
-                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -592,6 +680,11 @@
                                     "target": "identity_policy_form_modal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
+                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -603,86 +696,85 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.identity_policy_form_modal?.isSaving}}",
-                                "className": "flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg"
-                            },
                             "actions": [
                                 {
+                                    "comment": "저장. 만들기와 고치기가 같은 버튼을 쓰고 `isNew` 가 주소와 메서드를 가른다. 시작할 때 이전 오류를 함께 지우고, 성공하면 폼 자리를 통째로 비운 뒤 정책 목록을 다시 부른다.",
                                     "type": "click",
                                     "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "identity_policy_form_modal.isSaving": true,
+                                                "identity_policy_form_modal.errors": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-ecommerce/admin/identity-policies' : '/api/modules/sirsoft-ecommerce/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}",
+                                                "body": {
+                                                    "key": "{{_global.identity_policy_form_modal?.form?.key}}",
+                                                    "scope": "{{_global.identity_policy_form_modal?.form?.scope}}",
+                                                    "target": "{{_global.identity_policy_form_modal?.form?.target}}",
+                                                    "purpose": "{{_global.identity_policy_form_modal?.form?.purpose}}",
+                                                    "provider_id": "{{_global.identity_policy_form_modal?.form?.provider_id || null}}",
+                                                    "grace_minutes": "{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}",
+                                                    "applies_to": "{{_global.identity_policy_form_modal?.form?.applies_to}}",
+                                                    "fail_mode": "{{_global.identity_policy_form_modal?.form?.fail_mode}}",
+                                                    "enabled": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
+                                                    "priority": "{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}",
+                                                    "conditions": "{{_global.identity_policy_form_modal?.form?.conditions ?? null}}",
+                                                    "source_type": "{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}",
+                                                    "source_identifier": "{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-ecommerce' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-ecommerce')}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "message": "$t:admin.identity.policies.save_success",
+                                                        "type": "success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "identity_policy_form_modal"
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "ecommerceIdentityPolicies"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal": null
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "global",
-                                                    "identity_policy_form_modal.isSaving": true,
-                                                    "identity_policy_form_modal.errors": null
+                                                    "identity_policy_form_modal.isSaving": false,
+                                                    "identity_policy_form_modal.errors": "{{error}}"
                                                 }
-                                            },
-                                            {
-                                                "handler": "apiCall",
-                                                "auth_required": true,
-                                                "target": "{{_global.identity_policy_form_modal?.isNew ? '/api/admin/identity/policies' : '/api/admin/identity/policies/' + _global.identity_policy_form_modal?.form?.id}}",
-                                                "params": {
-                                                    "method": "{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}",
-                                                    "body": {
-                                                        "key": "{{_global.identity_policy_form_modal?.form?.key}}",
-                                                        "scope": "{{_global.identity_policy_form_modal?.form?.scope}}",
-                                                        "target": "{{_global.identity_policy_form_modal?.form?.target}}",
-                                                        "purpose": "{{_global.identity_policy_form_modal?.form?.purpose}}",
-                                                        "provider_id": "{{_global.identity_policy_form_modal?.form?.provider_id || null}}",
-                                                        "grace_minutes": "{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}",
-                                                        "applies_to": "{{_global.identity_policy_form_modal?.form?.applies_to}}",
-                                                        "fail_mode": "{{_global.identity_policy_form_modal?.form?.fail_mode}}",
-                                                        "enabled": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
-                                                        "priority": "{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}",
-                                                        "conditions": "{{_global.identity_policy_form_modal?.form?.conditions ?? null}}",
-                                                        "source_type": "{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}",
-                                                        "source_identifier": "{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-ecommerce' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-ecommerce')}}"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "message": "$t:admin.identity.policies.save_success",
-                                                            "type": "success"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "closeModal",
-                                                        "target": "identity_policy_form_modal"
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": { "dataSourceId": "ecommerceIdentityPolicies" }
-                                                    },
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "identity_policy_form_modal": null
-                                                        }
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "identity_policy_form_modal.isSaving": false,
-                                                            "identity_policy_form_modal.errors": "{{error}}"
-                                                        }
-                                                    }
-                                                ]
                                             }
-                                        ]
-                                    }
+                                        }
+                                    ]
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.identity_policy_form_modal?.isSaving || ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}",
+                                "className": "flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -19,6 +20,7 @@ class InstallModuleCommand extends Command
 {
     use HasProgressBar;
     use RebuildsSearchIndex;
+    use SelectsLayoutInstallSource;
 
     /**
      * The name and signature of the console command.
@@ -27,6 +29,7 @@ class InstallModuleCommand extends Command
         {identifier : 설치할 모듈 식별자}
         {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
         {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}
+        {--layout-source=auto : 레이아웃 설치 소스 (auto|json) — json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}
         {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
     /**
@@ -36,6 +39,9 @@ class InstallModuleCommand extends Command
 
     /**
      * 모듈 관리자 및 리포지토리
+     *
+     * @param  ModuleManager  $moduleManager  모듈 관리자
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -46,9 +52,16 @@ class InstallModuleCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
+        // `--layout-source` 검증 + 런타임 반영 (알 수 없는 값이면 즉시 실패).
+        if (! $this->applyLayoutInstallSource()) {
+            return self::FAILURE;
+        }
+
         $identifier = $this->argument('identifier');
 
         // 식별자 형식 검증
@@ -111,9 +124,9 @@ class InstallModuleCommand extends Command
                 $this->info('✅ '.__('modules.commands.install.success', ['module' => $identifier]));
                 $this->info('   - '.__('modules.commands.install.vendor', ['vendor' => $module->vendor]));
                 $this->info('   - '.__('modules.commands.install.version', ['version' => $module->version]));
-                $this->info('   - '.__('modules.commands.install.roles_created', ['count' => $rolesCount]));
-                $this->info('   - '.__('modules.commands.install.permissions_created', ['count' => $permissionsCount]));
-                $this->info('   - '.__('modules.commands.install.menus_created', ['count' => $menusCount]));
+                $this->info('   - '.trans_choice('modules.commands.install.roles_created', $rolesCount));
+                $this->info('   - '.trans_choice('modules.commands.install.permissions_created', $permissionsCount));
+                $this->info('   - '.trans_choice('modules.commands.install.menus_created', $menusCount));
 
                 Log::info(__('modules.commands.install.success', ['module' => $identifier]));
 

@@ -33,6 +33,12 @@ effects:
   - card_mileage_deducted_on_payment_complete    # 카드 → 결제완료 시 차감
   - mileage_off_disables_control                 # mileage.enabled=false → 컨트롤 disabled
   - zero_payable_always_immediate_deduct         # 0원 주문 즉시 차감(회귀)
+  # 주문 생성과 결제실패 경로의 쿠폰, 마일리지 처리 (Unit — OrderProcessingServiceTest)
+  - create_order_fires_coupon_use_hook_with_issue_ids  # 주문 생성 시 쿠폰 사용 훅에 적용 쿠폰 발급 ID 전달
+  - coupon_conflict_rolls_back_whole_order             # 다른 주문이 선점한 쿠폰이면 주문 생성 트랜잭션 전체 롤백
+  - create_order_due_amount_is_post_mileage_final_amount # 마일리지 사용 주문의 결제예정금액과 결제금액은 차감 후 금액
+  - fail_payment_restores_deducted_mileage             # 생성 시 차감된 마일리지는 결제실패 취소 때 복원
+  - fail_payment_skips_restore_for_undeducted_mileage  # 차감 전 결제실패는 복원 거래를 만들지 않음 (유령 적립 방지)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/CouponUseListenerTest.php

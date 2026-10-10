@@ -44,6 +44,8 @@ class ResourceFieldDescriber
         'slug' => 'URL 친화 식별자 (slug)',
         'label' => '표시용 라벨',
         'icon' => '아이콘 식별자 (아이콘 클래스/이름)',
+        'icon_url' => '확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체)',
+        'icon_source' => "아이콘을 어디서 얻었는지 ('manifest' 선언 · 'convention' 관례 파일 · 'target' 대상 확장 · 'core' 코어 · 'none' 없음)",
         'thumbnail' => '썸네일 이미지 URL/경로',
         'ip_address' => '요청/행위가 발생한 IP 주소',
 
@@ -163,7 +165,6 @@ class ResourceFieldDescriber
         //       ExtensionBundleService 에셋 매니페스트)
         'g7_version' => '요구하는 코어 최소 버전 (manifest requires.g7_version)',
         'required_version' => '요구되는 최소 버전',
-        'manifest_source' => 'manifest 를 읽어온 출처 경로 (활성/_bundled 구분)',
         'manifest_present' => 'manifest 파일 존재 여부',
         'license' => '라이선스 식별자 (manifest license)',
         'release_date' => '배포일',

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage[cross_product,effects] reason: |
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
 #   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(S2)은
 #   서버 전용(발급 API · 자동발급 리스너 · 신규 훅 2종 · 금액변동 연동)이며 UI 산출물이 없다.
@@ -96,7 +96,7 @@ effects:
   - listener_idempotent_across_both_hooks          # 한 입금에 두 훅이 도달해도 1회만 발급
   - listener_skips_zero_cash_equivalent_order      # 무통장 + 전액 마일리지 0원 주문 → 발급 미시도
   - listener_failure_records_failed_and_survives   # 발급 실패 → FAILED 이력, 입금확인은 성공 유지
-  - listener_swallows_provider_exception           # 프로바이더 예외 → 삼키고 로그만 (조용한 실패 금지)
+  - listener_swallows_provider_exception           # 프로바이더 예외 → FAILED 이력으로 남고 입금확인은 유지 (#747 B1)
   - listener_logs_on_swallowed_failure             # 삼킨 실패는 반드시 error/warning 로그로 남음
   - identifier_never_appears_in_logs               # 발급 실패·예외 로그 어디에도 식별번호 원본 부재
 

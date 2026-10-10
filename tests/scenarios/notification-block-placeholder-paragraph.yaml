@@ -1,0 +1,16 @@
+feature: 블록 HTML 을 값으로 받는 알림 자리표시자가 문단(<p>) 안에 들어가지 않는다
+
+description: |
+  메일 본문 편집기(CKEditor)는 최상위에 놓인 글자를 문단으로 감싸므로, 기본 본문의 블록 자리표시자
+  (`{notice_sections}{privacy_policy_link}` 등)가 저장 뒤 `<p>{…}{…}</p>` 가 된다. 값이 `<h3>`·`<p>` 같은 블록
+  HTML 이면 치환 결과가 `<p><h3>` 처럼 잘못된 HTML 이 되었다. 치환(`NotificationContentBehavior::replaceVariables`)이
+  자리표시자와 공백만 든 문단이고 값에 블록 태그가 있을 때만 그 `<p>` 를 걷는다. 글자가 함께 든 문단·인라인 값은 그대로다.
+
+axes:
+  wrapper: [paragraph_only_placeholders, paragraph_with_text]
+
+effects:
+  - block_placeholder_paragraph_unwrapped
+
+test_files:
+  - tests/Unit/Models/NotificationTemplateBlockPlaceholderTest.php

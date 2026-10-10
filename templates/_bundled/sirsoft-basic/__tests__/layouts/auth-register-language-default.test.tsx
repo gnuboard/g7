@@ -88,7 +88,6 @@ describe('회원가입 폼 언어 Select 기본값', () => {
       let found: Node | undefined;
       walk(registerForm as Node, (node) => {
         if (
-          node.type === 'basic' &&
           node.name === 'Select' &&
           node.props?.name === 'language'
         ) {

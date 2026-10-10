@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
+use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
+use App\Http\Requests\Auth\CompletePasswordChangeRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\PostponePasswordChangeRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
@@ -16,6 +20,7 @@ use App\Http\Requests\Auth\TwoFactorResendRequest;
 use App\Http\Requests\Auth\ValidateResetTokenRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 
@@ -23,6 +28,11 @@ class AuthController extends AuthBaseController
 {
     use BuildsAuthFailureResponses;
 
+    /**
+     * 사용자 인증 컨트롤러를 생성합니다.
+     *
+     * @param  AuthService  $authService  인증 서비스
+     */
     public function __construct(
         private AuthService $authService
     ) {
@@ -35,6 +45,9 @@ class AuthController extends AuthBaseController
             // 2단계 인증 확인·재발송은 아직 토큰이 없는 상태에서 호출된다 — 주체는 challenge 가 식별한다
             'verifyTwoFactor',
             'resendTwoFactor',
+            // 비밀번호 변경 단계도 토큰이 없는 상태에서 호출된다 — 주체는 변경 단계 식별자가 식별한다
+            'completePasswordChange',
+            'postponePasswordChange',
             'register',
             'forgotPassword',
             'resetPassword',
@@ -58,7 +71,12 @@ class AuthController extends AuthBaseController
 
             // 2단계 인증이 켜져 있으면 아직 토큰이 없다 — 인증 코드 확인 단계로 안내한다
             if ($data['two_factor_required'] ?? false) {
-                return $this->success('auth.two_factor_required', $data);
+                return $this->success($this->twoFactorRequiredMessageKey($data), $data);
+            }
+
+            // 비밀번호를 바꿔야 하면 아직 토큰도 사용자도 없다 — 변경 단계로 안내한다
+            if ($data['password_change_required'] ?? false) {
+                return $this->success($this->passwordChangeRequiredMessageKey($data), $data);
             }
 
             // 사용자 정보는 Resource로, 토큰은 그대로
@@ -67,8 +85,12 @@ class AuthController extends AuthBaseController
             return $this->success('auth.login_success', $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
+        } catch (PasswordChangeUnavailableException $e) {
+            return $this->passwordChangeUnavailableResponse();
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
         }
@@ -93,6 +115,10 @@ class AuthController extends AuthBaseController
                 ['code' => $validated['code']]
             );
 
+            if ($data['password_change_required'] ?? false) {
+                return $this->success($this->passwordChangeRequiredMessageKey($data), $data);
+            }
+
             $data['user'] = new UserResource($data['user']);
 
             return $this->success('auth.login_success', $data);
@@ -100,10 +126,73 @@ class AuthController extends AuthBaseController
             // 세션을 여는 지점이므로 `login` 과 같은 423 계약을 따른다 — 화면은 두 경로를
             // 구분하지 않으므로 한쪽만 다른 모양이면 잠금 안내가 깨진다.
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
+        } catch (PasswordChangeUnavailableException $e) {
+            return $this->passwordChangeUnavailableResponse();
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.two_factor_failed');
+        }
+    }
+
+    /**
+     * 로그인 비밀번호 변경 단계에서 새 비밀번호를 받아 로그인을 마칩니다.
+     *
+     * 비밀번호·2단계 인증을 통과했지만 비밀번호를 바꿔야 하는 회원이 로그인이 돌려준 변경 단계 식별자와
+     * 새 비밀번호를 보낸다. 성공 응답은 로그인 성공과 같은 모양이다.
+     *
+     * @param  CompletePasswordChangeRequest  $request  변경 단계 완료 요청
+     * @return JsonResponse 로그인 결과(사용자·토큰) 또는 403/422/423
+     */
+    public function completePasswordChange(CompletePasswordChangeRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        try {
+            $data = $this->authService->completePasswordChange(
+                $validated['challenge_id'],
+                $validated['password'],
+                'user'
+            );
+
+            $data['user'] = new UserResource($data['user']);
+
+            return $this->success('auth.password_change_success', $data);
+        } catch (AccountLockedException $e) {
+            return $this->lockedResponse($e);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
+        } catch (ValidationException $e) {
+            // 로그인 핸들러처럼 401 로 바꾸지 않는다 — 식별자 무효·처리 중·규칙 위반은 화면이 칸 단위로 안내한다.
+            return $this->validationError($e->errors(), 'auth.password_change_invalid_challenge');
+        }
+    }
+
+    /**
+     * 로그인 비밀번호 변경 단계에서 '다음에 변경' 을 골라 로그인을 마칩니다 ('다음에 변경 허용' 모드의 만료만).
+     *
+     * @param  PostponePasswordChangeRequest  $request  변경 연기 요청
+     * @return JsonResponse 로그인 결과(사용자·토큰·연기 종료일) 또는 403/422/423
+     */
+    public function postponePasswordChange(PostponePasswordChangeRequest $request): JsonResponse
+    {
+        try {
+            $data = $this->authService->postponePasswordChange(
+                $request->validated()['challenge_id'],
+                'user'
+            );
+
+            $data['user'] = new UserResource($data['user']);
+
+            return $this->success('auth.password_change_postponed', $data);
+        } catch (AccountLockedException $e) {
+            return $this->lockedResponse($e);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
+        } catch (ValidationException $e) {
+            return $this->validationError($e->errors(), $this->authService->postponeFailureMessageKey($e));
         }
     }
 
@@ -123,9 +212,11 @@ class AuthController extends AuthBaseController
                 $request->validated()['challenge_id']
             );
 
-            return $this->success('auth.two_factor_required', $data);
+            return $this->success($this->twoFactorRequiredMessageKey($data), $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {

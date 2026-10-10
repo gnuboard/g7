@@ -1,0 +1,152 @@
+{
+    "type": "composite",
+    "name": "DataGrid",
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{rows}}",
+                        "item_var": "row",
+                        "index_var": "i"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "text": "{{row.name}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "props": {
+        "data": "{{coupons?.data ?? []}}",
+        "subRowClassName": "bg-gray-50",
+        "expandContext": {
+            "selectedIds": "{{_local.selectedIds ?? []}}",
+            "label": "$t:defer:common.edit"
+        },
+        "columns": [
+            {
+                "field": "checkbox",
+                "header": "",
+                "width": "40px",
+                "selectable": true
+            },
+            {
+                "field": "name",
+                "header": "$t:admin.coupon.name",
+                "width": "200px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "A",
+                        "actions": [
+                            {
+                                "event": "click",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/coupons/{{row.id}}/edit"
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "text-blue-600",
+                            "text": "{{row.localized_name}}"
+                        }
+                    }
+                ]
+            }
+        ],
+        "expandChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "iteration": {
+                    "source": "row.options",
+                    "item_var": "opt"
+                },
+                "props": {
+                    "className": "p-4"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "text": "{{opt.label}}"
+                        }
+                    }
+                ]
+            }
+        ],
+        "subRowChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "if": "{{(row.items ?? []).length === 0}}",
+                "props": {
+                    "className": "empty"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "text": "$t:admin.coupon.no_items"
+                        }
+                    }
+                ]
+            }
+        ],
+        "footerCells": [
+            {
+                "field": "label",
+                "text": "$t:admin.coupon.total",
+                "className": "text-right font-bold"
+            },
+            {
+                "field": "amount",
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "text": "{{summary.total_amount}}"
+                        }
+                    }
+                ]
+            },
+            {
+                "field": "status"
+            }
+        ],
+        "footerCardChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "card-footer"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "text": "{{summary.total_amount}}"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

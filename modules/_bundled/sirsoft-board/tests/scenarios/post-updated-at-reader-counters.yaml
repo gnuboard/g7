@@ -1,0 +1,35 @@
+feature: 읽는 사람의 행동(조회·스크랩·반응)이 글의 수정 시각을 바꾸지 않는다
+
+description: |
+  글의 수정 시각(updated_at)은 글을 고친 시각이다. 사이트맵 lastmod 와 보유기간 IP 파기의
+  「수정 시각 보존」 약속이 이 값을 기준으로 삼는다.
+
+  배경 (7.1.0 브라우저 실측 O-H6, 2026-10-07): 관리자 게시글 상세를 열기만 해도 updated_at 이
+  바뀌었다(16:21:57 → 16:22:34). 조회수(view_count)·스크랩 수(scrap_count)는 Eloquent 빌더의
+  increment/decrement 로, 반응 집계(reaction_counts)는 모델 save 로 올려 updated_at 이 함께 갱신됐다.
+  사용자 상세를 처음 여는 회원도 같은 경로를 탄다.
+
+  조치: 조회수·스크랩 수는 쿼리 빌더(toBase)로 올리고, 반응 집계는 timestamps 를 끈 채 저장한다.
+  댓글·답글·첨부 수 재계산은 글 화면 내용이 바뀌는 것이라 종전처럼 수정 시각을 올린다(범위 밖).
+
+axes:
+  counter: [view_count, scrap_count, reaction_counts]
+  path: [repository, admin_detail_api]
+
+# 관리자 상세 API 경로는 조회수만 올린다 — 스크랩·반응은 상세 열기와 무관한 별도 요청이라 그 조합은 의미가 없다
+exclusions:
+  - { counter: scrap_count, path: admin_detail_api, reason: "상세 열기는 스크랩 수를 바꾸지 않는다" }
+  - { counter: reaction_counts, path: admin_detail_api, reason: "상세 열기는 반응 집계를 바꾸지 않는다" }
+
+effects:
+  - reader_counter_keeps_post_updated_at
+  - admin_detail_open_keeps_post_updated_at
+  - reaction_recalculation_keeps_comment_updated_at
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostUpdatedAtReaderCounterTest.php
+
+validation:
+  note: |
+    수정 전 4건 모두 「'2026-01-02 03:04:05' 기대, 실행 시각 실제」로 실패, 수정 후 4/4.
+    브라우저 실측은 관리자 상세·사용자 상세를 연 뒤 DB updated_at 전후 대조(결과 파일 area_K3).

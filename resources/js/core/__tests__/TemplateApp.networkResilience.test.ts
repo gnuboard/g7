@@ -45,6 +45,7 @@ vi.mock('../template-engine', () => ({
     initTemplateEngine: vi.fn().mockResolvedValue(undefined),
     renderTemplate: vi.fn().mockResolvedValue(undefined),
     destroyTemplate: vi.fn(),
+    releaseTemplateRoot: vi.fn(),
     updateTemplateData: vi.fn(),
     getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
     getState: vi.fn().mockReturnValue({
@@ -133,6 +134,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
     });
 
     describe('초기화 fetch 재시도', () => {
+        /**
+         * @scenario init_case=routes_transient
+         * @effects transient_init_failure_recovers_without_error_screen
+         */
         it('routes.json 이 1회 네트워크 실패 후 성공하면 에러 화면을 렌더하지 않는다', async () => {
             const fetchMock = vi.fn().mockImplementation((url: string) => {
                 if (url.includes('routes.json')) {
@@ -164,6 +169,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
             expect(routerInstance?.setRoutes).toHaveBeenCalled();
         });
 
+        /**
+         * @scenario init_case=routes_persistent
+         * @effects persistent_init_failure_renders_error_screen_once
+         */
         it('routes.json 이 3회 연속 네트워크 실패하면 에러 화면을 1회 렌더한다', async () => {
             const fetchMock = vi.fn().mockImplementation((url: string) => {
                 if (url.includes('routes.json')) {
@@ -186,6 +195,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
             expect(routesCalls).toHaveLength(3);
         });
 
+        /**
+         * @scenario init_case=components_transient
+         * @effects transient_init_failure_recovers_without_error_screen
+         */
         it('components.json 이 1회 네트워크 실패 후 성공하면 앱이 생존한다', async () => {
             // ComponentRegistry 는 vi.mock 으로 대체돼 있으므로, 매니페스트 fetch 재시도는
             // ComponentRegistry 자체 경로에서 검증된다. 여기서는 초기화 전체가 살아남는지 본다.
@@ -207,6 +220,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
             expect(errorSpy).not.toHaveBeenCalled();
         });
 
+        /**
+         * @scenario init_case=routes_http_500
+         * @effects http_500_renders_error_screen_without_retry
+         */
         it('routes.json 이 HTTP 500 이면 재시도 없이 즉시 에러 화면을 띄운다 (기존 동작 보존)', async () => {
             const fetchMock = vi.fn().mockImplementation((url: string) => {
                 if (url.includes('routes.json')) {
@@ -234,6 +251,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
     });
 
     describe('문서 이탈 가드', () => {
+        /**
+         * @scenario init_case=routes_fail_while_leaving
+         * @effects init_failure_while_leaving_skips_error_screen
+         */
         it('pagehide 이후 초기화가 실패하면 에러 화면을 렌더하지 않는다', async () => {
             const fetchMock = vi.fn().mockRejectedValue(networkError());
             vi.stubGlobal('fetch', fetchMock);
@@ -249,6 +270,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
             expect(errorSpy).not.toHaveBeenCalled();
         });
 
+        /**
+         * @scenario init_case=routes_fail_after_bfcache_restore
+         * @effects init_failure_after_bfcache_restore_renders_error_screen
+         */
         it('bfcache 복귀(pageshow persisted) 후 초기화가 실패하면 에러 화면을 렌더한다 (가드 해제)', async () => {
             const fetchMock = vi.fn().mockRejectedValue(networkError());
             vi.stubGlobal('fetch', fetchMock);
@@ -270,6 +295,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
     });
 
     describe('확장 번들 실패 시 5초 백지 제거 (waitForHandlers)', () => {
+        /**
+         * @scenario init_case=bundle_failed
+         * @effects failed_bundle_skips_handler_wait
+         */
         it('번들 로드가 실패로 확정되면 maxWait 를 기다리지 않고 즉시 반환한다', async () => {
             const { getModuleAssetLoader } = await import('../modules');
             const loader = getModuleAssetLoader();
@@ -295,6 +324,10 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
             (loader as any).failedJsAssets = new Set();
         });
 
+        /**
+         * @scenario init_case=bundle_healthy
+         * @effects healthy_bundle_still_waits_for_handlers
+         */
         it('번들이 정상이면 종전대로 핸들러 등록을 기다린다 (기존 동작 보존)', async () => {
             const { getModuleAssetLoader } = await import('../modules');
             const loader = getModuleAssetLoader();
@@ -318,6 +351,9 @@ describe('TemplateApp 네트워크 복원력 (#463)', () => {
          * 기존 동작 보존 가드 — `executeInitActions` 루프는 액션별 try/catch 로 이미
          * throw 를 삼키므로 미등록 핸들러가 있어도 **렌더는 진행된다**. 이번 수정이
          * 그 동작을 깨뜨리지 않았는지 잠근다("ActionError 가 렌더를 차단한다" 는 오해).
+         *
+         * @scenario init_case=bundle_healthy
+         * @effects unregistered_handler_does_not_break_init
          */
         it('미등록 핸들러가 있어도 init_actions 루프가 삼키고 초기화가 에러 화면 없이 완주한다 (기존 동작 보존)', async () => {
             const { getModuleAssetLoader } = await import('../modules');

@@ -7,7 +7,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 위치: modules/_bundled/vendor-module/resources/layouts/admin/*.json 또는 user/*.json
+1. 위치: modules/_bundled/vendor-module/resources/layouts/admin/*.g7.html 또는 user/*.g7.html
 2. 네이밍: vendor-module.layout-name 형식 (DOT 구분자)
 3. admin/ 하위 → Admin 템플릿, user/ 하위 → User 템플릿에 등록
 4. 활성화 시 자동 등록, 비활성화 시 자동 삭제
@@ -64,22 +64,22 @@ modules/
         └── resources/
             └── layouts/
             ├── admin/              ← Admin 템플릿에 등록
-            │   ├── index.json
-            │   └── edit.json
+            │   ├── index.g7.html
+            │   └── edit.g7.html
             └── user/               ← User 템플릿에 등록
-                ├── main.json
-                └── detail.json
+                ├── main.g7.html
+                └── detail.g7.html
 ```
 
-> **주의**: `layouts/` 루트에 직접 배치된 파일(예: `layouts/settings.json`)은 등록되지 않고 경고 로그가 출력됩니다. 반드시 `admin/` 또는 `user/` 하위에 배치하세요.
+> **주의**: `layouts/` 루트에 직접 배치된 파일(예: `layouts/settings.g7.html`)은 등록되지 않고 경고 로그가 출력됩니다. 반드시 `admin/` 또는 `user/` 하위에 배치하세요.
 
 ### 등록 대상 템플릿 결정
 
 | 파일 위치                | 등록 대상            | 예시                 |
 | ----------------------- | ------------------- | ------------------- |
-| `layouts/admin/*.json`  | 활성 Admin 템플릿     | sirsoft-admin_basic  |
-| `layouts/user/*.json`   | 활성 User 템플릿      | sirsoft-user_theme1  |
-| `layouts/*.json` (루트)  | 등록 안됨 (스킵)      | 경고 로그 출력         |
+| `layouts/admin/*.g7.html` | 활성 Admin 템플릿     | sirsoft-admin_basic  |
+| `layouts/user/*.g7.html` | 활성 User 템플릿      | sirsoft-user_theme1  |
+| `layouts/*.{g7.html,json}` (루트) | 등록 안됨 (스킵)      | 경고 로그 출력         |
 
 ---
 
@@ -96,15 +96,15 @@ modules/
 ### 예시
 
 ```
-파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/index.json
+파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/index.g7.html
 파일 내 layout_name: admin_sample_index
 DB 등록명: sirsoft-sample.admin_sample_index
 
-파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/edit.json
+파일: modules/_bundled/sirsoft-sample/resources/layouts/admin/edit.g7.html
 파일 내 layout_name: admin_sample_edit
 DB 등록명: sirsoft-sample.admin_sample_edit
 
-파일: modules/_bundled/sirsoft-sample/resources/layouts/user/main.json
+파일: modules/_bundled/sirsoft-sample/resources/layouts/user/main.g7.html
 파일 내 layout_name: user_sample_main
 DB 등록명: sirsoft-sample.user_sample_main
 ```
@@ -116,6 +116,15 @@ DB 등록명: sirsoft-sample.user_sample_main
 - 점(`.`) 구분자는 moduleIdentifier와 layoutName의 경계를 명확히 구분합니다
 
 ### 파일 내 layout_name 지정 예시
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sample.admin.index.title"/>
+  <slot name="content"/>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -192,13 +201,30 @@ public function activateModule(string $moduleName): array
         // 4. 레이아웃 등록 (새로운 레이아웃 또는 업데이트)
         $layoutsRegistered = $this->registerModuleLayouts($moduleName);
 
-        // 5. 캐시 무효화
+        // 5. 빈 자리로 등록한 조각 참조 경고 (7.0 JSON 호환 — 아래 「7.0 JSON 레이아웃 호환」)
+        $layoutWarnings = $this->takeLayoutIncludeWarnings();
+
+        // 6. 캐시 무효화
         $this->invalidateLayoutCache($module->getIdentifier());
     }
 
-    return ['success' => $result, 'layouts_registered' => $layoutsRegistered];
+    return ['success' => $result, 'layouts_registered' => $layoutsRegistered, 'layout_warnings' => $layoutWarnings];
 }
 ```
+
+#### 7.0 JSON 레이아웃 호환 — 깨진 조각 참조
+
+레이아웃이 `{"partial": "…"}` 로 조각을 참조하는데 그 조각을 읽을 수 없을 때, 참조를 **담고 있는 문서의 형식**에 따라 다르게 처리합니다.
+
+| 참조를 담은 문서 | 조각 파일 없음 · 조각 JSON 파싱 실패 · 순환 참조 | `layouts/` 밖 경로 · 최대 깊이 초과 · `.g7.html` 조각 컴파일 실패 |
+| --- | --- | --- |
+| `.json` (7.0 방식) | 설치·활성화·업데이트를 막지 않고 **그 자리를 비운 채** 등록 (부모가 배열이면 원소를 빼고, 아니면 `[]`) + 경고 | 오류 (설치 거부) |
+| `.g7.html` | 오류 (설치 거부) | 오류 (설치 거부) |
+
+- 판정 단위는 문서입니다 — JSON 레이아웃이 부른 `.g7.html` 조각 안의 깨진 참조는 엄격, JSON 조각 안의 깨진 참조는 관용합니다.
+- 경고는 활성화·업데이트·레이아웃 갱신·템플릿 설치 결과의 `layout_warnings`(`{file, partial, reason, message}` 목록)로 돌아오고, CLI 는 건별로 출력하며, 관리자 화면은 건수를 경고 알림으로 보여 줍니다. 설치된 확장 전체를 다시 훑어 보려면 `php artisan layout:check-installed` 의 「JSON 조각 참조 누락」 표를 봅니다.
+- `layouts/` 안의 JSON 조각 파일 자체가 깨져 있으면, 그 파일은 재귀 스캔에서 단독 레이아웃으로도 읽혀 파싱 오류로 설치가 실패합니다(7.0.11 과 같은 동작).
+- 새로 만드는 확장은 `.g7.html` 로 작성하세요 — 깨진 참조를 설치 시점에 오류로 알려 줍니다.
 
 ### 2. 모듈 비활성화 (deactivateModule)
 
@@ -237,12 +263,12 @@ DB::transaction(function () use ($templateName, $template, $templateRecord) {
     // 2. 상태 업데이트
     $this->templateRepository->updateByIdentifier($templateName, [...]);
 
-    // 3. 레이아웃 확장(layout_extensions) 등록
-    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
-
-    // 4. 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록
+    // 3. 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록 (호스트 먼저)
     app(ModuleManager::class)->registerLayoutsForAllActiveModules();
     app(PluginManager::class)->registerLayoutsForAllActivePlugins();
+
+    // 4. 레이아웃 확장(layout_extensions) 등록 — 붙을 자리(호스트 레이아웃·확장점)가 실재할 때만 행을 만든다
+    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
 
     // 5. 캐시 워밍
     $this->warmTemplateCache($templateName);
@@ -250,6 +276,8 @@ DB::transaction(function () use ($templateName, $template, $templateRecord) {
 ```
 
 **중요**: `registerModuleLayouts()`는 `updateOrCreate` 패턴을 사용하므로 중복 호출에 안전합니다.
+
+**순서**: 조각 등록은 붙을 자리가 그 템플릿에 실재하는지 보고 행을 만듭니다. 모듈 화면에 붙는 조각은 그 모듈 레이아웃이 호스트이므로, 새로 켠 템플릿에 모듈 레이아웃을 먼저 등록하고 조각을 그 뒤에 등록해야 빠지지 않습니다.
 
 ### 4. Soft Delete/Restore 이유
 
@@ -348,6 +376,16 @@ if ($this->isModuleLayoutName($layoutName)) {
 
 #### 사용 예시
 
+```html
+<extension target-layout="sirsoft-board.admin_board_settings">
+  <inject target-id="notification_section" position="append">
+    <card data-ref="custom_notification" title="$t:template.custom_notification.title"/>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "sirsoft-board.admin_board_settings",
@@ -355,7 +393,7 @@ if ($this->isModuleLayoutName($layoutName)) {
   "injections": [
     {
       "target_id": "notification_section",
-      "position": "after",
+      "position": "append",
       "components": [
         {
           "id": "custom_notification",
@@ -412,6 +450,14 @@ if ($this->isModuleLayoutName($layoutName)) {
 ## 레이아웃 상속 처리
 
 ### extends 필드 사용
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <slot name="content"/>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -534,10 +580,26 @@ protected function invalidateLayoutCache(string $moduleIdentifier): void
 mkdir -p modules/_bundled/sirsoft-sample/resources/layouts/admin
 
 # 레이아웃 파일 생성
-touch modules/_bundled/sirsoft-sample/resources/layouts/admin/index.json
+touch modules/_bundled/sirsoft-sample/resources/layouts/admin/index.g7.html
 ```
 
-### 2. 레이아웃 JSON 작성
+### 2. 레이아웃 작성
+
+마크업은 1단계에서 만든 `.g7.html` 마크업에 한다. 문법은 [layout-markup.md](../frontend/layout-markup.md) 가 SSoT 이고,
+설치 시 서버가 이 소스를 컴파일해 아래 JSON 을 만든다. 아래 블록은 그 **컴파일 산출물의 런타임 계약**이며
+([layout-json.md](../frontend/layout-json.md)), 어떤 키가 나와야 하는지를 보여주기 위한 것이다 — 손으로 쓰는 대상이 아니다.
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sample.admin.index.title" description="$t:sirsoft-sample.admin.index.description" :auth_required="true"/>
+  <data-source id="items" type="api" method="GET" endpoint="/api/modules/sirsoft-sample/admin/items" :auto_fetch="true" :auth_required="true"/>
+  <slot name="content">
+    <page-header data-ref="page_header" title="$t:sirsoft-sample.admin.index.title"/>
+  </slot>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -665,4 +727,4 @@ WHERE name = 'sirsoft-sample.admin_sample_index';
 - [module-commands.md](module-commands.md) - 모듈 Artisan 커맨드
 - [module-i18n.md](module-i18n.md) - 모듈 다국어
 - [template-caching.md](template-caching.md) - 템플릿 캐싱 전략
-- [index.md](index.md) - 확장 시스템 인덱스
+- [README.md](README.md) - 확장 시스템 인덱스

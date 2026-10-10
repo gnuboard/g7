@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 
 /**
@@ -78,6 +79,22 @@ class ConfirmDepositRequest extends FormRequest
             }
 
             $order->loadMissing('payment');
+
+            // 취소된 주문은 입금확인 대상이 아니다 (P4).
+            //
+            // 결제 레코드 기준으로만 판정하면 **취소된 주문이 되살아난다** — 미입금 취소가
+            // 결제행을 `waiting_deposit` 그대로 두던 시절의 행이 남아 있고, 뒤늦게 입금이
+            // 들어와 운영자가 [입금확인]을 누르면 `CANCELLED` 주문이 `PAYMENT_COMPLETE` 로
+            // 전이되어 재고와 마일리지가 다시 차감된다. 결제행 정리(`updatePayment`)와
+            // 이 가드를 둘 다 둔다 — 한쪽만으로는 이미 어긋난 구형 행을 막지 못한다.
+            if ($order->order_status === OrderStatusEnum::CANCELLED) {
+                $validator->errors()->add(
+                    'order',
+                    __('sirsoft-ecommerce::messages.orders.deposit_order_cancelled')
+                );
+
+                return;
+            }
 
             // 무통장(dbank) 결제수단만 입금확인 대상
             if (! $order->payment?->isBankTransfer()) {

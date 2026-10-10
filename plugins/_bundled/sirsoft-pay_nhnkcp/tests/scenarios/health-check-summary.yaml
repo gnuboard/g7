@@ -1,0 +1,22 @@
+feature: NHN KCP 시스템 점검 요약
+
+description: |
+  설정 화면 「시스템 점검」 카드가 결제서버 IP(공인 송신 IP, 실패 시 서버 IP 후보)와 그 출처를 알려 주고,
+  항목 이름·결과·조치 안내와 출처 문구가 관리자 화면 언어를 따른다.
+
+  수정 이력: 이커머스 전수 실측 S5-D12 (2026-10-07) — 영어 화면에서도 한국어로 나오던 문구.
+
+axes:
+  case: [c01, c02, c03, c04, c05]
+  # c01: test_health_summary_exposes_public_cancel_server_ip
+  # c02: test_health_summary_falls_back_to_server_addr_when_public_ip_lookup_fails
+  # c03: test_health_check_rows_follow_the_request_locale
+  # c04: test_health_check_uses_admin_base_and_response_helper_envelope
+  # c05: test_cli_binary_without_permission_reports_recovery_skipped_not_failed
+
+effects:
+  - health_check_summary_localized
+  - health_check_cli_recovery_skipped_without_permission
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Controllers/HealthCheckControllerTest.php

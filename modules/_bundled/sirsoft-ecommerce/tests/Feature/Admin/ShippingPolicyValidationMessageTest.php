@@ -558,4 +558,39 @@ class ShippingPolicyValidationMessageTest extends ModuleTestCase
         $this->assertNoRawKeys($response);
         $this->assertStringContainsString('우편번호', implode(' ', $this->allMessages($response)));
     }
+
+    // ───────── S17 B4: 조회한 그대로 되돌려도 저장이 막히던 축 ─────────
+
+    /**
+     * 단위당 정책의 `ranges` 는 `{unit_value}` 만 담는다 — `type` 은 구간(tiers)의 기준 축을
+     * 가리키는 값이라 여기엔 존재하지 않는다. 그런데도 필수로 걸려 있어 조회한 그대로
+     * 되돌려 저장해도 422 였고, 화면엔 그 오류를 그릴 자리조차 없었다.
+     */
+    #[Test]
+    public function test_per_unit_policy_saves_without_a_range_type(): void
+    {
+        $cs = $this->krSetting([
+            'charge_policy' => 'per_quantity',
+            'base_fee' => 3000,
+            'ranges' => ['unit_value' => 3],
+        ]);
+
+        $this->store($this->payload([$cs]))->assertStatus(201);
+    }
+
+    /**
+     * 구간 정책은 종전대로 `type` 을 요구한다 — 규칙을 넓힌 것이 아니라 뜻이 있는 자리로
+     * 좁힌 것임을 고정한다.
+     */
+    #[Test]
+    public function test_range_policy_still_requires_a_range_type(): void
+    {
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_amount',
+            'base_fee' => 0,
+            'ranges' => ['tiers' => [['min' => 0, 'max' => null, 'fee' => 3000]]],
+        ]);
+
+        $this->store($this->payload([$cs]))->assertStatus(422);
+    }
 }

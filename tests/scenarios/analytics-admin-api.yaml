@@ -1,0 +1,268 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
+#   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
+#   green 이다.
+
+feature: 방문자 통계 관리자·공개 API (이슈 #682 S2)
+
+description: |
+  집계된 숫자를 화면이 읽어 가는 길, 그리고 운영자가 설정·삭제·정보주체 요청을 수행하는 길.
+
+  배경:
+    - 권한이 셋으로 갈린다. read 는 숫자를 보는 것, update 는 설정·집계·삭제처럼 상태를
+      바꾸는 것, privacy 는 개별 방문자를 들여다보는 것이다. 한 화면 안에서도 갈린다 —
+      현재 접속자 목록은 read 로 보이되 그 IP 는 privacy 가 있어야 채워진다.
+    - 되돌릴 수 없는 길(전체 삭제·소급 익명화·정보주체 삭제)에는 확인 없이 들어갈 수
+      없다. 조건 없는 정보주체 삭제는 원장 전체를 지우는 사고가 된다.
+    - 설정은 전용 API 와 코어 설정 API 두 길로 저장된다. 규칙을 한쪽에만 두면 다른 길로
+      들어온 값이 검증 없이 저장되고, 그 값이 수집·정리·집계를 조용히 망가뜨린다.
+    - 공개 요약은 로그인 없이 누구나 부른다 — 네 숫자만 나가고, 꺼져 있으면 0 이 아니라
+      404 로 답한다(위젯이 0 을 보고 아무도 오지 않았다고 그리면 안 된다).
+
+  적용 지점:
+    - `app/Http/Controllers/Api/Admin/Analytics/**` 열한 컨트롤러, 라우트 27건(공개 요약 1건 제외).
+    - `app/Http/Requests/Admin/Analytics/**` FormRequest — 기간·목록·확인 규약.
+    - `app/Services/Analytics/{Overview,Series,Report,Pattern,Realtime,Diagnostics}Service`.
+    - `app/Services/Analytics/{CsvExporter,DataSubjectService,ReportMailService}`.
+    - `app/Http/Controllers/Api/Public/AnalyticsSummaryController` 공개 요약 1건.
+
+coverage_strategy: pairwise
+
+axes:
+  endpoint: [overview, series, reports, patterns, realtime, visitors, visitor_detail, referrer_urls, diagnostics, collect_failures, archive_runs, settings, opt_out, data, privacy_subjects, cloud_ranges, summary]
+  role: [none, read, update, privacy, superadmin]
+  period: [valid, inverted, too_long, preset]
+  format: [json, csv]
+  confirm: [given, missing]
+
+exclusions:
+  - { endpoint: summary, role: none, reason: "공개 요약은 인증을 요구하지 않는다 — 권한 축이 성립하지 않는다" }
+  - { format: csv, endpoint: settings, reason: "설정은 표가 아니다 — 내보낼 행이 없다" }
+  - { confirm: missing, endpoint: overview, reason: "조회는 되돌릴 수 없는 작업이 아니라 확인을 받지 않는다" }
+  - { format: csv, endpoint: referrer_urls, reason: "도메인 아래를 펼쳐 보는 목록이다 — 내려받기는 사이트 목록(reports)이 맡는다" }
+
+effects:
+  # 7.1.0 전수 실측 영역 E 후속 — 관측 O-E3·E4·E5·E8·E10·E11
+  - skipped_run_carries_its_reason_in_the_viewers_language
+  - ledger_created_at_is_stamped_in_utc
+  - visitor_csv_times_use_the_site_timezone
+  - each_address_row_says_whether_it_is_masked
+  - bot_recent_hits_follow_the_selected_period
+  - country_name_is_the_same_on_every_analytics_surface
+  # 화면 열 때 집계 미들웨어 · 신선도 블록
+  - aggregate_routes_run_on_view_and_carry_freshness
+  - ledger_routes_do_not_run_on_view
+  - forbidden_request_does_not_run_on_view
+  - csv_responses_are_left_untouched
+  - bots_request_runs_on_view_once
+  - on_view_disabled_does_nothing
+  - diagnostics_report_scheduler_and_on_view_state
+  # 한 항목 추이
+  - row_series_sums_label_per_day
+  - row_series_unit_follows_range_length
+  - row_series_downgrades_hour_to_day
+  - row_series_rejects_unknown_report_and_missing_label
+  - row_series_reads_bot_rows_for_bot_dimensions
+  - row_series_bot_dimension_ignores_exclude
+  - row_series_supports_extension_dimensions
+  - row_series_is_empty_without_rows
+  # 신규·재방문 · 새 리포트 · 설정
+  - series_points_carry_new_and_returning_visitors
+  - bucket_reports_are_ordered_by_bound_and_humanized
+  - search_tab_labels_are_translated
+  - bucket_bounds_must_be_ascending
+  - every_analytics_route_has_an_api_doc_section
+  - stored_codes_are_shown_as_human_labels
+  - public_analytics_routes_are_throttled
+  - every_emitted_analytics_hook_is_documented
+  - anonymous_visits_are_found_by_recent_salt_hashes
+  - reports_sort_by_the_requested_column
+  - every_admin_route_is_gated_by_exactly_its_permission
+  - same_alert_is_sent_once_a_day
+  # 기간 규약
+  - period_preset_resolves_to_a_date_range
+  - period_echo_path_matches_every_screen_response
+  - explicit_dates_win_over_the_preset
+  - inverted_range_is_rejected
+  - range_beyond_the_cap_is_rejected
+  - settings_store_declared_types_not_form_strings
+  - manual_archive_reports_skipped_when_locked
+  - exclude_toggles_drop_those_visitor_types_from_totals
+  # 개요·추이·패턴
+  - overview_returns_four_headline_numbers
+  - bot_totals_count_the_whole_period_not_the_page
+  - today_is_counted_from_the_ledger_not_the_archive
+  - today_uses_the_same_per_visitor_type_definition_as_the_daily_archive
+  - total_is_the_sum_of_daily_unique_visitors
+  - change_percent_is_empty_when_yesterday_was_zero
+  - overview_meta_exposes_collection_and_queue_state
+  - diagnostics_report_consent_selection_and_provider_label   # 동의 출처 배지 — 선택 상태·제공자 이름 (#639)
+  - series_unit_is_chosen_from_the_range_length
+  - series_downgrades_hour_outside_the_retention_window
+  - series_fills_empty_buckets_with_zero
+  - series_stops_at_the_current_bucket
+  - series_without_any_record_stays_empty
+  - patterns_average_instead_of_summing
+  # 상위 목록·CSV
+  - every_report_dimension_answers
+  - detail_top_n_setting_drives_the_page_size
+  - unknown_report_is_not_found
+  - report_rows_carry_display_labels
+  - page_labels_are_readable_for_display
+  - timeline_conversions_carry_the_declared_goal_name
+  - visitor_detail_shows_every_recorded_visit_detail
+  - report_search_matches_what_the_screen_shows
+  - report_rows_carry_dimension_extra_values
+  - report_rows_without_extra_stay_shaped
+  # 표의 「부가」 칸은 CSV 헤더 이름이 아니라 JSON extra 의 원래 키를 읽는다(매출 = revenue_cents)
+  - report_grid_reads_the_extra_keys_the_api_sends
+  - bot_reports_read_bot_typed_rows
+  - bot_reports_ignore_the_human_exclude_toggle
+  - bot_report_carries_recent_hits
+  - bot_recent_hits_carry_a_unique_row_id
+  - csv_export_starts_with_a_byte_order_mark
+  - csv_export_uses_crlf_line_endings
+  - csv_export_covers_the_whole_period_not_one_page
+  # 차원별 부가 열 — 화면에서 보이던 값이 파일에서 빠지면 안 된다(부록 D)
+  - csv_export_includes_per_report_extra_columns
+  # 목록 말고도 내려받는 곳 — 추이 그래프와 방문자 활동 내역(부록 D)
+  - series_can_be_downloaded_as_csv
+  # 실시간·진단
+  - realtime_hides_addresses_without_the_privacy_permission
+  - realtime_broadcast_carries_no_address_or_identity
+  - collect_failures_hide_addresses_without_the_privacy_permission
+  - realtime_shows_addresses_with_the_privacy_permission
+  - diagnostics_report_queue_archive_and_proxy_state
+  - collect_failures_can_be_filtered_by_reason
+  # 집계 실행
+  - manual_archive_returns_accepted
+  - reaggregation_is_handed_to_a_worker
+  - archive_run_progress_can_be_polled
+  - unknown_archive_run_is_not_found
+  # 설정
+  - settings_save_only_the_keys_that_were_sent
+  - settings_reject_values_outside_their_range
+  - stricter_privacy_offers_retroactive_anonymization
+  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다 (#703 실측)
+  - weaker_privacy_does_not_offer_it
+  - the_core_settings_route_validates_analytics_the_same_way
+  # 되돌릴 수 없는 길
+  - purge_requires_confirmation
+  - anonymize_requires_a_mask_or_hash
+  - subject_delete_requires_confirmation
+  - subject_lookup_requires_at_least_one_criterion
+  - subject_timeline_carries_search_result_count
+  - subject_rows_carry_what_the_screen_shows
+  - subject_export_filename_comes_from_the_server
+  - subject_export_filename_uses_the_site_date
+  - zero_visit_lookup_still_names_the_export_file
+  - pseudonymized_visits_are_found_by_member_number
+  - subject_delete_leaves_aggregates_intact
+  - opt_out_sets_and_clears_a_readable_cookie
+  # 권한 매트릭스
+  - unauthenticated_requests_are_rejected
+  - read_permission_cannot_reach_update_endpoints
+  - read_permission_cannot_reach_privacy_endpoints
+  - update_permission_can_save_settings
+  - privacy_permission_can_read_visitor_profiles
+  # 방문자 목록·단건
+  - visitor_list_groups_visits_by_person
+  - visitor_list_search_matches_key_address_or_member
+  - visitor_list_filters_by_visitor_type
+  - visitor_list_pages
+  - visitor_detail_expands_one_persons_timeline
+  - visitor_detail_carries_a_single_profile_card
+  - visitor_card_carries_member_and_returning
+  - privacy_subjects_carry_the_privacy_mode
+  - visitor_card_survives_an_empty_period
+  - visitor_views_announce_the_anonymous_mode_limit
+  - anonymous_profile_lookup_is_clamped_to_today
+  # 정보주체에게 건네줄 파일 — 내려받기도 목록과 같은 권한을 요구한다(부록 D)
+  - visitor_detail_can_be_downloaded_as_csv
+  - visitor_views_require_the_privacy_permission
+  # 이용 패턴
+  - patterns_always_return_seven_weekdays_and_twenty_four_hours
+  - patterns_hour_buckets_come_from_hourly_stats
+  - patterns_report_the_hourly_availability_window
+  - hourly_availability_boundary_follows_the_site_date
+  # 수집 제외 쿠키
+  - opt_out_cookie_is_readable_by_the_tracker
+  - opt_out_state_is_read_from_the_cookie
+  - opt_out_change_fires_a_hook
+  # 저장 용량·전체 삭제 (API 경로 — 같은 동작의 CLI 경로는 analytics-retention 이 소유)
+  - storage_stats_flag_the_warning_threshold
+  - storage_stats_list_every_analytics_table
+  - storage_stats_count_the_two_ledger_tables_exactly
+  - storage_table_rows_use_the_exact_ledger_counts
+  - purge_removes_ledger_and_aggregates
+  - purge_fires_the_data_purged_hook
+  # 클라우드 대역 갱신 (API 경로)
+  - cloud_ranges_are_downloaded_and_stored
+  - a_failed_download_keeps_the_existing_list
+  # 공개 요약·리포트 메일
+  - public_summary_returns_four_numbers
+  - public_summary_is_not_found_when_disabled
+  - report_is_silent_when_the_setting_is_off
+  - report_is_silent_when_the_definition_is_inactive
+  - weekly_report_fires_with_last_period_numbers
+  - each_period_fires_only_its_own_hook
+  - change_percent_is_empty_when_the_previous_period_was_zero
+  - report_rejects_an_unknown_period
+  - report_period_covers_the_previous_period_not_today
+  # 알림 배선
+  - notification_data_listener_subscribes_the_extract_filter
+  - archive_failure_notification_carries_run_and_error
+  - ledger_limit_notification_carries_counts_and_settings_link
+  - report_notification_renders_top_lists_and_handles_missing_change
+  - unknown_notification_types_pass_through
+  - dashboard_alert_appears_only_over_the_limit
+  - dashboard_alert_listener_subscribes_the_alerts_filter
+  - dashboard_alert_jump_is_gated_by_destination_permission
+  - analytics_notification_definitions_carry_channels_and_recipients
+  - public_summary_is_cached_between_requests
+  - public_summary_is_rate_limited
+  # 유입처 전체 주소 — 집계에 없는 값이라 이 한 갈래만 원장을 직접 읽는다 (라운드 4, 검수 지적 ⑥)
+  - referrer_urls_group_by_full_url_within_host
+  - referrer_urls_skip_visits_without_a_stored_url
+  - referrer_urls_paginate_with_has_more
+  - referrer_urls_require_a_host
+  - referrer_urls_require_analytics_read
+  - visitor_detail_carries_the_full_referrer_url
+  # 방문자 목록의 회원 신원 (라운드 4, 검수 지적 ⑦)
+  - visitor_list_carries_member_identity_for_logged_in_visitors
+  - visitor_list_leaves_member_null_when_the_account_is_gone
+  # 마스킹 표시·회원 이동 (#682 S3 라운드 6)
+  - masked_ip_is_labelled_as_masked
+  - analytics_times_are_rendered_in_the_site_timezone
+  - member_jump_is_gated_by_destination_permission
+  - visitor_csv_filename_carries_the_period
+
+test_files:
+  - tests/Feature/Analytics/Api/ArchiveOnViewMiddlewareTest.php
+  - tests/Feature/Analytics/Api/RowSeriesControllerTest.php
+  - tests/Feature/Analytics/Api/ApiSurfaceContractTest.php
+  - tests/Feature/Analytics/Api/OverviewControllerTest.php
+  - tests/Feature/Analytics/Api/ReportControllerTest.php
+  - tests/Feature/Analytics/Api/RealtimeControllerTest.php
+  - tests/Feature/Analytics/Api/DiagnosticsControllerTest.php
+  - tests/Feature/Analytics/Api/ArchiveRunControllerTest.php
+  - tests/Feature/Analytics/Api/SettingsControllerTest.php
+  - tests/Unit/Analytics/AnalyticsSettingsCastTest.php
+  - tests/Feature/Analytics/Api/PrivacyControllerTest.php
+  - tests/Feature/Analytics/Api/VisitorControllerTest.php
+  - tests/Feature/Analytics/Api/ReferrerUrlsControllerTest.php
+  - tests/Feature/Analytics/Api/PatternsControllerTest.php
+  - tests/Feature/Analytics/Api/OptOutControllerTest.php
+  - tests/Feature/Analytics/Api/DataControllerTest.php
+  - tests/Feature/Analytics/Api/CloudRangeControllerTest.php
+  - tests/Feature/Analytics/Api/PublicSummaryControllerTest.php
+  - tests/Feature/Analytics/Api/PermissionMatrixTest.php
+  - tests/Feature/Analytics/NotificationDefinitionsTest.php
+  - tests/Feature/Analytics/NotificationCooldownTest.php
+  - tests/Feature/Analytics/Api/LedgerAlertActionPermissionTest.php
+  - tests/Feature/Analytics/Api/PeriodEchoPathTest.php
+  - tests/Feature/Console/Analytics/ReportCommandTest.php
+  - tests/Unit/Analytics/CsvExporterTest.php
+  - tests/Unit/Analytics/LanguageLabelTranslatorTest.php
+
+# 관리자 화면(14면)의 E2E 는 S3 이 소유한다 — 이 단계에는 화면이 없고 API 만 있다.

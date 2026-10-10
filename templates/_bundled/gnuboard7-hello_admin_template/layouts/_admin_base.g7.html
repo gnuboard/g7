@@ -1,0 +1,17 @@
+<!-- 학습용 관리자 베이스 레이아웃 — 사이드바 + 콘텐츠 슬롯만 있는 최소 골격이다. 실제 관리자 템플릿(sirsoft-admin_basic)이 무엇을 더 얹는지 견주어 보라고 남긴 자리다 -->
+<layout name="_admin_base" version="1.0.0">
+  <meta title="$t:admin.base_layout_title" :is_base="true"/>
+  <div data-ref="admin_shell" class="flex min-h-screen bg-gray-50">
+    <div data-ref="sidebar" class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
+      <h2 data-ref="sidebar_title" class="section-heading mb-4">$t:admin.sidebar.title</h2>
+      <a data-ref="nav_dashboard" href="/admin" class="block px-3 py-2 text-body rounded hover:bg-gray-100 dark:hover:bg-gray-700">$t:admin.sidebar.dashboard</a>
+    </div>
+    <div data-ref="main_column" class="flex-1 flex flex-col">
+      <div data-ref="header" class="flex-center h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <span data-ref="header_title" class="text-primary text-sm font-medium">$t:admin.header.title</span>
+      </div>
+      <!-- 자식 레이아웃이 끼워지는 자리 — 베이스는 components 에 실제 노드를 두고 그 노드에 slot 키를 단다. slots 섹션 + type:slot 자리표시 노드는 정본이 아니며(코퍼스의 다른 베이스는 전부 이 형태), 강검증도 통과하지 못했다. -->
+      <div data-ref="main_content" data-slot="content" class="flex-1 p-6"/>
+    </div>
+  </div>
+</layout>

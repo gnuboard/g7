@@ -1,0 +1,20 @@
+feature: 레이아웃 원본 해시 — 빈 객체와 빈 배열을 같게 정규화 (keep 업데이트 거짓 "수정됨" 교정)
+
+description: |
+  #138 실측 ⑥. 레이아웃 파일을 컴파일한 본문은 빈 객체를 `{}` 로 들고 있어 설치 때 원본 해시가 그 모양으로
+  계산됐지만, 수정 여부를 볼 때는 DB 에서 배열로 읽은 본문(빈 객체가 `[]`)으로 해시를 계산했다. 빈 객체가 하나라도
+  있는 레이아웃은 아무도 고치지 않았는데 "사용자 수정본"이 되어 keep 업데이트가 새 판(조각 변경 포함)을 반영하지
+  않았다(개발 사이트 관리자 템플릿 20건 전부). 정규화를 JSON 왕복으로 맞추고, 7.1.0 업그레이드 스텝이 기존 설치본의
+  원본 해시를 — 설치 뒤 고치지 않은 행만 — 새 방식으로 다시 적는다.
+
+axes:
+  case: [hash_normalization, installed_untouched_layout, rehash_untouched_rows]
+
+effects:
+  - empty_object_and_empty_array_hash_identically
+  - untouched_layout_with_empty_object_is_not_reported_modified
+  - legacy_empty_object_hash_is_rewritten_only_for_untouched_rows
+
+test_files:
+  - tests/Feature/Extension/LayoutContentHashEmptyObjectTest.php
+  - tests/Feature/Upgrade/RehashLayoutOriginalContentTest.php

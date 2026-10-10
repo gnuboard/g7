@@ -1,0 +1,667 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Claim Detail - Shipping Section (collection + redelivery tracking groups per waybill, deliver per waybill) — #599 row-level tracking"
+    },
+    "comment": "배송 정보 섹션 (D17-②) — 회수와 재발송은 **한 카드 안의 두 항목**이다. 섹션을 둘로 나누면 탭이 하나 더 생기고, 재발송이 없는 반품에서 빈 탭이 남는다. 이 `if` 는 셸의 탭 배열 조건과 문자 그대로 같아야 한다 (D17-① — 한쪽만 분기하면 탭 클릭이 무반응이거나 scrollSpy 가 없는 탭을 활성화하려다 무시된다). 송장은 **상품 행**마다 있다 — 이 탭은 운송장별로 묶어 보여 주기만 하고 입력칸을 두지 않는다. 운송장 기록·정정은 「신청 상품」 칸에서 상품을 골라 [송장만 저장] 으로 한다(R3 — 한 행을 고쳐도 같은 운송장의 다른 행은 바뀌지 않는다).",
+    "id": "section_shipping_info",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
+    "props": {
+        "data-section-id": "shipping_info",
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "id": "claim_shipping_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-2"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.title"
+                },
+                {
+                    "id": "cs_001_edit_hint",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-secondary mb-6"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.edit_hint"
+                },
+                {
+                    "id": "claim_collection_block",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-base font-semibold text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.collection_title"
+                                },
+                                {
+                                    "comment": "신청서 **전체**의 회수 완료 시각 — 헤더가 회수도착에 닿았거나 완료될 때만 찍힌다(S2). 상품별 도착은 아래 묶음의 행마다 표시한다.",
+                                    "id": "cs_002_collection_done_badge",
+                                    "type": "composite",
+                                    "name": "Badge",
+                                    "if": "{{!!claim?.data?.claim?.collection_completed_at_formatted}}",
+                                    "props": {
+                                        "variant": "success"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.collected_at|at={{claim.data.claim.collection_completed_at_formatted}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "회수지 — 상품마다 배송정책이 달라 회수지가 둘 이상이면 주소별로 나눠 보여 준다(S4). 하나뿐이면 한 줄이다.",
+                            "id": "cs_003_collection_addresses",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-1 mb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{(claim?.data?.claim?.return_addresses ?? []).length > 0 ? claim.data.claim.return_addresses : [{ address_snapshot: claim?.data?.claim?.return_address_snapshot ?? {}, claim_item_ids: [] }]}}",
+                                        "item_var": "addr",
+                                        "index_var": "addrIdx"
+                                    },
+                                    "props": {
+                                        "className": "text-sm text-secondary"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.return_address_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100 ml-2"
+                                            },
+                                            "text": "{{[addr.address_snapshot?.recipient_name, addr.address_snapshot?.phone, addr.address_snapshot?.zipcode, addr.address_snapshot?.address1, addr.address_snapshot?.address2].filter(Boolean).join(' ') || '-'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(claim?.data?.claim?.return_addresses ?? []).length > 1}}",
+                                            "props": {
+                                                "className": "ml-2 text-xs text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "{{(claim?.data?.claim?.items ?? []).filter(i => (addr.claim_item_ids ?? []).includes(i.id)).map(i => i.product_name).join(', ')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "회수 운송장 묶음 — 같은 (택배사, 운송장)을 가진 행이 한 상자다. 송장 없이 도착한 행은 「송장 없이 도착」 묶음으로 따로 선다.",
+                            "id": "cs_004_collection_groups",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "id": "cs_005_collection_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.claim?.tracking_groups?.collection ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.no_tracking_yet"
+                                },
+                                {
+                                    "id": "cs_006_collection_group_{{groupIdx}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{claim?.data?.claim?.tracking_groups?.collection ?? []}}",
+                                        "item_var": "group",
+                                        "index_var": "groupIdx"
+                                    },
+                                    "props": {
+                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between gap-3 flex-wrap"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2 flex-wrap text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{group.no_tracking === true}}",
+                                                            "props": {
+                                                                "variant": "secondary"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.no_tracking_group"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{group.no_tracking !== true}}",
+                                                            "props": {
+                                                                "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "{{group.carrier_name ?? '-'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{group.no_tracking !== true}}",
+                                                            "props": {
+                                                                "className": "text-gray-900 dark:text-gray-100 break-all"
+                                                            },
+                                                            "text": "{{group.tracking_number ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{!!group.tracking_url}}",
+                                                            "props": {
+                                                                "href": "{{group.tracking_url}}",
+                                                                "target": "_blank",
+                                                                "rel": "noopener noreferrer",
+                                                                "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.track"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{group.all_arrived === true}}",
+                                                            "props": {
+                                                                "variant": "success"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.arrived"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{group.no_tracking !== true}}",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "막힌 이유는 버튼 옆에 적는다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다.",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{group.can_deliver !== true && !!group.blocked_reason}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{group.blocked_reason}}"
+                                                        },
+                                                        {
+                                                            "id": "cs_006b_collection_deliver_{{groupIdx}}",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "운송장 한 개에 묶인 행을 한꺼번에 도착 처리한다(R9). 일반 흐름은 회수도착으로 옮기고, 선교환 회수는 상태를 두고 도착 시각만 찍는다 — 판정은 서버가 한다.",
+                                                                    "type": "click",
+                                                                    "handler": "sirsoft-ecommerce.deliverClaimTracking",
+                                                                    "params": {
+                                                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                                        "direction": "collection",
+                                                                        "carrierId": "{{group.carrier_id}}",
+                                                                        "trackingNumber": "{{group.tracking_number}}"
+                                                                    },
+                                                                    "onError": {
+                                                                        "comment": "실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
+                                                                        "handler": "suppress"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "btn btn-outline btn-sm",
+                                                                "disabled": "{{claim?.data?.abilities?.can_update_status !== true || group.can_deliver !== true || _local.isDeliveringTracking === true}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "스피너는 누른 묶음에만 — 잠금(`isDeliveringTracking`)은 모든 묶음이 함께 쓰지만, 키가 이 묶음의 (방향, 택배사, 운송장)과 같을 때만 돈다.",
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "if": "{{_local.deliveringTrackingKey === 'collection|' + group.carrier_id + '|' + group.tracking_number}}",
+                                                                    "props": {
+                                                                        "name": "spinner",
+                                                                        "className": "spinner-sm mr-1"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.deliver"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "mt-2 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{group.items ?? []}}",
+                                                        "item_var": "gItem",
+                                                        "index_var": "gItemIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex-center gap-2 text-sm text-secondary flex-wrap"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "{{(gItem.product_name ?? '') + (gItem.option_name ? ' (' + gItem.option_name + ')' : '') + ' × ' + (gItem.quantity ?? 0)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs"
+                                                            },
+                                                            "text": "{{gItem.status_label ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{gItem.arrived === true}}",
+                                                            "props": {
+                                                                "variant": "success",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.arrived"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "claim_redelivery_divider",
+                    "type": "basic",
+                    "name": "Hr",
+                    "props": {
+                        "className": "my-6 border-gray-200 dark:border-gray-700"
+                    }
+                },
+                {
+                    "comment": "반품에는 재발송 축이 없다 — 카드에서 항목을 통째로 빼면 운영자가 '아직 안 보이는 것' 과 '해당 없음' 을 구분할 수 없어, 항목은 두고 해당 없음을 명시한다.",
+                    "id": "claim_redelivery_not_applicable",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'exchange'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "text-base font-semibold text-gray-900 dark:text-gray-100 mb-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_title"
+                        },
+                        {
+                            "id": "cs_008_redelivery_na_text",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-secondary"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_not_applicable"
+                        }
+                    ]
+                },
+                {
+                    "id": "claim_redelivery_block",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 mb-3 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-base font-semibold text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_title"
+                                },
+                                {
+                                    "comment": "두 뱃지는 서로 다른 사실을 말한다 (D14) — 이쪽은 최종 재발송지가 주문 배송지와 다른가이고, 아래는 고객이 신청서에서 손댔는가다. 운영자가 나중에 주소를 되돌리면 값은 같아지지만 손댄 사실은 남으므로 하나로 합치지 않는다. 판정은 서버가 두 주소를 비교해 내려준다.",
+                                    "id": "cs_009_address_differs_badge",
+                                    "type": "composite",
+                                    "name": "Badge",
+                                    "if": "{{claim?.data?.redelivery_address_differs === true}}",
+                                    "props": {
+                                        "variant": "warning"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.address_differs"
+                                },
+                                {
+                                    "id": "cs_010_changed_by_user_badge",
+                                    "type": "composite",
+                                    "name": "Badge",
+                                    "if": "{{claim?.data?.claim?.redelivery_address_snapshot?.changed_by_user === true}}",
+                                    "props": {
+                                        "variant": "info"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.changed_by_user"
+                                },
+                                {
+                                    "id": "cs_011_redelivered_badge",
+                                    "type": "composite",
+                                    "name": "Badge",
+                                    "if": "{{!!claim?.data?.claim?.redelivered_at_formatted}}",
+                                    "props": {
+                                        "variant": "success"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.redelivered_at|at={{claim.data.claim.redelivered_at_formatted}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cs_012_redelivery_address",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm text-secondary mb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_address_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100 ml-2"
+                                    },
+                                    "text": "{{[claim?.data?.claim?.redelivery_address_snapshot?.recipient_name, claim?.data?.claim?.redelivery_address_snapshot?.phone, claim?.data?.claim?.redelivery_address_snapshot?.zipcode, claim?.data?.claim?.redelivery_address_snapshot?.address1, claim?.data?.claim?.redelivery_address_snapshot?.address2, claim?.data?.claim?.redelivery_address_snapshot?.city, claim?.data?.claim?.redelivery_address_snapshot?.state].filter(Boolean).join(' ') || '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cs_013_redelivery_groups",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "id": "cs_014_redelivery_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.claim?.tracking_groups?.redelivery ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.no_tracking_yet"
+                                },
+                                {
+                                    "id": "cs_015_redelivery_group_{{groupIdx}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{claim?.data?.claim?.tracking_groups?.redelivery ?? []}}",
+                                        "item_var": "group",
+                                        "index_var": "groupIdx"
+                                    },
+                                    "props": {
+                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between gap-3 flex-wrap"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2 flex-wrap text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{group.no_tracking === true}}",
+                                                            "props": {
+                                                                "variant": "secondary"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.no_tracking_group"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{group.no_tracking !== true}}",
+                                                            "props": {
+                                                                "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "{{group.carrier_name ?? '-'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{group.no_tracking !== true}}",
+                                                            "props": {
+                                                                "className": "text-gray-900 dark:text-gray-100 break-all"
+                                                            },
+                                                            "text": "{{group.tracking_number ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{!!group.tracking_url}}",
+                                                            "props": {
+                                                                "href": "{{group.tracking_url}}",
+                                                                "target": "_blank",
+                                                                "rel": "noopener noreferrer",
+                                                                "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.track"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{group.all_arrived === true}}",
+                                                            "props": {
+                                                                "variant": "success"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.arrived"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{group.no_tracking !== true}}",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{group.can_deliver !== true && !!group.blocked_reason}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{group.blocked_reason}}"
+                                                        },
+                                                        {
+                                                            "id": "cs_015b_redelivery_deliver_{{groupIdx}}",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "재발송 묶음을 배송완료로 바꾼다 — 묶음의 택배사·송장을 함께 넘기고, 실패 안내는 핸들러가 띄운다",
+                                                                    "type": "click",
+                                                                    "handler": "sirsoft-ecommerce.deliverClaimTracking",
+                                                                    "params": {
+                                                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                                        "direction": "redelivery",
+                                                                        "carrierId": "{{group.carrier_id}}",
+                                                                        "trackingNumber": "{{group.tracking_number}}"
+                                                                    },
+                                                                    "onError": {
+                                                                        "handler": "suppress"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "btn btn-outline btn-sm",
+                                                                "disabled": "{{claim?.data?.abilities?.can_update_status !== true || group.can_deliver !== true || _local.isDeliveringTracking === true}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "if": "{{_local.deliveringTrackingKey === 'redelivery|' + group.carrier_id + '|' + group.tracking_number}}",
+                                                                    "props": {
+                                                                        "name": "spinner",
+                                                                        "className": "spinner-sm mr-1"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.deliver"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "mt-2 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{group.items ?? []}}",
+                                                        "item_var": "gItem",
+                                                        "index_var": "gItemIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex-center gap-2 text-sm text-secondary flex-wrap"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "{{(gItem.product_name ?? '') + (gItem.option_name ? ' (' + gItem.option_name + ')' : '') + ' × ' + (gItem.quantity ?? 0)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs"
+                                                            },
+                                                            "text": "{{gItem.status_label ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{gItem.arrived === true}}",
+                                                            "props": {
+                                                                "variant": "success",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.arrived"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

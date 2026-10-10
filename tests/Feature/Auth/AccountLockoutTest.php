@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,11 @@ class AccountLockoutTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,8 +48,13 @@ class AccountLockoutTest extends TestCase
     }
 
     /**
-     * @test
+     * 잠금시간 0 설정에서 임계값 도달 시 영구 잠금된다.
+     *
+     * @effects lockout_time_zero_creates_permanent_lock_not_one_minute
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 잠금시간_0_설정에서_임계값_도달_시_영구_잠금된다(): void
     {
         $user = User::factory()->create([
@@ -73,8 +84,13 @@ class AccountLockoutTest extends TestCase
     }
 
     /**
-     * @test
+     * 영구 잠금 응답은 locked until 이 null 이어도 직렬화된다.
+     *
+     * @effects permanent_lock_response_serializes_with_null_locked_until
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 영구_잠금_응답은_locked_until_이_null_이어도_직렬화된다(): void
     {
         $user = User::factory()->create([
@@ -96,8 +112,13 @@ class AccountLockoutTest extends TestCase
     }
 
     /**
-     * @test
+     * 관리자 해제 API 로 영구 잠금을 풀 수 있다.
+     *
+     * @effects admin_manual_unlock_endpoint_clears_lock
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 관리자_해제_ap_i_로_영구_잠금을_풀_수_있다(): void
     {
         $locked = User::factory()->create([
@@ -130,8 +151,13 @@ class AccountLockoutTest extends TestCase
     }
 
     /**
-     * @test
+     * 권한 없는 사용자는 해제 API 를 호출할 수 없다.
+     *
+     * @effects admin_manual_unlock_requires_users_update_permission
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 권한_없는_사용자는_해제_ap_i_를_호출할_수_없다(): void
     {
         $locked = User::factory()->create(['status' => 'active']);
@@ -153,8 +179,11 @@ class AccountLockoutTest extends TestCase
      * 기본 manager 역할이 그 권한을 self 스코프로 갖고 있으므로, 스코프가 이 경로에
      * 적용되지 않으면 매니저가 임의 계정의 잠금을 푸는 우회로가 된다.
      *
-     * @test
+     * @effects admin_manual_unlock_requires_users_update_permission
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function self_스코프_역할은_남의_계정_잠금을_해제할_수_없다(): void
     {
         $locked = User::factory()->create(['status' => 'active']);
@@ -177,8 +206,13 @@ class AccountLockoutTest extends TestCase
     }
 
     /**
-     * @test
+     * 유한 잠금 설정은 기존과 동일하게 만료된다.
+     *
+     * @effects finite_lockout_setting_keeps_previous_expiry_behavior
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 유한_잠금_설정은_기존과_동일하게_만료된다(): void
     {
         $this->setSecuritySettings(['login_lockout_time' => 5]);
@@ -211,6 +245,7 @@ class AccountLockoutTest extends TestCase
      * 보안 환경설정 값을 테스트용으로 덮어씁니다.
      *
      * @param  array  $values  덮어쓸 보안 설정 값
+     * @return void 반환값 없음
      */
     private function setSecuritySettings(array $values): void
     {

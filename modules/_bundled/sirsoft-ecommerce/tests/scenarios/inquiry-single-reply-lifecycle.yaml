@@ -46,6 +46,30 @@ effects:
   - pivot_soft_delete_and_restore       # 질문 글 삭제→복원 시 피벗 소프트 삭제→복원
   - orphan_replies_backfilled_idempotent # 업그레이드 스텝 04~06 정리 + 재실행 멱등
   - board_not_configured_safe           # 게시판 미설정 시 422/안전 열화 (500 없음)
+  - pivot_type_comes_from_hook_payload  # 게시판 삭제 벌크 훅의 글 모델 타입(셋째 인자)으로 피벗을 가림 — 이커머스는 게시판 클래스명을 적지 않음
+  - pivot_untouched_when_hook_type_missing # 타입 없는 벌크 훅(이전 판 게시판)은 피벗을 지우지 않음
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - count_replies_by_parent_id_counts_only_live_children
+  - has_alive_replies_returns_true_for_direct_live_reply
+  - has_alive_replies_returns_false_when_all_replies_trashed
+  - has_alive_replies_returns_false_when_only_grandchild_alive
+
+sub_flows:
+  - id: board_listener_contract
+    description: |
+      게시판 쪽 리스너(`EcommerceInquiryHookListener`)가 이커머스 문의 필터 훅을 받아
+      게시판 CRUD 로 위임하는 계약(샘플 시더용 2종 포함 10종). 게시판이 없거나 대상 글이 없을 때의
+      열화 방식과, 양쪽이 서로의 번역 키·모델을 쓰지 않는 경계까지 고정한다.
+    effects:
+      - listener_subscribes_every_inquiry_filter_hook
+      - listener_creates_board_post_for_inquiry
+      - listener_degrades_to_carry_when_board_missing
+      - listener_maps_posts_by_ids
+      - listener_reads_board_settings
+      - listener_delete_fails_loudly_for_missing_post
+      - listener_failure_reason_uses_own_lang       # 실패 사유는 게시판 자기 문구 — 이커머스 번역 키를 빌려 쓰지 않음
+      - listener_seeds_sample_post_with_reply       # 샘플 시더 계약: 게시판이 문의 글(+답변)을 대신 만들고 참조 반환
+      - listener_purges_only_own_type_sample_posts  # 샘플 시더 계약: 자기 글 타입 묶음과 답변 글만 영구 삭제
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminProductInquiryControllerTest.php

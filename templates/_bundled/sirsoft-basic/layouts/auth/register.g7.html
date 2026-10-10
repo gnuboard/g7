@@ -1,0 +1,36 @@
+<!-- 회원가입 화면 — 폼 본체와 약관·방침 모달은 조각으로 갈라 두고 여기서는 그것들을 모아 세운다. 약관 문서 둘을 이 화면이 선언하는 것은 모달 조각이 자기 데이터소스를 가질 수 없기 때문이다. -->
+<layout name="auth/register" version="1.0.0" extends="_user_base">
+  <meta title="$t:auth.register.title" :guest_only="true"/>
+  <!-- 이용약관 본문 — 약관 모달을 열 때만 부른다(auto_fetch 꺼짐). 가입 전이라 비로그인으로도 읽혀야 한다. -->
+  <data-source id="termsContent" label_key="$t:editor.data_source.termsContent" type="api" endpoint="/api/modules/sirsoft-page/pages/terms" method="GET" :auto_fetch="false" auth_mode="optional"/>
+  <!-- 개인정보처리방침 본문 — 방침 모달을 열 때만 부른다. -->
+  <data-source id="privacyContent" label_key="$t:editor.data_source.privacyContent" type="api" endpoint="/api/modules/sirsoft-page/pages/privacy" method="GET" :auto_fetch="false" auth_mode="optional"/>
+  <init>
+    <!-- registerForm 초기 상태 시드 — language 기본값은 _register_form.g7.html 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘) -->
+    <set-state target="local" :isRegistering="false" :registerError="null" :errors="null" :registerForm="{}"/>
+  </init>
+  <slot name="content">
+    <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">
+      <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
+      <!-- 회원가입 폼 -->
+      <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.register.title</h2>
+        <include src="partials/auth/_register_form.g7.html"/>
+        <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <span>$t:auth.already_member</span>
+          <span> </span>
+          <button class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+            <on type="click">
+              <navigate path="/login"/>
+            </on>
+            $t:auth.login
+          </button>
+        </div>
+      </div>
+    </flex>
+  </slot>
+  <!-- 약관 전문 창 — 가입 폼의 동의 줄에서 연다. -->
+  <modal src="partials/auth/_modal_terms.g7.html"/>
+  <!-- 방침 전문 창 — 같은 동의 줄의 다른 링크에서 연다. -->
+  <modal src="partials/auth/_modal_privacy.g7.html"/>
+</layout>

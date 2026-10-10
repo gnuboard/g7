@@ -1,0 +1,241 @@
+<!-- 주문서 오른쪽 요약 기둥과 최종 「결제하기」. 금액은 전부 `checkoutData.data.calculation` 이 준 값이고
+     화면에서 다시 더하지 않는다 — 왼쪽 칸들이 바꾸는 것은 조건뿐이고 계산은 늘 서버가 한다. -->
+<partial _e2e_allow="e2e:allow S4-D14 — 결제하기 잠금의 결제수단 판정을 고객 선택 가능 계산값으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다." description="결제 금액 요약 및 결제 버튼 (장바구니 수준 상세 정보, PC/모바일 반응형)">
+  <div class="sticky top-4">
+    <responsive on="portable" class=""/>
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+      <!-- 섹션 헤더 -->
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+        $t:shop.checkout.payment_amount
+      </h2>
+      <!-- 금액 상세 -->
+      <div class="space-y-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="space-y-2 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+        <!-- 상품 금액 (클릭하면 세금 상세 토글) -->
+        <div>
+          <div class="flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
+            <on type="click">
+              <!-- 상품 금액 줄 자체가 토글이다 — 누르면 과세·면세 분해가 접혔다 펴진다 -->
+              <set-state target="local" showTaxDetails="{{!_local.showTaxDetails}}"/>
+            </on>
+            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <span>$t:shop.checkout.subtotal</span>
+              <icon name="{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
+            </div>
+            <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? checkoutData.data.calculation?.summary?.subtotal_formatted ?? '-'}}</span>
+          </div>
+          <!-- 세금 상세 (접이식) -->
+          <div data-if="{{_local.showTaxDetails}}" class="ml-4 mt-2 space-y-1">
+            <div data-if="{{(checkoutData.data.calculation?.summary?.taxable_amount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.taxable_amount</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(checkoutData.data.calculation?.summary?.tax_free_amount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.tax_free_amount</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 할인 섹션 (할인이 있을 때만) -->
+        <div data-if="{{(checkoutData.data.calculation?.summary?.total_discount ?? 0) > 0}}">
+          <div class="flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
+            <on type="click">
+              <!-- 할인 줄도 같은 방식 — 쿠폰·적립금이 각각 얼마인지 펴서 보여 준다 -->
+              <set-state target="local" showDiscountDetails="{{!_local.showDiscountDetails}}"/>
+            </on>
+            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <span>$t:shop.cart.discount_total</span>
+              <icon name="{{_local.showDiscountDetails ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
+            </div>
+            <span class="font-medium text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? checkoutData.data.calculation?.summary?.total_discount_formatted}}</span>
+          </div>
+          <!-- 할인 상세 (접이식) -->
+          <div data-if="{{_local.showDiscountDetails}}" class="ml-4 mt-2 space-y-1">
+            <div data-if="{{(checkoutData.data.calculation?.summary?.product_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.coupon_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}</span>
+            </div>
+            <!-- 적용된 상품 쿠폰 상세 리스트 -->
+            <div data-if="{{(checkoutData.data.calculation?.promotions?.product_promotions?.coupons ?? []).length > 0}}" class="ml-4 mt-1 space-y-0.5">
+              <div data-each="pCoupon in {{checkoutData.data.calculation?.promotions?.product_promotions?.coupons ?? []}}" class="flex justify-between text-xs">
+                <span class="text-gray-500 dark:text-gray-400 truncate mr-2">{{pCoupon.name}}</span>
+                <span class="text-red-500 dark:text-red-400 flex-shrink-0">-{{pCoupon.total_discount_formatted}}</span>
+              </div>
+            </div>
+            <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.code_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.order_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}</span>
+            </div>
+            <!-- 적용된 주문 쿠폰 상세 -->
+            <div data-if="{{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="ml-4 mt-1 space-y-0.5">
+              <div data-each="oCoupon in {{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount')}}" class="flex justify-between text-xs">
+                <span class="text-gray-500 dark:text-gray-400 truncate mr-2">{{oCoupon.name}}</span>
+                <span class="text-red-500 dark:text-red-400 flex-shrink-0">-{{oCoupon.total_discount_formatted}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 배송비 섹션 -->
+        <div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">$t:shop.checkout.shipping_fee_label</span>
+            <span class="font-medium {{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.checkout.free' : (checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? checkoutData.data.calculation?.summary?.total_shipping_formatted)}}</span>
+          </div>
+          <!-- 배송비 상세 (배송비가 있을 때만) -->
+          <div data-if="{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) > 0 || (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="ml-4 mt-1 space-y-1">
+            <div data-if="{{(checkoutData.data.calculation?.summary?.base_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.base_shipping</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(checkoutData.data.calculation?.summary?.extra_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.extra_shipping</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.shipping_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}</span>
+            </div>
+            <!-- 적용된 배송비 쿠폰 상세 -->
+            <div data-if="{{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="ml-4 mt-1 space-y-0.5">
+              <div data-each="sCoupon in {{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" class="flex justify-between text-xs">
+                <span class="text-gray-500 dark:text-gray-400 truncate mr-2">{{sCoupon.name}}</span>
+                <span class="text-red-500 dark:text-red-400 flex-shrink-0">-{{sCoupon.total_discount_formatted}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 마일리지 차감 전 금액 (마일리지 사용 시) — summary.payment_amount 는 마일리지를 빼기 전 금액이다. 마일리지 사용 행 아래에 두면
+             차감 후 금액으로 읽혀 관리자 화면의 「결제예정금액」(차감 후)과 뜻이 갈렸다. 장바구니 요약의 「결제 예정금액」은 그대로 둔다.
+             e2e:allow 서버 값(summary.payment_amount) 하나를 그리는 표시 전용 행의 위치·라벨·노출 조건 변경이라 화면 판정 로직이 없다.
+             순서·라벨 키·points_used 조건은 __tests__/layouts/order-mileage-display.test.tsx 가 고정하고, ko/en/ja·모바일 실측은 후속C 이력의 브라우저 매트릭스에 있다. -->
+        <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="flex justify-between text-sm pt-2">
+          <span class="text-gray-600 dark:text-gray-400">$t:shop.checkout.amount_before_points</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}</span>
+        </div>
+        <!-- 사용 포인트 (마일리지 사용 시) -->
+        <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">$t:shop.checkout.points_used</span>
+          <span class="font-medium text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.points_used_formatted ?? '-'}}</span>
+        </div>
+        <!-- 적립 예정 마일리지 -->
+        <div data-if="{{(checkoutData.data.calculation?.summary?.points_earning ?? 0) > 0}}" class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">$t:shop.cart.expected_mileage</span>
+          <span class="font-medium text-blue-600 dark:text-blue-400">+{{checkoutData.data.calculation?.summary?.mileage_formatted ?? '-'}}</span>
+        </div>
+      </div>
+      <!-- 총 결제금액 -->
+      <div class="py-4">
+        <responsive on="portable" class="py-3"/>
+        <div class="flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-900 dark:text-white">
+            <responsive on="portable" class="font-semibold text-gray-900 dark:text-white"/>
+            $t:shop.checkout.total
+          </span>
+          <span class="text-xl font-bold text-gray-900 dark:text-white">
+            <responsive on="portable" class="text-lg font-bold text-gray-900 dark:text-white"/>
+            {{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}
+          </span>
+        </div>
+        <!-- 보조 통화들 -->
+        <div data-each="currency in {{Object.entries(checkoutData.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-1">
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.final_amount_formatted}}</span>
+        </div>
+      </div>
+      <!-- 배송 불가 안내 (D1 — 혼재 시 전체 차단) -->
+      <div data-if="{{checkoutData.data.has_unshippable_items === true}}" class="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">$t:shop.shippability.blocks_order</div>
+      <!-- 주문 권한 안내와 아래 [결제하기] 잠금은 장바구니·상품과 같이 `can_order` 가 true 가 아니면 건다 — 쿠폰·배송지·마일리지를
+           바꿀 때 받는 결제 정보 갱신(PUT) 응답도 조회 응답과 같이 abilities.can_order 를 싣는다. -->
+      <p data-if="{{!!checkoutData.data &amp;&amp; checkoutData.data?.abilities?.can_order !== true}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:shop.order_permission_denied</p>
+      <!-- 결제 버튼 — 배송지 필수값·처리 중·배송 불가 상품 외에, 고를 결제수단이 하나도 없을 때도 잠근다(무통장입금만 켜져 있고
+           입금 계좌가 없으면 서버가 무통장입금을 내려주지 않는다 — 그대로 누르면 「입금 은행 선택」 422 로만 끝났다, #703) -->
+      <button data-ref="checkout_pay_button" type="button" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(((_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true || !(_computed.selectablePaymentMethods ?? []).length) || checkoutData.data?.abilities?.can_order !== true}}">
+        <responsive on="portable" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-base hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
+        <on type="click">
+          <sequence>
+            <!-- 로딩 상태 시작 -->
+            <set-state target="_local.isSubmittingOrder" :value="true"/>
+            <!-- 결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.
+           params.body 는 통짜 표현식이다. 말미의 ...(_local.checkoutExtraPayload ?? {}) 는 슬롯에 주입된 모듈/플러그인 폼이 자기 필드를 주문 생성 payload 에 실어 보내기 위한 확장 병합 칸이다. 주입분은 이 body 리터럴을 수정할 수단이 없으므로(결제 버튼에 id 부재 → overlay target 불가, inject_props 는 컴포넌트 props 전용이라 actions[].params.body 미도달) 이 칸이 유일한 경로다. 확장은 자기 도메인 키만 쓴다 — spread 가 뒤에 오므로 기존 키를 덮어쓸 수 있다. 확장 미주입 시 {} 이므로 payload 는 전환 전과 키·값 모두 동일하다. refund_bank 는 템플릿 소유 필드라 확장 칸을 경유하지 않고 직접 기재한다. 회귀 pin: __tests__/layouts/checkoutSummaryBodyPayload.test.tsx -->
+            <api-call target="/api/modules/sirsoft-ecommerce/user/orders" auth_mode="optional" method="POST" body="{{ ({ temp_order_id: checkoutData.data.temp_order_id, orderer: _computed.ordererDefaults, shipping: _local.shipping, payment_method: _computed.selectedCorePaymentMethod, shipping_memo: _local.shippingMemo === 'custom' ? _local.shippingMemoCustom : _local.shippingMemo, depositor_name: _local.depositorName ?? _computed.ordererDefaults?.name ?? '', dbank: _computed.selectedCorePaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null, expected_total_amount: checkoutData.data.calculation?.summary?.final_amount ?? 0, save_shipping_address: _local.saveShippingAddress ?? false, save_shipping_address_id: ((_computed.shippingAddressDirty && (_local.updateSelectedAddress ?? true)) ? _local.selectedAddressId : null), guest_lookup_password: _global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? ''), guest_lookup_password_confirmation: _global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? ''), refund_bank: _local.refundBankCode ? { bank_code: _local.refundBankCode, account_number: _local.refundBankAccount ?? null, holder: _local.refundBankHolder ?? null } : null, ...(_local.checkoutExtraPayload ?? {}) }) }}">
+              <success>
+                <!-- 결제 방법 분기 — PG provider 가 응답으로 결제 진입 핸들러명(pg_payment_handler)을 내려준 경우 그 핸들러를 그대로 dispatch (provider-agnostic, 특정 PG 하드코딩 없음). 핸들러명 미선언 PG 는 이 분기 미발화 → non-PG fallback(비회원 verify 후 완료 페이지 navigate)으로 안전 강하. -->
+                <conditions>
+                  <when if="{{response.data.requires_pg_payment &amp;&amp; response.data.pg_payment_handler}}">
+                    <sequence>
+                      <!-- 비회원 조회 토큰을 결제창을 열기 **전에** 확보한다. 결제창을 닫으면 그 즉시 취소 이력 기록(orders/{n}/cancel-payment)과 PG 플러그인의 닫힘 보고(close-report)가 호출되는데, 둘 다 서버가 이 토큰으로 소유자를 확인한다 — 토큰이 없으면 정당한 비회원의 보고가 거부되고 화면에는 아무 신호도 남지 않는다.
+                           1순위: 주문 생성 응답이 내려준 토큰(guest_order_token)을 그대로 저장한다 — 주문을 만든 이 브라우저만 받는 값이라 소유 증명이 된다.
+                           2순위: 응답에 토큰이 없으면(토큰을 내려주지 않는 이전 이커머스 모듈) 종전처럼 전화번호+조회 비밀번호로 verify 해 발급받는다. -->
+                      <conditions>
+                        <when if="{{!_global.currentUser?.uuid &amp;&amp; response.data.guest_order_token}}">
+                          <action handler="saveGuestOrderToken" token="{{response.data.guest_order_token}}" orderNumber="{{response.data.order.order_number}}" expiresAt="{{response.data.guest_order_token_expires_at}}"/>
+                        </when>
+                        <when if="{{!_global.currentUser?.uuid}}">
+                          <api-call target="/api/modules/sirsoft-ecommerce/guest/orders/verify" auth_mode="optional" method="POST">
+                            <success>
+                              <!-- 토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러). -->
+                              <action handler="saveGuestOrderToken" token="{{response.data.guest_order_token}}" orderNumber="{{response.data.order.order_number}}" expiresAt="{{response.data.expires_at}}"/>
+                            </success>
+                            <fail>
+                              <!-- verify 실패는 결제 자체를 막지 않는다 — 주문은 이미 생성되었고 사용자는 나중에 조회 폼으로 재인증할 수 있다. 취소 이력만 남지 않는다. -->
+                              <suppress/>
+                            </fail>
+                            <body order_number="{{response.data.order.order_number}}" orderer_phone="{{_local.orderer?.phone ?? ''}}" guest_lookup_password="{{_local.guestLookupPassword ?? ''}}"/>
+                          </api-call>
+                        </when>
+                      </conditions>
+                      <action handler="{{response.data.pg_payment_handler}}" pgPaymentData="{{response.data.pg_payment_data}}"/>
+                    </sequence>
+                  </when>
+                  <else>
+                    <sequence>
+                      <!-- 비회원만 자동 verify — non-PG 결제 흐름에서만 수행. PG 결제는 결제 완료 콜백 이후 verify 수행 필요 (별도 처리). -->
+                      <conditions>
+                        <when if="{{!_global.currentUser?.uuid}}">
+                          <api-call target="/api/modules/sirsoft-ecommerce/guest/orders/verify" auth_mode="optional" method="POST">
+                            <success>
+                              <!-- 토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러). -->
+                              <action handler="saveGuestOrderToken" token="{{response.data.guest_order_token}}" orderNumber="{{response.data.order.order_number}}" expiresAt="{{response.data.expires_at}}"/>
+                            </success>
+                            <fail>
+                              <!-- verify 실패는 결제 자체를 막지 않음 — 주문은 이미 생성되었으므로 사용자가 나중에 lookup 폼으로 재인증 가능. 토스트로만 안내. -->
+                              <toast type="warning" message="{{error.message ?? '$t:shop.checkout.guest_token_issue_failed'}}"/>
+                            </fail>
+                            <body order_number="{{response.data.order.order_number}}" orderer_phone="{{_local.orderer?.phone ?? ''}}" guest_lookup_password="{{_local.guestLookupPassword ?? ''}}"/>
+                          </api-call>
+                        </when>
+                      </conditions>
+                      <navigate path="{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}"/>
+                    </sequence>
+                  </else>
+                </conditions>
+              </success>
+              <fail>
+                <set-state target="local" :isSubmittingOrder="false" errors="{{error.response?.errors ?? error.errors ?? null}}" orderError="{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"/>
+                <toast type="error" message="{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"/>
+              </fail>
+              <field name="headers">
+                <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+              </field>
+              <field name="identity_target">
+                <field name="email" value="{{_computed.ordererDefaults?.email || _local.orderer?.email || ''}}"/>
+                <field name="phone" value="{{_local.orderer?.phone || _global.currentUser?.phone || _local.shipping?.recipient_phone || ''}}"/>
+              </field>
+            </api-call>
+          </sequence>
+        </on>
+        {{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button
+      </button>
+      <!-- 결제 동의 문구 -->
+      <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+        <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2"/>
+        $t:shop.checkout.payment_agreement
+      </p>
+    </div>
+  </div>
+</partial>

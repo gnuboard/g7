@@ -1,0 +1,48 @@
+<partial description="자동 관리·인증키·갱신 결과와 호출 예산">
+<!-- 상태 카드 — 데이터소스 koreaeximStatus 를 그대로 보여주고, 연결 테스트(모의 실행)·지금 갱신(실제 실행) 두 버튼을 둔다. 권한이 없거나 실행 중이면 둘 다 잠긴다 -->
+<div data-ref="koreaexim_status_card" class="admin-card mb-4">
+  <div class="flex flex-wrap items-center gap-3">
+    <span class="font-semibold">$t:sirsoft-koreaexim.status</span>
+    <span class="badge bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{koreaeximStatus?.data?.auto_manage ? $t('sirsoft-koreaexim.enabled') : $t('sirsoft-koreaexim.disabled')}}</span>
+    <span class="badge bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{koreaeximStatus?.data?.auth_key_set ? $t('sirsoft-koreaexim.key_set') : $t('sirsoft-koreaexim.key_missing')}}</span>
+    <span>$t:sirsoft-koreaexim.last_success {{koreaeximStatus?.data?.last_success_run?.finished_at ?? '-'}}</span>
+    <span>$t:sirsoft-koreaexim.last_attempt {{koreaeximStatus?.data?.last_run?.finished_at ?? '-'}} · {{koreaeximStatus?.data?.last_run?.status_label ?? '-'}}</span>
+    <span>$t:sirsoft-koreaexim.calls {{koreaeximStatus?.data?.today_request_count ?? 0}}/{{koreaeximStatus?.data?.quota_limit ?? 1000}}</span>
+    <span>$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at_kst ?? '-'}} / {{koreaeximStatus?.data?.next_run_at ?? '-'}}</span>
+    <div class="ml-auto flex flex-wrap gap-2">
+      <button type="button" data-ref="test_connection" disabled="{{_local.busy || _computed.isReadOnly}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 연결 테스트 — dry_run 으로 실행을 요청한다. 실행 결과 status 에 따라 토스트 색을 가르고(성공·부분·모의=success, 자료 없음·건너뜀=info, 그 외=error) 상태·최근 실행·이력을 다시 받는다 -->
+          <sequence>
+            <set-state target="local" busy="test"/>
+            <api-call target="/api/plugins/sirsoft-koreaexim/admin/runs" method="POST" :auth_required="true">
+              <body :dry_run="true"/>
+              <success><set-state target="local" :busy="null"/><refetch-data-source dataSourceId="koreaeximStatus"/><refetch-data-source dataSourceId="koreaeximRecentRuns"/><refetch-data-source dataSourceId="koreaeximRuns"/><toast type="{{['success','partial','dry_run'].includes(response.data?.status) ? 'success' : ['no_data','skipped'].includes(response.data?.status) ? 'info' : 'error'}}" message="{{response.data?.message ?? response.message}}"/></success>
+              <fail><set-state target="local" :busy="null"/><toast type="error" message="{{error.message}}"/></fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_local.busy === 'test'}}" name="spinner" class="spinner-sm"/>
+        <span>$t:sirsoft-koreaexim.connection_test</span>
+      </button>
+      <button type="button" data-ref="update_now" disabled="{{_local.busy || _computed.isReadOnly || !koreaeximStatus?.data?.auto_manage}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 지금 갱신 — 실제 실행(dry_run=false)을 요청한다. 자동 관리가 꺼져 있으면 버튼이 잠기므로 여기서는 켜진 상태만 온다. 결과 처리는 연결 테스트와 같다 -->
+          <sequence>
+            <set-state target="local" busy="update"/>
+            <api-call target="/api/plugins/sirsoft-koreaexim/admin/runs" method="POST" :auth_required="true">
+              <body :dry_run="false"/>
+              <success><set-state target="local" :busy="null"/><refetch-data-source dataSourceId="koreaeximStatus"/><refetch-data-source dataSourceId="koreaeximRecentRuns"/><refetch-data-source dataSourceId="koreaeximRuns"/><toast type="{{['success','partial','dry_run'].includes(response.data?.status) ? 'success' : ['no_data','skipped'].includes(response.data?.status) ? 'info' : 'error'}}" message="{{response.data?.message ?? response.message}}"/></success>
+              <fail><set-state target="local" :busy="null"/><toast type="error" message="{{error.message}}"/></fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_local.busy === 'update'}}" name="spinner" class="spinner-sm"/>
+        <span>$t:sirsoft-koreaexim.update_now</span>
+      </button>
+    </div>
+  </div>
+  <p class="form-hint">{{koreaeximStatus?.data?.scheduler_hint}}</p>
+  <p data-if="{{koreaeximStatus?.data?.last_run?.message}}" role="status" class="badge">{{koreaeximStatus?.data?.last_run?.message ?? ''}}</p>
+</div>
+</partial>

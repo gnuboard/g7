@@ -77,17 +77,17 @@ effects:
   - html_mode_content_sanitized
   - ordinary_formatting_survives_sanitization
   - form_control_value_not_exposed_as_text
+  # 6차 병합(develop) — SeoSwitchValueParityTest 가 마킹
+  - switch_prop_values_resolved_in_bot_render
 
 sub_flows:
   - id: bot_request_transport
     description: |
-      봇 판정 경로별 실제 HTTP 응답. 봇용 렌더링은 `?_escaped_fragment_=` 쿼리와
-      봇 User-Agent 두 경로로 진입하는데, 한쪽만 검증하면 다른 경로에서 본문이 비어도
-      드러나지 않는다. 응답 캐시에 빈 본문이 굳는 경우까지 함께 확인한다.
+      봇 판정 경로의 실제 HTTP 응답. 봇용 렌더링은 검색엔진 User-Agent 로만 진입한다
+      (`?_escaped_fragment_=` 쿼리 경로는 KVE-2026-2333/2334/2335 조치로 폐지 — 그 회귀는
+      seo-host-trust.yaml 이 잠근다). 응답 캐시에 빈 본문이 굳는 경우까지 함께 확인한다.
     effects:
-      - escaped_fragment_request_renders_content
       - bot_user_agent_request_renders_content
-      - both_transports_render_same_content
       - cached_response_keeps_content
 
   - id: bot_screen_data_completeness
@@ -105,7 +105,7 @@ sub_flows:
       레이아웃/확장 자산에 봇 렌더러가 모르는 노드 키가 등장하면 검출한다.
       감시망 자체가 비어 있는 채로 초록이 되는 실패 모드(문서 루트가 곧 노드인
       partial 을 스캔에서 빠뜨리는 경우)까지 함께 잠근다 — 이슈 #86 이 실제로 터진
-      `_reply_section.json` 이 정확히 그 형태다.
+      `_reply_section.g7.html` 이 정확히 그 형태다.
     effects:
       - unclassified_node_key_is_detected
       - node_rooted_partials_are_scanned
@@ -137,6 +137,8 @@ sub_flows:
 test_files:
   - tests/Unit/Seo/ExtensionPointPropsRenderingTest.php
   - tests/Unit/Seo/SeoNodeKeyParityTest.php
+  # 6차 병합(develop) — $switch prop 값이 봇 렌더에서 해석되는지의 패리티 표본
+  - tests/Unit/Seo/SeoSwitchValueParityTest.php
   - tests/Unit/Seo/HtmlSanitizerTest.php
   - tests/Unit/Seo/SeoLayoutDataSourceDeclarationTest.php
   - tests/Unit/Upgrades/ClearSeoPageCacheAfterRendererParityFixTest.php

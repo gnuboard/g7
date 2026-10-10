@@ -1,0 +1,20 @@
+feature: 사용 중인 입금 계좌가 없을 때의 무통장입금 (#703)
+
+description: |
+  설치 기본값(무통장입금 활성 + 비어 있는 비활성 계좌 1건)에서 공개 결제 설정이 무통장입금을 내보내
+  주문서가 이를 기본 선택하고, 결제하기는 「입금 은행을 선택해주세요」 422 로만 끝났다.
+  공개 결제 설정은 사용 중(활성 + 계좌번호 입력) 계좌가 없으면 무통장입금을 걸러 내고, 관리자 저장은
+  사용 중인 계좌 없이 무통장입금을 켜는 것을 검증 오류로 막는다.
+
+axes:
+  surface: [public_payment_settings, admin_settings_save]
+  active_account: [none, present]
+
+effects:
+  - dbank_hidden_without_active_account
+  - dbank_offered_with_active_account
+  - dbank_activation_requires_active_account
+  - dbank_activation_allowed_with_active_account
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/DbankWithoutActiveAccountTest.php

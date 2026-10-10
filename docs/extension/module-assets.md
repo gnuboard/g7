@@ -60,6 +60,26 @@
 
 ---
 
+## 확장 컴포넌트 등록 (self-register)
+
+확장 번들은 액션 핸들러와 같은 방식으로 자기 화면 컴포넌트를 코어 레지스트리에 직접 등록한다 — 템플릿 컴포넌트처럼 매니페스트 + 전역 변수 경로로 실릴 자리가 확장에는 없기 때문이다.
+
+```ts
+const registry = (window as any).G7Core?.getComponentRegistry?.();
+
+registry?.registerExtensionComponent(
+    `${MODULE_IDENTIFIER}.ProductCard`,
+    ProductCard,
+    { name: `${MODULE_IDENTIFIER}.ProductCard`, type: 'composite' }
+);
+```
+
+**등록 시점은 안전하다.** 코어가 확장 번들 로드를 초기 라우트 처리 전에 기다리므로 이 등록은 첫 렌더보다 먼저 끝난다. 번들 로드가 실패하면 등록이 오지 않고 그 컴포넌트 노드는 화면에서 조용히 사라지며(미발견 컴포넌트는 `null` 렌더), 그 침묵은 `registry.getMissingExtensionComponents(names)` 로 관측한다.
+
+React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품으면 훅 호출이 다른 인스턴스에 걸려 "Invalid hook call" 로 죽는다.
+
+규약 전문(이름 프리픽스·판본 선택·오버라이드 우선순위): **[extension-components.md](extension-components.md)**
+
 ## 에셋 매니페스트 스키마
 
 ### module.json (통합 스키마)
@@ -189,8 +209,32 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 어느 소비자도 읽지 않아 **그 자산이 영영 로드되지 않는데, 오류도 경고도 남지 않습니다.**
 
 선언한 `output` 이 가리키는 파일은 디스크에 실재해야 합니다. 내용이 비어 있는 것(0바이트)은
-정상입니다 — 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아닙니다. 정적 검사가
+정상입니다 — 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아닙니다. 자동 검증이
 번들 확장 전수를 대상으로 두 조건(객체 형식 · 산출물 실재)을 확인합니다.
+
+### 확장 화면의 의미 색은 확장 CSS 가 싣는다
+
+확장 레이아웃(환경설정 화면, 조각)의 경고, 성공, 위험, 안내 글자색은 템플릿의 의미 색 클래스(`text-warning-soft`,
+`text-success-soft` 등)에 기대지 않고 **확장이 자기 CSS 에 접두 클래스로 직접 정의**합니다. 템플릿은 자기 화면에 맞춰
+의미 클래스의 이름이나 색을 바꿀 수 있고, 그러면 확장 화면의 색이 오류도 없이 따라 바뀝니다(경고 본문이 초록으로 보이는 식).
+
+- 이름은 확장 고유 접두를 붙입니다. 번들 결제 플러그인은 `pay-<id>-tone-{warning|success|danger|info}` 와 진한 제목용
+  `-strong` 짝을 씁니다(예: `pay-kginicis-tone-warning-strong`). 다른 확장의 클래스는 참조하지 않습니다.
+- 다크 모드 짝을 함께 둡니다. 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark .pay-kginicis-tone-warning` 처럼
+  조상 선택자로 씁니다.
+- 글자 크기와 굵기는 레이아웃의 유틸리티 클래스가 정하고, 접두 클래스는 색만 맡습니다.
+- 그 화면에만 있는 임의값 배치(`grid-cols-[150px_1fr]`, `min-w-[180px]` 등)도 같은 파일에 접두 클래스로 둡니다. 템플릿은
+  자기 레이아웃만 훑어 CSS 를 만들므로 확장 레이아웃에만 있는 임의값 유틸리티는 규칙이 생성되지 않습니다.
+- 배선은 세 곳입니다. manifest 에 `assets.css`(`entry`·`output`)를 선언하고, JS 엔트리가 CSS 를 import 하며,
+  `vite.config.ts` 의 `assetFileNames` 가 CSS 를 `output` 과 같은 경로(예: `{확장}/dist/css/plugin.css`)로 냅니다.
+
+```ts
+// vite.config.ts — rollupOptions.output
+assetFileNames: (info) => (info.name?.endsWith('.css') ? 'css/plugin.css' : 'assets/[name][extname]'),
+```
+
+입력 줄 배치(`grid-3col-responsive`), 섹션 제목(`section-heading-md`), 저장 오류 상자(`text-error-strong`·`text-error-soft`)처럼
+코어 플러그인 설정 화면 규약이 정한 구조 클래스는 계속 템플릿 것을 씁니다. 이 절은 확장 화면에서 **뜻이 있는 색**을 고를 때의 규약입니다.
 
 ---
 
@@ -406,15 +450,23 @@ export const handlerMap: Record<string, ActionHandler> = {
 
 ### 레이아웃에서 핸들러 사용
 
+```html
+<input type="number" value="{{row.stock_quantity}}">
+  <on type="blur">
+    <action handler="sirsoft-ecommerce.updateProductField" productId="{{row.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-    "component": "Input",
-    "props": {
-        "type": "number",
-        "value": "{{row.stock_quantity}}"
-    },
-    "events": {
-        "onBlur": {
+    "type": "basic",
+    "name": "Input",
+    "actions": [
+        {
+            "type": "blur",
             "handler": "sirsoft-ecommerce.updateProductField",
             "params": {
                 "productId": "{{row.id}}",
@@ -422,6 +474,10 @@ export const handlerMap: Record<string, ActionHandler> = {
                 "value": "{{$event.target.value}}"
             }
         }
+    ],
+    "props": {
+        "type": "number",
+        "value": "{{row.stock_quantity}}"
     }
 }
 ```
@@ -476,6 +532,23 @@ GET /api/modules/assets/{identifier}/{path}
 /api/modules/assets/sirsoft-ecommerce/dist/css/module.css
 ```
 
+### 아이콘 주소는 별도입니다
+
+확장 아이콘(`assets/icon.svg`)은 위 에셋 주소가 아니라 전용 주소로 서빙됩니다.
+
+```
+GET /api/extensions/{type}/{identifier}/icon
+```
+
+에셋 주소와 다른 점이 셋 있습니다.
+
+- **로그인이 필요 없습니다.** 아직 설치하지 않은 동봉 확장도 관리자 목록에 그림이 보여야 합니다.
+- **설치본만 보지 않습니다.** 설치본 → 대기 → 동봉 순으로 찾으므로 설치 전에도 그림이 나옵니다.
+- **정적 게시 대상이 아닙니다.** `?v=` 와 `ETag`(변경 시각·크기 기반, 같으면 304)로 캐시를 다룹니다.
+
+파일이 없거나 규격을 어기면 404 이고, 화면은 종류별 기본 그림으로 표시합니다.
+규격과 선언 방법은 [확장 아이콘](extension-icons.md) 에 있습니다.
+
 ---
 
 ## 서버측 번들 병합 (Server-side Bundle)
@@ -509,7 +582,7 @@ GET /api/plugins/bundle.css?v={version}
 
 ### 병합 규율
 
-| 규율 | 내용 | 정적 검사 |
+| 규율 | 내용 | 자동 검증 |
 |------|------|---------|
 | priority 순서 | manifest `loading.priority` 오름차순만. 확장 이름 하드코딩 금지 | (선언형) |
 | `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | `extension-bundle-concat-separator` |
@@ -681,8 +754,10 @@ G7Core.asset.template('sirsoft-admin_basic', 'vendor/flag-icons/7.2.3/css/flag-i
 조용히 404 가 됩니다.
 
 AMD 로더나 워커처럼 디렉토리 접두 뒤에 파일명을 이어 붙이는 소비자는 `templateDir()` 을
-씁니다 — 쿼리 형태는 뒤에 파일명을 이어 붙일 수 없기 때문입니다. 확장자 없는 모드에서 404
-일 수 있으므로 그 소비자는 폴백을 갖춰야 합니다.
+씁니다 — `template()` 의 쿼리 형태는 파일 경로를 인코딩해 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
+확장자 없는 모드에서 `templateDir()` 은 `?file=` 디렉토리를 돌려주고, 쿼리가 있는 URL 에 `.js` 를 붙이지 않는
+AMD 로더를 위해 템플릿 자산 서빙이 같은 이름의 `.js` 파일을 찾아 줍니다. 그래도 자산을 받지 못하는 환경이
+있으므로 그 소비자는 폴백을 갖춰야 합니다.
 
 로드에 끝내 실패하면 `G7Core.assets.notifyFailure({ id, label, retry })` 로 사용자에게
 알립니다. `console.error` 한 줄로 끝내면 사용자에게는 빈 자리로만 나타나고 자체 서버 로그에도
@@ -709,13 +784,21 @@ AMD 로더나 워커처럼 디렉토리 접두 뒤에 파일명을 이어 붙이
 
 ### 레이아웃 scripts 섹션
 
+외부 호스트(CDN)의 스크립트를 실으려면 그 호스트를 확장 매니페스트 `trusted_script_hosts` 에 선언해야 한다(위 「`trusted_script_hosts`」). 선언 없는 외부 호스트는 컴파일·저장·런타임에서 모두 거부되므로, 가능하면 아래처럼 확장이 동봉한 같은 origin 경로를 쓴다.
+
+```html
+<script src="/modules/vendor-sample/vendor/external-lib.js" id="external-lib" :async="true" data-if="{{_global.modules['vendor-sample'].useExternalLib}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "scripts": [
         {
-            "src": "https://cdn.example.com/lib.js",
+            "src": "/modules/vendor-sample/vendor/external-lib.js",
             "id": "external-lib",
-            "if": "{{_global.modules['sirsoft-ecommerce'].useExternalLib}}",
+            "if": "{{_global.modules['vendor-sample'].useExternalLib}}",
             "async": true
         }
     ]
@@ -866,7 +949,7 @@ API 레퍼런스: [docs/backend/api/extensions.md](../backend/api/extensions.md)
 | 방법 | 판정 |
 |---|---|
 | `dist/css/components.css` 직접 수정 | 다음 빌드·업데이트에 소실된다 |
-| `src/styles/custom.css` + 빌드 | 확장 **저작자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
+| `src/styles/custom.css` + 빌드 | 확장 **작성자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
 | `custom/custom.css` 에 파일만 놓기 | 권장 |
 
 ## AbstractModule 에셋 메서드

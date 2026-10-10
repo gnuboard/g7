@@ -1,0 +1,33 @@
+feature: 환불 실행 확인 창 — 계좌 줄·입력 칸을 환불 수단별 판정으로 세운다
+
+description: |
+  관리자 클레임 상세의 [환불하기] 확인 창은 신청자 계좌(은행·계좌번호·예금주) 줄과, 계좌가 필요한데 없을 때의
+  계좌 입력 칸·실행 버튼 잠금을 보인다. 종전 상세 응답은 **저장된 환불 수단** 하나로 판정한 값만 내려, 운영자가
+  상세에서 수단을 바꾸면 창이 어긋났다 — 「마일리지로 환불」로 바꿔도 계좌 줄이 보였고, 계좌가 없는 신청서는
+  계좌 칸이 뜨고 버튼이 잠겼다(서버는 막지 않음).
+
+  이제 상세 응답이 환불 수단마다 「돈이 계좌로 나가는가(used)」·「계좌를 받아야 실행되는가(required)」를
+  실행 게이트와 같은 술어(`ClaimRefundAccountPolicy`)로 내리고, 창은 지금 고른 수단의 값을 쓴다. 계좌 환불은
+  항상 계좌로 나가고, PG 환불은 입금된 가상계좌 주문일 때만(PG 가 고객 계좌로 송금), 마일리지 환불은 나가지 않는다.
+
+# axis 의미:
+#   payment        — 주문 결제수단: 입금된 가상계좌(PG 환불도 계좌 필요) / 카드(PG 환불은 카드 취소).
+#   stored_account — 신청서에 환불 계좌가 이미 적혀 있는가.
+axes:
+  payment: [vbank_deposited, card]
+  stored_account: [none, present]
+
+effects:
+  - refund_account_judged_per_refund_method        # 상세 응답이 수단별 used·required 를 내림(목록 행은 생략)
+  - refund_modal_account_rows_follow_selected_method # 확인 창 계좌 줄·입력 칸·잠금이 지금 고른 수단의 판정을 따름
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-detail.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimRefundAccountByMethodTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimRefundExecuteAccountByMethod.test.ts
+
+validation:
+  browser_check: Chrome MCP
+  note: |
+    서버 판정은 PHPUnit, 창의 표시 조건은 핸들러 컨텍스트와 레이아웃 조건 평가(Vitest)로 잰다. 실브라우저는
+    계좌 환불·마일리지 환불 신청서의 확인 창을 Chrome 으로 연다.

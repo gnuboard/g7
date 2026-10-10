@@ -1,7 +1,16 @@
-// e2e:allow PG 영수증 조회/팝업 — 외부 PG(이니시스) 결제 데이터 의존으로 브라우저 E2E 재현 불가, Vitest 회귀(__tests__/receiptPopup.test.ts)로 검증
+// e2e:allow PG 영수증 팝업 — 외부 PG(이니시스) 결제 데이터 의존으로 브라우저 E2E 재현 불가, Vitest 회귀(__tests__/handlers/openReceipt.test.ts)로 검증
+/**
+ * KG이니시스 영수증 창 열기 (플러그인 공용)
+ *
+ * 영수증 조회는 주문 화면 조각(resources/extensions/*.g7.html)이 플러그인 API 를 불러 화면 상태에 담는다.
+ * 이 모듈은 그 응답을 받아 창만 연다 — 외부(PG) 영수증 주소는 크기를 지정한 팝업으로, CBT 결제확인서는
+ * 응답 항목으로 그린 인쇄용 문서로. 조각은 `sirsoft-pay_kginicis.openReceipt` 핸들러로 이곳을 부른다.
+ */
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 
 export interface KginicisReceiptField {
+    /** 항목의 고정 이름 — 화면 스크립트는 번역되는 label 대신 이 값으로 항목을 찾는다 */
+    key?: string;
     label: string;
     value: string;
 }
@@ -15,81 +24,35 @@ export interface KginicisReceiptInfo {
     receipt_notice?: string | null;
     receipt_fields?: KginicisReceiptField[];
     payment_method_display_label?: string | null;
+    cbt_pay_method?: string | null;
 }
 
-function getAuthToken(): string | null {
-    return localStorage.getItem('auth_token');
-}
+/**
+ * 플러그인 번역 문구를 얻습니다.
+ *
+ * @param key 번역 키 (플러그인 네임스페이스 이하)
+ * @param fallback 번역 엔진이 없을 때 쓸 문구
+ * @returns 번역된 문구
+ */
+export function translateKginicis(key: string, fallback: string): string {
+    const translate = (window as any)?.G7Core?.t;
 
-function getGuestOrderToken(): string | null {
-    // 코어 storageHandlers.initGuestOrderTokenHandler 가 sessionStorage 에 저장한 토큰.
-    // sessionStorage 미접근 환경(private/iframe) fallback 으로 _global.guestOrderToken 도 확인.
-    try {
-        const sessionToken = sessionStorage.getItem('g7_guest_order_token');
-        if (sessionToken) return sessionToken;
-    } catch {
-        // sessionStorage 접근 불가
-    }
-    const globalToken = (window as any).G7Core?.state?.get?.('_global')?.guestOrderToken;
-    return typeof globalToken === 'string' && globalToken !== '' ? globalToken : null;
-}
-
-async function requestKginicisReceiptInfo(
-    orderNumber: string,
-    headers: Record<string, string>,
-): Promise<{ status: number; data: KginicisReceiptInfo | null }> {
-    try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
-            headers,
-            credentials: 'same-origin',
-        });
-        if (!res.ok) return { status: res.status, data: null };
-        return { status: res.status, data: (await res.json()) as KginicisReceiptInfo };
-    } catch {
-        return { status: 0, data: null };
-    }
-}
-
-export interface KginicisReceiptFetchResult {
-    /** 최종 시도의 HTTP 상태 코드 (네트워크 오류 시 0) */
-    status: number;
-    info: KginicisReceiptInfo | null;
-}
-
-export async function fetchKginicisReceiptInfoDetailed(
-    orderNumber: string,
-): Promise<KginicisReceiptFetchResult> {
-    const authToken = getAuthToken();
-    const guestToken = getGuestOrderToken();
-
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-    } else if (guestToken) {
-        // 백엔드 UserReceiptController 가 Auth::check() 실패 시 X-Guest-Order-Token 으로 분기.
-        headers['X-Guest-Order-Token'] = guestToken;
+    if (typeof translate !== 'function') {
+        return fallback;
     }
 
-    const first = await requestKginicisReceiptInfo(orderNumber, headers);
-    if (first.data || first.status !== 401 || !authToken) {
-        return { status: first.status, info: first.data };
-    }
+    const full = `${PLUGIN_ID}.${key}`;
+    const result = translate(full);
 
-    // 오래된 localStorage 토큰이 남아 401 이 난 경우 비회원 주문 토큰 또는
-    // PG callback 이 발급한 HttpOnly receipt cookie 경로로 한 번 더 시도한다.
-    const fallbackHeaders: Record<string, string> = { Accept: 'application/json' };
-    if (guestToken) {
-        fallbackHeaders['X-Guest-Order-Token'] = guestToken;
-    }
-
-    const second = await requestKginicisReceiptInfo(orderNumber, fallbackHeaders);
-    return { status: second.status, info: second.data };
+    return typeof result === 'string' && result !== full ? result : fallback;
 }
 
-export async function fetchKginicisReceiptInfo(orderNumber: string): Promise<KginicisReceiptInfo | null> {
-    return (await fetchKginicisReceiptInfoDetailed(orderNumber)).info;
-}
-
+/**
+ * 영수증 조회 응답으로 열 수 있는 창이 있는지 판정합니다.
+ *
+ * @param info 영수증 조회 응답(data)
+ * @returns 외부 영수증 주소가 있거나 CBT 확인서 항목이 있으면 true
+ */
 export function canOpenKginicisReceipt(
     info: KginicisReceiptInfo | null | undefined,
 ): info is KginicisReceiptInfo {
@@ -101,17 +64,38 @@ export function canOpenKginicisReceipt(
         && info.receipt_fields.length > 0;
 }
 
-export function receiptButtonLabel(info: KginicisReceiptInfo | null | undefined): string {
-    return info?.receipt_view_label || '영수증 조회';
+/**
+ * 외부(PG) 영수증 주소를 팝업으로 엽니다.
+ *
+ * 보안: https 주소만 열고, 새 창이 이 창(window.opener)을 조작하지 못하게 opener 를 끊은 뒤 주소를 싣는다
+ * (역방향 탭내빙 차단). 빈 창을 먼저 여는 이유 — `noopener` 를 주면 팝업 크기 지정이 무시되는 브라우저가 있다.
+ *
+ * @param url 영수증 주소
+ * @param name 창 이름
+ * @param features 창 속성
+ * @returns 열었으면 true
+ */
+export function openExternalReceiptWindow(url: unknown, name: string, features: string): boolean {
+    if (typeof url !== 'string' || !/^https:\/\//i.test(url)) {
+        return false;
+    }
+    const popup = window.open('', name, features);
+    if (popup) {
+        popup.opener = null;
+        popup.location.href = url;
+    }
+
+    return true;
 }
 
-export function receiptRowLabel(info: KginicisReceiptInfo | null | undefined): string {
-    return info?.receipt_label || '영수증';
-}
-
+/**
+ * 영수증 조회 응답으로 영수증 창을 엽니다 — 외부 주소가 있으면 그 주소를, CBT 결제는 확인서 문서를 연다.
+ *
+ * @param info 영수증 조회 응답(data)
+ */
 export function openKginicisReceipt(info: KginicisReceiptInfo): void {
     if (info.receipt_url) {
-        window.open(info.receipt_url, 'kginicis_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        openExternalReceiptWindow(info.receipt_url, 'kginicis_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
         return;
     }
 
@@ -124,7 +108,9 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
     const popup = window.open('', 'kginicis_receipt', 'width=800,height=700,scrollbars=yes,resizable=yes');
     if (!popup) return;
 
-    const title = info.receipt_title || 'KG 이니시스 CBT 결제확인서';
+    const title = info.receipt_title || translateKginicis('user.cbt_confirmation_title', 'KG 이니시스 CBT 결제확인서');
+    const printLabel = translateKginicis('user.receipt_print', '인쇄');
+    const lang = document.documentElement.lang || 'ko';
     const notice = info.receipt_notice || '';
     const rows = (info.receipt_fields ?? [])
         .map(field => `
@@ -137,7 +123,7 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
 
     popup.document.open();
     popup.document.write(`<!doctype html>
-<html lang="ko">
+<html lang="${escapeHtml(lang)}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -217,7 +203,7 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
         <h1>${escapeHtml(title)}</h1>
         ${notice ? `<p class="notice">${escapeHtml(notice)}</p>` : ''}
         <dl>${rows}</dl>
-        <div class="actions"><button type="button" onclick="window.print()">인쇄</button></div>
+        <div class="actions"><button type="button" onclick="window.print()">${escapeHtml(printLabel)}</button></div>
     </main>
 </body>
 </html>`);

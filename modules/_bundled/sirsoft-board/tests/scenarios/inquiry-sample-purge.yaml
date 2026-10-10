@@ -1,0 +1,26 @@
+feature: 이커머스 샘플 문의 생성·재시드 정리 (SB-1)
+
+description: |
+  이커머스 샘플 시더가 재시드 전에 부르는 `sirsoft-ecommerce.inquiry.purge_sample_posts`
+  필터 훅에 게시판이 답하는 범위를 고정한다. 넘겨받은 샘플 문의 글과 그 글에 parent_id 로
+  이어진 답변만 영구 삭제하고, 그 글들의 댓글·첨부 행·반응(글·댓글)·스크랩을 함께 지운 뒤
+  게시판의 글·댓글 수를 다시 센다. 같은 게시판의 다른 글(운영자가 실제 문의에 단 답변 포함)과
+  다른 게시판의 같은 ID 글은 지우지 않는다.
+
+axes:
+  case:
+    - sample_ids_with_children   # 샘플 문의(답변·댓글·반응·스크랩) + 실제 문의(운영자 답변)가 섞인 게시판
+    - no_sample_ids              # 넘길 샘플이 없음(실 문의만 있는 사이트)
+    - foreign_board_ids          # 다른 게시판 글의 ID 가 넘어옴
+    - seed_sample_posts          # 샘플 문의 글(+답변) 생성 뒤 건수
+    - sample_ids_with_attachment_file  # 샘플 답변에 저장소 파일이 있는 첨부
+
+effects:
+  - listener_purge_keeps_operator_replies_and_cleans_children
+  - listener_purge_noop_without_sample_ids
+  - listener_purge_scoped_to_inquiry_board
+  - listener_seed_sample_post_syncs_counts
+  - listener_purge_deletes_attachment_files
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/EcommerceInquirySamplePurgeTest.php

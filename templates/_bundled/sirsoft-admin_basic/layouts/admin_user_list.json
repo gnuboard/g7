@@ -1,35 +1,12 @@
 {
+    "comment": "회원 목록. 이 화면의 성격은 **상태를 URL 에 둔다**는 것이다 — 검색·필터·정렬·페이지·항목수를 전부\n  쿼리스트링으로 옮기고 데이터소스가 그 값을 파라미터로 읽으므로, 목록을 다시 부르는 대신 `navigate`\n  로 URL 만 바꾸면 갱신된다. 새로고침·뒤로가기·링크 공유가 그대로 되는 것이 그 대가로 얻는 것이다.\n  예외는 삭제 뒤 한 자리다(URL 이 안 바뀌므로 `refetch-data-source` 를 쓴다).\n\n  필터 영역은 쿠폰·상품·주문 목록과 같은 구조다(기본/상세 + 검색편집, #705) — 조각 파일 머리 주석 참조.\n  검색어 조건은 기존 `filters[0][*]` 형식을 그대로 두고(외부 링크·테스트가 이 형식에 묶여 있다),\n  새 조건은 평면 키(`status[]`·`role_ids[]`·`start_date` …)로 더했다. 확장이 더하는 조건은\n  `ext_filters[]` 배열 칸 하나로 모인다.\n  필터 선택지 두 벌은 `<defines>` 에 두고 computed(`userStatusOptions`·`countryOptions`)로 조각에 넘긴다 — 슬롯으로\n  옮겨 그려지는 필터 행에는 `_defines` 가 실리지 않는다(브라우저 실측에서 상태 체크박스가 사라진 원인). 계정 상태(`userStatusList`, 서버 Enum UserStatus 여섯 값과\n  같은 순서)와 국가(`countryList`, 회원 등록·수정 폼 admin_user_form 의 목록과 **같아야** 한다 — 갈리면\n  폼에서 넣은 나라를 필터로 찾지 못한다).\n\n  권한은 서버가 응답에 실어 준 `abilities` 로만 판정한다 — 역할 이름을 프론트에서 보지 않는다.\n  일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다.",
     "version": "1.0.0",
     "layout_name": "admin_user_list",
-    "permissions": [
-        "core.users.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.users.page_title",
         "description": "$t:admin.users.page_description"
     },
-    "state": {
-        "searchField": "all",
-        "searchQuery": ""
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "users"
-        ]
-    },
-    "init_actions": [
-        {
-            "handler": "setState",
-            "params": {
-                "target": "global",
-                "_local": {
-                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
-                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
-                }
-            }
-        }
-    ],
     "data_sources": [
         {
             "id": "users",
@@ -54,7 +31,26 @@
                 "filters[0][value]": "{{query['filters[0][value]']}}",
                 "filters[0][operator]": "{{query['filters[0][operator]']}}",
                 "sort_by": "{{query.sort_by}}",
-                "sort_order": "{{query.sort_order}}"
+                "sort_order": "{{query.sort_order}}",
+                "status": "{{query['status[]'] || []}}",
+                "role_ids": "{{query['role_ids[]'] || []}}",
+                "admin_scope": "{{query.admin_scope}}",
+                "lock_state": "{{query.lock_state}}",
+                "start_date": "{{query.start_date}}",
+                "end_date": "{{query.end_date}}",
+                "last_login_start": "{{query.last_login_start}}",
+                "last_login_end": "{{query.last_login_end}}",
+                "never_logged_in": "{{query.never_logged_in}}",
+                "dormant_start": "{{query.dormant_start}}",
+                "dormant_end": "{{query.dormant_end}}",
+                "status_changed_type": "{{query.status_changed_type}}",
+                "status_changed_start": "{{query.status_changed_start}}",
+                "status_changed_end": "{{query.status_changed_end}}",
+                "language": "{{query.language}}",
+                "country": "{{query.country}}",
+                "email_verified": "{{query.email_verified}}",
+                "identity_verified": "{{query.identity_verified}}",
+                "ext_filters": "{{query['ext_filters[]'] || []}}"
             },
             "fallback": {
                 "data": {
@@ -64,12 +60,300 @@
                     "per_page": 20,
                     "total": 0
                 }
-            }
+            },
+            "comment": "회원 목록. 파라미터가 전부 `query.*` 를 읽는 것이 이 화면의 뼈대다(위 설명 참조).\n       배열 조건은 URL 에 `키[]` 로 실리고 엔진이 늘 배열로 되읽으므로 `query['status[]']` 로 받는다.\n       403 은 토스트가 아니라 **에러 화면으로 갈아끼운다** — 목록 자체를 볼 권한이 없는 상태라\n       빈 표를 보여 주면 \"회원이 없다\" 로 읽힌다."
+        },
+        {
+            "id": "roles",
+            "label_key": "$t:editor.data_source.roles",
+            "type": "api",
+            "endpoint": "/api/admin/roles/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "comment": "권한 그룹 필터의 선택지(활성 역할). 목록을 가리지 않도록 늦게 받고, 실패해도 역할 행만 비고\n       목록은 그대로 쓴다 — 그래서 에러 화면으로 갈아끼우지 않는다."
         }
     ],
+    "initLocal": {
+        "visibleFilters": [
+            "searchField",
+            "searchKeyword",
+            "status",
+            "role",
+            "createdAt"
+        ],
+        "showDetailFilter": false,
+        "isEditMode": false,
+        "filter": {
+            "searchField": "all",
+            "searchKeyword": "",
+            "status": [],
+            "role": [],
+            "adminScope": "all",
+            "lockState": "all",
+            "createdStartDate": "",
+            "createdEndDate": "",
+            "createdDateQuick": "",
+            "lastLoginStartDate": "",
+            "lastLoginEndDate": "",
+            "lastLoginDateQuick": "",
+            "neverLoggedIn": false,
+            "dormantStartDate": "",
+            "dormantEndDate": "",
+            "statusChangedType": "",
+            "statusChangedStart": "",
+            "statusChangedEnd": "",
+            "language": "",
+            "country": "",
+            "emailVerified": "all",
+            "identityVerified": "all"
+        },
+        "userFilterExtraQuery": []
+    },
+    "computed": {
+        "userStatusOptions": "{{(_defines?.userStatusList ?? []).map(d => ({ code: d.code, name: d.name }))}}",
+        "countryOptions": "{{(_defines?.countryList ?? []).map(c => ({ value: c.code, label: c.name }))}}"
+    },
+    "permissions": [
+        "core.users.read"
+    ],
+    "defines": {
+        "userStatusList": [
+            {
+                "code": "active",
+                "name": "$t:admin.users.status.active"
+            },
+            {
+                "code": "inactive",
+                "name": "$t:admin.users.status.inactive"
+            },
+            {
+                "code": "blocked",
+                "name": "$t:admin.users.status.blocked"
+            },
+            {
+                "code": "withdrawn",
+                "name": "$t:admin.users.status.withdrawn"
+            },
+            {
+                "code": "pending_verification",
+                "name": "$t:admin.users.status.pending_verification"
+            },
+            {
+                "code": "dormant",
+                "name": "$t:admin.users.status.dormant"
+            }
+        ],
+        "countryList": [
+            {
+                "code": "KR",
+                "name": "$t:countries.KR"
+            },
+            {
+                "code": "US",
+                "name": "$t:countries.US"
+            },
+            {
+                "code": "JP",
+                "name": "$t:countries.JP"
+            },
+            {
+                "code": "CN",
+                "name": "$t:countries.CN"
+            },
+            {
+                "code": "GB",
+                "name": "$t:countries.GB"
+            },
+            {
+                "code": "DE",
+                "name": "$t:countries.DE"
+            },
+            {
+                "code": "FR",
+                "name": "$t:countries.FR"
+            },
+            {
+                "code": "CA",
+                "name": "$t:countries.CA"
+            },
+            {
+                "code": "AU",
+                "name": "$t:countries.AU"
+            },
+            {
+                "code": "IN",
+                "name": "$t:countries.IN"
+            },
+            {
+                "code": "BR",
+                "name": "$t:countries.BR"
+            },
+            {
+                "code": "RU",
+                "name": "$t:countries.RU"
+            },
+            {
+                "code": "IT",
+                "name": "$t:countries.IT"
+            },
+            {
+                "code": "ES",
+                "name": "$t:countries.ES"
+            },
+            {
+                "code": "MX",
+                "name": "$t:countries.MX"
+            },
+            {
+                "code": "NL",
+                "name": "$t:countries.NL"
+            },
+            {
+                "code": "SE",
+                "name": "$t:countries.SE"
+            },
+            {
+                "code": "CH",
+                "name": "$t:countries.CH"
+            },
+            {
+                "code": "SG",
+                "name": "$t:countries.SG"
+            },
+            {
+                "code": "HK",
+                "name": "$t:countries.HK"
+            },
+            {
+                "code": "TW",
+                "name": "$t:countries.TW"
+            },
+            {
+                "code": "TH",
+                "name": "$t:countries.TH"
+            },
+            {
+                "code": "VN",
+                "name": "$t:countries.VN"
+            },
+            {
+                "code": "PH",
+                "name": "$t:countries.PH"
+            },
+            {
+                "code": "MY",
+                "name": "$t:countries.MY"
+            },
+            {
+                "code": "ID",
+                "name": "$t:countries.ID"
+            },
+            {
+                "code": "NZ",
+                "name": "$t:countries.NZ"
+            },
+            {
+                "code": "AT",
+                "name": "$t:countries.AT"
+            },
+            {
+                "code": "BE",
+                "name": "$t:countries.BE"
+            },
+            {
+                "code": "DK",
+                "name": "$t:countries.DK"
+            },
+            {
+                "code": "FI",
+                "name": "$t:countries.FI"
+            },
+            {
+                "code": "NO",
+                "name": "$t:countries.NO"
+            },
+            {
+                "code": "PL",
+                "name": "$t:countries.PL"
+            },
+            {
+                "code": "PT",
+                "name": "$t:countries.PT"
+            },
+            {
+                "code": "IE",
+                "name": "$t:countries.IE"
+            },
+            {
+                "code": "GR",
+                "name": "$t:countries.GR"
+            },
+            {
+                "code": "CZ",
+                "name": "$t:countries.CZ"
+            },
+            {
+                "code": "HU",
+                "name": "$t:countries.HU"
+            },
+            {
+                "code": "TR",
+                "name": "$t:countries.TR"
+            },
+            {
+                "code": "IL",
+                "name": "$t:countries.IL"
+            },
+            {
+                "code": "AE",
+                "name": "$t:countries.AE"
+            },
+            {
+                "code": "SA",
+                "name": "$t:countries.SA"
+            },
+            {
+                "code": "ZA",
+                "name": "$t:countries.ZA"
+            },
+            {
+                "code": "EG",
+                "name": "$t:countries.EG"
+            },
+            {
+                "code": "AR",
+                "name": "$t:countries.AR"
+            },
+            {
+                "code": "CL",
+                "name": "$t:countries.CL"
+            },
+            {
+                "code": "CO",
+                "name": "$t:countries.CO"
+            },
+            {
+                "code": "PE",
+                "name": "$t:countries.PE"
+            }
+        ]
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "users",
+            "roles"
+        ]
+    },
     "named_actions": {
         "searchUsers": {
-            "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75). 검색도 표를 다시 그리므로 페이지 이동과 동일하게 표 본문에 전환 오버레이를 건다 (#245). transition_overlay_target 은 replace:true 인 navigate 에서만 읽히므로 함께 둔다.",
+            "comment": "검색 실행 — 필터 조각의 검색 버튼·Enter 가 이 액션 하나를 공유한다. 열거한 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고(빈 값·빈 배열은 엔진이 URL 에서 키를 지운다), 조건이 바뀌었으니 쪽수는 `page=\"\"` 로 떨궈 첫 쪽으로 되돌린다 — list-context.md 「페이지 되돌림은 빈 값」, 회귀 테스트 admin-list-context-round-trip (#75). 검색도 표를 다시 그리므로 페이지 이동과 동일하게 표 본문에 전환 오버레이를 건다 (#245). transition_overlay_target 은 replace:true 인 navigate 에서만 읽히므로 함께 둔다. 빠른 기간 표시(`*DateQuick`)는 URL 에 싣지 않는다 — 참조 목록들과 같이 새로고침하면 버튼 하이라이트만 꺼진다.",
             "handler": "navigate",
             "params": {
                 "path": "/admin/users",
@@ -78,22 +362,89 @@
                 "transition_overlay_target": "users_data_grid__body",
                 "query": {
                     "page": "",
-                    "filters[0][field]": "{{_local.searchField || 'all'}}",
-                    "filters[0][value]": "{{_local.searchQuery || undefined}}",
-                    "filters[0][operator]": "like"
+                    "filters[0][field]": "{{_local.filter.searchField || 'all'}}",
+                    "filters[0][value]": "{{_local.filter.searchKeyword || undefined}}",
+                    "filters[0][operator]": "like",
+                    "status[]": "{{_local.filter.status || []}}",
+                    "role_ids[]": "{{_local.filter.role || []}}",
+                    "admin_scope": "{{_local.filter.adminScope !== 'all' ? _local.filter.adminScope : ''}}",
+                    "lock_state": "{{_local.filter.lockState !== 'all' ? _local.filter.lockState : ''}}",
+                    "start_date": "{{_local.filter.createdStartDate}}",
+                    "end_date": "{{_local.filter.createdEndDate}}",
+                    "last_login_start": "{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginStartDate}}",
+                    "last_login_end": "{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginEndDate}}",
+                    "never_logged_in": "{{_local.filter.neverLoggedIn ? 'true' : ''}}",
+                    "dormant_start": "{{_local.filter.dormantStartDate}}",
+                    "dormant_end": "{{_local.filter.dormantEndDate}}",
+                    "status_changed_type": "{{_local.filter.statusChangedType}}",
+                    "status_changed_start": "{{_local.filter.statusChangedType ? _local.filter.statusChangedStart : ''}}",
+                    "status_changed_end": "{{_local.filter.statusChangedType ? _local.filter.statusChangedEnd : ''}}",
+                    "language": "{{_local.filter.language}}",
+                    "country": "{{_local.filter.country}}",
+                    "email_verified": "{{_local.filter.emailVerified !== 'all' ? _local.filter.emailVerified : ''}}",
+                    "identity_verified": "{{_local.filter.identityVerified !== 'all' ? _local.filter.identityVerified : ''}}",
+                    "ext_filters": "{{_local.userFilterExtraQuery || []}}"
                 }
             }
         }
     },
+    "init_actions": [
+        {
+            "handler": "loadVisibleFilters",
+            "params": {
+                "id": "admin_user_filters",
+                "defaultFilters": [
+                    "searchField",
+                    "searchKeyword",
+                    "status",
+                    "role",
+                    "createdAt"
+                ]
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "visibleFilters"
+            }
+        },
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "showDetailFilter": "{{!!(query.admin_scope || query.lock_state || query.last_login_start || query.last_login_end || query.never_logged_in || query.dormant_start || query.dormant_end || query.status_changed_type || query.language || query.country || query.email_verified || query.identity_verified || (query['ext_filters[]'] || []).length > 0)}}",
+                    "userFilterExtraQuery": "{{query['ext_filters[]'] || []}}",
+                    "filter": {
+                        "searchField": "{{query['filters[0][field]'] || 'all'}}",
+                        "searchKeyword": "{{query['filters[0][value]'] || ''}}",
+                        "status": "{{query['status[]'] || []}}",
+                        "role": "{{query['role_ids[]'] || []}}",
+                        "adminScope": "{{query.admin_scope || 'all'}}",
+                        "lockState": "{{query.lock_state || 'all'}}",
+                        "createdStartDate": "{{query.start_date || ''}}",
+                        "createdEndDate": "{{query.end_date || ''}}",
+                        "lastLoginStartDate": "{{query.last_login_start || ''}}",
+                        "lastLoginEndDate": "{{query.last_login_end || ''}}",
+                        "neverLoggedIn": "{{query.never_logged_in === 'true'}}",
+                        "dormantStartDate": "{{query.dormant_start || ''}}",
+                        "dormantEndDate": "{{query.dormant_end || ''}}",
+                        "statusChangedType": "{{query.status_changed_type || ''}}",
+                        "statusChangedStart": "{{query.status_changed_start || ''}}",
+                        "statusChangedEnd": "{{query.status_changed_end || ''}}",
+                        "language": "{{query.language || ''}}",
+                        "country": "{{query.country || ''}}",
+                        "emailVerified": "{{query.email_verified || 'all'}}",
+                        "identityVerified": "{{query.identity_verified || 'all'}}"
+                    }
+                }
+            }
+        }
+    ],
     "slots": {
         "content": [
             {
                 "id": "user_list_content",
                 "type": "basic",
                 "name": "Div",
-                "props": {
-                    "className": "admin-page-content-fluid"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
@@ -101,7 +452,38 @@
                         }
                     }
                 },
+                "props": {
+                    "className": "admin-page-content-fluid"
+                },
                 "children": [
+                    {
+                        "id": "filter_visibility_selector",
+                        "type": "composite",
+                        "name": "FilterVisibilitySelector",
+                        "actions": [
+                            {
+                                "comment": "화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 키로 직접 처리하므로 여기서 다시 보내지 않는다",
+                                "type": "change",
+                                "event": "onFilterVisibilityChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "visibleFilters": "{{$args[0]}}"
+                                }
+                            }
+                        ],
+                        "props": {
+                            "id": "admin_user_filters",
+                            "visibleFilters": "{{_local.visibleFilters}}",
+                            "defaultFilters": [
+                                "searchField",
+                                "searchKeyword",
+                                "status",
+                                "role",
+                                "createdAt"
+                            ]
+                        }
+                    },
                     {
                         "id": "page_header",
                         "type": "composite",
@@ -115,11 +497,6 @@
                                 "id": "refresh_button",
                                 "type": "composite",
                                 "name": "IconButton",
-                                "props": {
-                                    "iconName": "refresh",
-                                    "variant": "outline",
-                                    "size": "md"
-                                },
                                 "actions": [
                                     {
                                         "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 검색 조건을 유지한다 (#75).",
@@ -131,16 +508,17 @@
                                             "query": {}
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md"
+                                }
                             },
                             {
                                 "id": "add_user_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{users?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "comment": "등록 폼은 회원 목록 클러스터 안이다 — 취소하고 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75).",
@@ -153,6 +531,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{users?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -172,352 +554,137 @@
                         ]
                     },
                     {
-                        "id": "search_filter_area",
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "admin-card"
-                        },
-                        "children": [
-                            {
-                                "id": "search_row",
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "flex-center flex-row gap-3"
-                                },
-                                "children": [
-                                    {
-                                        "id": "search_field_select",
-                                        "type": "composite",
-                                        "name": "Select",
-                                        "props": {
-                                            "value": "{{_local.searchField || 'all'}}",
-                                            "className": "select-composite w-32",
-                                            "options": [
-                                                {
-                                                    "label": "$t:admin.users.search_fields.all",
-                                                    "value": "all"
-                                                },
-                                                {
-                                                    "label": "$t:admin.users.search_fields.name",
-                                                    "value": "name"
-                                                },
-                                                {
-                                                    "label": "$t:admin.users.search_fields.email",
-                                                    "value": "email"
-                                                }
-                                            ]
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "searchField": "{{$event.target.value}}"
-                                                }
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "search_input",
-                                        "type": "basic",
-                                        "name": "Input",
-                                        "props": {
-                                            "type": "text",
-                                            "placeholder": "$t:admin.users.search_placeholder",
-                                            "value": "{{_local.searchQuery || ''}}",
-                                            "className": "input flex-1 min-w-0"
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "searchQuery": "{{$event.target.value}}"
-                                                }
-                                            },
-                                            {
-                                                "type": "keypress",
-                                                "key": "Enter",
-                                                "actionRef": "searchUsers"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "column_selector",
-                                        "type": "composite",
-                                        "name": "ColumnSelector",
-                                        "props": {
-                                            "id": "admin_user_list_columns",
-                                            "columns": [
-                                                {
-                                                    "field": "id",
-                                                    "header": "$t:admin.users.columns.id",
-                                                    "required": true
-                                                },
-                                                {
-                                                    "field": "name",
-                                                    "header": "$t:admin.users.columns.name",
-                                                    "required": true
-                                                },
-                                                {
-                                                    "field": "role",
-                                                    "header": "$t:admin.users.columns.role",
-                                                    "required": true
-                                                },
-                                                {
-                                                    "field": "email",
-                                                    "header": "$t:admin.users.columns.email",
-                                                    "required": true
-                                                },
-                                                {
-                                                    "field": "language",
-                                                    "header": "$t:admin.users.columns.language"
-                                                },
-                                                {
-                                                    "field": "status",
-                                                    "header": "$t:admin.users.columns.status"
-                                                },
-                                                {
-                                                    "field": "created_at",
-                                                    "header": "$t:admin.users.columns.created_at"
-                                                },
-                                                {
-                                                    "field": "last_login_at",
-                                                    "header": "$t:admin.users.columns.last_login_at"
-                                                }
-                                            ],
-                                            "visibleColumns": "{{_global.visibleColumns_admin_users}}",
-                                            "triggerLabel": "$t:common.column_selector",
-                                            "menuTitle": "$t:common.column_selector_title",
-                                            "menuDescription": "$t:common.column_selector_description",
-                                            "position": "right",
-                                            "defaultColumns": [
-                                                "id",
-                                                "name",
-                                                "role",
-                                                "email"
-                                            ]
-                                        },
-                                        "actions": [
-                                            {
-                                                "event": "onColumnVisibilityChange",
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "visibleColumns_admin_users": "{{$args[0]}}"
-                                                }
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "search_button",
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "actionRef": "searchUsers"
-                                            }
-                                        ],
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:admin.users.search"
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "responsive": {
-                                    "portable": {
-                                        "props": {
-                                            "className": "row-stack"
-                                        },
-                                        "children": [
-                                            {
-                                                "id": "mobile_search_row",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex flex-row gap-2 items-center"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "id": "mobile_search_field_select",
-                                                        "type": "composite",
-                                                        "name": "Select",
-                                                        "props": {
-                                                            "value": "{{_local.searchField || 'all'}}",
-                                                            "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500",
-                                                            "options": [
-                                                                {
-                                                                    "label": "$t:admin.users.search_fields.all",
-                                                                    "value": "all"
-                                                                },
-                                                                {
-                                                                    "label": "$t:admin.users.search_fields.name",
-                                                                    "value": "name"
-                                                                },
-                                                                {
-                                                                    "label": "$t:admin.users.search_fields.email",
-                                                                    "value": "email"
-                                                                }
-                                                            ]
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "searchField": "{{$event.target.value}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "mobile_search_input",
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "text",
-                                                            "placeholder": "$t:admin.users.search_placeholder",
-                                                            "value": "{{_local.searchQuery || ''}}",
-                                                            "className": "input flex-1 min-w-0"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "searchQuery": "{{$event.target.value}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "keypress",
-                                                                "key": "Enter",
-                                                                "actionRef": "searchUsers"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "mobile_action_row",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex flex-row gap-2 items-center"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "id": "mobile_column_selector",
-                                                        "type": "composite",
-                                                        "name": "ColumnSelector",
-                                                        "props": {
-                                                            "id": "admin_user_list_columns",
-                                                            "columns": [
-                                                                {
-                                                                    "field": "id",
-                                                                    "header": "$t:admin.users.columns.id",
-                                                                    "required": true
-                                                                },
-                                                                {
-                                                                    "field": "name",
-                                                                    "header": "$t:admin.users.columns.name",
-                                                                    "required": true
-                                                                },
-                                                                {
-                                                                    "field": "role",
-                                                                    "header": "$t:admin.users.columns.role",
-                                                                    "required": true
-                                                                },
-                                                                {
-                                                                    "field": "email",
-                                                                    "header": "$t:admin.users.columns.email",
-                                                                    "required": true
-                                                                },
-                                                                {
-                                                                    "field": "language",
-                                                                    "header": "$t:admin.users.columns.language"
-                                                                },
-                                                                {
-                                                                    "field": "status",
-                                                                    "header": "$t:admin.users.columns.status"
-                                                                },
-                                                                {
-                                                                    "field": "created_at",
-                                                                    "header": "$t:admin.users.columns.created_at"
-                                                                },
-                                                                {
-                                                                    "field": "last_login_at",
-                                                                    "header": "$t:admin.users.columns.last_login_at"
-                                                                }
-                                                            ],
-                                                            "visibleColumns": "{{_global.visibleColumns_admin_users}}",
-                                                            "triggerLabel": "$t:common.column_selector",
-                                                            "menuTitle": "$t:common.column_selector_title",
-                                                            "menuDescription": "$t:common.column_selector_description",
-                                                            "position": "right",
-                                                            "defaultColumns": [
-                                                                "id",
-                                                                "name",
-                                                                "role",
-                                                                "email"
-                                                            ],
-                                                            "iconOnly": true
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "event": "onColumnVisibilityChange",
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "visibleColumns_admin_users": "{{$args[0]}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "mobile_search_button",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "props": {
-                                                            "className": "flex-1 px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "click",
-                                                                "actionRef": "searchUsers"
-                                                            }
-                                                        ],
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "text": "$t:admin.users.search"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        ]
+                        "partial": "partials/admin_user_list/_partial_filter_section.json"
                     },
                     {
                         "id": "bulk_actions_area",
                         "type": "basic",
                         "name": "Div",
                         "if": "{{users?.data?.abilities?.can_update === true}}",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "bulk-actions-bar"
+                                },
+                                "children": [
+                                    {
+                                        "id": "mobile_selected_count",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-body font-medium"
+                                        },
+                                        "text": "$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}"
+                                    },
+                                    {
+                                        "id": "mobile_bulk_action_dropdown",
+                                        "type": "composite",
+                                        "name": "Dropdown",
+                                        "actions": [
+                                            {
+                                                "comment": "모바일 일괄 처리 — 고른 항목에 따라 데스크톱 버튼 4개와 **같은 확인 창**을 연다.\n                   여기서 바로 처리하지 않는 이유는 되돌릴 수 없는 상태 변경이기 때문이다.\n                   고른 회원이 없으면 항목이 잠긴다 — 서버는 빈 대상(`ids=[]`)을 422 로 거절한다.",
+                                                "type": "action",
+                                                "event": "onItemClick",
+                                                "handler": "switch",
+                                                "cases": {
+                                                    "activate": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_activate_confirm_modal"
+                                                    },
+                                                    "deactivate": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_deactivate_confirm_modal"
+                                                    },
+                                                    "block": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_block_confirm_modal"
+                                                    },
+                                                    "withdraw": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_withdraw_confirm_modal"
+                                                    },
+                                                    "role_add": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "userBulkRoleMode": "add",
+                                                                    "userBulkRoleIds": [],
+                                                                    "userBulkRoleResult": null,
+                                                                    "userBulkRoleError": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "bulk_roles_modal"
+                                                            }
+                                                        ]
+                                                    },
+                                                    "role_remove": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "userBulkRoleMode": "remove",
+                                                                    "userBulkRoleIds": [],
+                                                                    "userBulkRoleResult": null,
+                                                                    "userBulkRoleError": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "bulk_roles_modal"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "label": "$t:admin.users.bulk_action_select",
+                                            "position": "bottom-right",
+                                            "className": "ml-auto",
+                                            "items": [
+                                                {
+                                                    "value": "activate",
+                                                    "label": "$t:admin.users.bulk_activate",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                },
+                                                {
+                                                    "value": "deactivate",
+                                                    "label": "$t:admin.users.bulk_deactivate",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                },
+                                                {
+                                                    "value": "block",
+                                                    "label": "$t:admin.users.bulk_block",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                },
+                                                {
+                                                    "value": "withdraw",
+                                                    "label": "$t:admin.users.bulk_withdraw",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                },
+                                                {
+                                                    "value": "role_add",
+                                                    "label": "$t:admin.users.bulk_roles.add_button",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                },
+                                                {
+                                                    "value": "role_remove",
+                                                    "label": "$t:admin.users.bulk_roles.remove_button",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
                         "props": {
                             "className": "bulk-actions-bar"
                         },
@@ -552,10 +719,6 @@
                                         "id": "bulk_activate",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "btn btn-sm btn-success",
-                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -563,6 +726,10 @@
                                                 "target": "bulk_activate_confirm_modal"
                                             }
                                         ],
+                                        "props": {
+                                            "className": "btn btn-sm btn-success",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -575,10 +742,6 @@
                                         "id": "bulk_deactivate",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "btn btn-sm btn-neutral",
-                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -586,6 +749,10 @@
                                                 "target": "bulk_deactivate_confirm_modal"
                                             }
                                         ],
+                                        "props": {
+                                            "className": "btn btn-sm btn-neutral",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -598,10 +765,6 @@
                                         "id": "bulk_block",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "btn btn-sm btn-danger",
-                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -609,6 +772,10 @@
                                                 "target": "bulk_block_confirm_modal"
                                             }
                                         ],
+                                        "props": {
+                                            "className": "btn btn-sm btn-danger",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -621,10 +788,6 @@
                                         "id": "bulk_withdraw",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "btn btn-sm btn-warning",
-                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -632,6 +795,10 @@
                                                 "target": "bulk_withdraw_confirm_modal"
                                             }
                                         ],
+                                        "props": {
+                                            "className": "btn btn-sm btn-warning",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -639,81 +806,90 @@
                                                 "text": "$t:admin.users.bulk_withdraw"
                                             }
                                         ]
-                                    }
-                                ]
-                            }
-                        ],
-                        "responsive": {
-                            "portable": {
-                                "props": {
-                                    "className": "bulk-actions-bar"
-                                },
-                                "children": [
-                                    {
-                                        "id": "mobile_selected_count",
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "props": {
-                                            "className": "text-body font-medium"
-                                        },
-                                        "text": "$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}"
                                     },
                                     {
-                                        "id": "mobile_bulk_action_dropdown",
-                                        "type": "composite",
-                                        "name": "Dropdown",
-                                        "props": {
-                                            "label": "$t:admin.users.bulk_action_select",
-                                            "items": [
-                                                {
-                                                    "value": "activate",
-                                                    "label": "$t:admin.users.bulk_activate"
-                                                },
-                                                {
-                                                    "value": "deactivate",
-                                                    "label": "$t:admin.users.bulk_deactivate"
-                                                },
-                                                {
-                                                    "value": "block",
-                                                    "label": "$t:admin.users.bulk_block"
-                                                },
-                                                {
-                                                    "value": "withdraw",
-                                                    "label": "$t:admin.users.bulk_withdraw"
-                                                }
-                                            ],
-                                            "position": "bottom-right",
-                                            "className": "ml-auto"
-                                        },
+                                        "id": "bulk_role_add",
+                                        "type": "basic",
+                                        "name": "Button",
                                         "actions": [
                                             {
-                                                "event": "onItemClick",
-                                                "type": "action",
-                                                "handler": "switch",
-                                                "cases": {
-                                                    "activate": {
-                                                        "handler": "openModal",
-                                                        "target": "bulk_activate_confirm_modal"
+                                                "comment": "역할 일괄 추가 — 모드를 정하고 지난 입력·결과를 비운 뒤 창을 연다(모바일 드롭다운의 같은 항목과 같은 동작)",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "userBulkRoleMode": "add",
+                                                            "userBulkRoleIds": [],
+                                                            "userBulkRoleResult": null,
+                                                            "userBulkRoleError": null
+                                                        }
                                                     },
-                                                    "deactivate": {
+                                                    {
                                                         "handler": "openModal",
-                                                        "target": "bulk_deactivate_confirm_modal"
-                                                    },
-                                                    "block": {
-                                                        "handler": "openModal",
-                                                        "target": "bulk_block_confirm_modal"
-                                                    },
-                                                    "withdraw": {
-                                                        "handler": "openModal",
-                                                        "target": "bulk_withdraw_confirm_modal"
+                                                        "target": "bulk_roles_modal"
                                                     }
-                                                }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-sm btn-secondary",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_roles.add_button"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_role_remove",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "역할 일괄 제거 — 추가와 같은 창을 제거 모드로 연다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "userBulkRoleMode": "remove",
+                                                            "userBulkRoleIds": [],
+                                                            "userBulkRoleResult": null,
+                                                            "userBulkRoleError": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_roles_modal"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-sm btn-secondary",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_roles.remove_button"
                                             }
                                         ]
                                     }
                                 ]
                             }
-                        }
+                        ]
                     },
                     {
                         "id": "list_toolbar",
@@ -724,13 +900,25 @@
                         },
                         "children": [
                             {
+                                "comment": "총 건수를 끝까지 센 경우 / 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다",
                                 "id": "total_count",
                                 "type": "basic",
                                 "name": "Span",
+                                "if": "{{users?.data?.pagination?.total_is_exact !== false}}",
                                 "props": {
                                     "className": "text-label"
                                 },
                                 "text": "$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}"
+                            },
+                            {
+                                "id": "total_count_at_least",
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{users?.data?.pagination?.total_is_exact === false}}",
+                                "props": {
+                                    "className": "text-label"
+                                },
+                                "text": "$t:admin.users.total_at_least|count={{users?.data?.pagination?.total ?? 0}}"
                             },
                             {
                                 "id": "list_options",
@@ -742,90 +930,132 @@
                                 "children": [
                                     {
                                         "id": "sort_select",
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "정렬 선택. 옵션 값 하나(`created_at_desc`)에 필드와 방향이 붙어 있어 마지막 조각을\n                   방향으로 떼고 나머지를 필드로 쓴다(필드명에 `_` 가 있어 앞에서 자를 수 없다).\n                   옵션은 표 머리글로 정렬할 수 있는 열마다 오름·내림 두 개씩 둔다 — 하나라도 빠지면\n                   그 머리글로 정렬했을 때 이 칸이 빈 칸으로 보인다.\n                   페이지는 1로 되돌린다 — 정렬이 바뀌면 3페이지의 의미가 달라진다.\n                   대기 표시는 표 본문에만 건다(툴바까지 덮으면 방금 고른 값이 가려진다).",
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users",
+                                                    "mergeQuery": true,
+                                                    "replace": true,
+                                                    "transition_overlay_target": "users_data_grid__body",
+                                                    "query": {
+                                                        "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                        "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
                                         "props": {
                                             "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                             "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                             "options": [
                                                 {
-                                                    "label": "$t:admin.users.sort.created_at_desc",
-                                                    "value": "created_at_desc"
+                                                    "value": "created_at_desc",
+                                                    "label": "$t:admin.users.sort.created_at_desc"
                                                 },
                                                 {
-                                                    "label": "$t:admin.users.sort.created_at_asc",
-                                                    "value": "created_at_asc"
+                                                    "value": "created_at_asc",
+                                                    "label": "$t:admin.users.sort.created_at_asc"
                                                 },
                                                 {
-                                                    "label": "$t:admin.users.sort.last_login_at_desc",
-                                                    "value": "last_login_at_desc"
+                                                    "value": "last_login_at_desc",
+                                                    "label": "$t:admin.users.sort.last_login_at_desc"
                                                 },
                                                 {
-                                                    "label": "$t:admin.users.sort.last_login_at_asc",
-                                                    "value": "last_login_at_asc"
+                                                    "value": "last_login_at_asc",
+                                                    "label": "$t:admin.users.sort.last_login_at_asc"
+                                                },
+                                                {
+                                                    "value": "name_asc",
+                                                    "label": "$t:admin.users.sort.name_asc"
+                                                },
+                                                {
+                                                    "value": "name_desc",
+                                                    "label": "$t:admin.users.sort.name_desc"
+                                                },
+                                                {
+                                                    "value": "email_asc",
+                                                    "label": "$t:admin.users.sort.email_asc"
+                                                },
+                                                {
+                                                    "value": "email_desc",
+                                                    "label": "$t:admin.users.sort.email_desc"
+                                                },
+                                                {
+                                                    "value": "country_asc",
+                                                    "label": "$t:admin.users.sort.country_asc"
+                                                },
+                                                {
+                                                    "value": "country_desc",
+                                                    "label": "$t:admin.users.sort.country_desc"
+                                                },
+                                                {
+                                                    "value": "language_asc",
+                                                    "label": "$t:admin.users.sort.language_asc"
+                                                },
+                                                {
+                                                    "value": "language_desc",
+                                                    "label": "$t:admin.users.sort.language_desc"
+                                                },
+                                                {
+                                                    "value": "status_asc",
+                                                    "label": "$t:admin.users.sort.status_asc"
+                                                },
+                                                {
+                                                    "value": "status_desc",
+                                                    "label": "$t:admin.users.sort.status_desc"
                                                 }
                                             ]
-                                        },
+                                        }
+                                    },
+                                    {
+                                        "id": "per_page_select",
+                                        "type": "basic",
+                                        "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "페이지당 항목 수. 정렬과 같은 이유로 페이지를 1로 되돌린다 — 100개씩 보기로 바꾸면\n                   기존 5페이지가 범위 밖이 된다.",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/users",
                                                     "mergeQuery": true,
-                                                    "query": {
-                                                        "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                        "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                        "page": 1
-                                                    },
                                                     "replace": true,
-                                                    "transition_overlay_target": "users_data_grid__body"
+                                                    "transition_overlay_target": "users_data_grid__body",
+                                                    "query": {
+                                                        "per_page": "{{$event.target.value}}",
+                                                        "page": 1
+                                                    }
                                                 }
                                             }
-                                        ]
-                                    },
-                                    {
-                                        "id": "per_page_select",
-                                        "type": "composite",
-                                        "name": "Select",
+                                        ],
                                         "props": {
                                             "value": "{{query.per_page || '10'}}",
                                             "className": "px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500",
                                             "options": [
                                                 {
-                                                    "label": "$t:admin.users.per_page|count=10",
-                                                    "value": "10"
+                                                    "value": "10",
+                                                    "label": "$t:admin.users.per_page|count=10"
                                                 },
                                                 {
-                                                    "label": "$t:admin.users.per_page|count=20",
-                                                    "value": "20"
+                                                    "value": "20",
+                                                    "label": "$t:admin.users.per_page|count=20"
                                                 },
                                                 {
-                                                    "label": "$t:admin.users.per_page|count=50",
-                                                    "value": "50"
+                                                    "value": "50",
+                                                    "label": "$t:admin.users.per_page|count=50"
                                                 },
                                                 {
-                                                    "label": "$t:admin.users.per_page|count=100",
-                                                    "value": "100"
+                                                    "value": "100",
+                                                    "label": "$t:admin.users.per_page|count=100"
                                                 }
                                             ]
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "change",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/users",
-                                                    "mergeQuery": true,
-                                                    "query": {
-                                                        "per_page": "{{$event.target.value}}",
-                                                        "page": 1
-                                                    },
-                                                    "replace": true,
-                                                    "transition_overlay_target": "users_data_grid__body"
-                                                }
-                                            }
-                                        ]
+                                        }
                                     }
                                 ]
                             }
@@ -836,7 +1066,140 @@
                         "type": "composite",
                         "name": "DataGrid",
                         "blur_until_loaded": true,
+                        "actions": [
+                            {
+                                "comment": "선택한 행의 id 를 전역에 둔다 — 일괄 처리 버튼과 확인 창이 모두 이 값을 읽으므로\n               표 바깥(툴바·모달)에서 보여야 한다. 로그인한 본인의 행은 표가 고르지 못하게 막는다\n               (`nonSelectableIds`) — 본인이 섞인 일괄 요청은 서버가 통째로 422 로 거절한다.",
+                                "type": "change",
+                                "event": "onSelectionChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds_admin_users": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "comment": "표 자체의 열 선택기는 꺼 두었고(`:showColumnSelector=\"false\"`) 툴바 선택기가 그 역할을\n               한다. 이 배선은 표가 스스로 열을 감출 때를 위한 자리다.",
+                                "type": "change",
+                                "event": "onColumnVisibilityChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "visibleColumns_admin_users": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "comment": "열 머리글 정렬. 툴바 정렬 선택과 **같은 쿼리 키**로 모이므로 둘 중 무엇을 써도 상태가\n               한 곳(URL)에 남는다. 여기서는 페이지를 건드리지 않는다.\n               페이지 이동 — 표 본문만 대기 표시로 덮는다(페이지네이션까지 덮으면 누른 자리가 사라진다).",
+                                "type": "change",
+                                "event": "onSortChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/users",
+                                    "mergeQuery": true,
+                                    "replace": true,
+                                    "transition_overlay_target": "users_data_grid__body",
+                                    "query": {
+                                        "sort_by": "{{$args[0]}}",
+                                        "sort_order": "{{$args[1]}}",
+                                        "page": 1
+                                    }
+                                }
+                            },
+                            {
+                                "comment": "페이지 이동. 걸려 있던 검색·필터는 그대로 두고 번호만 바꾸며, 표 몸통만 덮어 필터 영역이 깜빡이지 않는다",
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/users",
+                                    "mergeQuery": true,
+                                    "replace": true,
+                                    "transition_overlay_target": "users_data_grid__body",
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "comment": "행 메뉴. 보기/수정은 곧바로 이동하고, 삭제만 확인 창을 거친다.\n               삭제 갈래는 대상 행을 전역 `modal_data` 에 **먼저 담고** 그 성공 갈래에서 창을 연다 —\n               순서를 바꾸면 창이 아직 비어 있는 대상을 가리킨다.",
+                                "type": "action",
+                                "event": "onRowAction",
+                                "handler": "switch",
+                                "cases": {
+                                    "view": {
+                                        "comment": "상세는 회원 목록 클러스터 안이다 — 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75).",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/{{$args[1].uuid}}",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    },
+                                    "edit": {
+                                        "comment": "수정 폼도 같은 클러스터다 — 취소하고 돌아왔을 때 목록 상태가 살아 있어야 한다 (#75).",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/{{$args[1].uuid}}/edit",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    },
+                                    "delete": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "modal_data": "{{$args[1]}}"
+                                        },
+                                        "onSuccess": {
+                                            "handler": "openModal",
+                                            "target": "delete_confirm_modal"
+                                        }
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
+                            "selectedCountText": "",
+                            "data": "{{users?.data?.data}}",
+                            "sortable": true,
+                            "sortField": "{{query.sort_by}}",
+                            "sortDirection": "{{query.sort_order || 'asc'}}",
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 15,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{users?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{users?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{users?.data?.pagination?.has_more_pages ?? false}}",
+                            "selectable": "{{users?.data?.abilities?.can_update === true}}",
+                            "selectionScope": "page",
+                            "nonSelectableIds": "{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}",
+                            "selectedIds": "{{_global.selectedIds_admin_users || []}}",
+                            "idField": "uuid",
+                            "showColumnSelector": false,
+                            "visibleColumns": "{{_global.visibleColumns_admin_users}}",
+                            "responsiveBreakpoint": 768,
+                            "actionsColumnHeader": "$t:common.actions",
+                            "rowActions": [
+                                {
+                                    "id": "view",
+                                    "label": "$t:admin.users.actions.view",
+                                    "iconName": "eye"
+                                },
+                                {
+                                    "id": "edit",
+                                    "label": "$t:admin.users.actions.edit",
+                                    "iconName": "pencil",
+                                    "disabledField": "abilities.can_update"
+                                },
+                                {
+                                    "id": "delete",
+                                    "label": "$t:admin.users.actions.delete",
+                                    "iconName": "trash",
+                                    "variant": "danger",
+                                    "disabledField": "abilities.can_delete",
+                                    "disabledReason": "$t:admin.users.actions.delete_disabled_reason"
+                                }
+                            ],
                             "columns": [
                                 {
                                     "field": "name",
@@ -859,11 +1222,11 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "if": "{{row.nickname}}",
                                                     "props": {
                                                         "className": "text-tertiary"
                                                     },
-                                                    "text": "{{row.nickname}}",
-                                                    "if": "{{row.nickname}}"
+                                                    "text": "{{row.nickname}}"
                                                 }
                                             ]
                                         }
@@ -905,7 +1268,18 @@
                                     "required": true
                                 },
                                 {
-                                    "hidden": true,
+                                    "field": "nickname",
+                                    "header": "$t:admin.users.columns.nickname",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{row.nickname ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
                                     "field": "country",
                                     "header": "$t:admin.users.columns.country",
                                     "sortable": true,
@@ -955,9 +1329,33 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{row.status_variant === 'success' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.status_variant === 'secondary' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : row.status_variant === 'danger' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}}"
+                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[row.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
                                             },
                                             "text": "{{row.status_label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "email_verified_at",
+                                    "header": "$t:admin.users.columns.email_verified_at",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{row.email_verified_at ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "identity_verified_at",
+                                    "header": "$t:admin.users.columns.identity_verified_at",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{row.identity_verified_at ?? '-'}}"
                                         }
                                     ]
                                 },
@@ -971,135 +1369,8 @@
                                     "header": "$t:admin.users.columns.last_login_at",
                                     "sortable": true
                                 }
-                            ],
-                            "data": "{{users?.data?.data}}",
-                            "sortable": true,
-                            "sortField": "{{query.sort_by}}",
-                            "sortDirection": "{{query.sort_order || 'asc'}}",
-                            "pagination": true,
-                            "alwaysShowPagination": true,
-                            "pageSize": 15,
-                            "serverSidePagination": true,
-                            "serverCurrentPage": "{{users?.data?.pagination?.current_page ?? 1}}",
-                            "serverTotalPages": "{{users?.data?.pagination?.last_page ?? null}}",
-                            "serverHasMorePages": "{{users?.data?.pagination?.has_more_pages ?? false}}",
-                            "selectable": "{{users?.data?.abilities?.can_update === true}}",
-                            "selectionScope": "page",
-                            "selectedIds": "{{_global.selectedIds_admin_users || []}}",
-                            "idField": "uuid",
-                            "showColumnSelector": false,
-                            "visibleColumns": "{{_global.visibleColumns_admin_users}}",
-                            "responsiveBreakpoint": 768,
-                            "rowActions": [
-                                {
-                                    "id": "view",
-                                    "label": "$t:admin.users.actions.view",
-                                    "iconName": "eye"
-                                },
-                                {
-                                    "id": "edit",
-                                    "label": "$t:admin.users.actions.edit",
-                                    "iconName": "pencil",
-                                    "disabledField": "abilities.can_update"
-                                },
-                                {
-                                    "id": "delete",
-                                    "label": "$t:admin.users.actions.delete",
-                                    "iconName": "trash",
-                                    "variant": "danger",
-                                    "disabledField": "abilities.can_delete"
-                                }
-                            ],
-                            "actionsColumnHeader": "$t:common.actions"
-                        },
-                        "actions": [
-                            {
-                                "event": "onSelectionChange",
-                                "type": "change",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "selectedIds_admin_users": "{{$args[0]}}"
-                                }
-                            },
-                            {
-                                "event": "onColumnVisibilityChange",
-                                "type": "change",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "local",
-                                    "visibleColumns_admin_users": "{{$args[0]}}"
-                                }
-                            },
-                            {
-                                "event": "onSortChange",
-                                "type": "change",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/users",
-                                    "mergeQuery": true,
-                                    "replace": true,
-                                    "query": {
-                                        "sort_by": "{{$args[0]}}",
-                                        "sort_order": "{{$args[1]}}",
-                                        "page": 1
-                                    },
-                                    "transition_overlay_target": "users_data_grid__body"
-                                }
-                            },
-                            {
-                                "event": "onPageChange",
-                                "type": "change",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/users",
-                                    "mergeQuery": true,
-                                    "query": {
-                                        "page": "{{$args[0]}}"
-                                    },
-                                    "replace": true,
-                                    "transition_overlay_target": "users_data_grid__body"
-                                }
-                            },
-                            {
-                                "event": "onRowAction",
-                                "type": "action",
-                                "handler": "switch",
-                                "cases": {
-                                    "view": {
-                                        "comment": "상세는 회원 목록 클러스터 안이다 — 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75).",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/users/{{$args[1].uuid}}",
-                                            "mergeQuery": true,
-                                            "query": {}
-                                        }
-                                    },
-                                    "edit": {
-                                        "comment": "수정 폼도 같은 클러스터다 — 취소하고 돌아왔을 때 목록 상태가 살아 있어야 한다 (#75).",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/users/{{$args[1].uuid}}/edit",
-                                            "mergeQuery": true,
-                                            "query": {}
-                                        }
-                                    },
-                                    "delete": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "modal_data": "{{$args[1]}}"
-                                        },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "openModal",
-                                                "target": "delete_confirm_modal"
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        ]
+                            ]
+                        }
                     }
                 ]
             }
@@ -1107,9 +1378,7 @@
     },
     "modals": [
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.user_list.bulk_activate_confirm_modal"
-            },
+            "comment": "선택한 회원을 한꺼번에 활성으로 바꾸는 확인 창. 아래 일괄 창 4개(활성·비활성·차단·탈퇴)는\n         `status` 값과 성공 문구만 다른 같은 형태다.",
             "id": "bulk_activate_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1145,16 +1414,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "btn btn-secondary"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1164,14 +1433,12 @@
                             ]
                         },
                         {
+                            "id": "bulk_activate_submit_button",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
                             "actions": [
                                 {
+                                    "comment": "일괄 활성 실행. 성공하면 선택을 비우고(처리된 id 가 남아 있으면 다음 일괄이 그것을\n                 다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.\n                 실패는 토스트가 아니라 오류 창으로 띄운다(일괄은 몇 건이 왜 실패했는지가 길다).",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1184,8 +1451,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/users/bulk-status",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH",
                                                 "body": {
@@ -1214,10 +1481,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.bulk_activate_success"
+                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1239,6 +1507,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1259,12 +1531,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.user_list.bulk_activate_confirm_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.user_list.bulk_deactivate_confirm_modal"
-            },
+            "comment": "선택한 회원을 한꺼번에 비활성으로 바꾸는 확인 창(활성 창과 같은 형태, `status` 만 다르다).",
             "id": "bulk_deactivate_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1300,16 +1573,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "btn btn-secondary"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1319,14 +1592,12 @@
                             ]
                         },
                         {
+                            "id": "bulk_deactivate_submit_button",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
                             "actions": [
                                 {
+                                    "comment": "일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1339,8 +1610,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/users/bulk-status",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH",
                                                 "body": {
@@ -1369,10 +1640,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.bulk_deactivate_success"
+                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1394,6 +1666,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1414,12 +1690,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.user_list.bulk_deactivate_confirm_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.user_list.delete_confirm_modal"
-            },
+            "comment": "회원 한 건 삭제 확인 창. 대상은 행 메뉴가 전역 `modal_data` 에 담아 준 행이다\n         (일괄 창들이 쓰는 선택 목록과 다른 값을 본다).",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1455,16 +1732,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1476,12 +1753,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "삭제 실행. 이 화면에서 **유일하게 URL 을 바꾸지 않는 갱신**이라 목록을 직접 다시 부른다\n                 (일괄 처리 쪽은 같은 URL 을 다시 밟는 방식이다). 실패는 창을 연 채 토스트만 띄운다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1494,8 +1768,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/users/{{_global.modal_data.uuid}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE"
                                             },
@@ -1544,6 +1818,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1563,12 +1841,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.user_list.delete_confirm_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.user_list.error_modal"
-            },
+            "comment": "일괄 처리 실패를 띄우는 공용 오류 창. 일괄 창 4개가 실패 갈래에서 문구를 전역\n         `errorMessage` 에 담고 이것을 연다 — 자기 창은 닫지 않으므로 오류 창이 그 위에 겹친다.",
             "id": "error_modal",
             "type": "composite",
             "name": "Modal",
@@ -1604,15 +1883,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1623,12 +1902,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.user_list.error_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.user_list.bulk_block_confirm_modal"
-            },
+            "comment": "선택한 회원을 한꺼번에 차단하는 확인 창(활성 창과 같은 형태, `status` 만 다르다).",
             "id": "bulk_block_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1664,16 +1944,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "btn btn-secondary"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1683,14 +1963,12 @@
                             ]
                         },
                         {
+                            "id": "bulk_block_submit_button",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
                             "actions": [
                                 {
+                                    "comment": "일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1703,8 +1981,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/users/bulk-status",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH",
                                                 "body": {
@@ -1733,10 +2011,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.bulk_block_success"
+                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1758,6 +2037,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1778,12 +2061,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.user_list.bulk_block_confirm_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.user_list.bulk_withdraw_confirm_modal"
-            },
+            "comment": "선택한 회원을 한꺼번에 탈퇴 처리하는 확인 창(활성 창과 같은 형태, `status` 만 다르다).",
             "id": "bulk_withdraw_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1819,16 +2103,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "btn btn-secondary"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1838,14 +2122,12 @@
                             ]
                         },
                         {
+                            "id": "bulk_withdraw_submit_button",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
                             "actions": [
                                 {
+                                    "comment": "일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1858,8 +2140,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/users/bulk-status",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH",
                                                 "body": {
@@ -1892,7 +2174,7 @@
                                                     "handler": "toast",
                                                     "params": {
                                                         "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1914,6 +2196,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1934,7 +2220,14 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.user_list.bulk_withdraw_confirm_modal"
+            }
+        },
+        {
+            "comment": "회원 역할 일괄 추가·제거 창 — 일괄 작업 바의 「역할 추가」「역할 제거」(모바일은 드롭다운)가 연다.",
+            "partial": "partials/admin_user_list/_modal_bulk_roles.json"
         }
     ]
 }

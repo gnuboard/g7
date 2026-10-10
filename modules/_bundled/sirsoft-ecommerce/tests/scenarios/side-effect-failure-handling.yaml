@@ -1,0 +1,23 @@
+# e2e:allow 화면 변경 없음 — 부가 작업 실패의 서버 처리(재throw·보고·세이브포인트·행 격리)만 바뀐다.
+feature: 부가 작업 실패를 삼키지 않거나, 흔적과 복구 경로를 남긴다 (동시성 · B6 · B7 · B8 · B10) — #747 C9
+
+description: |
+  - 동시성: 트랜잭션 안 catch 가 교착(40001·1213)을 삼키면 바깥 트랜잭션은 이미 되돌려졌는데 이후 쓰기가 autocommit 으로
+    남는다. Support/ConcurrencyErrors::rethrowIfConcurrencyError 를 부가 작업 catch 첫 줄에서 부른다.
+  - B6 상품 재고 합계 동기화 실패는 report() 로 올린다(흐름은 유지 — 다음 재고 변경 때 재계산).
+  - B7 현금영수증 식별번호 폐기 실패를 삼키지 않는다 — 큐 재시도에 맡긴다.
+  - B8 쿠폰 직접 발급은 회원마다 세이브포인트 — 한 회원의 후속 처리 실패가 그 회원의 발급만 되돌린다.
+  - B10 적립 배치는 행마다 격리 — 한 행의 실패가 뒤 행을 막지 않는다.
+
+axes:
+  item: [concurrency, b6_stock_sync, b7_identifier_purge, b8_direct_issue, b10_earn_batch]
+
+effects:
+  - concurrency_errors_are_never_swallowed
+  - stock_sum_sync_failure_is_reported
+  - identifier_purge_failure_is_retried_by_the_queue
+  - direct_issue_failure_rolls_back_only_that_member
+  - earn_batch_isolates_failing_rows
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/SideEffects/SideEffectFailureHandlingTest.php

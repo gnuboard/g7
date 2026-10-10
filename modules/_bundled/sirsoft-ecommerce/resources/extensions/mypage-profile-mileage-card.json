@@ -1,138 +1,139 @@
 {
-  "target_layout": "mypage/profile",
-  "injections": [
-    {
-      "target_id": "mypage_tab_content",
-      "position": "append_child",
-      "components": [
+    "comment": "마이페이지 프로필에 붙는 내 마일리지 요약 카드.\n  숫자를 따로 불러오지 않는다 — 로그인 사용자 정보(`user.data.ecommerce_mileage`)에 이커머스가\n  이미 실어 보낸 값을 읽기만 한다. 그래서 이 조각에는 데이터소스가 없고, 카드가 안 보이면\n  원인은 이 파일이 아니라 그 응답에 마일리지가 실렸는지에 있다.\n  기능을 끈 상태에서도 카드는 남고 안내문만 대신 나온다(관리자 회원 상세의 마일리지 탭과 같은 규약).",
+    "target_layout": "mypage/profile",
+    "priority": 320,
+    "injections": [
         {
-          "id": "ext_my_mileage_card",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!!user?.data?.ecommerce_mileage}}",
-          "props": {
-            "className": "mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center justify-between mb-3"
-              },
-              "children": [
+            "target_id": "mypage_tab_content",
+            "position": "append_child",
+            "components": [
                 {
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "coins",
-                        "className": "w-4 h-4 text-gray-600 dark:text-gray-400"
-                      }
+                    "id": "ext_my_mileage_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!user?.data?.ecommerce_mileage}}",
+                    "props": {
+                        "className": "mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.user_mileage.title"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "coins",
+                                                "className": "text-base text-gray-600 dark:text-gray-400"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.user_mileage.title"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "비활성화 안내 (mileage.enabled=false)",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!user?.data?.ecommerce_mileage?.enabled}}",
+                            "props": {
+                                "className": "block text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.user_mileage.disabled_notice"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{user?.data?.ecommerce_mileage?.enabled}}",
+                            "props": {
+                                "className": "flex items-center justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.user_mileage.available"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "block text-xl font-bold text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0) > 0}}",
+                                            "props": {
+                                                "className": "block text-xs text-amber-600 dark:text-amber-400 mt-1"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.user_mileage.expiring_soon|amount={{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "view_my_mileage_history",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/mypage/mileage"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.user_mileage.view_history"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "arrow-right",
+                                                "className": "text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "comment": "비활성화 안내 (mileage.enabled=false)",
-              "type": "basic",
-              "name": "Span",
-              "if": "{{!user?.data?.ecommerce_mileage?.enabled}}",
-              "props": {
-                "className": "block text-sm text-gray-500 dark:text-gray-400"
-              },
-              "text": "$t:sirsoft-ecommerce.user_mileage.disabled_notice"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{user?.data?.ecommerce_mileage?.enabled}}",
-              "props": {
-                "className": "flex items-center justify-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "$t:sirsoft-ecommerce.user_mileage.available"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "block text-xl font-bold text-gray-900 dark:text-white"
-                      },
-                      "text": "{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0) > 0}}",
-                      "props": {
-                        "className": "block text-xs text-amber-600 dark:text-amber-400 mt-1"
-                      },
-                      "text": "$t:sirsoft-ecommerce.user_mileage.expiring_soon|amount={{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}}"
-                    }
-                  ]
-                },
-                {
-                  "id": "view_my_mileage_history",
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/mypage/mileage"
-                      }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.user_mileage.view_history"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "arrow-right",
-                        "className": "w-3.5 h-3.5"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ],
-  "priority": 320
+    ]
 }

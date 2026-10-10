@@ -38,12 +38,10 @@
   "modal": {
     "member_search": {
       "title": "会員検索",
-      "description": "会員名、ID、メールアドレスで検索して選択してください",
       "search_placeholder": "会員名、ID、メールアドレスで検索"
     },
     "order_search": {
       "title": "注文検索および連携",
-      "description": "注文番号、顧客名、商品名で検索して選択してください",
       "search_field": "検索フィールド",
       "search_field_all": "すべて",
       "search_field_order_number": "注文番号",

@@ -1,0 +1,192 @@
+{
+    "comment": "본인인증 정책별 문구 삭제 확인 창(알림 설정 > 분류 「본인인증」). **운영자가 추가한 문구만 지울 수 있다** —\n  코어·확장이 선언한 정의는 목록에서 삭제 버튼이 나오지 않고(서버가 abilities.can_delete 로 판정), 그쪽은\n  「기본값 복원」 창이 짝이다. 7.0.x 의 본인인증 탭 메시지 삭제 창을 알림 정의 API 로 옮긴 것이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "본인인증 정책별 문구(알림 정의) 삭제 확인 모달 — 운영자 추가 정의만",
+        "editor_label": "$t:admin.modal_label.admin_settings.modal_notification_identity_definition_delete"
+    },
+    "id": "modal_notification_identity_definition_delete",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.notification_definitions.identity_delete.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:admin.settings.notification_definitions.identity_delete.confirm_message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "form-sub-label"
+                    },
+                    "text": "$t:admin.settings.notification_definitions.identity_delete.target_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-primary font-medium"
+                    },
+                    "text": "{{_global.identity_notification_delete_modal?.name ?? ''}}"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "alert-danger"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-error-soft"
+                    },
+                    "text": "$t:admin.settings.notification_definitions.identity_delete.warning_message"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "modal_notification_identity_definition_delete"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.identity_notification_delete_modal?.isDeleting ?? false}}"
+                    },
+                    "text": "$t:common.cancel"
+                },
+                {
+                    "id": "identity_notification_delete_confirm_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "삭제 실행. 성공하면 대상을 비우고 알림 정의 목록과 「추가」 창의 선택지(이미 정의가 있는 정책)를\n               다시 받는다 — 지운 정책을 바로 다시 고를 수 있어야 한다. 실패하면 진행 표시를 끄고 서버 문구를 띄운다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "identity_notification_delete_modal.isDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/notification-definitions/{{_global.identity_notification_delete_modal?.id}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "identity_notification_delete_modal": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notificationDefinitions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "identityPolicyDefinitions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.settings.notification_definitions.identity_delete.delete_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "modal_notification_identity_definition_delete"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "identity_notification_delete_modal.isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.settings.notification_definitions.identity_delete.delete_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "debounce": 400
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.identity_notification_delete_modal?.isDeleting ?? false}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.identity_notification_delete_modal?.isDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.identity_notification_delete_modal?.isDeleting ? '$t:admin.settings.notification_definitions.identity_delete.btn_confirming' : '$t:admin.settings.notification_definitions.identity_delete.btn_confirm'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

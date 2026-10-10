@@ -1,0 +1,17 @@
+feature: 토글 스위치의 접근 가능한 이름 — 보이는 라벨 없는 스위치 (7.1.0 실측 O-B6)
+
+description: |
+  표의 「사용」 열이나 옆 문구처럼 라벨이 스위치 밖에 있으면 스위치(`role="switch"`)에 이름이 없어 화면 읽기
+  프로그램이 이름 없는 스위치로 읽었다. `ariaLabel` prop 으로 보이는 라벨을 더하지 않고 이름만 붙인다.
+  `ariaLabel` 이 없으면 `label` → 곁 제목(aria-labelledby) → `name` 순으로 쓴다. 첫 그리기에 곁 제목이 없어
+  `name` 으로 읽히다가 제목이 그려지면 그 제목을 다시 찾아 잇는다. 레이아웃 쪽 적용(IP 규칙 표)은
+  `ip-restriction-rule-feedback.yaml`, TOTP 설정 카드는 sirsoft-totp 의 레이아웃 테스트가 잠근다.
+
+axes:
+  source: [aria_label, label, adjacent_label_late]
+
+effects:
+  - switch_has_accessible_name
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toggle.ariaLabel.test.tsx

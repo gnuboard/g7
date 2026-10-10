@@ -1,7 +1,7 @@
 /**
  * Smoke: 게시글/댓글 신고 제출 후 피드백·상태 반영 (이슈 #413-60)
  *
- * @scenario board-report-submit: actor=member, target=post, board=use_report
+ * @scenario actor=member, target=post, board=use_report
  * @effects report_success_button_switches_to_reported_without_reload
  * @effects report_duplicate_closes_modal_and_shows_error_toast
  *

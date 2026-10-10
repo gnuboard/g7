@@ -1,0 +1,24 @@
+feature: 확장 설치 창은 함께 고른 언어팩 설치 실패를 알린다
+
+description: |
+  설치 응답은 함께 고른 번들 언어팩 중 실패한 것을 `language_pack_failures`(식별자·사유)로 돌려주는데 화면이 읽지 않아,
+  체크해 둔 언어팩이 설치되지 않아도 「설치되었습니다」만 보였다(Q-G2 Hello 모듈 설치 실측 — ja 언어팩이
+  「대상 모듈이 비활성」 사유로 실패). 실패가 있으면 경고 토스트로 식별자와 첫 사유를 알린다.
+  서버가 비활성 대상에 언어팩을 거절하는 정책 자체(설치 직후 확장은 비활성)는 별도 결정 대상으로 남긴다.
+  또 이미 설치·활성화되어 충족된 의존 확장의 언어팩이 「의존 확장을 함께 설치하도록 골랐을 때만」 조건에 묶여
+  체크박스가 늘 꺼진 채 잠겨 있었다 — 미리보기가 충족된 의존 확장의 언어팩에는 depends_on_extension 을 싣지 않는다.
+
+axes:
+  case:
+    - failure_toast_surfaced
+    - met_dependency_language_pack_unbound
+    - unmet_dependency_language_pack_bound
+    - met_dependency_badge_shown
+
+effects:
+  - install_language_pack_failures_surfaced
+  - met_dependency_language_pack_selectable
+
+test_files:
+  - tests/Unit/Services/Extension/InstallPreviewMetDependencyLanguagePackTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-install-language-pack-failures.test.tsx

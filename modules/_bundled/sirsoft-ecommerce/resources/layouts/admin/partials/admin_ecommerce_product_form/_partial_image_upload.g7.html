@@ -1,0 +1,68 @@
+<!-- 상품 폼 — 이미지 구획. 고른 즉시 올리지 않고 저장을 누를 때 폼이 사건으로 신호를 보내면 그때
+  올린다(저장하지 않고 나간 파일이 서버에 남는 것을 막는다). 신규 진입은 아직 상품 id 가 없어
+  임시키로 묶어 올리고, 수정 진입은 상품 아래로 바로 올린다 — 업로드 주소가 그래서 갈린다. -->
+<partial description="Product Form - Image Upload Section">
+  <div data-ref="images" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <!-- 구획 접기/펼치기. 접힐 때 숨기기만 하고 걷어내지 않는 것은(`hidden`) 업로더가 사라지면 고른 파일이 함께 날아가기 때문이다 -->
+        <set-state target="local" ui.imagesExpanded="{{!_local.ui.imagesExpanded}}"/>
+      </on>
+      <icon name="images" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.images</span>
+      <span class="text-label-subtle ml-2">({{((_local.form.images ?? []).length + (_local.ui.pendingImageCount ?? 0) + (_local.ui.uploadedImageCount ?? 0))}}/20)</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.imagesExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="images_body" class="row-stack {{_local.ui.imagesExpanded === false ? 'hidden' : ''}}">
+      <div data-ref="images_uploader_wrapper" class="{{_local.errors?.images ? 'border border-red-500 dark:border-red-500 rounded-lg p-1' : ''}}">
+        <file-uploader data-type="composite" data-ref="images_uploader" collection="main" :maxFiles="20" maxSize="{{_global.settings?.upload?.max_file_size ?? 10}}" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{product?.data?.images ?? copy_source?.data?.images ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:product_images" :confirmBeforeRemove="true" :enablePrimarySelection="true" primaryFileId="{{_local.form.thumbnail_hash}}" uploadParams="{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}" disabled="{{_computed.isReadOnly}}">
+          <prop name="imageCompression">
+            <field name="maxSizeMB" :value="1"/>
+            <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? 1200}}"/>
+          </prop>
+          <prop name="apiEndpoints">
+            <field name="upload" value="{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/' + product.data.id + '/images' : '/api/modules/sirsoft-ecommerce/admin/products/images'}}"/>
+            <field name="delete" value="/api/modules/sirsoft-ecommerce/admin/products/images/:id"/>
+            <field name="reorder" value="{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/images/reorder' : ''}}"/>
+          </prop>
+          <on event="onFilesChange">
+            <!-- 아직 안 올린 파일 수 — 머리글의 「n/20」 계수에 들어간다(올린 것과 따로 세야 한도가 맞는다) -->
+            <set-state target="local" ui.pendingImageCount="{{($args[0] ?? []).length}}"/>
+          </on>
+          <on event="onPrimaryChange">
+            <!-- 대표 이미지 지정 — 목록·검색 결과·공유 미리보기에 나가는 한 장이다 -->
+            <set-state target="local" form.thumbnail_hash="{{$args[0]}}"/>
+          </on>
+          <on event="onUploadComplete">
+            <!-- 업로드 완료 — 수정 진입에서만 결과를 폼의 이미지 목록에 이어 붙인다. 신규는 아직 상품이 없어 임시키로 매달려 있고, 저장 응답 뒤 서버가 상품에 묶는다 -->
+            <sequence>
+              <set-state target="local" :ui.pendingImageCount="0" ui.uploadedImageCount="{{(_local.ui.uploadedImageCount ?? 0) + ($args[0] ?? []).length}}" form.images="{{product?.data?.id ? [...(_local.form?.images ?? []), ...($args[0] ?? [])] : (_local.form?.images ?? [])}}"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.product.images.upload_complete"/>
+            </sequence>
+          </on>
+          <on event="onUploadError">
+            <!-- 업로드 실패는 알리기만 한다 — 고른 파일은 업로더가 그대로 들고 있어 다시 저장하면 재시도된다 -->
+            <toast type="error" message="{{$args[0]}}"/>
+          </on>
+          <on event="onReorder">
+            <!-- 끌어 옮긴 순서가 곧 상품 화면의 노출 순서다 -->
+            <set-state target="local" form.images="{{$args[0] ?? []}}"/>
+          </on>
+          <on event="onRemove">
+            <!-- 삭제된 한 장을 폼 목록에서도 걷어낸다. 올리기 전 파일은 hash 로, 올라간 파일은 id 로 오므로 둘 다 견준다 -->
+            <sequence>
+              <set-state target="local" form.images="{{(_local.form?.images ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+              <toast type="info" message="$t:sirsoft-ecommerce.admin.product.images.deleted"/>
+            </sequence>
+          </on>
+        </file-uploader>
+      </div>
+      <span data-if="{{_local.errors?.images}}" class="form-error-xs mt-1">{{_local.errors?.images?.[0]}}</span>
+      <div class="text-tertiary space-y-1">
+        <p>$t:sirsoft-ecommerce.admin.product.images.drag_hint</p>
+        <p>$t:sirsoft-ecommerce.admin.product.images.thumbnail_hint</p>
+        <p>$t:sirsoft-ecommerce.admin.product.images.format_hint</p>
+      </div>
+    </div>
+  </div>
+</partial>

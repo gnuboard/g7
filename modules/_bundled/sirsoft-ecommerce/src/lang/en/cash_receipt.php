@@ -84,6 +84,7 @@ return [
         'provider_not_configured' => 'No cash receipt provider is configured.',
         'no_provider_handled' => 'No provider handled the cash receipt request.',
         'no_issuable_amount' => 'There is no issuable cash-equivalent amount.',
+        'currency_conversion_failed' => 'The amount could not be converted to the payment currency, so no cash receipt was issued. Check the order currency information.',
         'identifier_unavailable' => 'The identifier required for re-issuance could not be decrypted. An administrator must re-enter the identifier to issue the receipt.',
         'payment_not_found' => 'Payment information could not be found.',
         'not_cash_payment' => 'Only bank transfer (dbank) orders can be issued a cash receipt.',

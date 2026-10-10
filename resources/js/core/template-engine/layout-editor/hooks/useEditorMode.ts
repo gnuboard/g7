@@ -133,7 +133,7 @@ export function extractEditModePath(search: string): string | null {
  * admin 라우트는 선행 와일드카드(별표 + /admin/...)를 포함한다. 반면 코드 편집기는 서버
  * LayoutResource.route_path (= TemplateService::resolveRoutePathExpressions, 선행 별표를
  * ltrim 으로 제거)와 ?route= 를 === 매칭한다. 두 표현이 어긋나면 매칭 실패로
- * 코드 편집기가 첫 레이아웃(_admin_base.json)을 폴백 선택한다.
+ * 코드 편집기가 첫 레이아웃(_admin_base)을 폴백 선택한다.
  *
  * 따라서 코드 편집기로 넘길 때만 선행 `*` 를 제거해 서버 정규화와 일치시킨다. 위지윅
  * 내부 트리/URL 표현(`*` 보존)은 건드리지 않는다.

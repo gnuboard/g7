@@ -26,6 +26,7 @@ axes:
     - snapshot         # 환불 재계산 → 동일 검증(skip 안 함)
 
 effects:
+  - is_combinable_false_alone_passes              # false 쿠폰 단독(총수 1) → 허용·정상 할인
   - is_combinable_false_blocks_across_all_slots   # 슬롯 교차 false 차단
   - is_combinable_dedup_same_id_single_error      # 동일 issueId 단일 에러
   - is_combinable_all_true_passes                 # 전부 true → 허용

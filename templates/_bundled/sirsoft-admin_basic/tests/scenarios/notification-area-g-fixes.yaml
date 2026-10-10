@@ -1,0 +1,30 @@
+feature: 알림 화면 결함 회귀 — 상한 총계 문구·알림함 이동 단추 권한·방금 고른 수신자 이름과 칩 (7.1.0 전수 실측 영역 G)
+
+description: |
+  2026-10-06 영역 G 실측에서 찾은 관리자 화면 결함을 잠근다.
+  - 회원 알림함·알림 발송 이력·본인인증 이력·회원 목록이 상한(result_cap)에 걸린 총 건수를 「총 10000건」 처럼
+    정확한 총계로 말했다 → total_is_exact 가 false 면 「총 N건 이상」.
+  - 회원 읽기만 가진 관리자에게 회원 상세·수정의 [알림함 보기] 가 보여, 누르면 권한 오류 화면이 떴다 → 보는 사람
+    권한 목록(current_user)에 core.member-notifications.read 가 있을 때만 세운다.
+  - 알림 템플릿 편집 창에서 방금 고른 역할·회원이 식별자·UUID 로 보이고, 검색어가 남아 있으면 목록에서 사라져
+    풀 수 없었다. CHANGELOG 가 약속한 「고른 역할 칩」 도 없었다 → 표시 이름을 함께 담고 칩으로 하나씩 뺀다.
+
+axes:
+  case: [capped_total, inbox_button_permission, picked_role_name, picked_user_name, role_chip_remove, user_chip_remove, chips_above_open_dropdown]
+
+effects:
+  - capped_total_says_at_least
+  - inbox_button_requires_member_notification_read
+  - picked_role_keeps_search_result_name
+  - picked_user_keeps_search_result_name
+  - role_chip_removes_value_and_name_together
+  - user_chip_removes_value_and_name_together
+  # 열린 수신자 드롭다운이 칩 줄을 덮던 결함 — 칩 줄을 드롭다운 위로 옮긴다
+  - chips_stay_visible_while_dropdown_open
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-notification-area-g-fixes.test.ts
+
+notes: |
+  e2e_browser=measured — 영역 G 결과 파일(브라우저 실측 재실측 행)에 실화면 증거. Playwright 스펙은 두지 않는다
+  (표현식 계약 — 실화면은 실측으로 확인).

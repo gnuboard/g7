@@ -1,0 +1,104 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "최근 실행 다섯 건 요약"
+    },
+    "comment": "설정 탭 하단의 최근 실행 5건 — 데이터소스 koreaeximRecentRuns(per_page 5)를 페이지 없이 그린다. 전체는 이력 탭에서 본다",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-4"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-koreaexim.recent"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "이력 탭으로 이동 — 다른 쿼리는 유지한 채 tab 만 바꾼다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/plugins/sirsoft-koreaexim/settings",
+                                "mergeQuery": true,
+                                "query": {
+                                    "tab": "history"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-koreaexim.history_tab"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "koreaexim_recent_runs",
+            "type": "composite",
+            "name": "DataGrid",
+            "props": {
+                "data": "{{koreaeximRecentRuns?.data?.data ?? []}}",
+                "pagination": false,
+                "selectable": false,
+                "emptyMessage": "$t:sirsoft-koreaexim.empty",
+                "columns": [
+                    {
+                        "field": "search_date",
+                        "header": "$t:sirsoft-koreaexim.date"
+                    },
+                    {
+                        "field": "trigger_label",
+                        "header": "$t:sirsoft-koreaexim.trigger"
+                    },
+                    {
+                        "field": "status_label",
+                        "header": "$t:sirsoft-koreaexim.result",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "{{['success','partial','dry_run'].includes(row.status) ? 'text-green-700 dark:text-green-300' : ['no_data','skipped'].includes(row.status) ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}",
+                                    "title": "{{row.message}}"
+                                },
+                                "text": "{{row.status_label}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "applied_count",
+                        "header": "$t:sirsoft-koreaexim.applied"
+                    },
+                    {
+                        "field": "request_count",
+                        "header": "$t:sirsoft-koreaexim.calls"
+                    }
+                ]
+            }
+        }
+    ]
+}

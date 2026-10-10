@@ -1,0 +1,17 @@
+feature: 방문자 통계 집계 잠금 — 같은 날짜는 한 번에 하나 (7.1.0 전수 실측 O-EF1 · 결정 P9)
+
+description: |
+  잠금 키가 실행 종류별(`analytics:archive:{run_type}:{date}`)이라 같은 날의 시간 집계와 구간 재집계가 서로를
+  「다른 집계」로 보지 않고 동시에 돌았다. 둘 다 같은 날의 집계 행을 지우고 다시 쓰므로 한쪽 결과를 덮을 수 있다.
+  결정: 하나로 묶음 — 잠금은 날짜 하나(`ArchiveService::lockKey($date)`), 실행 종류는 키에 넣지 않는다.
+
+axes:
+  lock_holder: [other_run_type, other_date]
+  run_type: [all]
+
+effects:
+  - archive_lock_is_shared_across_run_types_for_a_date
+  - archive_lock_does_not_block_other_dates
+
+test_files:
+  - tests/Feature/Analytics/ArchiveLockPerDateTest.php

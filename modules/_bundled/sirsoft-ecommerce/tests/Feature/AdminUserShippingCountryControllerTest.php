@@ -19,6 +19,11 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class AdminUserShippingCountryControllerTest extends ModuleTestCase
 {
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -31,11 +36,24 @@ class AdminUserShippingCountryControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 회원별 변경 API 주소를 만든다.
+     *
+     * @param  string  $uuid  uuid 인자
+     * @return string 문자열
+     */
     private function url(string $uuid): string
     {
         return "/api/modules/sirsoft-ecommerce/admin/users/{$uuid}/shipping-country";
     }
 
+    /**
+     * 권한 있는 관리자는 회원 배송국가를 바꿀 수 있다(폐기 예고 API 호환).
+     *
+     * @effects admin_with_permission_can_change_user_shipping_country
+     *
+     * @return void 반환값 없음
+     */
     public function test_admin_with_permission_can_change_user_shipping_country(): void
     {
         $this->createDefaultRoles();
@@ -52,6 +70,13 @@ class AdminUserShippingCountryControllerTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 비활성 국가는 422 로 거부된다.
+     *
+     * @effects inactive_country_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_inactive_country_rejected_422(): void
     {
         $this->createDefaultRoles();
@@ -64,6 +89,13 @@ class AdminUserShippingCountryControllerTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 권한 없는 관리자는 403 이다.
+     *
+     * @effects admin_without_permission_forbidden
+     *
+     * @return void 반환값 없음
+     */
     public function test_admin_without_permission_forbidden(): void
     {
         $this->createDefaultRoles();
@@ -76,6 +108,13 @@ class AdminUserShippingCountryControllerTest extends ModuleTestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 배송국가 변경이 활동 로그 훅을 발화한다.
+     *
+     * @effects shipping_country_change_fires_activity_log_hook
+     *
+     * @return void 반환값 없음
+     */
     public function test_shipping_country_change_fires_activity_log_hook(): void
     {
         $this->createDefaultRoles();

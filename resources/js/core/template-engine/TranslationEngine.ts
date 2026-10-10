@@ -23,6 +23,106 @@ import { hasPipes } from './PipeRegistry';
 
 const logger = createLogger('TranslationEngine');
 
+/**
+ * replaceParams 파라미터 키별 정규식 쌍(`{{key}}`, `{key}`) 캐시 — 종전에는 파라미터마다 매 호출 새로 만들었다.
+ *
+ * - 키를 정규식 이스케이프하지 않는 현행 동작을 그대로 둔다(`a.b` 의 `.` 은 임의 문자).
+ * - `new RegExp` 가 던지는 키(`(x` 등)는 캐시에 넣지 않아 호출마다 현행과 같은 예외가 난다.
+ * - `String.prototype.replace` 는 g 정규식의 lastIndex 를 시작 시 0 으로 맞추므로 재사용해도 안전하다.
+ *   캐시한 정규식을 test/exec 로 쓰면 lastIndex 가 남으니 replace 전용으로만 쓴다.
+ *
+ * @since engine-v1.74.0
+ */
+export const REPLACE_PARAMS_REGEX_CACHE_LIMIT = 500;
+
+/** separateTrailingText 의 trailing 판정 — non-global match 전용이라 상수로 공유해도 상태가 남지 않는다 */
+const TRAILING_TEXT_PATTERN = /(\s+[^\p{L}\w=|&\s][^\p{L}\w=]*\s*)$/u;
+const replaceParamRegexCache = new Map<string, readonly [RegExp, RegExp]>();
+let replaceParamRegexHits = 0;
+let replaceParamRegexMisses = 0;
+
+function getReplaceParamPatterns(key: string): readonly [RegExp, RegExp] {
+  const cached = replaceParamRegexCache.get(key);
+  if (cached) {
+    replaceParamRegexHits++;
+    return cached;
+  }
+  replaceParamRegexMisses++;
+  const pair = [new RegExp(`\\{\\{${key}\\}\\}`, 'g'), new RegExp(`\\{${key}\\}`, 'g')] as const;
+  if (replaceParamRegexCache.size >= REPLACE_PARAMS_REGEX_CACHE_LIMIT) {
+    const oldest = replaceParamRegexCache.keys().next().value;
+    if (oldest !== undefined) replaceParamRegexCache.delete(oldest);
+  }
+  replaceParamRegexCache.set(key, pair);
+  return pair;
+}
+
+/**
+ * replaceParams 정규식 캐시 통계(진단용).
+ *
+ * @return 적중·미스 횟수와 현재 크기
+ */
+export function getReplaceParamsRegexCacheStats(): { hits: number; misses: number; size: number } {
+  return { hits: replaceParamRegexHits, misses: replaceParamRegexMisses, size: replaceParamRegexCache.size };
+}
+
+/**
+ * 테스트 간 상태 누수를 막기 위해 캐시와 통계를 비운다.
+ *
+ * @return void
+ */
+export function __resetReplaceParamsRegexCacheForTests(): void {
+  replaceParamRegexCache.clear();
+  replaceParamRegexHits = 0;
+  replaceParamRegexMisses = 0;
+}
+
+/** 로케일별 Intl.PluralRules 캐시 — 번역마다 새로 만들지 않는다 */
+const pluralRulesCache = new Map<string, Intl.PluralRules | null>();
+
+/**
+ * 해석된 번역 인자에서 복수형 선택용 수(`count`)를 꺼냅니다.
+ *
+ * 숫자 표기(`1`·`-2`·`1.5`)만 수로 본다. 빈 값·천 단위 구분 기호가 든 값(`1,000`)·글자는 수가 아니라서
+ * 복수형 선택을 하지 않는다(기본 키 = other 꼴이 그대로 나온다).
+ *
+ * @param params 해석된 번역 인자
+ * @return 수, 수가 아니면 undefined
+ * @since engine-v1.78.7
+ */
+function pluralCount(params: TranslationParams): number | undefined {
+  if (!Object.prototype.hasOwnProperty.call(params, 'count')) return undefined;
+  const raw = params.count;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : undefined;
+  const text = String(raw).trim();
+  return /^-?\d+(\.\d+)?$/.test(text) ? Number(text) : undefined;
+}
+
+/**
+ * 로케일의 복수 범주(CLDR: zero·one·two·few·many·other)를 구합니다.
+ *
+ * 로케일을 모르거나 Intl.PluralRules 가 없으면 other(기본 키)로 본다.
+ *
+ * @param locale 사전 로케일
+ * @param count 수
+ * @return 복수 범주
+ * @since engine-v1.78.7
+ */
+function pluralCategory(locale: string, count: number): string {
+  let rules = pluralRulesCache.get(locale);
+  if (rules === undefined) {
+    try {
+      rules = typeof Intl !== 'undefined' && typeof Intl.PluralRules === 'function'
+        ? new Intl.PluralRules(locale)
+        : null;
+    } catch {
+      rules = null;
+    }
+    pluralRulesCache.set(locale, rules);
+  }
+  return rules ? rules.select(count) : 'other';
+}
+
 // ============================================================================
 // 타입 정의
 // ============================================================================
@@ -341,30 +441,37 @@ export class TranslationEngine {
     paramsStr?: string,
     dataContext?: any
   ): string {
-    // 번역 텍스트 조회 (폴백 포함)
-    const text = this.getTranslation(key, context);
-
     // 파라미터 문자열의 trailing 비파라미터 텍스트 정리
     const cleanedParamsStr = paramsStr ? this.cleanParamsStr(paramsStr) : paramsStr;
 
     // 파라미터 치환
     if (cleanedParamsStr) {
       const params = this.parseParams(cleanedParamsStr, dataContext);
+      // 복수형 선택은 해석된 `count` 값으로 한다(engine-v1.78.7).
+      const text = this.getTranslation(key, context, pluralCount(params));
       return this.replaceParams(text, params);
     }
 
-    return text;
+    // 번역 텍스트 조회 (폴백 포함)
+    return this.getTranslation(key, context);
   }
 
   /**
    * 번역 텍스트 조회 (폴백 규칙 적용)
    *
+   * `count` 가 수이면 사전마다 그 사전 로케일의 복수 범주로 `키_{범주}` 를 먼저 찾고, 없으면 기본 키를
+   * 쓴다. 기본 키가 other 꼴이라 `_other` 는 찾지 않는다. 현재 로케일 사전에 기본 키가 있으면 폴백 사전의
+   * 변형으로 넘어가지 않는다(문구는 언제나 한 로케일에서 나온다).
+   *
    * @param key 번역 키
    * @param context 번역 컨텍스트
+   * @param count 복수형 선택에 쓸 수 (없으면 복수형 선택 안 함)
+   * @since engine-v1.78.7 count 복수형 선택
    */
   private getTranslation(
     key: string,
-    context: TranslationContext
+    context: TranslationContext,
+    count?: number
   ): string {
     const { templateId, locale } = context;
 
@@ -372,7 +479,7 @@ export class TranslationEngine {
     const currentKey = `${templateId}:${locale}`;
     const current = this.translations.get(currentKey);
     if (current) {
-      const value = this.getNestedValue(current, key);
+      const value = this.lookupWithPlural(current, key, locale, count);
       // 빈 문자열도 유효한 번역 값이므로 !== null 체크
       if (value !== null) return value;
     }
@@ -382,13 +489,40 @@ export class TranslationEngine {
       const fallbackKey = `${templateId}:${this.options.fallbackLocale}`;
       const fallback = this.translations.get(fallbackKey);
       if (fallback) {
-        const value = this.getNestedValue(fallback, key);
+        const value = this.lookupWithPlural(fallback, key, this.options.fallbackLocale, count);
         if (value !== null) return value;
       }
     }
 
     // 3. 키 자체 반환 (번역 없음)
     return key;
+  }
+
+  /**
+   * 한 사전에서 복수형 변형을 먼저, 없으면 기본 키를 찾습니다.
+   *
+   * 변형은 기본 키가 있을 때만 쓴다 — `키_one` 만 있고 `키` 가 없는 사전은 그 키를 갖지 않은 것으로 보고
+   * 다음 사전(폴백)으로 넘긴다. 이렇게 해야 「현재 로케일에 없음 → 폴백」 판정이 종전과 같다.
+   *
+   * @param dict 번역 사전
+   * @param key 기본 키
+   * @param locale 이 사전의 로케일 (복수 범주 계산용)
+   * @param count 복수형 선택에 쓸 수
+   * @return 찾은 문구, 없으면 null
+   * @since engine-v1.78.7
+   */
+  private lookupWithPlural(
+    dict: TranslationDictionary,
+    key: string,
+    locale: string,
+    count?: number
+  ): string | null {
+    const base = this.getNestedValue(dict, key);
+    if (base === null || count === undefined) return base;
+    const category = pluralCategory(locale, count);
+    if (category === 'other') return base;
+    const variant = this.getNestedValue(dict, `${key}_${category}`);
+    return variant !== null ? variant : base;
   }
 
   /**
@@ -595,7 +729,7 @@ export class TranslationEngine {
 
     // 간단한 휴리스틱: 마지막에 공백 + 특수문자(/, \, 등)로 끝나면 trailing
     // \p{L}을 사용하여 유니코드 문자(한글 등)도 단어 문자로 인식
-    const trailingMatch = paramsStr.match(/(\s+[^\p{L}\w=|&\s][^\p{L}\w=]*\s*)$/u);
+    const trailingMatch = paramsStr.match(TRAILING_TEXT_PATTERN);
     if (trailingMatch) {
       return {
         cleanedParams: paramsStr.slice(0, -trailingMatch[1].length),
@@ -649,12 +783,12 @@ export class TranslationEngine {
     let result = text;
 
     for (const [key, value] of Object.entries(params)) {
+      const [doublePattern, singlePattern] = getReplaceParamPatterns(key);
+
       // {{key}} 형식 (이중 중괄호) 먼저 치환
-      const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       result = result.replace(doublePattern, String(value));
 
       // {key} 형식 (단일 중괄호) 치환
-      const singlePattern = new RegExp(`\\{${key}\\}`, 'g');
       result = result.replace(singlePattern, String(value));
     }
 

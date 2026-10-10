@@ -1,0 +1,276 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "클레임 상세 - 진행 단계 (교환·반품·환불·취소 공용, 회원/비회원 셸 공유)",
+        "editor_label": "$t:user.modal_label.mypage_claims.detail_progress"
+    },
+    "comment": "관리자 상세와 같은 배열(`progress_steps`)을 그린다 — 화면이 순서를 다시 적으면 그 사본이 어휘의 두 번째 출처가 된다. 칸 폭은 균일하고 모바일은 4칸/줄로 줄바꿈하며 가로 스크롤을 만들지 않는다. 아이콘·색은 서버가 상태 Enum 에서 실어 준다.",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(claim.data?.progress_steps ?? []).length > 0}}",
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg p-4"
+            }
+        }
+    },
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg p-6"
+    },
+    "children": [
+        {
+            "comment": "섹션 제목",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "bars-progress",
+                        "className": "text-base text-gray-900 dark:text-white"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-base font-bold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:claim.detail.progress_title"
+                }
+            ]
+        },
+        {
+            "comment": "진행단계 칸 — 관리자 상세와 같은 구조.",
+            "id": "claim_progress_steps",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "grid grid-cols-4 gap-x-2 gap-y-5"
+                    }
+                }
+            },
+            "props": {
+                "className": "{{(claim.data?.progress_steps ?? []).length > 9 ? 'grid grid-cols-6 gap-x-2 gap-y-6' : 'grid grid-flow-col auto-cols-fr gap-x-2 gap-y-6'}}"
+            },
+            "children": [
+                {
+                    "id": "claim_progress_step_{{stepIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{claim.data?.progress_steps ?? []}}",
+                        "item_var": "step",
+                        "index_var": "stepIdx"
+                    },
+                    "props": {
+                        "className": "relative flex flex-col items-center gap-2 min-w-0",
+                        "data-step-value": "{{step.value ?? ''}}",
+                        "data-step-state": "{{step.state ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "comment": "원 크기와 아이콘 크기는 이 래퍼가 정한다 — 아이콘은 글리프라 부모 font-size 를 물려받는다. 모바일은 4칸/줄이라 한 단계 작게.",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-14 h-14 text-xl"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "w-16 h-16 text-2xl"
+                            },
+                            "children": [
+                                {
+                                    "comment": "색은 상태 뱃지와 같은 variant 팔레트 — 지나간 칸은 그 상태 색으로 채우고, 현재 칸은 옅은 바탕에 테두리·그림자, 남은 칸은 회색, 이탈(보류·반려·철회)은 빨강.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "classMap": {
+                                        "base": "flex items-center justify-center w-full h-full rounded-full border-2",
+                                        "key": "{{step.state + ':' + (step.variant ?? 'secondary')}}",
+                                        "variants": {
+                                            "done:success": "border-transparent bg-green-600 text-white dark:bg-green-500",
+                                            "current:success": "border-green-600 bg-green-100 text-green-800 shadow-md dark:bg-green-900/30 dark:text-green-400",
+                                            "off_path:success": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                            "done:warning": "border-transparent bg-yellow-600 text-white dark:bg-yellow-500",
+                                            "current:warning": "border-yellow-600 bg-yellow-100 text-yellow-800 shadow-md dark:bg-yellow-900/30 dark:text-yellow-400",
+                                            "off_path:warning": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                            "done:info": "border-transparent bg-blue-600 text-white dark:bg-blue-500",
+                                            "current:info": "border-blue-600 bg-blue-100 text-blue-800 shadow-md dark:bg-blue-900/30 dark:text-blue-400",
+                                            "off_path:info": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                            "done:primary": "border-transparent bg-indigo-600 text-white dark:bg-indigo-500",
+                                            "current:primary": "border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-400",
+                                            "off_path:primary": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                            "done:secondary": "border-transparent bg-gray-600 text-white dark:bg-gray-500",
+                                            "current:secondary": "border-gray-600 bg-gray-100 text-gray-700 shadow-md dark:bg-gray-700 dark:text-gray-300",
+                                            "off_path:secondary": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                            "done:danger": "border-transparent bg-red-600 text-white dark:bg-red-500",
+                                            "current:danger": "border-red-500 bg-red-100 text-red-800 shadow-md dark:bg-red-900/30 dark:text-red-400",
+                                            "off_path:danger": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                            "done:dark": "border-transparent bg-slate-600 text-white dark:bg-slate-500",
+                                            "current:dark": "border-slate-600 bg-slate-200 text-slate-800 shadow-md dark:bg-slate-800 dark:text-slate-200",
+                                            "off_path:dark": "border-transparent bg-red-500 text-white dark:bg-red-600"
+                                        },
+                                        "default": "border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{step.icon ?? 'circle'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "라벨은 칸 폭 안에서 띄어쓰기 기준으로 줄바꿈한다 — nowrap 이면 언어에 따라 칸 폭이 달라진다.",
+                            "type": "basic",
+                            "name": "Span",
+                            "classMap": {
+                                "base": "w-full text-xs text-center break-words leading-tight",
+                                "key": "{{step.state}}",
+                                "variants": {
+                                    "done": "text-gray-700 dark:text-gray-300",
+                                    "current": "font-bold text-gray-900 dark:text-gray-100",
+                                    "upcoming": "text-gray-400 dark:text-gray-500",
+                                    "off_path": "font-bold text-red-600 dark:text-red-400"
+                                },
+                                "default": "text-gray-400 dark:text-gray-500"
+                            },
+                            "text": "{{step.label ?? ''}}"
+                        },
+                        {
+                            "comment": "칸 사이 꺾쇠 (PC) — 마지막 칸에는 없다. 칸이 10개 이상이면 PC 도 한 줄 6칸으로 줄바꿈하므로(원 64px 가 들어갈 폭이 안 나온다) 그때는 줄 끝(6n번째)에도 세우지 않는다. 칸 오른쪽 경계에서 그리드 간격의 절반(-mr-1 = 4px)만큼 밀고 자기 폭의 절반을 되돌려(translate-x-1/2) 두 원 사이 정중앙에 세운다 — 칸 폭이 몇이든 양쪽 원과의 거리가 같다. 세로는 원 높이(h-16)의 flex 중앙. 숨김은 래퍼 Div 가 맡는다: Icon 에 직접 `hidden` 을 주면 Font Awesome 의 `display` 규칙(레이어 밖)이 Tailwind 유틸리티(레이어 안)를 이겨 숨겨지지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{stepIdx < (claim.data?.progress_steps ?? []).length - 1 && ((claim.data?.progress_steps ?? []).length <= 9 || stepIdx % 6 !== 5)}}",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "hidden",
+                                        "data-step-chevron": "pc"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-300 dark:text-gray-600",
+                                "data-step-chevron": "pc"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "chevron-right"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "칸 사이 꺾쇠 (모바일) — 한 줄 4칸이라 줄 끝(4n번째) 칸에는 세우지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{stepIdx < (claim.data?.progress_steps ?? []).length - 1 && stepIdx % 4 !== 3}}",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600",
+                                        "data-step-chevron": "mobile"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden",
+                                "data-step-chevron": "mobile"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "chevron-right"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "선교환의 「회수」 줄 — 선교환은 새 상품을 먼저 보내므로 위 단계에 회수가 없다. 헌 상품 회수 진행을 수량으로 센 값과 반송 기한·지연을 관리자 상세와 같은 배열(`collection_lane`)로 그린다. 일반 교환·반품은 서버가 null 을 준다.",
+            "id": "claim_collection_lane",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!claim.data?.collection_lane}}",
+            "props": {
+                "className": "mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:claim.detail.collection_lane_title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "classMap": {
+                        "base": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                        "key": "{{claim.data?.collection_lane?.state_variant}}",
+                        "variants": {
+                            "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                            "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+                            "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                            "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                        },
+                        "default": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                    },
+                    "text": "{{claim.data?.collection_lane?.state_label ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-xs text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:claim.detail.collection_lane_counts|collected={{claim.data?.collection_lane?.collected ?? 0}}|total={{claim.data?.collection_lane?.total ?? 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{!!claim.data?.collection_lane?.due_date}}",
+                    "props": {
+                        "className": "text-xs text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:claim.detail.collection_lane_due|date={{claim.data?.collection_lane?.due_date ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{claim.data?.collection_lane?.is_overdue === true}}",
+                    "props": {
+                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                    },
+                    "text": "$t:claim.detail.collection_overdue|count={{claim.data?.collection_lane?.overdue_days ?? 0}}|days={{claim.data?.collection_lane?.overdue_days ?? 0}}"
+                }
+            ]
+        }
+    ]
+}

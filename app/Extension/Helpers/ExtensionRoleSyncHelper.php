@@ -2,11 +2,13 @@
 
 namespace App\Extension\Helpers;
 
+use App\Contracts\Extension\UpgradeStepInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
 use App\Models\Role;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -68,24 +70,16 @@ class ExtensionRoleSyncHelper
             );
         }
 
-        // 기존 역할 업데이트: user_overrides에 없는 필드만 갱신
-        $userOverrides = $existing->user_overrides ?? [];
-
-        $updateData = [
+        // 기존 역할 업데이트 — 판정은 모델 공통 규칙(HasUserOverrides::planUpgrade)이 한다({@see planRoleUpgrade()}). 운영자 수정 기록은
+        // 다국어 dot-path(`name.ko`)라 종전의 `in_array('name', …)` 정확 일치 판정은 늘 "미수정" 이었다 —
+        // 역할 이름·설명 수정이 업데이트마다 되돌아간 원인(#727 D5-①). is_active 도 여기서 함께 보존된다(W10).
+        $updateData = array_merge([
             'extension_type' => $extensionType,
             'extension_identifier' => $extensionIdentifier,
-        ];
-
-        if (! in_array('name', $userOverrides, true)) {
-            $updateData['name'] = $newName;
-        }
-
-        if (! in_array('description', $userOverrides, true)) {
-            $updateData['description'] = $newDescription;
-        }
-
-        // 기타 속성 병합
-        $updateData = array_merge($updateData, $otherAttributes);
+        ], self::planRoleUpgrade($existing, array_merge([
+            'name' => $newName,
+            'description' => $newDescription,
+        ], $otherAttributes)));
 
         // user_overrides 자동 마킹 비활성화 — 시스템 sync 컨텍스트는 사용자 변경이 아님.
         // ExtensionMenuSyncHelper 와 동일 패턴 (HasUserOverrides::bootHasUserOverrides 의
@@ -100,6 +94,67 @@ class ExtensionRoleSyncHelper
         }
 
         return $existing->fresh();
+    }
+
+    /**
+     * 기존 역할에 반영할 갱신 값을 계산합니다 — 운영자가 고친 칸은 보존합니다.
+     *
+     * 판정은 모델 공통 규칙(`HasUserOverrides::planUpgrade`)을 쓴다. 다만 7.0.x 에서 올리는 코어 업데이트의 부모 프로세스는
+     * 옛 `Role`(planUpgrade 가 없는 트레이트)을 이미 메모리에 올린 채 이 새 헬퍼를 불러, 메서드가 없어 코어 역할·권한
+     * 재동기화 전체가 멈췄다(새 권한이 어느 역할에도 연결되지 않음 — 7.1.0 출시 점검 CU-3). 그때는 보수적으로 계산한다:
+     * 운영자 수정 표식(`user_overrides`)에 칸 이름이 있으면 그 칸을 통째로 두고, `칸.언어` 표식이면 그 언어 값만 두고
+     * 나머지 언어는 새 값으로 바꾼다. 표식 해제(합의 해제)는 하지 않는다 — 다음 정상 업데이트가 처리한다.
+     *
+     * @param  Model  $existing  기존 역할 모델
+     * @param  array<string, mixed>  $newAttributes  선언 값
+     * @return array<string, mixed> 갱신할 속성
+     */
+    public static function planRoleUpgrade(Model $existing, array $newAttributes): array
+    {
+        if (method_exists($existing, 'planUpgrade')) {
+            return $existing->planUpgrade($newAttributes);
+        }
+
+        $overrides = $existing->getAttribute('user_overrides');
+        if (is_string($overrides)) {
+            $overrides = json_decode($overrides, true);
+        }
+        $overrides = is_array($overrides) ? $overrides : [];
+
+        $updateData = [];
+        foreach ($newAttributes as $field => $value) {
+            if (in_array($field, $overrides, true)) {
+                continue;
+            }
+
+            $kept = [];
+            foreach ($overrides as $entry) {
+                if (is_string($entry) && str_starts_with($entry, $field.'.')) {
+                    $kept[] = substr($entry, strlen($field) + 1);
+                }
+            }
+
+            if ($kept === [] || ! is_array($value)) {
+                $updateData[$field] = $value;
+
+                continue;
+            }
+
+            $current = $existing->getAttribute($field);
+            if (is_string($current)) {
+                $current = json_decode($current, true);
+            }
+            $current = is_array($current) ? $current : [];
+
+            foreach ($kept as $locale) {
+                if (array_key_exists($locale, $current)) {
+                    $value[$locale] = $current[$locale];
+                }
+            }
+            $updateData[$field] = $value;
+        }
+
+        return $updateData;
     }
 
     /**
@@ -151,7 +206,7 @@ class ExtensionRoleSyncHelper
      * @param  array  $currentIdentifiers  현재 유효한 권한 식별자 목록
      * @return int 삭제된 권한 수
      *
-     * @see \App\Contracts\Extension\UpgradeStepInterface
+     * @see UpgradeStepInterface
      */
     public function cleanupStalePermissions(
         ExtensionOwnerType $extensionType,
@@ -264,6 +319,7 @@ class ExtensionRoleSyncHelper
      *
      * @param  array  $permissionRoleMap  권한→역할 맵 (예: ['board.read' => [['role' => 'admin', 'scope_type' => null], ...]])
      * @param  array  $allExtensionPermIdentifiers  이 확장의 모든 권한 식별자 목록
+     * @return void 반환값 없음
      */
     public function syncAllRoleAssignments(
         array $permissionRoleMap,
@@ -333,6 +389,7 @@ class ExtensionRoleSyncHelper
      * @param  Role  $role  대상 역할
      * @param  array  $definedPermEntries  이 확장이 이 역할에 정의한 권한 목록 [['identifier' => ..., 'scope_type' => ...], ...]
      * @param  array  $allExtensionPermIdentifiers  이 확장의 모든 권한 식별자 목록
+     * @return void 반환값 없음
      */
     private function syncRolePermissions(
         Role $role,

@@ -6,6 +6,8 @@
  * 카카오 이미지 URL 을 params.statePathUrl 에, 파일명을 params.statePathName 에 설정한다.
  *
  * 업로드는 multipart/form-data 이므로 apiCall 핸들러로는 처리하기 번거로워 전용 핸들러로 둔다.
+ * 요청은 코어 API 클라이언트(`G7Core.api`)로 보낸다 — Bearer 부착·401 처리·운영자 로케일(Accept-Language)은
+ * 코어가 맡는다.
  * 진행 상태·오류는 params.statePathStatus(기본 bz_tpl_upload) 하위의
  * `{uploading, error}` 로 노출한다.
  *
@@ -34,25 +36,6 @@ const UPLOAD_URL = '/api/plugins/sirsoft-message_bizppurio/admin/templates/image
 
 /** 서버 사유가 없을 때 쓰는 최후 폴백 문구의 다국어 키 */
 const FAILURE_KEY = 'sirsoft-message_bizppurio.template.form.image_upload_failed';
-
-/**
- * 운영자 로케일을 Accept-Language 로 실어 보냅니다.
- *
- * 이 핸들러는 multipart 때문에 코어 ApiClient/ActionDispatcher 를 우회해 raw fetch 를
- * 쓰므로, 두 경로가 공통으로 붙이는 로케일 헤더를 여기서 직접 재현한다. 빠뜨리면 서버
- * 검증 메시지와 카카오 사유 원문이 운영자 언어가 아닌 앱 기본 로케일로 돌아온다.
- *
- * @returns Accept-Language 헤더 객체 (미설정 시 빈 객체)
- */
-function localeHeader(): Record<string, string> {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    const locale = localStorage.getItem('g7_locale');
-
-    return locale ? { 'Accept-Language': locale } : {};
-}
 
 /**
  * 업로드 실패 폴백 문구를 반환합니다.
@@ -190,25 +173,26 @@ export async function uploadTemplateImageHandler(
     setState({ [`${pathStatus}.uploading`]: true, [`${pathStatus}.error`]: null });
 
     try {
-        const token = localStorage.getItem('auth_token') ?? '';
         const form = new FormData();
         form.append('image', file, file.name);
 
-        const res = await fetch(UPLOAD_URL, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                ...localeHeader(),
-            },
-            body: form,
-        });
+        let json: any;
+        try {
+            json = await G7Core.api.post(UPLOAD_URL, form, {
+                // 기본 Content-Type(JSON) 이 FormData 를 JSON 으로 바꾸지 않게 한다 — 경계값은 브라우저가 채운다
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+        } catch (error: any) {
+            // 4xx·5xx 는 API 클라이언트가 예외로 던진다. 응답 본문이 없으면(네트워크 오류 등) 바깥 catch 로 넘긴다.
+            if (!error?.response) {
+                throw error;
+            }
+            json = { ...(error.response.data ?? {}), success: false };
+        }
 
-        const json = await res.json().catch(() => ({}));
-
-        if (!res.ok || json?.success === false) {
+        if (json?.success === false) {
             // 서버가 내려준 사유(카카오 원문·검증 메시지)는 그대로 보여준다 —
-            // Accept-Language 를 실어 보냈으므로 운영자 로케일로 도착한다.
+            // 코어 클라이언트가 Accept-Language 를 실어 보내므로 운영자 로케일로 도착한다.
             const message = json?.errors?.bizppurio_message
                 || json?.errors?.image?.[0]
                 || json?.message

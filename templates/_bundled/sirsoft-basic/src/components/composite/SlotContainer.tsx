@@ -97,6 +97,25 @@ export interface SlotContainerProps {
    * 자식 컴포넌트 (children을 통한 fallback 또는 slot 컴포넌트가 아닌 정적 컨텐츠)
    */
   children?: React.ReactNode;
+
+  /**
+   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
+   *
+   * 등록 항목에 렌더 환경이 없을 때 이 SlotContainer 를 그린 렌더러의 렌더 환경을 쓴다(#141).
+   * @internal 템플릿 엔진 내부 사용
+   */
+  __componentContext?: { renderEnvRef?: { current: SlotRenderEnvironment | null } };
+}
+
+/**
+ * 렌더 환경 (코어 RenderEnvironment 와 호환되는 부분집합)
+ */
+interface SlotRenderEnvironment {
+  componentRegistry?: any;
+  bindingEngine?: any;
+  translationEngine?: any;
+  actionDispatcher?: any;
+  isEditMode?: boolean;
 }
 
 /**
@@ -110,6 +129,10 @@ interface SlotRegistration {
   getParentComponentContext: () => { state: Record<string, any>; setState: (updates: any) => void };
   translationContext: any;
   registrationKey: string;
+  /** 등록 렌더러의 렌더 환경 getter (코어 engine-v1.75.2+) */
+  getRenderEnv?: () => SlotRenderEnvironment | null;
+  /** 슬롯 노드의 원본 편집 경로 (코어 engine-v1.75.2+) */
+  componentPath?: string;
 }
 
 /**
@@ -139,6 +162,7 @@ export const SlotContainer: React.FC<SlotContainerProps> = ({
   style,
   id,
   children,
+  __componentContext,
 }) => {
   const [slotComponents, setSlotComponents] = useState<SlotRegistration[]>([]);
   const [, forceUpdate] = useState({});
@@ -229,7 +253,14 @@ export const SlotContainer: React.FC<SlotContainerProps> = ({
           parentFormContext,
           getParentComponentContext,
           translationContext,
+          getRenderEnv,
+          componentPath,
         } = registration;
+
+        // 렌더 환경: 등록 렌더러의 환경 > 이 SlotContainer 를 그린 렌더러의 환경 > 호스트 값.
+        // 레이아웃 편집기 미리보기에서 슬롯 내용이 미리보기 레지스트리·dispatcher·편집 모드를 따르고,
+        // 편집 마커(data-editor-path)가 원본 노드 경로로 붙는다. 편집기 밖에서는 환경이 곧 호스트 값이다(#141).
+        const env = getRenderEnv?.() ?? __componentContext?.renderEnvRef?.current ?? null;
 
         // 같은 슬롯 컴포넌트가 여러 SlotContainer(헤더 데스크톱/모바일)에서 렌더될 때
         // 주입 컴포넌트 root id 를 컨테이너 id 로 스코프해 HTML id 중복을 막는다.
@@ -241,13 +272,15 @@ export const SlotContainer: React.FC<SlotContainerProps> = ({
             componentDef={scopedDef}
             dataContext={dataContext}
             translationContext={translationContext}
-            registry={g7Core.getComponentRegistry()}
-            bindingEngine={g7Core.getDataBindingEngine()}
-            translationEngine={g7Core.getTranslationEngine()}
-            actionDispatcher={g7Core.getActionDispatcher()}
+            registry={env?.componentRegistry ?? g7Core.getComponentRegistry()}
+            bindingEngine={env?.bindingEngine ?? g7Core.getDataBindingEngine()}
+            translationEngine={env?.translationEngine ?? g7Core.getTranslationEngine()}
+            actionDispatcher={env?.actionDispatcher ?? g7Core.getActionDispatcher()}
             parentComponentContext={getParentComponentContext?.()}
             parentFormContextProp={parentFormContext}
             isRootRenderer={false}
+            isEditMode={env?.isEditMode}
+            componentPath={componentPath}
           />
         );
       })}

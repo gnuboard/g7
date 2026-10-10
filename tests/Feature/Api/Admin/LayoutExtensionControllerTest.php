@@ -13,6 +13,7 @@ use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutExtensionVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -42,6 +43,11 @@ class LayoutExtensionControllerTest extends TestCase
 
     private string $token;
 
+    /**
+     * 테스트마다 관리자·일반 사용자와 토큰, 테스트용 템플릿을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -60,6 +66,7 @@ class LayoutExtensionControllerTest extends TestCase
      * 관리자 사용자 생성 (필요한 권한 포함)
      *
      * @param  array<string>  $permissions  부여할 권한 식별자 목록
+     * @return User 권한을 가진 관리자 사용자
      */
     private function createAdminUser(array $permissions = []): User
     {
@@ -108,6 +115,8 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼
+     *
+     * @return static 인증 헤더를 붙인 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -119,6 +128,9 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * 테스트용 extension_point 확장 생성
+     *
+     * @param  array<string, mixed>  $overrides  기본값을 덮을 속성
+     * @return LayoutExtension 만든 확장 조각
      */
     private function makeExtensionPoint(array $overrides = []): LayoutExtension
     {
@@ -134,6 +146,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * index - 출처별 그룹핑 구조 반환
+     *
+     * @scenario endpoint=extension_index
+     *
+     * @effects extension_index_lists_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_source_grouped_extensions(): void
     {
@@ -168,6 +186,12 @@ class LayoutExtensionControllerTest extends TestCase
      * 라우트 트리가 클릭(캔버스 로드) 없이도 layoutName 매칭으로 화면별 연결 확장 목록을
      * 정적 구성할 수 있도록, 목록 응답의 각 확장에 호스트 레이아웃 목록이 포함되어야 한다.
      * overlay = [target_layout], extension_point = 그 확장점을 포함하는 레이아웃 전체.
+     *
+     * @scenario endpoint=extension_index
+     *
+     * @effects extension_index_lists_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_attaches_host_layouts_to_each_extension(): void
     {
@@ -233,6 +257,12 @@ class LayoutExtensionControllerTest extends TestCase
      *
      * 회귀: 편집 화면 좌측 트리가 화면에 실제 적용되지 않는 "가려진 행"을
      * 노출하여, 관리자가 그 행을 편집해도 반영되지 않던 문제.
+     *
+     * @scenario endpoint=extension_index
+     *
+     * @effects extension_index_lists_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_excludes_overridden_extensions(): void
     {
@@ -276,6 +306,12 @@ class LayoutExtensionControllerTest extends TestCase
      * 확장 버전 목록도 본문을 싣지 않고 조회 건수 상한을 따른다.
      *
      * 레이아웃 본체와 같은 정책 — 버전 행은 저장할 때마다 쌓이고 정리되지 않는다.
+     *
+     * @scenario endpoint=extension_versions
+     *
+     * @effects extension_versions_listed_and_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_version_list_omits_body_and_honors_limit(): void
     {
@@ -318,6 +354,8 @@ class LayoutExtensionControllerTest extends TestCase
      * @scenario resource=layout_extension,endpoint=list,observation=response_payload
      *
      * @effects list_omits_extension_content
+     *
+     * @return void 반환값 없음
      */
     public function test_index_omits_extension_content(): void
     {
@@ -347,6 +385,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * index - 라우트 트리가 쓰는 표시 필드는 목록에 그대로 남는다 (기능 축소 아님).
+     *
+     * @scenario endpoint=extension_index
+     *
+     * @effects extension_index_lists_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_keeps_fields_used_by_route_tree(): void
     {
@@ -386,6 +430,8 @@ class LayoutExtensionControllerTest extends TestCase
      * 화면에는 모든 확장이 `0 B` 로 나타나므로, 키 존재만으로는 회귀를 잡지 못한다.
      *
      * @effects extension_size_matches_actual_content_length
+     *
+     * @return void 반환값 없음
      */
     public function test_index_reports_actual_content_size(): void
     {
@@ -417,6 +463,8 @@ class LayoutExtensionControllerTest extends TestCase
      * @scenario resource=layout_extension,endpoint=detail,observation=response_payload
      *
      * @effects detail_still_returns_full_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_show_still_provides_extension_content(): void
     {
@@ -446,6 +494,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * index - 권한 없는 사용자 403
+     *
+     * @scenario endpoint=extension_index
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_index_forbidden_for_unauthorized_user(): void
     {
@@ -457,6 +511,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * show - content 직렬화
+     *
+     * @scenario endpoint=extension_show
+     *
+     * @effects extension_show_returns_content
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_extension_with_serialized_content(): void
     {
@@ -474,6 +534,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * show - 호스트 레이아웃 후보 반환
+     *
+     * @scenario endpoint=extension_show
+     *
+     * @effects extension_show_returns_content
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_host_layouts_for_overlay(): void
     {
@@ -506,6 +572,12 @@ class LayoutExtensionControllerTest extends TestCase
     /**
      * 시각 편집기 inject_props 교차 저장 페이로드 — 호스트 노드
      * 속성 모달에서 편집한 주입 props 가 그 확장 행으로 저장되고 original_content_hash 보존.
+     *
+     * @scenario endpoint=extension_update
+     *
+     * @effects extension_update_saves_and_versions
+     *
+     * @return void 반환값 없음
      */
     public function test_inject_props_cross_save_preserves_hash(): void
     {
@@ -547,6 +619,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * show - 다른 템플릿의 확장 ID 는 404
+     *
+     * @scenario endpoint=extension_show
+     *
+     * @effects extension_show_returns_content
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_404_for_extension_of_other_template(): void
     {
@@ -561,6 +639,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * update - 200 + 버전 2건 생성 + original_content_hash 불변
+     *
+     * @scenario endpoint=extension_update
+     *
+     * @effects extension_update_saves_and_versions
+     *
+     * @return void 반환값 없음
      */
     public function test_update_succeeds_and_creates_versions(): void
     {
@@ -597,6 +681,12 @@ class LayoutExtensionControllerTest extends TestCase
      *
      * 라우트 트리 확장 노드 버전 배지의 데이터 소스 — 버전 이력이 있는 확장은 최신 버전
      * 번호, 이력이 없는(원본) 확장은 null 이어야 한다(배지 미표시).
+     *
+     * @scenario endpoint=extension_index
+     *
+     * @effects extension_index_lists_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_attaches_current_version_to_each_extension(): void
     {
@@ -624,6 +714,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * update - expected_lock_version 불일치 시 409 Conflict (낙관적 잠금)
+     *
+     * @scenario endpoint=extension_update
+     *
+     * @effects extension_update_saves_and_versions
+     *
+     * @return void 반환값 없음
      */
     public function test_update_returns_409_on_lock_version_mismatch(): void
     {
@@ -651,6 +747,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * update - 잘못된 구조는 422
+     *
+     * @scenario endpoint=extension_update
+     *
+     * @effects extension_update_saves_and_versions
+     *
+     * @return void 반환값 없음
      */
     public function test_update_rejects_invalid_structure(): void
     {
@@ -668,6 +770,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * update - 권한 없는 사용자 403
+     *
+     * @scenario endpoint=extension_update
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_update_forbidden_for_unauthorized_user(): void
     {
@@ -683,6 +791,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * versions - 버전 목록 조회
+     *
+     * @scenario endpoint=extension_versions
+     *
+     * @effects extension_versions_listed_and_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_versions_returns_version_list(): void
     {
@@ -702,6 +816,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * showVersion - 특정 버전 조회
+     *
+     * @scenario endpoint=extension_versions
+     *
+     * @effects extension_versions_listed_and_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_show_version_returns_specific_version(): void
     {
@@ -725,6 +845,8 @@ class LayoutExtensionControllerTest extends TestCase
      * content 가 조회되지 않아 버전 비교 diff 가 "전 항목 삭제"로 표시된다.
      *
      * @effects version_detail_still_returns_content
+     *
+     * @return void 반환값 없음
      */
     public function test_show_version_still_provides_extension_content(): void
     {
@@ -753,6 +875,8 @@ class LayoutExtensionControllerTest extends TestCase
      * 단건이 목록용 조회(상한 100건)를 재사용하면 101번째 이전 버전이 404 가 된다.
      *
      * @effects version_detail_reaches_rows_beyond_list_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_show_version_reaches_versions_beyond_the_list_cap(): void
     {
@@ -774,6 +898,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * restoreVersion - content 복원 + 새 버전 생성
+     *
+     * @scenario endpoint=extension_versions
+     *
+     * @effects extension_versions_listed_and_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_restores_content(): void
     {
@@ -797,6 +927,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * restoreVersion - 존재하지 않는 버전 404
+     *
+     * @scenario endpoint=extension_versions
+     *
+     * @effects extension_versions_listed_and_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_returns_404_for_missing_version(): void
     {
@@ -810,6 +946,12 @@ class LayoutExtensionControllerTest extends TestCase
 
     /**
      * storePreview - overlay 타입 미리보기 토큰 반환
+     *
+     * @scenario endpoint=extension_preview
+     *
+     * @effects extension_preview_token_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_store_preview_returns_token_for_overlay(): void
     {
@@ -832,7 +974,61 @@ class LayoutExtensionControllerTest extends TestCase
     }
 
     /**
+     * storePreview - 미리보기 주소는 템플릿 종류의 화면 셸을 가리킨다 (7.1.0 O-G3-6).
+     *
+     * 관리자 템플릿의 확장 조각을 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿 자원으로 그려졌다.
+     *
+     * @scenario endpoint=extension_preview
+     *
+     * @effects preview_url_shell_matches_template_type
+     *
+     * @param  string  $type  템플릿 종류(admin|user)
+     * @param  string  $prefix  기대하는 미리보기 주소 접두
+     * @return void 반환값 없음
+     */
+    #[DataProvider('previewShellProvider')]
+    public function test_store_preview_url_matches_template_type_shell(string $type, string $prefix): void
+    {
+        $template = Template::factory()->create(['type' => $type]);
+        $extension = LayoutExtension::factory()->create([
+            'template_id' => $template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin/dashboard',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-analytics',
+            'content' => ['target_layout' => 'admin/dashboard', 'injections' => []],
+        ]);
+
+        $response = $this->authRequest()
+            ->postJson("/api/admin/templates/{$template->identifier}/layout-extensions/{$extension->id}/preview", [
+                'content' => ['target_layout' => 'admin/dashboard', 'injections' => []],
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertSame($prefix.$response->json('data.token'), $response->json('data.preview_url'));
+    }
+
+    /**
+     * 템플릿 종류별 기대 미리보기 주소 접두를 제공합니다.
+     *
+     * @return array<string, array{0: string, 1: string}> 데이터셋 이름별 [템플릿 종류, 기대 주소 접두]
+     */
+    public static function previewShellProvider(): array
+    {
+        return [
+            'admin 템플릿' => ['admin', '/admin/preview/'],
+            'user 템플릿' => ['user', '/preview/'],
+        ];
+    }
+
+    /**
      * storePreview - extension_point 타입은 preview_layout 없으면 422
+     *
+     * @scenario endpoint=extension_preview
+     *
+     * @effects extension_preview_token_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_store_preview_requires_preview_layout_for_extension_point(): void
     {

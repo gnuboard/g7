@@ -1,0 +1,23 @@
+feature: 게시판 편집기 표본이 화면이 번역하는 키와 맞는다
+
+description: |
+  레이아웃 편집기 상태 표본 전수 순회에서 게시판 환경설정 화면에 번역 키 원문이 보였다. 실제 화면은 정상이고,
+  표본 값이 실제 응답과 달랐다 — 기본 권한 키가 read/write/comment 로 줄여 적혀 있었고(실제는 admin.posts.read 등 17개,
+  값은 역할 배열), 알림 정의 표본 종류가 없는 이름(board.post.created, sample_notification), 일괄 적용 확인 창 표본에
+  없는 권한(manager.write)이 있었다. 표본 값으로 화면이 만드는 번역 키가 ko 언어 파일에 있는지 가드한다.
+
+axes:
+  sample: [default_board_permissions, bulk_apply_snapshot, notification_definition]
+
+effects:
+  - board_editor_sample_permission_keys_have_labels
+  - board_editor_sample_bulk_apply_fields_have_labels
+  - board_editor_sample_notification_types_have_labels
+  - board_editor_sample_bulk_apply_boards_exist_in_board_list
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-editor-sample-translation-keys.test.ts
+
+notes: |
+  브라우저 실측: 레이아웃 편집기 */admin/boards/settings 「게시판 설정」 상태와 일괄 적용 확인 창, 알림 설정 탭,
+  알림 템플릿 편집 창에서 번역 키 원문이 사라지고 권한·알림 이름이 보인다.

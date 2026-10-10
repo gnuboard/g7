@@ -122,12 +122,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [initialValue]);
 
-  // 값 변경 시 콜백 호출
-  useEffect(() => {
-    if (onChange) {
-      onChange(content);
-    }
-  }, [content, onChange]);
+  // 값 변경 — 사용자가 내용을 바꿀 때만 onChange 를 부른다. 종전에는 useEffect([content, onChange]) 로 불러
+  // 마운트와 콜백이 바뀌는 리렌더마다 불렸고, 편집기가 이 칸을 원시값 콜백(event: "onChange")으로 적으면
+  // 사용자 조작 없이도 동작이 실행됐다(사례 26, 7.1.0 O-I2F-4).
+  const updateContent = (next: string) => {
+    setContent(next);
+    onChange?.(next);
+  };
 
   // 포맷 적용 (실제 구현 시 에디터 API 사용)
   const applyFormat = (format: FormatType) => {
@@ -287,17 +288,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       {showCodeView ? (
         <Textarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => updateContent(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none resize-none"
+          className="w-full p-4 bg-gray-900 dark:bg-gray-900 text-gray-100 dark:text-gray-100 font-mono text-sm focus:outline-none resize-none"
           style={{ minHeight }}
         />
       ) : (
         <Div
           ref={editorRef}
           contentEditable={!disabled}
-          onInput={(e) => setContent(e.currentTarget.innerHTML)}
+          onInput={(e) => updateContent(e.currentTarget.innerHTML)}
           className="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none prose dark:prose-invert max-w-none"
           style={{ minHeight }}
           data-placeholder={placeholder}
@@ -335,7 +336,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
               <Button
                 type="button"
                 onClick={insertLink}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
               >
                 {t('editor.link_modal.insert')}
               </Button>

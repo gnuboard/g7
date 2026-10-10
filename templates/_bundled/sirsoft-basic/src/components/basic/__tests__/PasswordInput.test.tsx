@@ -46,6 +46,7 @@ describe('PasswordInput 컴포넌트', () => {
   });
 
   describe('렌더링', () => {
+    /** @effects password_input_renders_rules_and_toggle */
     it('기본 렌더링이 되어야 함', () => {
       render(<PasswordInput name="password" data-testid="password-input" />);
       const input = screen.getByTestId('password-input');
@@ -53,18 +54,21 @@ describe('PasswordInput 컴포넌트', () => {
       expect(input).toHaveAttribute('type', 'password');
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('showToggle=true일 때 토글 버튼이 렌더링되어야 함', () => {
       render(<PasswordInput name="password" showToggle={true} />);
       const toggleButton = screen.getByRole('button', { name: /비밀번호 보기/i });
       expect(toggleButton).toBeInTheDocument();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('showToggle=false일 때 토글 버튼이 렌더링되지 않아야 함', () => {
       render(<PasswordInput name="password" showToggle={false} />);
       const toggleButton = screen.queryByRole('button');
       expect(toggleButton).not.toBeInTheDocument();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('에러 메시지가 표시되어야 함', () => {
       render(<PasswordInput name="password" error="비밀번호 오류" />);
       expect(screen.getByText('비밀번호 오류')).toBeInTheDocument();
@@ -72,6 +76,7 @@ describe('PasswordInput 컴포넌트', () => {
   });
 
   describe('비밀번호 보기/숨기기', () => {
+    /** @effects password_input_renders_rules_and_toggle */
     it('토글 버튼 클릭 시 비밀번호가 표시되어야 함', () => {
       render(<PasswordInput name="password" data-testid="password-input" />);
       const input = screen.getByTestId('password-input');
@@ -87,6 +92,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(input).toHaveAttribute('type', 'text');
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('토글 버튼 두 번 클릭 시 비밀번호가 다시 숨겨져야 함', () => {
       render(<PasswordInput name="password" data-testid="password-input" />);
       const input = screen.getByTestId('password-input');
@@ -99,6 +105,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(input).toHaveAttribute('type', 'password');
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('disabled 상태에서 토글 버튼도 비활성화되어야 함', () => {
       render(<PasswordInput name="password" disabled />);
       const toggleButton = screen.getByRole('button');
@@ -107,6 +114,7 @@ describe('PasswordInput 컴포넌트', () => {
   });
 
   describe('비밀번호 검증', () => {
+    /** @effects password_input_rules_match_backend */
     it('showValidation=true일 때 검증 규칙이 표시되어야 함', () => {
       render(
         <PasswordInput
@@ -126,6 +134,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.getByText('특수문자 포함')).toBeInTheDocument();
     });
 
+    /** @effects password_input_rules_match_backend */
     it('조건 충족 시 체크 아이콘이 표시되어야 함', () => {
       render(
         <PasswordInput
@@ -143,6 +152,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(checkIcons.length).toBeGreaterThan(0);
     });
 
+    /** @effects password_input_rules_match_backend */
     it('showRules로 표시할 규칙을 제한할 수 있어야 함', () => {
       render(
         <PasswordInput
@@ -164,6 +174,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.queryByText('특수문자 포함')).not.toBeInTheDocument();
     });
 
+    /** @effects password_input_rules_match_backend */
     it('onValidityChange 콜백이 호출되어야 함', () => {
       const onValidityChange = vi.fn();
       render(
@@ -180,6 +191,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(onValidityChange).toHaveBeenCalledWith(true, []);
     });
 
+    /** @effects password_input_rules_match_backend */
     it('빈 값일 때 검증 결과가 표시되지 않아야 함', () => {
       render(
         <PasswordInput
@@ -195,6 +207,7 @@ describe('PasswordInput 컴포넌트', () => {
   });
 
   describe('비밀번호 확인', () => {
+    /** @effects password_input_renders_rules_and_toggle */
     it('isConfirmField=true일 때 일치 여부가 표시되어야 함', () => {
       render(
         <PasswordInput
@@ -209,6 +222,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.getByText('비밀번호가 일치합니다')).toBeInTheDocument();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('비밀번호가 일치하지 않을 때 불일치 메시지가 표시되어야 함', () => {
       render(
         <PasswordInput
@@ -223,6 +237,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.getByText('비밀번호가 일치하지 않습니다')).toBeInTheDocument();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('onMatchChange 콜백이 호출되어야 함', () => {
       const onMatchChange = vi.fn();
       render(
@@ -239,6 +254,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(onMatchChange).toHaveBeenCalledWith(true);
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('빈 값일 때 일치 여부가 표시되지 않아야 함', () => {
       render(
         <PasswordInput
@@ -255,6 +271,7 @@ describe('PasswordInput 컴포넌트', () => {
   });
 
   describe('입력 처리', () => {
+    /** @effects password_input_renders_rules_and_toggle */
     it('onChange가 호출되어야 함', () => {
       const onChange = vi.fn();
       render(
@@ -271,6 +288,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(onChange).toHaveBeenCalled();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('controlled 모드에서 value prop이 적용되어야 함', () => {
       render(
         <PasswordInput
@@ -287,6 +305,7 @@ describe('PasswordInput 컴포넌트', () => {
   });
 
   describe('availablePasswordRules', () => {
+    /** @effects password_input_rules_match_backend */
     it('minLength 규칙이 올바르게 동작해야 함', () => {
       const rule = availablePasswordRules.minLength;
       // defaultParam=6 이므로 6자 미만이면 false, 6자 이상이면 true
@@ -294,32 +313,65 @@ describe('PasswordInput 컴포넌트', () => {
       expect(rule.validate('123456')).toBe(true); // 6자 - 통과 (defaultParam=6)
     });
 
+    /** @effects password_input_rules_match_backend */
     it('hasUppercase 규칙이 올바르게 동작해야 함', () => {
       const rule = availablePasswordRules.hasUppercase;
       expect(rule.validate('lowercase')).toBe(false);
       expect(rule.validate('Uppercase')).toBe(true);
     });
 
+    /** @effects password_input_rules_match_backend */
     it('hasLowercase 규칙이 올바르게 동작해야 함', () => {
       const rule = availablePasswordRules.hasLowercase;
       expect(rule.validate('UPPERCASE')).toBe(false);
       expect(rule.validate('lowerCASE')).toBe(true);
     });
 
+    /** @effects password_input_rules_match_backend */
     it('hasNumber 규칙이 올바르게 동작해야 함', () => {
       const rule = availablePasswordRules.hasNumber;
       expect(rule.validate('noNumbers')).toBe(false);
       expect(rule.validate('has1Number')).toBe(true);
     });
 
+    /** @effects password_input_rules_match_backend */
     it('hasSpecial 규칙이 올바르게 동작해야 함', () => {
       const rule = availablePasswordRules.hasSpecial;
       expect(rule.validate('noSpecial')).toBe(false);
       expect(rule.validate('has@Special')).toBe(true);
     });
+
+    // #736 — 서버(`symbols()`·`PasswordComposition`: 유니코드 P·S·Z 범주)와 같은 집합이어야 화면 체크와 서버 판정이 갈리지 않는다.
+    /** @effects password_input_rules_match_backend */
+    it.each(['a-b', 'a_b', 'a~b', 'a+b', 'a=b', 'a/b', 'a[b', 'a b', 'a😀b', 'a※b'])(
+      'hasSpecial 이 서버가 특수문자로 세는 %s 를 인정한다',
+      (value) => {
+        expect(availablePasswordRules.hasSpecial.validate(value)).toBe(true);
+      },
+    );
+
+    /** @effects password_input_rules_match_backend */
+    it('hasSpecial 이 영문·숫자·한글만으로는 통과하지 않는다', () => {
+      expect(availablePasswordRules.hasSpecial.validate('abcABC123가나다')).toBe(false);
+    });
+
+    /** @effects password_input_rules_match_backend */
+    it('minTypes 는 영문(대·소문자 한 종류)·숫자·특수문자 세 종류로 센다 — 서버 「문자 종류 조합」과 같다', () => {
+      const rule = availablePasswordRules.minTypes;
+      // 대·소문자만 섞은 것은 한 종류다 — 종전(네 종류 셈법)에서는 2종류로 통과했다.
+      expect(rule.validate('abcdEFGH', 2)).toBe(false);
+      expect(rule.validate('abcd1234', 2)).toBe(true);
+      expect(rule.validate('abcd-efg', 2)).toBe(true);
+      expect(rule.validate('1234-567', 2)).toBe(true);
+      expect(rule.validate('abcd1234', 3)).toBe(false);
+      expect(rule.validate('abc12-x', 3)).toBe(true);
+      // 기본 파라미터는 서버 기본 규칙과 같은 2종류다.
+      expect(rule.defaultParam).toBe(2);
+    });
   });
 
   describe('다국어 지원', () => {
+    /** @effects password_input_renders_rules_and_toggle */
     it('G7Core.t()가 호출되어야 함', () => {
       render(
         <PasswordInput
@@ -336,6 +388,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(mockT).toHaveBeenCalledWith('auth.password_input.rules.minLength', { count: 6 });
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('비밀번호 확인 시 다국어 메시지가 표시되어야 함', () => {
       render(
         <PasswordInput
@@ -353,6 +406,7 @@ describe('PasswordInput 컴포넌트', () => {
   });
 
   describe('defaultPasswordRules', () => {
+    /** @effects password_input_rules_match_backend */
     it('기본 규칙에 minLength만 포함되어야 함', () => {
       expect(defaultPasswordRules).toHaveLength(1);
       expect(defaultPasswordRules[0].key).toBe('minLength');
@@ -373,6 +427,7 @@ describe('PasswordInput 컴포넌트', () => {
       return event;
     };
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('CapsLock이 켜져 있을 때 경고 메시지가 표시되어야 함', () => {
       render(<PasswordInput name="password" data-testid="password-input" />);
       const input = screen.getByTestId('password-input');
@@ -385,6 +440,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.getByText('CapsLock이 켜져 있습니다')).toBeInTheDocument();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('CapsLock이 꺼지면 경고 메시지가 사라져야 함', () => {
       render(<PasswordInput name="password" data-testid="password-input" />);
       const input = screen.getByTestId('password-input');
@@ -402,6 +458,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.queryByText('CapsLock이 켜져 있습니다')).not.toBeInTheDocument();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('비밀번호가 보이는 상태에서는 CapsLock 경고가 표시되지 않아야 함', () => {
       render(<PasswordInput name="password" data-testid="password-input" />);
       const input = screen.getByTestId('password-input');
@@ -419,6 +476,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.queryByText('CapsLock이 켜져 있습니다')).not.toBeInTheDocument();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('CapsLock 경고 아이콘이 올바르게 표시되어야 함', () => {
       render(<PasswordInput name="password" data-testid="password-input" />);
       const input = screen.getByTestId('password-input');
@@ -435,6 +493,7 @@ describe('PasswordInput 컴포넌트', () => {
   // 레이아웃 편집기 표식(data-editor-*)은 내부 input 이 아니라
   // 시각적 루트(wrapper div)에 부착되어야 캔버스 선택/드래그가 컴포넌트 전체를 잡는다.
   describe('레이아웃 편집기 표식 부착 위치', () => {
+    /** @effects password_input_renders_rules_and_toggle */
     it('data-editor-* / onMouseMove 는 wrapper 루트 div 에 부착', () => {
       const onMouseMove = vi.fn();
       const { container } = render(
@@ -461,6 +520,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(input.getAttribute('data-editor-id')).toBeNull();
     });
 
+    /** @effects password_input_renders_rules_and_toggle */
     it('일반 input 속성(name/placeholder)은 내부 input 에 그대로 전달', () => {
       const { container } = render(
         <PasswordInput

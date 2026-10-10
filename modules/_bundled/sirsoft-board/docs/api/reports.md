@@ -27,13 +27,13 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| filters | query | array | 아니오 | — | 추가 필터 조건 맵 (필드별 조건) |
+| filters | query | array | 아니오 | — | 검색 조건 배열. 첫 요소만 사용하며 `filters[0][field]`(검색 대상 필드, 미지정 시 `all`) + `filters[0][value]`(검색어) 형태다. 관리자 목록 화면들이 공유하는 표기이며, 배열 2번째 이후 요소는 무시된다 |
 | status | query | string | 아니오 | — | 상태 필터 (해당 상태의 항목만 조회) |
 | target_type | query | string | 아니오 | — | 신고 대상 타입 필터 (`post`/`comment`). 단일 문자열 또는 배열로 여러 타입을 전달할 수 있습니다. |
 | target_status | query | string | 아니오 | — | 신고 대상 콘텐츠의 현재 상태 필터 (게시글/댓글의 status 기준). 단일 문자열 또는 배열로 전달하며 `all`은 무시됩니다. |
 | board_id | query | integer | 아니오 | — | board 식별자 |
-| reported_at_from | query | string | 아니오 | — | 신고 접수 기간 시작일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 00:00:00 이후 건만 조회합니다. |
-| reported_at_to | query | string | 아니오 | — | 신고 접수 기간 종료일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 23:59:59 이전 건만 조회합니다. |
+| reported_at_from | query | string | 아니오 | — | 신고 접수 기간 시작일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 00:00:00 이후 건만 조회합니다. 날짜는 보는 사람의 시간대 하루로 해석합니다. |
+| reported_at_to | query | string | 아니오 | — | 신고 접수 기간 종료일 (`YYYY-MM-DD`). 마지막 신고일시(`last_reported_at`) 기준으로 이 날짜 23:59:59 이전 건만 조회합니다. 날짜는 보는 사람의 시간대 하루로 해석합니다. |
 | sort_by | query | string | 아니오 | — | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | per_page | query | integer | 아니오 | — | 페이지당 항목 수 |
@@ -750,3 +750,84 @@ _단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 
 **설명** 단건 신고의 상태를 변경합니다. `auth:sanctum` 인증과 `sirsoft-board.reports.manage` 권한이 필요합니다. 경로의 `report`(신고 ID)에 대해 `status`로 지정한 상태로 전환하고 선택적으로 `process_note`(최대 1000자)를 처리 메모로 남깁니다. 영구삭제(deleted) 등 전환 불가 상태는 FormRequest 검증에서 422로 선차단되고 서비스의 deleted 가드가 2차 방어선으로 동작하며, 대상이 없으면 404를 반환합니다.
 
 
+
+---
+
+## 회원용 (마이페이지 「내 신고」)
+
+아래 두 엔드포인트는 본인이 남긴 신고만 다룹니다. `api:docgen` 의 실측 대상이 아니므로
+(회원 인증 + 본인 소유 데이터가 필요) 사람이 작성해 유지합니다.
+
+관리자 신고 목록과 모집단이 다릅니다 — 관리자는 **신고 케이스**(`reports`, 같은 대상에 대한
+신고를 하나로 묶은 것)를 보고, 회원은 **자기 신고 로그**(`report_logs`, 내가 남긴 한 건)를
+봅니다. 그래서 식별자도 `report` 가 아니라 `reportLogId` 입니다.
+
+### GET /api/modules/sirsoft-board/me/reports
+
+- **인증**: `auth:sanctum` (본인 것만) · **권한 불요** — 개인 화면이라 게시판 abilities 를 싣지 않습니다
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 페이지 번호 |
+| per_page | query | integer | 아니오 | 1~100 (기본 10) | 페이지당 건수 |
+| search | query | string | 아니오 | max 255 | 검색어 |
+| search_field | query | string | 아니오 | `title_content`(기본), `title`, `content`, `reason` | 검색 대상. 규칙 밖의 값은 기본값 `title_content` 로 처리 |
+| target_type | query | string | 아니오 | `post`, `comment` | 대상 구분 필터 |
+| status | query | string | 아니오 | `pending`, `review`, `rejected`, `suspended`, `deleted` | 처리 상태 필터 |
+| board_slug | query | string | 아니오 | max 50 | 게시판 필터 |
+| sort | query | string | 아니오 | `latest`(기본), `oldest` | 정렬 |
+
+> `reason` 검색(신고 사유 설명 `reason_detail` 을 훑습니다)은 형제 탭(내 글·내 댓글·내 반응)에 없는 갈래입니다 — 신고할 때
+> 자기가 적어 넣은 사유 설명으로 되찾을 수 있어야 하기 때문입니다.
+
+**응답 필드** (`data.data[]`)
+
+| 필드 | 타입 | 용도 |
+| --- | --- | --- |
+| id | integer | 신고 **로그** 식별자 (취소가 받는 값) |
+| report_id | integer\|null | 묶인 신고 케이스 ID. 케이스가 사라졌으면 null |
+| board | object\|null | `{slug,name}`. 게시판 삭제 시 null |
+| board_slug / board_name | string\|null | 위 값의 평면 표기 (목록 셀이 바로 씁니다) |
+| target_type | string\|null | `post` \| `comment` |
+| target_type_label | string\|null | 표시용 라벨 (번역 적용) |
+| target_id | integer\|null | 대상 식별자 |
+| post_id | integer\|null | 이동 대상 글 ID (댓글 신고도 부모 글로 갑니다) |
+| comment_id | integer\|null | 댓글 신고일 때의 댓글 ID |
+| title | string\|null | 신고 시점 스냅샷 제목 |
+| excerpt | string\|null | 신고 시점 스냅샷 본문 발췌 |
+| reason_type / reason_type_label | string\|null | 신고 사유 구분과 그 라벨 |
+| reason_detail | string\|null | 신고자가 적은 사유 설명 |
+| status / status_label | string\|null | 처리 상태와 그 라벨 |
+| reported_at | string | 신고 시각 (모듈 표시 설정을 따릅니다) |
+| can_cancel | boolean | 취소 버튼 노출 판정 — **접수(`pending`) 상태만 true** |
+| target_deleted | boolean | 대상 소실 여부 |
+
+스냅샷(`title`·`excerpt`)은 신고 당시 값입니다. 원글이 지워져도 무엇을 신고했는지는 남아야
+하기 때문입니다.
+
+**응답 메타**: `data.query`(적용된 필터 에코) · `data.pagination`(표준 페이지네이션)
+
+다른 신고자나 처리자 정보는 싣지 않습니다 — 누가 같이 신고했는지가 신고자에게 보이면
+안 됩니다.
+
+### DELETE /api/modules/sirsoft-board/me/reports/{reportLogId}
+
+신고를 취소합니다.
+
+- **인증**: `auth:sanctum` · 본인이 남긴 로그만
+- 남의 로그·없는 ID → **404** (존재 여부를 흘리지 않습니다)
+- **접수(`pending`) 상태만 취소됩니다.** 검토·반려·보류 등으로 넘어갔거나 케이스가 이미
+  삭제됐으면 **403** (`report_cancel_not_allowed`) — 처리가 시작된 뒤에는 신고자가
+  되돌릴 수 없습니다
+
+| 응답 필드 | 타입 | 용도 |
+| --- | --- | --- |
+| case_deleted | boolean | 이 취소로 신고 케이스 자체가 사라졌는지 |
+| remaining | integer | 그 케이스에 남은 다른 사람의 신고 건수 |
+
+마지막 신고자가 취소해 남은 로그가 0 이 되면 케이스를 **영구 삭제**합니다. 소프트 삭제로
+두면 `unique_report_case` 제약이 같은 대상의 재신고를 영구히 막기 때문입니다.
+로그가 남아 있으면 케이스는 유지하고 `last_reported_at` 을 다시 계산한 뒤 처리 이력에
+`report_cancelled` 를 남깁니다.
+
+훅: `sirsoft-board.report.before_cancel` (로그·케이스를 인자로 받습니다)

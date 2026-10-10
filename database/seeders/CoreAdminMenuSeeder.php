@@ -58,11 +58,7 @@ class CoreAdminMenuSeeder extends Seeder
 
         $createdMenus = [];
         foreach ($coreMenus as $menuData) {
-            $createdMenus[] = Menu::create(array_merge($menuData, [
-                'extension_type' => ExtensionOwnerType::Core,
-                'extension_identifier' => 'core',
-                'created_by' => null,
-            ]));
+            $this->createMenuRecursive($menuData, null, $createdMenus);
         }
 
         // 관리자 역할에 모든 코어 메뉴 read 권한 부여
@@ -70,6 +66,37 @@ class CoreAdminMenuSeeder extends Seeder
 
         // 매니저 역할에 대시보드 메뉴 read 권한 부여
         $this->grantManagerDashboardMenu($createdMenus);
+    }
+
+    /**
+     * 메뉴 정의 한 건을 생성하고 children 이 있으면 부모 id 를 물려 재귀 생성합니다.
+     *
+     * config/core.php 의 메뉴 정의는 children 으로 계층을 표현할 수 있습니다
+     * (업데이트 경로의 ExtensionMenuSyncHelper::syncMenuRecursive 와 같은 형식).
+     * children 을 그대로 Menu::create 에 넘기면 컬럼이 아니라서 버려지므로
+     * 여기서 분리해 부모를 먼저 만들고 그 id 를 자식의 parent_id 로 넣습니다.
+     *
+     * @param  array  $menuData  메뉴 정의(children 포함 가능)
+     * @param  int|null  $parentId  부모 메뉴 id
+     * @param  array<Menu>  $createdMenus  생성된 메뉴 누적(참조)
+     */
+    private function createMenuRecursive(array $menuData, ?int $parentId, array &$createdMenus): void
+    {
+        $children = $menuData['children'] ?? [];
+        unset($menuData['children']);
+
+        $menu = Menu::create(array_merge($menuData, [
+            'parent_id' => $parentId ?? ($menuData['parent_id'] ?? null),
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'created_by' => null,
+        ]));
+
+        $createdMenus[] = $menu;
+
+        foreach ($children as $childData) {
+            $this->createMenuRecursive($childData, $menu->id, $createdMenus);
+        }
     }
 
     /**

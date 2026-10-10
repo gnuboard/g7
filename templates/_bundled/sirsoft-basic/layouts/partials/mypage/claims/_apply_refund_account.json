@@ -1,0 +1,222 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "클레임 신청서 작성 - 환불 계좌 (무통장 원결제, §6-3)",
+        "editor_label": "$t:user.modal_label.mypage_claims.apply_refund_account"
+    },
+    "comment": "계좌로 환불되는 주문에서만 선다. '어느 결제수단이 계좌 환불인가' 는 서버가 판정해 claimable-options 의 refund_account.required 로 내려준다 — 화면이 결제수단 코드로 재현하면 확장 결제수단이 자기 카탈로그에 선언한 환불 수단과 갈리고, 어긋난 쪽은 오류 없이 '계좌 입력칸이 없는 계좌 환불'(승인 뒤 관리자가 다시 받아야 한다) 또는 'PG 환불인데 계좌를 요구'(구매자가 쓸모없는 정보를 넣는다)가 된다.\n주문 시 등록해 둔 계좌가 있으면 채워서 연다(2026-08-31 확정). 채우는 값은 서버가 refund_account.prefill 로 실어 준 **원문**이며, 표시용 응답의 마스킹 값(MasksRefundBankAccount — 계좌 뒤 4자리·예금주 첫 글자)을 재사용하지 않는다. 마스킹 값을 채우면 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장되고, 검증은 통과해 환불 실행 때가 되어서야 드러난다.\n반품에서도 선다(§6-3 \"무통장 원결제면 환불계좌 입력\"). 계좌 환불은 운영자가 직접 이체하므로 계좌가 없는 무통장 주문의 반품이 계좌 없이 접수되면 승인 단계에서 운영자가 구매자에게 따로 물어야 한다.\n교환은 **돌려줄 돈이 있을 때만** 선다(2026-08-31 확정) — 저가 옵션으로 바꿔 차액이 구매자에게 돌아가는 경우다. 판정은 청구 축 라디오와 같은 값(refund_product_amount)을 쓴다. adjustment.refund_total 로 판정하면 차액 0원 교환에서도 0 이 아니라(대상 상품을 되돌린 뒤 새 옵션을 얹는 형태) 돈이 돌아오지 않는 교환까지 계좌를 요구한다. 미리보기 전에는 값이 없어 서지 않고, 차액이 확인되면 선다.\n은행 목록은 운영자가 주문설정에서 관리하는 값을 서버가 실어 온다. 화면에 코드표를 두면 운영자가 취급 은행을 바꿔도 이 신청서만 옛 목록으로 남는다.",
+    "id": "claim_apply_refund_account",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0)}}",
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg p-4"
+            }
+        }
+    },
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg p-6"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-center gap-2 mb-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "building-columns",
+                        "className": "text-base text-gray-700 dark:text-gray-300"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:claim.apply.refund_account_title"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "if": "{{_local.claimEditMode !== true}}",
+            "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "text": "$t:claim.apply.refund_account_hint"
+        },
+        {
+            "comment": "수정 화면의 안내 (2026-09-01 확정 — 신청 단계에서만 계좌를 고칠 수 있다). 지금 기록된 계좌를 함께 보여 주고, 비워 두면 그대로 둔다는 것을 말한다. 칸을 빈 채로 여는 것은 표시 응답의 계좌가 마스킹된 값이기 때문이다 — 그 값을 채워서 열면 구매자가 손대지 않고 저장했을 때 별표가 섞인 계좌번호가 저장되고, 검증은 통과해 환불을 실행할 때가 되어서야 드러난다.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.claimEditMode === true}}",
+            "props": {
+                "className": "mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_local.claimEditSnapshot?.refund_bank_account}}",
+                    "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "{{$t('claim.edit.refund_account_current')}} {{_local.claimEditSnapshot?.refund_bank_name ?? ''}} {{_local.claimEditSnapshot?.refund_bank_account ?? ''}} {{_local.claimEditSnapshot?.refund_bank_holder ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "$t:claim.edit.refund_account_hint"
+                }
+            ]
+        },
+        {
+            "comment": "가린 등록 계좌 안내 — 서버는 등록 계좌를 가린 모양(계좌 뒤 4자리 · 예금주 첫 글자)으로 채워 준다. 세 칸을 그대로 두면 서버가 원문으로 되돌리지만, 한 칸만 바꾸면 나머지 가린 칸이 별표째 저장된다. 그래서 세 칸은 한 핸들러(setClaimRefundAccountField)를 거쳐 한 칸을 고치는 순간 나머지 가린 칸을 비우고, 가린 값이 채워져 있는 동안 그 사실을 여기 알린다.",
+            "type": "basic",
+            "name": "P",
+            "if": "{{_local.claimRefundAccountMasked === true}}",
+            "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+            },
+            "text": "$t:claim.apply.refund_account_masked_hint"
+        },
+        {
+            "comment": "은행 / 계좌번호 2열 → 모바일 1열 (마크업 구조가 바뀌므로 responsive 속성을 쓴다)",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "grid grid-cols-1 gap-3"
+                    }
+                }
+            },
+            "props": {
+                "className": "grid grid-cols-2 gap-3"
+            },
+            "children": [
+                {
+                    "comment": "은행 — 커스텀 Select 는 value 제어 전용이라 defaultValue 를 쓰지 않는다. 값은 사용자의 선택 상태에서 읽는다.",
+                    "type": "basic",
+                    "name": "Select",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sirsoft-ecommerce.setClaimRefundAccountField",
+                            "params": {
+                                "field": "bank_code",
+                                "value": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "value": "{{_local.claimRefundBankCode ?? ''}}",
+                        "options": "{{[{ value: '', label: $t('claim.apply.refund_account_bank_select') }, ...(((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    }
+                },
+                {
+                    "comment": "계좌번호는 입력한 그대로 두었다가 제출 때 앞뒤 공백만 걷어 보낸다 — 하이픈 없이 쓰라는 것은 안내 문구일 뿐 화면이 걷어 내지 않는다(숫자만 남기는 가공을 하지 않으므로 가린 값의 별표도 그대로 남는다). 금액과 무관해 바꿔도 미리보기를 다시 부르지 않는다.",
+                    "type": "basic",
+                    "name": "Input",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sirsoft-ecommerce.setClaimRefundAccountField",
+                            "params": {
+                                "field": "account_number",
+                                "value": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "text",
+                        "value": "{{_local.claimRefundBankAccount ?? ''}}",
+                        "placeholder": "$t:claim.apply.refund_account_number_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    }
+                }
+            ]
+        },
+        {
+            "comment": "예금주 — 작성 화면에서는 주문 때 등록한 계좌가 있으면 그 원문으로 채워 열리고, 수정 화면에서는 빈 칸으로 열린다. 수정 화면에서 계좌번호만 새로 적고 이 칸을 비워 두면 세 칸이 짝을 이루지 못해 서버가 거절한다.",
+            "type": "basic",
+            "name": "Input",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "w-full mt-3 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    }
+                }
+            },
+            "actions": [
+                {
+                    "type": "change",
+                    "handler": "sirsoft-ecommerce.setClaimRefundAccountField",
+                    "params": {
+                        "field": "holder",
+                        "value": "{{$event.target.value}}"
+                    }
+                }
+            ],
+            "props": {
+                "type": "text",
+                "value": "{{_local.claimRefundBankHolder ?? ''}}",
+                "placeholder": "$t:claim.apply.refund_account_holder_placeholder",
+                "className": "w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            }
+        },
+        {
+            "comment": "세 필드가 함께 와야 한다는 규칙은 서버가 정한다 — 하나만 오면 계좌 없는 무통장 환불이 승인된다. 화면은 그 규칙을 미리 알려 제출 전에 채울 수 있게 한다.",
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mt-2"
+            },
+            "text": "$t:claim.apply.refund_account_all_required"
+        },
+        {
+            "comment": "제출 거절(422)의 환불계좌 사유를 그 카드 아래에 남긴다(§6-3 P13 — '필드 오류는 그 필드 옆에'). 서버는 묶음 키(refund_bank)와 개별 키를 모두 돌려줄 수 있어 핸들러가 접두사로 묶어 준다.",
+            "type": "basic",
+            "name": "P",
+            "if": "{{!!_local.claimFieldErrors?.refund_bank}}",
+            "props": {
+                "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+            },
+            "text": "{{_local.claimFieldErrors?.refund_bank ?? ''}}"
+        }
+    ]
+}

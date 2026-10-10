@@ -1,0 +1,82 @@
+feature: SEO 봇 렌더의 요청 Host 비신뢰 · 내부 호출 목적지 고정 · 동시 렌더 상한 (KVE-2026-2333/2334/2335)
+
+description: |
+  봇 화면(SeoRenderer)은 Laravel url() — 요청 Host 기준 — 으로 canonical·og:url·hreflang·
+  이미지 주소와 데이터소스 내부 API 주소를 만들었다. Host 는 방문자가 위조할 수 있다.
+
+  기존 결함:
+    - 2333 캐시 오염: 캐시 키(md5(url|locale))에 Host 가 없어 `Host: <사이트>:6666` 으로 한 번
+      렌더한 화면이 정상 방문자에게 HIT 로 나갔다(canonical 에 :6666).
+    - 2334 SSRF: 데이터소스 호출이 url($endpoint) + withoutVerifying() 라, 서버가 공격자가 고른
+      호스트·포트로 요청을 보내고 그 응답을 봇 화면에 실었다(아웃바운드 5건 실측).
+    - 2335 증폭: 렌더 1건 = 내부 호출 5건. IP 당 분당 예산은 동시에 몰아친 요청을 막지 못했고
+      (동시 15건 전량 MISS), 파일 캐시 카운터가 경쟁으로 언더카운트됐다.
+    - 공통 진입점: `?_escaped_fragment_` 쿼리 하나로 UA 와 무관하게 봇 판정.
+
+  조치:
+    - SeoUrl: 봇 화면 절대 URL·캐시 키 origin 을 APP_URL 로 고정 (요청 Host 비의존)
+    - DataSourceResolver: 호출 주소 = APP_URL + 경로, OutboundUrlValidator 로 재검증, 리다이렉트도
+      APP_URL 안에서만, TLS 검증은 APP_URL 이 루프백으로 풀릴 때만 생략(연결 고정)
+    - SeoCacheBounds: IP 예산 판정+차감을 잠금으로 원자화, 사이트 전체 동시 렌더 슬롯
+      (초과분은 SPA + X-SEO-Cache: BYPASS — 429 아님)
+    - BotDetector: `_escaped_fragment_` 봇 신호 제거
+    - TrustHosts: APP_URL 도메인·TRUSTED_HOSTS 가 아닌 Host 거부 (마지막 겹)
+
+axes:
+  host_header: [genuine, forged]
+  sink: [datasource_call, rendered_urls, cache_slot, locale_redirect]
+
+exclusions: []
+
+effects:
+  - datasource_call_targets_site_origin
+  - endpoint_expression_cannot_leave_site_origin
+  - redirect_outside_site_origin_is_refused
+  - tls_verification_skipped_only_for_loopback_origin
+  - datasource_timeout_is_configurable
+  - rendered_urls_use_site_origin
+  - site_url_parity_with_laravel_url
+  - cache_key_namespaced_by_site_origin
+  - forged_host_render_does_not_poison_cached_page
+  - locale_redirect_uses_site_origin
+
+sub_flows:
+  - id: bot_signal
+    description: |
+      봇 판정은 검색엔진 User-Agent(라이브러리·운영자 패턴·훅)로만 한다. `?_escaped_fragment_`
+      쿼리는 신호가 아니며, 나머지 판정 체인은 종전 그대로다.
+    effects:
+      - escaped_fragment_query_is_not_a_bot_signal
+      - existing_bot_detection_chain_preserved
+
+  - id: render_concurrency
+    description: |
+      미스 렌더의 IP 예산 판정·차감은 한 잠금 안에서 원자적으로, 사이트 전체 동시 렌더는
+      슬롯 수 안에서만. 슬롯이 없으면 차감을 되돌리고 SPA + BYPASS. 슬롯은 렌더가 끝나면
+      (예외 포함) 반환한다. 상한 0 은 제한 없음.
+    effects:
+      - render_budget_claim_is_atomic
+      - concurrent_render_over_cap_gets_spa_bypass
+      - slot_full_refunds_render_budget
+      - render_slot_released_after_render
+      - zero_cap_disables_concurrency_limit
+
+  - id: trusted_hosts
+    description: |
+      전역 TrustHosts 미들웨어의 허용 패턴. APP_URL 도메인·하위 도메인 + APP_URL 의 www 쌍
+      (www.X 면 X 정확 일치 — 맨 앞 www. 한 단계만, IP·점 없는 이름 제외) + TRUSTED_HOSTS(정확 일치).
+      설치 전·TRUSTED_HOSTS_ENABLED=false·APP_URL 미상이면 빈 목록(제한 없음).
+    effects:
+      - trusted_hosts_allow_site_domain_and_listed_hosts
+      - trusted_hosts_allow_www_pair_of_site_host
+      - trusted_hosts_unrestricted_before_install_or_disabled
+      - untrusted_host_is_rejected
+      - trust_hosts_registered_in_global_stack
+
+test_files:
+  - tests/Unit/Seo/SeoHostTrustTest.php
+  - tests/Unit/Seo/SeoRenderConcurrencyTest.php
+  - tests/Feature/Seo/SeoMiddlewareHostTrustTest.php
+  - tests/Unit/Seo/BotDetectorTest.php
+  - tests/Unit/Support/TrustedHostsTest.php
+  - tests/Playwright/specs/seo-bot-rendering.spec.ts

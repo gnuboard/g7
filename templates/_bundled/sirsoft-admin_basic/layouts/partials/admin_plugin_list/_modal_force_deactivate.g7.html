@@ -1,0 +1,87 @@
+<!-- 앞 창과 방향이 반대다 — **이 플러그인에 기대는 쪽이 있는데도** 끄겠다는 확인 창.
+  기대는 쪽은 셋으로 갈라 보여 준다(템플릿·모듈·플러그인). 셋 다 서버가 막으면서 알려 준 것을
+  목록이 담아 둔 값이라, 여기서 다시 조회하지 않는다.
+  밀어붙이면 저쪽들이 없는 기능을 부르게 되므로, 끄기 전에 그 목록을 먼저 정리하는 편이 낫다. -->
+<partial description="플러그인 강제 비활성화 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_force_deactivate_modal">
+  <modal data-type="composite" data-ref="plugin_force_deactivate_modal" title="$t:admin.plugins.modals.deactivate_warning_title" size="sm">
+    <div class="py-2">
+      <div class="alert-warning">
+        <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <div>
+          <p class="text-warning-soft">$t:admin.plugins.modals.deactivate_warning_message</p>
+        </div>
+      </div>
+      <div data-if="{{_global.deactivateWarningData?.dependent_templates?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.plugins.modals.dependent_templates</p>
+        <div>
+          <div data-each="template in _global.deactivateWarningData?.dependent_templates ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="layer-group" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{template.name || template.identifier}}</span>
+            <span class="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded">{{template.type === 'admin' ? '$t:admin.templates.type.admin' : '$t:admin.templates.type.user'}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.deactivateWarningData?.dependent_modules?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.plugins.modals.dependent_modules</p>
+        <div>
+          <div data-each="module in _global.deactivateWarningData?.dependent_modules ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{module.name || module.identifier}}</span>
+            <span class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">v{{module.version}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.deactivateWarningData?.dependent_plugins?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.plugins.modals.dependent_plugins</p>
+        <div>
+          <div data-each="plugin in _global.deactivateWarningData?.dependent_plugins ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="plug" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{plugin.name || plugin.identifier}}</span>
+            <span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded">v{{plugin.version}}</span>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-label">$t:admin.plugins.modals.force_deactivate_description</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isForceDeactivating}}">
+        <on type="click">
+          <!-- 앞 창의 취소와 같은 이유로 목록을 다시 받는다 — 이쪽은 스위치가 **꺼진 모양**으로 남아 있어 그것을 서버 값으로 되돌린다. -->
+          <sequence>
+            <set-state target="global" :deactivateWarningData="null"/>
+            <refetch-data-source dataSourceId="plugins"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceDeactivating}}">
+        <on type="click">
+          <!-- 끌 때도 관리자 메뉴를 함께 다시 받는다 — 이 플러그인이 더해 둔 메뉴 항목을 걷어내야 사라진 화면으로 가는 길이 남지 않는다. -->
+          <sequence>
+            <set-state target="global" :isForceDeactivating="true"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/deactivate" method="POST">
+              <success>
+                <set-state target="global" :isForceDeactivating="false" :deactivateWarningData="null"/>
+                <parallel>
+                  <refetch-data-source dataSourceId="plugins"/>
+                  <refetch-data-source dataSourceId="admin_menu"/>
+                  <reload-extensions pluginInfo="{{result}}" action="remove"/>
+                </parallel>
+                <toast type="success" message="$t:admin.plugins.deactivate_success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isForceDeactivating="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body plugin_name="{{_global.selectedPlugin.identifier}}" :force="true"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isForceDeactivating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isForceDeactivating ? '$t:admin.plugins.deactivating' : '$t:admin.plugins.modals.confirm_deactivate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,38 @@
+<!-- 주문 완료 화면의 결제 금액 요약에 KG이니시스 간편결제 이름과 영수증·결제확인서 보기를 덧붙이는 조각. 예전에는 주입 스크립트(orderCompleteReceiptInjector)가 화면 주소(/shop/orders/…/complete)를 글자로 맞춰 파란 버튼 옆에 버튼을 끼웠다 — 쇼핑몰 경로를 바꾼 설치본에서는 조용히 빠졌다(#639 에서 이 조각으로 옮김). 붙일 자리는 템플릿이 단 id(order_complete_payment_summary)로만 찾는다. -->
+<extension target-layout="shop/order_complete">
+  <inject target-id="order_complete_payment_summary" position="append_child">
+    <!-- 거래번호가 있는 KG이니시스 주문 — 그려질 때 영수증 조회 API 를 한 번 불러 응답을 화면 상태에 담는다. 다른 결제대행사·무통장 주문에서는 부르지 않는다. 회원은 토큰(선택 인증), 비회원은 조회 토큰 헤더로 같은 API 를 부른다. 결제 직후 조회 토큰이 아직 없으면 서버가 결제 콜백이 발급한 단기 영수증 쿠키로 확인한다 -->
+    <div data-ref="kginicis_order_complete_block" data-if="{{orderData?.data?.payment?.pg_provider === 'kginicis' &amp;&amp; orderData?.data?.payment?.transaction_id}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+      <!-- 마운트 조회는 조건(data-if)을 단 노드가 아니라 그 안쪽 노드에 둔다 — 엔진은 조건이 거짓이어도 그 노드의 마운트 동작을 실행하므로, 바깥에 두면 다른 결제대행사 주문에서도 조회가 나간다 -->
+      <div data-ref="kginicis_order_complete_rows" class="space-y-2">
+        <on event="mount">
+          <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_kginicis/user/orders/{{orderData?.data?.order_number}}/receipt" method="GET">
+            <field name="headers">
+              <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+            </field>
+            <success>
+              <set-state target="local" _kgOcReceipt="{{response.data}}"/>
+            </success>
+          </api-call>
+        </on>
+        <!-- 간편결제 이름 (요청 언어로 번역돼 온다) -->
+        <div data-ref="kginicis_oc_easy_pay_row" data-if="{{!!_local._kgOcReceipt?.embedded_pg_provider_label}}" class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_kginicis.user.easy_pay_label</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{_local._kgOcReceipt?.embedded_pg_provider_label}}</span>
+        </div>
+        <!-- 영수증 — 결제가 끝났으면 결제사 영수증, 일본 결제(CBT)는 결제확인서(편의점 입금 대기면 입금정보). 클릭한 틱에서 창을 열어야 팝업 차단에 걸리지 않으므로 받아 둔 응답을 그대로 넘긴다 -->
+        <div data-ref="kginicis_oc_receipt_row" data-if="{{(orderData?.data?.payment?.payment_status === 'paid' &amp;&amp; !!_local._kgOcReceipt?.receipt_url) || (_local._kgOcReceipt?.receipt_type === 'cbt_confirmation' &amp;&amp; (_local._kgOcReceipt?.receipt_fields ?? []).length > 0)}}" class="flex justify-between items-center text-sm">
+          <span class="text-gray-600 dark:text-gray-400">{{_local._kgOcReceipt?.receipt_label || $t('sirsoft-pay_kginicis.user.receipt_label')}}</span>
+          <!-- 보기 — 마운트 때 받아 둔 영수증 조회 응답으로 창을 연다. 클릭과 같은 틱에 열어야 팝업 차단에 걸리지 않아 다시 조회하지 않는다. -->
+          <button type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <on type="click">
+              <action handler="sirsoft-pay_kginicis.openReceipt" receipt="{{_local._kgOcReceipt}}"/>
+            </on>
+            <icon name="file-text" class="text-sm"/>
+            <span>{{_local._kgOcReceipt?.receipt_view_label || $t('sirsoft-pay_kginicis.user.receipt_view')}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

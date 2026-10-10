@@ -1,525 +1,542 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "플러그인 수동 설치 모달",
-    "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_manual_install_modal"
-  },
-  "id": "plugin_manual_install_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.plugins.modals.manual_install_title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-secondary mb-4"
-      },
-      "text": "$t:admin.plugins.modals.manual_install_description"
+    "comment": "목록에 없는 플러그인을 **밖에서 들여오는** 창. 목록에 이미 있는 것을 깔 때 쓰는 설치 창과는\n  다른 자리다 — 이쪽은 파일(ZIP)이나 GitHub 주소를 직접 준다.\n  둘은 보내는 방식까지 갈라져(파일은 폼 전송, 주소는 JSON) 아래 설치 버튼이 지금 탭에 맞춰\n  주소·형식·본문을 통째로 바꿔 보낸다.\n  실패는 토스트가 아니라 창 안 붉은 띠와 각 칸 아래 문구로 남긴다 — 고칠 자리가 이 창 안이기 때문이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "플러그인 수동 설치 모달",
+        "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_manual_install_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "mb-4" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md"
-          },
-          "actions": [
-            { "event": "onClick", "handler": "openModal", "target": "plugin_manifest_preview_drawer" }
-          ],
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "fas fa-eye", "size": "sm" } },
-            { "type": "basic", "name": "Span", "text": "$t:admin.plugins.actions.preview_manifest" }
-          ]
-        }
-      ]
+    "id": "plugin_manual_install_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.plugins.modals.manual_install_title",
+        "size": "medium"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.pluginInstallError}}",
-      "props": {
-        "className": "alert-danger"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "form-error-xs"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "triangle-exclamation",
-                "className": "text-red-500 mt-0.5",
-                "size": "sm"
-              }
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-secondary mb-4"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-error-strong"
-                  },
-                  "text": "{{_global.pluginInstallError}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{_global.pluginInstallErrors?.error}}",
-                  "props": {
-                    "className": "text-error-soft mt-1 whitespace-pre-line"
-                  },
-                  "text": "{{_global.pluginInstallErrors.error}}"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "plugin_install_tabs",
-      "type": "composite",
-      "name": "TabNavigation",
-      "props": {
-        "tabs": [
-          {
-            "id": "file_upload",
-            "label": "$t:admin.plugins.tabs.file_upload",
-            "iconName": "upload"
-          },
-          {
-            "id": "github",
-            "label": "$t:admin.plugins.tabs.github",
-            "iconName": "code-branch"
-          }
-        ],
-        "activeTabId": "{{_global.pluginInstallTab || 'file_upload'}}",
-        "variant": "underline"
-      },
-      "actions": [
-        {
-          "event": "onTabChange",
-          "type": "change",
-          "handler": "setState",
-          "params": {
-            "target": "global",
-            "pluginInstallTab": "{{$args[0]}}",
-            "pluginInstallError": null,
-            "pluginInstallErrors": null
-          }
-        }
-      ]
-    },
-    {
-      "id": "plugin_file_upload_tab",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload'}}",
-      "props": {
-        "className": "mt-4 space-y-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:admin.plugins.tabs.file_label"
-            },
-            {
-              "type": "basic",
-              "name": "FileInput",
-              "props": {
-                "accept": ".zip",
-                "className": "{{_global.pluginInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
-                "buttonText": "$t:common.browse",
-                "placeholder": "$t:admin.plugins.tabs.no_file_selected"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "pluginUploadFile": "{{$event.target.value}}",
-                    "pluginUploadFileName": "{{$event.target.value?.name}}",
-                    "pluginInstallError": null,
-                    "pluginInstallErrors": null
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_global.pluginInstallErrors?.file}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{Array.isArray(_global.pluginInstallErrors?.file) ? _global.pluginInstallErrors.file[0] : _global.pluginInstallErrors?.file}}"
-            }
-          ]
+            "text": "$t:admin.plugins.modals.manual_install_description"
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-start gap-2"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "info-circle",
-                    "className": "text-blue-500 mt-0.5",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-info-soft"
-                      },
-                      "text": "$t:admin.plugins.tabs.file_requirements"
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "openModal",
+                            "target": "plugin_manifest_preview_drawer"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md"
                     },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
-                      },
-                      "text": "plugin.json"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "mt-1 text-info-soft"
-                      },
-                      "text": "$t:admin.plugins.tabs.file_structure_hint"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "fas fa-eye",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.plugins.actions.preview_manifest"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "plugin_github_tab",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.pluginInstallTab === 'github'}}",
-      "props": {
-        "className": "mt-4 space-y-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:admin.plugins.tabs.github_url_label"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "url",
-                "placeholder": "https://github.com/vendor/plugin-name",
-                "value": "{{_global.pluginGithubUrl ?? ''}}",
-                "className": "input {{_global.pluginInstallErrors?.github_url ? 'input-error' : ''}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "pluginGithubUrl": "{{$event.target.value}}",
-                    "pluginInstallError": null,
-                    "pluginInstallErrors": null
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_global.pluginInstallErrors?.github_url}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{Array.isArray(_global.pluginInstallErrors?.github_url) ? _global.pluginInstallErrors.github_url[0] : _global.pluginInstallErrors?.github_url}}"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary"
-              },
-              "text": "$t:admin.plugins.tabs.github_url_hint"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-start gap-2"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.pluginInstallError}}",
+            "props": {
+                "className": "alert-danger"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "info-circle",
-                    "className": "text-blue-500 mt-0.5",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-info-soft"
-                      },
-                      "text": "$t:admin.plugins.tabs.github_requirements"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-error-xs"
                     },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
-                      },
-                      "text": "plugin.json"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "mt-1 text-info-soft"
-                      },
-                      "text": "$t:admin.plugins.tabs.github_public_only"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-red-500 mt-0.5",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-error-strong"
+                                    },
+                                    "text": "{{_global.pluginInstallError}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.pluginInstallErrors?.error}}",
+                                    "props": {
+                                        "className": "text-error-soft mt-1 whitespace-pre-line"
+                                    },
+                                    "text": "{{_global.pluginInstallErrors.error}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isPluginManualInstalling}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "pluginUploadFile": null,
-                    "pluginUploadFileName": null,
-                    "pluginGithubUrl": null,
-                    "pluginInstallError": null,
-                    "pluginInstallErrors": null,
-                    "pluginInstallTab": "file_upload"
-                  }
-                },
-                {
-                  "handler": "closeModal"
-                }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isPluginManualInstalling || ((!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? !_global.pluginUploadFile : !_global.pluginGithubUrl)}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "id": "plugin_install_tabs",
+            "type": "composite",
+            "name": "TabNavigation",
+            "actions": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isPluginManualInstalling": true,
-                    "pluginInstallError": null,
-                    "pluginInstallErrors": null
-                  }
-                },
-                {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? '/api/admin/plugins/install-from-file' : '/api/admin/plugins/install-from-github'}}",
-                  "params": {
-                    "method": "POST",
-                    "contentType": "{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
-                    "body": "{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? { file: _global.pluginUploadFile } : { github_url: _global.pluginGithubUrl }}}"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
+                    "comment": "탭을 옮길 때 앞 탭의 오류만 지운다 — 입력값은 남겨 두어 오가며 채우다 돌아와도 다시 고르지 않아도 된다.",
+                    "type": "change",
+                    "event": "onTabChange",
+                    "handler": "setState",
+                    "params": {
                         "target": "global",
-                        "isPluginManualInstalling": false,
-                        "pluginUploadFile": null,
-                        "pluginUploadFileName": null,
-                        "pluginGithubUrl": null,
+                        "pluginInstallTab": "{{$args[0]}}",
                         "pluginInstallError": null,
-                        "pluginInstallErrors": null,
-                        "pluginInstallTab": "file_upload"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.plugins.install_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "plugins"
-                      }
-                    },
-                    {
-                      "handler": "reloadExtensions"
-                    },
-                    {
-                      "handler": "closeModal"
+                        "pluginInstallErrors": null
                     }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isPluginManualInstalling": false,
-                        "pluginInstallError": "{{error.message}}",
-                        "pluginInstallErrors": "{{error.errors}}"
-                      }
-                    }
-                  ]
                 }
-              ]
+            ],
+            "props": {
+                "activeTabId": "{{_global.pluginInstallTab || 'file_upload'}}",
+                "variant": "underline",
+                "tabs": [
+                    {
+                        "id": "file_upload",
+                        "label": "$t:admin.plugins.tabs.file_upload",
+                        "iconName": "upload"
+                    },
+                    {
+                        "id": "github",
+                        "label": "$t:admin.plugins.tabs.github",
+                        "iconName": "code-branch"
+                    }
+                ]
             }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{!_global.isPluginManualInstalling}}",
-              "props": {
-                "name": "download",
-                "size": "sm"
-              }
+        },
+        {
+            "id": "plugin_file_upload_tab",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload'}}",
+            "props": {
+                "className": "mt-4 space-y-4"
             },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isPluginManualInstalling}}",
-              "props": {
-                "name": "spinner",
-                "className": "animate-spin",
-                "size": "sm"
-              }
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.plugins.tabs.file_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "FileInput",
+                            "actions": [
+                                {
+                                    "comment": "이 자리는 위 미리보기 창의 파일 자리와 다르다 — 거기서 확인해 봤더라도 여기에 다시 골라야 설치된다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pluginUploadFile": "{{$event.target.value}}",
+                                        "pluginUploadFileName": "{{$event.target.value?.name}}",
+                                        "pluginInstallError": null,
+                                        "pluginInstallErrors": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "accept": ".zip",
+                                "className": "{{_global.pluginInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
+                                "buttonText": "$t:common.browse",
+                                "placeholder": "$t:admin.plugins.tabs.no_file_selected"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.pluginInstallErrors?.file}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{Array.isArray(_global.pluginInstallErrors?.file) ? _global.pluginInstallErrors.file[0] : _global.pluginInstallErrors?.file}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "info-circle",
+                                        "className": "text-blue-500 mt-0.5",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-info-soft"
+                                            },
+                                            "text": "$t:admin.plugins.tabs.file_requirements"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
+                                            },
+                                            "text": "plugin.json"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1 text-info-soft"
+                                            },
+                                            "text": "$t:admin.plugins.tabs.file_structure_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "plugin_github_tab",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.pluginInstallTab === 'github'}}",
+            "props": {
+                "className": "mt-4 space-y-4"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isPluginManualInstalling ? '$t:admin.plugins.installing' : '$t:admin.plugins.actions.install'}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.plugins.tabs.github_url_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "공개 저장소 주소만 받는다(안내 문구가 짚는 제약). 어느 판본을 가져올지는 서버가 정하므로 여기서 고르지 않는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pluginGithubUrl": "{{$event.target.value}}",
+                                        "pluginInstallError": null,
+                                        "pluginInstallErrors": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "url",
+                                "placeholder": "https://github.com/vendor/plugin-name",
+                                "value": "{{_global.pluginGithubUrl ?? ''}}",
+                                "className": "input {{_global.pluginInstallErrors?.github_url ? 'input-error' : ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.pluginInstallErrors?.github_url}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{Array.isArray(_global.pluginInstallErrors?.github_url) ? _global.pluginInstallErrors.github_url[0] : _global.pluginInstallErrors?.github_url}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.plugins.tabs.github_url_hint"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "info-circle",
+                                        "className": "text-blue-500 mt-0.5",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-info-soft"
+                                            },
+                                            "text": "$t:admin.plugins.tabs.github_requirements"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
+                                            },
+                                            "text": "plugin.json"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1 text-info-soft"
+                                            },
+                                            "text": "$t:admin.plugins.tabs.github_public_only"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "닫기만 해서는 안 된다 — 여섯 값이 모두 전역이라 비우지 않으면 다음에 열 때 지난 파일과 오류가 그대로 남는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pluginUploadFile": null,
+                                        "pluginUploadFileName": null,
+                                        "pluginGithubUrl": null,
+                                        "pluginInstallError": null,
+                                        "pluginInstallErrors": null,
+                                        "pluginInstallTab": "file_upload"
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isPluginManualInstalling}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "성공 갈래에서만 입력값을 비운다 — 실패하면 고쳐서 다시 누를 수 있어야 한다. 목록 설치와 달리 관리자 메뉴는 다시 받지 않는데, 여기서 들여온 플러그인은 깔리기만 하고 아직 켜지지 않기 때문이다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isPluginManualInstalling": true,
+                                        "pluginInstallError": null,
+                                        "pluginInstallErrors": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? '/api/admin/plugins/install-from-file' : '/api/admin/plugins/install-from-github'}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "contentType": "{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
+                                        "body": "{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? { file: _global.pluginUploadFile } : { github_url: _global.pluginGithubUrl }}}"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isPluginManualInstalling": false,
+                                                "pluginUploadFile": null,
+                                                "pluginUploadFileName": null,
+                                                "pluginGithubUrl": null,
+                                                "pluginInstallError": null,
+                                                "pluginInstallErrors": null,
+                                                "pluginInstallTab": "file_upload"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.plugins.install_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "plugins"
+                                            }
+                                        },
+                                        {
+                                            "handler": "reloadExtensions"
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isPluginManualInstalling": false,
+                                            "pluginInstallError": "{{error.message}}",
+                                            "pluginInstallErrors": "{{error.errors}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isPluginManualInstalling || ((!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? !_global.pluginUploadFile : !_global.pluginGithubUrl)}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{!_global.isPluginManualInstalling}}",
+                            "props": {
+                                "name": "download",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isPluginManualInstalling}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "animate-spin",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isPluginManualInstalling ? '$t:admin.plugins.installing' : '$t:admin.plugins.actions.install'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -21,6 +21,23 @@
               "sidebarOpen": true
             }
           }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "layoutWarnings": [{ "id": "editor-sample-warning", "type": "compatibility", "level": "warning", "message": "샘플 경고" }],
+              "adminNotificationCount": 0,
+              "mobileLanguageOpen": false,
+              "toasts": [{ "id": "editor-sample-toast", "type": "success", "message": "샘플 알림" }],
+              "sidebarCollapsed": false,
+              "notificationsUnreadOnly": true,
+              "notificationsHasMore": true,
+              "notificationsLoadingMore": false,
+              "notificationsCurrentPage": 1
+            }
+          }
         }
       ]
     },
@@ -52,6 +69,20 @@
               }
             }
           }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "selectedIds_admin_users": [
+                11,
+                12,
+                13
+              ],
+              "visibleColumns_admin_users": ["name", "role", "email", "nickname", "status", "created_at", "last_login_at"]
+            }
+          }
         }
       ]
     },
@@ -72,7 +103,10 @@
                 "name": "이서연",
                 "email": "seoyeon.lee@example.com",
                 "nickname": "서연",
-                "role_ids": [2, 5],
+                "role_ids": [
+                  2,
+                  5
+                ],
                 "status": "active",
                 "mobile": "010-3456-7890",
                 "phone": "02-777-8800",
@@ -110,7 +144,10 @@
                 "name": "",
                 "email": "invalid-email",
                 "nickname": "서연",
-                "role_ids": [2, 5],
+                "role_ids": [
+                  2,
+                  5
+                ],
                 "status": "active",
                 "mobile": "010-3456-7890",
                 "phone": "02-777-8800",
@@ -128,8 +165,25 @@
             }
           },
           "formErrors": {
-            "_local.errors.name": ["필수 입력 항목입니다"],
-            "_local.errors.email": ["올바른 이메일 형식이 아닙니다"]
+            "_local.errors.name": [
+              "필수 입력 항목입니다"
+            ],
+            "_local.errors.email": [
+              "올바른 이메일 형식이 아닙니다"
+            ]
+          }
+        },
+        {
+          "id": "withdraw_confirm",
+          "label": "$t:editor.state.withdraw_confirm",
+          "comment": "탈퇴 확인 창은 data-if 로 여는 인라인 창이라 편집기 창 목록에 없다 — 창을 여는 지역 상태(showWithdrawConfirm)를 이 화면 상태로 켜서 미리본다.",
+          "initialState": {
+            "local": {
+              "showWithdrawConfirm": true
+            },
+            "global": {
+              "isSaving": false
+            }
           }
         }
       ]
@@ -146,88 +200,199 @@
           "label": "$t:editor.state.settings_general",
           "default": true,
           "initialState": {
-            "query": { "tab": "general" },
-            "global": { "activeSettingsTab": "general" }
+            "query": {
+              "tab": "general"
+            },
+            "global": {
+              "activeSettingsTab": "general"
+            }
           }
         },
         {
           "id": "settings_mail",
           "label": "$t:editor.state.settings_mail",
           "initialState": {
-            "query": { "tab": "mail" },
-            "global": { "activeSettingsTab": "mail" }
+            "query": {
+              "tab": "mail"
+            },
+            "global": {
+              "activeSettingsTab": "mail"
+            }
           }
         },
         {
           "id": "settings_upload",
           "label": "$t:editor.state.settings_upload",
           "initialState": {
-            "query": { "tab": "upload" },
-            "global": { "activeSettingsTab": "upload" }
+            "query": {
+              "tab": "upload"
+            },
+            "global": {
+              "activeSettingsTab": "upload"
+            }
           }
         },
         {
           "id": "settings_seo",
           "label": "$t:editor.state.settings_seo",
           "initialState": {
-            "query": { "tab": "seo" },
-            "global": { "activeSettingsTab": "seo" }
+            "query": {
+              "tab": "seo"
+            },
+            "global": {
+              "activeSettingsTab": "seo"
+            }
           }
         },
         {
           "id": "settings_security",
           "label": "$t:editor.state.settings_security",
           "initialState": {
-            "query": { "tab": "security" },
-            "global": { "activeSettingsTab": "security" }
+            "query": {
+              "tab": "security"
+            },
+            "global": {
+              "activeSettingsTab": "security"
+            }
+          }
+        },
+        {
+          "id": "settings_security_ip_restriction",
+          "label": "$t:editor.state.settings_security_ip_restriction",
+          "comment": "IP 접근 제한 카드 미리보기 — 편집기는 데이터소스 initLocal(\"form\")을 실행하지 않아 보안 탭 입력칸이 비고, 접근 제한 토글이 꺼진 채라 허용 목록·규칙 표가 흐리게만 보인다. _local.form.security 를 직접 시드해 켜진 토글·허용 목록·사용/미사용 규칙 두 줄을 그린다(나머지 보안 값은 sampleData settings 와 같은 값). IP 는 문서용 예약 대역(203.0.113.0/24·198.51.100.0/24)만 쓴다.",
+          "initialState": {
+            "query": {
+              "tab": "security"
+            },
+            "global": {
+              "activeSettingsTab": "security"
+            },
+            "local": {
+              "form": {
+                "security": {
+                  "force_https": false,
+                  "login_attempt_enabled": true,
+                  "auth_token_lifetime": "3600",
+                  "max_login_attempts": 5,
+                  "login_lockout_time": 5,
+                  "two_factor_auth": false,
+                  "password_min_length": 8,
+                  "require_password_special_char": false,
+                  "ip_restriction_enabled": true,
+                  "admin_allowed_ips": [
+                    "203.0.113.24",
+                    "198.51.100.0/24"
+                  ],
+                  "ip_restriction_rules": [
+                    {
+                      "pattern": "/api/admin/users*",
+                      "ips": [
+                        "203.0.113.0/24"
+                      ],
+                      "memo": "본사 사무실망에서만 회원 관리",
+                      "enabled": true
+                    },
+                    {
+                      "pattern": "/api/modules/sirsoft-ecommerce/admin/*",
+                      "ips": [
+                        "198.51.100.7"
+                      ],
+                      "memo": "주문 담당자 고정 IP",
+                      "enabled": false
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         {
           "id": "settings_drivers",
           "label": "$t:editor.state.settings_drivers",
           "initialState": {
-            "query": { "tab": "drivers" },
-            "global": { "activeSettingsTab": "drivers" }
+            "query": {
+              "tab": "drivers"
+            },
+            "global": {
+              "activeSettingsTab": "drivers"
+            }
           }
         },
         {
           "id": "settings_advanced",
           "label": "$t:editor.state.settings_advanced",
           "initialState": {
-            "query": { "tab": "advanced" },
-            "global": { "activeSettingsTab": "advanced" }
+            "query": {
+              "tab": "advanced"
+            },
+            "global": {
+              "activeSettingsTab": "advanced"
+            }
           }
         },
         {
           "id": "settings_notification_definitions",
           "label": "$t:editor.state.settings_notification_definitions",
           "initialState": {
-            "query": { "tab": "notification_definitions" },
-            "global": { "activeSettingsTab": "notification_definitions" }
+            "query": {
+              "tab": "notification_definitions"
+            },
+            "global": {
+              "activeSettingsTab": "notification_definitions"
+            }
           }
         },
         {
           "id": "settings_language_packs",
           "label": "$t:editor.state.settings_language_packs",
           "initialState": {
-            "query": { "tab": "language_packs" },
-            "global": { "activeSettingsTab": "language_packs" }
+            "query": {
+              "tab": "language_packs"
+            },
+            "global": {
+              "activeSettingsTab": "language_packs"
+            }
           }
         },
         {
           "id": "settings_identity",
           "label": "$t:editor.state.settings_identity",
           "initialState": {
-            "query": { "tab": "identity" },
-            "global": { "activeSettingsTab": "identity" }
+            "query": {
+              "tab": "identity"
+            },
+            "global": {
+              "activeSettingsTab": "identity"
+            }
           }
         },
         {
           "id": "settings_info",
           "label": "$t:editor.state.settings_info",
           "initialState": {
-            "query": { "tab": "info" },
-            "global": { "activeSettingsTab": "info" }
+            "query": {
+              "tab": "info"
+            },
+            "global": {
+              "activeSettingsTab": "info"
+            }
+          }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "settingsAbilities": {
+                "can_update": false
+              },
+              "isLanguagePackCheckingUpdates": false,
+              "uploadSettings": {
+                "allowed_extensions_formatted": "샘플 값",
+                "image_max_width": 3,
+                "max_file_size": 3
+              }
+            }
           }
         }
       ]
@@ -269,8 +434,12 @@
             }
           },
           "formErrors": {
-            "_local.resetErrors.password": ["필수 입력 항목입니다"],
-            "_local.resetErrors.password_confirmation": ["필수 입력 항목입니다"]
+            "_local.resetErrors.password": [
+              "필수 입력 항목입니다"
+            ],
+            "_local.resetErrors.password_confirmation": [
+              "필수 입력 항목입니다"
+            ]
           }
         },
         {
@@ -280,6 +449,15 @@
             "local": {
               "tokenError": false,
               "success": true
+            }
+          }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "theme": "light"
             }
           }
         }
@@ -310,7 +488,9 @@
           "id": "validation_failed",
           "label": "$t:editor.state.validation_failed",
           "formErrors": {
-            "_global.formErrors.name": ["필수 입력 항목입니다"]
+            "_global.formErrors.name": [
+              "필수 입력 항목입니다"
+            ]
           }
         }
       ]
@@ -364,7 +544,7 @@
       ]
     },
     {
-      "comment": "템플릿 목록. admin_template_list 는 라우트 path param route.type(user/admin)으로 데이터소스 type 파라미터를 분기한다(본문 line 45/600). 탭 하이라이트는 _global.activeTemplateTab 이지만 목록 내용은 route.type 이 SSoT 이므로 두 값을 함께 주입한다.",
+      "comment": "템플릿 목록. admin_template_list 는 라우트 path param route.type(user/admin)으로 데이터소스 type 파라미터를 분기한다(본문 line 45/600). 탭 하이라이트는 _global.activeTemplateTab 이지만 목록 내용은 route.type 이 SSoT 이므로 두 값을 함께 주입한다. 보기 방식(갤러리/목록) 항목도 이 묶음에 둔다 — 편집기 캔버스는 토글 클릭이 없어 _global.extensionViewMode 를 상태로 주입해야 두 배치를 모두 편집할 수 있고, 같은 범위의 묶음을 나누면 기본 상태가 둘이 된다.",
       "scope": {
         "kind": "route",
         "match": "*/admin/templates/:type"
@@ -375,16 +555,63 @@
           "label": "$t:editor.state.tab.template_user",
           "default": true,
           "initialState": {
-            "route": { "type": "user" },
-            "global": { "activeTemplateTab": "user" }
+            "route": {
+              "type": "user"
+            },
+            "global": {
+              "activeTemplateTab": "user"
+            }
           }
         },
         {
           "id": "admin_templates",
           "label": "$t:editor.state.tab.template_admin",
           "initialState": {
-            "route": { "type": "admin" },
-            "global": { "activeTemplateTab": "admin" }
+            "route": {
+              "type": "admin"
+            },
+            "global": {
+              "activeTemplateTab": "admin"
+            }
+          }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "route": {
+              "type": "user"
+            },
+            "global": {
+              "activeTemplateTab": "user",
+              "isCheckingTemplateUpdates": false
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "initialState": {
+            "route": {
+              "type": "user"
+            },
+            "global": {
+              "activeTemplateTab": "user",
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "route": {
+              "type": "user"
+            },
+            "global": {
+              "activeTemplateTab": "user",
+              "extensionViewMode": "list"
+            }
           }
         }
       ]
@@ -406,8 +633,22 @@
           "label": "$t:editor.state.login_failed",
           "formErrors": {
             "_local.loginError": "올바른 이메일 형식이 아닙니다",
-            "_local.loginErrors.email": ["올바른 이메일 형식이 아닙니다"],
-            "_local.loginErrors.password": ["필수 입력 항목입니다"]
+            "_local.loginErrors.email": [
+              "올바른 이메일 형식이 아닙니다"
+            ],
+            "_local.loginErrors.password": [
+              "필수 입력 항목입니다"
+            ]
+          }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "theme": "light",
+              "toasts": [{ "id": "editor-sample-toast", "type": "success", "message": "샘플 알림" }]
+            }
           }
         }
       ]
@@ -424,14 +665,3663 @@
           "label": "$t:editor.state.forgot_default",
           "default": true,
           "initialState": {
-            "local": { "success": false }
+            "local": {
+              "success": false
+            }
           }
         },
         {
           "id": "success",
           "label": "$t:editor.state.forgot_success",
           "initialState": {
-            "local": { "success": true }
+            "local": {
+              "success": true
+            }
+          }
+        },
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "theme": "light"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모듈·플러그인·템플릿 언어팩 관리(세 화면 모두 admin_language_pack_list 를 상속)의 보기 방식. 편집기 캔버스는 정적 시뮬레이션이라 토글 클릭이 없으므로 _global.extensionViewMode 를 상태로 주입해야 갤러리·목록 두 배치를 모두 편집할 수 있다. 기본은 갤러리이며, 목록 변종은 회귀 축이라 현행 배치를 그대로 보여 준다. 범위는 레이아웃 이름이 아니라 라우트다 — 편집기는 route/base/modal 범위만 맞춰 본다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/*/:identifier/language-packs"
+      },
+      "items": [
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "default": true,
+          "initialState": {
+            "global": {
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "list"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isProcessing, selectedIds_admin_users) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_activate_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedIds_admin_users": [
+                11,
+                12,
+                13
+              ],
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isProcessing, selectedIds_admin_users) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_block_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedIds_admin_users": [
+                11,
+                12,
+                13
+              ],
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isProcessing, selectedIds_admin_users) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_deactivate_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedIds_admin_users": [
+                11,
+                12,
+                13
+              ],
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isDeleting, selectedIds_admin_activity_logs, selectedIds_admin_member_notifications, selectedIds_admin_notification_logs) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_delete_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedIds_admin_activity_logs": [
+                11,
+                12,
+                13
+              ],
+              "isDeleting": false,
+              "selectedIds_admin_member_notifications": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_notification_logs": [
+                11,
+                12,
+                13
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isProcessing, selectedIds_admin_users) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_withdraw_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedIds_admin_users": [
+                11,
+                12,
+                13
+              ],
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(coreChangelogContent) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "changelog_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "coreChangelogContent": "샘플 설명 문구입니다."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deleteTargetId, isDeleting, modal_data, selectedMenuId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "delete_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isDeleting": false,
+              "modal_data": {
+                "id": 1,
+                "uuid": "00000000-0000-4000-8000-000000000031"
+              },
+              "selectedMenuId": 1,
+              "deleteTargetId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "error_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "errorMessage": "샘플 설명 문구입니다."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(extensionLicenseContent) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "extension_license_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "extensionLicenseContent": "샘플 설명 문구입니다."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(editorContent, previewLayoutSelection, selectedExtensionId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "extension_preview_layout_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedExtensionId": 1,
+              "editorContent": "샘플 설명 문구입니다.",
+              "previewLayoutSelection": "샘플 값"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(dirtyFileKeys, isRestoringExtension, selectedExtensionId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "extension_version_history_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedExtensionId": 1,
+              "dirtyFileKeys": [],
+              "isRestoringExtension": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(fileDeleteError, fileDeleteReferences, fileDeleteRouteRequired, fileDeleteTarget) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "file_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "fileDeleteTarget": "샘플 값",
+              "fileDeleteError": "샘플 값",
+              "fileDeleteRouteRequired": "샘플 값",
+              "fileDeleteReferences": [
+                {
+                  "name": "partials/shop/_header.g7.html",
+                  "line": 12,
+                  "kind": "include",
+                  "kind_label": "포함",
+                  "route_path": null
+                },
+                {
+                  "name": "shop/index",
+                  "line": 3,
+                  "kind": "route",
+                  "kind_label": "라우트",
+                  "route_path": "/shop"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(fileFormContent, fileFormError, fileFormMode, fileFormName, fileFormTarget, pendingFolders) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "file_form_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "pendingFolders": [],
+              "fileFormMode": "create_folder",
+              "fileFormName": "샘플 제목",
+              "fileFormError": "샘플 값",
+              "fileFormContent": "샘플 설명 문구입니다.",
+              "fileFormTarget": "샘플 값"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(identity_log_modal_data) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "identity_log_detail_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identity_log_modal_data": {
+                "attempts": 0,
+                "channel": "sample",
+                "created_at": "2026-09-19 11:30:00",
+                "expires_at": "2026-09-19 11:30:00",
+                "ip_address": "샘플 값",
+                "max_attempts": 5,
+                "metadata": {},
+                "origin_identifier": "샘플 값",
+                "origin_type": "sample",
+                "properties": {},
+                "provider_id": 1,
+                "purpose": "샘플 값",
+                "status": "verified",
+                "target_hash": "샘플 값",
+                "user_id": 1,
+                "verified_at": "2026-09-19 11:30:00"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isPurgingIdentityLogs) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "identity_log_purge_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isPurgingIdentityLogs": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(identityPolicyDeleteId, identityPolicyDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "identity_policy_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identityPolicyDeleting": false,
+              "identityPolicyDeleteId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(identity_policy_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "identity_policy_form_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identity_policy_form_modal": {
+                "errors": {
+                  "errors": {
+                    "applies_to": [
+                      "샘플 안내 문구입니다."
+                    ],
+                    "fail_mode": [
+                      "샘플 안내 문구입니다."
+                    ],
+                    "grace_minutes": [
+                      "샘플 안내 문구입니다."
+                    ],
+                    "key": [
+                      "샘플 안내 문구입니다."
+                    ],
+                    "priority": [
+                      "샘플 안내 문구입니다."
+                    ],
+                    "purpose": [
+                      "샘플 안내 문구입니다."
+                    ],
+                    "scope": [
+                      "샘플 안내 문구입니다."
+                    ],
+                    "target": [
+                      "샘플 안내 문구입니다."
+                    ]
+                  },
+                  "message": "샘플 설명 문구입니다."
+                },
+                "form": {
+                  "applies_to": "샘플 값",
+                  "conditions": {
+                    "signup_stage": "샘플 값"
+                  },
+                  "enabled": true,
+                  "fail_mode": "sample",
+                  "grace_minutes": 0,
+                  "id": 1,
+                  "key": "sample",
+                  "priority": 100,
+                  "provider_id": 1,
+                  "purpose": "signup",
+                  "scope": "sample",
+                  "source_type": "admin",
+                  "target": "샘플 값"
+                },
+                "isNew": true,
+                "isSaving": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(ip_restriction_rule_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "ip_restriction_rule_form_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "ip_restriction_rule_form_modal": {
+                "error": "pattern_required",
+                "form": {
+                  "enabled": true,
+                  "ips": [],
+                  "memo": "샘플 메모입니다.",
+                  "pattern": "샘플 값"
+                },
+                "row_index": "샘플 값",
+                "rules": []
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isLanguagePackInstalling, languagePackReinstallMode, selectedBundledLanguagePack) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "language_pack_install_bundled_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isLanguagePackInstalling": false,
+              "selectedBundledLanguagePack": {
+                "abilities": {
+                  "can_activate": true,
+                  "can_install": true
+                },
+                "icon_url": null,
+                "identifier": "샘플 값",
+                "install_blocked_reason": "target_version_too_old",
+                "locale": "ko",
+                "locale_native_name": "샘플 제목",
+                "scope": "sample",
+                "target_identifier": "샘플 값",
+                "version": 3
+              },
+              "languagePackReinstallMode": "sample"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isLanguagePackInstalling, languagePackGithubUrl, languagePackInstallError, languagePackInstallErrors, languagePackInstallTab, languagePackUploadFile) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "language_pack_install_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "languagePackInstallError": "샘플 값",
+              "languagePackInstallTab": "github",
+              "languagePackInstallErrors": {
+                "file": "샘플 값",
+                "github_url": "/sample"
+              },
+              "languagePackGithubUrl": "/sample",
+              "isLanguagePackInstalling": false,
+              "languagePackUploadFile": "샘플 값"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isLanguagePackPreviewLoading, languagePackPreviewFile, languagePackPreviewResult) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "language_pack_manifest_preview_drawer"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "languagePackPreviewFile": "샘플 값",
+              "isLanguagePackPreviewLoading": false,
+              "languagePackPreviewResult": {
+                "manifest": {
+                  "identifier": "샘플 값",
+                  "locale": "ko",
+                  "scope": "sample",
+                  "version": 3
+                },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
+                },
+                "validation": {
+                  "already_installed": "샘플 값",
+                  "errors": ["샘플 값"],
+                  "existing_version": "샘플 값",
+                  "is_valid": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(slotConflictCurrent, slotConflictTarget, slotConflictTargetId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "language_pack_slot_conflict_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "slotConflictCurrent": {
+                "identifier": "샘플 값"
+              },
+              "slotConflictTarget": {
+                "identifier": "샘플 값"
+              },
+              "slotConflictTargetId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isLanguagePackUninstalling) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "language_pack_uninstall_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isLanguagePackUninstalling": false
+            },
+            "local": {
+              "uninstallId": 7,
+              "uninstallScope": "module",
+              "uninstallTarget": "sirsoft-ecommerce",
+              "uninstallLocale": "ja",
+              "uninstallIconUrl": null,
+              "uninstallCascade": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isLanguagePackUpdating) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "language_pack_update_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isLanguagePackUpdating": false
+            },
+            "local": {
+              "updateId": 7,
+              "updateCurrent": "1.1.4",
+              "updateLatest": "1.1.5",
+              "updateIconUrl": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(coreLicenseContent) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "license_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "coreLicenseContent": "샘플 설명 문구입니다."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(identity_notification_add_modal) — [정책별 문구 추가] 버튼이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_notification_identity_definition_add"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identity_notification_add_modal": {
+                "editLang": "ko",
+                "errors": null,
+                "form": {
+                  "body": {
+                    "ko": "샘플 설명 문구입니다."
+                  },
+                  "name": {
+                    "ko": "샘플 제목"
+                  },
+                  "policy_key": "admin.sample.policy",
+                  "subject": {
+                    "ko": "샘플 제목"
+                  }
+                },
+                "isSaving": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(identity_notification_delete_modal) — 목록 행의 [삭제] 버튼이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_notification_identity_definition_delete"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identity_notification_delete_modal": {
+                "id": 1,
+                "isDeleting": false,
+                "name": "샘플 제목"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(notification_channel_off_modal) — [저장]이 메일 채널 끄기를 감지해 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_notification_channel_off_confirm"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "notification_channel_off_modal": {
+                "channels": [
+                  {
+                    "id": "mail",
+                    "is_active": false,
+                    "sort_order": 1
+                  }
+                ],
+                "isSaving": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isResettingNotification, resetTargetId, resetTargetName) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_notification_definition_reset"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "resetTargetName": "샘플 제목",
+              "isResettingNotification": false,
+              "resetTargetId": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_notification_template_form"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "notification_template_form_modal": {
+                "isSaving": false,
+                "errors": null,
+                "editLang": "ko",
+                "definition": {
+                  "id": 1,
+                  "type": "welcome",
+                  "relations": [
+                    "author"
+                  ],
+                  "relation_labels": {
+                    "author": "작성자"
+                  },
+                  "name": {
+                    "ko": "샘플 알림 정의",
+                    "en": "Sample notification"
+                  },
+                  "variables": [
+                    {
+                      "key": "recipient_name"
+                    },
+                    {
+                      "key": "subject_title"
+                    },
+                    {
+                      "key": "target_url"
+                    }
+                  ]
+                },
+                "template": {
+                  "id": 1,
+                  "channel": "mail",
+                  "click_url": "/sample",
+                  "subject": {
+                    "ko": "[{app_name}] {subject_title} 알림",
+                    "en": "[{app_name}] {subject_title} notification"
+                  },
+                  "body": {
+                    "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                    "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                  }
+                },
+                "recipients": [
+                  {
+                    "type": "trigger_user"
+                  },
+                  {
+                    "type": "related_user",
+                    "relation": "author"
+                  },
+                  {
+                    "type": "role",
+                    "value": [
+                      "admin"
+                    ],
+                    "display_names": [
+                      "최고 관리자"
+                    ],
+                    "exclude_trigger_user": false
+                  },
+                  {
+                    "type": "specific_users",
+                    "value": [
+                      "00000000-0000-4000-8000-000000000021"
+                    ],
+                    "display_names": [
+                      "운영자 A"
+                    ],
+                    "exclude_trigger_user": true
+                  }
+                ],
+                "roleSearchResults": [
+                  {
+                    "value": "admin",
+                    "label": "최고 관리자",
+                    "description": "admin"
+                  },
+                  {
+                    "value": "operator",
+                    "label": "운영자",
+                    "description": "operator"
+                  }
+                ],
+                "userSearchResults": [
+                  {
+                    "value": "00000000-0000-4000-8000-000000000022",
+                    "label": "운영자 B"
+                  }
+                ],
+                "preview": {
+                  "subject": "[샘플 사이트] 새 소식 알림",
+                  "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "modal_notification_template_preview"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "notification_template_form_modal": {
+                "isSaving": false,
+                "errors": null,
+                "editLang": "ko",
+                "definition": {
+                  "id": 1,
+                  "type": "welcome",
+                  "relations": [
+                    "author"
+                  ],
+                  "relation_labels": {
+                    "author": "작성자"
+                  },
+                  "name": {
+                    "ko": "샘플 알림 정의",
+                    "en": "Sample notification"
+                  },
+                  "variables": [
+                    {
+                      "key": "recipient_name"
+                    },
+                    {
+                      "key": "subject_title"
+                    },
+                    {
+                      "key": "target_url"
+                    }
+                  ]
+                },
+                "template": {
+                  "id": 1,
+                  "channel": "mail",
+                  "click_url": "/sample",
+                  "subject": {
+                    "ko": "[{app_name}] {subject_title} 알림",
+                    "en": "[{app_name}] {subject_title} notification"
+                  },
+                  "body": {
+                    "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                    "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                  }
+                },
+                "recipients": [
+                  {
+                    "type": "trigger_user"
+                  },
+                  {
+                    "type": "related_user",
+                    "relation": "author"
+                  },
+                  {
+                    "type": "role",
+                    "value": [
+                      "admin"
+                    ],
+                    "display_names": [
+                      "최고 관리자"
+                    ],
+                    "exclude_trigger_user": false
+                  },
+                  {
+                    "type": "specific_users",
+                    "value": [
+                      "00000000-0000-4000-8000-000000000021"
+                    ],
+                    "display_names": [
+                      "운영자 A"
+                    ],
+                    "exclude_trigger_user": true
+                  }
+                ],
+                "roleSearchResults": [
+                  {
+                    "value": "admin",
+                    "label": "최고 관리자",
+                    "description": "admin"
+                  },
+                  {
+                    "value": "operator",
+                    "label": "운영자",
+                    "description": "operator"
+                  }
+                ],
+                "userSearchResults": [
+                  {
+                    "value": "00000000-0000-4000-8000-000000000022",
+                    "label": "운영자 B"
+                  }
+                ],
+                "preview": {
+                  "subject": "[샘플 사이트] 새 소식 알림",
+                  "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(moduleChangelog, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_detail_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-ecommerce",
+                "vendor": "sirsoft",
+                "name": "이커머스",
+                "version": "1.3.0",
+                "description": "그누보드7 이커머스 모듈 - 상품, 주문, 결제 관리",
+                "requires_core": ">=7.1.0",
+                "dependencies": [],
+                "status": "active",
+                "license": "MIT",
+                "layouts_count": 31,
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon",
+                "permissions": [
+                  {
+                    "identifier": "products",
+                    "name": {
+                      "ko": "상품 관리",
+                      "en": "Product Management"
+                    },
+                    "permissions": [
+                      {
+                        "action": "read",
+                        "name": {
+                          "ko": "상품 조회",
+                          "en": "Read Products"
+                        }
+                      },
+                      {
+                        "action": "create",
+                        "name": {
+                          "ko": "상품 생성",
+                          "en": "Create Product"
+                        }
+                      },
+                      {
+                        "action": "update",
+                        "name": {
+                          "ko": "상품 수정",
+                          "en": "Update Product"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "identifier": "orders",
+                    "name": {
+                      "ko": "주문 관리",
+                      "en": "Order Management"
+                    },
+                    "permissions": [
+                      {
+                        "action": "read",
+                        "name": {
+                          "ko": "주문 조회",
+                          "en": "Read Orders"
+                        }
+                      },
+                      {
+                        "action": "update",
+                        "name": {
+                          "ko": "주문 수정",
+                          "en": "Update Order"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "roles": [
+                  {
+                    "identifier": "sirsoft-ecommerce.manager",
+                    "name": {
+                      "ko": "이커머스 관리자",
+                      "en": "Ecommerce Manager"
+                    }
+                  }
+                ],
+                "admin_menus": [
+                  {
+                    "name": {
+                      "ko": "이커머스",
+                      "en": "Ecommerce"
+                    },
+                    "slug": "sirsoft-ecommerce",
+                    "icon": "fas fa-shopping-cart"
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "identifier": "sirsoft-module-sirsoft-ecommerce-en",
+                    "locale": "en",
+                    "locale_native_name": "English",
+                    "origin": "built_in",
+                    "status": "active",
+                    "version": "1.3.0"
+                  },
+                  {
+                    "identifier": "g7-module-sirsoft-ecommerce-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "origin": "bundled",
+                    "status": "active",
+                    "version": "1.1.5"
+                  }
+                ]
+              },
+              "moduleChangelog": [
+                {
+                  "version": "1.3.0",
+                  "date": "2026-09-04",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["취소·반품·교환 신청과 관리자 처리 화면을 추가했습니다.", "회원 상세에 쇼핑 데이터 탭을 추가했습니다."]
+                    },
+                    {
+                      "name": "Fixed",
+                      "items": ["관리자 주문 상세의 보조 통화 표시를 바로잡았습니다."]
+                    }
+                  ]
+                },
+                {
+                  "version": "1.2.1",
+                  "date": "2026-08-24",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["장바구니 담기 수량 제한이 적용되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(activateWarningData, isForceActivating, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_force_activate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "inactive"
+              },
+              "activateWarningData": {
+                "missing_modules": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "inactive"
+                  }
+                ],
+                "missing_plugins": [
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "not_installed"
+                  }
+                ]
+              },
+              "isForceActivating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deactivateWarningData, isForceDeactivating, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_force_deactivate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "active"
+              },
+              "deactivateWarningData": {
+                "dependent_templates": [
+                  {
+                    "name": "기본 사용자 템플릿",
+                    "type": "user"
+                  }
+                ],
+                "dependent_modules": [
+                  {
+                    "name": "쇼핑몰",
+                    "version": "1.3.0"
+                  }
+                ],
+                "dependent_plugins": [
+                  {
+                    "name": "토스페이먼츠",
+                    "version": "1.1.0"
+                  }
+                ]
+              },
+              "isForceDeactivating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isModuleInstalling, moduleInstallVendorMode, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_install_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "uninstalled",
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon"
+              },
+              "moduleInstallVendorMode": "auto",
+              "installPreview": {
+                "dependencies": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "type": "module",
+                    "required_version": ">=1.2.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": true,
+                    "is_active": false
+                  },
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "type": "plugin",
+                    "required_version": ">=1.0.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": false,
+                    "is_active": false
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "bundled_identifier": "g7-module-sirsoft-ecommerce-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "version": "1.0.0",
+                    "default_selected": true,
+                    "depends_on_extension": null
+                  }
+                ]
+              },
+              "installSelectedDeps": [],
+              "installSelectedLPs": [],
+              "isModuleInstalling": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isModulePreviewLoading, modulePreviewFile, modulePreviewResult) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_manifest_preview_drawer"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "modulePreviewFile": "sirsoft-ecommerce-1.3.1.zip",
+              "isModulePreviewLoading": false,
+              "modulePreviewResult": {
+                "manifest": {
+                  "identifier": "sirsoft-ecommerce",
+                  "vendor": "sirsoft",
+                  "version": "1.3.1"
+                },
+                "validation": {
+                  "is_valid": true,
+                  "already_installed": true,
+                  "existing_version": "1.3.0",
+                  "errors": []
+                },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isModuleManualInstalling, moduleGithubUrl, moduleInstallError, moduleInstallErrors, moduleInstallTab, moduleUploadFile) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_manual_install_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "moduleInstallError": null,
+              "moduleInstallErrors": null,
+              "moduleInstallTab": "github",
+              "moduleGithubUrl": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce",
+              "isModuleManualInstalling": false,
+              "moduleUploadFile": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isBulkActivatingLanguagePacks, reactivateLanguagePacksData) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_reactivate_language_packs_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "reactivateLanguagePacksData": [
+                {
+                  "identifier": "g7-module-sirsoft-board-ja",
+                  "locale": "ja",
+                  "locale_native_name": "日本語"
+                }
+              ],
+              "isBulkActivatingLanguagePacks": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isModuleRefreshingLayouts, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_refresh_layouts_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "active"
+              },
+              "isModuleRefreshingLayouts": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deleteModuleData, isModuleUninstalling, moduleUninstallBackups, moduleUninstallInfo, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_uninstall_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "status": "inactive",
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon"
+              },
+              "moduleUninstallBackups": [],
+              "deleteModuleData": true,
+              "moduleUninstallInfo": {
+                "tables": [
+                  {
+                    "name": "ecommerce_categories",
+                    "size_formatted": "144 KB"
+                  },
+                  {
+                    "name": "ecommerce_category_images",
+                    "size_formatted": "96 KB"
+                  },
+                  {
+                    "name": "ecommerce_brands",
+                    "size_formatted": "128 KB"
+                  },
+                  {
+                    "name": "ecommerce_search_presets",
+                    "size_formatted": "48 KB"
+                  }
+                ],
+                "storage_directories": [
+                  {
+                    "name": "cache",
+                    "size_formatted": "40.1 KB"
+                  },
+                  {
+                    "name": "images",
+                    "size_formatted": "101.2 MB"
+                  },
+                  {
+                    "name": "settings",
+                    "size_formatted": "31.6 KB"
+                  }
+                ],
+                "vendor_directory": {
+                  "items": [
+                    {
+                      "name": "vendor/",
+                      "size_formatted": "1.1 MB"
+                    },
+                    {
+                      "name": "composer.lock",
+                      "size_formatted": "3 KB"
+                    }
+                  ],
+                  "total_size_formatted": "1.1 MB"
+                },
+                "extension_directory": {
+                  "path": "modules/sirsoft-ecommerce",
+                  "size_formatted": "40.2 MB"
+                },
+                "shared_records": [
+                  {
+                    "table": "permissions",
+                    "label_key": "permissions",
+                    "count": 95
+                  },
+                  {
+                    "table": "menus",
+                    "label_key": "menus",
+                    "count": 17
+                  },
+                  {
+                    "table": "notification_definitions",
+                    "label_key": "notification_definitions",
+                    "count": 52
+                  }
+                ],
+                "total_table_size_formatted": "8.3 MB",
+                "total_storage_size_formatted": "101.3 MB"
+              },
+              "isModuleUninstalling": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(hasModifiedModuleLayouts, isModuleUpdating, modifiedModuleLayouts, modifiedModuleLayoutsCheckFailed, modifiedModuleLayoutsCount, moduleForceUpdate, moduleLayoutStrategy, moduleRebuildSearchIndex, moduleUpdateError, selectedModule, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_update_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-ecommerce",
+                "vendor": "sirsoft",
+                "name": "이커머스",
+                "version": "1.3.0",
+                "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce/releases",
+                "required_core_version": ">=7.1.0",
+                "current_core_version": "7.1.0",
+                "is_compatible": true,
+                "incompatible_required_version": null,
+                "status": "active",
+                "update_source": "github",
+                "latest_version": "1.3.1",
+                "icon_url": "/api/extensions/module/sirsoft-ecommerce/icon"
+              },
+              "moduleForceUpdate": false,
+              "moduleUpdateError": null,
+              "updateChangelog": [
+                {
+                  "version": "1.3.1",
+                  "date": "2026-10-01",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["목록 필터가 새로 고침 뒤에도 유지되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ],
+              "moduleRebuildSearchIndex": false,
+              "hasModifiedModuleLayouts": true,
+              "modifiedModuleLayoutsCount": 1,
+              "modifiedModuleLayoutsCheckFailed": false,
+              "moduleLayoutStrategy": "keep",
+              "modifiedModuleLayouts": [
+                {
+                  "name": "admin_ecommerce_product_list",
+                  "updated_at": "2026-09-30 14:20:00"
+                }
+              ],
+              "isModuleUpdating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isDeletingAllNotifications) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "notification_delete_all_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isDeletingAllNotifications": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(pluginChangelog, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_detail_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedPlugin": {
+                "identifier": "sirsoft-gdpr",
+                "vendor": "sirsoft",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "version": "1.1.0",
+                "description": "쿠키 동의 배너, 자동 차단, 동의 이력 저장, 마이페이지 동의 철회를 제공하는 GDPR 대응 플러그인입니다.",
+                "requires_core": ">=7.1.0",
+                "dependencies": [],
+                "status": "active",
+                "license": "MIT",
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon",
+                "permissions": [
+                  {
+                    "identifier": "privacy",
+                    "name": {
+                      "ko": "개인정보 보호",
+                      "en": "Privacy"
+                    },
+                    "permissions": [
+                      {
+                        "action": "view",
+                        "name": {
+                          "ko": "개인정보 조회",
+                          "en": "View Privacy"
+                        }
+                      },
+                      {
+                        "action": "update",
+                        "name": {
+                          "ko": "개인정보 설정 변경",
+                          "en": "Update Privacy Settings"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "roles": [
+                  {
+                    "identifier": "sirsoft-gdpr.privacy",
+                    "name": {
+                      "ko": "개인정보 운영자",
+                      "en": "Privacy Operator"
+                    }
+                  }
+                ],
+                "hooks": [
+                  {
+                    "name": "sirsoft-gdpr.privacy.annual_notice_due",
+                    "type": "action",
+                    "description": {
+                      "ko": "개인정보 연간 통지 접수 후 발화",
+                      "en": "Annual privacy notice queued"
+                    }
+                  },
+                  {
+                    "name": "sirsoft-gdpr.consent.granted",
+                    "type": "action",
+                    "description": {
+                      "ko": "동의 부여 시 발화",
+                      "en": "Fired when consent is granted"
+                    }
+                  },
+                  {
+                    "name": "sirsoft-gdpr.necessary_storage.filter_provided_keys",
+                    "type": "filter",
+                    "description": {
+                      "ko": "확장이 쿠키 미동의 방문자에게도 필요한 자기 저장 키를 제공 (strictly necessary 허용목록에 합쳐진다)",
+                      "en": "Extensions provide their own storage keys that non-consenting visitors still need (merged into the strictly necessary allowlist)"
+                    }
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "identifier": "sirsoft-plugin-sirsoft-gdpr-en",
+                    "locale": "en",
+                    "locale_native_name": "English",
+                    "origin": "built_in",
+                    "status": "active",
+                    "version": "1.1.0"
+                  },
+                  {
+                    "identifier": "g7-plugin-sirsoft-gdpr-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "origin": "bundled",
+                    "status": "active",
+                    "version": "1.0.3"
+                  }
+                ]
+              },
+              "pluginChangelog": [
+                {
+                  "version": "1.1.0",
+                  "date": "2026-08-20",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["개인정보 이용내역 연간 통지를 추가했습니다.", "동의 이력 화면에서 채널별 발송 결과를 구분합니다."]
+                    }
+                  ]
+                },
+                {
+                  "version": "1.0.0",
+                  "date": "2026-07-01",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["쿠키 동의 배너와 동의 이력 저장을 추가했습니다."]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(extensionLicenseContent) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_extension_license_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "extensionLicenseContent": "샘플 설명 문구입니다."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(activateWarningData, isForceActivating, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_force_activate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "activateWarningData": {
+                "missing_modules": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "inactive"
+                  }
+                ],
+                "missing_plugins": [
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "not_installed"
+                  }
+                ]
+              },
+              "isForceActivating": false,
+              "selectedPlugin": {
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "inactive"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deactivateWarningData, isForceDeactivating, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_force_deactivate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "deactivateWarningData": {
+                "dependent_templates": [
+                  {
+                    "name": "기본 사용자 템플릿",
+                    "type": "user"
+                  }
+                ],
+                "dependent_modules": [
+                  {
+                    "name": "쇼핑몰",
+                    "version": "1.3.0"
+                  }
+                ],
+                "dependent_plugins": [
+                  {
+                    "name": "토스페이먼츠",
+                    "version": "1.1.0"
+                  }
+                ]
+              },
+              "isForceDeactivating": false,
+              "selectedPlugin": {
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "active"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isPluginInstalling, pluginInstallVendorMode, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_install_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "installPreview": {
+                "dependencies": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "type": "module",
+                    "required_version": ">=1.2.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": true,
+                    "is_active": false
+                  },
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "type": "plugin",
+                    "required_version": ">=1.0.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": false,
+                    "is_active": false
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "bundled_identifier": "g7-plugin-sirsoft-tosspayments-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "version": "1.0.0",
+                    "default_selected": true,
+                    "depends_on_extension": null
+                  }
+                ]
+              },
+              "installSelectedDeps": [],
+              "installSelectedLPs": [],
+              "selectedPlugin": {
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "uninstalled",
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon"
+              },
+              "pluginInstallVendorMode": "auto",
+              "isPluginInstalling": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isPluginPreviewLoading, pluginPreviewFile, pluginPreviewResult) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_manifest_preview_drawer"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "pluginPreviewFile": "sirsoft-gdpr-1.1.1.zip",
+              "isPluginPreviewLoading": false,
+              "pluginPreviewResult": {
+                "manifest": {
+                  "identifier": "sirsoft-gdpr",
+                  "vendor": "sirsoft",
+                  "version": "1.1.1"
+                },
+                "validation": {
+                  "is_valid": true,
+                  "already_installed": true,
+                  "existing_version": "1.1.0",
+                  "errors": []
+                },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isPluginManualInstalling, pluginGithubUrl, pluginInstallError, pluginInstallErrors, pluginInstallTab, pluginUploadFile) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_manual_install_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "pluginInstallError": null,
+              "pluginInstallErrors": null,
+              "pluginInstallTab": "github",
+              "pluginGithubUrl": "https://github.com/gnuboard/g7-plugin-sirsoft-gdpr",
+              "isPluginManualInstalling": false,
+              "pluginUploadFile": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isBulkActivatingLanguagePacks, reactivateLanguagePacksData) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_reactivate_language_packs_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "reactivateLanguagePacksData": [
+                {
+                  "identifier": "g7-plugin-sirsoft-tosspayments-ja",
+                  "locale": "ja",
+                  "locale_native_name": "日本語"
+                }
+              ],
+              "isBulkActivatingLanguagePacks": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isPluginRefreshingLayouts, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_refresh_layouts_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedPlugin": {
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "active"
+              },
+              "isPluginRefreshingLayouts": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deletePluginData, isPluginUninstalling, pluginUninstallBackups, pluginUninstallInfo, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_uninstall_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedPlugin": {
+                "identifier": "sirsoft-gdpr",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "status": "inactive",
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon"
+              },
+              "pluginUninstallBackups": [],
+              "deletePluginData": true,
+              "pluginUninstallInfo": {
+                "tables": [
+                  {
+                    "name": "gdpr_user_consents",
+                    "size_formatted": "48 KB"
+                  },
+                  {
+                    "name": "gdpr_user_consent_histories",
+                    "size_formatted": "80 KB"
+                  },
+                  {
+                    "name": "gdpr_policy_versions",
+                    "size_formatted": "64 KB"
+                  },
+                  {
+                    "name": "gdpr_privacy_notice_logs",
+                    "size_formatted": "80 KB"
+                  }
+                ],
+                "storage_directories": [
+                  {
+                    "name": "settings",
+                    "size_formatted": "1.6 KB"
+                  }
+                ],
+                "vendor_directory": {
+                  "items": [
+                    {
+                      "name": "composer.lock",
+                      "size_formatted": "623 B"
+                    }
+                  ],
+                  "total_size_formatted": "623 B"
+                },
+                "extension_directory": {
+                  "path": "plugins/sirsoft-gdpr",
+                  "size_formatted": "3.2 MB"
+                },
+                "shared_records": [
+                  {
+                    "table": "permissions",
+                    "label_key": "permissions",
+                    "count": 4
+                  },
+                  {
+                    "table": "menus",
+                    "label_key": "menus",
+                    "count": 2
+                  },
+                  {
+                    "table": "notification_definitions",
+                    "label_key": "notification_definitions",
+                    "count": 1
+                  }
+                ],
+                "total_table_size_formatted": "272 KB",
+                "total_storage_size_formatted": "1.6 KB"
+              },
+              "isPluginUninstalling": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(hasModifiedPluginLayouts, isPluginUpdating, modifiedPluginLayouts, modifiedPluginLayoutsCheckFailed, modifiedPluginLayoutsCount, pluginForceUpdate, pluginLayoutStrategy, pluginRebuildSearchIndex, pluginUpdateError, selectedPlugin, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_update_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "updateChangelog": [
+                {
+                  "version": "1.1.1",
+                  "date": "2026-10-01",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["목록 필터가 새로 고침 뒤에도 유지되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ],
+              "selectedPlugin": {
+                "identifier": "sirsoft-gdpr",
+                "vendor": "sirsoft",
+                "name": "GDPR (일반 데이터 보호 규정)",
+                "version": "1.1.0",
+                "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-gdpr/releases",
+                "required_core_version": ">=7.1.0",
+                "current_core_version": "7.1.0",
+                "is_compatible": true,
+                "incompatible_required_version": null,
+                "status": "active",
+                "update_source": "github",
+                "latest_version": "1.1.1",
+                "icon_url": "/api/extensions/plugin/sirsoft-gdpr/icon"
+              },
+              "pluginForceUpdate": false,
+              "pluginUpdateError": null,
+              "pluginRebuildSearchIndex": false,
+              "hasModifiedPluginLayouts": true,
+              "modifiedPluginLayoutsCount": 1,
+              "modifiedPluginLayoutsCheckFailed": false,
+              "pluginLayoutStrategy": "keep",
+              "modifiedPluginLayouts": [
+                {
+                  "name": "gdpr_consent_log",
+                  "updated_at": "2026-09-30 14:20:00"
+                }
+              ],
+              "isPluginUpdating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deleteTargetId, deleteTargetName, isDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isDeleting": false,
+              "deleteTargetId": 1,
+              "deleteTargetName": "샘플 제목"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isDuplicating, selectedSchedule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_duplicate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedSchedule": {
+                "command": "샘플 값",
+                "description": "샘플 설명 문구입니다.",
+                "expression": "샘플 값",
+                "id": 1,
+                "name": "샘플 제목",
+                "timeout": 60,
+                "type_label": "샘플 제목"
+              },
+              "isDuplicating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isEditMode, isSubmitting, scheduleForm, selectedSchedule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_form_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedSchedule": {
+                "command": "샘플 값",
+                "description": "샘플 설명 문구입니다.",
+                "expression": "샘플 값",
+                "id": 1,
+                "name": "샘플 제목",
+                "timeout": 60,
+                "type_label": "샘플 제목"
+              },
+              "isEditMode": true,
+              "scheduleForm": {
+                "frequency": "샘플 값",
+                "is_active": true,
+                "run_in_maintenance": false,
+                "type": "sample",
+                "without_overlapping": true
+              },
+              "isSubmitting": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(historyPage, selectedSchedule, scheduleHistory) — 앞의 둘은 목록 행의 클릭이 담고, 이력은 창의 데이터소스가 initGlobal 로 scheduleHistory({data, pagination})에 넘긴다. 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_history_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedSchedule": {
+                "command": "샘플 값",
+                "description": "샘플 설명 문구입니다.",
+                "expression": "샘플 값",
+                "id": 1,
+                "name": "샘플 제목",
+                "timeout": 60,
+                "type_label": "샘플 제목"
+              },
+              "historyPage": 1,
+              "scheduleHistory": {
+                "data": [
+                  {
+                    "id": 2,
+                    "status": "failed",
+                    "trigger_type": "manual",
+                    "started_at": "2026-05-29 03:00:00",
+                    "duration_formatted": "0.4초",
+                    "memory_usage_formatted": "12 MB",
+                    "triggered_by": { "name": "관리자" },
+                    "output": "샘플 실행 출력입니다.",
+                    "error_output": "샘플 오류 출력입니다."
+                  },
+                  {
+                    "id": 1,
+                    "status": "success",
+                    "trigger_type": "scheduled",
+                    "started_at": "2026-05-28 03:00:00",
+                    "duration_formatted": "1.2초",
+                    "memory_usage_formatted": "18 MB",
+                    "triggered_by": null,
+                    "output": "샘플 실행 출력입니다.",
+                    "error_output": null
+                  }
+                ],
+                "pagination": {
+                  "current_page": 1,
+                  "last_page": 1,
+                  "per_page": 10,
+                  "total": 2,
+                  "has_more_pages": false
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isRunning, runResult, selectedSchedule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_run_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedSchedule": {
+                "command": "샘플 값",
+                "description": "샘플 설명 문구입니다.",
+                "expression": "샘플 값",
+                "id": 1,
+                "name": "샘플 제목",
+                "timeout": 60,
+                "type_label": "샘플 제목"
+              },
+              "runResult": {
+                "duration": "샘플 값",
+                "duration_formatted": "샘플 값",
+                "output": "샘플 값",
+                "status": "success"
+              },
+              "isRunning": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isDeletingCache) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "settings_cache_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isDeletingCache": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(appKeyPassword, isRegeneratingKey) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "settings_password_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isRegeneratingKey": false,
+              "appKeyPassword": "샘플 값"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isRepublishingStaticCache) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "settings_static_cache_republish_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "isRepublishingStaticCache": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isTemplateActivating, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_activate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
+                "status": "inactive"
+              },
+              "isTemplateActivating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isTemplateDeactivating, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_deactivate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "status": "active"
+              },
+              "isTemplateDeactivating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(selectedTemplate, templateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_detail_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "vendor": "sirsoft",
+                "name": "Basic",
+                "version": "1.2.0",
+                "type": "user",
+                "description": "그누보드7 기본 사용자 템플릿",
+                "requires_core": ">=7.1.0",
+                "status": "active",
+                "license": "MIT",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon",
+                "components": {
+                  "basic": ["Button", "Input", "Textarea", "Select", "Option", "Checkbox", "PasswordInput", "Div"],
+                  "composite": ["Header", "Footer", "MobileNav", "ProductCard", "RichTextEditor", "ImageGallery"]
+                },
+                "dependencies": {
+                  "modules": [
+                    {
+                      "identifier": "sirsoft-board",
+                      "name": "게시판",
+                      "required_version": ">=1.0.0",
+                      "installed_version": "1.2.0",
+                      "is_active": true,
+                      "is_met": true
+                    },
+                    {
+                      "identifier": "sirsoft-ecommerce",
+                      "name": "이커머스",
+                      "required_version": ">=1.3.0",
+                      "installed_version": "1.3.0",
+                      "is_active": true,
+                      "is_met": true
+                    }
+                  ],
+                  "plugins": [
+                    {
+                      "identifier": "sirsoft-daum_postcode",
+                      "name": "Daum 우편번호",
+                      "required_version": ">=1.0.0",
+                      "installed_version": "1.1.0",
+                      "is_active": true,
+                      "is_met": true
+                    }
+                  ]
+                },
+                "externals": [
+                  {
+                    "type": "style",
+                    "id": "fontawesome",
+                    "url": "/api/templates/assets/sirsoft-basic?file=vendor%2Ffont-awesome%2F6.4.0%2Fcss%2Fall.inlined.css"
+                  },
+                  {
+                    "type": "webfont",
+                    "id": "pretendard",
+                    "url": "/api/templates/assets/sirsoft-basic?file=vendor%2Fpretendard%2F1.3.9%2Fpretendard-variable.css"
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "identifier": "sirsoft-template-sirsoft-basic-en",
+                    "locale": "en",
+                    "locale_native_name": "English",
+                    "origin": "built_in",
+                    "status": "active",
+                    "version": "1.2.0"
+                  },
+                  {
+                    "identifier": "g7-template-sirsoft-basic-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "origin": "bundled",
+                    "status": "active",
+                    "version": "1.1.4"
+                  }
+                ]
+              },
+              "templateChangelog": [
+                {
+                  "version": "1.2.0",
+                  "date": "2026-09-09",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["마이페이지에 스크랩과 내 반응 목록을 추가했습니다."]
+                    }
+                  ]
+                },
+                {
+                  "version": "1.1.0",
+                  "date": "2026-08-10",
+                  "categories": [
+                    {
+                      "name": "Added",
+                      "items": ["주문서에 환불 계좌 입력란을 추가했습니다."]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(extensionLicenseContent) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_extension_license_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "extensionLicenseContent": "샘플 설명 문구입니다."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(activateWarningData, isForceActivating, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_force_activate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "activateWarningData": {
+                "missing_modules": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "inactive"
+                  }
+                ],
+                "missing_plugins": [
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "not_installed"
+                  }
+                ]
+              },
+              "isForceActivating": false,
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "status": "inactive"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isTemplateInstalling, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_install_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "installPreview": {
+                "dependencies": [
+                  {
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "type": "module",
+                    "required_version": ">=1.2.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": true,
+                    "is_active": false
+                  },
+                  {
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "type": "plugin",
+                    "required_version": ">=1.0.0",
+                    "available": true,
+                    "default_selected": true,
+                    "is_met": false,
+                    "is_installed": false,
+                    "is_active": false
+                  }
+                ],
+                "language_packs": [
+                  {
+                    "bundled_identifier": "g7-template-sirsoft-basic-ja",
+                    "locale": "ja",
+                    "locale_native_name": "日本語",
+                    "version": "1.0.0",
+                    "default_selected": true,
+                    "depends_on_extension": null
+                  }
+                ]
+              },
+              "installSelectedDeps": [],
+              "installSelectedLPs": [],
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
+                "status": "uninstalled",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
+              },
+              "isTemplateInstalling": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isTemplatePreviewLoading, templatePreviewFile, templatePreviewResult) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_manifest_preview_drawer"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "templatePreviewFile": "sirsoft-basic-1.2.1.zip",
+              "isTemplatePreviewLoading": false,
+              "templatePreviewResult": {
+                "manifest": {
+                  "identifier": "sirsoft-basic",
+                  "vendor": "sirsoft",
+                  "version": "1.2.1",
+                  "type": "user"
+                },
+                "validation": {
+                  "is_valid": true,
+                  "already_installed": true,
+                  "existing_version": "1.2.0",
+                  "errors": []
+                },
+                "icon": {
+                  "present": true,
+                  "valid": true,
+                  "path": "assets/icon.svg",
+                  "source": "convention",
+                  "format": "svg",
+                  "warnings": [
+                    {
+                      "code": "manifest_icon_missing",
+                      "message": "설정 파일의 icon 이 가리키는 파일이 없습니다."
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isTemplateManualInstalling, templateGithubUrl, templateInstallError, templateInstallErrors, templateInstallTab, templateUploadFile) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_manual_install_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "templateInstallError": null,
+              "templateInstallErrors": null,
+              "templateInstallTab": "github",
+              "templateGithubUrl": "https://github.com/gnuboard/g7-template-sirsoft-basic",
+              "isTemplateManualInstalling": false,
+              "templateUploadFile": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isBulkActivatingLanguagePacks, reactivateLanguagePacksData) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_reactivate_language_packs_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "reactivateLanguagePacksData": [
+                {
+                  "identifier": "g7-template-sirsoft-basic-ja",
+                  "locale": "ja",
+                  "locale_native_name": "日本語"
+                }
+              ],
+              "isBulkActivatingLanguagePacks": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(isTemplateRefreshingLayouts, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_refresh_layouts_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "status": "active"
+              },
+              "isTemplateRefreshingLayouts": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(deleteTemplateData, isTemplateUninstalling, selectedTemplate, templateUninstallBackups, templateUninstallInfo) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_uninstall_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
+                "status": "inactive",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
+              },
+              "templateUninstallBackups": [],
+              "deleteTemplateData": true,
+              "templateUninstallInfo": {
+                "extension_directory": {
+                  "path": "templates/sirsoft-basic",
+                  "size_formatted": "13.7 MB"
+                }
+              },
+              "isTemplateUninstalling": false
+            }
+          }
+        },
+        {
+          "id": "uninstall_done",
+          "label": "$t:editor.state.uninstall_done",
+          "comment": "제거를 마친 뒤 — 보존한 운영자 파일 사본 안내만 남는 모습. 기본(제거 확인) 상태에 사본을 담으면 창이 늘 이 모습으로 열려 안내·삭제 선택·단추를 고칠 수 없다.",
+          "initialState": {
+            "global": {
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "name": "Basic",
+                "type": "user",
+                "status": "uninstalled",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
+              },
+              "templateUninstallBackups": [
+                {
+                  "directory": "custom",
+                  "archive": "sirsoft-basic_20260920_103000.zip"
+                }
+              ],
+              "deleteTemplateData": true,
+              "isTemplateUninstalling": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(hasModifiedTemplateLayouts, isTemplateUpdating, modifiedTemplateLayouts, modifiedTemplateLayoutsCheckFailed, modifiedTemplateLayoutsCount, selectedTemplate, templateForceUpdate, templateLayoutStrategy, templateUpdateError, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "template_update_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "updateChangelog": [
+                {
+                  "version": "1.2.1",
+                  "date": "2026-10-01",
+                  "categories": [
+                    {
+                      "name": "Fixed",
+                      "items": ["목록 필터가 새로 고침 뒤에도 유지되도록 수정했습니다."]
+                    }
+                  ]
+                }
+              ],
+              "selectedTemplate": {
+                "identifier": "sirsoft-basic",
+                "vendor": "sirsoft",
+                "name": "Basic",
+                "version": "1.2.0",
+                "type": "user",
+                "github_changelog_url": "https://github.com/gnuboard/g7-template-sirsoft-basic/blob/main/CHANGELOG.md",
+                "required_core_version": ">=7.1.0",
+                "current_core_version": "7.1.0",
+                "is_compatible": true,
+                "incompatible_required_version": null,
+                "status": "active",
+                "update_source": "github",
+                "latest_version": "1.2.1",
+                "icon_url": "/api/extensions/template/sirsoft-basic/icon"
+              },
+              "templateForceUpdate": false,
+              "templateUpdateError": null,
+              "hasModifiedTemplateLayouts": true,
+              "modifiedTemplateLayoutsCount": 1,
+              "modifiedTemplateLayoutsCheckFailed": false,
+              "templateLayoutStrategy": "keep",
+              "modifiedTemplateLayouts": [
+                {
+                  "id": 1,
+                  "name": "home",
+                  "updated_at": "2026-09-30 14:20:00",
+                  "size_diff": 512,
+                  "kind": "layout"
+                }
+              ],
+              "isTemplateUpdating": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "모달 본문이 읽는 전역 상태(dirtyFileKeys, isRestoring, layoutFilesList, layoutVersionLimit, selectedLayoutName) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "version_history_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedLayoutName": "샘플 제목",
+              "layoutFilesList": [
+                "샘플 안내 문구입니다."
+              ],
+              "layoutVersionLimit": 20,
+              "dirtyFileKeys": [],
+              "isRestoring": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(selectedIds_admin_activity_logs, selectedIds_admin_member_notifications, selectedIds_admin_notification_logs) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/activity-logs"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "selectedIds_admin_activity_logs": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_member_notifications": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_notification_logs": [
+                11,
+                12,
+                13
+              ]
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(assetUrlModeDrift) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/dashboard"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "assetUrlModeDrift": "샘플 값"
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(selectedIds_admin_activity_logs, selectedIds_admin_member_notifications, selectedIds_admin_notification_logs) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/identity/logs"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "selectedIds_admin_activity_logs": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_member_notifications": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_notification_logs": [
+                11,
+                12,
+                13
+              ]
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(selectedIds_admin_activity_logs, selectedIds_admin_member_notifications, selectedIds_admin_notification_logs) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/member-notifications"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "selectedIds_admin_member_notifications": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_activity_logs": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_notification_logs": [
+                11,
+                12,
+                13
+              ]
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(formData, formErrors, isSaving, panelMode, selectedMenu, selectedMenuId) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/menus"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "selectedMenuId": 1,
+              "panelMode": "view",
+              "formErrors": {
+                "name": [
+                  "샘플 안내 문구입니다."
+                ],
+                "parent_id": [
+                  "샘플 안내 문구입니다."
+                ],
+                "slug": [
+                  "샘플 안내 문구입니다."
+                ],
+                "url": [
+                  "샘플 안내 문구입니다."
+                ]
+              },
+              "selectedMenu": {
+                "children": ["샘플 값"],
+                "created_at": "2026-09-19 11:30:00",
+                "creator": {
+                  "email": "user@example.com",
+                  "name": "샘플 제목"
+                },
+                "extension_identifier": "샘플 값",
+                "extension_type": "core",
+                "icon": "fas fa-folder",
+                "is_active": true,
+                "name": "샘플 제목",
+                "order": "샘플 값",
+                "parent": {
+                  "name": "샘플 제목"
+                },
+                "parent_id": 1,
+                "plugin": {
+                  "name": "샘플 제목"
+                },
+                "plugin_id": 1,
+                "roles": [],
+                "slug": "sample-slug",
+                "updated_at": "2026-09-19 11:30:00",
+                "url": "/sample"
+              },
+              "formData": {
+                "extension_identifier": "샘플 값",
+                "extension_type": "sample",
+                "icon": "fas fa-folder",
+                "is_active": true,
+                "name": "샘플 제목",
+                "parent_id": 1,
+                "roles": "샘플 값",
+                "slug": "sample-slug",
+                "url": "/sample"
+              },
+              "isSaving": false
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(isCheckingUpdates) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다. 보기 방식(갤러리/목록) 항목도 이 묶음에 둔다 — 편집기 캔버스는 토글 클릭이 없어 _global.extensionViewMode 를 상태로 주입해야 두 배치를 모두 편집할 수 있고, 같은 범위의 묶음을 나누면 기본 상태가 둘이 된다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/modules"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "isCheckingUpdates": false
+            }
+          },
+          "default": true
+        },
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "list"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(selectedIds_admin_activity_logs, selectedIds_admin_member_notifications, selectedIds_admin_notification_logs) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/notification-logs"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "selectedIds_admin_notification_logs": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_activity_logs": [
+                11,
+                12,
+                13
+              ],
+              "selectedIds_admin_member_notifications": [
+                11,
+                12,
+                13
+              ]
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(isCheckingUpdates) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다. 보기 방식(갤러리/목록) 항목도 이 묶음에 둔다 — 편집기 캔버스는 토글 클릭이 없어 _global.extensionViewMode 를 상태로 주입해야 두 배치를 모두 편집할 수 있고, 같은 범위의 묶음을 나누면 기본 상태가 둘이 된다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/plugins"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "isCheckingUpdates": false
+            }
+          },
+          "default": true
+        },
+        {
+          "id": "extensions_list_view_gallery",
+          "label": "$t:editor.state.extensions_list_view_gallery",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "gallery"
+            }
+          }
+        },
+        {
+          "id": "extensions_list_view_list",
+          "label": "$t:editor.state.extensions_list_view_list",
+          "initialState": {
+            "global": {
+              "extensionViewMode": "list"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(activePermissionTab, formErrors, installedModules, installedPlugins, isSaving) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/roles/create"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "formErrors": {
+                "description": [
+                  "샘플 안내 문구입니다."
+                ],
+                "description_raw": [
+                  "샘플 안내 문구입니다."
+                ],
+                "identifier": [
+                  "샘플 안내 문구입니다."
+                ],
+                "name": [
+                  "샘플 안내 문구입니다."
+                ],
+                "name_raw": [
+                  "샘플 안내 문구입니다."
+                ]
+              },
+              "installedModules": [{ "identifier": "sirsoft-board", "name": "게시판", "status": "active" }, { "identifier": "sirsoft-ecommerce", "name": "이커머스", "status": "active" }],
+              "installedPlugins": [{ "identifier": "sirsoft-gdpr", "name": "GDPR", "status": "active" }],
+              "activePermissionTab": "샘플 값",
+              "isSaving": false
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(activeScheduleTab, bulkStatusAction, selectedScheduleIds, showAdvancedSearch) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/schedules"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "activeScheduleTab": "샘플 값",
+              "showAdvancedSearch": "샘플 값",
+              "selectedScheduleIds": [
+                11,
+                12,
+                13
+              ],
+              "bulkStatusAction": "active"
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(editorContent, isSaving, layoutFilesList, markupCompileError, markupWarnings, selectedExtensionId) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/templates/:identifier/edit"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "layoutFilesList": [
+                "샘플 안내 문구입니다."
+              ],
+              "editorContent": "샘플 설명 문구입니다.",
+              "markupWarnings": [],
+              "selectedExtensionId": 1,
+              "markupCompileError": {
+                "code": "sample",
+                "column": 0,
+                "line": 0,
+                "message": "샘플 설명 문구입니다."
+              },
+              "isSaving": false
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "화면 본문이 읽는 전역 상태(isSaving) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/users/create"
+      },
+      "items": [
+        {
+          "id": "screen_filled",
+          "label": "$t:editor.state.screen_filled",
+          "initialState": {
+            "global": {
+              "isSaving": false
+            }
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "comment": "방문자 통계 리포트 행의 「추이」 창. 행의 추이 아이콘이 `_global.analyticsRowTrend` 에 리포트·저장 라벨을 담고 연다 — 창 제목(「{label} 추이」)과 차트 게이트가 그 값과 데이터소스 `analytics_row_trend` 의 report·label 일치를 본다. 상태 없이는 제목에 `{{label}}` 원문과 오류 카드가 그려진다.",
+      "scope": {
+        "kind": "modal",
+        "match": "analytics_row_trend_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "analyticsRowTrend": {
+                "report": "page_url",
+                "label": "example.com/board/notice",
+                "label_display": "/board/notice"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "방문자 통계 설정의 「소급 익명화」 확인 창. 저장 직전 화면이 `_global.analyticsRetro` 에 바뀔 건수(visits·actions)를 담고 연다 — 상태 없이는 「방문 0건·액션 0건」으로 그려진다.",
+      "scope": {
+        "kind": "modal",
+        "match": "analytics_retro_anonymize_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "analyticsRetro": {
+                "visits": 12840,
+                "actions": 45210,
+                "hash": "editor-sample",
+                "maskOctets": 1
+              },
+              "analyticsRetroConfirm": false,
+              "analyticsRetroRunning": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "메뉴 관리의 역할 일괄 적용 확인 창. 일괄 패널이 고른 메뉴(`menuBulkSelectedIds`)·역할(`menuBulkRoleIds`)·동작(`menuBulkAction`)을 담고 연다 — 상태 없이는 「메뉴 0개에 역할 「{{roles}}」…」로 그려진다. 메뉴·역할 id 는 표본 데이터소스(menus·roles)의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_roles_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "menuBulkAction": "add",
+              "menuBulkSelectedIds": [
+                2,
+                3
+              ],
+              "menuBulkRoleIds": [
+                2
+              ],
+              "menuBulkError": null,
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "회원 목록의 역할 일괄 추가/제거 창. 목록의 선택 행(`selectedIds_admin_users`)과 고른 동작(`userBulkRoleMode`)을 읽는다 — 상태 없이는 「선택한 회원 0명에게」로 그려진다. 적용 결과(`userBulkRoleResult`)는 비워 두어 입력 모습으로 연다.",
+      "scope": {
+        "kind": "modal",
+        "match": "bulk_roles_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedIds_admin_users": [
+                "00000000-0000-4000-8000-000000000003",
+                "00000000-0000-4000-8000-000000000004",
+                "00000000-0000-4000-8000-000000000005"
+              ],
+              "userBulkRoleMode": "add",
+              "userBulkRoleIds": [
+                2
+              ],
+              "userBulkRoleResult": null,
+              "userBulkRoleError": null,
+              "isProcessing": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "본인인증 코드 입력 창(공통 레이아웃·비밀번호 재설정). 인증을 요구한 요청이 `_global.identityChallenge` 에 발급 정보를 담고 연다 — 상태 없이는 「남은 시도: 0회」·남은 시간 없음으로 그려진다. 코드 칸은 비워 [확인] 은 입력 전 잠김(평상 모습).",
+      "scope": {
+        "kind": "modal",
+        "match": "identity-challenge-modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "identityChallenge": {
+                "challenge_id": "00000000-0000-4000-8000-0000000000c1",
+                "provider_id": "g7:core.mail",
+                "purpose": "sensitive_action",
+                "policy_key": null,
+                "target": "a***@example.com",
+                "render_hint": "text_code",
+                "expires_at": "2026-01-01T09:15:00+09:00",
+                "remainingSeconds": 540,
+                "attempts": 0,
+                "maxAttempts": 5,
+                "code": "",
+                "error": null,
+                "resendCooldown": 0,
+                "resending": false,
+                "verifying": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "보안 탭 비밀번호 만료 「지금 실행」 확인 창. 단계 카드의 버튼이 `_global.passwordExpiryRun` 에 단계·대상 수를 담고 미리보기 건수를 받아 온 뒤 연다 — 상태 없이는 건수 줄 없이 [실행] 이 잠긴 채 그려진다. 값은 표본 passwordExpiryPreview·passwordExpiryManualRuns 의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "password_expiry_run_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "passwordExpiryRun": {
+                "key": "password_expiry:notice",
+                "stage": "notice",
+                "label": "비밀번호 만료 사전 안내",
+                "total": 12,
+                "batchSize": 1000,
+                "preview": {
+                  "count": 12,
+                  "enabled": true
+                },
+                "loading": false,
+                "submitting": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "개인정보 탭 「지금 실행」 확인 창. 카드의 버튼이 `_global.privacyRun` 에 대상 키·이름을 담고 건수를 받아 온 뒤 연다 — 상태 없이는 제목이 「{{target}} — 직권 실행」 원문으로, 건수 줄 없이 그려진다. 값은 표본 privacyManualRuns 의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "privacy_run_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "privacyRun": {
+                "key": "retention:user-withdrawn",
+                "label": "탈퇴 회원 잔여 개인정보",
+                "supportsSkip": false,
+                "skipWaiting": false,
+                "preview": {
+                  "count": 3,
+                  "mode": "anonymize",
+                  "enabled": true
+                },
+                "loading": false,
+                "submitting": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "개인정보 탭 「대상 보기」 창. 카드의 버튼이 `_global.privacyTargets` 에 조회 경로와 창 제목(`title`)을 담고 연다 — 목록은 표본 데이터소스 privacyTargets 로 채워지지만 제목은 이 상태 없이는 빈 칸이다.",
+      "scope": {
+        "kind": "modal",
+        "match": "privacy_targets_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "privacyTargets": {
+                "path": "retention-targets/user-withdrawn",
+                "currentPage": 1,
+                "hasMore": false,
+                "isLoadingMore": false,
+                "title": "$t:admin.settings.privacy.targets.title.withdrawn"
+              }
+            }
           }
         }
       ]

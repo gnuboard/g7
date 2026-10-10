@@ -69,8 +69,10 @@
     "message_cannot_delete": " category cannot be deleted.",
     "message_suffix": " category. Are you sure?",
     "cannot_delete_title": "Cannot Delete",
-    "has_children_cannot_delete": "This category has {count} child category(ies). Please delete child categories first.",
-    "has_products_cannot_delete": "This category has {count} linked product(s). Please change the category of products first.",
+    "has_children_cannot_delete": "This category has {count} child categories. Please delete child categories first.",
+    "has_children_cannot_delete_one": "This category has {count} child category. Please delete the child category first.",
+    "has_products_cannot_delete": "This category has {count} linked products. Please change the category of products first.",
+    "has_products_cannot_delete_one": "This category has {count} linked product. Please change the category of the product first.",
     "irreversible_warning": "This action cannot be undone. Are you sure you want to delete?"
   },
   "modal": {

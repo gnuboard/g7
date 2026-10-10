@@ -1,0 +1,147 @@
+<!-- 활동 로그 표. 쪽 넘김을 서버가 하므로 표는 현재 쪽만 들고 있고, 쪽을 옮기는 것도
+  **주소를 갈아 끼워 다시 받는 방식**이다 — 돌아온 목록이 곧 화면이다.
+  변경 내역이 있는 줄만 펼칠 수 있고(`has_changes`), 펼친 자리에는 한 건짜리 수정과 여러 건을
+  한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다. -->
+<partial description="Activity Log List DataGrid">
+  <data-grid data-type="composite" data-ref="activity_log_datagrid" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{activityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{activityLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" loading="{{activityLogs?.loading}}" :expandable="true" expandConditionField="has_changes" actionsColumnHeader="$t:common.actions">
+    <expand>
+      <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+          <div data-if="{{row.loggable_type_display}}" class="flex-center gap-2">
+            <span class="font-medium text-gray-700 dark:text-gray-300">$t:admin.activity_log.detail.target_label</span>
+            <span class="text-gray-600 dark:text-gray-400">{{row.loggable_type_display}} #{{row.loggable_id}}</span>
+          </div>
+        </div>
+        <div data-if="{{row.changes &amp;&amp; row.changes.length > 0}}">
+          <span class="form-label">$t:admin.activity_log.detail.changes_title</span>
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div class="flex bg-gray-100 dark:bg-gray-800 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <span class="flex-1">$t:admin.activity_log.detail.column_field</span>
+              <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_old</span>
+              <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_new</span>
+            </div>
+            <div data-each="change in row.changes" class="flex items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-sm">
+              <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+              <span class="w-1/3 text-center text-red-600 dark:text-red-400 break-all">{{change.old_label ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+              <span class="w-1/3 text-center text-green-600 dark:text-green-400 break-all">{{change.new_label ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-if="{{row.bulk_changes &amp;&amp; row.bulk_changes.length > 0}}">
+          <span class="form-label">$t:admin.activity_log.detail.bulk_changes_title</span>
+          <div class="stack-tight">
+            <div data-each="group in row.bulk_changes" class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div class="flex bg-gray-100 dark:bg-gray-800 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                <span class="flex-1">ID: {{group.model_id}}</span>
+                <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_old</span>
+                <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_new</span>
+              </div>
+              <div data-each="change in {{group.changes}}" class="flex items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-sm">
+                <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                <span class="w-1/3 text-center text-red-600 dark:text-red-400 break-all">{{change.old_label ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                <span class="w-1/3 text-center text-green-600 dark:text-green-400 break-all">{{change.new_label ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </expand>
+    <prop name="rowActions">
+      <item id="delete" label="$t:admin.activity_log.delete.button" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
+    </prop>
+    <column field="number" header="$t:admin.activity_log.table.column.number" width="60px">
+      <cell>
+        <span class="text-label-subtle">{{row.number ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="log_type" header="$t:admin.activity_log.table.column.log_type" width="90px">
+      <cell>
+        <span class="{{row.log_type === 'admin' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : row.log_type === 'user' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}">{{row.log_type_label}}</span>
+      </cell>
+    </column>
+    <column field="action" header="$t:admin.activity_log.table.column.action" width="100px">
+      <cell>
+        <span class="text-heading">{{row.action_label}}</span>
+      </cell>
+    </column>
+    <column field="description" header="$t:admin.activity_log.table.column.description" width="250px">
+      <cell>
+        <span class="text-body line-clamp-1">{{row.localized_description ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="target" header="$t:admin.activity_log.table.column.target" width="100px">
+      <cell>
+        <span class="text-label">{{row.loggable_type_display ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="actor" header="$t:admin.activity_log.table.column.actor" width="150px">
+      <cell>
+        <!-- 회원이 없는 로그(시스템·CLI)도 API 는 user 객체를 준다({uuid: null, name: "시스템(CLI)" 등}).
+          그래서 user 유무가 아니라 uuid 유무로 가른다 — user 유무로 가르면 시스템 로그에도 회원 메뉴가
+          그려지고 「회원 정보 보기」가 /admin/users/undefined 로 이동한다. -->
+        <span data-if="{{!row.user?.uuid}}" class="text-gray-500 dark:text-gray-400">{{row.actor_name ?? row.user?.name ?? '-'}}</span>
+        <action-menu data-type="composite" data-if="{{!!row.user?.uuid}}" position="right">
+          <prop name="items">
+            <item id="view_member" label="$t:admin.activity_log.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
+            <item id="search_by_actor" label="$t:admin.activity_log.action.search_by_actor" iconName="search"/>
+          </prop>
+          <on event="onItemClick">
+            <!-- 행위자 이름을 눌렀을 때의 두 갈래. 회원 상세는 **새 창**으로 띄워 보던 목록을
+              잃지 않게 하고, 「이 사람으로 검색」은 조건 칸에도 그 회원을 앉힌 뒤 주소를 바꿔
+              곧바로 조회한다 — 조건만 바꾸면 검색 버튼을 한 번 더 눌러야 한다. -->
+            <switch>
+              <case when="view_member">
+                <open-window path="/admin/users/{{row.user.uuid}}"/>
+              </case>
+              <case when="search_by_actor">
+                <set-state target="local" filter.createdBy="{{row.user.uuid}}" actorSearchResults="{{[{ value: row.user.uuid, label: row.user.name, description: row.user.email }]}}"/>
+                <navigate path="/admin/activity-logs" :mergeQuery="true" :replace="true" transition_overlay_target="activity_log_datagrid__body">
+                  <query created_by="{{row.user.uuid}}" :page="1"/>
+                </navigate>
+              </case>
+            </switch>
+          </on>
+          <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+            <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <div class="min-w-0 flex-1">
+              <span class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.user.name}}</span>
+              <span data-if="{{!!row.user.email}}" class="text-tertiary truncate block">({{row.user.email}})</span>
+            </div>
+          </div>
+        </action-menu>
+      </cell>
+    </column>
+    <column field="ip_address" header="$t:admin.activity_log.table.column.ip_address" width="130px">
+      <cell>
+        <span class="text-label font-mono">{{row.ip_address ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="created_at" header="$t:admin.activity_log.table.column.created_at" width="160px">
+      <cell>
+        <span class="text-label">{{row.created_at ?? '-'}}</span>
+      </cell>
+    </column>
+    <on type="change" event="onPageChange">
+      <!-- 쪽만 갈아 끼우고 나머지 조건은 주소에 있던 것을 그대로 물려받는다. 뒤로 가기로 이전 쪽에 돌아갈 수 있게 이력에 쌓지는 않는다. -->
+      <navigate path="/admin/activity-logs" :mergeQuery="true" :replace="true" transition_overlay_target="activity_log_datagrid__body">
+        <query page="{{$args[0]}}"/>
+      </navigate>
+    </on>
+    <on type="action" event="onSelectionChange">
+      <!-- 고른 줄을 전역에 둔다 — 일괄 삭제 버튼이 표 밖(화면 머리)에 있어 표의 안쪽 상태로는 닿지 않는다. -->
+      <set-state target="global" selectedIds_admin_activity_logs="{{$args[0]}}"/>
+    </on>
+    <on type="action" event="onRowAction">
+      <!-- 줄 삭제는 곧바로 지우지 않고, 누른 줄을 전역에 실어 둔 뒤 확인 창을 연다 — 창은 그 값을 읽어 무엇을 지우는지 보여 준다. -->
+      <switch>
+        <case when="delete">
+          <set-state target="global" modal_data="{{$args[1]}}">
+            <success>
+              <open-modal target="delete_confirm_modal"/>
+            </success>
+          </set-state>
+        </case>
+      </switch>
+    </on>
+  </data-grid>
+</partial>

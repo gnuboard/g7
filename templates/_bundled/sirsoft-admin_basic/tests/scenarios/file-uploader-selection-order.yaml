@@ -1,0 +1,20 @@
+feature: 파일 업로더 — 고른 순서 저장과 방금 올린 그림 재요청 없음
+
+description: |
+  파일 선택창에서 여러 파일을 한 번에 고르면 업로더가 동시에 올려 먼저 끝난 파일이 앞 순서를 받았다. 페이지·게시판처럼
+  서버가 도착 순서로 번호를 매기는 곳에서는 저장 순서가 고른 순서와 달라졌다(7.1.0 전수 실측 영역 L, O-L1).
+  기본값은 고른 순서대로 하나씩 올리고, 동시 업로드를 켠 화면에서도 화면 목록·완료 콜백·저장 목록은 고른 순서를 지킨다.
+  방금 올린 그림을 썸네일·갤러리용으로 서버에서 다시 받다가 저장이 임시 첨부를 옮기는 사이 404 와 콘솔 오류가 났다(O-L5).
+  방금 올린 그림은 브라우저에 있는 파일로 보여 준다. 처음부터 있던 그림은 종전대로 인증 요청으로 받는다.
+
+axes:
+  case: [default_concurrency, parallel_concurrency, fresh_image, existing_image]
+
+effects:
+  - file_uploader_uploads_in_selection_order_by_default
+  - file_uploader_keeps_selection_order_when_parallel
+  - file_uploader_reuses_local_image_after_upload
+  - file_uploader_existing_images_still_fetched
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderSelectionOrder.test.tsx

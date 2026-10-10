@@ -3,6 +3,7 @@
   "title_edit": "Edit Board",
   "description": "Manage board settings",
   "read_only_message": "You have read-only access. Contact an administrator if you need to make changes.",
+  "create_read_only_message": "You do not have permission to create boards, so this form is read-only.",
   "validation_error": "Please check the input information.",
   "add_category": "Add Category",
   "tabs": {
@@ -23,6 +24,9 @@
     "use_comment": "Enable Comments",
     "use_reply": "Enable Reply Posts",
     "use_report": "Enable Reports",
+    "use_scrap": "Enable Scrap",
+    "use_reaction": "Enable Reactions",
+    "active_reaction_types": "Select Reaction Types",
     "secret_mode": "Secret Mode",
     "order_by": {
       "label": "Sort By",
@@ -83,7 +87,8 @@
     },
     "max_file_count": {
       "label": "Maximum File Count",
-      "hint": "Up to {{max}} files can be uploaded"
+      "hint": "Up to {{max}} files can be uploaded",
+      "hint_one": "Up to {{max}} file can be uploaded"
     },
     "max_file_size": {
       "label": "Maximum File Size (MB)",
@@ -136,7 +141,10 @@
       "channels_label": "Channels",
       "channel_mail": "Email",
       "channel_database": "Site Notification"
-    }
+    },
+    "use_comment_reaction": "Enable Comment Reactions",
+    "manage_reaction_types": "Manage Types",
+    "manage_reaction_types_no_permission": "You need the board settings update permission to manage reaction types."
   },
   "placeholders": {
     "name": "e.g., Notice Board",
@@ -154,7 +162,10 @@
     "use_comment": "When enabled, you can configure detailed comment settings (length, depth, order).",
     "use_reply": "When enabled, you can set the maximum reply depth.",
     "use_report": "Enable report feature for inappropriate posts/comments",
-    "type": "Board types can be managed in Settings > Basic Settings."
+    "use_scrap": "Enable the scrap feature that lets members save posts to their personal collection",
+    "use_reaction": "Enable reactions such as recommend/not recommend on posts",
+    "type": "Board types can be managed in Settings > Basic Settings.",
+    "use_comment_reaction": "Show reaction buttons on comments too. Works only on boards where \"Enable Reactions\" is on."
   },
   "options": {
     "secret_mode": {
@@ -166,16 +177,19 @@
   "permissions": {
     "managers_title": "Board Managers",
     "managers_description": "Managers have full permissions for this board.",
+    "members_assign_denied": "Your account is not included in the default board permissions, so on a new board you can only name yourself as manager. Save as is and you become this board's manager. Assign other managers or staff on the board edit screen after the board is created (requires permission to edit boards).",
     "managers_select_button": "Select Manager",
     "manager_email_placeholder": "Enter manager email",
     "search_manager": "Search",
     "confirm_add": "Add",
     "select": "Select",
     "change": "Change",
-    "users_found": "Found {{count}} user(s)",
+    "users_found": "Found {{count}} users",
+    "users_found_one": "Found {{count}} user",
     "no_users_found_search": "No users found",
     "user_search_failed": "Failed to search users",
-    "users_found_with_limit": "Found {{count}} user(s) (max 20 displayed)",
+    "users_found_with_limit": "Found {{count}} users (max 20 displayed)",
+    "users_found_with_limit_one": "Found {{count}} user (max 20 displayed)",
     "user_added": "{{name}} has been added",
     "no_search_results": "No search results",
     "selected_managers": "Selected Managers",
@@ -200,7 +214,9 @@
     "role_restricted": "Role Restricted",
     "select_roles_hint": "Select roles to allow access. (required)",
     "admin_count": "{{count}} permissions",
+    "admin_count_one": "{{count}} permission",
     "user_count": "{{count}} permissions",
+    "user_count_one": "{{count}} permission",
     "error_title": "Permission Configuration Error",
     "error_description": "Please select at least one role for each permission.",
     "error_roles_required": "Please select roles.",

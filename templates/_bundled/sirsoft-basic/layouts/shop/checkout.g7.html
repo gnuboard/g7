@@ -1,0 +1,227 @@
+<!-- 주문서 작성 — 장바구니에서 넘어온 선택분과 바로구매가 같은 화면을 쓴다. 금액은 화면에서 더하지
+     않고 서버가 계산한 것을 그대로 보여 준다(쿠폰·적립금·배송비가 서로 물려 있어 한쪽만 바꿔도 전부
+     달라지기 때문). 회원·비회원 모두 진입하므로 auth_mode 는 optional 이다.
+     e2e:allow S4-D14 — 고객 선택 가능 결제수단 계산값을 더하고 기본 선택식의 거르기를 같은 기준으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다. -->
+<layout name="shop/checkout" version="1.0.0" extends="_user_base">
+  <meta title="주문서 작성" description="주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"/>
+  <!-- 장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관. -->
+  <data-source id="checkoutData" label_key="$t:editor.data_source.checkoutData" type="api" endpoint="/api/modules/sirsoft-ecommerce/checkout" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <params country_code="{{_local.checkout?.country_code ?? ((_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR')}}" zipcode="{{_local.checkout?.zipcode ?? ''}}"/>
+    <init-local>
+      <field name="_merge" value="deep"/>
+      <field name="checkout">
+        <field name="item_coupons" value="promotions.item_coupons"/>
+        <field name="order_coupon_issue_id" value="promotions.order_coupon_issue_id"/>
+        <field name="shipping_coupon_issue_id" value="promotions.shipping_coupon_issue_id"/>
+        <field name="use_points" value="use_points"/>
+      </field>
+      <field name="unavailableModal">
+        <field name="items" value="unavailable_items"/>
+        <field name="hasStockIssue" value="has_stock_issue"/>
+      </field>
+    </init-local>
+    <success>
+      <!-- 구매불가 상품이 있으면 setState로 데이터 설정 후 모달 표시 (initLocal 머지는 모달 표현식 캐시를 갱신하지 않으므로 setState 필수) -->
+      <conditions>
+        <when if="{{(response.data.data.unavailable_items?.length ?? 0) > 0}}">
+          <sequence>
+            <set-state target="local">
+              <field name="unavailableModal">
+                <field name="visible" :value="true"/>
+                <field name="items" value="{{response.data.data.unavailable_items ?? []}}"/>
+                <field name="hasStockIssue" value="{{response.data.data.has_stock_issue ?? false}}"/>
+              </field>
+            </set-state>
+            <open-modal target="cart_unavailable_modal"/>
+          </sequence>
+        </when>
+      </conditions>
+    </success>
+    <error-handling>
+      <on-code code="404">
+        <open-modal target="tempOrderNotFoundModal"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 사용자 저장 배송지 목록 (회원 전용). 비회원/토큰만료 시 401 코어 DEFAULT 핸들러가 navigate({{auth.loginPath}}) 를 발동해 'Failed to execute action: navigate' 가 보고됨 — suppress 로 조용히 무시 -->
+  <data-source id="userAddresses" label_key="$t:editor.data_source.userAddresses" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/addresses" method="GET" :auto_fetch="true" auth_mode="required">
+    <success>
+      <!-- 기본 배송지로 배송지 칸을 채워 연다(2026-09-21 요구사항) — 주문할 때마다 같은 주소를 다시
+           고르게 두지 않는다. 목록은 기본 배송지가 맨 앞이라 첫 줄을 집는다.
+           칩을 누른 경로와 **같은 모양**으로 옮겨 담는다(저장 형식 UserAddress → 주문서 형식):
+           해외 주소는 도시·주·우편번호가 `intl_*` 로 갈리므로 한 칸씩 옮겨야 한다.
+           마지막에 주문서를 다시 받는 것은 배송비 때문이다 — 우편번호·국가가 정해졌으니 그 값으로
+           계산된 금액이어야 주문 확정 때의 재계산과 미리보기가 갈라지지 않는다. refetch 는 «현재»
+           로컬 상태를 읽으므로 setState 가 같은 sequence 앞에 있어야 한다.
+           채움은 **화면 진입마다 한 번**이다 — 배송지 관리 창이 주소를 추가·수정하고 목록을 다시 받을 때마다
+           이 onSuccess 가 다시 돈다. 그때 또 채우면 구매자가 고른 배송지를 기본 배송지로 덮어 다른 주소로
+           배송될 수 있다. onSuccess 컨텍스트에는 _local 이 없어 표현식으로 판정할 수 없으므로 핸들러
+           (markLocalOnce)가 현재 로컬 상태로 첫 회만 참을 돌려준다(플래그는 아래 initLocal 이 진입마다 거짓으로 세운다). -->
+      <sequence if="{{(response.data.data.addresses?.data ?? []).length > 0}}">
+        <action handler="sirsoft-basic.markLocalOnce" key="checkoutDefaultAddressPrefilled"/>
+        <conditions>
+          <when if="{{$prev === true}}">
+            <set-state target="local" selectedAddressId="{{(response.data.data.addresses.data)[0].id}}" selectedAddressObj="{{(response.data.data.addresses.data)[0]}}"/>
+            <set-state target="local">
+              <field name="shipping">
+                <field name="recipient_name" value="{{(response.data.data.addresses.data)[0].recipient_name}}"/>
+                <field name="recipient_phone" value="{{(response.data.data.addresses.data)[0].recipient_phone}}"/>
+                <field name="country_code" value="{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}"/>
+                <field name="zipcode" value="{{(response.data.data.addresses.data)[0].zipcode ?? ''}}"/>
+                <field name="address" value="{{(response.data.data.addresses.data)[0].address ?? ''}}"/>
+                <field name="address_detail" value="{{(response.data.data.addresses.data)[0].address_detail ?? ''}}"/>
+                <field name="region" value="{{(response.data.data.addresses.data)[0].region ?? ''}}"/>
+                <field name="address_line_1" value="{{(response.data.data.addresses.data)[0].address_line_1 ?? ''}}"/>
+                <field name="address_line_2" value="{{(response.data.data.addresses.data)[0].address_line_2 ?? ''}}"/>
+                <field name="intl_city" value="{{(response.data.data.addresses.data)[0].city ?? ''}}"/>
+                <field name="intl_state" value="{{(response.data.data.addresses.data)[0].state ?? ''}}"/>
+                <field name="intl_postal_code" value="{{(response.data.data.addresses.data)[0].postal_code ?? ''}}"/>
+              </field>
+            </set-state>
+            <set-state target="local" checkout.zipcode="{{(response.data.data.addresses.data)[0].zipcode ?? ''}}" checkout.country_code="{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}"/>
+            <refetch-data-source dataSourceId="checkoutData"/>
+          </when>
+        </conditions>
+      </sequence>
+    </success>
+    <fallback>
+      <field name="data">
+        <field name="addresses">
+          <field name="data" :value="[]"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="401">
+        <suppress/>
+      </on-code>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 결제 설정 (활성 결제 수단, 은행 목록, 입금 계좌) -->
+  <data-source id="paymentSettings" label_key="$t:editor.data_source.paymentSettings" type="api" endpoint="/api/modules/sirsoft-ecommerce/settings/payment" method="GET" :auto_fetch="true" auth_mode="optional"/>
+  <!-- 배송 설정 (국내/해외 배송 가능 여부 등) -->
+  <data-source id="shippingSettings" label_key="$t:editor.data_source.shippingSettings" type="api" endpoint="/api/modules/sirsoft-ecommerce/settings/shipping" method="GET" :auto_fetch="true" auth_mode="optional"/>
+  <init-local>
+    <field name="checkout">
+      <field name="item_coupons" :value="{}"/>
+      <field name="order_coupon_issue_id" :value="null"/>
+      <field name="shipping_coupon_issue_id" :value="null"/>
+      <field name="use_points" :value="0"/>
+      <field name="discount_code" :value="null"/>
+      <field name="zipcode" :value="null"/>
+    </field>
+    <field name="downloadableCoupons" :value="null"/>
+    <field name="downloadableCouponsLoading" :value="false"/>
+    <field name="downloadableCouponsPage" :value="1"/>
+    <field name="isSubmittingOrder" :value="false"/>
+    <field name="errors" :value="null"/>
+    <field name="orderError" :value="null"/>
+    <field name="selectedDbank" :value="null"/>
+    <field name="addressModalMode" value="list"/>
+    <field name="selectedAddressId" :value="null"/>
+    <field name="checkoutDefaultAddressPrefilled" :value="false"/>
+    <field name="selectedAddressObj" :value="null"/>
+    <field name="saveShippingAddress" :value="false"/>
+    <field name="updateSelectedAddress" :value="true"/>
+    <field name="editingAddress" :value="null"/>
+    <field name="unavailableModal">
+      <field name="visible" :value="false"/>
+      <field name="items" :value="[]"/>
+      <field name="hasStockIssue" :value="false"/>
+    </field>
+  </init-local>
+  <computed name="comment">orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결) / 결제 통화에서 고를 수 없는 수단(체크아웃 응답 allowed_payment_methods 밖, #639 D17)은 고객 선택 가능 목록(selectablePaymentMethods)에서 빠지고, 고른 값이어도 버리고 그 목록의 첫 수단으로 돌린다 — 서버가 같은 판정으로 422 를 낸다 / 서버로 보낼 코어 결제수단(selectedCorePaymentMethod) — 플러그인이 더한 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 고른 결제수단의 core_payment_method(모듈이 병합 때 보존한다)로 옮겨 보낸다. 선언이 없는 것(dbank·KG 등)은 원래 id 를 그대로 쓴다.</computed>
+  <computed name="ordererDefaults">{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}</computed>
+  <computed name="shippingAddressDirty">{{!!_local.selectedAddressId &amp;&amp; [['recipient_name', 'recipient_name'], ['recipient_phone', 'recipient_phone'], ['zipcode', 'zipcode'], ['address', 'address'], ['address_detail', 'address_detail'], ['address_line_1', 'address_line_1'], ['address_line_2', 'address_line_2'], ['intl_city', 'city'], ['intl_state', 'state'], ['intl_postal_code', 'postal_code']].some(pair => ((_local.shipping ?? {})[pair[0]] ?? '') !== ((_local.selectedAddressObj ?? {})[pair[1]] ?? ''))}}</computed>
+  <computed name="selectablePaymentMethods">{{(paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; m.customer_selectable !== false &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos) &amp;&amp; (!Array.isArray(checkoutData?.data?.allowed_payment_methods) || checkoutData.data.allowed_payment_methods.includes(m.id)))}}</computed>
+  <computed name="selectedPaymentMethod">{{(_local.paymentMethod &amp;&amp; (!Array.isArray(checkoutData?.data?.allowed_payment_methods) || checkoutData.data.allowed_payment_methods.includes(_local.paymentMethod))) ? _local.paymentMethod : ((_computed.selectablePaymentMethods ?? [])[0]?.id ?? 'dbank')}}</computed>
+  <computed name="selectedCorePaymentMethod">{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === _computed.selectedPaymentMethod)?.core_payment_method ?? _computed.selectedPaymentMethod}}</computed>
+  <permissions/>
+  <init>
+    <!-- 배송국가 시드 — 주문서 진입 시 배송비 계산용 _local.checkout.country_code 와 배송지 폼·주문 제출용 _local.shipping.country_code 를
+         **같은 값**으로 채운다. 값은 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)이되, 해외배송이 켜져 있고
+         그 나라가 활성 배송국가일 때만 쓰고 아니면 KR 이다(선택 칸 옵션에 없는 나라가 고른 값처럼 보이지 않도록).
+         둘 중 하나만 시드하면 선택 칸은 「미국」인데 주소 폼은 국내형이고 주문은 KR 로 저장되는 어긋남이 생긴다(#703).
+         checkout.country_code 는 checkoutData GET 쿼리로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가
+         Select 를 바꾸면 그 시점 값이 두 자리 모두를 덮어쓴다(주문서 기준). -->
+    <set-state target="local" checkout.country_code="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}" shipping.country_code="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
+    <!-- 결제 콜백 에러 쿼리 파라미터 감지 — PG 결제 실패 후 리다이렉트 시 에러 코드 저장 + toast + URL 정리 -->
+    <conditions>
+      <when if="{{!!query.error}}">
+        <sequence>
+          <set-state target="local" orderError="{{query.error}}" orderErrorMessage="{{query.message ?? ''}}"/>
+          <toast type="error" message="$t:shop.checkout.payment_generic_error"/>
+          <replace-url path="/shop/checkout"/>
+        </sequence>
+      </when>
+    </conditions>
+  </init>
+  <slot name="content">
+    <container data-type="layout" data-blur-until-loaded="{{_local.isSubmittingOrder}}" class="py-8">
+      <responsive on="portable" class="py-4"/>
+      <!-- 에러 요약 (페이지 상단) -->
+      <div data-if="{{_local.orderError}}" class="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+        <responsive on="portable" class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"/>
+        <div class="flex items-start gap-3">
+          <icon name="exclamation-circle" class="text-xl text-red-500 flex-shrink-0 mt-0.5"/>
+          <div>
+            <p class="text-sm font-medium text-red-800 dark:text-red-200">{{_local.orderError === 'confirm_failed' ? '$t:shop.checkout.payment_confirm_failed' : _local.orderError === 'amount_mismatch' ? '$t:shop.checkout.payment_amount_mismatch' : _local.orderError === 'order_not_found' ? '$t:shop.checkout.payment_order_not_found' : '$t:shop.checkout.payment_generic_error'}}</p>
+            <p data-if="{{_local.orderErrorMessage}}" class="text-xs text-red-600 dark:text-red-400 mt-1">{{_local.orderErrorMessage}}</p>
+          </div>
+        </div>
+      </div>
+      <!-- 뒤로가기 + 페이지 제목 -->
+      <div class="mb-6">
+        <responsive on="portable" class="mb-4"/>
+        <button class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer">
+          <responsive on="portable" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 text-sm cursor-pointer"/>
+          <on type="click">
+            <navigate path="{{_global.shopBase}}/cart"/>
+          </on>
+          <icon name="chevron-left" class="text-base"/>
+          <span>$t:shop.checkout.back</span>
+        </button>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+          $t:shop.checkout.title
+        </h1>
+      </div>
+      <!-- PC: 3컬럼 그리드 (좌측 폼 2칸, 우측 결제금액 1칸) -->
+      <grid data-type="layout" :cols="3" :gap="6">
+        <responsive on="portable" :cols="1" :gap="4"/>
+        <!-- 좌측 영역 - 폼 섹션들 -->
+        <div class="col-span-2 space-y-6">
+          <responsive on="portable" class="col-span-1 space-y-4"/>
+          <include src="partials/shop/_checkout_items.g7.html"/>
+          <include src="partials/shop/_checkout_discount.g7.html"/>
+          <include src="partials/shop/_checkout_mileage.g7.html"/>
+          <include src="partials/shop/_checkout_orderer.g7.html"/>
+          <include src="partials/shop/_checkout_shipping.g7.html"/>
+          <include src="partials/shop/_checkout_payment.g7.html"/>
+        </div>
+        <!-- 우측 영역 - 결제 금액 (sticky) -->
+        <div class="col-span-1">
+          <include src="partials/shop/_checkout_summary.g7.html"/>
+        </div>
+      </grid>
+      <extension-point name="shop_checkout_extensions">
+        <default/>
+      </extension-point>
+    </container>
+  </slot>
+  <!-- 결제 도중 이탈했다가 되돌아왔는데 임시 주문이 이미 만료·정리된 경우 — 장바구니로 되돌린다 -->
+  <modal src="partials/shop/_modal_temp_order_not_found.g7.html"/>
+  <!-- 중복 사용 불가 쿠폰을 고를 때 — 먼저 걸린 쿠폰이 해제된다는 것을 알리고 확인을 받는다 -->
+  <modal src="partials/shop/_modal_exclusive_coupon_confirm.g7.html"/>
+  <!-- 저장된 배송지 목록에서 고르기(마이페이지로 나가지 않고 주문서 안에서 처리한다) -->
+  <modal src="partials/shop/_modal_address_manage.g7.html"/>
+  <!-- 배송지 저장 자리가 꽉 찼을 때 어느 것을 덮어쓸지 묻는다. 마이페이지 배송지 화면과 같은 창을 쓴다 -->
+  <modal src="partials/mypage/addresses/_modal_confirm_overwrite.g7.html"/>
+  <!-- 주문서를 여는 동안 품절·판매중지로 바뀐 항목이 있으면 알린다(장바구니와 같은 창) -->
+  <modal src="partials/shop/_modal_cart_unavailable.g7.html"/>
+  <!-- 주문서에서 곧바로 쿠폰을 더 받아 적용할 수 있게 여는 창 -->
+  <modal src="partials/shop/_modal_coupon_download.g7.html"/>
+</layout>

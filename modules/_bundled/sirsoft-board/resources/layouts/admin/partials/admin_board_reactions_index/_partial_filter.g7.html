@@ -1,0 +1,180 @@
+<!-- 반응 목록 — 검색·필터 영역. 저장소의 관리자 목록 관례를 그대로 따른다(알림 로그·회원 알림함·
+  본인인증 로그·배송 정책 등 17개 화면이 같은 짜임이다).
+
+  ⓐ **층을 나눈다** — 자유 입력인 「검색어」와 값을 고르는 「필터」는 성격이 달라 같은 줄에 두지
+     않는다. 한 줄에 몰면 좁은 화면에서 서로 폭을 빼앗아 입력칸이 사라진다(2026-09-16 실측:
+     게시판 셀렉트 861px vs 검색어 200px, 셀렉트 우변이 뷰포트를 297px 넘겼다).
+  ⓑ 필터 한 줄은 `.filter-row` + 왼쪽 `.filter-label` — 이 자산이 이 용도로 만들어져 있다
+     (`main.css` 의 `.filter-grid`/`.filter-row`/`.filter-label`).
+  ⓒ 초기화·검색은 **자기 줄**에 가운데로 둔다. 좁은 화면에서는 둘이 반씩 나눠 차지한다.
+  ⓓ 상세검색 접힘 상태는 `_local` 에 둔다 — 전역 키로 두면 형제 화면(스크랩·게시글·신고)과
+     상태가 섞인다.
+
+  검색 조립은 명명 액션 `searchBoardReactions` 한 자리에 있고, 엔터·검색 버튼이 그것을 부른다. -->
+<partial description="Board Reactions List - Filter Section">
+  <div data-ref="filter_section" class="admin-card">
+    <!-- 1층 — 검색어. 무엇을 찾을지 고르고 낱말을 넣는 자리다. -->
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select data-ref="search_field_select" name="searchField" class="select-composite w-44" value="{{_local.searchField || 'all'}}">
+          <responsive on="portable" class="select-composite w-32"/>
+          <options>
+            <option value="all">$t:sirsoft-board.admin.reactions.search_fields.all</option>
+            <option value="target_title">$t:sirsoft-board.admin.reactions.search_fields.target_title</option>
+            <option value="target_content">$t:sirsoft-board.admin.reactions.search_fields.target_content</option>
+            <option value="board_name">$t:sirsoft-board.admin.reactions.search_fields.board_name</option>
+            <option value="member">$t:sirsoft-board.admin.reactions.search_fields.member</option>
+            <option value="author_name">$t:sirsoft-board.admin.reactions.search_fields.author_name</option>
+          </options>
+          <on type="change">
+            <set-state searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <icon name="fa-solid fa-search" class="text-sm text-gray-400 dark:text-gray-500"/>
+          </span>
+          <input data-ref="search_input" name="search" type="text" placeholder="$t:sirsoft-board.admin.reactions.search_placeholder" class="input pl-10" value="{{_local.searchQuery || ''}}">
+            <on type="change">
+              <set-state searchQuery="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <action-ref name="searchBoardReactions"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <!-- 2층 — 값을 고르는 필터. 줄마다 왼쪽에 무엇을 고르는지 이름이 선다. -->
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="board_filter_row" class="filter-row">
+        <span class="filter-label w-24">$t:sirsoft-board.admin.reactions.filters.board_label</span>
+        <select data-ref="board_filter_select" class="select-composite w-64" value="{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}">
+          <responsive on="portable" class="select-composite w-full"/>
+          <option value="">$t:sirsoft-board.admin.reactions.filters.board_all</option>
+          <option data-each="b in {{reactions?.data?.boards ?? []}}" value="{{b.id}}">{{b.name}}</option>
+          <on type="change">
+            <!-- 담아만 두고 실제 조회는 검색 버튼이 한 번에 한다 -->
+            <set-state target="global" reactionBoardFilter="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <div data-ref="type_target_filter_row" class="filter-row">
+        <span class="filter-label w-24">$t:sirsoft-board.admin.reactions.filters.type_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <!-- 유형 선택지는 목록 응답이 실어 준 메타에서 온다. 반응 조회 권한만 가진 매니저는
+            환경설정을 볼 수 없어 유형 API 를 부를 수 없기 때문이다. 이미 비활성으로 돌린 유형도
+            남겨 둔다 — 그 유형으로 쌓인 과거 반응을 찾아야 한다. -->
+          <select data-ref="reaction_type_filter_select" data-testid="admin-reaction-type-filter" aria-label="$t:sirsoft-board.admin.reactions.filters.type_label" class="select-composite w-40 shrink-0" value="{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}">
+            <option value="">$t:sirsoft-board.admin.reactions.filters.type_all</option>
+            <option data-each="t in {{reactions?.data?.reaction_types ?? []}}" value="{{t.id}}">{{t.is_active === false ? t.name + ' ' + $t('sirsoft-board.admin.reactions.filters.type_inactive_suffix') : t.name}}</option>
+            <on type="change">
+              <set-state target="global" reactionTypeFilter="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <select data-ref="target_filter_select" data-testid="admin-reaction-target-filter" aria-label="$t:sirsoft-board.admin.reactions.columns.target" class="select-composite w-32 shrink-0" value="{{_global.reactionTargetFilter !== undefined ? _global.reactionTargetFilter : (query.target_type || '')}}">
+            <options>
+              <option value="">$t:sirsoft-board.admin.reactions.filters.target_all</option>
+              <option value="post">$t:sirsoft-board.admin.reactions.filters.target_post</option>
+              <option value="comment">$t:sirsoft-board.admin.reactions.filters.target_comment</option>
+            </options>
+            <on type="change">
+              <!-- 대상 구분(전체/글/댓글) — 값은 전역에 두었다가 검색 버튼이 쿼리로 옮긴다 -->
+              <set-state target="global" reactionTargetFilter="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="date_filter_row" class="filter-row">
+        <span class="filter-label w-24">$t:sirsoft-board.admin.reactions.filters.reacted_at_label</span>
+        <div class="flex-center gap-2 flex-wrap">
+          <input data-ref="date_from" type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}" class="input w-40" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reacted_at_from || '')}}">
+            <on type="change">
+              <!-- 시작일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->
+              <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input data-ref="date_to" type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}" class="input w-40" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}">
+            <on type="change">
+              <!-- 종료일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->
+              <set-state target="global" dateTo="{{$event.target.value}}" dateQuick=""/>
+            </on>
+          </input>
+            <div data-ref="date_quick_buttons" class="flex flex-wrap gap-1">
+              <button type="button" class="{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 오늘 하루 — 시작·끝을 같은 날로 채운다. 여섯 버튼 모두 날짜 두 칸을 대신 채워 줄 뿐이라 실제 조회는 검색 버튼에서 일어난다 -->
+                  <set-state target="global" dateQuick="today" dateFrom="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" dateTo="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"/>
+                </on>
+                $t:sirsoft-board.admin.reactions.filters.date_quick_today
+              </button>
+              <button type="button" class="{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 최근 3일 — 오늘을 포함해 세 날이므로 이틀을 뺀다 -->
+                  <set-state target="global" dateQuick="3days" dateFrom="{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 2); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}" dateTo="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"/>
+                </on>
+                $t:sirsoft-board.admin.reactions.filters.date_quick_3days
+              </button>
+              <button type="button" class="{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 최근 1주 — 오늘 포함 7일이라 엿새를 뺀다 -->
+                  <set-state target="global" dateQuick="week" dateFrom="{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 6); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}" dateTo="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"/>
+                </on>
+                $t:sirsoft-board.admin.reactions.filters.date_quick_week
+              </button>
+              <button type="button" class="{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 다음 달로 넘어간다). 「오늘」은 계정 시간대(회원 → 사이트 기본)의 날짜이고, 그 달력 날짜에서 UTC 셈으로 빼 브라우저 시간대가 끼지 않는다 -->
+                  <set-state target="global" dateQuick="month" dateFrom="{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 1); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}" dateTo="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"/>
+                </on>
+                $t:sirsoft-board.admin.reactions.filters.date_quick_month
+              </button>
+              <button type="button" class="{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 최근 3개월 — 달 셋을 뺀 같은 날짜 -->
+                  <set-state target="global" dateQuick="3months" dateFrom="{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 3); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}" dateTo="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"/>
+                </on>
+                $t:sirsoft-board.admin.reactions.filters.date_quick_3months
+              </button>
+              <button type="button" class="{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+                <on type="click">
+                  <!-- 기간 제한 없음 — 두 칸을 «빈 값»으로 둔다(손대지 않은 상태와 달라서, 검색 시 URL 의 기존 날짜를 잇지 않고 지운다) -->
+                  <set-state target="global" dateQuick="all" dateFrom="" dateTo=""/>
+                </on>
+                $t:sirsoft-board.admin.reactions.filters.date_quick_all
+              </button>
+            </div>
+        </div>
+      </div>
+    </div>
+    <!-- 3층 — 실행. 형제 화면과 같이 자기 줄에서 가운데로 선다. -->
+    <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button data-ref="search_button" type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <!-- 조립은 명명 액션 한 자리에 있다 — 엔터와 같은 규칙을 쓰기 위해서다 -->
+          <action-ref name="searchBoardReactions"/>
+        </on>
+        $t:sirsoft-board.admin.reactions.search
+      </button>
+      <button data-ref="reset_button" type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <!-- 초기화 ①  검색 대상·검색어·접힘 상태를 지역에서 비운다 -->
+          <set-state searchField="all" searchQuery=""/>
+        </on>
+        <on type="click">
+          <!-- 초기화 ②  게시판·유형·대상·날짜·선택을 전역에서 비운다 — 이것을 먼저 하지 않으면 URL 만 털리고 화면의 셀렉트·날짜·체크가 남는다 -->
+          <set-state target="global" reactionBoardFilter="" reactionTypeFilter="" reactionTargetFilter="" dateFrom="" dateTo="" dateQuick="" :selectedIds="[]"/>
+        </on>
+        <on type="click">
+          <!-- audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. 회원 필터도 함께 떨어진다 -->
+          <navigate path="/admin/boards/reactions" :mergeQuery="false"/>
+        </on>
+        $t:sirsoft-board.admin.reactions.reset
+      </button>
+    </div>
+  </div>
+</partial>

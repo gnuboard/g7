@@ -1,0 +1,33 @@
+<!-- 상품 목록 — 검색조건 프리셋 삭제 확인 창. 지울 프리셋의 id·이름은 관리 창이 `_global` 에 담아
+  두고 이 창이 읽는다(창끼리도 서로의 `_local` 을 못 본다). 주문 목록의 같은 창과 달리 처리중
+  표시(`isDeleting`)를 두지 않아 버튼이 잠기지 않는다 — 응답이 늦으면 같은 삭제가 두 번 나갈 수
+  있는 자리다. -->
+<partial description="Product Index - Preset Delete Confirm Modal">
+  <modal data-type="composite" data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.preset_delete.title" size="sm">
+    <p data-ref="preset_delete_message" class="text-body">$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
+    <div data-ref="preset_delete_footer" class="flex justify-end gap-2 mt-4">
+      <button type="button" class="btn btn-secondary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button type="button" class="btn btn-danger">
+        <on type="click">
+          <!-- 삭제. 성공하면 프리셋 목록만 다시 부른다 — 상품 목록은 건드리지 않는다(지운 것은 검색조건이지 상품이 아니다). -->
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}" method="DELETE">
+            <success>
+              <refetch-data-source dataSourceId="presets"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.deleted"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        $t:common.delete
+      </button>
+    </div>
+  </modal>
+</partial>

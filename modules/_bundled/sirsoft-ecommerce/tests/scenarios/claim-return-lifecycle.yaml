@@ -1,0 +1,181 @@
+feature: claim_return_lifecycle
+
+description: |
+  반품 신청서의 수량 분할과 청구, 그리고 완료 뒤의 환불 접수 (#599 S15a)
+
+  교환과 나뉘는 지점만 다룬다 — 반품에는 재발송 구간이 없어 배송비가 편도이고, 돌려줄 것은
+  옵션 차액이 아니라 **상품 대금 자체**다. 그래서 교환에는 없는 두 축이 생긴다: 한 상품의
+  일부 수량만 돌려보내는 **수량 분할**과, 완료 뒤에 비로소 정해지는 **환불 접수 시점**이다.
+
+  조용히 갈리는 지점은 넷이다.
+
+  ① **부분 수량 반품은 주문옵션 행을 쪼갠다.** 쪼갠 뒤 신청 상품 행이 **코스 상태를 실제로 가진
+     행**을 가리켜야 하며, 잔여 행을 가리키면 이후 완료·복귀가 엉뚱한 수량에 적용된다. 원 수량은
+     감사용으로 따로 남긴다 — 남기지 않으면 쪼갠 뒤에는 원래 몇 개를 샀는지 알 방법이 없다.
+
+  ② **청구 방식은 수량이 아니라 총 청구액이 정한다.** 고정액 회수비는 신청 수량으로 나뉘지
+     않으므로, 1개를 돌려보내도 3개를 돌려보내도 같은 금액이 청구된다. 판매자 귀책이면 그
+     금액이 0 이 되어 방식 자체가 지워진다.
+
+  ③ **회수비가 환불 원금에서 빠지는 것과 배송비 재판정 차는 다른 값이다.** '환불금 차감' 의
+     회수비는 `OrderAdjustmentService` 의 추가 비용으로 **환불 원금**에서 빠지고,
+     `refund_shipping_amount` 는 주문 배송비가 반품으로 다시 계산되며 생긴 차액이다. 둘을
+     같은 값으로 다루면 회수비가 두 번 빠지거나 한 번도 빠지지 않는데, 어느 쪽도 오류를
+     내지 않고 금액만 달라진다.
+
+  ④ **완료와 환불 접수는 같은 순간이 아니다**(D26). 운영자가 '접수하지 않음' 을 고르면 그
+     시점에는 환불이 만들어지지 않고, 회수비도 뺄 곳이 없다. 그 회수비가 **사라진 것이 아니라
+     미뤄진 것**이라는 사실은 나중 접수까지 이어 봐야만 확인된다 — 완료만 보면 두 경우가
+     구분되지 않는다.
+
+# axis 의미:
+#   quantity      — 전량 반품과 부분 수량 반품. 부분 수량만 주문옵션 행 분할이 발생한다.
+#   charge_method — 회수비 청구 방식. `none` 은 "청구액이 0 이라 방식을 고르지 않는다" 는 뜻이며
+#                   판매자·배송사 귀책이 그 상태를 만든다.
+#   refund_chain  — 환불이 접수되는 시점. 완료 처리에서 '접수하지 않음' 을 고르면 `none`,
+#                   완료와 함께 접수하면 `at_completion`, 완료 뒤 별도로 접수하면
+#                   `after_completion` 이다. 신청 축과 다른 단계이므로 이 축의 칸은 전부
+#                   **신청부터 완료까지 관통**해야 판정된다 — 신청 단계 단언만으로는 잴 수 없다.
+#                   (2026-09-02 확정으로 sub_flow 에서 축으로 승격했다.)
+#
+# 귀책(`fault`) 역시 이 매니페스트의 축이 아니다 — 반품에서 귀책이 정하는 것은 회수비가
+# 청구되는가 하나뿐이고, 그 판정은 `claim-shipping-fee-calculation.yaml` 이 부과정책과의 곱으로
+# 전수한다. 여기서는 그 결과가 청구 방식 축의 `none` 으로 나타난다.
+axes:
+  quantity: [full, partial]
+  charge_method: [pay_on_request, pay_on_approval, deduct_from_refund, none]
+  refund_chain: [none, at_completion, after_completion]
+
+exclusions:
+  - { quantity: partial, charge_method: [pay_on_approval, deduct_from_refund], reason: "부분 수량은 회수 대상 행을 나누는 축이고 청구 방식은 그 위에서 정해진 금액을 받는 방법이라 서로의 판정을 바꾸지 않는다 — 나뉜 행이 청구를 그대로 지고 가는지만 보면 되므로 청구가 있는 방식(pay_on_request)과 없는 상태(none) 두 대표로 충분하다" }
+
+effects:
+  # 수량 분할
+  - return_request_splits_the_order_option_for_a_partial_quantity
+  - return_request_keeps_the_original_quantity_for_audit
+  - return_request_records_the_original_option_status_for_revert
+  - return_request_rejects_a_quantity_locked_by_another_claim
+  - return_request_period_is_measured_from_delivery
+  # 회수비 · 청구 방식
+  - return_shipping_fee_and_charge_amount_are_frozen
+  - return_seller_fault_charges_nothing
+  - return_charge_method_is_required_when_a_fee_remains
+  - return_charge_method_is_cleared_when_the_fee_is_zero
+  - return_charge_method_outside_the_allowed_list_is_rejected
+  - return_deduct_from_refund_requires_a_covering_refund
+  - return_pay_on_approval_does_not_ask_for_payment_at_request_time
+  - return_multi_currency_amounts_come_from_the_order_snapshot
+  - return_address_comes_from_the_shipping_policy
+  - return_auto_approval_needs_a_zero_charge
+  # 비회원 판정은 주문의 주인(`order.user_id`)이 정한다 — `requested_by` 가 아니다.
+  # 옛 이름(`return_guest_request_has_no_requester`)은 "신청자 칸이 비면 비회원" 을 뜻했는데,
+  # 그 칸은 운영자 대리 접수·시스템 자동 처리도 비운다(§4-3-1). 교환 축이 같은 이유로 이미
+  # 이름을 바꿨고(`exchange_guest_flag_reads_the_order_owner`), 반품만 옛 이름으로 남아 있어
+  # 테스트가 쓰는 이름과 갈려 있었다.
+  - return_guest_flag_reads_the_order_owner
+  - return_preview_matches_the_requested_amounts
+  - return_preview_reports_the_refund_before_the_fee_is_deducted
+  # #599 후속 D13 — 환불완료 시 취소신청서가 생긴다
+  - return_refund_completion_records_a_cancellation
+  - return_refund_option_rows_announce_their_creation   # 그 취소신청서의 옵션 행도 함께 선언된다
+  # 환불 접수 시점 (D26) — 축이 잰 칸 위에서 이어지는 규칙
+  - return_completion_refund_is_filed_only_when_asked
+  - return_completion_refund_is_filed_exactly_once
+  - return_refund_can_be_filed_after_completion
+  - return_second_refund_request_is_rejected
+  - return_each_completion_round_files_its_own_refund   # S7 — 회차마다 환불 미연결 완료 상품으로 접수
+  - return_deducted_fee_is_carried_into_a_later_refund_request
+  - return_later_round_refund_covers_every_completed_item
+
+sub_flows:
+  - id: transition_gate
+    description: |
+      상태 전이 — 정상 흐름 · 철회 · 반려 · 보류. 완료는 전이로 도달할 수 없고 완료 처리만이
+      옮긴다. 상품 단위 전이는 전 항목이 같은 상태일 때만 헤더를 옮긴다.
+    effects:
+      - return_transition_follows_the_status_gate
+      - return_completion_can_come_while_collecting   # 회수중인 물건도 완료(선환불)할 수 있다 (#599 후속)
+      - tracking_save_does_not_move_the_status        # 송장 저장은 저장만 — 회수중은 전이가 송장을 싣는다
+      - return_completion_is_not_reachable_by_a_plain_transition
+      - return_on_hold_and_approval_times_are_stamped
+      - return_withdraw_reverts_the_order_option
+      - return_withdraw_is_blocked_after_approval
+      - return_reject_reverts_each_item_to_its_own_original_status
+      - return_item_level_transition_moves_the_header_only_when_items_agree
+      # 상태 어휘·전이표 (ClaimEnumsTest — Enum 단위로 게이트 자체를 고정한다)
+      - return_status_vocabulary_has_eleven_cases_without_redelivery
+      - return_status_withdrawable_only_before_approval
+      - return_payment_pending_keeps_its_exits
+      - return_on_hold_can_be_approved_or_rejected
+      - return_requested_can_enter_payment_pending
+      - return_approved_cannot_be_rejected_or_skipped
+      - return_withdraw_gate_matches_is_withdrawable
+      - return_self_transition_is_a_noop
+      - return_collection_stages_only_move_forward
+      - return_status_transition_table_is_pinned_row_by_row
+      - return_terminal_states_have_no_transitions
+      - return_status_labels_are_type_prefixed_and_translated
+
+  - id: stock_restore
+    description: |
+      재고 복원은 완료 처리에서 **운영자가 상품별로 체크한 것만** 되돌린다 — 설정 기본값은
+      모달의 초기 표시를 정할 뿐 서비스 동작을 바꾸지 않는다(D26). 반품 상품에 **이미 확정된
+      적립은 회수하지 않는다**(운영 결정 2026-09-23) — 되돌리면 회원이 이미 쓰거나 소멸시킨 적립을
+      살아 있는 다른 적립에서 대신 빼 오게 된다. 아직 적립 전이면 반품완료로 옵션 상태가 바뀌어
+      적립 대상 조회에서 자동으로 빠진다.
+    effects:
+      - return_completion_restores_stock_only_for_checked_items
+      - return_completion_stock_choice_can_differ_per_item
+      - return_completion_ignores_the_settings_default
+      - return_completion_keeps_the_earned_mileage
+
+  - id: update_request
+    description: 승인 전까지의 신청서·금액 수정 — 사유가 바뀌면 회수비를 다시 계산한다.
+    effects:
+      - return_update_request_recalculates_the_fee_when_the_reason_changes
+      - return_update_request_is_blocked_after_approval
+      - return_update_amounts_moves_the_total_charge_with_the_fee
+
+  - id: item_row_facts
+    description: |
+      헤더 한 칸이던 사실을 상품 행으로 옮긴 결함 정리(S2·S3·S4·S6·S8). 상품마다 갈리는 사실 —
+      도착 시각·반려 사유·회수지·재고 복구·완료 판정 — 을 헤더 한 칸에 두면 부분 처리 회차가
+      다른 상품의 사실을 덮는다.
+    effects:
+      - return_header_collection_time_is_stamped_only_when_the_header_arrives
+      - return_item_rejection_reason_lives_on_the_item_row
+      - return_item_row_snapshots_its_own_policy_return_address
+      - return_stock_restoration_is_recorded_per_item_row
+      - return_header_completes_when_living_items_are_all_completed
+
+
+  # ── 아래는 `sub_flows` 리스트에 문자열로 놓여 있던 잔여 항목이다. 그 자리는 YAML 상
+  #    「하위 흐름 하나」의 자리라 커버리지 규칙이 **선언으로 세지 않았고**, 그래서 테스트가
+  #    쓰던 이름이 「소유 매니페스트에 없다」로 잡혔다. 실제로 테스트가 쓰는 것은 위
+  #    `effects:` 로 올렸고(2026-09-23), 여기에는 **아직 어느 테스트도 검증하지 않는** 것만
+  #    남긴다 — 올리면 그 자리에서 미검증으로 잡히므로, 테스트가 생길 때 함께 올린다.
+  #    (#599 후속 D13 활동로그 축 — 반품 완료 → 환불 → 취소신청서)
+  - returned_items_keep_the_returned_status           # 상품 상태는 `returned` 를 유지한다
+  - return_originated_refund_fires_the_requested_hook # 반품 발 환불신청서도 접수 훅을 쏜다 (B9)
+  - return_originated_refund_is_not_buyer_editable    # 구매자 [수정]/[철회] 가 서지 않는다 (F3)
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderReturnServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
+
+notes: |
+  **미커버로 남기는 칸은 없다.** 착수 시점 `OrderReturnServiceTest` 는 117케이스였고 6셀 중
+  5셀이 그 안에 있었다. 없던 칸은 부분 수량 × 신청 시점 결제였다 — 수량 분할 테스트는 배송비가
+  0 인 기본 정책을 쓰고, 청구 방식 테스트는 전량 반품을 써서 둘이 만나는 자리가 비어 있었다.
+
+  **`refund_chain` 은 2026-09-02 확정으로 축이 됐다.** 처음에는 완료 단계의 분기라 신청 축과
+  곱해지지 않는다고 보아 sub_flow 로 두었으나, 곱으로 세우자 6칸이 18칸이 되면서 그 12칸이
+  통째로 비어 있다는 사실이 드러났다 — 완료 테스트는 전부 **청구가 0 인 반품**만 썼고, 청구가
+  걸린 반품이 완료를 지나 환불로 이어지는 경로는 어느 테스트도 관통한 적이 없었다. 열넷을 이
+  세션이 새로 썼다(기존 넷 재활용).
+
+  **회수비가 미뤄지는 경로는 이 세션이 처음 잰다.** 완료 처리에서 '접수하지 않음' 을 고른 뒤의
+  회수비 행방은 어느 테스트도 보지 않았다. 실측 결과 사라지지 않고 나중 접수의 환불 원금에서
+  빠진다 — 결함이 아니라 D26 이 의도한 이연이며, 그 사실을 이제 테스트가 고정한다. 다만
+  회수비가 `refund_shipping_amount` 가 아니라 **환불 원금**에서 빠진다는 점은 교환(왕복
+  배송비가 `refund_shipping_amount` 로 기록된다)과 다르므로, 두 유형의 환불 금액을 같은 식으로
+  읽는 화면·리포트가 생기면 그 자리에서 어긋난다.

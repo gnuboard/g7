@@ -1,0 +1,133 @@
+<!-- 환경 리포트 — 브라우저·OS·기기·해상도·브라우저 언어·사이트 로케일 여섯 탭. 기기 탭은 종류가 셋뿐이라
+  도넛을 함께 그린다. 나머지는 공통 조각이다. -->
+<layout name="admin_analytics_environment" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.environment.title"/>
+  <!-- 탭 → 리포트 이름(기기 탭은 `device_type`). 기기 탭에서는 같은 응답을 도넛과 표가 함께 쓴다 — 두 번 받지 않는다. -->
+  <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({browsers: 'browser', os: 'os', devices: 'device_type', resolutions: 'resolution', languages: 'browser_language', locales: 'locale'})[query.tab || 'browsers'] || 'browser'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="has_more" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 수집·큐 상태 — 상단 경고 조각이 읽는다. 첫 그림을 늦추지 않게 background 로 받고, fallback 은 「수집 켜짐·적체 없음」이라
+       응답 전이나 실패 때 경고가 헛뜨지 않는다. -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를
+       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다. -->
+  <data-source id="analytics_row_trend" label_key="$t:editor.data_source.analytics_row_trend" type="api" endpoint="/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series" method="GET" :auto_fetch="false" :auth_required="true">
+    <params label="{{_global.analyticsRowTrend?.label ?? ''}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
+    <fallback>
+      <field name="data">
+        <field name="unit" value="day"/>
+        <field name="unit_downgraded" :value="false"/>
+        <field name="points" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <on-code code="422">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="periodPath" value="/admin/analytics/environment"/>
+    <field name="periodSource" value="analytics_report"/>
+    <field name="showUnit" :value="false"/>
+  </init-local>
+  <computed name="reportName">{{({browsers: 'browser', os: 'os', devices: 'device_type', resolutions: 'resolution', languages: 'browser_language', locales: 'locale'})[query.tab || 'browsers'] || 'browser'}}</computed>
+  <computed name="csvUrl">{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
+  <computed name="csvFilename">{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
+  <computed name="periodFrom">{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}</computed>
+  <computed name="periodTo">{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}</computed>
+  <computed name="archiveFreshness">{{analytics_report?.data?.freshness ?? null}}</computed>
+  <permissions>
+    <permission>core.analytics.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_report</wait-for>
+  </transition-overlay>
+  <init>
+    <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="periodComputed"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="analytics_environment_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.environment.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.environment.description</p>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'browsers'}}" variant="underline">
+        <prop name="tabs">
+          <item id="browsers" label="$t:admin.analytics.environment.tabs.browsers"/>
+          <item id="os" label="$t:admin.analytics.environment.tabs.os"/>
+          <item id="devices" label="$t:admin.analytics.environment.tabs.devices"/>
+          <item id="resolutions" label="$t:admin.analytics.environment.tabs.resolutions"/>
+          <item id="languages" label="$t:admin.analytics.environment.tabs.languages"/>
+          <item id="locales" label="$t:admin.analytics.environment.tabs.locales"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->
+          <navigate path="/admin/analytics/environment" :replace="true">
+            <query tab="{{$args[0]}}" preset="{{query.preset}}" from="{{query.from}}" to="{{query.to}}" unit="{{query.unit}}" exclude="{{query.exclude}}" per_page="{{query.per_page}}"/>
+          </navigate>
+        </on>
+      </tab-navigation>
+      <div data-ref="device_chart_card" data-if="{{(query.tab || 'browsers') === 'devices' &amp;&amp; (analytics_report?.data?.data ?? []).length > 0}}" class="admin-card mb-4">
+        <h2 class="section-heading mb-3">$t:admin.analytics.environment.device_share_title</h2>
+        <div class="flex justify-center">
+          <donut-chart data-type="composite" data-ref="device_chart" data="{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981'][i % 4] }))}}" :size="220" :showLegend="true"/>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_environment_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
+    </div>
+  </slot>
+  <!-- 한 항목 추이 창. -->
+  <modal src="partials/admin_analytics/_modal_row_trend.g7.html"/>
+</layout>

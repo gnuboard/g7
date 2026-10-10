@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,6 +35,11 @@ class InstallerIncludeOrderTest extends TestCase
 {
     private string $projectRoot = '';
 
+    /**
+     * 프로젝트 루트 경로를 확보한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,7 +51,7 @@ class InstallerIncludeOrderTest extends TestCase
      * 인스톨러 include 파일 2개를 지정한 순서로 로드하는 격리 PHP 프로세스 실행.
      *
      * @param  array<int, string>  $relativeIncludes  BASE_PATH 기준 상대 경로 목록
-     * @return array{exitCode:int, output:string}
+     * @return array{exitCode:int, output:string} 종료 코드와 출력
      */
     private function loadInIsolatedProcess(array $relativeIncludes): array
     {
@@ -78,6 +84,10 @@ class InstallerIncludeOrderTest extends TestCase
      *
      * 이 순서가 곧 install-process.php 의 require 순서였고, escapeEnvValue()
      * 재선언 fatal 로 빈 응답이 발생했다.
+     *
+     * @effects endpoint_require_chain_defines_gate_helpers
+     *
+     * @return void 반환값 없음
      */
     public function test_runtime_before_functions_does_not_fatal(): void
     {
@@ -100,6 +110,10 @@ class InstallerIncludeOrderTest extends TestCase
      * 기존 순서(functions.php 먼저) 도 계속 동작해야 한다 — 회귀 방지.
      *
      * finalize-env.php / task-runner.php 가 이 순서를 사용한다.
+     *
+     * @effects endpoint_require_chain_defines_gate_helpers
+     *
+     * @return void 반환값 없음
      */
     public function test_functions_before_runtime_does_not_fatal(): void
     {
@@ -118,6 +132,10 @@ class InstallerIncludeOrderTest extends TestCase
      *
      * 이 엔드포인트가 SSE / 폴링 양 모드의 공통 시작점이므로, 여기서 fatal 이 나면
      * 두 모드 모두 설치 시작 즉시 실패한다.
+     *
+     * @effects endpoint_require_chain_defines_gate_helpers
+     *
+     * @return void 반환값 없음
      */
     public function test_install_process_require_chain_does_not_fatal(): void
     {
@@ -150,11 +168,15 @@ class InstallerIncludeOrderTest extends TestCase
      * 단위 테스트는 함수를 직접 호출하므로 이 축을 잡지 못한다 — 엔드포인트의 조립
      * 계층을 재현해야만 검출된다.
      *
-     * @dataProvider endpointChainProvider
-     *
+     * @param  string  $endpoint  엔드포인트 파일명 (실패 메시지용)
      * @param  array<int, string>  $chain  엔드포인트의 top-level require 순서
      * @param  array<int, string>  $requiredFunctions  그 엔드포인트가 호출하는 함수들
+     *
+     * @effects endpoint_require_chain_defines_gate_helpers
+     *
+     * @return void 반환값 없음
      */
+    #[DataProvider('endpointChainProvider')]
     public function test_endpoint_require_chain_defines_all_functions_it_calls(
         string $endpoint,
         array $chain,
@@ -199,7 +221,7 @@ class InstallerIncludeOrderTest extends TestCase
      *
      * 인스톨러 엔드포인트에 새 함수 호출을 추가하면 여기에도 등록한다.
      *
-     * @return array<string, array{0:string, 1:array<int,string>, 2:array<int,string>}>
+     * @return array<string, array{0:string, 1:array<int,string>, 2:array<int,string>}> 엔드포인트별 체인·호출 함수
      */
     public static function endpointChainProvider(): array
     {
@@ -212,6 +234,7 @@ class InstallerIncludeOrderTest extends TestCase
                     'public/install/includes/installer-state.php',
                     'public/install/includes/functions.php',
                     'public/install/includes/installer-runtime.php',
+                    'public/install/includes/installer-ownership.php',
                 ],
                 [
                     'sanitizeConfigForState',
@@ -220,25 +243,48 @@ class InstallerIncludeOrderTest extends TestCase
                     'readInstallerRuntime',
                     'getInstallationState',
                     'saveInstallationState',
+                    'saveInstallationStateCas',
                     'applyExistingDbActionStateGuard',
                     'escapeEnvValue',
+                    'installer_require_owner',
+                    'installer_require_csrf',
+                    'installer_request_json_body',
+                    'installer_verify_drop_confirm',
+                    'installer_normalize_db_prefix',
+                    'installer_plan_signature',
+                    'installer_json_error',
+                    'hydrateDbSecretsFromRuntime',
+                    'getDatabaseConnection',
+                    'filterTablesByPrefix',
                 ],
             ],
-            'state-management.php (reset / abort)' => [
+            'state-management.php (reset / abort / reclaim)' => [
                 'state-management.php',
                 [
                     'public/install/includes/config.php',
                     'public/install/includes/session.php',
                     'public/install/includes/functions.php',
                     'public/install/includes/installer-state.php',
+                    'public/install/includes/installer-ownership.php',
                     'public/install/api/rollback-functions.php',
                 ],
                 [
                     'redactInstallationStateSecrets',
                     'saveInstallationState',
+                    'saveInstallationStateCas',
                     'getInstallationState',
+                    'isInstallationCompleted',
                     'rollbackCurrentTask',
                     'executeSeedTruncate',
+                    'installer_require_owner',
+                    'installer_require_csrf',
+                    'installer_state_is_claimed',
+                    'installer_session_is_owner',
+                    'installer_recovery_token_matches',
+                    'installer_reclaim_owner',
+                    'installer_reclaim_is_locked',
+                    'installer_reclaim_record_failure',
+                    'installer_reclaim_reset_throttle',
                 ],
             ],
             'finalize-env.php' => [
@@ -248,14 +294,23 @@ class InstallerIncludeOrderTest extends TestCase
                     'public/install/includes/functions.php',
                     'public/install/includes/installer-runtime.php',
                     'public/install/includes/installer-state.php',
+                    'public/install/includes/session.php',
+                    'public/install/includes/installer-ownership.php',
                 ],
                 [
                     'redactInstallationStateSecrets',
                     'getInstallationState',
                     'saveInstallationState',
+                    'installerReadStateFile',
                     'readInstallerRuntime',
                     'mergeRuntimeIntoEnv',
                     'deleteInstallerRuntime',
+                    'installer_json_error',
+                    'installer_ownership_lang',
+                    'installer_state_is_claimed',
+                    'installer_require_owner',
+                    'installer_require_csrf',
+                    'installer_reclaim_reset_throttle',
                 ],
             ],
             'install-worker.php (SSE 워커 → task-runner)' => [
@@ -274,6 +329,24 @@ class InstallerIncludeOrderTest extends TestCase
                     'readInstallerRuntime',
                     'writeInstallerRuntime',
                     'executeSeedTruncate',
+                    'installer_plan_verify',
+                ],
+            ],
+            'save-extensions.php' => [
+                'save-extensions.php',
+                [
+                    'public/install/includes/session.php',
+                    'public/install/includes/config.php',
+                    'public/install/includes/installer-state.php',
+                    'public/install/includes/functions.php',
+                    'public/install/includes/installer-ownership.php',
+                ],
+                [
+                    'getInstallationState',
+                    'saveInstallationStateCas',
+                    'installer_require_owner',
+                    'installer_require_csrf',
+                    'installer_json_error',
                 ],
             ],
             'index.php (Step3 폼 / 완료 감지)' => [
@@ -289,6 +362,16 @@ class InstallerIncludeOrderTest extends TestCase
                     'sanitizeConfigForState',
                     'isInstallationCompleted',
                     'installerSecretConfigKeys',
+                    'installer_state_is_claimed',
+                    'installer_session_is_owner',
+                    'installer_csrf_token',
+                    'installer_csrf_is_valid',
+                    'installer_request_csrf_token',
+                    'installer_step3_db_connections',
+                    'installer_db_test_status',
+                    'installer_claim_owner',
+                    'installer_format_recovery_token',
+                    'saveInstallationStateCas',
                 ],
             ],
         ];
@@ -299,6 +382,10 @@ class InstallerIncludeOrderTest extends TestCase
      * function_exists 가드를 가져야 한다 — 정적 계약 검사.
      *
      * 앞으로 두 파일에 중복 함수가 새로 추가되어도 가드 없이는 통과하지 못한다.
+     *
+     * @effects endpoint_require_chain_defines_gate_helpers
+     *
+     * @return void 반환값 없음
      */
     public function test_functions_shared_with_runtime_are_all_guarded(): void
     {

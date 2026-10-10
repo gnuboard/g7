@@ -1,0 +1,26 @@
+feature: KCP 클레임 추가결제의 가상계좌 판정 — 클라이언트 값에 기대지 않는다 (#599 validate C2)
+
+description: |
+  클레임 결제는 입금 대기 상태가 없어 가상계좌를 받지 않는다. 그런데 거절 판정이 브라우저가 보낸
+  `use_pay_method` 하나였다 — 값을 빼거나 바꿔 보내면 계좌만 발급됐는데(입금 전) KCP 승인 응답이 0000 이라
+  결제 건이 결제완료로 확정됐다. 주문 경로는 KVE-2026-2018 때문에 저장된 결제수단으로만 판정한다.
+
+  판정 층: ① 승인 전 — 결제 건에 저장된 결제수단. ② 승인 뒤 — KCP 응답의 결제수단(가상계좌면 발급분 취소).
+  대조 금액은 KCP 응답 금액만 쓴다(청구액과 다르거나 응답에 없으면 승인분 취소 + 거절 —
+  validate-p2-plugin.yaml, approval-amount-verification.yaml). 브라우저 값(good_mny)은 대체값으로 쓰지 않는다.
+
+axes:
+  judged_by: [stored_method, pg_response]
+  callback_method: [omitted, card]
+
+exclusions:
+  - { judged_by: stored_method, callback_method: card, reason: "저장값이 가상계좌면 콜백 값과 무관하게 승인 전에 끝난다 — omitted 하나로 대표한다" }
+
+effects:
+  - kcp_claim_deposit_method_is_judged_by_the_stored_method   # ① 저장된 결제수단이 가상계좌면 승인 전 거절
+  - kcp_claim_deposit_method_is_rechecked_on_the_pg_response  # ② 응답이 가상계좌(VCNT·001000000000)면 취소 + 거절
+  - kcp_claim_paid_amount_prefers_the_pg_response             # 대조 금액은 응답 금액 우선 (다르면 취소 + 거절)
+  - kcp_claim_card_approval_is_unchanged                      # 비회귀
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/ClaimApproveDepositMethodGuardTest.php

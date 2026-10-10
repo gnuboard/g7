@@ -61,9 +61,6 @@
     },
     "password": {
       "min": "パスワードは最小 :min文字以上である必要があります。"
-    },
-    "ip_address": {
-      "required": "IP アドレスは必須です。"
     }
   },
   "board": {

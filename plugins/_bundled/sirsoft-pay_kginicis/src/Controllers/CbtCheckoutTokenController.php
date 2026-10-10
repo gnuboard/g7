@@ -2,11 +2,17 @@
 
 declare(strict_types=1);
 
+// audit:allow api-doc-coverage reason: 클레임 결제 Repository 를 서비스 로케이터 대신 생성자로 주입하고 private 메서드 PHPDoc 을 채운 내부 수정이다. 라우트·요청 파라미터·응답 구조는 불변이라 API 문서에 반영할 표면 변화가 없다(`api:docgen --scope=plugin:sirsoft-pay_kginicis --check` drift 없음).
+
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtCheckoutTokenRequest;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCheckoutTokenService;
@@ -14,12 +20,21 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class CbtCheckoutTokenController
 {
+    use HandlesCbtClaimPayments;
+    use HandlesClaimPaymentCallbacks;
     use ValidatesCbtOrderContext;
 
+    /**
+     * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  CbtCheckoutTokenService  $checkoutTokenService  CBT 체크아웃 토큰 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private readonly KgInicisApiService $apiService,
         private readonly OrderProcessingService $orderService,
         private readonly CbtCheckoutTokenService $checkoutTokenService,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -56,6 +71,29 @@ class CbtCheckoutTokenController
                 'success' => false,
                 'message' => 'Japan CBT payment is not configured.',
             ], 422);
+        }
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 Order not found 로 끝난다.
+        // 검증을 통과하면 토큰 발급은 주문과 같은 경로를 쓴다(토큰은 oid·금액·구매자에 묶인다).
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            $claimError = $this->validateCbtClaimPaymentContext($request, $oid, $price);
+
+            if ($claimError !== null) {
+                return $claimError;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'checkout_token' => $this->checkoutTokenService->issue(
+                        $oid,
+                        $price,
+                        (string) $request->input('buyer_email', ''),
+                        (string) $request->input('buyer_phone', ''),
+                        $request,
+                    ),
+                ],
+            ]);
         }
 
         $order = $this->orderService->findByOrderNumber($oid);

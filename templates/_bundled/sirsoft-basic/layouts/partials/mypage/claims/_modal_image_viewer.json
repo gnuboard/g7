@@ -1,0 +1,84 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "클레임 첨부 사진 확대 보기 모달",
+        "editor_label": "$t:user.modal_label.mypage_claims.image_viewer_modal"
+    },
+    "comment": "§5-4 의 모달 id 규약(claim_ 접두)을 따른다 — 다른 화면의 모달 id 와 충돌하지 않게. 대상은 여는 지점이 페이지 로컬(claimImageViewerUrl)에 세우고 여기서는 그것만 읽는다.\n첨부는 한시 서명 URL 로만 열린다. 화면이 해시로 주소를 조립하면 서명이 빠져 403 이 되므로 서버가 준 download_url 을 그대로 쓴다.",
+    "id": "modal_claim_image_viewer",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:claim.detail.image_viewer_title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Img",
+                    "if": "{{!!_local.claimImageViewerUrl}}",
+                    "props": {
+                        "src": "{{_local.claimImageViewerUrl}}",
+                        "alt": "{{_local.claimImageViewerName ?? ''}}",
+                        "className": "w-full h-auto rounded-lg object-contain bg-gray-100 dark:bg-gray-900"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_local.claimImageViewerName}}",
+                    "props": {
+                        "className": "mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all"
+                    },
+                    "text": "{{_local.claimImageViewerName}}"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end px-4 pb-4"
+            },
+            "children": [
+                {
+                    "comment": "닫으면서 대상도 지운다 — 남기면 다음에 다른 사진으로 열었을 때 잠깐 앞 사진이 보인다.",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "claimImageViewerUrl": null,
+                                        "claimImageViewerName": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "modal_claim_image_viewer"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    },
+                    "text": "$t:claim.detail.image_viewer_close"
+                }
+            ]
+        }
+    ]
+}

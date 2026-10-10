@@ -1,0 +1,305 @@
+<!-- init_actions 가드를 두지 않는 이유 — init_actions 는 _user_base 의 current_user 데이터소스(auto_fetch) 응답보다 먼저 실행되므로 _global.currentUser 가 회원이어도 null 로 평가되어 가드가 오발화한다. 대신 (1) 빈 화면 깜빡임은 blur_until_loaded 로 차단, (2) 토큰 없는 진입은 백엔드가 404 를 반환하면 errorHandling.404 가 회원/비회원 분기로 적절히 처리한다. -->
+<layout name="shop/order_complete" version="1.0.0" extends="_user_base">
+  <meta _e2e_allow="e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구. / e2e:allow 후속B B6 — 주소록 대조로 버튼 숨김·409 안내(api-call error-handling on-code 409)는 같은 「로그인 회원 + 완료된 주문」 전제라 spec 시드로 세울 수 없다. 레이아웃 테스트 order-complete-save-address.test.tsx 9케이스(실제 클릭 흐름 409→info·500→error·성공→success 포함, 수정 전 2 failed)가 잠그고, 전용 Chrome·Playwright MCP 실측 T1~T7(이력 후속B 「Chrome MCP 정밀 점검 매트릭스」)으로 확인했다." title="$t:shop.order_complete.page_title" description="주문 완료/결제 완료 화면"/>
+  <!-- 주문 상세 정보 — 회원/비회원 공유. user/orders/{N} 통합 엔드포인트가 optional.sanctum 으로 회원/비회원 모두 받으며, 백엔드 컨트롤러가 Auth::check() 로 분기한다 (회원: 본인 주문이면 OrderResource, 비회원: X-Guest-Order-Token 매칭 시 GuestOrderResource). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 — globalHeaders 의 user/orders/* 광역 패턴을 쓰면 회원 전용 라우트(목록/취소/구매확정 등) 에도 토큰이 첨부되어 보안 우려가 있어 데이터소스 개별 headers 로 한정. endpoint 표현식 분기를 제거해 _global.currentUser 도착 타이밍과 무관하게 안전. -->
+  <data-source id="orderData" label_key="$t:editor.data_source.orderData" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{route.id}}" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <headers X-Guest-Order-Token="{{_global.guestOrderToken}}"/>
+    <!-- 백엔드가 회원/비회원 판단 + 메시지 + redirect_to 결정. 프론트는 단일 sequence 로 토스트 + 백엔드 지정 경로 navigate. 토큰 클리어는 여기서 하지 않음 — verify 직후 또는 다른 흐름에서 저장된 유효 토큰을 덮어쓸 위험. 토큰 만료는 redirect_to=/login 도착 후 사용자가 다시 lookup 진입 시 재발급으로 처리. -->
+    <error-handling>
+      <on-code code="401">
+        <sequence>
+          <toast type="warning" message="{{error.message ?? '$t:auth.session_expired_toast'}}"/>
+          <navigate path="{{error.errors?.redirect_to ?? '/login'}}"/>
+        </sequence>
+      </on-code>
+      <on-code code="404">
+        <sequence>
+          <toast type="error" message="{{error.message ?? '$t:shop.order_complete.order_not_found'}}"/>
+          <navigate path="{{error.errors?.redirect_to ?? '/login'}}"/>
+        </sequence>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 배송지 저장 (회원만 — 비회원은 배송지 저장 버튼 if 로 비노출) -->
+  <data-source id="saveShippingAddress" label_key="$t:editor.data_source.saveShippingAddress" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/addresses" method="POST" :auto_fetch="false" auth_mode="required"/>
+  <!-- 회원의 저장 배송지 목록 — 주문 배송지가 이미 주소록에 있으면 [이 배송지를 저장하기] 를 숨기는 근거다. 비회원·만료 토큰은 401 이라
+    실패를 화면 오류로 키우지 않고 빈 목록으로 떨어뜨린다(그때는 버튼 노출 판정만 종전대로). -->
+  <data-source id="userAddresses" label_key="$t:editor.data_source.userAddresses" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/addresses" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="addresses">
+          <field name="data" :value="[]"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <default>
+        <!-- 비회원(401)·일시 실패 모두 정상 흐름 — 주소록을 못 읽으면 버튼을 종전처럼 보일 뿐이다 -->
+        <suppress/>
+      </default>
+    </error-handling>
+  </data-source>
+  <computed name="comment">shippingAddressAlreadySaved — 주문 배송지가 주소록 항목과 같은가. 수령인·연락처(숫자만)·국가와, 국내는 우편번호·주소·상세주소, 해외는 주소줄·도시·주·우편번호를 대조한다. 배송지명은 대조하지 않는다(주문완료에는 이름 입력칸이 없어 「배송지」로 저장된다).</computed>
+  <computed name="shippingAddressAlreadySaved">{{(() => { const a = orderData?.data?.shipping_address; if (!a) return false; const n = v => String(v ?? '').trim(); const d = v => String(v ?? '').split('').filter(ch => '0123456789'.includes(ch)).join(''); const cc = n(a.recipient_country_code) || 'KR'; return (userAddresses?.data?.addresses?.data ?? []).some(x => (n(x.country_code) || 'KR') === cc &amp;&amp; n(x.recipient_name) === n(a.recipient_name) &amp;&amp; d(x.recipient_phone) === d(a.recipient_phone) &amp;&amp; (cc === 'KR' ? (n(x.zipcode) === n(a.zipcode) &amp;&amp; n(x.address) === n(a.address) &amp;&amp; n(x.address_detail) === n(a.address_detail)) : (n(x.address_line_1) === n(a.address_line_1) &amp;&amp; n(x.address_line_2) === n(a.address_line_2) &amp;&amp; n(x.city) === n(a.intl_city) &amp;&amp; n(x.state) === n(a.intl_state) &amp;&amp; n(x.postal_code) === n(a.intl_postal_code)))); })()}}</computed>
+  <permissions/>
+  <slot name="content">
+    <!-- blur_until_loaded: 지정한 데이터소스 응답이 도착하기 전까지 콘텐츠 가림. init_actions 가드(비로그인 + 토큰 부재)가 navigate 발화하기 전 한 프레임에서 빈 콘텐츠가 노출되는 깜빡임 회귀 방지. 객체 형태로 데이터소스 지정 — 로드 전 blur, 로드 후 해제. -->
+    <container data-type="layout" class="py-12">
+      <blur-until-loaded>
+        <item>orderData</item>
+      </blur-until-loaded>
+      <responsive on="portable" class="py-6"/>
+      <div class="max-w-2xl mx-auto">
+        <!-- 무통장입금/가상계좌 결제 대기 헤더 -->
+        <div data-if="{{orderData?.data?.payment?.payment_method === 'vbank' || orderData?.data?.payment?.payment_method === 'dbank'}}" class="text-center mb-8">
+          <responsive on="portable" class="text-center mb-6"/>
+          <div class="w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center leading-none">
+            <icon name="clock" size="lg" class="text-blue-600 dark:text-blue-400"/>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white mb-2"/>
+            $t:shop.order_complete.vbank_title
+          </h1>
+          <p class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.vbank_message</p>
+        </div>
+        <!-- 즉시 결제완료 헤더 — 가상계좌/무통장(입금대기)이 아닌 모든 결제수단. 확장 결제수단(간편결제)도 결제수단 ID 가 'card' 가 아니라 확장 ID(예: nhnkcp_naverpay)로 저장되므로 'card' 하드코딩 대신 입금대기 수단의 여집합으로 판정한다(#475). -->
+        <div data-if="{{orderData?.data?.payment?.payment_method &amp;&amp; orderData?.data?.payment?.payment_method !== 'vbank' &amp;&amp; orderData?.data?.payment?.payment_method !== 'dbank'}}" class="text-center mb-8">
+          <responsive on="portable" class="text-center mb-6"/>
+          <div class="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center leading-none">
+            <icon name="check" size="lg" class="text-green-600 dark:text-green-400"/>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white mb-2"/>
+            $t:shop.order_complete.card_title
+          </h1>
+          <p class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.card_message</p>
+        </div>
+        <!-- 무통장입금(dbank) 입금 안내 -->
+        <div data-if="{{orderData?.data?.payment?.payment_method === 'dbank'}}" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-6">
+          <responsive on="portable" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-4"/>
+          <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-4">$t:shop.order_complete.deposit_info</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.bank</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{orderData?.data?.payment?.dbank_name}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.account</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{orderData?.data?.payment?.dbank_account}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.holder</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{orderData?.data?.payment?.dbank_holder}}</span>
+            </div>
+            <!-- 입금자명 -->
+            <div data-if="{{orderData?.data?.payment?.depositor_name}}" class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.depositor_name</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{orderData?.data?.payment?.depositor_name}}</span>
+            </div>
+            <!-- 입금 금액 (다중 통화) -->
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.deposit_amount</span>
+              <span class="font-bold text-blue-600 dark:text-blue-400 text-lg">{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_amount_formatted}}</span>
+            </div>
+            <!-- 입금 기한 -->
+            <div class="flex justify-between pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.deposit_due</span>
+              <span class="font-medium text-red-600 dark:text-red-400">{{orderData?.data?.payment?.deposit_due_at_formatted}}</span>
+            </div>
+          </div>
+          <p class="text-sm text-blue-700 dark:text-blue-300 mt-4">$t:shop.order_complete.vbank_notice</p>
+        </div>
+        <!-- 가상계좌(vbank) 입금 안내 -->
+        <div data-if="{{orderData?.data?.payment?.payment_method === 'vbank'}}" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-6">
+          <responsive on="portable" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-4"/>
+          <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-4">$t:shop.order_complete.vbank_deposit_info</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.bank</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{orderData?.data?.payment?.vbank_name}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.account</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{orderData?.data?.payment?.vbank_number}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.holder</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{orderData?.data?.payment?.vbank_holder}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.deposit_amount</span>
+              <span class="font-bold text-blue-600 dark:text-blue-400 text-lg">{{orderData?.data?.total_amount_formatted}}</span>
+            </div>
+            <div class="flex justify-between pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.deposit_due</span>
+              <span class="font-medium text-red-600 dark:text-red-400">{{orderData?.data?.payment?.vbank_due_at_formatted}}</span>
+            </div>
+          </div>
+          <p class="text-sm text-blue-700 dark:text-blue-300 mt-4">$t:shop.order_complete.vbank_notice</p>
+        </div>
+        <!-- 비회원 안내 — 비로그인 사용자에게 주문 조회 방법과 회원 전환 안내. 회원에게는 미노출. -->
+        <div data-if="{{!_global.currentUser?.uuid}}" class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
+          <responsive on="portable" class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4"/>
+          <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.order_complete.guest_notice_title</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">$t:shop.order_complete.guest_notice_lookup</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">$t:shop.order_complete.guest_notice_save</p>
+        </div>
+        <!-- 비회원 주문 확인 메일 발송 안내 (비회원 + 주문자 이메일 존재 시) -->
+        <div data-if="{{!orderData?.data?.user_id &amp;&amp; orderData?.data?.orderer_email}}" class="flex items-start gap-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4 mb-6">
+          <icon name="envelope" size="sm" class="text-green-600 dark:text-green-400 mt-0.5"/>
+          <p class="text-sm text-green-800 dark:text-green-300">$t:shop.order_complete.guest_email_sent</p>
+        </div>
+        <!-- 주문 정보 카드 -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+          <responsive on="portable" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"/>
+          <!-- 주문번호 -->
+          <div class="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-gray-700">
+            <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.order_number</span>
+            <span class="font-mono font-bold text-lg text-gray-900 dark:text-white">{{orderData?.data?.order_number}}</span>
+          </div>
+          <!-- 주문 상품 목록 -->
+          <div class="py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">$t:shop.order_complete.ordered_items</h3>
+            <div class="space-y-3">
+              <div data-each="item, idx in {{orderData?.data?.options ?? []}}" class="flex gap-3">
+                <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{$localized(item.product_name)}}" class="w-16 h-16 object-cover rounded"/>
+                <div data-if="{{!item.thumbnail_url}}" class="shrink-0 w-16 h-16 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <icon name="image" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-gray-900 dark:text-white truncate">{{$localized(item.product_name)}}</p>
+                  <!-- 옵션명 (product_option_name 또는 option_snapshot fallback) -->
+                  <p data-if="{{item.product_option_name || item.option_snapshot?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400">{{$localized(item.product_option_name ?? item.option_snapshot?.option_name)}}</p>
+                  <!-- 선택된 추가옵션 (스냅샷 — 옵션 라인 바로 아래) -->
+                  <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="space-y-0.5">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+                  </div>
+                  <!-- 단가 x 수량 (주 통화) -->
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{item.mc_unit_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.unit_price_formatted}} x {{item.quantity}}</p>
+                  <!-- 단가 보조 통화들 -->
+                  <div data-if="{{Object.keys(item.mc_unit_price ?? {}).length > 1}}" data-each="currency in {{Object.entries(item.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
+                    <span class="text-xs text-gray-400 dark:text-gray-500">{{currency[1]?.formatted}} x {{item.quantity}}</span>
+                  </div>
+                  <!-- 할인 표시 (할인이 있을 때만) -->
+                  <p data-if="{{(item.subtotal_discount_amount ?? 0) > 0}}" class="text-xs text-red-500 dark:text-red-400">-{{item.subtotal_discount_amount_formatted}}</p>
+                </div>
+                <!-- 소계 (다중 통화) -->
+                <div class="flex flex-col items-end justify-center flex-shrink-0">
+                  <span class="font-medium text-gray-900 dark:text-white">{{item.mc_subtotal_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted}}</span>
+                  <!-- 소계 보조 통화들 -->
+                  <div data-if="{{Object.keys(item.mc_subtotal_price ?? {}).length > 1}}" data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 배송지 정보 -->
+          <div class="py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">$t:shop.order_complete.shipping_address</h3>
+            <p class="text-gray-700 dark:text-gray-300">{{orderData?.data?.shipping_address?.recipient_name}} ({{orderData?.data?.shipping_address?.recipient_phone}})</p>
+            <!-- 국내 주소 -->
+            <p data-if="{{(orderData?.data?.shipping_address?.recipient_country_code ?? 'KR') === 'KR'}}" class="text-gray-600 dark:text-gray-400 text-sm">({{orderData?.data?.shipping_address?.zipcode}}) {{orderData?.data?.shipping_address?.address}} {{orderData?.data?.shipping_address?.address_detail}}</p>
+            <!-- 해외 주소 -->
+            <div data-if="{{(orderData?.data?.shipping_address?.recipient_country_code ?? 'KR') !== 'KR'}}" class="text-gray-600 dark:text-gray-400 text-sm">
+              <p>{{orderData?.data?.shipping_address?.address}}</p>
+              <p>{{orderData?.data?.shipping_address?.city}}, {{orderData?.data?.shipping_address?.state}} {{orderData?.data?.shipping_address?.zipcode}}</p>
+              <p>{{orderData?.data?.shipping_address?.recipient_country_code}}</p>
+            </div>
+            <!-- 배송지 저장 버튼 (로그인 사용자만).
+                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,
+                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.
+                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).
+                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —
+                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.
+                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만
+                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).
+                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측 S4, 제품 결정 ①). -->
+            <button data-ref="save_shipping_address_button" data-if="{{_global.currentUser?.uuid &amp;&amp; !_computed.shippingAddressAlreadySaved}}" type="button" class="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">
+              <on type="click">
+                <api-call target="/api/modules/sirsoft-ecommerce/user/addresses" :auth_required="true" method="POST">
+                  <success>
+                    <sequence>
+                      <toast type="success" message="$t:shop.order_complete.address_saved"/>
+                      <!-- 주소록을 다시 받아 버튼을 숨긴다 — 두 번 눌러 같은 주소를 쌓지 않게 -->
+                      <refetch-data-source dataSourceId="userAddresses"/>
+                    </sequence>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message ?? '$t:shop.order_complete.address_save_failed'}}"/>
+                  </fail>
+                  <error-handling>
+                    <on-code code="409">
+                      <!-- 409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻이다 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다.
+                        분기는 상태 코드별 error-handling 으로 한다(fail 안의 conditions 는 엔진이 오류 처리기로 옮길 때 조건 목록을 버려 아무 토스트도 뜨지 않았다). -->
+                      <toast type="info" message="$t:shop.order_complete.address_name_exists"/>
+                    </on-code>
+                  </error-handling>
+                  <body name="{{$t('shop.order_complete.shipping_address')}}" recipient_name="{{orderData?.data?.shipping_address?.recipient_name}}" recipient_phone="{{orderData?.data?.shipping_address?.recipient_phone}}" country_code="{{orderData?.data?.shipping_address?.recipient_country_code ?? 'KR'}}" zipcode="{{orderData?.data?.shipping_address?.zipcode ?? ''}}" address="{{orderData?.data?.shipping_address?.address ?? ''}}" address_detail="{{orderData?.data?.shipping_address?.address_detail ?? ''}}" address_line_1="{{orderData?.data?.shipping_address?.address_line_1 ?? ''}}" address_line_2="{{orderData?.data?.shipping_address?.address_line_2 ?? ''}}" intl_city="{{orderData?.data?.shipping_address?.intl_city ?? ''}}" intl_state="{{orderData?.data?.shipping_address?.intl_state ?? ''}}" intl_postal_code="{{orderData?.data?.shipping_address?.intl_postal_code ?? ''}}" :is_default="false"/>
+                </api-call>
+              </on>
+              $t:shop.order_complete.save_shipping_address
+            </button>
+          </div>
+          <!-- 결제 금액 요약 — 결제 플러그인 조각(영수증·매출전표·가상계좌 안내)이 이 id 끝에 붙는다(#639, 쇼핑몰 docs/extension-points.md 약속) -->
+          <div data-ref="order_complete_payment_summary" class="py-4">
+            <!-- 상품 금액 -->
+            <div class="flex justify-between mb-2">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.subtotal</span>
+              <span class="text-gray-900 dark:text-white">{{orderData?.data?.mc_subtotal_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.subtotal_amount_formatted}}</span>
+            </div>
+            <!-- 배송비 -->
+            <div class="flex justify-between mb-2">
+              <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.shipping_fee</span>
+              <!-- Number() 캐스팅 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false 회귀 -->
+              <span class="{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}</span>
+            </div>
+            <!-- 할인 -->
+            <div data-if="{{(orderData?.data?.total_discount_amount ?? 0) > 0}}" class="flex justify-between mb-2 text-red-600 dark:text-red-400">
+              <span>$t:shop.order_complete.discount</span>
+              <span>-{{orderData?.data?.mc_total_discount_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_discount_amount_formatted}}</span>
+            </div>
+            <!-- 마일리지 사용 (있을 때만) — 마일리지는 base_currency 단일 정산이라 통화 전환 없이 *_formatted 사용 -->
+            <div data-if="{{(orderData?.data?.total_points_used_amount ?? 0) > 0}}" class="flex justify-between mb-2 text-red-600 dark:text-red-400">
+              <span>$t:shop.order_complete.points_used</span>
+              <span>-{{orderData?.data?.total_points_used_amount_formatted}}</span>
+            </div>
+            <!-- 총 결제금액 (주 통화) -->
+            <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700 font-bold text-lg">
+              <span class="text-gray-900 dark:text-white">$t:shop.order_complete.total</span>
+              <span class="text-blue-600 dark:text-blue-400">{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_amount_formatted}}</span>
+            </div>
+            <!-- 총 결제금액 보조 통화들 -->
+            <div data-if="{{Object.keys(orderData?.data?.mc_total_amount ?? {}).length > 1}}" data-each="currency in {{Object.entries(orderData?.data?.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+            </div>
+            <!-- 적립 예정 마일리지 (있을 때만) — 마일리지는 base_currency 단일 정산 -->
+            <div data-if="{{(orderData?.data?.total_earned_points_amount ?? 0) > 0 &amp;&amp; orderData?.data?.order_status !== 'cancelled' &amp;&amp; !orderData?.data?.is_partially_cancelled}}" class="flex justify-between mt-2 text-sm">
+              <span class="text-gray-500 dark:text-gray-400">$t:shop.order_complete.points_earning</span>
+              <span class="font-medium text-blue-600 dark:text-blue-400">+{{orderData?.data?.total_earned_points_amount_formatted}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 하단 버튼 -->
+        <div class="flex gap-4 justify-center">
+          <responsive on="portable" class="flex flex-col gap-3"/>
+          <!-- 회원: 마이페이지 주문 상세(/mypage/orders/:order_number, auth_required:true), 비회원: 비회원 주문 상세(/{shopBase}/guest/orders/:order_number, auth_required:false + X-Guest-Order-Token globalHeader 자동 주입). 분기 없이 마이페이지로만 보내면 비회원이 라우트 가드에 막혀 로그인 페이지로 튕긴다. -->
+          <button type="button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium">
+            <responsive on="portable" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"/>
+            <on type="click">
+              <navigate path="{{_global.currentUser?.uuid ? ('/mypage/orders/' + orderData?.data?.order_number) : ((_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number)}}"/>
+            </on>
+            $t:shop.order_complete.view_order_detail
+          </button>
+          <button type="button" class="px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700">
+            <responsive on="portable" class="w-full px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700"/>
+            <on type="click">
+              <navigate path="/"/>
+            </on>
+            $t:shop.order_complete.continue_shopping
+          </button>
+        </div>
+      </div>
+    </container>
+  </slot>
+</layout>

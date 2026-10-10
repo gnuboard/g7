@@ -8,13 +8,13 @@ use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Models\NotificationDefinition;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\MessageBizppurio\Http\Middleware\BizppurioWebhookIpWhitelist;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\BalanceLowNotificationDataListener;
-use Plugins\Sirsoft\MessageBizppurio\Listeners\GuestPhoneExtractListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\InvalidateTokenOnSettingsSaveListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\LinkNotificationLogListener;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\RegisterNotificationChannelsListener;
@@ -48,14 +48,18 @@ class Plugin extends AbstractPlugin
     /**
      * 플러그인 활성화 — 기존 회원 알림에 sms·alimtalk template 을 즉시 증강.
      *
-     * SeedChannelTemplatesListener 는 코어/모듈이 알림 정의를 *시딩할 때* 필터 훅으로 증강한다.
-     * 그러나 플러그인 활성화 시점에는 코어/모듈 정의가 이미 시딩돼 있어(우리 채널 없이) 다음
-     * 재시딩까지 alimtalk template 이 생기지 않는다. 따라서 활성화 시 코어·활성 모듈의 알림
-     * 정의를 재시드해, 이제 활성화된 우리 필터를 통과시켜 기존 정의에도 채널을 즉시 반영한다.
+     * SeedChannelTemplatesListener 는 코어·모듈·플러그인이 알림 정의를 *시딩할 때* 코어 공통 시딩 훅
+     * (core.notification.filter_seed_definitions)으로 증강한다.
+     * 그러나 플러그인 활성화 시점에는 다른 확장의 정의가 이미 시딩돼 있어(우리 채널 없이) 다음
+     * 재시딩까지 alimtalk template 이 생기지 않는다. 따라서 활성화 시 코어 알림 정의와, 이미
+     * 설치·활성인 모든 모듈·플러그인의 **알림 정의만** 코어 진입점으로 다시 동기화해, 이제 활성화된
+     * 우리 필터를 통과시켜 기존 정의에도 채널을 즉시 반영한다.
      *
-     * 재시드는 모두 user_overrides 보존 upsert(멱등)이며 코어·모듈 파일을 수정하지 않는다.
-     * 실패는 로그만 남기고 활성화 자체는 막지 않는다(발송·연동은 채널 등록만으로도 동작하며,
-     * template 은 다음 정상 재시딩에도 수렴).
+     * 재동기화는 설치본의 선언만 읽고(_bundled 를 읽지 않음) 역할·권한·메뉴는 건드리지 않는다.
+     * 모두 user_overrides 보존 upsert(멱등)라 운영자가 고친 템플릿은 그대로 남는다. 코어가 특정
+     * 확장 이름을 모르듯 이 플러그인도 대상 확장을 고르지 않는다 — 활성 목록 전체가 대상이다.
+     * 단계별 실패는 로그만 남기고 다음 단계와 활성화 자체는 막지 않는다(발송·연동은 채널 등록만으로도
+     * 동작하며, template 은 다음 정상 재시딩에도 수렴).
      *
      * 리스너 선등록: PluginManager::activatePlugin() 은 DB status 를 active 로 바꾸기
      * '전에' 이 activate() 를 호출한다. 그런데 registerPluginHookListeners() 의 active 가드는
@@ -71,26 +75,48 @@ class Plugin extends AbstractPlugin
         try {
             // 재시딩이 편승할 시딩 필터 리스너를 status=active 전환 이전에 명시적으로 등록한다.
             HookListenerRegistrar::register(SeedChannelTemplatesListener::class, $this->getIdentifier());
-
-            app(NotificationDefinitionSeeder::class)->run();
-            app(ModuleManager::class)->resyncAllActiveDeclarativeArtifacts();
         } catch (\Throwable $e) {
-            Log::warning('[sirsoft-message_bizppurio] 알림 채널 template 증강 재시드 실패', [
+            Log::warning('[sirsoft-message_bizppurio] 시딩 리스너 선등록 실패', [
                 'error' => $e->getMessage(),
             ]);
         }
+
+        $steps = [
+            'core' => fn () => app(NotificationDefinitionSeeder::class)->run(),
+            'modules' => fn () => app(ModuleManager::class)->resyncActiveModuleNotificationDefinitions(),
+            'plugins' => fn () => app(PluginManager::class)->resyncActivePluginNotificationDefinitions(),
+        ];
+
+        foreach ($steps as $step => $run) {
+            try {
+                $run();
+            } catch (\Throwable $e) {
+                Log::warning('[sirsoft-message_bizppurio] 알림 채널 template 증강 재시드 실패', [
+                    'step' => $step,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // 이 플러그인은 관리자 메뉴를 만들지 않는다(화면 배치 결정 2026-07-14 — 진입은 코어
+        // 소유 설정 페이지 하나로 통일). 이전 버전(getAdminMenus 사용 시기)이 심은 메뉴 행이
+        // 남아 있을 수 있어 활성화 때 청소한다 — 켜져 있는 동안 죽은 메뉴가 보이지 않게.
+        // 자식 메뉴 + role_menus 피벗은 helper 가 cascade 처리. 멱등.
+        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
+            ExtensionOwnerType::Plugin,
+            $this->getIdentifier(),
+            currentSlugs: [],
+        );
 
         return true;
     }
 
     /**
-     * 플러그인 비활성화 — 이 플러그인 소속 관리자 메뉴 잔재 정리.
+     * 플러그인 비활성화 — 관리자 메뉴 행은 건드리지 않는다.
      *
-     * 이 플러그인은 관리자 메뉴를 만들지 않는다(화면 배치 결정 2026-07-14 — 진입은 코어
-     * 소유 설정 페이지 하나로 통일). 다만 이전 버전(getAdminMenus 사용 시기)에 생성된
-     * 메뉴 row 가 DB 에 남아 있을 수 있어, 비활성화 시 currentSlugs=[] 로 cleanupStaleMenus
-     * 를 호출해 잔재를 청소한다. 재활성화 시 아무 메뉴도 만들지 않으므로 정상 무메뉴 상태로
-     * 수렴한다(멱등). 자식 메뉴 + role_menus 피벗은 helper 가 cascade 처리.
+     * 번들 플러그인 공통 관례: 비활성 플러그인의 메뉴는 사이드바·메뉴 관리 목록에서 자동으로
+     * 빠지므로 비활성화는 메뉴 행을 지우지 않는다(운영자가 붙인 메뉴 역할 보존). 이 플러그인은
+     * 메뉴를 만들지 않으며, 옛 판본 잔재 청소는 activate() 가, 전체 삭제는 uninstall() 이 맡는다.
      *
      * SeedChannelTemplatesListener 의 HookListenerRegistrar 등록 이력 캐시를 함께 지운다 —
      * activate() 가 register() 로 등록한 뒤(process-wide idempotency 캐시, source::class 키),
@@ -104,12 +130,6 @@ class Plugin extends AbstractPlugin
      */
     public function deactivate(): bool
     {
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
         $this->forgetSeedChannelTemplatesListenerRegistration();
 
         return true;
@@ -122,6 +142,8 @@ class Plugin extends AbstractPlugin
      * 초기화), 코어를 수정하지 않고 이 캐시를 조작하기 위해 리플렉션을 사용한다. 실패해도
      * (리플렉션 예외 등) 치명적이지 않으므로 조용히 무시한다 — 최악의 경우 이번 재활성화만
      * 채널 재시딩이 안 붙고, 운영자가 다시 활성화하면 정상화된다.
+     *
+     * @return void
      */
     private function forgetSeedChannelTemplatesListenerRegistration(): void
     {
@@ -140,7 +162,7 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 제거 — 메뉴 잔재 안전망(정상 흐름은 deactivate 가 먼저 처리) + sms·alimtalk 채널 잔재 정리.
+     * 플러그인 제거 — 메뉴 잔재 삭제(비활성화는 메뉴를 보존하므로 여기서 지운다) + sms·alimtalk 채널 잔재 정리.
      *
      * SeedChannelTemplatesListener 가 코어/게시판/이커머스 소유 알림 정의에 필터 훅으로 끼워넣은
      * sms·alimtalk template 은, 그 정의가 우리 소유가 아니므로 PluginManager 의 범용 알림 정의
@@ -161,6 +183,14 @@ class Plugin extends AbstractPlugin
     public function uninstall(): bool
     {
         $this->deactivate();
+
+        // 메뉴 잔재 삭제 — 비활성화는 메뉴 행을 지우지 않으므로 제거가 직접 지운다.
+        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
+            ExtensionOwnerType::Plugin,
+            $this->getIdentifier(),
+            currentSlugs: [],
+        );
+
         $this->cleanupChannelContributions();
 
         return true;
@@ -174,6 +204,8 @@ class Plugin extends AbstractPlugin
      * 우리 채널" 만으로 남길 목록을 계산할 수 있다. template 삭제는 코어 공개 메서드
      * NotificationSyncHelper::cleanupStaleTemplates() 를 그대로 사용해 로깅·모델 이벤트 등
      * 코어 도메인 규칙을 그대로 따른다.
+     *
+     * @return void
      */
     private function cleanupChannelContributions(): void
     {
@@ -378,6 +410,7 @@ class Plugin extends AbstractPlugin
             [
                 'type' => 'bizppurio_balance_low',
                 'hook_prefix' => 'sirsoft-message_bizppurio',
+                'audience' => 'staff',
                 'name' => [
                     'ko' => '비즈뿌리오 잔액 부족',
                     'en' => 'Bizppurio Balance Low',
@@ -404,9 +437,12 @@ class Plugin extends AbstractPlugin
                             'ko' => '[{app_name}] 비즈뿌리오 잔액이 부족합니다',
                             'en' => '[{app_name}] Bizppurio balance is insufficient',
                         ],
+                        // 메일 수신자는 `click_url` 을 볼 수 없다(그 키는 알림센터 전용)
+                        // — 본문에 갈 곳을 함께 적지 않으면 "충전하라" 는 말만 받고 어디서
+                        // 충전하는지는 스스로 찾아야 한다.
                         'body' => [
-                            'ko' => '{name}님, 비즈뿌리오 지갑 잔액이 부족하여 {channel_label} 발송이 실패했습니다 (코드: {result_code}). 충전 후 발송이 정상화됩니다.',
-                            'en' => 'Dear {name}, a {channel_label} message failed due to insufficient Bizppurio balance (code: {result_code}). Delivery resumes after recharging.',
+                            'ko' => '{name}님, 비즈뿌리오 지갑 잔액이 부족하여 {channel_label} 발송이 실패했습니다 (코드: {result_code}). 충전 후 발송이 정상화됩니다. 설정 화면: {settings_url}',
+                            'en' => 'Dear {name}, a {channel_label} message failed due to insufficient Bizppurio balance (code: {result_code}). Delivery resumes after recharging. Settings: {settings_url}',
                         ],
                     ],
                     [
@@ -420,6 +456,8 @@ class Plugin extends AbstractPlugin
                             'ko' => '비즈뿌리오 잔액 부족으로 {channel_label} 발송이 실패했습니다 (코드: {result_code}).',
                             'en' => 'A {channel_label} message failed due to insufficient Bizppurio balance (code: {result_code}).',
                         ],
+                        // 알림센터에서 눌렀을 때 갈 곳 — 없으면 눌러도 아무 일도 일어나지 않는다.
+                        'click_url' => '{settings_url}',
                     ],
                 ],
             ],
@@ -429,9 +467,9 @@ class Plugin extends AbstractPlugin
     /**
      * 훅 리스너 목록 반환
      *
-     * - RegisterNotificationChannelsListener: 채널 등록/readiness/3영역 노출(Phase 3)
+     * - RegisterNotificationChannelsListener: 채널 등록/readiness/코어 채널 후보 훅 응답(도메인 비인지)
      * - SeedChannelTemplatesListener: 회원 알림에 sms·alimtalk template 증강(Phase 6 결정 D — 시딩 필터 훅)
-     * - GuestPhoneExtractListener: 비회원 주문 전화번호 주입(Phase 3)
+     *   (비회원 수신 전화번호는 도메인이 코어 표준 키로 알림 data 에 싣는다 — 이 플러그인은 읽기만 한다)
      * - LinkNotificationLogListener: 코어 알림 로그↔dispatch 연결(A-2 — 발송 이력 결과 주입 연결고리)
      * - ValidateBizppurioSettingsListener: 환경설정 검증
      * - InvalidateTokenOnSettingsSaveListener: 설정 저장 시 인증 토큰 캐시 무효화
@@ -443,11 +481,37 @@ class Plugin extends AbstractPlugin
         return [
             RegisterNotificationChannelsListener::class,
             SeedChannelTemplatesListener::class,
-            GuestPhoneExtractListener::class,
             BalanceLowNotificationDataListener::class,
             LinkNotificationLogListener::class,
             ValidateBizppurioSettingsListener::class,
             InvalidateTokenOnSettingsSaveListener::class,
+        ];
+    }
+
+    /**
+     * 이 플러그인이 발행해 다른 확장에 제공하는 훅 선언.
+     *
+     * 관리자 확장 관리의 플러그인 정보 창 「훅」 칸과 확장 문서의 발행 훅 표가 이 선언을 읽는다.
+     * 구독하는 훅(getHookListeners)은 여기에 싣지 않는다.
+     *
+     * @return array<int, array<string, mixed>> 훅 정의 목록
+     */
+    public function getHooks(): array
+    {
+        return [
+            [
+                'name' => 'sirsoft-message_bizppurio.balance.low',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '잔액 부족·후불 한도 초과로 문자·알림톡 발송이 실패했을 때(채널별 쿨다운 안에서 1회) 실행되는 액션 훅',
+                    'en' => 'Action hook fired when an SMS or AlimTalk send fails for low balance or an exceeded postpaid limit (once per channel cooldown)',
+                    'ja' => '残高不足・後払い上限超過で SMS・アラートトークの送信が失敗したときに(チャネルごとのクールダウン内で1回)実行されるアクションフック',
+                ],
+                'parameters' => [
+                    'resultCode' => 'string - 비즈뿌리오 결과 코드 (9070 문자 잔액 부족, 7436 알림톡 지갑 잔액 부족, 9071 후불 한도 초과)',
+                    'channel' => 'string - 실패한 채널 (sms, lms, alimtalk)',
+                ],
+            ],
         ];
     }
 

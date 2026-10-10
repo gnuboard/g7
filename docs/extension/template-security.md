@@ -37,7 +37,7 @@ Custom Rule: ComponentExists
 | JSON 구조 유효성 | 올바른 JSON 형식인지 검증 |
 | 최대 중첩 깊이 | 10단계 제한 |
 | 엔드포인트 화이트리스트 | `/api/(admin\|auth\|public)/` 패턴만 허용 |
-| 외부 URL 금지 | 외부 도메인 URL 차단 (사이트 자기 host 와 「공개 자산 스토리지」로 선언한 디스크의 host 는 외부가 아니다) |
+| 외부 URL 금지 | 외부 도메인 URL 차단 (사이트 자기 host 와 「공개 자산 스토리지」로 선언한 디스크의 host 는 외부가 아니다). 컴포넌트 prop 의 입력 안내 문구(`placeholder`)·링크(`href`)와 액션 요청 본문(`params.body`)은 `http(s)` 웹 주소 허용 — 실행 스킴·`//`·`ftp:` 는 그 자리에서도 차단. 확장 조각의 `injections[].components`·`injections[].props` 도 같은 규칙 |
 | 컴포넌트 존재 여부 | components.json 기준으로 검증 |
 
 ---

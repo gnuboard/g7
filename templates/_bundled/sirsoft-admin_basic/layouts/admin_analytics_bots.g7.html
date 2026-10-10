@@ -1,0 +1,252 @@
+<!-- 봇·크롤러 화면. 봇 탭은 봇 이름별 집계와 최근 요청 50건(어느 주소를 언제 긁어 갔는지)을 함께 보이고,
+  페이지 탭은 봇이 가져간 페이지 집계다. 봇 행에는 뺄 사람 유형이 없으므로 「관리자·회원 제외」 토글을
+  두지 않는다. 검색엔진 캐시(SEO) 상태와 겹치는 값이라 그 설정으로 가는 길을 둔다. -->
+<layout name="admin_analytics_bots" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.bots.title"/>
+  <!-- 봇 이름별 집계 + 최근 요청 목록. 봇 탭에서만 받는다. -->
+  <data-source id="analytics_bots" label_key="$t:editor.data_source.analytics_bots" type="api" endpoint="/api/admin/analytics/bots" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'bots') === 'bots'}}">
+    <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="has_more" :value="false"/>
+        </field>
+        <field name="recent_hits" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 봇이 가져간 페이지 집계. 페이지 탭에서만 받는다 — 공통 표 조각이 이 소스를 읽는다. -->
+  <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/bot_pages" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'bots') === 'pages'}}">
+    <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="has_more" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 상단 경고용 진단 상태 — 봇 표보다 먼저 올 필요가 없어 background 로 받고, 응답 전에는 fallback 의 「정상」 값으로
+       경고를 띄우지 않는다. -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를
+       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다. -->
+  <data-source id="analytics_row_trend" label_key="$t:editor.data_source.analytics_row_trend" type="api" endpoint="/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series" method="GET" :auto_fetch="false" :auth_required="true">
+    <params label="{{_global.analyticsRowTrend?.label ?? ''}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
+    <fallback>
+      <field name="data">
+        <field name="unit" value="day"/>
+        <field name="unit_downgraded" :value="false"/>
+        <field name="points" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <on-code code="422">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="periodPath" value="/admin/analytics/bots"/>
+    <field name="periodSource" value="analytics_bots"/>
+    <field name="showUnit" :value="false"/>
+    <field name="showExclude" :value="false"/>
+  </init-local>
+  <computed name="csvUrl">{{'/api/admin/analytics/' + ((query.tab || 'bots') === 'pages' ? 'reports/bot_pages' : 'bots') + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
+  <computed name="csvFilename">{{'analytics-' + ((query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name') + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
+  <computed name="periodFrom">{{query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.from : analytics_bots?.data?.from) || _local.periodComputed?.from || ''}}</computed>
+  <computed name="periodTo">{{query.to || query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.to : analytics_bots?.data?.to) || _local.periodComputed?.to || ''}}</computed>
+  <computed name="reportName">{{(query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name'}}</computed>
+  <computed name="archiveFreshness">{{((query.tab || 'bots') === 'pages' ? analytics_report?.data?.freshness : analytics_bots?.data?.freshness) ?? null}}</computed>
+  <permissions>
+    <permission>core.analytics.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_bots</wait-for>
+    <wait-for>analytics_report</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local" periodSource="{{(query.tab || 'bots') === 'pages' ? 'analytics_report' : 'analytics_bots'}}"/>
+    <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="periodComputed"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="analytics_bots_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.bots.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.bots.description</p>
+        </div>
+        <button data-ref="seo_cache_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="btn btn-secondary btn-sm">
+          <on type="click">
+            <!-- 검색엔진 캐시 설정으로 — 환경설정 SEO 탭을 연다. 환경설정 읽기 권한이 있어야 버튼이 보인다(없으면 가도 권한 안내뿐이다). -->
+            <navigate path="/admin/settings">
+              <query tab="seo"/>
+            </navigate>
+          </on>
+          $t:admin.analytics.bots.seo_cache_link
+        </button>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
+      <div data-ref="bot_kpi_row" data-if="{{(query.tab || 'bots') === 'bots'}}" class="grid grid-cols-2 gap-4 mb-4">
+        <blur-until-loaded sources="analytics_bots"/>
+        <stat-card data-type="composite" data-ref="kpi_bot_hits" value="{{(analytics_bots?.data?.totals?.hits ?? 0) | number}}" label="$t:admin.analytics.bots.kpi.hits" iconName="robot"/>
+        <stat-card data-type="composite" data-ref="kpi_bot_names" value="{{(analytics_bots?.data?.totals?.labels ?? 0) | number}}" label="$t:admin.analytics.bots.kpi.names" iconName="list"/>
+      </div>
+      <tab-navigation data-type="composite" data-ref="bot_tabs" class="mb-4" activeTabId="{{query.tab || 'bots'}}" variant="underline">
+        <prop name="tabs">
+          <item id="bots" label="$t:admin.analytics.bots.tabs.bots"/>
+          <item id="pages" label="$t:admin.analytics.bots.tabs.pages"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <!-- 탭을 옮기면 기간 바의 새로고침 대상부터 그 탭의 소스로 바꾼 뒤 이동한다 — 봇 탭은 `analytics_bots`,
+               페이지 탭은 공통 표의 `analytics_report` 다. 바꾸지 않으면 새로고침이 보이지 않는 탭의 소스를 다시 받는다. -->
+          <sequence>
+            <set-state target="local" periodSource="{{$args[0] === 'pages' ? 'analytics_report' : 'analytics_bots'}}"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 봇 이름·봇 페이지 표는 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to)과 쪽 크기만 query 로 명시해 잇는다. -->
+            <navigate path="/admin/analytics/bots" :replace="true">
+              <query tab="{{$args[0]}}" preset="{{query.preset}}" from="{{query.from}}" to="{{query.to}}" per_page="{{query.per_page}}"/>
+            </navigate>
+          </sequence>
+        </on>
+      </tab-navigation>
+      <div data-ref="bots_tab_content" data-if="{{(query.tab || 'bots') === 'bots'}}" class="space-y-4">
+        <div data-ref="bot_names_card" class="admin-card">
+          <h2 class="section-heading mb-3">$t:admin.analytics.bots.names_title</h2>
+          <div class="overflow-x-auto">
+            <data-grid data-type="composite" data-ref="bot_names_grid" data-if="{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+              <on type="action" event="onPageChange">
+                <!-- 봇 이름 표의 쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼우고 전환 표시는 표 몸통에만 띄운다. 총 쪽 수를 모르는
+                     목록이라 다음 쪽이 있는지는 응답의 `has_more` 가 가른다. -->
+                <navigate path="/admin/analytics/bots" :mergeQuery="true" :replace="true" transition_overlay_target="bot_names_grid__body">
+                  <query page="{{$args[0]}}"/>
+                </navigate>
+              </on>
+              <column field="label_display" header="$t:admin.analytics.bots.columns.bot">
+                <cell>
+                  <span class="text-heading">{{row.label_display ?? row.label ?? '-'}}</span>
+                </cell>
+              </column>
+              <column field="visits" header="$t:admin.analytics.common.visits" width="100px" align="right">
+                <cell>
+                  <span class="text-body">{{(row.visits ?? 0) | number}}</span>
+                </cell>
+              </column>
+              <column field="hits" header="$t:admin.analytics.bots.columns.hits" width="100px" align="right">
+                <cell>
+                  <span class="text-body">{{(row.hits ?? 0) | number}}</span>
+                </cell>
+              </column>
+              <column field="trend" header="" width="56px" align="center">
+                <cell>
+                  <!-- 행 끝 추이 — 공통 표와 같은 동작(봇 이름 리포트). -->
+                  <button data-ref="bot_row_trend_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.row_trend.open" title="$t:admin.analytics.row_trend.open">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global">
+                          <field name="analyticsRowTrend">
+                            <field name="report" value="bot_name"/>
+                            <field name="label" value="{{row.label ?? ''}}"/>
+                            <field name="label_display" value="{{row.label_display ?? row.label ?? ''}}"/>
+                          </field>
+                        </set-state>
+                        <refetch-data-source dataSourceId="analytics_row_trend"/>
+                        <open-modal target="analytics_row_trend_modal"/>
+                      </sequence>
+                    </on>
+                    <icon name="chart-line" size="sm"/>
+                  </button>
+                </cell>
+              </column>
+            </data-grid>
+          </div>
+          <empty-state data-type="composite" data-if="{{!analytics_bots?.loading &amp;&amp; (analytics_bots?.data?.data ?? []).length === 0}}" iconName="robot" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
+        </div>
+        <div data-ref="recent_hits_card" class="admin-card">
+          <h2 class="section-heading">$t:admin.analytics.bots.recent_title</h2>
+          <!-- 최근 요청은 고른 기간 안에서 고른다(서버 `ReportService::recentBotHits`) — 화면의 다른 숫자와 같은 기간이라는
+               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측 O-E10). -->
+          <p class="text-hint mb-3">$t:admin.analytics.bots.recent_hint</p>
+          <div class="overflow-x-auto">
+            <!-- 최근 요청은 서버가 늘 50건을 한 응답에 실어 준다(`ReportService::RECENT_BOT_HITS`). 전부 펼치면
+              카드 하나가 2,800px 가까이 되어 옆의 「봇별 집계」와 높이가 맞지 않는다 — 받은 배열을 화면에서
+              10건씩 나눈다. 서버 쪽 나눔이 아니라 요청 수는 그대로다(#682 라운드 4, 검수 지적 ③). -->
+            <data-grid data-type="composite" data-ref="recent_hits_grid" data="{{analytics_bots?.data?.recent_hits ?? []}}" :pagination="true" :pageSize="10" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+              <column field="bot_name" header="$t:admin.analytics.bots.columns.bot" width="160px">
+                <cell>
+                  <span class="text-heading">{{row.bot_name ?? '-'}}</span>
+                </cell>
+              </column>
+              <column field="url" header="$t:admin.analytics.bots.columns.url">
+                <cell>
+                  <span class="text-body break-all">{{row.url ?? '-'}}</span>
+                </cell>
+              </column>
+              <column field="cache_status" header="$t:admin.analytics.bots.columns.cache_status" width="110px">
+                <cell>
+                  <badge data-type="composite" color="{{row.cache_status === 'hit' ? 'green' : (row.cache_status === 'miss' ? 'yellow' : 'gray')}}" text="{{['hit', 'miss', 'bypass', 'none'].includes(row.cache_status ?? '') ? $t('admin.analytics.bots.cache_statuses.' + row.cache_status) : (row.cache_status ?? '-')}}" size="sm"/>
+                </cell>
+              </column>
+              <column field="occurred_at" header="$t:admin.analytics.bots.columns.time" width="160px">
+                <cell>
+                  <span class="text-label">{{row.occurred_at | datetime | default('-')}}</span>
+                </cell>
+              </column>
+            </data-grid>
+          </div>
+        </div>
+      </div>
+      <div data-ref="pages_tab_content" data-if="{{(query.tab || 'bots') === 'pages'}}">
+        <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
+      </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_bots_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
+    </div>
+  </slot>
+  <!-- 한 항목 추이 창. -->
+  <modal src="partials/admin_analytics/_modal_row_trend.g7.html"/>
+</layout>

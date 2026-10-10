@@ -1,6 +1,7 @@
 {
   "drop_or_click": "파일을 드래그하거나 클릭하여 업로드",
   "upload_limit": "최대 {{maxFiles}}개, 각 {{maxSize}}MB까지",
+  "upload_limit_count": "최대 {{maxFiles}}개까지",
   "delete_confirm_title": "첨부파일 삭제",
   "delete_confirm_message": "이 파일을 삭제하시겠습니까?",
   "deleting": "삭제 중...",
@@ -8,7 +9,14 @@
   "upload_limit_exceeded": "최대 {{max}}개까지 첨부할 수 있습니다.",
   "max_size": "최대 {{size}}MB",
   "reorder_failed": "파일 순서 변경에 실패했습니다",
+  "file_too_large": "[{{name}}] 파일 크기({{size}})가 최대 허용 크기({{max}}MB)를 초과합니다.",
+  "file_type_not_allowed": "[{{name}}] 허용되지 않는 파일 형식입니다. (허용: {{accept}})",
+  "upload_failed": "업로드에 실패했습니다.",
+  "upload_response_invalid": "업로드 응답을 해석하지 못했습니다.",
   "drag_to_reorder": "드래그하여 순서 변경",
   "primary_image": "대표 이미지",
-  "set_as_primary": "대표 이미지로 설정"
+  "set_as_primary": "대표 이미지로 설정",
+  "empty_file": "[{{name}}] 빈 파일(0바이트)은 올릴 수 없습니다.",
+  "invalid_file_type": "허용되지 않는 파일 형식입니다.",
+  "delete_failed": "파일 삭제에 실패했습니다."
 }

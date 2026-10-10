@@ -33,6 +33,7 @@ class PostCollection extends BaseApiCollection
      * 전체 일반 게시글 수를 설정합니다.
      *
      * @param  BoundedCount  $total  전체 일반 게시글 수 + 정확도
+     * @return void
      */
     public function setTotalNormalPosts(BoundedCount $total): void
     {
@@ -43,6 +44,7 @@ class PostCollection extends BaseApiCollection
      * 정렬 방향을 설정합니다.
      *
      * @param  string  $direction  정렬 방향 (asc 또는 desc, 대소문자 무관)
+     * @return void
      */
     public function setOrderDirection(string $direction): void
     {
@@ -336,7 +338,8 @@ class PostCollection extends BaseApiCollection
             'can_view_deleted' => $canManage,
             // 유저 화면에서 관리자 게시판 화면으로 진입 가능한지 여부 (Admin 타입 admin.manage 권한 보유자만 true).
             // 유저용 can_manage(게시판 매니저)와 다른, 관리자 화면 접근 게이트 전용 플래그.
-            'can_access_admin' => $this->checkBoardPermission($slug, 'admin.manage'),
+            // 관리자 게시판 화면(posts_index·post_detail·form)의 레이아웃 권한이 sirsoft-board.boards.read 라 그것도 있어야 링크가 열린다
+            'can_access_admin' => $this->checkBoardPermission($slug, 'admin.manage') && $this->checkModulePermission('boards', 'read'),
         ];
     }
 }

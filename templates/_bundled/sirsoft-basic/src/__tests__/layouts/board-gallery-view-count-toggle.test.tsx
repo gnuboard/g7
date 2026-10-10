@@ -3,7 +3,7 @@
  * @description 갤러리형 목록 - 조회수 표시 토글(show_view_count) 반영 회귀 테스트 (#413-19-4b)
  *
  * 배경:
- *   갤러리형 목록(types/gallery/index.json)의 조회수 Span 에 show_view_count 조건이 없어,
+ *   갤러리형 목록(types/gallery/index.g7.html)의 조회수 Span 에 show_view_count 조건이 없어,
  *   환경설정에서 '조회수 표시'를 OFF 해도 갤러리형에서는 조회수가 항상 표시되던 회귀.
  *   basic/card 형은 동일 조건으로 정상 동작 → 갤러리에도 동일 if 조건을 추가.
  *
@@ -12,7 +12,7 @@
  * 2. show_view_count === false 일 때 조회수 미표시
  *
  * 조건식: "{{posts?.data?.board?.settings?.show_view_count !== false}}"
- *   - basic/card/index.json 과 동일 (SSoT)
+ *   - basic/card/index.g7.html 과 동일 (SSoT)
  */
 
 import React from 'react';
@@ -73,7 +73,7 @@ function setupTestRegistry(): ComponentRegistry {
 }
 
 // ============================================================
-// 레이아웃 JSON — gallery/index.json 의 조회수 Span 구조를 반영
+// 레이아웃 JSON — gallery/index.g7.html 의 조회수 Span 구조를 반영
 // ============================================================
 
 const galleryViewCountLayoutJson = {

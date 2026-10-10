@@ -1,0 +1,57 @@
+<!-- 상품 목록 — 일괄 재고변경 **조건 입력** 창. 가격 창과 같은 구조로, 여기서는 담기만 하고 실제
+  적용은 확인 창이 한 번 더 물은 뒤에 일어난다. 재고는 옵션 단위이므로 상품 하나를 골라도
+  옵션 수만큼 줄이 바뀐다(그 규모는 확인 창이 보여 준다).
+
+  알려진 결함: 확정 시 만드는 요약 문구에 단위 "개" 가 코드에 박혀 있어 다국어로 바뀌지 않는다
+  (가격 창은 같은 자리를 쇼핑몰 기본 통화에서 읽어 온다). 산출 값이 달라지는 수정이라 주석 주입
+  단락에서는 손대지 않았다. -->
+<partial description="Product Index - Bulk Stock Change Modal">
+  <modal data-type="composite" data-ref="modal_bulk_stock" title="$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.title" size="md">
+    <div data-ref="bulk_stock_form">
+      <div data-ref="stock_method_field">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method</label>
+        <select class="select w-full">
+          <on type="change">
+            <!-- `set` 은 "얼마로 맞춘다" 라 옵션마다 현재 재고와 무관하게 같은 값이 되고, 증감은 옵션별 현재값 기준이다 — 미리보기 문구 세 개가 이 값으로 갈린다. -->
+            <set-state target="local" bulkStockMethod="{{$event.target.value}}"/>
+          </on>
+          <option value="increase">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_increase</option>
+          <option value="decrease">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_decrease</option>
+          <option value="set">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_set</option>
+        </select>
+      </div>
+      <div data-ref="stock_value_field">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.value</label>
+        <input type="number" data-testid="bulk-stock-value" placeholder="0" class="input">
+          <on type="input">
+            <!-- 감액을 골라도 음수를 적지 않는다 — 부호는 방식이 정하고 여기에는 크기만 담는다. -->
+            <set-state target="local" bulkStockValue="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <div data-ref="stock_preview" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+        <span data-ref="stock_preview_increase" data-if="{{(_local.bulkStockMethod || 'increase') === 'increase'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_increase|value={{_local.bulkStockValue || 0}}</span>
+        <span data-ref="stock_preview_decrease" data-if="{{(_local.bulkStockMethod || 'increase') === 'decrease'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_decrease|value={{_local.bulkStockValue || 0}}</span>
+        <span data-ref="stock_preview_set" data-if="{{(_local.bulkStockMethod || 'increase') === 'set'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_set|value={{_local.bulkStockValue || 0}}</span>
+      </div>
+    </div>
+    <div data-ref="bulk_stock_footer" class="flex justify-end gap-2 mt-6">
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.cancel
+      </button>
+      <button type="button" data-testid="bulk-stock-apply" class="btn btn-primary">
+        <on type="click">
+          <!-- 적용. 확인 창에 보여 줄 조건 문구를 여기서 만든다 — 지정이면 값 그대로, 증감이면 부호를 붙여 적는다 -->
+          <set-state target="global" bulkStockCondition="{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + '개' : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + '개'}}" bulkStockMethod="{{_local.bulkStockMethod || 'increase'}}" bulkStockValue="{{_local.bulkStockValue || 0}}"/>
+        </on>
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.change
+      </button>
+    </div>
+  </modal>
+</partial>

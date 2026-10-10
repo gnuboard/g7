@@ -1,0 +1,133 @@
+<!-- 「기본값」 탭의 게시글 구획 — 새 게시판이 물려받을 글 규칙(제목·본문 길이의 최소와 최대, 금지어, 「새 글」 표시가 유지되는 시간) -->
+<partial description="게시판 설정 > 게시글 탭">
+  <div data-ref="post" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div>
+      <section-layout data-type="layout" data-ref="section_post" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.post</h3>
+        <div class="row-stack">
+          <div data-ref="field_min_title_length" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「제목 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_title_length') : [...(_local.bulkApplyFields ?? []), 'min_title_length']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.min_title_length</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.min_title_length|min={{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}</p>
+                </div>
+              </label>
+              <div class="flex-shrink-0">
+                <input type="number" name="basic_defaults.min_title_length" min="{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}" class="{{(_local.errors?.['basic_defaults.min_title_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.min_title_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_title_length']) ? _local.errors['basic_defaults.min_title_length'][0] : _local.errors?.['basic_defaults.min_title_length']) ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_max_title_length" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「제목 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_title_length') : [...(_local.bulkApplyFields ?? []), 'max_title_length']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.max_title_length</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_title_length|min={{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}</p>
+                </div>
+              </label>
+              <div class="flex-shrink-0">
+                <input type="number" name="basic_defaults.max_title_length" min="{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}" class="{{(_local.errors?.['basic_defaults.max_title_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.max_title_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_title_length']) ? _local.errors['basic_defaults.max_title_length'][0] : _local.errors?.['basic_defaults.max_title_length']) ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_min_content_length" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「본문 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_content_length') : [...(_local.bulkApplyFields ?? []), 'min_content_length']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.min_content_length</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.min_content_length|min={{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}</p>
+                </div>
+              </label>
+              <div class="flex-shrink-0">
+                <input type="number" name="basic_defaults.min_content_length" min="{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}" class="{{(_local.errors?.['basic_defaults.min_content_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.min_content_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_content_length']) ? _local.errors['basic_defaults.min_content_length'][0] : _local.errors?.['basic_defaults.min_content_length']) ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_max_content_length" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「본문 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_content_length') : [...(_local.bulkApplyFields ?? []), 'max_content_length']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.max_content_length</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_content_length|min={{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}</p>
+                </div>
+              </label>
+              <div class="flex-shrink-0">
+                <input type="number" name="basic_defaults.max_content_length" min="{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}" class="{{(_local.errors?.['basic_defaults.max_content_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.max_content_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_content_length']) ? _local.errors['basic_defaults.max_content_length'][0] : _local.errors?.['basic_defaults.max_content_length']) ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_blocked_keywords" class="">
+            <div class="px-3 py-2">
+              <label class="flex-start gap-2 text-heading cursor-pointer mb-2">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「금지어 목록」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'blocked_keywords') : [...(_local.bulkApplyFields ?? []), 'blocked_keywords']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.blocked_keywords</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.blocked_keywords</p>
+                </div>
+              </label>
+              <tag-input data-type="composite" name="basic_defaults.blocked_keywords" placeholder="$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder" :creatable="true" class="w-full" disabled="{{_computed.isReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_new_display_hours" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「새 글 표시가 몇 시간 유지되는지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('new_display_hours') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'new_display_hours') : [...(_local.bulkApplyFields ?? []), 'new_display_hours']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.new_display_hours</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.new_display_hours</p>
+                </div>
+              </label>
+              <div class="flex-shrink-0">
+                <input type="number" name="basic_defaults.new_display_hours" min="{{_local?.form?._meta?.limits?.new_display_hours_min ?? 1}}" max="{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}" class="{{(_local.errors?.['basic_defaults.new_display_hours']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.new_display_hours']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.new_display_hours']) ? _local.errors['basic_defaults.new_display_hours'][0] : _local.errors?.['basic_defaults.new_display_hours']) ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section-layout>
+    </div>
+  </div>
+</partial>

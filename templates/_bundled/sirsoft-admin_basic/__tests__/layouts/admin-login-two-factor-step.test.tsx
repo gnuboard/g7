@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import adminLogin from '../../layouts/admin_login.json';
 
@@ -45,9 +46,10 @@ function flatten(node: Node | Node[] | undefined): Node[] {
   return [node, ...children];
 }
 
-function flattenActions(actions: Action[] | undefined): Action[] {
+// 컴파일러가 원소 하나짜리 배열을 객체로 접으므로(D67) 배열 모양을 단정하지 않는다 — asArray 로 정규화.
+function flattenActions(actions: Action[] | Action | undefined): Action[] {
   if (!actions) return [];
-  return actions.flatMap((a) => [
+  return asArray<Action>(actions).flatMap((a) => [
     a,
     ...flattenActions(a.actions),
     ...flattenActions(a.onSuccess),
@@ -66,7 +68,9 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
    * @effects code_step_rendered_on_challenge, credential_step_hidden_on_challenge
    */
   it('1단계 입력과 2단계 블록의 조건이 상보적이다', () => {
-    const stepOne = nodes.filter((n) => n.if === '{{!_local.twoFactor?.required}}');
+    // #736 이후 1단계는 2단계 인증·비밀번호 변경 두 단계가 모두 아닐 때만 보인다(세 단계 상보 — 변경 단계 쪽은
+    // admin-login-password-change-step.test.tsx 가 잠근다).
+    const stepOne = nodes.filter((n) => n.if === '{{!_local.twoFactor?.required && !_local.passwordChange?.required}}');
     const stepTwo = nodes.filter((n) => n.if === '{{_local.twoFactor?.required}}');
 
     expect(stepOne.length).toBeGreaterThanOrEqual(3);
@@ -102,7 +106,7 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
     const login = formActions.find((a) => a.handler === 'login');
     const verify = formActions.find((a) => a.handler === 'loginTwoFactor');
 
-    expect(login?.if).toBe('{{!_local.twoFactor?.required}}');
+    expect(login?.if).toBe('{{!_local.twoFactor?.required && !_local.passwordChange?.required}}');
     expect(verify?.if).toBe('{{_local.twoFactor?.required}}');
     expect(login?.target).toBe('admin');
     expect(verify?.target).toBe('admin');
@@ -144,7 +148,7 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
     expect(resendAction?.target).toBe('admin');
     expect(resendAction?.params?.body?.challenge_id).toBe('{{_local.twoFactor?.challenge_id}}');
 
-    const success = resendAction?.onSuccess?.[0];
+    const success = asArray<Action>(resendAction?.onSuccess)[0];
     expect(success?.params?.twoFactor?.challenge_id).toBe('{{response.challenge_id}}');
     expect(success?.params?.twoFactor?.code).toBe('');
     expect(success?.params?.twoFactor?.resent).toBe(true);

@@ -4,6 +4,7 @@ namespace App\ActivityLog\Traits;
 
 use App\Enums\ActivityLogType;
 use App\Extension\ExtensionManager;
+use App\Support\IpAccessMatcher;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -12,7 +13,10 @@ use Illuminate\Support\Facades\Log;
  * Service 훅이 관리자/사용자/시스템 등 다양한 컨텍스트에서 호출될 수 있으므로
  * 요청 경로를 기반으로 log_type을 동적으로 결정합니다.
  *
- * - /api/admin/* 경로 → ActivityLogType::Admin
+ * - 관리자 영역 경로 → ActivityLogType::Admin — 코어 관리자 API(`api/admin/*`)뿐 아니라 확장 관리자 API
+ *   (`api/{modules|plugins}/{id}/admin/*`)·관리자 로그인 API(`api/auth/admin/*`)·관리자 셸(`admin/*`)까지.
+ *   판정은 IP 제한의 관리자 영역 정의(`IpAccessMatcher::isAdminArea`)를 그대로 쓴다 — 기준을 두 벌 두면
+ *   확장 관리자 동작(예: 인증 앱 강제 해제)이 「사용자」로 남는다(7.1.0 실측 O-B2).
  * - 그 외 HTTP 요청 → ActivityLogType::User
  * - CLI/스케줄러(request 없음) → ActivityLogType::System
  */
@@ -28,7 +32,7 @@ trait ResolvesActivityLogType
         $request = request();
 
         if ($request && $request->path() !== '/') {
-            return $request->is('api/admin/*')
+            return IpAccessMatcher::isAdminArea($request->path())
                 ? ActivityLogType::Admin
                 : ActivityLogType::User;
         }
@@ -46,6 +50,7 @@ trait ResolvesActivityLogType
      *
      * @param  string  $action  액션명 (예: 'user.create')
      * @param  array  $context  Monolog context 배열
+     * @return void 반환값 없음
      */
     protected function logActivity(string $action, array $context): void
     {

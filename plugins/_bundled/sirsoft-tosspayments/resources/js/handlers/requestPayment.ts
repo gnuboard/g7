@@ -1,3 +1,4 @@
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다).
 /**
  * 토스페이먼츠 결제창 호출 핸들러
  *
@@ -15,6 +16,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { buildGuestOwnershipHeaders } from '../guestOrderToken';
 import { rememberPendingClose } from '../paymentCloseReport';
 
 interface EscrowProduct {
@@ -29,12 +31,26 @@ interface PgPaymentData {
     order_number: string;
     order_name: string;
     amount: number;
+    /** 결제 금액 중 면세분 (복합 과세 상점 계약 — 승인·취소에 함께 실어야 한다) */
+    tax_free_amount?: number | null;
     currency?: string;
     customer_name?: string;
     customer_email?: string;
     customer_phone?: string;
     customer_key?: string | null;
+    /** 서버가 저장한 결제수단 id (코어 id `card`·`vbank` 또는 `toss_*`) — 결제창 수단 결정의 기준 */
+    payment_method?: string | null;
     escrow_products?: EscrowProduct[];
+    // 클레임 추가결제에만 실린다 — 주문 결제에는 없다.
+    //
+    // 이 값이 있으면 이 건은 주문 결제가 아니라 클레임 추가결제이고, `order_number` 가
+    // 가리키는 것도 주문번호가 아니라 결제번호(CP…)다. 사용자가 결제창을 스스로 닫았을 때
+    // 돌아갈 주소는 서버(`ClaimPaymentRedirect`)가 만들어 실어 준다 — 회원/비회원 분기와
+    // 폴백 경로가 그쪽 SSoT 에 있어 프런트가 조립하면 조용히 어긋난다.
+    claim_payment_number?: string;
+    claim_type?: string;
+    claim_number?: string | null;
+    claim_cancel_return_url?: string;
 }
 
 interface RequestPaymentParams {
@@ -193,16 +209,42 @@ async function loadScript(src: string): Promise<void> {
  * 결정한다. 프론트는 결제수단 매핑을 하드코딩하지 않는다 (서버가 SSoT).
  * order_sheet_mode 가 off 이거나 선택 id 를 못 찾으면 통합결제창 카드(CARD)로 처리한다.
  *
+ * 선택 id 는 두 가지로 온다 — 주문서에서 toss_* 항목을 직접 고르면 그 id(`toss_virtual_account`)
+ * 가, 코어 카탈로그의 결제수단(신용카드·가상계좌)을 고르면 **코어 id**(`card`·`vbank`)가
+ * `_local.paymentMethod` 에 담긴다. 코어 id 를 못 찾고 CARD 로 강하하면 **가상계좌 주문에
+ * 카드 결제창이 열린다**(S1-D1). 그래서 toss_* id 를 먼저 찾고, 없으면 core_payment_method
+ * 로 한 번 더 찾는다. 순서가 중요하다 — toss_kakaopay 의 core 는 card 라 코어를 먼저 맞추면
+ * 간편결제 자체창(easyPay)이 사라진다.
+ *
  * @param config 클라이언트 설정 (enabled_methods 포함)
- * @param selectedId 선택된 toss_* 결제수단 id
+ * @param selectedId 선택된 결제수단 id (toss_* 또는 코어 id)
  * @returns SDK method 와 easyPay provider
  */
+/**
+ * 결제창에 쓸 결제수단 id 를 정합니다.
+ *
+ * 액션 인자가 있으면 그 값, 없으면 서버가 저장한 결제수단(payment_method)이다. 화면 상태(`_local.paymentMethod`)는
+ * 보지 않는다 — 주문서가 아닌 화면(클레임 추가결제 등)에서는 비거나 서버와 다른 값일 수 있다.
+ *
+ * @param paramId 액션 인자로 받은 결제수단 id
+ * @param serverId 서버가 결제 데이터에 실어 준 결제수단 id
+ * @returns 결제수단 id (둘 다 비어 있으면 undefined)
+ */
+export function resolveSelectedMethodId(
+    paramId?: string | null,
+    serverId?: string | null,
+): string | undefined {
+    return paramId || serverId || undefined;
+}
+
 function resolveMethod(config: ClientConfig, selectedId?: string): { method: string; easyPay: string | null } {
     if (!config.order_sheet_mode || !selectedId) {
         return { method: 'CARD', easyPay: null };
     }
 
-    const entry = (config.enabled_methods ?? []).find((m) => m.id === selectedId);
+    const methods = config.enabled_methods ?? [];
+    const entry = methods.find((m) => m.id === selectedId)
+        ?? methods.find((m) => m.core_payment_method === selectedId);
     if (!entry) {
         return { method: 'CARD', easyPay: null };
     }
@@ -284,9 +326,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
     const G7Core = (window as any).G7Core;
 
-    // 선택된 결제수단 id — action.params 우선, 없으면 _local.paymentMethod 참조
-    const selectedMethodId: string | undefined =
-        params.paymentMethod ?? G7Core?.state?.getLocal?.()?.paymentMethod;
+    const selectedMethodId = resolveSelectedMethodId(params.paymentMethod, pgPaymentData.payment_method);
 
     try {
         // 1. Client Config API 호출
@@ -337,7 +377,6 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
         // 5. 결제 요청 페이로드 조립
-        const origin = window.location.origin;
         const requestPayload: any = {
             method,
             amount: {
@@ -346,12 +385,19 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             },
             orderId: pgPaymentData.order_number,
             orderName: pgPaymentData.order_name,
-            successUrl: origin + config.callback_urls.success,
-            failUrl: origin + config.callback_urls.fail,
+            successUrl: requireSiteAbsoluteUrl(config.callback_urls?.success),
+            failUrl: requireSiteAbsoluteUrl(config.callback_urls?.fail),
             customerEmail: pgPaymentData.customer_email ?? undefined,
             customerName: pgPaymentData.customer_name ?? undefined,
             customerMobilePhone: pgPaymentData.customer_phone ?? undefined,
         };
+
+        // 복합 과세 상점은 **승인 요청에도** 면세 금액을 실어야 한다 (S1-D12). 승인에서 빼면
+        // PG 가 그 결제를 전액 과세로 등록해 두고, 나중에 면세분이 실린 취소를
+        // 「취소 할 수 없는 금액 입니다」 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 막힌다.
+        if (typeof pgPaymentData.tax_free_amount === 'number' && pgPaymentData.tax_free_amount > 0) {
+            requestPayload.taxFreeAmount = pgPaymentData.tax_free_amount;
+        }
 
         if (method === 'CARD') {
             requestPayload.card = {
@@ -380,13 +426,11 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
         // 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 실패 화면에서 서버에 보고할 때 쓸
-        // 구매자 정보를 미리 남겨 둔다. 브라우저 리턴 콜백은 인증이 없어 주문 상태를 바꾸지 않고,
-        // 소유권을 대조하는 close-report 만이 정당한 결제 실패를 기록할 수 있다.
+        // 주문 정보를 미리 남겨 둔다. 브라우저 리턴 콜백은 인증이 없어 주문 상태를 바꾸지 않고,
+        // 주문 소유자(회원 로그인 / 비회원 조회 토큰)를 확인하는 close-report 만이 정당한 결제 실패를 기록할 수 있다.
         rememberPendingClose({
             orderId: pgPaymentData.order_number,
             amount: pgPaymentData.amount,
-            buyer_email: pgPaymentData.customer_email ?? '',
-            buyer_phone: pgPaymentData.customer_phone ?? '',
         });
 
         await payment.requestPayment(requestPayload);
@@ -399,16 +443,42 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         if (error?.code === 'USER_CANCEL') {
             console.info('[sirsoft-tosspayments] Payment cancelled by user');
 
+            // 클레임 추가결제는 **주문 결제가 아니다** — 취소 처분이 갈린다.
+            //
+            // 이 핸들러는 주문 체크아웃과 클레임 추가결제가 함께 쓴다. 두 경우의
+            // `pgPaymentData.order_number` 가 가리키는 것이 다르다: 주문은 주문번호지만
+            // 클레임은 **결제번호(CP…)** 다(결제 플러그인의 콜백이 그 값으로 결제 건을
+            // 되찾도록 서버가 그렇게 싣는다). 그래서 종전처럼 주문 취소 경로로 보내면
+            // `orders/CP…/cancel-payment` 가 되어 **404** 가 나고, 아래 catch 가
+            // `console.warn` 으로 삼켜 화면에는 아무 신호도 남지 않았다. 이어지는
+            // 체크아웃 전용 취소 모달도 신청서 화면에는 뜨지 않아, 구매자는 신청서가
+            // 접수된 채 결제만 안 된 상태에서 **무슨 일이 있었는지 알 수 없었다**
+            // (실측 EX20260915-1145077892 · CP20260915-1145087969).
+            //
+            // 클레임은 서버가 복귀 주소 계약을 이미 갖고 있다(`ClaimPaymentRedirect`):
+            // 의도된 중단은 실패가 아니므로 `?claim_payment=cancelled` 로 신청서 상세에
+            // 돌려보내고 화면이 재시도를 열어 준다. 취소 이력 기록 라우트는 클레임 쪽에
+            // 없으므로(있는 것은 pay·approve 뿐) 호출하지 않는다 — 결제 건은
+            // `pending` 그대로 남아 구매자가 다시 낼 수 있다.
+            const claimReturnUrl = pgPaymentData.claim_cancel_return_url;
+
+            if (claimReturnUrl) {
+                G7Core?.state?.setLocal?.({ isSubmittingOrder: false });
+                window.location.href = claimReturnUrl;
+
+                return;
+            }
+
             // 1. 결제 취소 이력 기록 API 호출 (PG사 응답값 전달)
             //
             // 이 엔드포인트는 회원/비회원 공유라 서버가 소유권을 대조한다. 비회원 주문은 조회
             // 토큰이 그 증명이므로 반드시 함께 보낸다 — 빠지면 서버가 404 로 거부하고, 여기서는
             // console.warn 만 남긴 채 취소 안내 모달이 평소대로 떠서 이력 유실이 드러나지 않는다.
-            // 토큰은 주문 생성 직후 체크아웃이 발급해 _global.guestOrderToken 에 넣어 둔다.
+            // 토큰은 주문 생성 직후 체크아웃이 발급해 쇼핑몰 계약 _global.guestOrderToken 에 넣어 둔다.
             try {
-                const guestToken = G7Core?.state?.get?.('_global')?.guestOrderToken;
-                const config = guestToken
-                    ? { headers: { 'X-Guest-Order-Token': guestToken } }
+                const ownershipHeaders = buildGuestOwnershipHeaders();
+                const config = Object.keys(ownershipHeaders).length > 0
+                    ? { headers: ownershipHeaders }
                     : undefined;
 
                 await G7Core.api.post(
@@ -434,4 +504,25 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         G7Core?.state?.setLocal?.({ paymentErrorMessage: errorMessage, isSubmittingOrder: false });
         G7Core?.modal?.open?.('tosspayments_payment_error_modal');
     }
+}
+
+/**
+ * PG 로 보낼 결과 수신 주소가 서버가 내려준 절대 URL 인지 확인하고 그대로 돌려줍니다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 조립하지 않는다 — 별칭·하위 도메인·포트로
+ * 접속한 사용자의 결제 결과가 그 주소로 간다. 서버(client-config)가 사이트 주소로 만든 값만 쓰고,
+ * 상대 경로가 오면(구버전 서버) 결제를 시작하지 않는다.
+ *
+ * @param url 서버가 내려준 주소
+ * @returns 절대 URL
+ * @throws Error http(s) 절대 URL 이 아닌 경우
+ */
+export function requireSiteAbsoluteUrl(url: unknown): string {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    throw new Error(
+        t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+    );
 }

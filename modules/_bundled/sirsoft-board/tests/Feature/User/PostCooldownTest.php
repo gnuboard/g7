@@ -6,6 +6,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 
 use Illuminate\Support\Facades\Cache;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 게시글 작성 쿨다운 API 통합 시나리오 테스트
@@ -15,20 +16,30 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 쿨다운 활성: 첫 작성 성공 후 두 번째 작성 422
  * - 쿨다운 활성: 캐시 만료 후 재작성 허용 (단위 테스트에서 검증)
  * - 회원은 user_id로, 비회원은 IP로 격리
- *
- * @group board
- * @group feature
- * @group cooldown
  */
+#[Group('board')]
+#[Group('feature')]
+#[Group('cooldown')]
 class PostCooldownTest extends BoardTestCase
 {
     private array $mockSettings = [];
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'post-cooldown-test';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -44,6 +55,11 @@ class PostCooldownTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,6 +79,11 @@ class PostCooldownTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 시험용 게시판 모듈 설정을 설정 미러(Config)에 반영합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function applySettings(): void
     {
         // g7_module_settings()는 Config::get("g7_settings.modules.sirsoft-board.*")를 읽음
@@ -71,11 +92,21 @@ class PostCooldownTest extends BoardTestCase
         }
     }
 
+    /**
+     * 게시글 작성 API 주소를 돌려줍니다.
+     *
+     * @return string API 주소
+     */
     private function postUrl(): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
     }
 
+    /**
+     * 검증을 통과하는 게시글 작성 본문을 돌려줍니다.
+     *
+     * @return array<string, string> 제목과 본문
+     */
     private function validPostData(): array
     {
         return [
@@ -90,6 +121,12 @@ class PostCooldownTest extends BoardTestCase
 
     /**
      * 쿨다운 0초: 연속 작성 허용
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_off
+     *
+     * @effects consecutive_posts_allowed_when_cooldown_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_consecutive_posts_allowed_when_cooldown_disabled(): void
     {
@@ -111,6 +148,12 @@ class PostCooldownTest extends BoardTestCase
 
     /**
      * 쿨다운 활성: 첫 번째 작성 성공
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects first_post_succeeds_when_cooldown_active
+     *
+     * @return void 반환값 없음
      */
     public function test_first_post_succeeds_when_cooldown_active(): void
     {
@@ -125,6 +168,12 @@ class PostCooldownTest extends BoardTestCase
 
     /**
      * 쿨다운 활성: 첫 작성 직후 두 번째 작성 422
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects second_post_rejected_when_cooldown_active
+     *
+     * @return void 반환값 없음
      */
     public function test_second_post_rejected_when_cooldown_active(): void
     {
@@ -144,6 +193,12 @@ class PostCooldownTest extends BoardTestCase
 
     /**
      * 쿨다운 활성: 다른 사용자는 영향 없음 (user_id 격리)
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects cooldown_is_isolated_per_user
+     *
+     * @return void 반환값 없음
      */
     public function test_cooldown_is_isolated_per_user(): void
     {
@@ -164,6 +219,12 @@ class PostCooldownTest extends BoardTestCase
 
     /**
      * 쿨다운 오류 응답에 422 상태코드와 errors 필드가 있다
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects cooldown_rejection_returns_422_with_errors
+     *
+     * @return void 반환값 없음
      */
     public function test_cooldown_rejection_returns_422_with_errors(): void
     {

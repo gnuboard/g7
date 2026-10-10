@@ -1,0 +1,180 @@
+<!-- e2e:allow 2026-09-21 회원 배송지 화면 전면 재작성 — Playwright spec 대신 **작성자가 직접 브라우저로 관통 실측**했다(로그인 → 회원 2명 다중선택 → 28건→10건 → 「이 회원으로 검색」 10건→5건, 콘솔 오류 0). 전용 시드(저장 배송지를 가진 회원 다수 + manage 권한 운영자)가 필요해 기존 admin spec 의 시드로는 세울 수 없고, 그 시드 신설은 별도 과제다. 구조 회귀는 레이아웃 계약 테스트 18건이 막는다.
+
+  회원 배송지 목록 — 결과 표. 좁은 화면(768px 미만)에서는 DataGrid 가 스스로 카드 보기로 바꿔
+  그리므로 목록을 따로 두 벌 두지 않는다. 예전에 있던 별도 카드 블록은 아무도 채우지 않는
+  `_global.isPortable` 에 묶여 한 번도 보이지 않아 걷어냈다(2026-10-04 결정 3).
+
+  정렬·페이지·페이지당 개수는 전부 URL query 로 나간다. 행마다 무엇을 할 수 있는지는 서버가 준
+  `abilities.can_manage` 가 정한다 — 화면이 임의로 판단하지 않는다.
+
+  회원 이름은 **곧바로 떠나지 않고 메뉴를 연다**. 지우려고 조건을 세워 둔 목록에서 한 칸 잘못
+  누르면 그 조건을 다시 세워야 하기 때문이다(게시판 스크랩·반응 관리와 같은 규약):
+  「회원 정보」는 새 창, 「이 회원으로 검색」은 같은 창에서 회원 조건만 갈아끼운다. -->
+<partial description="User Address List - DataGrid Section with Bulk Delete">
+  <div data-ref="address_datagrid_section" class="mt-6">
+    <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+      <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.user_addresses.table.selected_count|count={{(_local.selectedItems || []).length}}</span>
+      <div class="flex-1"/>
+      <button data-ref="bulk_delete_button" data-testid="admin-addresses-bulk-delete" type="button" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_local.selectedItems || []).length || _computed.canManage !== true}}">
+        <on type="click">
+          <!-- 고른 행을 _global 로 옮겨 담고 확인 창을 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다 -->
+          <sequence>
+            <set-state target="global" bulkSelectedItems="{{_local.selectedItems}}"/>
+            <open-modal target="modal_addresses_bulk_delete"/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.admin.user_addresses.bulk.delete
+      </button>
+    </div>
+    <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+      <span class="text-label">$t:sirsoft-ecommerce.admin.user_addresses.table.total_count|count={{addresses?.data?.pagination?.total || 0}}</span>
+      <div class="flex-center gap-3">
+        <select name="sort" class="w-40" value="{{query.sort || 'created_at_desc'}}">
+          <options>
+            <option value="created_at_desc">$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_desc</option>
+            <option value="created_at_asc">$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_asc</option>
+          </options>
+          <on type="change">
+            <!-- 정렬이 바뀌면 같은 체크가 다른 행을 가리키므로 선택을 먼저 비운다. 쪽수도 1로 되돌린다 -->
+            <sequence>
+              <set-state target="_local" :selectedItems="[]"/>
+              <navigate path="/admin/ecommerce/user-addresses" :replace="true" :mergeQuery="true" transition_overlay_target="pc_data_table__body">
+                <query sort="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </sequence>
+          </on>
+        </select>
+        <select name="perPage" class="w-20" value="{{query.per_page || '20'}}">
+          <options>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </options>
+          <on type="change">
+            <!-- 페이지당 개수 — 행 집합이 바뀌므로 선택을 비우고 1쪽으로 -->
+            <sequence>
+              <set-state target="_local" :selectedItems="[]"/>
+              <navigate path="/admin/ecommerce/user-addresses" :replace="true" :mergeQuery="true" transition_overlay_target="pc_data_table__body">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </sequence>
+          </on>
+        </select>
+      </div>
+    </div>
+    <!-- 행 메뉴의 회원 항목은 회원 없는 배송지(member null)에서 비활성이다 — 회원 없는 배송지의 「회원 정보」 는 `/admin/users/undefined` 로, 「이 회원으로 검색」 은 `user_uuids[]=[undefined]` → 422 → 본문 전체 오류로 이어졌다. 행마다 다른 조건은 `disabledField`(행 데이터 경로, 값이 falsy 면 비활성)로 적고, 삭제는 관리 권한으로 막는다. -->
+    <data-grid data-type="composite" data-ref="pc_data_table" :data-blur-until-loaded="true" data="{{addresses?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{addresses?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{addresses?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{addresses?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" selectable="{{_computed.canManage === true}}" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" idField="id" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.user_addresses.table.empty" actionsColumnHeader="$t:common.actions">
+      <prop name="rowActions">
+        <item id="view_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="fa-regular fa-user" disabledField="member.uuid"/>
+        <item id="search_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member" iconName="fa-solid fa-magnifying-glass" disabledField="member.uuid"/>
+        <item id="divider" :divider="true"/>
+        <item id="delete" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.delete" iconName="fa-regular fa-trash-can" variant="danger" disabled="{{_computed.canManage !== true}}"/>
+      </prop>
+      <column field="checkbox" header="" width="40px" :selectable="true"/>
+      <column field="created_at" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.created_at" width="150px">
+        <cell>
+          <span class="whitespace-nowrap">{{row.created_at}}</span>
+        </cell>
+      </column>
+      <column field="member" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.member" width="200px">
+        <cell>
+          <action-menu data-type="composite" data-if="{{!!row.member?.uuid}}" position="right">
+            <prop name="items">
+              <item id="view_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="user"/>
+              <item id="search_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member" iconName="magnifying-glass"/>
+            </prop>
+            <on event="onItemClick">
+              <!-- 배송지 행의 작업 메뉴 — 고른 항목(회원 보기 등)에 따라 분기한다 -->
+              <switch>
+                <case when="view_member">
+                  <open-window path="/admin/users/{{row.member?.uuid}}"/>
+                </case>
+                <case when="search_member">
+                  <!-- 손에 든 회원 한정도 이 한 명으로 맞춘다 — URL 만 갈면 필터 칸이 이전 선택을 든 채로 남는다 -->
+                  <sequence>
+                    <set-state target="_local" filter.memberUuids="{{[row.member?.uuid]}}" filter.memberOptions="{{[{ value: row.member?.uuid, label: row.member?.name, description: row.member?.email }]}}" :selectedItems="[]"/>
+                    <navigate path="/admin/ecommerce/user-addresses" :mergeQuery="true" :replace="true" transition_overlay_target="pc_data_table__body">
+                      <query user_uuid="" user_uuids[]="{{[row.member?.uuid]}}" :page="1"/>
+                    </navigate>
+                  </sequence>
+                </case>
+              </switch>
+            </on>
+            <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+              <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+              <div class="min-w-0 flex-1">
+                <span class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.member?.name}}</span>
+                <span data-if="{{!!row.member?.email}}" class="text-tertiary truncate block">({{row.member?.email}})</span>
+              </div>
+            </div>
+          </action-menu>
+          <div data-if="{{!row.member?.uuid}}" class="flex-center gap-2">
+            <badge data-type="composite" color="gray" text="$t:sirsoft-ecommerce.admin.user_addresses.badges.guest" size="sm"/>
+          </div>
+          <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" text="$t:sirsoft-ecommerce.admin.user_addresses.badges.withdrawn" size="sm"/>
+        </cell>
+      </column>
+      <column field="recipient" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.recipient" width="140px">
+        <cell>
+          <div class="flex-center gap-2">
+            <span class="font-medium">{{row.recipient_name}}</span>
+            <badge data-type="composite" data-if="{{row.is_default}}" color="blue" text="$t:sirsoft-ecommerce.admin.user_addresses.badges.is_default" size="sm"/>
+          </div>
+          <span data-if="{{!!row.label}}" class="text-tertiary block truncate">{{row.label}}</span>
+        </cell>
+      </column>
+      <column field="contact" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.contact" width="140px">
+        <cell>
+          <span class="whitespace-nowrap">{{row.recipient_phone ?? '-'}}</span>
+        </cell>
+      </column>
+      <column field="address_summary" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.address">
+        <cell>
+          <span>{{row.address_summary}}</span>
+        </cell>
+      </column>
+      <on type="change" event="onPageChange">
+        <!-- 쪽 이동 — 화면에 없는 행이 선택된 채로 일괄 삭제에 실리지 않도록 선택을 비운다 -->
+        <sequence>
+          <set-state target="_local" :selectedItems="[]"/>
+          <navigate path="/admin/ecommerce/user-addresses" :replace="true" :mergeQuery="true" transition_overlay_target="pc_data_table__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </sequence>
+      </on>
+      <on event="onSelectionChange">
+        <!-- 체크한 배송지. 일괄 삭제 버튼과 확인 창이 이 목록을 읽는다 -->
+        <set-state target="_local" selectedItems="{{$args[0]}}"/>
+      </on>
+      <on event="onRowAction">
+        <!-- 목록 행 작업 버튼 — 작업 종류에 따라 분기한다(작업 메뉴와 같은 동작) -->
+        <switch>
+          <case when="view_member">
+            <open-window path="/admin/users/{{$args[1]?.member?.uuid}}"/>
+          </case>
+          <case when="search_member">
+            <sequence>
+              <set-state target="_local" filter.memberUuids="{{[$args[1]?.member?.uuid]}}" filter.memberOptions="{{[{ value: $args[1]?.member?.uuid, label: $args[1]?.member?.name, description: $args[1]?.member?.email }]}}" :selectedItems="[]"/>
+              <navigate path="/admin/ecommerce/user-addresses" :mergeQuery="true" :replace="true" transition_overlay_target="pc_data_table__body">
+                <query user_uuid="" user_uuids[]="{{[$args[1]?.member?.uuid]}}" :page="1"/>
+              </navigate>
+            </sequence>
+          </case>
+          <case when="delete">
+            <sequence>
+              <set-state target="global">
+                <field name="deleteTarget">
+                  <field name="id" value="{{$args[1].id}}"/>
+                  <field name="recipient_name" value="{{$args[1].recipient_name}}"/>
+                  <field name="member_name" value="{{$args[1].member?.name}}"/>
+                </field>
+              </set-state>
+              <open-modal target="modal_addresses_delete"/>
+            </sequence>
+          </case>
+        </switch>
+      </on>
+    </data-grid>
+  </div>
+</partial>

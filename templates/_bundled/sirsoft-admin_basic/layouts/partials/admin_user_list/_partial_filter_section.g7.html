@@ -1,0 +1,718 @@
+<!-- 회원 목록 — 검색 필터 영역. 쿠폰·상품·주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),
+  다만 항목이 회원 도메인이고 **프리셋이 없다**(#705 D6).
+
+  ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를
+     정한다 — 보이고 숨겨도 행이 다시 만들어지지 않으므로 입력값이 유지된다.
+  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage)에 남긴다. 저장은 본체의 필터 표시 선택기가
+     자기 `id`(`admin_user_filters`)와 로그인 사용자로 만든 키에 스스로 한다 — 편집모드 체크박스는
+     상태만 바꾼다. 되읽기는 코어 템플릿 핸들러 `loadVisibleFilters` 가 같은 키로 한다.
+  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다(`searchUsers`).
+  ⓓ 모듈·플러그인이 더하는 필터 행은 상세 영역 아래 확장점(`admin_user_list_filters`)에 모인다.
+     그 행은 기본/상세 이동 대상이 아니다 — 코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다.
+     값은 각 확장이 자기 네임스페이스로 등록한 핸들러로 `_local.userFilterExtraQuery` 배열에 모으고,
+     이 영역의 검색이 그 배열을 `ext_filters[]` 로 보낸다 — 확장 조각은 이 템플릿의 핸들러에 기대지 않는다.
+
+  날짜 축이 **넷**이다 — 가입일(`created*`), 최근 로그인(`lastLogin*`), 휴면 전환일(`dormant*`),
+  상태 변경일(`statusChanged*`, 탈퇴/차단 중 고른 쪽). 빠른 기간 버튼은 가입일·최근 로그인에만 있다.
+  날짜 칸은 `<input type="date">` 라 빠른 기간 핸들러를 `format="date"` 로 부른다. -->
+<partial description="User List - Filter Section with Slot System">
+  <div data-ref="filter_card" data-key="filter" class="admin-card">
+    <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
+      <div data-ref="status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('status')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status">
+          <on type="change">
+            <!-- 계정 상태 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 브라우저에 남긴다 — 여기서는 상태만 바꾸고 저장은 필터 표시 선택기가 한다. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('status') ? (_local.visibleFilters || []).filter(f => f !== 'status') : [...(_local.visibleFilters || []), 'status']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.status</span>
+        <div class="flex-center flex-wrap gap-3">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="checkbox" name="statusAll" class="checkbox" checked="{{(_local.filter.status || []).length === 0}}">
+              <on type="change">
+                <!-- 계정 상태 — 전체. 여럿을 고르는 값이라 「전체」는 값이 아니라 **빈 목록**이다. -->
+                <set-state target="_local" :filter.status="[]"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label data-each="st in (_computed.userStatusOptions ?? [])" class="flex-center gap-1 cursor-pointer">
+            <input type="checkbox" name="status" value="{{st.code}}" class="checkbox" checked="{{(_local.filter.status || []).includes(st.code)}}">
+              <on type="change">
+                <!-- 상태 하나 켜고 끄기. 여섯 상태는 본체 computed `userStatusOptions` 가 서버 Enum(UserStatus) 과 같은 순서로 준다 — 슬롯으로 옮겨 그려지는 행에는 `_defines` 가 실리지 않으므로 computed 로 받는다. -->
+                <set-state target="_local" filter.status="{{(_local.filter.status || []).includes(st.code) ? (_local.filter.status || []).filter(v => v !== st.code) : [...(_local.filter.status || []), st.code]}}"/>
+              </on>
+            </input>
+            <span class="text-body">{{st.name}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="role_filter_row" data-slot="{{(_local.visibleFilters || []).includes('role') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('role')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.role">
+          <on type="change">
+            <!-- 권한 그룹 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('role') ? (_local.visibleFilters || []).filter(f => f !== 'role') : [...(_local.visibleFilters || []), 'role']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.role</span>
+        <!-- 역할은 설치마다 수십 개가 될 수 있어 체크박스를 늘어놓으면 행이 화면 몇 개 높이로 자란다 — 회원 폼의
+             역할 선택과 같은 「검색 + 태그」 한 칸으로 고른다. 비워 두면 전체다(「전체」 칸이 따로 없다).
+             값은 id 문자열이다 — URL(`role_ids[]`)에서 되읽으면 문자열로 오므로 선택지 value 도 문자열로 맞춘다.
+             폭은 이 칸이 맡는다 — TagInput 의 class 는 안쪽 입력 상자에만 붙어, 바깥이 내용 폭으로 줄어든다. -->
+        <div class="flex-1 min-w-0 max-w-2xl">
+          <responsive on="portable" class="w-full"/>
+          <!-- 역할 목록은 목록 데이터보다 늦게 온다(냉간 수 초). 그 전에 URL 에서 되읽은 값만으로 태그를 그리면 이름
+               대신 id 가 보이므로, 목록이 오기 전에는 고른 개수만큼 「…」 태그로 두고 입력을 잠근다. -->
+          <tag-input data-type="composite" name="role" value="{{_local.filter.role || []}}" options="{{(roles?.data?.data ? roles.data.data.map(r => ({value: String(r.id), label: r.name})) : (_local.filter.role || []).map(v => ({value: v, label: '…'}))) ?? []}}" disabled="{{!roles?.data?.data}}" placeholder="$t:admin.users.filter.role_placeholder" noOptionsMessage="$t:admin.users.filter.role_no_options" class="w-full" defaultVariant="blue">
+            <on type="change">
+              <set-state target="_local" filter.role="{{($event.target.value ?? []).map(String)}}"/>
+            </on>
+          </tag-input>
+        </div>
+      </div>
+      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.created_at">
+          <on type="change">
+            <!-- 가입일 필터 노출 스위치. 빠른 기간 버튼이 붙어 자리를 많이 먹는다. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.created_at</span>
+        <div class="flex-center flex-wrap gap-2">
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.created_at')}}" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
+              <on type="change">
+                <!-- 가입일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
+                <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
+              </on>
+            </input>
+            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.created_at')}}" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
+              <on type="change">
+                <!-- 가입일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
+                <set-state target="_local" filter.createdEndDate="{{$event.target.value}}" filter.createdDateQuick=""/>
+              </on>
+            </input>
+          </div>
+          <div class="flex-center flex-wrap gap-1">
+            <button type="button" class="{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 가입일 빠른 기간 여섯. 핸들러가 시작·종료일을 날짜 형식으로 계산해 돌려주고 $prev 로 받아 담는다 — 날짜 칸은 시각이 붙은 값을 받지 못한다. 오늘. -->
+                <sequence>
+                  <action handler="setDateRange" preset="today" format="date"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.today
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
+                <sequence>
+                  <action handler="setDateRange" preset="week" format="date"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.week
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1개월. -->
+                <sequence>
+                  <action handler="setDateRange" preset="month" format="date"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.month
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3개월. -->
+                <sequence>
+                  <action handler="setDateRange" preset="3months" format="date"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.3months
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 6개월. -->
+                <sequence>
+                  <action handler="setDateRange" preset="6months" format="date"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.6months
+            </button>
+            <button type="button" class="{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1년. -->
+                <sequence>
+                  <action handler="setDateRange" preset="1year" format="date"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.1year
+            </button>
+          </div>
+        </div>
+      </div>
+      <div data-ref="last_login_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lastLoginAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lastLoginAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.last_login">
+          <on type="change">
+            <!-- 최근 로그인 필터 노출 스위치. 휴면 전 안내 대상을 찾을 때 기본으로 올려 두는 일이 많다. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lastLoginAt') ? (_local.visibleFilters || []).filter(f => f !== 'lastLoginAt') : [...(_local.visibleFilters || []), 'lastLoginAt']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.last_login</span>
+        <div class="flex-center flex-wrap gap-2">
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.last_login')}}" name="lastLoginStartDate" value="{{_local.filter.lastLoginStartDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
+              <on type="change">
+                <!-- 최근 로그인 시작. 「로그인 이력 없음」 을 켜면 이 칸은 잠긴다 — 둘은 동시에 참일 수 없다. -->
+                <set-state target="_local" filter.lastLoginStartDate="{{$event.target.value}}" filter.lastLoginDateQuick=""/>
+              </on>
+            </input>
+            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.last_login')}}" name="lastLoginEndDate" value="{{_local.filter.lastLoginEndDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
+              <on type="change">
+                <!-- 최근 로그인 종료. -->
+                <set-state target="_local" filter.lastLoginEndDate="{{$event.target.value}}" filter.lastLoginDateQuick=""/>
+              </on>
+            </input>
+          </div>
+          <div class="flex-center flex-wrap gap-1">
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 최근 로그인 빠른 기간 여섯 — 가입일과 같은 방식이다. 누르면 「로그인 이력 없음」 을 끈다. 오늘. -->
+                <sequence>
+                  <action handler="setDateRange" preset="today" format="date"/>
+                  <set-state target="_local" filter.lastLoginDateQuick="{{$prev.preset}}" filter.lastLoginStartDate="{{$prev.startDate}}" filter.lastLoginEndDate="{{$prev.endDate}}" :filter.neverLoggedIn="false"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.today
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1주일. -->
+                <sequence>
+                  <action handler="setDateRange" preset="week" format="date"/>
+                  <set-state target="_local" filter.lastLoginDateQuick="{{$prev.preset}}" filter.lastLoginStartDate="{{$prev.startDate}}" filter.lastLoginEndDate="{{$prev.endDate}}" :filter.neverLoggedIn="false"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.week
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1개월. -->
+                <sequence>
+                  <action handler="setDateRange" preset="month" format="date"/>
+                  <set-state target="_local" filter.lastLoginDateQuick="{{$prev.preset}}" filter.lastLoginStartDate="{{$prev.startDate}}" filter.lastLoginEndDate="{{$prev.endDate}}" :filter.neverLoggedIn="false"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.month
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3개월. -->
+                <sequence>
+                  <action handler="setDateRange" preset="3months" format="date"/>
+                  <set-state target="_local" filter.lastLoginDateQuick="{{$prev.preset}}" filter.lastLoginStartDate="{{$prev.startDate}}" filter.lastLoginEndDate="{{$prev.endDate}}" :filter.neverLoggedIn="false"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.3months
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 6개월. -->
+                <sequence>
+                  <action handler="setDateRange" preset="6months" format="date"/>
+                  <set-state target="_local" filter.lastLoginDateQuick="{{$prev.preset}}" filter.lastLoginStartDate="{{$prev.startDate}}" filter.lastLoginEndDate="{{$prev.endDate}}" :filter.neverLoggedIn="false"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.6months
+            </button>
+            <button type="button" class="{{_local.filter.lastLoginDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1년. -->
+                <sequence>
+                  <action handler="setDateRange" preset="1year" format="date"/>
+                  <set-state target="_local" filter.lastLoginDateQuick="{{$prev.preset}}" filter.lastLoginStartDate="{{$prev.startDate}}" filter.lastLoginEndDate="{{$prev.endDate}}" :filter.neverLoggedIn="false"/>
+                </sequence>
+              </on>
+              $t:admin.users.filter.date_quick.1year
+            </button>
+          </div>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="checkbox" name="neverLoggedIn" class="checkbox" checked="{{!!_local.filter.neverLoggedIn}}">
+              <on type="change">
+                <!-- 로그인 이력 없음. 켜면 기간을 비운다 — 서버도 이 조건이 참이면 기간을 무시하지만, 칸에 값이 남아 있으면 운영자가 둘 다 걸렸다고 읽는다. -->
+                <set-state target="_local" filter.neverLoggedIn="{{!_local.filter.neverLoggedIn}}" filter.lastLoginStartDate="" filter.lastLoginEndDate="" filter.lastLoginDateQuick=""/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.never_logged_in</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="admin_scope_filter_row" data-slot="{{(_local.visibleFilters || []).includes('adminScope') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('adminScope')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.admin_scope">
+          <on type="change">
+            <!-- 관리자 여부 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('adminScope') ? (_local.visibleFilters || []).filter(f => f !== 'adminScope') : [...(_local.visibleFilters || []), 'adminScope']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.admin_scope</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="adminScope" value="all" checked="{{(_local.filter.adminScope || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 관리자 여부 — 전체. 하나만 고르는 값이라 「전체」도 값(`all`)이다. -->
+                <set-state target="_local" filter.adminScope="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="adminScope" value="admin" checked="{{_local.filter.adminScope === 'admin'}}" class="radio">
+              <on type="change">
+                <!-- 관리자만. 슈퍼관리자이거나 관리자 권한이 든 역할을 가진 회원이다(역할 이름이 아니라 권한으로 판정). -->
+                <set-state target="_local" filter.adminScope="admin"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.admin_scope_options.admin</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="adminScope" value="member" checked="{{_local.filter.adminScope === 'member'}}" class="radio">
+              <on type="change">
+                <!-- 일반회원만. -->
+                <set-state target="_local" filter.adminScope="member"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.admin_scope_options.member</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="lock_state_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lockState') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lockState')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.lock_state">
+          <on type="change">
+            <!-- 계정 잠금 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lockState') ? (_local.visibleFilters || []).filter(f => f !== 'lockState') : [...(_local.visibleFilters || []), 'lockState']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.lock_state</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="lockState" value="all" checked="{{(_local.filter.lockState || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 계정 잠금 — 전체. -->
+                <set-state target="_local" filter.lockState="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="lockState" value="locked" checked="{{_local.filter.lockState === 'locked'}}" class="radio">
+              <on type="change">
+                <!-- 잠김. 영구 잠금이거나 해제 시각이 아직 오지 않은 계정이다 — 해제 시각이 지난 잠금은 정상으로 본다. -->
+                <set-state target="_local" filter.lockState="locked"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.lock_state_options.locked</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="lockState" value="unlocked" checked="{{_local.filter.lockState === 'unlocked'}}" class="radio">
+              <on type="change">
+                <!-- 정상. -->
+                <set-state target="_local" filter.lockState="unlocked"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.lock_state_options.unlocked</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="dormant_filter_row" data-slot="{{(_local.visibleFilters || []).includes('dormantAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('dormantAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.dormant_at">
+          <on type="change">
+            <!-- 휴면 전환일 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('dormantAt') ? (_local.visibleFilters || []).filter(f => f !== 'dormantAt') : [...(_local.visibleFilters || []), 'dormantAt']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.dormant_at</span>
+        <div class="flex-center gap-2">
+          <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+          <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.dormant_at')}}" name="dormantStartDate" value="{{_local.filter.dormantStartDate || ''}}" class="input w-36">
+            <on type="change">
+              <!-- 휴면 전환일 시작. 휴면이 풀린 회원은 전환일이 지워지므로 지금 휴면인 회원만 걸린다. -->
+              <set-state target="_local" filter.dormantStartDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.dormant_at')}}" name="dormantEndDate" value="{{_local.filter.dormantEndDate || ''}}" class="input w-36">
+            <on type="change">
+              <!-- 휴면 전환일 종료. -->
+              <set-state target="_local" filter.dormantEndDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <div data-ref="status_changed_filter_row" data-slot="{{(_local.visibleFilters || []).includes('statusChangedAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('statusChangedAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status_changed">
+          <on type="change">
+            <!-- 상태 변경일 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('statusChangedAt') ? (_local.visibleFilters || []).filter(f => f !== 'statusChangedAt') : [...(_local.visibleFilters || []), 'statusChangedAt']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.status_changed</span>
+        <div class="flex-center flex-wrap gap-2">
+          <select name="statusChangedType" aria-label="$t:admin.users.filter.status_changed" class="w-28" value="{{_local.filter.statusChangedType || ''}}">
+            <options>
+              <option value="">$t:common.all</option>
+              <option value="withdrawn">$t:admin.users.filter.status_changed_options.withdrawn</option>
+              <option value="blocked">$t:admin.users.filter.status_changed_options.blocked</option>
+            </options>
+            <on type="change">
+              <!-- 어떤 변경의 날짜인지 — 탈퇴일/차단일. 아래 기간이 **무엇의 기간인지**를 이 값이 정한다. 종류만 고르고 기간을 비우면 그 일이 있었던 회원 전부다. -->
+              <set-state target="_local" filter.statusChangedType="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.status_changed')}}" name="statusChangedStart" value="{{_local.filter.statusChangedStart || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
+              <on type="change">
+                <!-- 상태 변경일 시작. 종류를 고르기 전에는 잠겨 있다 — 무엇의 날짜인지 모르면 서버가 무시한다. -->
+                <set-state target="_local" filter.statusChangedStart="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.status_changed')}}" name="statusChangedEnd" value="{{_local.filter.statusChangedEnd || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
+              <on type="change">
+                <!-- 상태 변경일 종료. -->
+                <set-state target="_local" filter.statusChangedEnd="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+      </div>
+      <div data-ref="language_filter_row" data-slot="{{(_local.visibleFilters || []).includes('language') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('language')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.language">
+          <on type="change">
+            <!-- 언어 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('language') ? (_local.visibleFilters || []).filter(f => f !== 'language') : [...(_local.visibleFilters || []), 'language']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.language</span>
+        <div class="flex-center gap-2">
+          <select name="language" class="w-40" value="{{_local.filter.language || ''}}" options="{{[{ value: '', label: '$t:common.all' }, ...(($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l })))]}}">
+            <on type="change">
+              <!-- 회원이 고른 표시 언어. 선택지는 사이트가 지원하는 언어 목록이라 설치마다 다르다. -->
+              <set-state target="_local" filter.language="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.country">
+          <on type="change">
+            <!-- 국가 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.country</span>
+        <div class="flex-center gap-2 flex-1">
+          <searchable-dropdown data-type="composite" options="{{_computed.countryOptions ?? []}}" value="{{_local.filter.country || ''}}" triggerLabel="$t:admin.users.filter.country_select" searchPlaceholder="$t:admin.users.filter.country_search" noResultsText="$t:common.no_results" class="w-64">
+            <on type="change" event="onChange">
+              <!-- 국가 선택. 선택지는 회원 등록·수정 폼과 같은 국가 목록(본체 `countryList`)이다 — 목록이 갈리면 폼에서 넣은 나라를 필터로 못 찾는다. -->
+              <set-state target="_local" filter.country="{{$args[0]}}"/>
+            </on>
+          </searchable-dropdown>
+          <button data-if="{{!!_local.filter.country}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+            <on type="click">
+              <!-- 고른 국가 지우기. -->
+              <set-state target="_local" filter.country=""/>
+            </on>
+            <icon name="xmark" class="text-base"/>
+          </button>
+        </div>
+      </div>
+      <div data-ref="email_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('emailVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('emailVerified')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.email_verified">
+          <on type="change">
+            <!-- 이메일 인증 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('emailVerified') ? (_local.visibleFilters || []).filter(f => f !== 'emailVerified') : [...(_local.visibleFilters || []), 'emailVerified']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.email_verified</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="emailVerified" value="all" checked="{{(_local.filter.emailVerified || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 이메일 인증 — 전체. -->
+                <set-state target="_local" filter.emailVerified="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="emailVerified" value="verified" checked="{{_local.filter.emailVerified === 'verified'}}" class="radio">
+              <on type="change">
+                <!-- 인증 완료 — 인증 시각이 있는 회원. -->
+                <set-state target="_local" filter.emailVerified="verified"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.verified_options.verified</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="emailVerified" value="unverified" checked="{{_local.filter.emailVerified === 'unverified'}}" class="radio">
+              <on type="change">
+                <!-- 미완료. -->
+                <set-state target="_local" filter.emailVerified="unverified"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.verified_options.unverified</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="identity_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('identityVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('identityVerified')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.identity_verified">
+          <on type="change">
+            <!-- 본인인증 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('identityVerified') ? (_local.visibleFilters || []).filter(f => f !== 'identityVerified') : [...(_local.visibleFilters || []), 'identityVerified']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:admin.users.filter.identity_verified</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="identityVerified" value="all" checked="{{(_local.filter.identityVerified || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 본인인증 — 전체. -->
+                <set-state target="_local" filter.identityVerified="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="identityVerified" value="verified" checked="{{_local.filter.identityVerified === 'verified'}}" class="radio">
+              <on type="change">
+                <!-- 본인인증 완료 — 최종 성공 시각이 있는 회원. -->
+                <set-state target="_local" filter.identityVerified="verified"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.verified_options.verified</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="identityVerified" value="unverified" checked="{{_local.filter.identityVerified === 'unverified'}}" class="radio">
+              <on type="change">
+                <!-- 미완료. -->
+                <set-state target="_local" filter.identityVerified="unverified"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.filter.verified_options.unverified</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-4">
+      <responsive on="portable" class="row-stack mb-4"/>
+      <div data-ref="search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <select data-ref="search_field_select" name="searchField" class="w-32" value="{{_local.filter.searchField || 'all'}}">
+          <responsive on="portable" class="w-24"/>
+          <options>
+            <option value="all">$t:admin.users.search_fields.all</option>
+            <option value="name">$t:admin.users.search_fields.name</option>
+            <option value="nickname">$t:admin.users.search_fields.nickname</option>
+            <option value="email">$t:admin.users.search_fields.email</option>
+            <option value="contact">$t:admin.users.search_fields.contact</option>
+            <option value="identifier">$t:admin.users.search_fields.identifier</option>
+            <option value="admin_memo">$t:admin.users.search_fields.admin_memo</option>
+          </options>
+          <on type="change">
+            <!-- 검색어를 어느 칸에서 찾을지. 회원번호/고유ID 는 LIKE 가 아니라 정확 일치다(숫자면 번호, UUID 면 고유ID). -->
+            <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <input data-ref="search_input" type="text" name="searchKeyword" class="input flex-1 min-w-[200px]" placeholder="$t:admin.users.search_placeholder" value="{{_local.filter.searchKeyword || ''}}">
+          <responsive on="portable" class="input flex-1"/>
+          <on type="change">
+            <!-- 타이핑은 담기만 한다 — 실제 조회는 Enter 나 검색 버튼이다. -->
+            <set-state target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+          </on>
+          <on type="keypress" key="Enter">
+            <action-ref name="searchUsers"/>
+          </on>
+        </input>
+      </div>
+      <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
+        <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
+        <!-- 보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다 -->
+        <column-selector data-type="composite" data-ref="column_selector" id="admin_user_list_columns" visibleColumns="{{_global.visibleColumns_admin_users}}" triggerLabel="$t:common.column_selector" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+          <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
+          <prop name="columns">
+            <item field="name" header="$t:admin.users.columns.name" :required="true"/>
+            <item field="role" header="$t:admin.users.columns.role" :required="true"/>
+            <item field="email" header="$t:admin.users.columns.email" :required="true"/>
+            <item field="nickname" header="$t:admin.users.columns.nickname"/>
+            <item field="country" header="$t:admin.users.columns.country"/>
+            <item field="language" header="$t:admin.users.columns.language"/>
+            <item field="status" header="$t:admin.users.columns.status"/>
+            <item field="email_verified_at" header="$t:admin.users.columns.email_verified_at"/>
+            <item field="identity_verified_at" header="$t:admin.users.columns.identity_verified_at"/>
+            <item field="created_at" header="$t:admin.users.columns.created_at"/>
+            <item field="last_login_at" header="$t:admin.users.columns.last_login_at"/>
+          </prop>
+          <prop name="defaultColumns">
+            <item>name</item>
+            <item>role</item>
+            <item>email</item>
+          </prop>
+          <on type="change" event="onColumnVisibilityChange">
+            <!-- 보이는 열 선택. 전역에 두는 이유는 화면을 떠났다 돌아와도 유지하기 위해서다 — 선택기는 `id`(admin_user_list_columns)와 로그인 사용자로 키를 만들어 브라우저에도 남긴다. -->
+            <set-state target="global" visibleColumns_admin_users="{{$args[0]}}"/>
+          </on>
+        </column-selector>
+        <button data-ref="detail_search_toggle" type="button" class="btn btn-outline flex-center gap-2">
+          <responsive on="portable" class="flex-center btn btn-outline justify-center gap-2 w-full"/>
+          <on type="click">
+            <!-- 상세 필터 펼침/접힘. 편집모드를 켜면 아래 검색편집 버튼이 이 값을 강제로 참으로 만든다. -->
+            <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
+          </on>
+          <span>$t:admin.users.filter.detail_search</span>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <slot-container data-type="composite" data-ref="basic_filters_section" slotId="basic_filters" class="filter-grid"/>
+    <span data-ref="detail_filter_title" data-if="{{_local.showDetailFilter}}" class="block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-body font-medium">$t:admin.users.filter.detail_title</span>
+    <slot-container data-type="composite" data-ref="detail_filters_section" data-if="{{_local.showDetailFilter}}" slotId="detail_filters" class="filter-grid mt-2"/>
+    <extension-point name="admin_user_list_filters" data-ref="user_list_filter_extension_slot" data-if="{{_local.showDetailFilter}}" class="filter-grid mt-4"/>
+    <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+      <div data-ref="filter_actions_row1" class="contents">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <div data-ref="edit_search_button_wrapper" class="flex-1">
+          <responsive on="portable" class="hidden"/>
+          <button data-ref="edit_search_button_pc" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex-center gap-2' : 'btn btn-outline flex-center gap-2'}}">
+            <on type="click">
+              <!-- 검색편집을 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 다시 꺼내려면 그것이 보여야 하기 때문이고, 끌 때는 펼침 상태를 그대로 둔다. -->
+              <sequence>
+                <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+              </sequence>
+            </on>
+            <icon name="sliders" class="text-base"/>
+            <span>$t:admin.users.action.edit_search</span>
+          </button>
+        </div>
+        <div class="flex-center justify-center gap-2 flex-1">
+          <responsive on="portable" class="contents"/>
+          <button data-ref="search_button" type="button" class="btn btn-primary">
+            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <on type="click">
+              <action-ref name="searchUsers"/>
+            </on>
+            $t:admin.users.search
+          </button>
+          <!-- 필터 초기화(넓은 화면). 입력값과 확장 필터 값을 함께 비운다 — 확장 값이 남으면 초기화한 뒤에도 보이지 않는 조건이 목록을 거른다 -->
+          <button data-ref="reset_button_pc" type="button" class="btn btn-outline">
+            <responsive on="portable" class="hidden"/>
+            <on type="click">
+              <set-state target="_local" :userFilterExtraQuery="[]">
+                <field name="filter">
+                  <field name="searchField" value="all"/>
+                  <field name="searchKeyword" value=""/>
+                  <field name="status" :value="[]"/>
+                  <field name="role" :value="[]"/>
+                  <field name="adminScope" value="all"/>
+                  <field name="lockState" value="all"/>
+                  <field name="createdStartDate" value=""/>
+                  <field name="createdEndDate" value=""/>
+                  <field name="createdDateQuick" value=""/>
+                  <field name="lastLoginStartDate" value=""/>
+                  <field name="lastLoginEndDate" value=""/>
+                  <field name="lastLoginDateQuick" value=""/>
+                  <field name="neverLoggedIn" :value="false"/>
+                  <field name="dormantStartDate" value=""/>
+                  <field name="dormantEndDate" value=""/>
+                  <field name="statusChangedType" value=""/>
+                  <field name="statusChangedStart" value=""/>
+                  <field name="statusChangedEnd" value=""/>
+                  <field name="language" value=""/>
+                  <field name="country" value=""/>
+                  <field name="emailVerified" value="all"/>
+                  <field name="identityVerified" value="all"/>
+                </field>
+              </set-state>
+              <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+              <navigate path="/admin/users" :mergeQuery="false" :replace="true"/>
+            </on>
+            $t:admin.users.action.reset
+          </button>
+        </div>
+        <div class="flex-1">
+          <responsive on="portable" class="hidden"/>
+        </div>
+      </div>
+      <div data-ref="filter_actions_row2_mobile" class="hidden">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <button data-ref="edit_search_button_mobile" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex items-center justify-center gap-2 flex-1' : 'btn btn-outline flex items-center justify-center gap-2 flex-1'}}">
+          <on type="click">
+            <!-- 좁은 화면용 짝 검색편집 버튼. 넓은 화면 버튼과 같이 상세 필터를 강제로 펼친다. -->
+            <sequence>
+              <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+            </sequence>
+          </on>
+          <icon name="sliders" class="text-base"/>
+          <span>$t:admin.users.action.edit_search</span>
+        </button>
+        <!-- 필터 초기화(좁은 화면). 넓은 화면 버튼과 같은 일을 하며, 두 벌을 두는 것은 반응형에서 버튼 배치가 달라지기 때문이다 -->
+        <button data-ref="reset_button_mobile" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <set-state target="_local" :userFilterExtraQuery="[]">
+              <field name="filter">
+                <field name="searchField" value="all"/>
+                <field name="searchKeyword" value=""/>
+                <field name="status" :value="[]"/>
+                <field name="role" :value="[]"/>
+                <field name="adminScope" value="all"/>
+                <field name="lockState" value="all"/>
+                <field name="createdStartDate" value=""/>
+                <field name="createdEndDate" value=""/>
+                <field name="createdDateQuick" value=""/>
+                <field name="lastLoginStartDate" value=""/>
+                <field name="lastLoginEndDate" value=""/>
+                <field name="lastLoginDateQuick" value=""/>
+                <field name="neverLoggedIn" :value="false"/>
+                <field name="dormantStartDate" value=""/>
+                <field name="dormantEndDate" value=""/>
+                <field name="statusChangedType" value=""/>
+                <field name="statusChangedStart" value=""/>
+                <field name="statusChangedEnd" value=""/>
+                <field name="language" value=""/>
+                <field name="country" value=""/>
+                <field name="emailVerified" value="all"/>
+                <field name="identityVerified" value="all"/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/users" :mergeQuery="false" :replace="true"/>
+          </on>
+          $t:admin.users.action.reset
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

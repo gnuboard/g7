@@ -215,4 +215,51 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     await expect(handle).toBeVisible();
     await expect(handle).toHaveAttribute('draggable', 'true');
   });
+
+  /**
+   * 정렬 박스(flex) 편집은 스타일 탭 상단에 뜨고, **컨테이너 역할**로 판정된 요소여야
+   * 컨테이너 설정(방향/정렬/간격) 묶음이 나온다. 항목(item) 역할로 잘못 판정되면 같은
+   * 요소인데 다른 설정이 뜬다.
+   */
+  /** @effects flex_section_for_container */
+  test('컨테이너 요소의 스타일 탭에 정렬 박스 컨테이너 설정이 노출된다', async ({ page }) => {
+    const token = issueToken('core.templates.layouts.edit');
+    await authenticatePage(page, token);
+    await openFirstNodeModal(page);
+
+    const paths = await visibleNodePaths(page, 12);
+    let found = false;
+    for (const path of paths) {
+      if (!(await selectNode(page, path))) continue;
+      const info = page.getByTestId('g7le-overlay-info-button');
+      if ((await info.count()) === 0) continue;
+      await info.click();
+      const editProps = page.getByTestId('g7le-context-menu-edit-props');
+      if ((await editProps.count()) === 0) continue;
+      await editProps.click();
+      await page.waitForSelector('[data-testid="g7le-property-modal"]', { timeout: 8_000 });
+
+      const styleTab = page.getByTestId('g7le-property-tab-style');
+      if ((await styleTab.count()) > 0) await styleTab.click();
+
+      if ((await page.getByTestId('g7le-flex-editor').count()) > 0) {
+        // 꺼진 상태면 켜서 컨테이너 설정 묶음을 띄운다(운영자가 밟는 순서).
+        if ((await page.getByTestId('g7le-flex-container-section').count()) === 0) {
+          const enable = page.getByTestId('g7le-flex-enable');
+          if ((await enable.count()) === 0) {
+            await page.getByTestId('g7le-property-modal-close').click();
+            continue;
+          }
+          await enable.click();
+        }
+        await expect(page.getByTestId('g7le-flex-container-section')).toBeVisible({ timeout: 10_000 });
+        // 항목(item) 설정이 아니라 컨테이너 설정이어야 한다
+        await expect(page.getByTestId('g7le-flex-empty')).toHaveCount(0);
+        found = true;
+        break;
+      }
+      await page.getByTestId('g7le-property-modal-close').click();
+    }
+    expect(found, '정렬 박스 편집을 지원하는 요소를 찾지 못했다').toBe(true);
+  });
 });

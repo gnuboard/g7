@@ -114,6 +114,14 @@ test.describe('통합검색 화면 상태의 주소 승계', () => {
     const before = await queryParams(page);
     expect(before.type, '사전 조건: 주소에 탭이 실려 있어야 한다').toBe('posts');
 
+    // 요청 감시는 새로고침 **전에** 걸어 둔다 — 검색 요청은 부팅 직후 한 번만 나가므로,
+    // 새로고침 뒤에 리스너를 붙이면 이미 지나간 요청을 영영 잡지 못한다.
+    const requestPromise = page
+      .waitForRequest((r) => r.url().includes('/api/search?') && r.url().includes('type=posts'), {
+        timeout: 20_000,
+      })
+      .catch(() => null);
+
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1200);
@@ -124,13 +132,7 @@ test.describe('통합검색 화면 상태의 주소 승계', () => {
     expect(after.q, '새로고침 후 검색어가 사라졌다').toBe(KEYWORD);
 
     // 주소만 남고 화면이 따라오지 않으면 의미가 없다 — 요청도 그 탭으로 나가야 한다.
-    const request = await page
-      .waitForRequest((r) => r.url().includes('/api/search?') && r.url().includes('type=posts'), {
-        timeout: 15_000,
-      })
-      .catch(() => null);
-
-    expect(request, '새로고침 후 검색 요청이 주소의 탭을 반영하지 않았다').not.toBeNull();
+    expect(await requestPromise, '새로고침 후 검색 요청이 주소의 탭을 반영하지 않았다').not.toBeNull();
   });
 
   // @scenario case=search_state_restores_on_back

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 신규 표면(회원가입 연락처 필드) 시나리오 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트(백엔드 3 + 레이아웃 렌더링 8)로 커버. 선택 입력 필드 2개 추가라 발행/상태 전이 등 브라우저 특유 로직이 없어 Playwright spec 대신 렌더링 테스트로 대체(위지윅 발행 회귀 #238 유형의 위험 부재).
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 본 매니페스트는 신규 표면(회원가입 연락처 필드) 시나리오 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트(백엔드 3 + 레이아웃 렌더링 8)로 커버. 선택 입력 필드 2개 추가라 발행/상태 전이 등 브라우저 특유 로직이 없어 Playwright spec 대신 렌더링 테스트로 대체(위지윅 발행 회귀 #238 유형의 위험 부재).
 
 feature: 회원가입 시 휴대폰/전화번호 선택 입력
 

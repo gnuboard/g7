@@ -1,0 +1,46 @@
+feature: 알림 정의 시딩 공통 훅 (core.notification.filter_seed_definitions, 7.1.0)
+
+description: |
+  코어 시더(NotificationDefinitionSeeder)와 모든 모듈·플러그인의 알림 정의 동기화
+  (ModuleManager / PluginManager 의 sync*NotificationDefinitions)가 DB 에 쓰기 직전
+  같은 코어 필터 훅 하나를 발화한다. 문자·알림톡처럼 채널을 제공하는 확장은 도메인 이름을
+  모른 채 이 훅에 답해 자기 채널 template 을 정의에 더한다.
+
+  핵심 동작:
+    - 인자: (정의 순차 배열 — 각 항목에 type·extension_type·extension_identifier, 컨텍스트
+      ['extension_type' => core|module|plugin, 'extension_identifier' => 식별자])
+    - 코어 시더는 config 의 type 키 연관 배열을 type 을 담은 순차 배열로 펴서 넘긴다
+    - 도메인별 언어팩 훅(seed.{id}.notifications.translations) 다음에 발화한다 — 언어팩 로케일이
+      병합된 본문을 채널 확장이 받는다(종전 도메인 훅 구독과 결과 동일)
+    - 훅이 더한 template 은 시딩 주체가 자기 선언처럼 저장하고, stale template 정리에서 빠지지 않는다
+    - 리스너가 빈 목록·배열 아닌 값을 돌려주면 원본으로 시딩한다(소유자 정의 전량 삭제 방어)
+    - 도메인별 언어팩 훅은 그대로 발화한다(언어팩 병합 소비자 유지)
+    - 활성 확장 알림 정의 재동기화(ModuleManager::resyncActiveModuleNotificationDefinitions /
+      PluginManager::resyncActivePluginNotificationDefinitions): 설치본의 알림 정의만 다시 돌려 공통 훅을
+      발화한다. 비활성은 건너뛰고, _bundled·권한·메뉴는 건드리지 않으며, user_overrides 는 보존한다 —
+      채널 제공 확장이 켜질 때 부르는 공개 진입점
+
+axes:
+  owner: [core, module, plugin]
+
+effects:
+  - module_sync_fires_common_seed_hook_with_owner_context
+  - plugin_sync_fires_common_seed_hook_with_owner_context
+  - core_seeder_fires_common_seed_hook_with_typed_list
+  - seed_hook_contributed_templates_persist_for_owner
+  - common_seed_hook_runs_after_lang_pack_filter
+  - empty_seed_hook_result_falls_back_to_original_definitions
+  - active_plugin_notification_resync_fires_seed_hook_only_for_active
+  - active_module_notification_resync_fires_seed_hook_only_for_active
+  - resync_preserves_user_overridden_templates
+  # 도메인별 언어팩 훅(seed.{id}.notifications.translations) 발화 — 확장 동기화 경로
+  - domain_lang_pack_filter_fires_on_module_notification_sync
+  - domain_lang_pack_filter_fires_on_plugin_notification_sync
+  - legacy_identity_declaration_converted_before_domain_lang_pack_filter
+
+test_files:
+  - tests/Feature/Notifications/NotificationSeedDefinitionsHookTest.php
+  - tests/Feature/LanguagePack/ManagerSyncFilterTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

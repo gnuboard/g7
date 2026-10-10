@@ -1,0 +1,34 @@
+<!-- 클레임 목록 — 검색 프리셋 삭제 확인 창(관리 창 위에 겹쳐 뜬다). 지울 프리셋의 id·이름은 관리 창이 `_global` 에 담아 둔 값을 읽으며, 이 창은 프리셋 목록을 따로 조회하지 않는다. -->
+<partial description="Claim List - Preset Delete Confirm Modal">
+  <modal data-type="composite" data-ref="modal_claim_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.title" size="sm">
+    <p class="text-body">$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <!-- 삭제 실행. 성공하면 프리셋 목록만 다시 불러 필터 카드의 프리셋 버튼과 아래 깔린 관리 창에서 함께 빠지게 한다 — 지운 것은 조건 묶음이지 신청서가 아니므로 클레임 목록은 다시 읽지 않는다. -->
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <set-state target="global" :isDeleting="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}" method="DELETE">
+            <success>
+              <set-state target="global" :isDeleting="false"/>
+              <refetch-data-source dataSourceId="presets"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.deleted"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isDeleting="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

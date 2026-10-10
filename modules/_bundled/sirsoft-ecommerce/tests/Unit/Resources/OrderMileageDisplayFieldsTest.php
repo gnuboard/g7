@@ -16,14 +16,23 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 이슈 #44 전수조사: 마일리지 시스템 도입 전 완성된 주문 화면들이
  * 기대하는 마일리지 사용/적립/환불 키를 백엔드 응답(Summary DTO / 목록 Resource)이
  * 실제로 노출하는지 검증한다. 누락 시 화면에 마일리지가 "--"/미표시로 회귀한다.
+ * 적립 표기는 포인트 단위 `P`, 사용·환불 표기는 통화 단위다.
+ * 시나리오 SSoT: tests/scenarios/order-mileage-display-fields.yaml
  */
 class OrderMileageDisplayFieldsTest extends ModuleTestCase
 {
     /**
-     * Summary DTO 가 마일리지 사용액 포맷(points_used_formatted)을 노출하는지 확인
+     * Summary DTO 가 마일리지 사용액 포맷(points_used_formatted)을 노출하는지 확인합니다.
      *
      * 결함: 체크아웃 요약(_checkout_summary) line 332 가 points_used_formatted 를 바인딩하나
      * Summary::toArray() 가 points_used(값)만 만들고 포맷 키를 누락 → 사용액이 "--" 로 표시.
+     * 사용액·결제예정액은 통화(원) 표기이고, 적립 포맷(mileage_formatted)은 포인트 단위 `P` 로 남는다.
+     *
+     * @scenario surface=checkout_summary
+     *
+     * @effects summary_exposes_points_used_and_payment_amount_formatted, earned_points_are_formatted_with_the_point_suffix
+     *
+     * @return void 반환값 없음
      */
     public function test_summary_exposes_points_used_formatted(): void
     {
@@ -48,7 +57,13 @@ class OrderMileageDisplayFieldsTest extends ModuleTestCase
     }
 
     /**
-     * 마일리지 미사용 주문도 points_used_formatted 가 0원으로 노출되는지 확인 (폴백 안전)
+     * 마일리지 미사용 주문도 points_used_formatted 가 0원으로 노출되는지 확인합니다 (폴백 안전).
+     *
+     * @scenario surface=checkout_summary
+     *
+     * @effects summary_points_used_formatted_falls_back_to_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_summary_points_used_formatted_zero_when_unused(): void
     {
@@ -60,7 +75,15 @@ class OrderMileageDisplayFieldsTest extends ModuleTestCase
     }
 
     /**
-     * OrderListResource(관리자 목록)가 마일리지 사용/적립 필드를 노출하는지 확인
+     * OrderListResource(관리자 목록)가 마일리지 사용/적립 필드를 노출하는지 확인합니다.
+     *
+     * 사용액은 통화(`5,000원`), 적립액은 포인트(`2,400P`)로 포맷된다.
+     *
+     * @scenario surface=admin_order_list
+     *
+     * @effects admin_order_list_exposes_mileage_used_and_earned, earned_points_are_formatted_with_the_point_suffix
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_order_list_resource_exposes_mileage_fields(): void
     {
@@ -77,11 +100,19 @@ class OrderMileageDisplayFieldsTest extends ModuleTestCase
         $this->assertEquals(5000, $resource['total_points_used_amount']);
         $this->assertEquals('5,000원', $resource['total_points_used_amount_formatted']);
         $this->assertEquals(2400, $resource['total_earned_points_amount']);
-        $this->assertEquals('2,400원', $resource['total_earned_points_amount_formatted']);
+        $this->assertEquals('2,400P', $resource['total_earned_points_amount_formatted']);
     }
 
     /**
-     * UserOrderListResource(마이페이지 목록)가 마일리지 사용/적립 필드를 노출하는지 확인
+     * UserOrderListResource(마이페이지 목록)가 마일리지 사용/적립 필드를 노출하는지 확인합니다.
+     *
+     * 사용액은 통화(`1,000원`), 적립액은 포인트(`990P`)로 포맷된다.
+     *
+     * @scenario surface=user_order_list
+     *
+     * @effects user_order_list_exposes_mileage_used_and_earned, earned_points_are_formatted_with_the_point_suffix
+     *
+     * @return void 반환값 없음
      */
     public function test_user_order_list_resource_exposes_mileage_fields(): void
     {
@@ -99,14 +130,21 @@ class OrderMileageDisplayFieldsTest extends ModuleTestCase
         $this->assertEquals(1000, $resource['total_points_used_amount']);
         $this->assertEquals('1,000원', $resource['total_points_used_amount_formatted']);
         $this->assertEquals(990, $resource['total_earned_points_amount']);
-        $this->assertEquals('990원', $resource['total_earned_points_amount_formatted']);
+        $this->assertEquals('990P', $resource['total_earned_points_amount_formatted']);
     }
 
     /**
-     * GuestOrderResource(비회원 주문상세)가 마일리지 사용/적립/환불 필드를 노출하는지 확인
+     * GuestOrderResource(비회원 주문상세)가 마일리지 사용/적립/환불 필드를 노출하는지 확인합니다.
      *
      * 결함: 비회원 주문상세는 회원과 동일 결제정보 partial 을 쓰나 GuestOrderResource 가
      * 마일리지 필드를 전혀 노출하지 않아 비회원 화면에 마일리지가 미표시.
+     * 사용·환불 마일리지는 통화(원) 표기, 적립은 포인트(`P`) 표기다.
+     *
+     * @scenario surface=guest_order_detail
+     *
+     * @effects guest_order_detail_exposes_mileage_used_earned_and_refunded, earned_points_are_formatted_with_the_point_suffix
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_order_resource_exposes_mileage_and_refund_fields(): void
     {
@@ -130,7 +168,7 @@ class OrderMileageDisplayFieldsTest extends ModuleTestCase
         $this->assertEquals(2000, $resource['total_points_used_amount']);
         $this->assertEquals('2,000원', $resource['total_points_used_amount_formatted']);
         $this->assertEquals(1500, $resource['total_earned_points_amount']);
-        $this->assertEquals('1,500원', $resource['total_earned_points_amount_formatted']);
+        $this->assertEquals('1,500P', $resource['total_earned_points_amount_formatted']);
         $this->assertEquals(800, $resource['total_refunded_points_amount']);
         $this->assertEquals('800원', $resource['total_refunded_points_amount_formatted']);
     }

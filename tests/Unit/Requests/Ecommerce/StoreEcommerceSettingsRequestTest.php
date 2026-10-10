@@ -15,6 +15,14 @@ use Tests\TestCase;
  */
 class StoreEcommerceSettingsRequestTest extends TestCase
 {
+    /**
+     * 규칙이 `ClaimReasonRepositoryInterface` 를 컨테이너에서 읽으므로(사유 코드 중복 검증) 모듈
+     * 서비스 프로바이더가 등록돼야 한다 — 코어 경로의 테스트는 자기 확장을 자동 탐지하지 않는다.
+     *
+     * @var array<int, string>
+     */
+    protected array $requiredExtensions = ['modules/sirsoft-ecommerce'];
+
     protected function setUp(): void
     {
         parent::setUp();

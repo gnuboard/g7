@@ -1,11 +1,12 @@
 /**
  * 관리자 배송정책 — 계산 API 연동 고급 설정 (skeleton, placeholder).
  *
- * 축 요약(마커 아님 — 평문): http_method=GET|POST, auth_type=none|bearer|custom_header,
- * response_type=json|text. 요약을 시나리오 축 마커로 적으면 파서가 `=` 없는 토큰을 버려 빈 조합
- * `{}` 이 되고, 축이 0개인 매니페스트가 생기면 어떤 케이스든 커버된 것으로 오집계될 수 있다.
- *
- * 효과 요약(마커 아님 — 평문): method_get_sends_query_string, bearer_attaches_authorization_header, custom_header_requires_header_name, field_map_renames_request_keys, json_nested_path_extracted, text_currency_stripped_to_number, auth_token_masked_in_response, test_call_returns_preview_and_fee, options_from_backend_enum_ssot.
+ * @scenario http_method, GET, POST, auth_type, none, bearer, custom_header, response_type, json, text
+ * @effects method_get_sends_query_string, bearer_attaches_authorization_header,
+ *          custom_header_requires_header_name, field_map_renames_request_keys,
+ *          json_nested_path_extracted, text_currency_stripped_to_number,
+ *          auth_token_masked_in_response, test_call_returns_preview_and_fee,
+ *          options_from_backend_enum_ssot
  *
  * 배경(MP12): 배송정책 부과정책 "외부 API 연동" 선택 시 HTTP 메서드/인증/필드매핑/응답형식을
  *   설정하고, "테스트 호출" 버튼으로 실제 API 응답·추출 배송비를 미리볼 수 있다. 인증 토큰은

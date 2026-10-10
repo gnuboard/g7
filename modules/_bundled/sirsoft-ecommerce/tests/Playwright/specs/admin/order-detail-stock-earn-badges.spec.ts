@@ -18,7 +18,7 @@
  *           (withExists 집계 경로)임을 라이브 검증한다.
  *
  * 본 spec 은 다음 사전 작업 완료 후 활성화한다 (data-testid 보강):
- *   1. _partial_order_info.json 주문상품 DataGrid 행에 data-testid="order-option-row-{id}"
+ *   1. _partial_order_info.g7.html 주문상품 DataGrid 행에 data-testid="order-option-row-{id}"
  *   2. 구매수량 컬럼 재고 배지에 data-testid="order-option-stock-badge"
  *   3. 적립예정 컬럼 적립 배지에 data-testid="order-option-earn-badge"
  *   4. 재고 차감/미차감, 적립 발생/미발생 4축을 시드하는 OrderSeeder 보강

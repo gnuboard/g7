@@ -256,6 +256,7 @@ class PublicProductReviewControllerTest extends ModuleTestCase
      * 개수는 배열 길이가 아니라 DB 집계에서 온다.
      *
      * @scenario surface=public_product_review_list,observation=response_payload
+     *
      * @effects public_list_carries_images_and_count_together, image_download_url_is_present_on_each_image, image_count_is_zero_not_missing_when_empty, no_public_single_review_endpoint_exists_as_fallback
      */
     #[Test]

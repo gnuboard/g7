@@ -27,7 +27,7 @@ class BulkUpdateUserStatusRequest extends FormRequest
     /**
      * 검증 규칙을 정의합니다.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string> 필드별 검증 규칙
      */
     public function rules(): array
     {
@@ -44,14 +44,14 @@ class BulkUpdateUserStatusRequest extends FormRequest
     /**
      * 검증 오류 메시지를 정의합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 규칙별 오류 메시지
      */
     public function messages(): array
     {
         return [
             'ids.required' => __('validation.required', ['attribute' => __('validation.attributes.user_ids')]),
             'ids.array' => __('validation.array', ['attribute' => __('validation.attributes.user_ids')]),
-            'ids.min' => __('validation.min.array', ['attribute' => __('validation.attributes.user_ids'), 'min' => 1]),
+            'ids.min' => trans_choice('validation.min.array', 1, ['attribute' => __('validation.attributes.user_ids'), 'min' => 1]),
             'ids.*.required' => __('validation.required', ['attribute' => __('validation.attributes.user_id')]),
             'ids.*.uuid' => __('validation.uuid', ['attribute' => __('validation.attributes.user_id')]),
             'ids.*.exists' => __('validation.exists', ['attribute' => __('validation.attributes.user_id')]),
@@ -66,7 +66,7 @@ class BulkUpdateUserStatusRequest extends FormRequest
      * 범용 필드명 ids 는 전역 라벨이 범용 문구이므로,
      * 사용자 대상 라벨을 이 요청에서만 명시 매핑합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 필드별 표시명
      */
     public function attributes(): array
     {

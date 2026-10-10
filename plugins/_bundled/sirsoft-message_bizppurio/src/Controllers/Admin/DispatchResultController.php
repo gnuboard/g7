@@ -39,7 +39,7 @@ class DispatchResultController extends AdminBaseController
      */
     public function lookup(DispatchResultLookupRequest $request): JsonResponse
     {
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('sirsoft-message_bizppurio::messages.dispatch_result.loaded', [
             'results' => $this->service->resultsForLogIds($request->logIds()),
         ]);
     }
@@ -54,7 +54,7 @@ class DispatchResultController extends AdminBaseController
      */
     public function recent(): JsonResponse
     {
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('sirsoft-message_bizppurio::messages.dispatch_result.loaded', [
             'results' => $this->service->recentResults(),
         ]);
     }

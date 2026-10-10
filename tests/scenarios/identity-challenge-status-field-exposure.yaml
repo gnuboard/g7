@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 challenge 상태 조회 응답의 노출 필드 SSoT. 회귀 가드는 test_files 의 Feature 테스트가 cover.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 본 매니페스트는 challenge 상태 조회 응답의 노출 필드 SSoT. 회귀 가드는 test_files 의 Feature 테스트가 cover.
 # e2e:allow 챌린지 진행 화면(auth/identity_challenge)의 프론트 변경은 서버가 더는 주지 않는 attempts 필드 참조를 제거한 것뿐이며, 남은 시도 횟수 UI 는 URL query fallback 과 verify 실패 시 로컬 증가로 동일하게 동작한다. 실질 회귀 대상(응답에서 attempts 제거)은 IdentityChallengeShowTest 가 검증하므로 브라우저 E2E 는 불요.
 
 feature: 본인인증 challenge 상태 조회 — 노출 필드 제한 (민감 필드 비노출)
@@ -15,7 +15,7 @@ description: |
 
   조치:
     - getStatus 응답에서 attempts / max_attempts 제거 (공개 안전 필드만 유지).
-    - 챌린지 진행 화면(auth/identity_challenge.json — admin_basic / basic)에서 서버 응답의
+    - 챌린지 진행 화면(auth/identity_challenge.g7.html — admin_basic / basic)에서 서버 응답의
       attempts 참조를 제거. 남은 시도 횟수 UI 는 URL query fallback + verify 실패 시 로컬
       증가로 유지되므로 사용자 가시 동작은 동일.
 
@@ -35,6 +35,8 @@ effects:
   - verification_token_absent_from_response
   - metadata_absent_from_response
   - challenge_screen_remaining_attempts_ui_works_via_query_fallback  # 프론트: 서버 attempts 없이도 남은 횟수 UI 동작
+  - polling_unknown_challenge_returns_404         # 없는 challenge id 조회는 404
+  - polling_reflects_current_status               # 폴링 응답 status 가 로그의 현재 상태(processing 등)를 그대로 반영
 
 test_files:
   - tests/Feature/Api/Identity/IdentityChallengeShowTest.php

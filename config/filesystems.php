@@ -57,8 +57,14 @@ return [
             'report' => false,
         ],
 
+        // modules · plugins · attachments · public — 확장·코어 스토리지 드라이버(StorageInterface)가
+        // 게시판 슬러그·임시 키·상품 코드처럼 요청에서 온 값으로 경로를 만드는 디스크다.
+        // local-safe 는 local 과 같되 `..` 상대경로 순회를 어댑터 직전에서 거부한다
+        // (AppServiceProvider::createTraversalSafeLocalDisk). 드라이버의 경로 가드가 1차 방어,
+        // 이것이 최후 방어선이다. 사용자 정의 드라이버라 serve=true 서명 URL 서빙은 지원하지 않는다.
         'modules' => [
-            'driver' => 'local',
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
             'root' => storage_path($extensionStorageRoot.'/modules'),
             'serve' => false,
             'throw' => true,
@@ -66,7 +72,8 @@ return [
         ],
 
         'plugins' => [
-            'driver' => 'local',
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
             'root' => storage_path($extensionStorageRoot.'/plugins'),
             'serve' => false,
             'throw' => true,
@@ -74,7 +81,8 @@ return [
         ],
 
         'attachments' => [
-            'driver' => 'local',
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
             'root' => storage_path('app/attachments'),
             'serve' => false,
             'throw' => true,
@@ -110,7 +118,8 @@ return [
         ],
 
         'public' => [
-            'driver' => 'local',
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
             'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',

@@ -4,14 +4,19 @@ namespace Modules\Sirsoft\Board\Http\Requests;
 
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 게시판 첨부파일 순서 변경 요청 검증
  */
 class ReorderAttachmentsRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 요청 권한 확인
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {

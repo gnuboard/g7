@@ -257,7 +257,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 새 브랜드를 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.create` 권한이 필요하며, `BrandService::createBrand()`가 트랜잭션 내에서 저장하고 생성자/수정자(`created_by`/`updated_by`)를 현재 사용자로 기록한 뒤 `BrandResource`를 201로 반환합니다. `name`(다국어 배열)과 `slug`가 필수이며 `website`·`sort_order`·`is_active`는 선택입니다. `sirsoft-ecommerce.brand.create_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다.
+**설명** 새 브랜드를 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.create` 권한이 필요하며, `BrandService::createBrand()`가 트랜잭션 내에서 저장하고 생성자/수정자(`created_by`/`updated_by`)를 현재 사용자로 기록한 뒤 `BrandResource`를 201로 반환합니다. `name`(다국어 배열)과 `slug`가 필수이며 `website`·`sort_order`·`is_active`는 선택입니다. `sirsoft-ecommerce.brand.create_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「브랜드명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Brand Name field is required.").
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/brands/{brand}
@@ -428,7 +428,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 기존 브랜드(path의 `brand`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.update` 권한이 필요하며, `BrandService::updateBrand()`가 검증된 데이터로 갱신한 뒤 `BrandResource`를 반환합니다. `name`은 필수이고 `slug`·`website`·`sort_order`·`is_active`는 선택입니다. 존재하지 않는 ID 는 400(`brand_not_found`), 스코프 밖 대상은 403(`auth.scope_denied`)을 반환하며, `sirsoft-ecommerce.brand.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다.
+**설명** 기존 브랜드(path의 `brand`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.brands.update` 권한이 필요하며, `BrandService::updateBrand()`가 검증된 데이터로 갱신한 뒤 `BrandResource`를 반환합니다. `name`은 필수이고 `slug`·`website`·`sort_order`·`is_active`는 선택입니다. 존재하지 않는 ID 는 400(`brand_not_found`), 스코프 밖 대상은 403(`auth.scope_denied`)을 반환하며, `sirsoft-ecommerce.brand.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「브랜드명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Brand Name field is required.").
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/brands/{id}

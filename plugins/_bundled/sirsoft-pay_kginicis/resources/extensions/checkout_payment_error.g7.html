@@ -1,0 +1,25 @@
+<!-- 결제 실패를 주문서 화면에 알리는 조각 — 결제창이 실패로 돌아왔을 때 뜬다 -->
+<extension target-layout="shop/checkout">
+  <modal>
+    <!-- 결제 실패 안내 창 — PG 가 준 사유가 있으면 함께 보여 준다 -->
+    <modal data-type="composite" data-ref="kginicis_payment_error_modal" title="$t:sirsoft-pay_kginicis.payment_error.title" size="sm" :showCloseButton="true">
+      <div class="text-center py-4">
+        <icon name="exclamation-circle" class="text-red-500 text-4xl mb-4"/>
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-pay_kginicis.payment_error.message</p>
+        <p data-if="{{_local.paymentErrorMessage}}" class="text-sm text-red-600 dark:text-red-400 mt-2">{{_local.paymentErrorMessage}}</p>
+      </div>
+      <div class="flex justify-center mt-6">
+        <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+          <on type="click">
+            <!-- 확인 — 남아 있던 실패 사유를 지우고 창을 닫는다(지우지 않으면 다음에 열 때 옛 사유가 그대로 보인다) -->
+            <sequence>
+              <set-state target="local" :paymentErrorMessage="null"/>
+              <close-modal/>
+            </sequence>
+          </on>
+          $t:common.confirm
+        </button>
+      </div>
+    </modal>
+  </modal>
+</extension>

@@ -34,6 +34,11 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     private LayoutExtension $extension;
 
+    /**
+     * 저장소와 테스트용 템플릿·레이아웃 확장을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * saveVersion - 첫 번째 버전 생성
+     *
+     * @effects extension_version_auto_increments
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_creates_first_version(): void
     {
@@ -60,6 +69,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * saveVersion - 버전 자동 증가
+     *
+     * @effects extension_version_auto_increments
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_auto_increments(): void
     {
@@ -73,6 +86,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * getVersions - 최신순 정렬
+     *
+     * @effects extension_version_auto_increments
+     *
+     * @return void 반환값 없음
      */
     public function test_get_versions_returns_latest_first(): void
     {
@@ -89,6 +106,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * getNextVersion - 버전 없을 때 1 반환
+     *
+     * @effects extension_version_auto_increments
+     *
+     * @return void 반환값 없음
      */
     public function test_get_next_version_returns_one_when_empty(): void
     {
@@ -96,7 +117,11 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
     }
 
     /**
-     * getNextVersion - max + 1
+     * getNextVersion - 기존 최대 버전 + 1 을 다음 버전으로 반환한다.
+     *
+     * @effects extension_version_auto_increments
+     *
+     * @return void 반환값 없음
      */
     public function test_get_next_version_returns_max_plus_one(): void
     {
@@ -109,6 +134,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * 버전은 확장별로 격리됨
+     *
+     * @effects extension_versions_isolated_by_extension_id
+     *
+     * @return void 반환값 없음
      */
     public function test_versions_are_isolated_by_extension(): void
     {
@@ -125,6 +154,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
      * changes_summary 는 버전 비교 diff 뷰와 동일한 라인 단위로 센다. 키 정렬 직렬화
      * 후 라인 LCS 로 추가/삭제 라인 수를 집계한다(added/removed 는 정수 카운트, modified
      * 키는 없음 — 값 변경은 삭제+추가 라인으로 표현).
+     *
+     * @effects calculate_changes_detects_added_removed_modified_via_shared_trait
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_detects_diff(): void
     {
@@ -143,6 +176,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * restoreVersion - 트랜잭션 내 복원 + 새 버전 생성
+     *
+     * @effects restore_extension_version_restores_content_and_creates_new_version
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_restores_content_and_creates_new_version(): void
     {
@@ -171,6 +208,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * restoreVersion - 존재하지 않는 버전은 예외
+     *
+     * @effects restore_extension_version_restores_content_and_creates_new_version
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_throws_when_version_not_found(): void
     {
@@ -181,6 +222,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * getCurrentVersionsByExtensionIds — 확장별 최신 버전 맵
+     *
+     * @effects extension_index_response_includes_current_version_per_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_versions_by_extension_ids_returns_latest_version_map(): void
     {
@@ -207,6 +252,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * getCurrentVersionsByExtensionIds — 빈 입력/이력 전무 시 빈 맵
+     *
+     * @effects extension_index_response_includes_current_version_per_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_versions_by_extension_ids_returns_empty_for_empty_input(): void
     {
@@ -216,6 +265,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * saveVersion 은 인증 사용자를 created_by 로 기록한다(레이아웃 본체와 동형).
+     *
+     * @effects extension_version_list_shows_creator_name
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_records_authenticated_user_as_creator(): void
     {
@@ -229,6 +282,10 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
 
     /**
      * restoreVersion 은 확장 lock_version 을 올린다(레이아웃 본체와 동형).
+     *
+     * @effects restore_extension_version_restores_content_and_creates_new_version
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_increments_extension_lock_version(): void
     {
@@ -245,5 +302,20 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
         $this->extension->refresh();
         $this->assertSame(3, (int) $this->extension->lock_version);
         $this->assertEquals($oldContent, $this->extension->content);
+    }
+
+    /**
+     * 확장 조각 버전 저장도 부가 요약(병합 출처)을 계산된 카운트와 함께 남긴다 (#727).
+     *
+     * @effects version_history_marks_extension_update_rows
+     *
+     * @return void 반환값 없음
+     */
+    public function test_summary_extra_is_merged_into_changes_summary(): void
+    {
+        $version = $this->repository->saveVersion($this->extension->id, ['a' => 2], ['a' => 1], null, ['source' => 'extension_update']);
+
+        $this->assertSame('extension_update', $version->changes_summary['source']);
+        $this->assertArrayHasKey('added', $version->changes_summary);
     }
 }

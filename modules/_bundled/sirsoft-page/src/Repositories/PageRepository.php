@@ -6,7 +6,6 @@ use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
-use App\Search\Engines\DatabaseFulltextEngine;
 use App\Search\KeywordSearch;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;

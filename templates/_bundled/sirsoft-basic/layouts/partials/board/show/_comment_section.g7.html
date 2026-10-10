@@ -1,0 +1,53 @@
+<!-- 댓글 영역 전체 — 목록·안내·입력창을 한 조각에 담는다. 목록은 평평한 배열로 오고 답글은 깊이(depth)로만 구분되므로, 어느 답글이 어느 원댓글에 속하는지는 상세 화면이 미리 계산해 둔 commentRootMap 을 보고 접고 편다. 댓글을 못 읽는 경우는 아예 이 조각을 부르지 않는다(부르는 쪽 조건). -->
+<partial description="댓글 섹션 전체">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center justify-between px-6 pt-6 pb-4">
+      <div class="flex items-center gap-2">
+        <icon name="message-square" size="lg"/>
+        <span>$t:board.comments</span>
+        <span>{{post?.data?.comment_count ?? 0}}</span>
+      </div>
+      <!-- 삭제된 댓글 포함 토글 버튼 (manager 권한 보유 시에만 표시) -->
+      <button data-if="{{post?.data?.abilities?.can_manage}}" type="button" class="{{query.del_cmt === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+        <on type="click">
+          <navigate path="/board/{{route.slug}}/{{route.id}}" :mergeQuery="true">
+            <query del_cmt="{{query.del_cmt === '1' ? '' : '1'}}"/>
+          </navigate>
+        </on>
+        <icon name="eye" size="sm"/>
+        <span>$t:board.filter.include_deleted_comments</span>
+      </button>
+    </h3>
+    <!-- 헤더 구분선 -->
+    <div class="border-b border-gray-200 dark:border-gray-700"/>
+    <!-- 댓글 없음 안내 (조회+작성 권한 O, 댓글 0개, 블라인드 아님) -->
+    <div data-if="{{(post?.data?.comment_count ?? 0) === 0 &amp;&amp; post?.data?.abilities?.can_write_comments &amp;&amp; post?.data?.status !== 'blinded'}}" class="px-6 py-8 text-center">
+      <icon name="message-square" size="xl" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <p class="text-gray-500 dark:text-gray-400">$t:board.no_comments_yet</p>
+    </div>
+    <div data-each="comment, idx in {{post?.data?.comments ?? []}}" class="space-y-4">
+      <div data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment?.id]] === false)}}" class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors {{(comment?.depth ?? 0) > 0 ? 'bg-gray-50 dark:bg-gray-900/50' : ''}}">
+        <include src="partials/board/show/_comment_item.g7.html"/>
+        <!-- 답글이 있는 경우 토글 버튼 -->
+        <button data-if="{{(comment?.replies_count ?? 0) > 0 &amp;&amp; (comment?.depth ?? 0) === 0}}" class="ml-16 mb-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1">
+          <on type="click">
+            <set-state target="local" collapsedReplies="{{Object.assign({}, _local.collapsedReplies || {}, {[comment?.id]: !(_local.collapsedReplies?.[comment?.id] ?? true)})}}"/>
+          </on>
+          <icon name="{{_local.collapsedReplies?.[comment?.id] === false ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
+          <span>{{_local.collapsedReplies?.[comment?.id] === false ? '$t:board.hide_replies' : '$t:board.show_replies'}} ({{comment?.replies_count}})</span>
+        </button>
+      </div>
+    </div>
+    <!-- 블라인드 게시글 댓글 작성 불가 안내 -->
+    <div data-if="{{post?.data?.status === 'blinded' &amp;&amp; post?.data?.abilities?.can_read_comments}}" class="px-6 py-8 text-center border-t border-gray-200 dark:border-gray-700">
+      <icon name="eye-slash" size="xl" class="mx-auto text-gray-300 dark:text-gray-600 mb-5"/>
+      <p class="text-gray-500 dark:text-gray-400">$t:board.blinded_comment_disabled</p>
+    </div>
+    <!-- 작성 권한 없음 안내 (조회 권한 O, 작성 권한 X, 블라인드 아님) -->
+    <div data-if="{{post?.data?.abilities?.can_read_comments &amp;&amp; !post?.data?.abilities?.can_write_comments &amp;&amp; post?.data?.status !== 'blinded'}}" class="px-6 py-8 text-center border-t border-gray-200 dark:border-gray-700">
+      <icon name="lock" size="xl" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <p class="text-gray-500 dark:text-gray-400">$t:board.no_comment_write_permission</p>
+    </div>
+    <include src="partials/board/show/_comment_input.g7.html"/>
+  </div>
+</partial>

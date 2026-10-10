@@ -1,0 +1,15 @@
+<!-- 학습용 관리자 첫 화면 — 베이스의 content 슬롯을 채우는 가장 단순한 예다 -->
+<layout name="admin_dashboard" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.dashboard.title" :auth_required="true"/>
+  <permissions>
+    <permission>core.dashboard.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="dashboard_content" class="p-8">
+      <div data-ref="welcome_card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-2xl" data-testid="welcome-card">
+        <h1 data-ref="welcome_title" class="text-page-heading mb-2" data-testid="welcome-title">$t:admin.dashboard.welcome_title</h1>
+        <span data-ref="welcome_message" class="text-secondary text-sm" data-testid="welcome-message">$t:admin.dashboard.welcome_message</span>
+      </div>
+    </div>
+  </slot>
+</layout>

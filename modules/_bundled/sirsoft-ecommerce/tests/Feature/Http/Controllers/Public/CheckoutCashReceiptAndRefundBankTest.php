@@ -297,16 +297,40 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
-     * 무통장(dbank)을 제외한 전 결제수단.
+     * 고객이 주문서에서 고를 수 있으면서 무통장(dbank)이 아닌 결제수단.
+     *
+     * `point`·`deposit`·`free` 는 뺀다(#599 후속 P10) — 코어에 이 수단들의 **결제 실행 경로가
+     * 없어** 실결제액이 0보다 큰 주문에 고르면 `PENDING_ORDER` 에 영구 정박한다. 그래서 주문
+     * 생성이 그 조합을 거절하며, 거절되는 조합으로 "현금영수증을 저장하지 않는다" 를 재 봤자
+     * 저장 경로에 도달하지 못한 것을 통과로 읽게 된다.
      *
      * @return array<string, array{string}>
      */
     public static function nonDbankPaymentMethodProvider(): array
     {
+        return self::customerSelectableMethodsExcept([PaymentMethodEnum::DBANK]);
+    }
+
+    /**
+     * 고객이 주문서에서 고를 수 있는 수단에서 지정한 것들을 뺀 목록을 만듭니다.
+     *
+     * @param  array<int, PaymentMethodEnum>  $excluded  제외할 수단
+     * @return array<string, array{string}> 데이터 프로바이더 케이스
+     */
+    private static function customerSelectableMethodsExcept(array $excluded): array
+    {
+        // 코어에 결제 실행 경로가 없는 수단 — `PaymentMethodResolver::isCustomerSelectable()`
+        // 과 같은 집합이다(그쪽이 SSoT 이고 여기는 그 판정을 재현하지 않는다).
+        $internalOnly = [
+            PaymentMethodEnum::POINT,
+            PaymentMethodEnum::DEPOSIT,
+            PaymentMethodEnum::FREE,
+        ];
+
         $cases = [];
 
         foreach (PaymentMethodEnum::cases() as $method) {
-            if ($method === PaymentMethodEnum::DBANK) {
+            if (in_array($method, $excluded, true) || in_array($method, $internalOnly, true)) {
                 continue;
             }
 
@@ -391,17 +415,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      */
     public static function nonRefundBankPaymentMethodProvider(): array
     {
-        $cases = [];
-
-        foreach (PaymentMethodEnum::cases() as $method) {
-            if (in_array($method, [PaymentMethodEnum::DBANK, PaymentMethodEnum::VBANK], true)) {
-                continue;
-            }
-
-            $cases[$method->value] = [$method->value];
-        }
-
-        return $cases;
+        return self::customerSelectableMethodsExcept([PaymentMethodEnum::DBANK, PaymentMethodEnum::VBANK]);
     }
 
     /**

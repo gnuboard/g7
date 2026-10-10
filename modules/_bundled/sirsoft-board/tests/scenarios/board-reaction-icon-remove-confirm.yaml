@@ -1,0 +1,19 @@
+feature: 게시판 환경설정 반응 유형 아이콘 — 삭제 확인 창
+
+description: |
+  반응 유형 아이콘 업로더의 「삭제」는 저장 전에 서버의 첨부와 파일을 곧바로 지운다. 확인 없이 지워 실수로 눌러도
+  되돌릴 수 없었다(7.1.0 실측 O-K1-5, 결정 2026-10-08). 넓은 화면 표·좁은 화면 카드·두 「유형 추가」 행의 업로더가
+  모두 확인 창을 거치고, 창 문구는 저장과 무관하게 바로 지워져 되돌릴 수 없음을 ko/en/ja 로 알린다. 취소하면 요청이
+  나가지 않는 것은 업로더 계약(confirmBeforeRemove)이다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-icon-remove-confirm.test.ts
+
+axes:
+  viewport:
+    - desktop_table
+    - mobile_cards
+
+effects:
+  - reaction_icon_remove_requires_confirm
+  - reaction_icon_remove_confirm_message_localized

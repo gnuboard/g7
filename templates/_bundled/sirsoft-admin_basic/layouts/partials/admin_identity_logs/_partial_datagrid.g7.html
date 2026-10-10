@@ -1,0 +1,92 @@
+<!-- 본인인증 기록 표. **줄을 고를 수 없다** — 이 기록은 감사 자료라 한 건씩 골라 지우는 길을
+  두지 않았고, 정리는 화면 머리의 보존기간 삭제 하나로만 한다.
+  줄을 펼치면 목록에 못 싣는 것들이 나온다(대상 해시 전문, 인증을 건 자리, 제공자가 남긴
+  부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다. -->
+<partial description="Identity Logs DataGrid">
+  <data-grid data-type="composite" data-ref="identity_log_datagrid" data="{{identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{identityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" loading="{{identityLogs?.loading}}" :expandable="true">
+    <expand>
+      <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
+        <div class="grid-2col-responsive">
+          <div>
+            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.target_hash_label</span>
+            <span class="block text-xs font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5">{{row.target_hash ?? '-'}}</span>
+          </div>
+          <div>
+            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.origin_label</span>
+            <span class="block text-body mt-0.5">{{(row.origin_type ? $t('admin.identity.logs.origin_type.' + row.origin_type) : '-') + ' / ' + (row.origin_identifier ?? '-')}}</span>
+          </div>
+          <div data-if="{{row.origin_policy_key}}" class="md:col-span-2">
+            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.origin_policy_key_label</span>
+            <span class="block text-body font-mono break-all mt-0.5">{{row.origin_policy_key}}</span>
+          </div>
+        </div>
+        <div data-if="{{row.properties}}">
+          <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.properties_label</span>
+          <pre class="admin-card">{{JSON.stringify(row.properties ?? {}, null, 2)}}</pre>
+        </div>
+        <div data-if="{{row.metadata}}">
+          <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.metadata_label</span>
+          <pre class="admin-card">{{JSON.stringify(row.metadata ?? {}, null, 2)}}</pre>
+        </div>
+        <div class="flex justify-end">
+          <button type="button" class="px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <on type="click">
+              <!-- 펼친 줄을 통째로 전역에 옮겨 담고 상세 창을 연다 — 창은 이 값만 읽으므로 서버를 다시 부르지 않는다(펼친 자리와 같은 내용에 시각·시도 횟수 등이 더 붙는다). -->
+              <sequence>
+                <set-state target="global" identity_log_modal_data="{{row}}"/>
+                <open-modal target="identity_log_detail_modal"/>
+              </sequence>
+            </on>
+            $t:admin.identity.logs.detail_title
+          </button>
+        </div>
+      </div>
+    </expand>
+    <column field="created_at" header="$t:admin.identity.logs.col.created_at" :sortable="true" width="160px">
+      <cell>
+        <span class="text-label whitespace-nowrap">{{row.created_at ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="provider_id" header="$t:admin.identity.logs.col.provider_id" width="140px">
+      <cell>
+        <badge data-type="composite" color="indigo" text="{{(identityProviders?.data ?? []).find(p => p.id === row.provider_id)?.label ?? row.provider_id ?? '-'}}"/>
+      </cell>
+    </column>
+    <column field="purpose" header="$t:admin.identity.logs.col.purpose" width="140px">
+      <cell>
+        <span class="text-body">{{(identityPurposes?.data ?? []).find(p => p.id === row.purpose)?.label ?? row.purpose ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="channel" header="$t:admin.identity.logs.col.channel" width="100px">
+      <cell>
+        <badge data-type="composite" color="blue" text="{{row.channel ? (((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[row.channel] ?? row.channel) : '-'}}"/>
+      </cell>
+    </column>
+    <column field="status" header="$t:admin.identity.logs.col.status" :sortable="false" width="120px">
+      <cell>
+        <span class="{{row.status === 'verified' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : (row.status === 'failed' || row.status === 'policy_violation_logged' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : (row.status === 'expired' || row.status === 'cancelled' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'))}}">{{$t('admin.identity.logs.status.' + (row.status ?? 'requested'))}}</span>
+      </cell>
+    </column>
+    <column field="user_id" header="$t:admin.identity.logs.col.user_id" width="100px">
+      <cell>
+        <span class="text-body font-mono">{{row.user_id ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="ip_address" header="$t:admin.identity.logs.col.ip_address" width="130px">
+      <cell>
+        <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{row.ip_address ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="attempts" header="$t:admin.identity.logs.col.attempts" :sortable="true" width="100px">
+      <cell>
+        <span class="text-body text-center block">{{(row.attempts ?? 0) + ' / ' + (row.max_attempts ?? 5)}}</span>
+      </cell>
+    </column>
+    <on type="change" event="onPageChange">
+      <!-- 쪽 번호만 주소에 갈아 끼우고 걸어 둔 조건은 그대로 물려받는다. 표 몸통에 덮개를 씌워 새 쪽이 올 때까지 이전 내용이 깜박이지 않게 한다. -->
+      <navigate path="/admin/identity/logs" :replace="true" :mergeQuery="true" transition_overlay_target="identity_log_datagrid__body">
+        <query page="{{$args[0]}}"/>
+      </navigate>
+    </on>
+  </data-grid>
+</partial>

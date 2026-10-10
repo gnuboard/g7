@@ -50,6 +50,10 @@ effects:
   - checkout_preview_unaffected_by_limit        # 조회 경로는 한도 위반이어도 200 (화면 붕괴 방지)
   - unrestricted_policy_keeps_previous_behavior # 한도 미설정 사이트 기존 동작 유지
   - max_usable_zero_when_cap_below_min_use      # 안내값(getMaxUsable)이 최소 사용액 하한 반영
+  # 방어선 단위 요약 (E1) — 위 세부 효과를 어느 방어선이 떠받치는지 묶는다
+  - mileage_usage_limit_enforced_on_temp_order  # 1차 방어선: 임시주문 생성·수정에서 사용 정책 강제
+  - mileage_usage_limit_enforced_on_order_create # 2차 방어선: 주문 확정 시 정책 재검증
+  - mileage_preview_not_blocked_by_limit        # 조회(주문서 미리보기)는 방어선 밖 — 200 유지
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/TempOrderServiceSecurityTest.php

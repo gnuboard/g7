@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\Tosspayments\Tests\Feature\Controllers;
 
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -15,7 +17,9 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * 토스페이먼츠 결제창 닫힘·결제 실패 보고 테스트
  *
  * 브라우저 리턴 콜백(`/payment/fail`)이 주문 상태를 바꾸지 않게 되면서, 정당한 결제 실패를
- * 기록하는 책임은 전적으로 이 엔드포인트에 있다. 그 자격은 구매자 정보 대조가 정한다.
+ * 기록하는 책임은 전적으로 이 엔드포인트에 있다. 그 자격은 주문 소유자 확인(회원 본인 로그인 /
+ * 비회원 조회 토큰)이 정한다 — 주문자 연락처는 제3자도 알 수 있어 소유 증명이 아니다 (KVE-2026-2434).
+ * 소유자 확인의 전 경우는 PaymentCloseReportOwnershipTest 가 검증한다.
  */
 class PaymentCloseReportControllerTest extends PluginTestCase
 {
@@ -50,6 +54,21 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ],
             'snapshot_at' => '2026-01-01T00:00:00+00:00',
         ];
+    }
+
+    /**
+     * 주문을 회원 소유로 만들고 그 회원으로 로그인합니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return User 로그인한 소유 회원
+     */
+    private function actAsOrderOwner(Order $order): User
+    {
+        $owner = User::factory()->create();
+        $order->update(['user_id' => $owner->id]);
+        Sanctum::actingAs($owner);
+
+        return $owner;
     }
 
     /**
@@ -100,17 +119,20 @@ class PaymentCloseReportControllerTest extends PluginTestCase
     }
 
     /**
-     * 구매자 정보가 일치하면 결제창 닫힘이 주문 취소로 기록된다.
+     * 주문 소유자가 보고하면 결제창 닫힘이 주문 취소로 기록된다.
+     *
+     * @effects close_report_marks_pending_order_cancelled
+     *
+     * @return void 반환값 없음
      */
     public function test_close_report_marks_pending_order_cancelled(): void
     {
         $order = $this->makeOrder('ORD-TOSS-CLOSE-001');
+        $this->actAsOrderOwner($order);
 
         $response = $this->postJson(self::URL, [
             'orderId' => 'ORD-TOSS-CLOSE-001',
             'amount' => 10000,
-            'buyer_email' => self::BUYER_EMAIL,
-            'buyer_phone' => self::BUYER_PHONE,
             'reason' => 'user closed the payment window',
         ]);
 
@@ -130,16 +152,19 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 결제 거절(실패 코드 동반)은 원인을 구분할 수 있게 기록된다.
+     *
+     * @effects close_report_records_declined_payment_with_its_code
+     *
+     * @return void 반환값 없음
      */
     public function test_close_report_records_declined_payment_with_its_code(): void
     {
         $order = $this->makeOrder('ORD-TOSS-CLOSE-002');
+        $this->actAsOrderOwner($order);
 
         $response = $this->postJson(self::URL, [
             'orderId' => 'ORD-TOSS-CLOSE-002',
             'amount' => 10000,
-            'buyer_email' => self::BUYER_EMAIL,
-            'buyer_phone' => self::BUYER_PHONE,
             'code' => 'REJECT_CARD_COMPANY',
             'reason' => '카드사에서 승인을 거절했습니다.',
         ]);
@@ -156,20 +181,27 @@ class PaymentCloseReportControllerTest extends PluginTestCase
     }
 
     /**
-     * 구매자 정보가 다르면 주문을 건드리지 않는다 — 이 대조가 유일한 자격 근거다.
+     * 주문자 연락처를 정확히 맞춰 보내도 소유자 인증이 없으면 주문을 건드리지 않는다 (KVE-2026-2434).
+     *
+     * 종전에는 이 대조가 유일한 자격 근거였고, 연락처를 아는 제3자가 주문을 취소시킬 수 있었다.
+     *
+     * @effects close_report_rejects_matching_buyer_contact_without_ownership
+     *
+     * @return void 반환값 없음
      */
-    public function test_close_report_rejects_buyer_mismatch(): void
+    public function test_close_report_rejects_matching_buyer_contact_without_ownership(): void
     {
         $order = $this->makeOrder('ORD-TOSS-CLOSE-003');
 
         $response = $this->postJson(self::URL, [
             'orderId' => 'ORD-TOSS-CLOSE-003',
             'amount' => 10000,
-            'buyer_email' => 'attacker@evil.example',
-            'buyer_phone' => '01099999999',
+            'buyer_email' => self::BUYER_EMAIL,
+            'buyer_phone' => self::BUYER_PHONE,
         ]);
 
-        $response->assertStatus(403);
+        $response->assertStatus(403)
+            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status);
@@ -177,9 +209,13 @@ class PaymentCloseReportControllerTest extends PluginTestCase
     }
 
     /**
-     * 구매자 정보를 아예 보내지 않아도 통과시키지 않는다.
+     * 소유자 증명(로그인·조회 토큰)이 없으면 통과시키지 않는다.
+     *
+     * @effects close_report_rejects_request_without_ownership_proof
+     *
+     * @return void 반환값 없음
      */
-    public function test_close_report_rejects_missing_buyer_information(): void
+    public function test_close_report_rejects_request_without_ownership_proof(): void
     {
         $order = $this->makeOrder('ORD-TOSS-CLOSE-004');
 
@@ -196,16 +232,19 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 금액이 주문 청구액과 다르면 거부한다.
+     *
+     * @effects close_report_rejects_amount_mismatch
+     *
+     * @return void 반환값 없음
      */
     public function test_close_report_rejects_amount_mismatch(): void
     {
         $order = $this->makeOrder('ORD-TOSS-CLOSE-005');
+        $this->actAsOrderOwner($order);
 
         $response = $this->postJson(self::URL, [
             'orderId' => 'ORD-TOSS-CLOSE-005',
             'amount' => 999,
-            'buyer_email' => self::BUYER_EMAIL,
-            'buyer_phone' => self::BUYER_PHONE,
         ]);
 
         $response->assertStatus(422);
@@ -216,13 +255,16 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 존재하지 않는 주문번호는 404 로 응답한다.
+     *
+     * @effects close_report_returns_not_found_for_unknown_order
+     *
+     * @return void 반환값 없음
      */
     public function test_close_report_returns_not_found_for_unknown_order(): void
     {
         $response = $this->postJson(self::URL, [
             'orderId' => 'ORD-TOSS-DOES-NOT-EXIST',
             'amount' => 10000,
-            'buyer_email' => self::BUYER_EMAIL,
         ]);
 
         $response->assertStatus(404);
@@ -230,6 +272,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 이미 결제가 성공한 주문은 무시한다 — 성공 콜백과의 경쟁에서 주문을 덮지 않는다.
+     *
+     * @effects close_report_ignores_order_whose_payment_already_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_close_report_ignores_order_whose_payment_already_paid(): void
     {
@@ -242,8 +288,6 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $response = $this->postJson(self::URL, [
             'orderId' => 'ORD-TOSS-CLOSE-006',
             'amount' => 10000,
-            'buyer_email' => self::BUYER_EMAIL,
-            'buyer_phone' => self::BUYER_PHONE,
         ]);
 
         $response->assertOk();
@@ -256,6 +300,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 이미 결제 가능 상태가 아닌 주문은 무시한다.
+     *
+     * @effects close_report_ignores_order_that_is_no_longer_payable
+     *
+     * @return void 반환값 없음
      */
     public function test_close_report_ignores_order_that_is_no_longer_payable(): void
     {
@@ -265,8 +313,6 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $response = $this->postJson(self::URL, [
             'orderId' => 'ORD-TOSS-CLOSE-007',
             'amount' => 10000,
-            'buyer_email' => self::BUYER_EMAIL,
-            'buyer_phone' => self::BUYER_PHONE,
         ]);
 
         $response->assertOk();

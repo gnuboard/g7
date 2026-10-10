@@ -1,0 +1,42 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "환율 실행 이력 탭"
+    },
+    "comment": "이력 탭 — 필터, 조회 중 표시, 서버 페이지네이션 그리드 순. query.tab === 'history' 일 때만 그리며 데이터소스 koreaeximRuns 도 같은 조건으로만 받는다",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeTab === 'history'}}",
+    "children": [
+        {
+            "partial": "_history_filter.json"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{koreaeximRuns?.loading === true}}",
+            "props": {
+                "role": "status",
+                "className": "admin-card mb-4 flex items-center gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "spinner-sm"
+                    },
+                    "text": ""
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-koreaexim.loading"
+                }
+            ]
+        },
+        {
+            "partial": "_history_grid.json"
+        }
+    ]
+}

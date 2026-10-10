@@ -1,487 +1,474 @@
 {
-  "version": "1.0.0",
-  "layout_name": "auth/identity_challenge",
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:admin.identity.challenge.title"
-  },
-  "state": {
-    "code": "",
-    "resendCooldown": 0,
-    "attempts": 0,
-    "maxAttempts": 0,
-    "expiresAt": null,
-    "remainingSeconds": 0,
-    "error": null
-  },
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "challenge_id": "{{query.challenge_id ?? ''}}",
-        "render_hint": "{{query.render_hint ?? 'text_code'}}",
-        "purpose": "{{query.purpose ?? 'sensitive_action'}}",
-        "return_url": "{{query.return_url ?? '/admin'}}",
-        "redirect_url": "{{query.redirect_url ?? ''}}",
-        "expiresAt": "{{query.expires_at ?? ''}}",
-        "remainingSeconds": "{{query.expires_at ? Math.max(0, Math.floor((new Date(query.expires_at).getTime() - Date.now()) / 1000)) : 0}}",
-        "attempts": "{{Number(query.attempts ?? 0)}}",
-        "maxAttempts": "{{Number(query.max_attempts ?? 0)}}",
-        "resendCooldown": 0
-      }
+    "comment": "본인인증(IDV) 챌린지를 **풀페이지로** 진행하는 화면. 정상 경로에서는 템플릿이 등록한 launcher 가\n  모달로 띄우므로 여기까지 오지 않는다 — launcher 미등록 폴백과 외부 PG 리다이렉트 복귀가 이 화면의 몫이다.\n  그래서 상태를 두 곳에서 받는다. 먼저 `query` 로 초기값을 깔고(리다이렉트 복귀 시 그것뿐이므로),\n  `challenge_id` 가 있으면 서버 조회로 덮어쓴다 — 시도 횟수·만료는 query 가 낡아 있을 수 있다.\n  1초 인터벌 하나가 남은 시간과 재발송 쿨다운을 함께 깎는다(타이머를 둘로 두지 않는다).\n  `render_hint` 로 세 갈래를 가른다 — 코드 입력 / 메일 링크 안내 / 외부 리다이렉트 대기.\n  검증 성공 시 `resolve-identity-challenge` 로 코어 인터셉터의 대기 중인 resolver 에 먼저 통보하고,\n  그 다음 원래 가던 곳으로 토큰을 실어 보낸다 — 모달 경로로 들어온 호출자가 있으면 그쪽이 이어받는다.",
+    "version": "1.0.0",
+    "layout_name": "auth/identity_challenge",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.identity.challenge.title"
     },
-    {
-      "comment": "challenge_id 가 있으면 서버에서 정확한 max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장. 누적 시도 횟수(attempts)는 이 응답에 없다 — 인증 없이 challenge id 만으로 조회되는 공개 경로라 서버가 싣지 않는다(IdentityVerificationService::getStatus 주석 참조). 따라서 _local.attempts 는 이 화면에서 시도한 횟수만 세는 자체 카운터이며, 남은 횟수를 화면에 표시하지 않는다.",
-      "handler": "apiCall",
-      "target": "/api/identity/challenges/{{query.challenge_id}}",
-      "if": "{{!!query.challenge_id}}",
-      "params": {
-        "method": "GET"
-      },
-      "onSuccess": [
-        {
-          "handler": "setState",
-          "params": {
-            "target": "local",
-            "render_hint": "{{response.data.render_hint ?? _local.render_hint}}",
-            "purpose": "{{response.data.purpose ?? _local.purpose}}",
-            "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
-            "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
-            "maxAttempts": "{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"
-          }
-        }
-      ],
-      "onError": [
-        {
-          "handler": "suppress"
-        }
-      ]
+    "initLocal": {
+        "code": "",
+        "resendCooldown": 0,
+        "attempts": 0,
+        "maxAttempts": 0,
+        "expiresAt": null,
+        "remainingSeconds": 0,
+        "error": null
     },
-    {
-      "handler": "startInterval",
-      "params": {
-        "id": "identity_challenge_tick",
-        "intervalMs": 1000,
-        "actions": [
-          {
+    "init_actions": [
+        {
             "handler": "setState",
             "params": {
-              "target": "local",
-              "remainingSeconds": "{{_local.expiresAt ? Math.max(0, Math.floor((new Date(_local.expiresAt).getTime() - Date.now()) / 1000)) : 0}}",
-              "resendCooldown": "{{Math.max(0, (_local.resendCooldown ?? 0) - 1)}}"
+                "target": "local",
+                "challenge_id": "{{query.challenge_id ?? ''}}",
+                "render_hint": "{{query.render_hint ?? 'text_code'}}",
+                "purpose": "{{query.purpose ?? 'sensitive_action'}}",
+                "return_url": "{{query.return_url ?? '/admin'}}",
+                "redirect_url": "{{query.redirect_url ?? ''}}",
+                "expiresAt": "{{query.expires_at ?? ''}}",
+                "remainingSeconds": "{{query.expires_at ? Math.max(0, Math.floor((new Date(query.expires_at).getTime() - Date.now()) / 1000)) : 0}}",
+                "attempts": "{{Number(query.attempts ?? 0)}}",
+                "maxAttempts": "{{Number(query.max_attempts ?? 0)}}",
+                "resendCooldown": 0
             }
-          }
-        ]
-      }
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "flex-center min-h-[60vh] justify-center py-12 px-4"
         },
-        "children": [
-          {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8"
+        {
+            "comment": "challenge_id 가 있으면 서버에서 정확한 max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장. 누적 시도 횟수(attempts)는 이 응답에 없다 — 인증 없이 challenge id 만으로 조회되는 공개 경로라 서버가 싣지 않는다(IdentityVerificationService::getStatus 주석 참조). 따라서 _local.attempts 는 이 화면에서 시도한 횟수만 세는 자체 카운터이며, 남은 횟수를 화면에 표시하지 않는다.",
+            "handler": "apiCall",
+            "target": "/api/identity/challenges/{{query.challenge_id}}",
+            "if": "{{!!query.challenge_id}}",
+            "params": {
+                "method": "GET"
             },
-            "children": [
-              {
-                "comment": "render_hint = text_code",
+            "onSuccess": {
+                "handler": "setState",
+                "params": {
+                    "target": "local",
+                    "render_hint": "{{response.data.render_hint ?? _local.render_hint}}",
+                    "purpose": "{{response.data.purpose ?? _local.purpose}}",
+                    "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
+                    "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
+                    "maxAttempts": "{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"
+                }
+            },
+            "onError": {
+                "handler": "suppress"
+            }
+        },
+        {
+            "handler": "startInterval",
+            "params": {
+                "id": "identity_challenge_tick",
+                "intervalMs": 1000,
+                "actions": [
+                    {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "remainingSeconds": "{{_local.expiresAt ? Math.max(0, Math.floor((new Date(_local.expiresAt).getTime() - Date.now()) / 1000)) : 0}}",
+                            "resendCooldown": "{{Math.max(0, (_local.resendCooldown ?? 0) - 1)}}"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
-                "if": "{{(_local.render_hint ?? 'text_code') === 'text_code'}}",
+                "props": {
+                    "className": "flex-center min-h-[60vh] justify-center py-12 px-4"
+                },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "text-center mb-6"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "H1",
-                        "props": {
-                          "className": "text-page-heading mb-2"
-                        },
-                        "text": "$t:admin.identity.challenge.code_title"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "P",
-                        "props": {
-                          "className": "text-label"
-                        },
-                        "text": "$t:admin.identity.challenge.code_subtitle"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.error}}",
-                    "props": {
-                      "className": "alert-danger"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "props": {
-                          "className": "text-error-soft"
-                        },
-                        "text": "{{_local.error ?? ''}}"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
+                    {
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8"
+                        },
                         "children": [
-                          {
-                            "type": "basic",
-                            "name": "Input",
-                            "props": {
-                              "type": "text",
-                              "name": "code",
-                              "inputMode": "numeric",
-                              "autoComplete": "one-time-code",
-                              "placeholder": "$t:admin.identity.challenge.code_placeholder",
-                              "maxLength": 10,
-                              "className": "px-4 text-center text-xl tracking-widest font-mono focus:ring-indigo-500 focus:border-indigo-500"
-                            }
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                              "className": "flex-between text-sm",
-                              "role": "status",
-                              "aria-live": "polite"
-                            },
-                            "children": [
-                              {
+                            {
+                                "comment": "render_hint = text_code",
                                 "type": "basic",
-                                "name": "Span",
-                                "if": "{{(_local.remainingSeconds ?? 0) > 0}}",
-                                "props": {
-                                  "className": "text-secondary"
-                                },
-                                "text": "$t:admin.identity.challenge.remaining_time|minutes={{Math.floor((_local.remainingSeconds ?? 0) / 60)}}|seconds={{String((_local.remainingSeconds ?? 0) % 60).padStart(2, '0')}}"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Span",
-                                "if": "{{(_local.remainingSeconds ?? 0) <= 0 && _local.expiresAt}}",
-                                "props": {
-                                  "className": "text-red-600 dark:text-red-400"
-                                },
-                                "text": "$t:admin.identity.challenge.expired"
-                              }
-                            ]
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Button",
-                            "props": {
-                              "type": "button",
-                              "className": "w-full px-4 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
-                              "disabled": "{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || ((_local.maxAttempts ?? 0) > 0 && (_local.attempts ?? 0) >= (_local.maxAttempts ?? 0))}}"
-                            },
-                            "actions": [
-                              {
-                                "type": "click",
-                                "handler": "sequence",
-                                "params": {
-                                  "actions": [
+                                "name": "Div",
+                                "if": "{{(_local.render_hint ?? 'text_code') === 'text_code'}}",
+                                "children": [
                                     {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "error": null
-                                      }
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-center mb-6"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H1",
+                                                "props": {
+                                                    "className": "text-page-heading mb-2"
+                                                },
+                                                "text": "$t:admin.identity.challenge.code_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-label"
+                                                },
+                                                "text": "$t:admin.identity.challenge.code_subtitle"
+                                            }
+                                        ]
                                     },
                                     {
-                                      "handler": "apiCall",
-                                      "target": "/api/identity/challenges/{{_local.challenge_id}}/verify",
-                                      "params": {
-                                        "method": "POST",
-                                        "body": {
-                                          "code": "{{_local.code ?? ''}}"
-                                        }
-                                      },
-                                      "onSuccess": [
-                                        {
-                                          "comment": "코어 IdentityGuardInterceptor 의 deferred resolver 가 살아있다면(launcher 미등록 폴백으로 풀페이지 진입) verify 결과 통보",
-                                          "handler": "resolveIdentityChallenge",
-                                          "params": {
-                                            "result": "verified",
-                                            "token": "{{response.data.verification_token ?? ''}}"
-                                          }
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.error}}",
+                                        "props": {
+                                            "className": "alert-danger"
                                         },
-                                        {
-                                          "handler": "navigate",
-                                          "params": {
-                                            "path": "{{_local.return_url ?? '/admin'}}",
-                                            "mergeQuery": true,
-                                            "query": {
-                                              "verification_token": "{{response.data.verification_token ?? ''}}",
-                                              "challenge_id": "{{_local.challenge_id}}"
-                                            }
-                                          }
-                                        }
-                                      ],
-                                      "onError": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "local",
-                                            "error": "{{error.message ?? '$t:admin.identity.challenge.error_generic'}}",
-                                            "attempts": "{{(_local.attempts ?? 0) + 1}}"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              }
-                            ],
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Span",
-                                "text": "$t:admin.identity.challenge.verify"
-                              }
-                            ]
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                              "className": "text-center"
-                            },
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Button",
-                                "props": {
-                                  "type": "button",
-                                  "disabled": "{{(_local.resendCooldown ?? 0) > 0}}",
-                                  "className": "text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
-                                },
-                                "actions": [
-                                  {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "params": {
-                                      "actions": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "local",
-                                            "resendCooldown": 30
-                                          }
-                                        },
-                                        {
-                                          "handler": "apiCall",
-                                          "target": "/api/identity/challenges",
-                                          "params": {
-                                            "method": "POST",
-                                            "body": {
-                                              "purpose": "{{_local.purpose ?? 'sensitive_action'}}"
-                                            }
-                                          },
-                                          "onSuccess": [
+                                        "children": [
                                             {
-                                              "handler": "setState",
-                                              "params": {
-                                                "target": "local",
-                                                "challenge_id": "{{response.data.id ?? _local.challenge_id}}",
-                                                "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
-                                                "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
-                                                "attempts": 0,
-                                                "error": null
-                                              }
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-error-soft"
+                                                },
+                                                "text": "{{_local.error ?? ''}}"
                                             }
-                                          ],
-                                            "onError": [
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "name": "code",
+                                                            "inputMode": "numeric",
+                                                            "autoComplete": "one-time-code",
+                                                            "placeholder": "$t:admin.identity.challenge.code_placeholder",
+                                                            "maxLength": 10,
+                                                            "className": "px-4 text-center text-xl tracking-widest font-mono focus:ring-indigo-500 focus:border-indigo-500"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-between text-sm",
+                                                            "role": "status",
+                                                            "aria-live": "polite"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{(_local.remainingSeconds ?? 0) > 0}}",
+                                                                "props": {
+                                                                    "className": "text-secondary"
+                                                                },
+                                                                "text": "$t:admin.identity.challenge.remaining_time|minutes={{Math.floor((_local.remainingSeconds ?? 0) / 60)}}|seconds={{String((_local.remainingSeconds ?? 0) % 60).padStart(2, '0')}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{(_local.remainingSeconds ?? 0) <= 0 && _local.expiresAt}}",
+                                                                "props": {
+                                                                    "className": "text-red-600 dark:text-red-400"
+                                                                },
+                                                                "text": "$t:admin.identity.challenge.expired"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "코드 검증. 이전 오류 문구를 먼저 지운다 — 남겨 두면 재시도 중에도 옛 실패가 붙어 있다.\n                       실패는 화면에 문구를 남기고 시도 횟수를 올린다(서버 카운트와 별개로 버튼 잠금에 쓰인다).",
+                                                                "type": "click",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "error": null
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "apiCall",
+                                                                        "target": "/api/identity/challenges/{{_local.challenge_id}}/verify",
+                                                                        "params": {
+                                                                            "method": "POST",
+                                                                            "body": {
+                                                                                "code": "{{_local.code ?? ''}}"
+                                                                            }
+                                                                        },
+                                                                        "onSuccess": [
+                                                                            {
+                                                                                "comment": "코어 IdentityGuardInterceptor 의 deferred resolver 가 살아있다면(launcher 미등록 폴백으로 풀페이지 진입) verify 결과 통보",
+                                                                                "handler": "resolveIdentityChallenge",
+                                                                                "params": {
+                                                                                    "result": "verified",
+                                                                                    "token": "{{response.data.verification_token ?? ''}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "navigate",
+                                                                                "params": {
+                                                                                    "path": "{{_local.return_url ?? '/admin'}}",
+                                                                                    "mergeQuery": true,
+                                                                                    "query": {
+                                                                                        "verification_token": "{{response.data.verification_token ?? ''}}",
+                                                                                        "challenge_id": "{{_local.challenge_id}}"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "onError": {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "error": "{{error.message ?? '$t:admin.identity.challenge.error_generic'}}",
+                                                                                "attempts": "{{(_local.attempts ?? 0) + 1}}"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "w-full px-4 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
+                                                            "disabled": "{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || ((_local.maxAttempts ?? 0) > 0 && (_local.attempts ?? 0) >= (_local.maxAttempts ?? 0))}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.identity.challenge.verify"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-center"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "코드 재발송. 쿨다운 30초를 **응답 전에** 걸어 연타를 막는다(실패해도 풀지 않는다 —\n                         서버가 거절한 경우에도 곧바로 다시 두드리면 같은 결과다). 새 챌린지는 id 부터\n                         만료까지 통째로 갈리므로 시도 횟수와 오류 문구도 함께 초기화한다.",
+                                                                        "type": "click",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "resendCooldown": 30
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "apiCall",
+                                                                                "target": "/api/identity/challenges",
+                                                                                "params": {
+                                                                                    "method": "POST",
+                                                                                    "body": {
+                                                                                        "purpose": "{{_local.purpose ?? 'sensitive_action'}}"
+                                                                                    }
+                                                                                },
+                                                                                "onSuccess": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "challenge_id": "{{response.data.id ?? _local.challenge_id}}",
+                                                                                        "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
+                                                                                        "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
+                                                                                        "attempts": 0,
+                                                                                        "error": null
+                                                                                    }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "disabled": "{{(_local.resendCooldown ?? 0) > 0}}",
+                                                                    "className": "text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{(_local.resendCooldown ?? 0) > 0}}",
+                                                                        "text": "$t:admin.identity.challenge.resend_cooldown|seconds={{_local.resendCooldown ?? 0}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{(_local.resendCooldown ?? 0) <= 0}}",
+                                                                        "text": "$t:admin.identity.challenge.resend"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
                                                     }
-                                                }
-                                            ]
-                                        }
-                                      ]
+                                                ]
+                                            }
+                                        ]
                                     }
-                                  }
-                                ],
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{(_local.resendCooldown ?? 0) > 0}}",
-                                    "text": "$t:admin.identity.challenge.resend_cooldown|seconds={{_local.resendCooldown ?? 0}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{(_local.resendCooldown ?? 0) <= 0}}",
-                                    "text": "$t:admin.identity.challenge.resend"
-                                  }
                                 ]
-                              }
-                            ]
-                          }
-                        ],
-                        "props": {
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "comment": "render_hint = link",
-                "type": "basic",
-                "name": "Div",
-                "if": "{{(_local.render_hint ?? '') === 'link'}}",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "text-center mb-6"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full mb-4"
-                        },
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                              "name": "fas fa-envelope",
-                              "className": "text-3xl text-blue-600 dark:text-blue-400"
+                            },
+                            {
+                                "comment": "render_hint = link",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_local.render_hint ?? '') === 'link'}}",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-center mb-6"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full mb-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fas fa-envelope",
+                                                            "className": "text-3xl text-blue-600 dark:text-blue-400"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "H1",
+                                                "props": {
+                                                    "className": "text-page-heading mb-2"
+                                                },
+                                                "text": "$t:admin.identity.challenge.link_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-label"
+                                                },
+                                                "text": "$t:admin.identity.challenge.link_subtitle"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-tertiary text-center"
+                                        },
+                                        "text": "$t:admin.identity.challenge.check_spam"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "render_hint = external_redirect",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_local.render_hint ?? '') === 'external_redirect'}}",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-center py-8"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "inline-flex items-center justify-center w-16 h-16 mb-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fas fa-spinner fa-spin",
+                                                            "className": "text-4xl text-indigo-600 dark:text-indigo-400"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "H1",
+                                                "props": {
+                                                    "className": "text-primary text-xl font-bold mb-2"
+                                                },
+                                                "text": "$t:admin.identity.challenge.external_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-label mb-4"
+                                                },
+                                                "text": "$t:admin.identity.challenge.external_subtitle"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "A",
+                                                "if": "{{_local.redirect_url}}",
+                                                "props": {
+                                                    "href": "{{_local.redirect_url}}",
+                                                    "className": "inline-block px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.identity.challenge.manual_redirect"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
                             }
-                          }
                         ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "H1",
-                        "props": {
-                          "className": "text-page-heading mb-2"
-                        },
-                        "text": "$t:admin.identity.challenge.link_title"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "P",
-                        "props": {
-                          "className": "text-label"
-                        },
-                        "text": "$t:admin.identity.challenge.link_subtitle"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                      "className": "text-tertiary text-center"
-                    },
-                    "text": "$t:admin.identity.challenge.check_spam"
-                  }
+                    }
                 ]
-              },
-              {
-                "comment": "render_hint = external_redirect",
-                "type": "basic",
-                "name": "Div",
-                "if": "{{(_local.render_hint ?? '') === 'external_redirect'}}",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "text-center py-8"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "inline-flex items-center justify-center w-16 h-16 mb-4"
-                        },
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                              "name": "fas fa-spinner fa-spin",
-                              "className": "text-4xl text-indigo-600 dark:text-indigo-400"
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "H1",
-                        "props": {
-                          "className": "text-primary text-xl font-bold mb-2"
-                        },
-                        "text": "$t:admin.identity.challenge.external_title"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "P",
-                        "props": {
-                          "className": "text-label mb-4"
-                        },
-                        "text": "$t:admin.identity.challenge.external_subtitle"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "A",
-                        "if": "{{_local.redirect_url}}",
-                        "props": {
-                          "href": "{{_local.redirect_url}}",
-                          "className": "inline-block px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg"
-                        },
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.identity.challenge.manual_redirect"
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

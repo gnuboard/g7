@@ -9,7 +9,6 @@ use App\Models\LanguagePack;
 use App\Providers\LanguagePackServiceProvider;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Foundation\Application;
@@ -39,7 +38,6 @@ class RunSeedersOnLanguagePackLifecycle
     /** @var array<int, class-string> 코어 entity 시더 — translation 필터를 사용하는 시더만 등록 */
     private const CORE_ENTITY_SEEDERS = [
         NotificationDefinitionSeeder::class,
-        IdentityMessageDefinitionSeeder::class,
         IdentityPolicySeeder::class,
     ];
 
@@ -58,6 +56,7 @@ class RunSeedersOnLanguagePackLifecycle
      * 언어팩 활성화 시 호출됩니다.
      *
      * @param  LanguagePack  $pack  활성화된 언어팩
+     * @return void 반환값 없음
      */
     public function handleActivated(LanguagePack $pack): void
     {
@@ -71,6 +70,7 @@ class RunSeedersOnLanguagePackLifecycle
      * 수행하여 일관된 상태를 유지합니다.
      *
      * @param  LanguagePack  $pack  비활성화된 언어팩
+     * @return void 반환값 없음
      */
     public function handleDeactivated(LanguagePack $pack): void
     {
@@ -79,6 +79,9 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 언어팩의 scope 에 따라 적절한 시더를 재실행합니다.
+     *
+     * @param  LanguagePack  $pack  활성/비활성이 바뀐 언어팩
+     * @return void 반환값 없음
      */
     private function reseedForScope(LanguagePack $pack): void
     {
@@ -109,6 +112,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * LanguagePackRegistry 의 인스턴스 캐시를 무효화하고 supported_locales 를 갱신합니다.
+     *
+     * @return void 반환값 없음
      */
     private function refreshRegistry(): void
     {
@@ -134,6 +139,8 @@ class RunSeedersOnLanguagePackLifecycle
      *
      * 멱등성: 동일 키에 클로저를 추가 등록해도 LanguagePackSeedInjector 는 활성 팩에서
      * 한 번만 sub-key 머지하므로 결과 동일.
+     *
+     * @return void 반환값 없음
      */
     private function refreshExtensionSeedFilters(): void
     {
@@ -148,6 +155,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 코어 entity 시더 + 모든 활성 모듈/플러그인 시더를 재실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function reseedCoreScope(): void
     {
@@ -158,6 +167,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 코어 entity 시더 (translation 필터를 사용하는 것) 만 재실행.
+     *
+     * @return void 반환값 없음
      */
     private function runCoreEntitySeeders(): void
     {
@@ -177,6 +188,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 모든 활성 모듈의 시더를 재실행합니다 (module:seed 명령).
+     *
+     * @return void 반환값 없음
      */
     private function runAllActiveModuleSeeders(): void
     {
@@ -187,6 +200,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 모든 활성 플러그인의 시더를 재실행합니다 (plugin:seed 명령).
+     *
+     * @return void 반환값 없음
      */
     private function runAllActivePluginSeeders(): void
     {
@@ -197,6 +212,10 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 단일 확장의 시더를 재실행합니다.
+     *
+     * @param  string  $type  확장 유형 (module | plugin)
+     * @param  string|null  $targetIdentifier  대상 확장 식별자
+     * @return void 반환값 없음
      */
     private function reseedExtensionTarget(string $type, ?string $targetIdentifier): void
     {
@@ -213,6 +232,9 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 모듈 시더를 안전하게 호출합니다.
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @return void 반환값 없음
      */
     private function runModuleSeeder(string $identifier): void
     {
@@ -230,6 +252,9 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 플러그인 시더를 안전하게 호출합니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return void 반환값 없음
      */
     private function runPluginSeeder(string $identifier): void
     {

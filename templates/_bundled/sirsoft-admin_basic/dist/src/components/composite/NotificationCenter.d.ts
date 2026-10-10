@@ -4,6 +4,12 @@ import { EditorAttrs } from '../../types';
 /**
  * 알림 아이템 인터페이스
  */
+/**
+ * 닫을 때 읽음 처리로 한 번에 넘기는 id 의 최대 개수.
+ *
+ * 코어 읽음 일괄 API(`POST .../notifications/read-batch`)의 `ids` 상한(NotificationBatchReadRequest `max:100`)과 같다.
+ */
+export declare const READ_BATCH_MAX_IDS = 100;
 export interface NotificationItem {
     id: string | number;
     title: string;
@@ -40,7 +46,7 @@ export interface NotificationCenterProps {
     unreadOnly?: boolean;
     /** 알림 클릭 핸들러 (알림 전체 객체 전달) */
     onNotificationClick?: (notification: NotificationItem) => void;
-    /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록) */
+    /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록 — READ_BATCH_MAX_IDS 건 단위로 나눠 여러 번 호출될 수 있음) */
     onClose?: (visibleUnreadIds: (string | number)[]) => void;
     /** 추가 로드 요청 */
     onLoadMore?: () => void;
@@ -52,6 +58,13 @@ export interface NotificationCenterProps {
     onDelete?: (notification: NotificationItem) => void;
     /** "미읽음만" 체크박스 토글 */
     onUnreadOnlyToggle?: (checked: boolean) => void;
+    /**
+     * 읽음 처리 권한 — false 면 「모두 읽음」 버튼을 숨기고, 닫을 때 보인 미읽음 id 를 onClose 로 보내지 않는다.
+     * 생략하면 true(기존 동작). 관리자 헤더는 응답 abilities.can_update 를 넘긴다.
+     */
+    canUpdate?: boolean;
+    /** 삭제 권한 — false 면 「모두 삭제」·개별 삭제 버튼을 숨긴다. 생략하면 true(기존 동작) */
+    canDelete?: boolean;
     /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
     dropdownAlign?: 'left' | 'right';
     className?: string;

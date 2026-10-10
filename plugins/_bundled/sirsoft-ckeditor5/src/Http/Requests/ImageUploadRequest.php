@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Ckeditor5\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -9,7 +10,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 /**
  * CKEditor5 이미지 업로드 요청 검증
  *
- * CKEditor5 SimpleUploadAdapter가 전송하는 이미지 파일을 검증합니다.
+ * 플러그인 업로드 어댑터(uploadAdapter.ts)가 코어 API 클라이언트로 전송하는 이미지 파일을 검증합니다.
  */
 class ImageUploadRequest extends FormRequest
 {
@@ -26,7 +27,7 @@ class ImageUploadRequest extends FormRequest
     /**
      * 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -57,16 +58,16 @@ class ImageUploadRequest extends FormRequest
         $maxSizeMb = (int) plugin_setting('sirsoft-ckeditor5', 'imageMaxSizeMb', 2);
 
         return [
-            'upload.required'  => __('sirsoft-ckeditor5::messages.upload.required'),
-            'upload.file'      => __('sirsoft-ckeditor5::messages.upload.invalid_file'),
-            'upload.image'     => __('sirsoft-ckeditor5::messages.upload.not_image'),
-            'upload.mimes'     => __('sirsoft-ckeditor5::messages.upload.invalid_mime'),
-            'upload.max'       => __('sirsoft-ckeditor5::messages.upload.too_large', ['max' => $maxSizeMb]),
+            'upload.required' => __('sirsoft-ckeditor5::messages.upload.required'),
+            'upload.file' => __('sirsoft-ckeditor5::messages.upload.invalid_file'),
+            'upload.image' => __('sirsoft-ckeditor5::messages.upload.not_image'),
+            'upload.mimes' => __('sirsoft-ckeditor5::messages.upload.invalid_mime'),
+            'upload.max' => __('sirsoft-ckeditor5::messages.upload.too_large', ['max' => $maxSizeMb]),
         ];
     }
 
     /**
-     * 검증 실패 시 CKEditor SimpleUploadAdapter 규격으로 응답합니다.
+     * 검증 실패 시 업로드 어댑터가 읽는 SimpleUploadAdapter 규격(error.message)으로 응답합니다.
      *
      * Laravel 기본 응답: { message, errors }
      * CKEditor 요구 형식: { error: { message } }

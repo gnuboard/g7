@@ -1,0 +1,215 @@
+{
+    "comment": "소급 익명화 확인 창. 개인정보 설정을 더 엄격한 쪽으로 저장했을 때 서버가 `retro_anonymize_available`\n  을 주면 열린다 — 과거 기록에는 옛 설정대로 모은 값이 남아 있기 때문이다. 되돌릴 수 없으므로\n  체크 없이는 실행 버튼이 잠긴다. 실행은 워커에게 넘어가고(202) 진행률은 진단 화면 이력에서 본다.\n  「건너뛰기」는 아무것도 하지 않는다 — 새 설정은 이미 저장돼 있다.",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 — 소급 익명화 확인 창",
+        "editor_label": "$t:admin.modal_label.analytics.retro_anonymize_modal"
+    },
+    "id": "analytics_retro_anonymize_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.analytics.modals.retro.title",
+        "size": "md"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2 space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:admin.analytics.modals.retro.body|visits={{(_global.analyticsRetro?.visits ?? 0) | number}}|actions={{(_global.analyticsRetro?.actions ?? 0) | number}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:admin.analytics.modals.retro.hint"
+                },
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "inline-clickable"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "확인 체크 — 소급은 되돌릴 수 없어 켜야 적용 버튼이 풀린다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "analyticsRetroConfirm": "{{$event.target.checked}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "checkbox",
+                                "checked": "{{_global.analyticsRetroConfirm === true}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.analytics.modals.retro.confirm_label"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "건너뛰기 — 소급 없이 닫는다. 새 설정은 이미 저장돼 앞으로 모이는 값에만 적용되고, 체크는 걷어 둔다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "analyticsRetroConfirm": false
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.analyticsRetroRunning}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.analytics.modals.retro.skip"
+                        }
+                    ]
+                },
+                {
+                    "id": "retro_apply_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "저장한 설정의 마스킹 폭·해시 여부를 그대로 소급한다. 둘 중 하나는 반드시 실려야 서버가 받는다(422).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "analyticsRetroRunning": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/analytics/privacy/anonymize",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "confirm": true,
+                                            "mask_octets": "{{_global.analyticsRetro?.hash ? undefined : (_global.analyticsRetro?.maskOctets ?? 0)}}",
+                                            "hash": "{{_global.analyticsRetro?.hash ? true : undefined}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "analyticsRetroRunning": false,
+                                                "analyticsRetroConfirm": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.analytics.modals.retro.queued"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "analyticsRetroRunning": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.analyticsRetroConfirm !== true || _global.analyticsRetroRunning}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.analyticsRetroRunning}}",
+                            "props": {
+                                "name": "spinner",
+                                "spin": true,
+                                "className": "text-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.analytics.modals.retro.apply"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

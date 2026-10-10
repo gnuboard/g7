@@ -18,6 +18,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Services\CoreUpdateService;
 use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
+use App\Support\HookCacheFreshProcess;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
@@ -576,6 +577,10 @@ class CoreUpdateCommand extends Command
             // 라우트를 다시 등록한다. 재생성은 파일이 전부 안착한 이 지점에서만 안전하다.
             RouteCacheHelper::rebuild();
 
+            // 훅 캐시는 새 프로세스에서 한 번 더 굽는다 — 이 프로세스는 이전 코드로 부팅해, 업데이트 시작 때
+            // 훅 캐시가 없던 사이트에서는 이전 리스너 구독으로 구워졌을 수 있다(#138 후속).
+            $this->rebuildHookCacheInFreshProcess($log);
+
             $log('정리 완료');
 
             $bar->finish();
@@ -605,6 +610,10 @@ class CoreUpdateCommand extends Command
             );
 
             if (($promptResult['success'] ?? 0) > 0) {
+                // 일괄 업데이트는 이 (이전 코드) 프로세스에서 확장마다 훅 캐시를 재생성해, 위에서 새 프로세스로
+                // 구운 캐시를 이전 리스너 구독으로 덮어쓸 수 있다 — 소유권 복원 전에 새 프로세스로 다시 굽는다.
+                $this->rebuildHookCacheInFreshProcess($log);
+
                 $this->newLine();
                 $this->info('일괄 업데이트로 생성된 파일의 소유권을 복원하는 중...');
                 // 일괄 확장 update 가 sudo 컨텍스트에서 root 로 만들 수 있는 PHP-FPM 쓰기
@@ -659,6 +668,9 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
+                // 핸드오프는 정상 종료 경로의 훅 캐시 재굽기를 지나지 않는다 — 파일은 이미 toVersion 이므로
+                // 새 코드로 부팅하는 새 프로세스에서 굽는다(#138 후속).
+                $this->rebuildHookCacheInFreshProcess($log);
                 // 핸드오프로 멈춰도 파일은 이미 toVersion 이므로 워커는 새 코드로 재기동해야 한다.
                 $service->signalQueueRestart();
                 $log('큐 워커 재시작 신호 전송 (queue:restart)');
@@ -1163,6 +1175,7 @@ class CoreUpdateCommand extends Command
      *  - `resumeCommand`: null 허용. string 일 때 길이 < 1000 + shell metacharacter(`;&|`$()<>`) 부재
      *
      * @param  mixed  $payload  json_decode 결과
+     * @return bool 네 키가 모두 규격에 맞으면 true
      */
     private function isValidHandoffPayload($payload): bool
     {
@@ -1208,6 +1221,7 @@ class CoreUpdateCommand extends Command
      * @param  bool  $prune  --prune 지정 여부
      * @param  array<int, string>|null  $applyList  증분 적용 대상 목록 (null 이면 전체 덮어쓰기)
      * @param  array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}|null  $applyStats  computeApplyList 산출 통계
+     * @return void 반환값 없음
      */
     private function summarizeApplyMode(bool $prune, ?array $applyList, ?array $applyStats): void
     {
@@ -1244,6 +1258,7 @@ class CoreUpdateCommand extends Command
      * @param  string  $fromVersion  시작 버전
      * @param  string  $toVersion  종료 버전
      * @param  bool  $success  성공 여부
+     * @return void 반환값 없음
      */
     private function saveUpdateLog(array $entries, string $fromVersion, string $toVersion, bool $success): void
     {
@@ -1272,6 +1287,29 @@ class CoreUpdateCommand extends Command
     }
 
     /**
+     * 훅 캐시를 새 프로세스에서 다시 굽고, 실패하면 운영자에게 수동 명령을 안내합니다.
+     *
+     * 이 프로세스는 이전 코드로 부팅했으므로 여기서 구운 훅 캐시는 이전 리스너 구독을 담을 수 있다.
+     * 새 프로세스는 디스크의 새 코드로 부팅한다. 실패해도 업데이트는 되돌리지 않는다(#138 후속).
+     *
+     * @param  \Closure  $log  업데이트 로그 기록 콜백
+     * @return void 반환값 없음
+     */
+    private function rebuildHookCacheInFreshProcess(\Closure $log): void
+    {
+        $hookCache = HookCacheFreshProcess::run(['hooks:cache']);
+        if ($hookCache['ok']) {
+            $log('훅 캐시 재생성 완료 (새 프로세스)');
+
+            return;
+        }
+
+        $message = '훅 캐시를 새 프로세스로 다시 굽지 못했습니다 — 업데이트 뒤 `php artisan hooks:cache` 를 실행하세요: '.$hookCache['output'];
+        $log($message);
+        $this->warn($message);
+    }
+
+    /**
      * 코어 업데이트(부모 프로세스)가 생성한 upgrade 로그 파일의 소유권을 부모(storage/logs)
      * 로 정합합니다 — **spawn 실패로 부모가 upgrade step 을 in-process 로 직접 실행한 경우** 대비.
      *
@@ -1284,6 +1322,8 @@ class CoreUpdateCommand extends Command
      * module:update upgrade step 이 같은 날짜 로그에 append 하지 못해 Permission denied 로
      * 실패한다. 본 메서드를 코어 업데이트의 모든 로그 쓰기가 끝난 종료 시점(각 return 직전)에
      * 호출한다. **본 메서드 자체는 로그를 쓰지 않는다**(쓰면 다시 root 가 됨). silent no-op 멱등.
+     *
+     * @return void 반환값 없음
      */
     private function restoreUpgradeLogOwnership(): void
     {
@@ -1308,6 +1348,9 @@ class CoreUpdateCommand extends Command
      * 공유 호스팅에서 FTP 사용자(파일 소유자)와 SSH 사용자, 또는 SSH 사용자와
      * www-data 가 다른 경우 권한 거부가 발생할 수 있습니다. 차단하지는 않고
      * 사용자가 직접 판단하도록 경고만 출력합니다.
+     *
+     * @param  \Closure  $log  내부 로그 누적 콜백
+     * @return void 반환값 없음
      */
     private function warnIfFileOwnerMismatch(\Closure $log): void
     {
@@ -1369,6 +1412,7 @@ class CoreUpdateCommand extends Command
      *     → 명령 그대로 안내하되 "웹서버 계정으로 실행" 일반 경고 (계정명 미상).
      *
      * @param  string  $resumeCommand  재실행할 `core:execute-upgrade-steps` 명령
+     * @return void 반환값 없음
      */
     private function surfaceResumeCommandWithPermissionGuidance(string $resumeCommand): void
     {
@@ -1386,6 +1430,7 @@ class CoreUpdateCommand extends Command
      * @param  string  $resumeCommand  재실행할 `core:execute-upgrade-steps` 명령
      * @param  string  $mode  `classifyResumeExecutionContext()` 가 반환한 실행 환경 모드
      * @param  string|null  $webUser  웹서버 계정명 (`root_web_known` 일 때만 유효)
+     * @return void 반환값 없음
      */
     private function renderResumeGuidance(string $resumeCommand, string $mode, ?string $webUser): void
     {
@@ -1449,7 +1494,9 @@ class CoreUpdateCommand extends Command
      * 본 메서드 호출 후 service 의 `lastPermissionWarnings` 가 다음 호출 시 초기화되므로
      * 매 `restoreOwnership` 직후 1회 호출 패턴이 정합.
      *
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스 (누적된 권한 경고 보유)
      * @param  callable  $log  내부 로그 누적 콜백 (`saveUpdateLog` 입력용)
+     * @return void 반환값 없음
      */
     private function surfacePermissionWarnings(CoreUpdateService $service, callable $log): void
     {

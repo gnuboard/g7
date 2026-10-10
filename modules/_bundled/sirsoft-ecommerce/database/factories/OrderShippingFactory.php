@@ -2,11 +2,13 @@
 
 namespace Modules\Sirsoft\Ecommerce\Database\Factories;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
+use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 
 /**
  * 주문 배송 Factory
@@ -38,10 +40,6 @@ class OrderShippingFactory extends Factory
             'carrier_id' => null,
             'tracking_number' => null,
             'return_shipping_amount' => 0,
-            'return_carrier_id' => null,
-            'return_tracking_number' => null,
-            'exchange_carrier_id' => null,
-            'exchange_tracking_number' => null,
             'package_number' => null,
             'visit_date' => null,
             'visit_time_slot' => null,
@@ -98,36 +96,66 @@ class OrderShippingFactory extends Factory
     /**
      * 배송 중 상태
      *
+     * 송장이 있으면 택배사도 있어야 한다 — 택배사를 넘기지 않으면 활성 국내 택배사를 고른다
+     * (택배사 행이 하나도 없는 시험 DB 에서만 null).
+     *
+     * @param  Carbon|null  $shippedAt  발송 시각 (생략하면 지금)
+     * @param  int|null  $carrierId  택배사 id
      * @return static
      */
-    public function inTransit(): static
+    public function inTransit(?Carbon $shippedAt = null, ?int $carrierId = null): static
     {
         $trackingNumber = \fake()->numerify('############');
 
-        return $this->state(fn (array $attributes) => [
-            'shipping_status' => ShippingStatusEnum::IN_TRANSIT,
-            'tracking_number' => $trackingNumber,
-            'shipped_at' => now(),
-            'estimated_arrival_at' => now()->addDays(2),
-        ]);
+        return $this->state(function (array $attributes) use ($trackingNumber, $shippedAt, $carrierId) {
+            $shippedAt ??= now();
+
+            return [
+                'shipping_status' => ShippingStatusEnum::IN_TRANSIT,
+                'carrier_id' => $carrierId ?? $attributes['carrier_id'] ?? self::defaultCarrierId(),
+                'tracking_number' => $trackingNumber,
+                'shipped_at' => $shippedAt,
+                'estimated_arrival_at' => $shippedAt->copy()->addDays(2),
+            ];
+        });
     }
 
     /**
      * 배송 완료 상태
      *
+     * @param  Carbon|null  $deliveredAt  배송완료 시각 (생략하면 지금, 발송은 그 2일 전)
+     * @param  int|null  $carrierId  택배사 id
      * @return static
      */
-    public function delivered(): static
+    public function delivered(?Carbon $deliveredAt = null, ?int $carrierId = null): static
     {
         $trackingNumber = \fake()->numerify('############');
 
-        return $this->state(fn (array $attributes) => [
-            'shipping_status' => ShippingStatusEnum::DELIVERED,
-            'tracking_number' => $trackingNumber,
-            'shipped_at' => now()->subDays(2),
-            'estimated_arrival_at' => now(),
-            'delivered_at' => now(),
-        ]);
+        return $this->state(function (array $attributes) use ($trackingNumber, $deliveredAt, $carrierId) {
+            $deliveredAt ??= now();
+
+            return [
+                'shipping_status' => ShippingStatusEnum::DELIVERED,
+                'carrier_id' => $carrierId ?? $attributes['carrier_id'] ?? self::defaultCarrierId(),
+                'tracking_number' => $trackingNumber,
+                'shipped_at' => $deliveredAt->copy()->subDays(2),
+                'estimated_arrival_at' => $deliveredAt,
+                'delivered_at' => $deliveredAt,
+            ];
+        });
+    }
+
+    /**
+     * 활성 국내 택배사 id 를 고릅니다 (CJ대한통운 우선).
+     *
+     * @return int|null 택배사 id (택배사 행이 없으면 null)
+     */
+    private static function defaultCarrierId(): ?int
+    {
+        $carriers = ShippingCarrier::query()->where('is_active', true)->where('type', 'domestic')->orderBy('sort_order')->get(['id', 'code']);
+        $carrier = $carriers->firstWhere('code', 'cj') ?? $carriers->first();
+
+        return $carrier ? (int) $carrier->id : null;
     }
 
     /**

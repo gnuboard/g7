@@ -1,3 +1,5 @@
 {
-  "krw": "KRW"
+  "krw": "KRW",
+  "krw_prefix": "₩",
+  "krw_suffix": ""
 }

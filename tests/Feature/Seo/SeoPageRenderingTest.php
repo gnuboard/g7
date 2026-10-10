@@ -19,6 +19,8 @@ class SeoPageRenderingTest extends TestCase
 
     /**
      * 테스트 초기화 - 레이아웃 파일 기본 경로를 설정합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -50,6 +52,12 @@ class SeoPageRenderingTest extends TestCase
 
     /**
      * home.json 레이아웃에 SEO 메타가 올바르게 설정되어 있는지 확인합니다.
+     *
+     * @scenario layout_scope=single_layout
+     *
+     * @effects layout_seo_home_layout_has_seo_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_home_layout_has_seo_meta(): void
     {
@@ -67,7 +75,8 @@ class SeoPageRenderingTest extends TestCase
 
         // priority 확인 (홈페이지는 최우선)
         $this->assertArrayHasKey('priority', $seo, 'home.json seo에 priority 키가 존재해야 합니다');
-        $this->assertSame(1.0, $seo['priority'], 'home.json의 SEO priority는 1.0이어야 합니다');
+        // 마크업 `:priority="1"` 은 JSON 정수 1 로 구워진다 — 형이 아니라 값을 본다
+        $this->assertEquals(1.0, $seo['priority'], 'home.json의 SEO priority는 1.0이어야 합니다');
 
         // changefreq 확인
         $this->assertArrayHasKey('changefreq', $seo, 'home.json seo에 changefreq 키가 존재해야 합니다');
@@ -87,6 +96,10 @@ class SeoPageRenderingTest extends TestCase
 
     /**
      * shop/show.json 레이아웃에 Product structured_data가 설정되어 있는지 확인합니다.
+     *
+     * @effects layout_seo_shop_show_layout_has_product_structured_data
+     *
+     * @return void 반환값 없음
      */
     public function test_shop_show_layout_has_product_structured_data(): void
     {
@@ -116,6 +129,10 @@ class SeoPageRenderingTest extends TestCase
 
     /**
      * board/show.json 레이아웃에 Article structured_data가 설정되어 있는지 확인합니다.
+     *
+     * @effects layout_seo_board_show_layout_has_article_structured_data
+     *
+     * @return void 반환값 없음
      */
     public function test_board_show_layout_has_article_structured_data(): void
     {
@@ -145,6 +162,10 @@ class SeoPageRenderingTest extends TestCase
 
     /**
      * search/index.json 레이아웃에 SEO 설정이 최소화(낮은 priority)되어 있는지 확인합니다.
+     *
+     * @effects layout_seo_search_layout_has_seo_with_minimal_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_search_layout_has_seo_with_minimal_priority(): void
     {
@@ -180,6 +201,12 @@ class SeoPageRenderingTest extends TestCase
 
     /**
      * 모든 주요 레이아웃의 SEO priority 값이 유효한 범위(0~1)인지 확인합니다.
+     *
+     * @scenario layout_scope=all_enabled_layouts
+     *
+     * @effects layout_seo_all_layouts_have_valid_seo_priority_range
+     *
+     * @return void 반환값 없음
      */
     public function test_all_layouts_have_valid_seo_priority_range(): void
     {
@@ -203,6 +230,10 @@ class SeoPageRenderingTest extends TestCase
 
     /**
      * 모든 주요 레이아웃의 SEO changefreq 값이 유효한 값인지 확인합니다.
+     *
+     * @effects layout_seo_all_layouts_have_valid_seo_changefreq
+     *
+     * @return void 반환값 없음
      */
     public function test_all_layouts_have_valid_seo_changefreq(): void
     {
@@ -234,6 +265,10 @@ class SeoPageRenderingTest extends TestCase
      * 모든 enabled=true 레이아웃 의 meta.seo 를 SeoMetaResolver.resolve() 에 통과시키되,
      * 코어 설정값(site_name 등) 이 다국어 JSON 배열로 저장된 환경을 시뮬레이션 — 이전 회귀
      * "Array to string conversion" 의 광범위 재발 방지.
+     *
+     * @effects layout_seo_all_enabled_layouts_resolve_without_throw_under_multilingual_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_all_enabled_layouts_resolve_without_throw_under_multilingual_settings(): void
     {

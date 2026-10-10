@@ -23,6 +23,7 @@ trait ValidatesAttachmentCount
      * @param  Validator  $validator  검증기
      * @param  Board|null  $board  대상 게시판
      * @param  int|null  $postId  수정 대상 게시글 ID (신규 작성이면 null)
+     * @return void 반환값 없음
      */
     protected function validateAttachmentTotal(Validator $validator, ?Board $board, ?int $postId = null): void
     {
@@ -58,7 +59,7 @@ trait ValidatesAttachmentCount
             : 0;
 
         if ($existing + $newCount > $limit) {
-            $validator->errors()->add('files', __('sirsoft-board::messages.errors.attachment_limit_exceeded', [
+            $validator->errors()->add('files', trans_choice('sirsoft-board::messages.errors.attachment_limit_exceeded', $limit, [
                 'limit' => $limit,
                 'attempted' => $existing + $newCount,
             ]));
@@ -81,6 +82,7 @@ trait ValidatesAttachmentCount
      * @param  Board|null  $board  대상 게시판
      * @param  int|null  $postId  대상 게시글 ID (임시 업로드면 null)
      * @param  string|null  $tempKey  임시 업로드 키
+     * @return void 반환값 없음
      *
      * @throws AttachmentLimitExceededException 상한 초과 시
      */

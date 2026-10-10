@@ -1,0 +1,26 @@
+feature: 게시판 생성·복사 폼 — 담당자를 지정할 수 없는 액터에게 이유를 보이고 명단 칸을 잠근다 (7.1.0 전수 실측 O-K4-3)
+
+description: |
+  새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 위임 관리자가 관리자·스텝을 지정하면 저장이 권한
+  부여 상한(403)으로 거부된다(서버 축은 board-acl-escalation-ceiling.yaml). 종전 생성 폼은 그런 계정에게도
+  본인을 관리자로 미리 채워 그대로 저장하면 403 이 났다. form-data 가 명단을 비우고
+  `_meta.can_assign_board_members=false` 를 주면, 권한 탭은 안내 상자를 보이고 관리자·스텝 칸을 잠근다.
+  true(지정 가능)·null(수정 모드)이면 종전과 같다.
+
+  K4F-2(결정 2026-10-08): 새 게시판에 한해 생성자 본인 한 명을 관리자로 두는 것을 허용한 뒤로 form-data 는 그런
+  계정에게 본인 한 명을 관리자로 채워 보낸다. 칸은 그대로 잠그고(값이 바뀌면 다시 403), 안내 문구는 「본인만 관리자로
+  지정할 수 있고 그대로 저장하면 본인이 관리자가 된다」를 알린다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-form-member-assign-lock.test.ts
+
+axes:
+  member_assign:
+    - denied
+    - allowed
+
+effects:
+  - assign_denied_notice_shown
+  - member_inputs_locked_when_denied
+  - member_inputs_open_when_allowed
+  - assign_denied_notice_explains_self_only

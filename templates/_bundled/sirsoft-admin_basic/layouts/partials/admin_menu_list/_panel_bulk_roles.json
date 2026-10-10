@@ -1,0 +1,295 @@
+{
+    "comment": "메뉴 관리 화면 오른쪽 판의 「여러 개 선택」 모드. 왼쪽 목록에서 체크한 메뉴들에 역할을 한꺼번에 더하거나 뺀다.\n  상세 판(_panel_detail)과 같은 자리에 놓이고, 둘 중 하나만 보인다 — 모드 값 하나로 갈린다.\n  「적용」 은 바로 보내지 않고 확인 창을 연다: 부모·자식이 자동으로 함께 처리되는 수를 먼저 보여 주기 위해서다.",
+    "meta": {
+        "is_partial": true
+    },
+    "layout_name": "panel_bulk_roles",
+    "id": "bulk_roles_panel",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global.menuBulkMode === true}}",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-heading"
+                    },
+                    "text": "$t:admin.menus.bulk.panel_title"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4 space-y-5"
+            },
+            "children": [
+                {
+                    "id": "bulk_selected_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "id": "bulk_selected_count",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-900 dark:text-white mb-2"
+                            },
+                            "text": "$t:admin.menus.bulk.selected_count|count={{(_global.menuBulkSelectedIds ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_global.menuBulkSelectedIds ?? []).length === 0}}",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.menus.bulk.empty_selection"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.menuBulkSelectedIds ?? []).length > 0}}",
+                            "props": {
+                                "className": "flex flex-wrap gap-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "iteration": {
+                                        "source": "{{(menus?.data?.data ?? []).flatMap(m => [m, ...(m.children ?? [])]).filter(m => (_global.menuBulkSelectedIds ?? []).includes(m.id)).slice(0, 10)}}",
+                                        "item_var": "picked"
+                                    },
+                                    "props": {
+                                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                    },
+                                    "text": "{{$localized(picked.name)}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(_global.menuBulkSelectedIds ?? []).length > 10}}",
+                                    "props": {
+                                        "className": "px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:admin.menus.bulk.more_count|count={{(_global.menuBulkSelectedIds ?? []).length - 10}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_roles_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.menus.bulk.roles_label"
+                        },
+                        {
+                            "id": "bulk_roles_input",
+                            "type": "composite",
+                            "name": "TagInput",
+                            "actions": [
+                                {
+                                    "comment": "적용할 역할 — 태그 입력이 준 배열을 통째로 담는다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "menuBulkRoleIds": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_global.menuBulkRoleIds ?? []}}",
+                                "options": "{{(roles?.data?.data ?? []).filter(r => _global.menuBulkAction !== 'remove' || r.identifier !== 'admin').map(r => ({ value: r.id, label: $localized(r.name) }))}}",
+                                "placeholder": "$t:admin.menus.bulk.roles_placeholder",
+                                "noOptionsMessage": "$t:admin.menus.form.roles_no_options",
+                                "className": "w-full",
+                                "defaultVariant": "blue"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_action_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.menus.bulk.action_label"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "actions": [
+                                {
+                                    "comment": "추가/제거 고르기. 제거로 바꾸면 관리자 역할은 고를 수 없으므로(서버가 거부) 이미 골라 둔 것에서도 뺀다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "menuBulkAction": "{{$event.target.value}}",
+                                        "menuBulkRoleIds": "{{$event.target.value === 'remove' ? (_global.menuBulkRoleIds ?? []).filter(id => (roles?.data?.data ?? []).find(r => r.id === id)?.identifier !== 'admin') : (_global.menuBulkRoleIds ?? [])}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "menu_bulk_action",
+                                "value": "{{_global.menuBulkAction ?? 'add'}}",
+                                "inline": true,
+                                "options": [
+                                    {
+                                        "label": "$t:admin.menus.bulk.action_add",
+                                        "value": "add"
+                                    },
+                                    {
+                                        "label": "$t:admin.menus.bulk.action_remove",
+                                        "value": "remove"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_rule_hint",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.menus.bulk.rule_hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_buttons",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-wrap justify-end gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "bulk_clear_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "선택만 비운다 — 모드와 고른 역할은 그대로 둔다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "menuBulkSelectedIds": []
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{(_global.menuBulkSelectedIds ?? []).length === 0}}",
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "text": "$t:admin.menus.bulk.clear"
+                        },
+                        {
+                            "id": "bulk_exit_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "선택 모드 끝내기 — 상단 토글을 끈 것과 같다. 고른 것과 역할을 비워 다음에 켤 때 남지 않게 한다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "menuBulkMode": false,
+                                        "menuBulkSelectedIds": [],
+                                        "menuBulkRoleIds": [],
+                                        "menuBulkAction": "add",
+                                        "menuBulkError": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:admin.menus.bulk.exit"
+                        },
+                        {
+                            "id": "bulk_apply_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "적용 — 확인 창을 연다. 지난 실패 문구는 비운다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "menuBulkError": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "bulk_roles_confirm_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{(_global.menuBulkSelectedIds ?? []).length === 0 || (_global.menuBulkRoleIds ?? []).length === 0}}",
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "text": "$t:admin.menus.bulk.apply"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

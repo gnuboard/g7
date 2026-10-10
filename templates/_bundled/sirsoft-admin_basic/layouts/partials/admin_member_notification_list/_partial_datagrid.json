@@ -1,0 +1,366 @@
+{
+    "comment": "회원 알림함 표. 줄 고르기는 **삭제 권한이 있을 때만 켜진다** — 권한이 없으면 체크칸 자체가\n  나오지 않아 지울 수 없는 버튼을 눌러 보는 일이 없다.\n  식별자가 uuid 문자열이라 `idField` 가 가리키는 값도 문자열이다(표는 문자열 식별자를 허용한다).\n  회원 칸은 회원이 남아 있을 때만 상세로 이어진다 — 다형 관계에 외래키가 없어 회원이 먼저 지워지면\n  알림 줄만 남는데, 그 줄을 감추면 정리할 대상을 찾지 못하므로 「삭제된 회원」으로 그려 둔다.\n  줄을 펼치면 본문 발췌와 연결 주소가 나온다(전문은 목록에 싣지 않는다 — 알림 수만큼 무거워진다).",
+    "meta": {
+        "is_partial": true,
+        "description": "Member Notification List DataGrid"
+    },
+    "id": "member_notification_datagrid",
+    "type": "composite",
+    "name": "DataGrid",
+    "actions": [
+        {
+            "comment": "쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다.",
+            "type": "change",
+            "event": "onPageChange",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/member-notifications",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "member_notification_datagrid__body",
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        },
+        {
+            "comment": "고른 줄은 전역에 둔다 — 일괄 삭제 버튼이 표 밖 화면 머리에 있어 표 안쪽 상태로는 닿지 않는다.",
+            "type": "action",
+            "event": "onSelectionChange",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedIds_admin_member_notifications": "{{$args[0]}}"
+            }
+        },
+        {
+            "comment": "한 줄 삭제도 바로 지우지 않는다 — 누른 줄을 전역에 실어 둔 뒤 확인 창을 열고, 창이 그 값을 읽어 무엇을 지우는지 보여 준다.",
+            "type": "action",
+            "event": "onRowAction",
+            "handler": "switch",
+            "cases": {
+                "delete": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "modal_data": "{{$args[1]}}"
+                    },
+                    "onSuccess": {
+                        "handler": "openModal",
+                        "target": "delete_confirm_modal"
+                    }
+                }
+            }
+        }
+    ],
+    "props": {
+        "data": "{{memberNotifications?.data?.data}}",
+        "pagination": true,
+        "serverSidePagination": true,
+        "serverCurrentPage": "{{memberNotifications?.data?.pagination?.current_page ?? 1}}",
+        "serverTotalPages": "{{memberNotifications?.data?.pagination?.last_page ?? null}}",
+        "serverHasMorePages": "{{memberNotifications?.data?.pagination?.has_more_pages ?? false}}",
+        "pageSize": "{{+(query.per_page || 20)}}",
+        "alwaysShowPagination": true,
+        "idField": "id",
+        "selectable": "{{memberNotifications?.data?.abilities?.can_delete === true}}",
+        "selectionScope": "page",
+        "selectedIds": "{{_global.selectedIds_admin_member_notifications || []}}",
+        "selectedCountText": "",
+        "loading": "{{memberNotifications?.loading}}",
+        "expandable": true,
+        "emptyMessage": "$t:admin.member_notification.empty_message",
+        "actionsColumnHeader": "$t:common.actions",
+        "rowActions": [
+            {
+                "id": "delete",
+                "label": "$t:admin.member_notification.delete.button",
+                "iconName": "trash",
+                "variant": "danger",
+                "disabledField": "abilities.can_delete"
+            }
+        ],
+        "expandChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900 space-y-3"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "form-label"
+                                },
+                                "text": "$t:admin.member_notification.detail.body_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "if": "{{row.body_excerpt}}",
+                                "props": {
+                                    "className": "text-body whitespace-pre-line"
+                                },
+                                "text": "{{row.body_excerpt}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.body_excerpt}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                },
+                                "text": "$t:admin.member_notification.detail.no_body"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body font-medium shrink-0"
+                                },
+                                "text": "$t:admin.member_notification.detail.type_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "{{row.type ?? '-'}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{row.url}}",
+                        "props": {
+                            "className": "flex-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body font-medium shrink-0"
+                                },
+                                "text": "$t:admin.member_notification.detail.url_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-mono text-gray-600 dark:text-gray-400 break-all"
+                                },
+                                "text": "{{row.url}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "columns": [
+            {
+                "field": "created_at",
+                "header": "$t:admin.member_notification.col_created_at",
+                "sortable": true,
+                "width": "160px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-label"
+                        },
+                        "text": "{{row.created_at ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "member",
+                "header": "$t:admin.member_notification.col_member",
+                "width": "200px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!row.member}}",
+                        "props": {
+                            "className": "text-label-subtle italic"
+                        },
+                        "text": "$t:admin.member_notification.deleted_member"
+                    },
+                    {
+                        "type": "composite",
+                        "name": "ActionMenu",
+                        "if": "{{!!row.member}}",
+                        "actions": [
+                            {
+                                "comment": "회원 상세는 새 창이라 보던 목록을 잃지 않는다. 「이 회원만」은 이름이 아니라 uuid 로 좁힌다 — 개명·동명이인에 흔들리지 않는다.",
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.member.uuid}}"
+                                        }
+                                    },
+                                    "filter_by_member": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/member-notifications",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "member_notification_datagrid__body",
+                                            "query": {
+                                                "user_uuid": "{{row.member.uuid}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "position": "right",
+                            "items": [
+                                {
+                                    "id": "view_member",
+                                    "label": "$t:admin.member_notification.action.view_member",
+                                    "iconName": "user"
+                                },
+                                {
+                                    "id": "filter_by_member",
+                                    "label": "$t:admin.member_notification.action.filter_by_member",
+                                    "iconName": "search"
+                                }
+                            ]
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-regular fa-user",
+                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "min-w-0 flex-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-medium text-gray-900 dark:text-gray-100 truncate block text-sm"
+                                                },
+                                                "text": "{{row.member.name}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!!row.member.email}}",
+                                                "props": {
+                                                    "className": "text-tertiary truncate block"
+                                                },
+                                                "text": "({{row.member.email}})"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "type_label",
+                "header": "$t:admin.member_notification.col_type",
+                "width": "140px",
+                "cellChildren": [
+                    {
+                        "type": "composite",
+                        "name": "Badge",
+                        "props": {
+                            "color": "blue",
+                            "text": "{{row.type_label ?? '-'}}"
+                        }
+                    }
+                ]
+            },
+            {
+                "field": "subject",
+                "header": "$t:admin.member_notification.col_subject",
+                "width": "280px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-body line-clamp-1"
+                        },
+                        "text": "{{row.subject ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "read_at",
+                "header": "$t:admin.member_notification.col_read_at",
+                "sortable": true,
+                "width": "160px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "{{row.is_read ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'}}"
+                                },
+                                "text": "{{row.is_read ? '$t:admin.member_notification.badge.read' : '$t:admin.member_notification.badge.unread'}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!!row.read_at}}",
+                                "props": {
+                                    "className": "block text-tertiary mt-0.5"
+                                },
+                                "text": "{{row.read_at}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -39,6 +39,87 @@ if (! $scanExtensionsLibraryMode) {
     installer_guard_or_410();
 }
 
+// 확장 아이콘 검증기 적재 — Laravel autoload 없이 프로젝트 안 고정 경로에서 require 한다.
+// 검증기는 의존성 0 의 순수 PHP 라 여기서 바로 쓸 수 있다. 부재해도 죽지 않고
+// 아이콘만 빠진다(카드는 종전대로 유형 글리프).
+//
+// 기준점은 BASE_PATH 가 아니라 **이 스크립트 자신의 위치**다. BASE_PATH 는 "무엇을
+// 스캔할지" 를 가리키므로 테스트가 격리 디렉터리로 바꿔 놓는다 — 검증기는 코드와
+// 함께 있지 스캔 대상 안에 있지 않다.
+//
+// 클래스명을 FQN 으로 쓰는 것은 의도다 — `use` 문을 두면 오토로더가 없는 인스톨러
+// 실행 시점에 그 심볼을 해석할 수 없다. pint 의 `fully_qualified_strict_types` 가
+// 이것을 `use` 로 끌어올리려 하므로 `pint.json` 의 `notPath` 로 이 파일만 제외한다.
+if (! class_exists(\App\Support\ExtensionIcon\ExtensionIconValidator::class, false)) {
+    $g7IconValidatorPath = dirname(__DIR__, 3).'/app/Support/ExtensionIcon/ExtensionIconValidator.php';
+    if (is_file($g7IconValidatorPath)) {
+        require_once $g7IconValidatorPath;
+    }
+    unset($g7IconValidatorPath);
+}
+
+/**
+ * 확장 디렉토리의 아이콘을 data URI 로 만듭니다.
+ *
+ * 인스톨러는 Laravel 없이 도는 화면이라 아이콘 서빙 라우트를 쓸 수 없습니다. 대신
+ * 검증기를 통과한 바이트만 base64 로 카드에 실어 보냅니다. 검증기가 없거나 규격을
+ * 어기면 null 이고, 카드는 종전대로 유형 글리프를 그립니다.
+ *
+ * @param  string  $extensionDir  확장 루트 절대 경로
+ * @param  array  $manifest  매니페스트 데이터
+ * @return string|null data URI 문자열, 유효한 아이콘이 없으면 null
+ */
+function extractExtensionIconDataUri(string $extensionDir, array $manifest): ?string
+{
+    $validator = \App\Support\ExtensionIcon\ExtensionIconValidator::class;
+
+    if (! class_exists($validator, false)) {
+        return null;
+    }
+
+    $candidates = [];
+
+    $declared = $manifest['icon'] ?? null;
+    if (is_string($declared) && trim($declared) !== ''
+        && $validator::manifestPathViolation($declared) === null) {
+        $resolved = $validator::resolveInsideRoot($extensionDir, $declared);
+        if ($resolved !== null) {
+            $candidates[] = $resolved;
+        }
+    }
+
+    if ($candidates === []) {
+        foreach ($validator::CONVENTION_CANDIDATES as $relative) {
+            $resolved = $validator::resolveInsideRoot($extensionDir, $relative);
+            if ($resolved !== null) {
+                $candidates[] = $resolved;
+                break;
+            }
+        }
+    }
+
+    foreach ($candidates as $path) {
+        $result = $validator::validateFile($path);
+        if (! $result['valid']) {
+            continue;
+        }
+
+        $bytes = @file_get_contents($path);
+        if ($bytes === false) {
+            continue;
+        }
+
+        $mime = $validator::MIME_BY_EXTENSION[$result['format']] ?? null;
+        if ($mime === null) {
+            continue;
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode($bytes);
+    }
+
+    return null;
+}
+
 /**
  * 템플릿 디렉토리 스캔
  *
@@ -106,6 +187,7 @@ function scanTemplates(): array
             'dependencies_detailed' => $dependenciesDetailed,
             'author' => $author,
             'directory' => $dir,
+            'icon_data_uri' => extractExtensionIconDataUri($templatesDir.'/'.$dir, $data),
         ];
 
         if ($type === 'admin') {
@@ -157,6 +239,8 @@ function scanModules(): array
                 'dependencies' => [],
                 'author' => null,
                 'directory' => $dir,
+                // 매니페스트가 없는 역호환 분기 — 아이콘 선언을 읽을 근거가 없다.
+                'icon_data_uri' => null,
             ];
 
             continue;
@@ -189,6 +273,7 @@ function scanModules(): array
             'dependencies_detailed' => $dependenciesDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
+            'icon_data_uri' => extractExtensionIconDataUri($modulesDir.'/'.$dir, $data),
         ];
     }
 
@@ -234,6 +319,8 @@ function scanPlugins(): array
                 'dependencies' => [],
                 'author' => null,
                 'directory' => $dir,
+                // 매니페스트가 없는 역호환 분기 — 아이콘 선언을 읽을 근거가 없다.
+                'icon_data_uri' => null,
             ];
 
             continue;
@@ -266,6 +353,7 @@ function scanPlugins(): array
             'dependencies_detailed' => $dependenciesDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
+            'icon_data_uri' => extractExtensionIconDataUri($pluginsDir.'/'.$dir, $data),
         ];
     }
 

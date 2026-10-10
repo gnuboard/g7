@@ -1,0 +1,16 @@
+feature: API 문서 실측 샘플 권한 정리
+
+description: |
+  `api:docgen --seed` 는 상세 GET 실측을 위해 개발 DB 에 완전 샘플을 만든다. 그중 권한 샘플(「API 문서 샘플 권한」과
+  하위 「하위 권한」)이 남으면 관리자 권한 트리에 실제 권한처럼 보이고 실제 역할에 배정할 수 있었다(2026-10-07 실측 O-D2).
+  권한 정리(purgeAssignableSamples)는 샘플 권한과 그 역할 연결만 지운다. 사용자·역할·메뉴 등 나머지 샘플은 이제
+  실측 뒤 정리(cleanup)가 함께 걷는다 — tests/scenarios/apidoc-sample-cleanup.yaml 이 맡는다(2026-10-08).
+
+axes:
+  sample: [permission_purge, docgen_seed_run]
+
+effects:
+  - apidoc_sample_permissions_purged_after_probe
+
+test_files:
+  - tests/Feature/Console/ApiDocSamplePermissionPurgeTest.php

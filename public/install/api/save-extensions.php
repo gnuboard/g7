@@ -31,6 +31,7 @@ require_once dirname(__DIR__).'/includes/session.php';
 require_once dirname(__DIR__).'/includes/config.php';
 require_once dirname(__DIR__).'/includes/installer-state.php';
 require_once dirname(__DIR__).'/includes/functions.php';
+require_once dirname(__DIR__).'/includes/installer-ownership.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
@@ -47,6 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+// 설치 소유권 + 요청 검증 — 소유 세션만 설치할 확장 목록을 바꿀 수 있다.
+$state = getInstallationState();
+installer_require_owner($state);
+installer_require_csrf();
+$generation = (int) ($state['generation'] ?? 0);
 
 // 요청 본문 파싱
 $input = json_decode(file_get_contents('php://input'), true);
@@ -127,9 +134,6 @@ foreach ($identifierGroups as $groupKey => $ids) {
 }
 
 try {
-    // 현재 상태 가져오기
-    $state = getInstallationState();
-
     // selected_extensions 업데이트
     $state['selected_extensions'] = [
         'admin_templates' => $adminTemplates,
@@ -151,11 +155,9 @@ try {
     // 세션도 동기화 (Step 5로 이동 허용)
     $_SESSION['installer_current_step'] = 5;
 
-    // 상태 저장
-    $saved = saveInstallationState($state);
-
-    if (! $saved) {
-        throw new Exception(lang('state_save_failed'));
+    // 상태 저장 — 읽은 뒤 다른 상태변경이 먼저 커밋됐으면 덮어쓰지 않는다 (CAS).
+    if (! saveInstallationStateCas($state, $generation)) {
+        installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
     }
 
     // 로그 기록

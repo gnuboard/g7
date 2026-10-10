@@ -1,0 +1,44 @@
+{
+    "target_layout": "admin_user_detail",
+    "injections": [
+        {
+            "target_id": "user_detail_tabs",
+            "position": "inject_props",
+            "props": {
+                "tabs": {
+                    "_append": [
+                        {
+                            "id": "ext_notification",
+                            "label": "알림",
+                            "iconName": "cubes"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "target_id": "extension_tab_content",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "ext_notification_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data?.payments ?? []).length > 0}}",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "text": "확장 콘텐츠"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

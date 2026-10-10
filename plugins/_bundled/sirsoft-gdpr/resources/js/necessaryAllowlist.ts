@@ -117,6 +117,27 @@ export function isEmptyAllowlist(allowlist: NecessaryAllowlist): boolean {
 }
 
 /**
+ * 인라인 페이로드의 이 플러그인 설정에서 판정용 허용목록을 만듭니다.
+ *
+ * 판정은 **운영자 목록 ∪ 확장 제공 집합 ∪ 잠금 집합**이다. 확장 제공 집합(`necessary_storage_provided`)은
+ * 활성 확장이 계약 훅으로 덧붙인 키를 서버가 요청마다 모아 실은 것이다. 잠금 집합이 통째로 비어 오면
+ * 페이로드가 도달하지 않았다는 뜻이므로 코드 폴백으로 내려간다.
+ *
+ * @param  pluginConfig  `G7Config.plugins['sirsoft-gdpr']` (없으면 undefined)
+ * @return 스코프별 허용 패턴 목록
+ */
+export function resolveInlineAllowlist(pluginConfig: Record<string, unknown> | undefined): NecessaryAllowlist {
+    const operator = normalizeAllowlist(pluginConfig?.necessary_storage_allowlist);
+    const provided = normalizeAllowlist(pluginConfig?.necessary_storage_provided);
+    const locked = normalizeAllowlist(pluginConfig?.necessary_storage_locked);
+
+    return mergeAllowlists(
+        mergeAllowlists(operator, provided),
+        isEmptyAllowlist(locked) ? LOCKED_FALLBACK : locked,
+    );
+}
+
+/**
  * 한 패턴이 이름에 매칭되는지 판정합니다.
  *
  * 끝에 `*` 가 붙으면 앞부분 매칭, 아니면 정확 일치. `*` 는 끝에만 의미가 있으며

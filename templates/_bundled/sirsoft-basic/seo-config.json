@@ -312,10 +312,6 @@
             "tag": "div",
             "skip": true
         },
-        "PostReactions": {
-            "tag": "div",
-            "skip": true
-        },
         "SocialLoginButtons": {
             "tag": "div",
             "skip": true

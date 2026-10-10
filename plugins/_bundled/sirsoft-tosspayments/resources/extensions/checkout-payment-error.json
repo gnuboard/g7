@@ -1,7 +1,10 @@
 {
+    "comment": "주문서 화면에 토스 결제 실패·취소 안내창 두 개를 끼워 넣는다. 결제창은 별도 창에서 돌아오므로 실패 사유를 주문서 본문에 그리지 않고 모달로 띄운다",
     "extension_point": "shop_checkout_extensions",
+    "priority": 100,
     "modals": [
         {
+            "comment": "결제가 오류로 끝났을 때 뜬다. 사유는 결제창이 돌려준 문구를 그대로 보여 주므로 여기서 문안을 정하지 않는다",
             "id": "tosspayments_payment_error_modal",
             "type": "composite",
             "name": "Modal",
@@ -45,13 +48,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                            },
-                            "text": "$t:common.confirm",
                             "actions": [
                                 {
+                                    "comment": "닫기 전에 사유를 비운다. 남겨 두면 다음 결제 시도가 실패하기도 전에 지난 사유가 그려진 채 창이 열린다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -66,14 +65,19 @@
                                         "id": "tosspayments_payment_error_modal"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            },
+                            "text": "$t:common.confirm"
                         }
                     ]
                 }
             ]
-        }
-        ,
+        },
         {
+            "comment": "구매자가 결제창을 스스로 닫았을 때 뜬다. 오류가 아니므로 사유를 받지 않고 고정 안내만 보여 준다",
             "id": "tosspayments_payment_cancel_modal",
             "type": "composite",
             "name": "Modal",
@@ -117,11 +121,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                            },
-                            "text": "$t:common.confirm",
                             "actions": [
                                 {
                                     "type": "click",
@@ -130,12 +129,16 @@
                                         "id": "tosspayments_payment_cancel_modal"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            },
+                            "text": "$t:common.confirm"
                         }
                     ]
                 }
             ]
         }
-    ],
-    "priority": 100
+    ]
 }

@@ -1,0 +1,68 @@
+<!-- 주문서의 적립금 사용 칸 — 회원이면서 이 주문에 적립금을 쓸 수 있을 때만 보인다. 사용 한도는
+     화면이 정하지 않고 서버가 준 `max_usable` 을 그대로 쓴다(주문 금액·정책에 따라 달라지므로). -->
+<partial description="마일리지 사용 섹션 - 보유 마일리지 표시 및 사용 금액 입력 (PC/모바일 반응형, 로그인 사용자만)">
+  <div data-if="{{_global.currentUser?.uuid &amp;&amp; checkoutData.data.mileage?.enabled &amp;&amp; checkoutData.data.mileage?.usable !== false}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+    <!-- 섹션 헤더 -->
+    <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+      <div class="flex items-center gap-2">
+        <icon name="coins" class="text-xl text-gray-700 dark:text-gray-300"/>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+          $t:shop.checkout.mileage_section_title
+        </h2>
+      </div>
+      <!-- 보유 마일리지 -->
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        <span>$t:shop.checkout.mileage_available</span>
+        <span class="ml-1 font-semibold text-blue-600 dark:text-blue-400">{{(checkoutData.data.mileage?.available ?? 0).toLocaleString()}}</span>
+      </div>
+    </div>
+    <!-- 마일리지 입력 영역 -->
+    <div>
+      <!-- 최대 사용 가능 안내 -->
+      <div data-if="{{(checkoutData.data.mileage?.max_usable ?? 0) > 0}}" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:shop.checkout.mileage_max_usable|amount={{(checkoutData.data.mileage?.max_usable ?? 0).toLocaleString()}}</div>
+      <!-- 입력 필드 + 전액사용 + 적용 버튼 -->
+      <div class="flex gap-2">
+        <input type="number" name="use_points" value="{{_local.checkout?.use_points ?? 0}}" placeholder="$t:shop.checkout.mileage_input_placeholder" min="0" max="{{checkoutData.data.mileage?.max_usable ?? 0}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" disabled="{{(checkoutData.data.mileage?.available ?? 0) === 0}}">
+          <responsive on="portable" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+          <on type="change">
+            <!-- 담기만 하고 실제 반영은 옆 「적용」이 한다 — 한 글자마다 서버 계산을 부르지 않기 위해서다 -->
+            <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { use_points: parseInt($event.target.value) || 0 })}}"/>
+          </on>
+        </input>
+        <!-- 전액 사용 버튼 -->
+        <button type="button" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm whitespace-nowrap" disabled="{{(checkoutData.data.mileage?.max_usable ?? 0) === 0}}">
+          <on type="click">
+            <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { use_points: checkoutData.data.mileage?.max_usable ?? 0 })}}"/>
+          </on>
+          $t:shop.checkout.mileage_use_all
+        </button>
+        <!-- 적용 버튼 -->
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{(_local.checkout?.use_points ?? 0) === 0 &amp;&amp; (checkoutData.data.calculation?.summary?.points_used ?? 0) === 0}}">
+          <responsive on="portable" class="px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/>
+          <on type="click">
+            <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+              <success>
+                <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                <toast type="success" message="$t:shop.checkout.mileage_applied"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          $t:shop.checkout.mileage_apply
+        </button>
+      </div>
+      <!-- 적용된 마일리지 정보 -->
+      <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+        <icon name="check-circle" class="text-base"/>
+        <span>-{{checkoutData.data.calculation?.summary?.points_used_formatted}}</span>
+      </div>
+      <!-- 마일리지 부족 안내 -->
+      <div data-if="{{(checkoutData.data.mileage?.available ?? 0) === 0}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:shop.checkout.mileage_insufficient</div>
+    </div>
+  </div>
+</partial>

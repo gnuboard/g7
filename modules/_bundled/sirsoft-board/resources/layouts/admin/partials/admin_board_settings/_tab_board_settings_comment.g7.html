@@ -1,0 +1,113 @@
+<!-- 「기본값」 탭의 댓글 구획 — 새 게시판이 물려받을 댓글 규칙(사용 여부·정렬·길이 최소/최대·대댓글 깊이). 값 옆 체크박스는 그 항목을 일괄 적용에 실을지를 고르는 자리다 -->
+<partial description="게시판 설정 > 댓글 탭">
+  <div data-ref="comment" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <section-layout data-type="layout" data-ref="section_comment" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.comment</h3>
+      <div class="row-stack">
+        <div data-ref="field_use_comment" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「댓글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_comment') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment') : [...(_local.bulkApplyFields ?? []), 'use_comment']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_comment</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_comment</p>
+              </div>
+            </label>
+            <toggle data-type="composite" name="basic_defaults.use_comment" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_max_comment_depth" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「대댓글을 몇 단까지 허용할지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_comment_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_depth') : [...(_local.bulkApplyFields ?? []), 'max_comment_depth']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.max_comment_depth</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_comment_depth|min={{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}|max={{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}</p>
+              </div>
+            </label>
+            <div class="flex-shrink-0">
+              <input type="number" name="basic_defaults.max_comment_depth" min="{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}" max="{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}" class="{{(_local.errors?.['basic_defaults.max_comment_depth']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['basic_defaults.max_comment_depth']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_comment_depth']) ? _local.errors['basic_defaults.max_comment_depth'][0] : _local.errors?.['basic_defaults.max_comment_depth']) ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="field_comment_order" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('comment_order')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「댓글 정렬 순서」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('comment_order') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'comment_order') : [...(_local.bulkApplyFields ?? []), 'comment_order']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.comment_order</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.comment_order</p>
+              </div>
+            </label>
+            <select name="basic_defaults.comment_order" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="ASC">$t:sirsoft-board.admin.settings.options.comment_order.ASC</option>
+                <option value="DESC">$t:sirsoft-board.admin.settings.options.comment_order.DESC</option>
+              </options>
+            </select>
+          </div>
+        </div>
+        <div data-ref="field_min_comment_length" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「댓글 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_comment_length') : [...(_local.bulkApplyFields ?? []), 'min_comment_length']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.min_comment_length</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.min_comment_length|min={{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}</p>
+              </div>
+            </label>
+            <div class="flex-shrink-0">
+              <input type="number" name="basic_defaults.min_comment_length" min="{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}" class="{{(_local.errors?.['basic_defaults.min_comment_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['basic_defaults.min_comment_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_comment_length']) ? _local.errors['basic_defaults.min_comment_length'][0] : _local.errors?.['basic_defaults.min_comment_length']) ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="field_max_comment_length" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「댓글 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_length') : [...(_local.bulkApplyFields ?? []), 'max_comment_length']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.max_comment_length</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_comment_length|min={{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}</p>
+              </div>
+            </label>
+            <div class="flex-shrink-0">
+              <input type="number" name="basic_defaults.max_comment_length" min="{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}" class="{{(_local.errors?.['basic_defaults.max_comment_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['basic_defaults.max_comment_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_comment_length']) ? _local.errors['basic_defaults.max_comment_length'][0] : _local.errors?.['basic_defaults.max_comment_length']) ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section-layout>
+  </div>
+</partial>

@@ -1,0 +1,15 @@
+feature: 임시 첨부 키 검증 오류의 항목 이름
+
+description: |
+  페이지 생성·수정·첨부 업로드 요청은 UUID 가 아닌 임시 키(temp_key)를 422 로 거절한다. 그 문구가
+  「temp key 필드는 유효한 UUID여야 합니다.」처럼 내부 필드 이름을 그대로 보였다(7.1.0 전수 실측 영역 L, O-L3).
+  세 요청이 같은 항목 이름(ko 「임시 첨부 키」, en 「temporary attachment key」)을 쓴다.
+
+axes:
+  locale: [ko, en]
+
+effects:
+  - temp_key_error_uses_friendly_attribute_name
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/TempKeyAttributeNameTest.php

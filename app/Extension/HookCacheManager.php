@@ -19,6 +19,11 @@ use Illuminate\Support\Facades\Log;
  * 등록↔발화 순서 계약은 불변이다. 캐시 미스(파일 부재/설치 직후/캐시 클리어 후)는
  * 항상 스캔 폴백으로 안전하게 동작한다.
  *
+ * 캐시 파일에는 형식 번호(`format`)와 만든 코어 버전(`core_version`)을 함께 싣는다. 표지가 없거나(7.0.x 가 만든
+ * 파일) 형식·코어 버전이 지금과 다르면 쓰지 않고 스캔으로 폴백한다. 7.0.x 의 코어 업데이트는 새 파일을 깐 같은
+ * 프로세스에서 캐시를 다시 굽는데, 그 프로세스에는 옛 코어 리스너가 이미 로드돼 있어 옛 구독이 박힌다 — 표지로
+ * 그런 캐시가 새 코어에서 쓰이지 않게 한다.
+ *
  * 오토로드 캐시(autoload-extensions.php)와 동일 위치·생명주기를 갖는다:
  * 확장 install/activate/deactivate/uninstall/update 시
  * ExtensionManager::updateComposerAutoload() 가 함께 재생성한다.
@@ -27,6 +32,11 @@ use Illuminate\Support\Facades\Log;
  */
 class HookCacheManager
 {
+    /**
+     * 캐시 파일 형식 번호 — 표지 없는 파일(7.0.x)은 옛 형식으로 보고 버린다. 캐시 항목 구조를 바꾸면 올린다.
+     */
+    public const FORMAT = 2;
+
     /**
      * 캐시 파일 경로.
      */
@@ -47,6 +57,9 @@ class HookCacheManager
      */
     private static array|false|null $memo = null;
 
+    /**
+     * 캐시 파일 경로를 정합니다 (`bootstrap/cache/hooks.php`).
+     */
     public function __construct()
     {
         $this->cacheFilePath = base_path('bootstrap/cache/hooks.php');
@@ -75,7 +88,8 @@ class HookCacheManager
     /**
      * 캐시 파일을 읽어 반환합니다.
      *
-     * 파일이 없거나 구조가 손상된 경우 null 을 반환하여 호출측이 스캔 폴백하도록 한다.
+     * 파일이 없거나 구조가 손상됐거나, 형식 표지가 없거나 형식·코어 버전이 지금과 다르면 null 을 반환하여
+     * 호출측이 스캔 폴백하도록 한다.
      *
      * @return array{core: array<int, array<string, mixed>>, modules: array<string, array<int, array<string, mixed>>>, plugins: array<string, array<int, array<string, mixed>>>}|null
      */
@@ -120,6 +134,20 @@ class HookCacheManager
             return null;
         }
 
+        // 형식·코어 버전 표지 — 옛 코어(7.0.x)가 옛 리스너로 구운 캐시, 다른 코어 버전이 만든 캐시는 쓰지 않는다.
+        $format = $data['format'] ?? null;
+        $coreVersion = $data['core_version'] ?? null;
+        if ($format !== self::FORMAT || $coreVersion !== CoreVersionChecker::getCoreVersion()) {
+            Log::warning('훅 캐시 파일의 형식·코어 버전이 지금과 다릅니다 — 스캔 폴백 (php artisan hooks:cache 로 다시 만드세요)', [
+                'path' => $this->cacheFilePath,
+                'format' => $format,
+                'core_version' => $coreVersion,
+            ]);
+            self::$memo = false;
+
+            return null;
+        }
+
         self::$memo = $data;
 
         return $data;
@@ -154,6 +182,8 @@ class HookCacheManager
     public function generate(ModuleManager $moduleManager, PluginManager $pluginManager): array
     {
         $cache = [
+            'format' => self::FORMAT,
+            'core_version' => CoreVersionChecker::getCoreVersion(),
             'core' => $this->collectCoreListeners(),
             'modules' => $this->collectExtensionListeners($moduleManager->getActiveModules()),
             'plugins' => $this->collectExtensionListeners($pluginManager->getActivePlugins()),
@@ -300,6 +330,12 @@ class HookCacheManager
         ];
     }
 
+    /**
+     * 캐시 배열을 `return [...]` 형식의 PHP 파일 본문으로 만듭니다.
+     *
+     * @param  array<string, mixed>  $cache  형식 표지·코어 버전·세 버킷을 담은 캐시 배열
+     * @return string 캐시 파일 본문
+     */
     protected function buildCacheFileContent(array $cache): string
     {
         $exported = var_export($cache, true);

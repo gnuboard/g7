@@ -1,0 +1,205 @@
+<!-- 일반 탭 — 사이트 이름·로고 같은 기본 정보. 설정 화면의 기본 탭이다.
+  로고는 다른 칸과 달리 **저장 버튼을 누를 때 함께 올라간다** — 저장이 먼저 보내는 신호(`upload:site_logo`)를
+  아래 업로더가 받아 그때 올린다. 그래서 파일을 고른 것만으로는 아직 아무것도 올라가지 않는다. -->
+<partial description="환경설정 일반 탭 콘텐츠">
+  <div data-ref="tab_content_general" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'general'}}">
+    <div data-ref="card_site_info" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.site_info</h3>
+      <div class="card-description">$t:admin.settings.general.site_info_desc</div>
+      <div class="row-stack">
+        <div class="grid-2col-responsive">
+          <div data-ref="field_site_name">
+            <label class="form-label">
+              <span>$t:admin.settings.general.site_name</span>
+              <span class="text-red-500 ml-1">*</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.site_name'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="general.site_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_name'] === true}}" class="input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['general.site_name']}}" class="form-error">{{_local.errors?.['general.site_name']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_site_url">
+            <label class="form-label">
+              <span>$t:admin.settings.general.site_url</span>
+              <span class="text-red-500 ml-1">*</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.site_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="url" name="general.site_url" placeholder="https://example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_url'] === true}}" class="input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['general.site_url']}}" class="form-error">{{_local.errors?.['general.site_url']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="field_site_description">
+          <label class="form-label">$t:admin.settings.general.site_description</label>
+          <textarea name="general.site_description" :rows="2" placeholder="$t:admin.settings.general.site_description_placeholder" disabled="{{_computed.isReadOnly}}" class="input textarea-sm resize-none"/>
+        </div>
+        <div data-ref="field_admin_email">
+          <label class="form-label">
+            <span>$t:admin.settings.general.admin_email</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <input type="email" name="general.admin_email" placeholder="admin@example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.admin_email'] ? 'input-error' : ''}}"/>
+          <span data-if="{{_local.errors?.['general.admin_email']}}" class="form-error">{{_local.errors?.['general.admin_email']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="field_site_logo">
+          <label class="form-label">$t:admin.settings.general.site_logo</label>
+          <p class="text-tertiary mb-2">$t:admin.settings.general.site_logo_desc</p>
+          <file-uploader data-type="composite" data-ref="site_logo_uploader" collection="site_logo" disabled="{{_computed.isReadOnly}}" :maxFiles="5" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.general?.site_logo ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:site_logo" :confirmBeforeRemove="true">
+            <prop name="imageCompression">
+              <field name="maxSizeMB" :value="1"/>
+              <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"/>
+            </prop>
+            <on type="change" event="onFilesChange">
+              <!-- 파일을 고른 것만으로 **아직 올라가지 않는다**(`autoUpload=false`) — 저장 버튼이 보내는
+                   신호를 받아야 올린다. 여기서는 "고친 것이 있다" 표시만 켜 저장 버튼을 풀어 준다.
+                   고른 파일이 없어지는 경우까지 표시를 켜지 않도록 조건을 단다. -->
+              <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
+            </on>
+            <on type="change" event="onUploadComplete">
+              <!-- 업로드가 끝나면 올라간 파일을 폼 값에 **덧붙인다**(덮어쓰지 않는다) — 이미 있던 로고를
+                   남긴 채 새 것을 더하는 화면이라 그렇다. -->
+              <set-state target="local" :hasChanges="true" form.general.site_logo="{{[...(_local.form?.general?.site_logo ?? []), ...$args[0]]}}"/>
+            </on>
+            <on type="custom" event="onUploadComplete">
+              <!-- 같은 완료 이벤트를 **두 번 받는다** — 위는 값 갱신, 여기는 알림.
+                   갈라 둔 것은 값 갱신이 실패해도 알림이 뜨지 않게 하려는 것이 아니라, 한 블록에
+                   섞으면 어느 쪽이 화면 표시이고 어느 쪽이 상태 변경인지 읽기 어렵기 때문이다. -->
+              <toast type="success" message="$t:attachment.upload_success"/>
+            </on>
+            <on type="custom" event="onUploadError">
+              <!-- 업로드 실패 — 업로더가 준 문구를 그대로 띄운다(크기·확장자 제한은 업로드 탭이 정한다). -->
+              <toast type="error" message="{{$args[0]}}"/>
+            </on>
+            <on type="change" event="onRemove">
+              <!-- 뺀 파일을 폼 값에서도 걸러 낸다 — 화면에서만 사라지고 저장 값에 남으면 다음 저장에
+                   되살아난다. 실제 삭제는 저장 시점에 정해진다. -->
+              <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+            </on>
+            <on type="custom" event="onRemove">
+              <!-- 위 제거와 같은 이벤트의 알림 몫이다(완료 이벤트를 둘로 나눈 것과 같은 이유). -->
+              <toast type="info" message="$t:attachment.deleted"/>
+            </on>
+          </file-uploader>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_localization" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.localization</h3>
+      <div class="card-description">$t:admin.settings.general.localization_desc</div>
+      <div>
+        <div class="grid-2col-responsive">
+          <div data-ref="field_language">
+            <label class="form-label">
+              <span>$t:admin.settings.general.default_language</span>
+              <span class="text-red-500 ml-1">*</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.language'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <select name="general.language" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.language'] === true}}" placeholder="$t:admin.settings.general.select_language" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" error="{{_local.errors?.['general.language']?.[0] ?? ''}}"/>
+            <span data-if="{{_local.errors?.['general.language']}}" class="form-error">{{_local.errors?.['general.language']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_timezone">
+            <label class="form-label">
+              <span>$t:admin.settings.general.timezone</span>
+              <span class="text-red-500 ml-1">*</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['general.timezone'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <select name="general.timezone" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.timezone'] === true}}" placeholder="$t:admin.settings.general.select_timezone" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}" error="{{_local.errors?.['general.timezone']?.[0] ?? ''}}"/>
+            <span data-if="{{_local.errors?.['general.timezone']}}" class="form-error">{{_local.errors?.['general.timezone']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_asset_serving" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.asset_url_mode</h3>
+      <div class="card-description">$t:admin.settings.general.asset_url_mode_help</div>
+      <div data-ref="field_asset_url_mode">
+        <div class="flex gap-2 items-start">
+          <div class="flex-1">
+            <select name="general.asset_url_mode" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="extension">$t:admin.settings.general.asset_url_mode_extension</option>
+                <option value="extensionless">$t:admin.settings.general.asset_url_mode_extensionless</option>
+              </options>
+            </select>
+          </div>
+          <button data-ref="asset_url_mode_detect_button" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_computed.isReadOnly}}">
+            <on event="onClick">
+              <action handler="detectAssetUrlMode"/>
+            </on>
+            <span>$t:admin.settings.general.asset_url_mode_detect</span>
+          </button>
+        </div>
+        <p data-ref="asset_url_mode_msg_detecting" data-if="{{_local.asset_url_mode_detect_status === 'detecting'}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:admin.settings.general.asset_url_mode_detecting</p>
+        <p data-ref="asset_url_mode_msg_extension" data-if="{{_local.asset_url_mode_detect_status === 'extension'}}" class="mt-2 text-sm text-green-600 dark:text-green-400">$t:admin.settings.general.asset_url_mode_detect_extension</p>
+        <p data-ref="asset_url_mode_msg_extensionless" data-if="{{_local.asset_url_mode_detect_status === 'extensionless'}}" class="mt-2 text-sm text-amber-600 dark:text-amber-400">$t:admin.settings.general.asset_url_mode_detect_extensionless</p>
+        <p data-ref="asset_url_mode_msg_unavailable" data-if="{{_local.asset_url_mode_detect_status === 'unavailable'}}" class="mt-2 text-sm text-red-600 dark:text-red-400">$t:admin.settings.general.asset_url_mode_detect_unavailable</p>
+      </div>
+    </div>
+    <!-- 초기 화면 정적 파일 — 이 탭에서 **유일하게 저장 대상이 아닌 카드**다. `name=` 입력이 하나도 없고,
+      상태를 보여 주고 재게시를 실행할 뿐이라 저장 버튼과 무관하다.
+      상태 배지는 네 갈래를 classMap 하나로 가른다 — 꺼짐(G7_STATIC_CACHE=false) · 개발 모드(운영 모드가
+      아니라 게시 자체를 하지 않는다) · 게시됨 · 미게시. 앞 둘은 `publishable=false` 로 묶여
+      「지금 다시 만들기」가 잠기고, 왜 잠겼는지는 카드 아래 힌트가 갈라 말한다.
+      실행 계정을 함께 보여 주는 이유는 이 기능의 실패가 대개 소유권이기 때문이다 — 명령줄에서 root 로
+      게시하면 그 폴더가 root 소유가 되어 다음번 웹 서버 계정의 게시가 조용히 실패한다.
+      실패는 연속 횟수와 사유(쓰기 불가 · 잠금 실패 · 그 외)로 나뉘어 표시되고, 사유가 셋 중 무엇도
+      아니면 마지막 갈래가 받는다 — 사유를 모른다고 아무 안내도 없이 두지 않기 위해서다. -->
+    <div data-ref="card_static_cache" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.static_cache_title</h3>
+      <div class="card-description">$t:admin.settings.general.static_cache_description</div>
+      <div class="row-stack">
+        <div data-ref="static_cache_summary_row" class="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div data-ref="static_cache_status_row" class="flex items-center gap-2">
+            <span class="text-label">$t:admin.settings.general.static_cache_status</span>
+            <span data-ref="static_cache_status_badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
+              <class-map key="{{staticCacheStatus?.data?.enabled === false ? 'disabled' : (staticCacheStatus?.data?.publishable !== true ? 'dev_mode' : (staticCacheStatus?.data?.published ? 'published' : 'unpublished'))}}">
+                <variant when="published">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300</variant>
+                <variant when="unpublished">bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300</variant>
+                <variant when="disabled">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+                <variant when="dev_mode">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+              </class-map>
+              <span data-ref="static_cache_status_text_disabled" data-if="{{staticCacheStatus?.data?.enabled === false}}">$t:admin.settings.general.static_cache_status_disabled</span>
+              <span data-ref="static_cache_status_text_dev_mode" data-if="{{!!staticCacheStatus?.data &amp;&amp; staticCacheStatus?.data?.enabled !== false &amp;&amp; staticCacheStatus?.data?.publishable !== true}}">$t:admin.settings.general.static_cache_status_dev_mode</span>
+              <span data-ref="static_cache_status_text_published" data-if="{{staticCacheStatus?.data?.publishable === true &amp;&amp; !!staticCacheStatus?.data?.published}}">$t:admin.settings.general.static_cache_status_published</span>
+              <span data-ref="static_cache_status_text_unpublished" data-if="{{staticCacheStatus?.data?.publishable === true &amp;&amp; !staticCacheStatus?.data?.published}}">$t:admin.settings.general.static_cache_status_unpublished</span>
+            </span>
+          </div>
+          <div data-ref="static_cache_version_row" class="flex items-center gap-2">
+            <span class="text-label">$t:admin.settings.general.static_cache_version</span>
+            <span class="text-heading">{{Number(staticCacheStatus?.data?.version ?? 0) > 0 ? staticCacheStatus?.data?.version : '-'}}</span>
+          </div>
+          <div data-ref="static_cache_files_row" class="flex items-center gap-2">
+            <span class="text-label">$t:admin.settings.general.static_cache_files</span>
+            <span class="text-heading">{{staticCacheStatus?.data?.published ? Number(staticCacheStatus?.data?.files ?? 0).toLocaleString() : '-'}}</span>
+          </div>
+          <div data-ref="static_cache_published_at_row" class="flex items-center gap-2">
+            <span class="text-label">$t:admin.settings.general.static_cache_published_at</span>
+            <span data-ref="static_cache_published_at_value" data-if="{{!!staticCacheStatus?.data?.published_at}}" class="text-heading">{{staticCacheStatus.data.published_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
+            <span data-ref="static_cache_published_at_never" data-if="{{!staticCacheStatus?.data?.published_at}}" class="text-heading">$t:admin.settings.general.static_cache_never</span>
+          </div>
+          <div data-ref="static_cache_process_user_row" class="flex items-center gap-2">
+            <span class="text-label">$t:admin.settings.general.static_cache_process_user</span>
+            <span class="text-heading">{{staticCacheStatus?.data?.process_user ?? '-'}}</span>
+          </div>
+          <div data-ref="static_cache_actions" class="ml-auto">
+            <button data-ref="static_cache_republish_button" type="button" disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" aria-disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+              <on type="click">
+                <open-modal target="settings_static_cache_republish_modal"/>
+              </on>
+              $t:admin.settings.general.static_cache_republish_now
+            </button>
+          </div>
+        </div>
+        <div data-ref="static_cache_failure_row" data-if="{{!!staticCacheStatus?.data?.failure}}" class="form-hint text-red-600 dark:text-red-400 break-words">
+          <span>$t:admin.settings.general.static_cache_failure|count={{staticCacheStatus?.data?.failure?.count ?? 0}}</span>
+          <span> </span>
+          <span data-ref="static_cache_failure_reason_parent_not_writable" data-if="{{staticCacheStatus?.data?.failure?.reason === 'parent_not_writable'}}">$t:admin.settings.general.static_cache_failure_parent_not_writable</span>
+          <span data-ref="static_cache_failure_reason_lock_unavailable" data-if="{{staticCacheStatus?.data?.failure?.reason === 'lock_unavailable'}}">$t:admin.settings.general.static_cache_failure_lock_unavailable</span>
+          <span data-ref="static_cache_failure_reason_write_failed" data-if="{{!['parent_not_writable', 'lock_unavailable'].includes(staticCacheStatus?.data?.failure?.reason ?? '')}}">$t:admin.settings.general.static_cache_failure_write_failed</span>
+        </div>
+        <div data-ref="static_cache_not_publishable_hint" data-if="{{!!staticCacheStatus?.data &amp;&amp; staticCacheStatus?.data?.publishable !== true}}" class="form-hint">
+          <span data-ref="static_cache_hint_disabled" data-if="{{staticCacheStatus?.data?.enabled === false}}">$t:admin.settings.general.static_cache_hint_disabled</span>
+          <span data-ref="static_cache_hint_dev_mode" data-if="{{staticCacheStatus?.data?.enabled !== false}}">$t:admin.settings.general.static_cache_hint_dev_mode</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

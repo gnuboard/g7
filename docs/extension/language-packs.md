@@ -3,11 +3,11 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어/번들 확장의 lang/{ko,en}/ 는 가상 보호 행으로 자동 노출 (DB 없이 항상 active+protected, 수정 불가)
+1. 코어와 설치된 확장(설치본)의 lang/{ko,en}/ 는 가상 보호 행으로 자동 노출 (DB 없이 항상 active+protected, 수정 불가) — 미설치 번들 확장은 노출 안 됨
 2. lang-packs/_bundled/ 패키지(ja, fr 등)는 비보호 — 사용자가 install/uninstall/update/activate/deactivate 자유
-3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약)
-4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의
-5. 업데이트 우선순위: GitHub 1순위 + bundled 폴백 (force 시 bundled 우선) — 모듈/플러그인 패턴 동일
+3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약). 설치는 호스트가 설치돼 있으면 꺼져 있어도 허용(꺼진 채 설치)
+4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의. 호스트가 꺼진 동안 켜 달라는 요청으로 설치된 팩은 호스트를 켤 때 함께 켜짐
+5. 업데이트 출처: GitHub 공개 최신과 bundled 판 중 높은 버전(같으면 GitHub), 실제 업데이트도 확인이 고른 출처에서 받음. --force·--source=bundled 는 bundled — 모듈·플러그인·템플릿과 같은 규칙
 ```
 
 ## 개요
@@ -69,7 +69,7 @@ lang/
 - `core.<영역>.*` — 향후 코어 UI 추가 시
 
 호스팅 템플릿/모듈/플러그인의 lang JSON 은 root 에 `core` 키를 정의하지 않는다.
-정적 검사가 차단한다.
+자동 검증이 차단한다.
 
 ### 런타임 병합 흐름
 
@@ -174,6 +174,7 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 | `requires.depends_on_core_locale` | ✓ | true 일 때 활성화 시 동일 locale 의 코어 언어팩 활성 상태를 강제 |
 | `github_url` | ✓ | GitHub 저장소 URL (없으면 빈 문자열). 비어있지 않으면 GitHub 기반 업데이트 경로 활성화 — 모듈/플러그인 매니페스트와 동일 동작 |
 | `github_changelog_url` | ✓ | GitHub release/CHANGELOG URL (없으면 빈 문자열) |
+| `icon` | — | **선택**. 패키지 루트 기준 아이콘 상대경로. 적지 않으면 대상 확장(또는 코어) 아이콘에 로케일 표시를 얹어 자동 합성합니다 — [확장 아이콘](extension-icons.md) |
 
 ### 콘텐츠 파일
 
@@ -182,7 +183,15 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 - `backend/{locale}/*.php` — Laravel `trans()` 파일 (코어/모듈/플러그인 PHP 다국어)
 - `frontend/{locale}.json` — 템플릿 풀 페이로드
 - `frontend/partial/{locale}/*.json` — 템플릿/모듈 partial 페이로드
-- `seed/{entity}.json` — 다국어 시드 (NotificationDefinition, IdentityMessageDefinition 등)
+- `seed/{entity}.json` — 다국어 시드 (NotificationDefinition — 본인인증 알림 포함, Permission, Role, Menu 등)
+
+### 국가 이름 (코어 언어팩 `backend/{locale}/countries.php`)
+
+회원 정보·방문자 통계의 국가 이름은 저장값이 ISO alpha-2 코드(`KR`)이고 화면에서 이름을 붙입니다. 코어는 내장 로케일(ko·en) 이름만 `config/countries.php` 의 `localized_names` 에 두고, **그 밖의 로케일은 코어 언어팩이 채웁니다** — `backend/{locale}/countries.php` 가 `['KR' => '韓国', 'US' => 'アメリカ', …]` 처럼 코드를 키로 이름을 돌려주면 번역 키 `countries.{코드}` 로 올라옵니다.
+
+해석 순서는 하나입니다(회원 응답 `country_name`·방문자 통계 지역 라벨 공통): 그 로케일의 코어 설정 이름 → 언어팩 `countries.{코드}` → (방문자 통계만) intl 지역 표기 → 기본 폴백 로케일의 설정 이름 → 코드. 이 파일이 없는 로케일은 회원 화면 국가 이름이 기본 폴백 로케일(ko)로 보입니다. 번들 `g7-core-ja` 는 설정의 국가 전부를 일본어로 채우며, 표기는 관리자 템플릿 언어팩(`g7-template-sirsoft-admin_basic-ja`)의 국가 선택 목록(`lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/countries.json`)과 같게 둡니다(사용자 템플릿 목록은 한국을 「大韓民国」 으로 적어 한 곳이 다릅니다).
+
+이 파일은 **코어 `lang/ko` 에 짝이 없는 언어팩 전용 파일**입니다(내장 로케일의 정본이 번역 파일이 아니라 설정이므로 lang/ko/countries.php 를 만들지 않습니다). 그래서 다른 백엔드 파일처럼 `lang/ko/{파일}` 과 키를 대조하지 않고, 키(국가 코드)가 `config/countries.php` 의 `localized_names.ko` 국가 코드를 빠짐없이 덮는지로 확인합니다. 설정에 국가를 추가하면 번들 언어팩의 이 파일에도 같은 코드를 더합니다.
 
 ### 들여쓰기 규칙
 
@@ -207,10 +216,10 @@ UI 에서 라디오로 즉시 전환 가능. 활성 팩이 제거되면 slot 의
 2. `LanguagePackManifestValidator` → manifest 구조 검증
 3. 보안 검사: `backend/` 외 PHP 파일 차단, `eval`/`include` 패턴 차단
 4. 의존성 검사: `depends_on_core_locale=true` 면 코어 언어팩 active 여부 확인
-5. 대상 확장 존재 확인 (modules/plugins/templates 테이블)
+5. 대상 확장 존재 확인 (modules/plugins/templates 테이블) — 미설치·버전 미달은 거부, 설치돼 있으나 꺼진 대상은 허용
 6. 다운그레이드 차단 (version_compare)
 7. `_pending` → `lang-packs/{identifier}/` 이동
-8. DB 레코드 생성/업데이트, 슬롯이 비어있으면 자동 active 승격
+8. DB 레코드 생성/업데이트, 슬롯이 비어있으면 자동 active 승격. 대상 확장이 꺼져 있으면 꺼진 채(installed) 두고, 켜 달라는 요청이었으면 「대상 켜짐 대기」로 표시 — 아래 「꺼진 확장의 언어팩」
 9. `HookManager::doAction('core.language_packs.after_activate', $pack)` → `SyncDatabaseTranslations` 리스너가 DB JSON 컬럼 갱신
 
 ### 웹 인스톨러 (`public/install/`) 동반 설치
@@ -238,7 +247,7 @@ php artisan language-pack:provision --scope=core     # 스코프 한정
 
 - 대상 로케일 기본값은 `config('app.supported_locales')` 에서 base locale(ko/en)을 뺀 집합입니다. 즉 "사이트가 쓰겠다고 선언한 로케일" 만 채웁니다(불필요한 로케일 대량 설치 없음).
 - 미설치 번들 팩(신규 설치)과 설치본 파일이 사라진 드리프트 팩(복구)을 함께 대상으로 삼습니다. 정상 설치된 팩은 어느 쪽에도 해당하지 않아 재실행해도 신규 설치가 0 건으로 수렴합니다(완전 멱등). fresh install · 복구 · 시더가 공유하는 단일 프로비저닝 경로입니다.
-- 대상 확장 미설치/미활성 등 설치 차단 사유가 있는 팩은 건너뛰고 경고만 남깁니다(best-effort).
+- 대상 확장 미설치·버전 미달 등 설치 차단 사유가 있는 팩은 건너뛰고 경고만 남깁니다(best-effort). 대상 확장이 설치돼 있으나 꺼진 팩은 꺼진 채 설치되고 그 확장을 켤 때 함께 켜집니다.
 
 ### 미설치·드리프트 발견
 
@@ -248,7 +257,7 @@ php artisan language-pack:provision --scope=core     # 스코프 한정
 
 ### supported_locales ↔ 번들 소스 정합
 
-`config/app.php` 의 `supported_locales` 에 비-base 로케일을 선언했다면, 대응하는 코어 번들 소스(`lang-packs/_bundled/g7-core-{locale}/`)가 존재해야 프로비저닝으로 채울 수 있습니다. 대응 소스가 없는 로케일을 선언하면 설치할 팩 자체가 없어 그 로케일이 조용히 `ko` 로 폴백합니다(복구 경로 없음). 이 정합은 정적 검사로 확인됩니다 — 소스를 추가하거나 미지원 로케일을 선언에서 제거하세요.
+`config/app.php` 의 `supported_locales` 에 비-base 로케일을 선언했다면, 대응하는 코어 번들 소스(`lang-packs/_bundled/g7-core-{locale}/`)가 존재해야 프로비저닝으로 채울 수 있습니다. 대응 소스가 없는 로케일을 선언하면 설치할 팩 자체가 없어 그 로케일이 조용히 `ko` 로 폴백합니다(복구 경로 없음). 이 정합은 자동 검증으로 확인됩니다 — 소스를 추가하거나 미지원 로케일을 선언에서 제거하세요.
 
 ## 시더 통합 (HookManager 필터)
 
@@ -266,10 +275,8 @@ foreach ($config['categories'] as $cat) { ... }
 | `core.permissions.config` | RolePermissionSeeder |
 | `core.roles.config` | RolePermissionSeeder |
 | `core.menus.config` | CoreAdminMenuSeeder |
-| `seed.notifications.translations` | NotificationDefinitionSeeder |
-| `seed.identity_messages.translations` | IdentityMessageDefinitionSeeder (본인인증 메일 메시지 정의 — provider × scope × scope_value 복합 키) |
+| `seed.notifications.translations` | NotificationDefinitionSeeder (본인인증 알림 `identity.*` 정의 포함 — type 키) |
 | `seed.{vendor-module}.{entity}.translations` | 모듈 시더 (예: `seed.sirsoft-ecommerce.shipping_types.translations`, `seed.sirsoft-ecommerce.notifications.translations`, `seed.sirsoft-board.board_types.translations`) |
-| `seed.{vendor-module}.identity_messages.translations` | 모듈/플러그인 IDV 메시지 정의 — `ModuleManager::syncModuleIdentityMessages` / `PluginManager::syncPluginIdentityMessages` 가 발화 |
 | `module.{id}.admin_menus.translations` | ModuleManager::createModuleMenus() — 모듈 admin_menus 동기화 시 |
 | `module.{id}.roles.translations` | ModuleManager::createModuleRoles() — 모듈 roles 동기화 시 |
 | `module.{id}.permissions.translations` | ModuleManager::createModulePermissions() — 모듈 권한 트리 동기화 시 |
@@ -280,8 +287,7 @@ foreach ($config['categories'] as $cat) { ... }
 **확장 시드 필터 자동 결선** (`LanguagePackServiceProvider::registerExtensionSeedFilters`): 활성 모듈/플러그인 언어팩의 `seed/*.json` 마다 위 패턴의 필터에 listener 가 자동 등록됩니다. 매칭 키는 entry 의 컬럼을 우선순위(`code` > `slug` > `key` > `identifier` > `id`) 로 자동 감지합니다.
 
 엔티티별 결선 정책:
-- `notifications.json` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조)
-- `identity_messages.json` → `seed.{target}.identity_messages.translations` 필터 (Definition × Template × Channel — provider/scope_type/scope_value 복합 키 매칭)
+- `notifications.json` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조 — 확장의 본인인증 알림 `identity.purpose.*` 도 type 키로 여기 포함)
 - `menus.json` → `module.{target}.admin_menus.translations` 필터 (모듈 전용)
 - `roles.json` → `{scope}.{target}.roles.translations` 필터 (module/plugin)
 - `permissions.json` → `{scope}.{target}.permissions.translations` 필터 (3-레벨 트리: module/categories/permissions)
@@ -289,15 +295,15 @@ foreach ($config['categories'] as $cat) { ... }
 
 ### 복원 경로의 언어팩 병합
 
-[기본값 복원](알림 템플릿·본인인증 메시지)은 위 시딩 필터가 아니라 자체 기본값 필터
-(`core.notification.filter_default_definitions` / `core.identity.filter_default_message_definitions`)를
+[기본값 복원](알림 템플릿 — 본인인증 알림 포함)은 위 시딩 필터가 아니라 자체 기본값 필터
+(`core.notification.filter_default_definitions`)를
 탄다. 복원 기본값에는 **활성 언어팩 seed 로케일이 반드시 병합**되어야 한다 — 병합하지 않으면
 복원이 팩이 주입해 둔 로케일(ja 등)을 config 의 ko/en 만으로 대체해 영구 소실시키며,
-오류도 로그도 남지 않는다. 코어 서비스(NotificationTemplateService·IdentityMessageTemplateService)가
-필터 적용 후 시딩과 같은 주입기(SSoT)로 병합하며, 정적 검사(테스트)가 이 계약을 고정한다.
+오류도 로그도 남지 않는다. 코어 서비스(NotificationTemplateService)가
+필터 적용 후 시딩과 같은 주입기(SSoT)로 병합하며, 자동 검증(테스트)가 이 계약을 고정한다.
 
 시딩 필터의 페이로드는 **발화 주체의 원형 키를 보존**해야 한다 — 코어 알림 시더는 config
-원형(연관 배열, 키가 곧 type), 본인인증은 복합 키(`mail.purpose.signup` 등)가 매칭 키다.
+원형(연관 배열, 키가 곧 type — 본인인증 알림은 `identity.purpose.signup` 등)이 매칭 키다.
 키를 버리고 리스트로 만들면 주입기가 전 항목을 스킵해 팩 로케일이 오류 없이 주입되지 않는다.
 알림 주입기는 두 형태(문자열 키 우선, 없으면 type 필드)를 수용한다.
 
@@ -331,20 +337,19 @@ foreach ($config['categories'] as $cat) { ... }
 
 ### IDV 도메인 lang pack 커버리지
 
-`config/core.php` 의 본인인증 SSoT 4개 블록 중 lang pack seed 대상은 1개:
+`config/core.php` 에서 본인인증과 관련된 SSoT 3개 블록 중 lang pack seed 대상은 1개:
 
 | SSoT 블록 | lang pack seed | 사유 |
 |---|---|---|
-| `notification_definitions` | ✓ `seed/notifications.json` | 정의/템플릿이 다국어 데이터 직접 보유 |
-| `identity_messages` | ✓ `seed/identity_messages.json` | 메일 본문/제목이 다국어 데이터 직접 보유 |
+| `notification_definitions` (본인인증 알림 `identity.*`, category=identity 포함) | ✓ `seed/notifications.json` | 정의/템플릿(메일 제목·본문)이 다국어 데이터 직접 보유 |
 | `identity_policies` | ❌ | `IdentityPolicy` 모델에 다국어 필드 부재 — 관리자 UI 라벨은 `lang/{locale}/identity.php` 또는 `frontend/partial/admin.json` 의 i18n 키로 처리 |
 | `identity_purposes` | ❌ | `label_key`/`description_key` 참조 패턴 — 실제 ja 라벨은 `frontend/partial/admin.json::identity.purposes.*` 키로 처리 |
 
-**`identity_messages.json` 스키마 예시**:
+**본인인증 알림 번역 예시** (`seed/notifications.json` 안의 한 항목):
 
 ```json
 {
-  "mail.purpose.signup": {
+  "identity.purpose.signup": {
     "definition": {
       "name": "会員登録認証",
       "description": "会員登録時のメール認証"
@@ -359,7 +364,7 @@ foreach ($config['categories'] as $cat) { ... }
 }
 ```
 
-복합 키는 `{channel}.{scope_type}.{scope_value}` 또는 `{channel}.provider_default` 형태 — config/core.php::identity_messages 의 array key 와 동일.
+키는 알림 정의 type(`identity.default` / `identity.purpose.{purpose}`) — `config/core.php::notification_definitions` 의 array key 와 동일. 7.1.0 에서 별도 `seed/identity_messages.json` 은 폐지되고 이 파일로 통합되었습니다.
 
 **확장 권한 트리 시드 키 포맷**: 권한은 ModuleManager 가 DB row identifier 를 `{module-id}.{cat-id}.{perm-id}` 로 prefix 하므로 시드도 동일 포맷을 사용합니다. 권한 노드 식별자는 `action`(이커머스 등) 또는 `identifier`(명시적) 둘 중 존재하는 키를 사용합니다.
 
@@ -374,6 +379,8 @@ foreach ($config['categories'] as $cat) { ... }
 | C: locale 키 존재 + user_overrides 미등록 | 시드 값으로 덮어쓰기 |
 
 비활성화/제거 시에도 user_overrides 등록 locale 은 JSON 에서 제거되지 않습니다. 모든 보존 결정은 `language_pack` 채널에 감사 로그로 기록됩니다.
+
+모듈·플러그인 범위 팩을 비활성화하면 그 로케일 키를 확장 행(이름·설명)뿐 아니라 그 확장이 소유한 권한·역할·메뉴·알림 정의·알림 템플릿에서도 제거합니다(활성화 때 주입한 범위와 같음). 다시 활성화하면 seed 로 다시 채웁니다. 확장에 내장된 언어(`bundled_with_extension`)는 확장 자신의 언어라 제거하지 않습니다.
 
 ## 백엔드 번역 namespace fallback 메커니즘
 
@@ -437,24 +444,35 @@ wrap 이 필요한 이유: TemplateService 가 모듈/플러그인 자체 ko 데
 
 ## 공식 일본어 번들 언어팩 (g7-*-ja)
 
-G7 는 일본어 번들 언어팩 12종을 공식 제공합니다. ko 원본을 LLM 으로 자동 번역하여 빌드된 산출물이며, 사용자 환경에서는 일반 번들 확장과 동일하게 `language-pack:install --source=bundled` 로 설치합니다.
+G7 는 일본어 번들 언어팩 23종을 공식 제공합니다. ko 원본을 LLM 으로 자동 번역하여 빌드된 산출물이며, 사용자 환경에서는 일반 번들 확장과 동일하게 `language-pack:install --source=bundled` 로 설치합니다.
 
 ### 패키지 구성
 
 | scope | 식별자 | target_identifier |
 |---|---|---|
 | core | `g7-core-ja` | (null) |
-| template | `g7-template-sirsoft-admin_basic-ja` | sirsoft-admin_basic |
-| template | `g7-template-sirsoft-basic-ja` | sirsoft-basic |
 | template | `g7-template-gnuboard7-hello_admin_template-ja` | gnuboard7-hello_admin_template |
 | template | `g7-template-gnuboard7-hello_user_template-ja` | gnuboard7-hello_user_template |
-| module | `g7-module-sirsoft-ecommerce-ja` | sirsoft-ecommerce |
-| module | `g7-module-sirsoft-board-ja` | sirsoft-board |
-| module | `g7-module-sirsoft-page-ja` | sirsoft-page |
+| template | `g7-template-sirsoft-admin_basic-ja` | sirsoft-admin_basic |
+| template | `g7-template-sirsoft-basic-ja` | sirsoft-basic |
 | module | `g7-module-gnuboard7-hello_module-ja` | gnuboard7-hello_module |
+| module | `g7-module-sirsoft-board-ja` | sirsoft-board |
+| module | `g7-module-sirsoft-ecommerce-ja` | sirsoft-ecommerce |
+| module | `g7-module-sirsoft-page-ja` | sirsoft-page |
+| plugin | `g7-plugin-gnuboard7-hello_plugin-ja` | gnuboard7-hello_plugin |
 | plugin | `g7-plugin-sirsoft-ckeditor5-ja` | sirsoft-ckeditor5 |
+| plugin | `g7-plugin-sirsoft-daum_postcode-ja` | sirsoft-daum_postcode |
+| plugin | `g7-plugin-sirsoft-gdpr-ja` | sirsoft-gdpr |
+| plugin | `g7-plugin-sirsoft-koreaexim-ja` | sirsoft-koreaexim |
 | plugin | `g7-plugin-sirsoft-marketing-ja` | sirsoft-marketing |
+| plugin | `g7-plugin-sirsoft-message_bizppurio-ja` | sirsoft-message_bizppurio |
+| plugin | `g7-plugin-sirsoft-pay_kginicis-ja` | sirsoft-pay_kginicis |
+| plugin | `g7-plugin-sirsoft-pay_nhnkcp-ja` | sirsoft-pay_nhnkcp |
+| plugin | `g7-plugin-sirsoft-pay_nicepayments-ja` | sirsoft-pay_nicepayments |
 | plugin | `g7-plugin-sirsoft-tosspayments-ja` | sirsoft-tosspayments |
+| plugin | `g7-plugin-sirsoft-totp-ja` | sirsoft-totp |
+| plugin | `g7-plugin-sirsoft-verification_kginicis-ja` | sirsoft-verification_kginicis |
+| plugin | `g7-plugin-sirsoft-verification_nhnkcp-ja` | sirsoft-verification_nhnkcp |
 
 ### 입력 → 산출 매핑
 
@@ -466,6 +484,7 @@ G7 는 일본어 번들 언어팩 12종을 공식 제공합니다. ko 원본을 
 | `g7-module-{mod}-ja` | `modules/_bundled/{mod}/{src,resources}/lang/ko/*.php` + `resources/lang/ko.json` + `resources/lang/partial/ko/**/*.json` (재귀) | `backend/ja/*.php` + `frontend/ja.json` + `frontend/partial/**/*.json` |
 | `g7-module-sirsoft-ecommerce-ja` seed | `ShippingTypeSeeder`, `ClaimReasonSeeder`, `EcommerceNotificationDefinitionSeeder` ko 추출 | `seed/{shipping_types,claim_reasons,notifications}.json` |
 | `g7-module-sirsoft-board-ja` seed | `BoardTypeSeeder::DEFAULT_BOARD_TYPES` 상수 추출 | `seed/board_types.json` |
+| `g7-module-sirsoft-page-ja` seed | `PageSeeder` 샘플 페이지(제목·본문) ko 추출 | `lang-packs/_bundled/g7-module-sirsoft-page-ja/seed/pages.json` |
 | 모듈 ja 팩 (공통) | `module.php` 의 `getAdminMenus` / `getRoles` / `getPermissions` 추출 | `seed/{menus,roles,permissions}.json` |
 | 플러그인 ja 팩 (공통) | `plugin.php` 의 `getRoles` / `getPermissions` 추출 | `seed/{roles,permissions}.json` |
 | 모든 확장 ja 팩 | `module.json` / `plugin.json` / `template.json` 의 `name`/`description` ko | `seed/manifest.json` |
@@ -504,16 +523,16 @@ G7 는 일본어 번들 언어팩 12종을 공식 제공합니다. ko 원본을 
 - 이미 생성된 값을 손으로 고쳤다면 용어집도 함께 고친다 — 용어집을 두면 다음 키에서 같은 오역이 되풀이된다
 - 같은 용어는 팩 전체에서 한 표기로 통일한다 (용어집이 단일 출처)
 
-정적 검사가 번역 값의 원본 로케일 문자 잔존을 검출한다. 매니페스트와 CHANGELOG,
+자동 검증이 번역 값의 원본 로케일 문자 잔존을 검출한다. 매니페스트와 CHANGELOG,
 그리고 한국어 주석은 대상이 아니다.
 
 ### 설치 및 활성화
 
 ```bash
-# 12개 패키지를 번들 소스로 설치 (자동 활성)
+# 23개 패키지를 번들 소스로 설치 (자동 활성)
 php artisan language-pack:install g7-core-ja --source=bundled
 php artisan language-pack:install g7-template-sirsoft-admin_basic-ja --source=bundled
-# ... (나머지 10개 동일)
+# ... (나머지 21개 동일 — 식별자는 위 「패키지 구성」 표)
 
 # 확인
 php artisan language-pack:list --scope=core
@@ -535,6 +554,7 @@ ko 에서 키 제거 시 번들 ja 의 대응 키도 수동 제거 권장 (자�
 번들 언어팩 자산을 수정할 때마다 모듈/플러그인/템플릿 확장과 동일한 수준의 버전 + CHANGELOG 관리를 적용한다.
 
 - **버전 bump 시점**: 패키지가 외부에 한 번이라도 출시(릴리즈/배포) 된 이후의 수정에 한해 버전을 올린다. 아직 출시되지 않은 번들 패키지의 사전 보강(키 추가/번역 정정 등) 은 `1.0.0` 그대로 유지한다. 이미 출시된 버전의 콘텐츠를 수정하면 patch bump 가 필수다 (출시 확정 버전의 콘텐츠를 버전 유지한 채 덮어쓰지 않는다).
+  - 여기서 "수정" 은 **결과물이 출시본과 달라지는 것**을 뜻한다. 브랜치를 출시본 쪽으로 맞추는 작업(상위 브랜치 병합 등)은 그 파일이 변경 목록에 오르더라도 결과가 출시본과 같으므로 bump 대상이 아니다. 판정은 파일 내용을 출시본과 직접 대조해서 한다.
 - **버전 bump 단위**: 출시 후 키 추가/누락 보강은 패치 (1.0.0 → 1.0.1), 의미적으로 큰 변경이나 제거는 마이너 (1.0.0 → 1.1.0).
 - **CHANGELOG.md**: 패키지 루트에 `CHANGELOG.md` 작성. Keep a Changelog 표준 (`## [버전] - YYYY-MM-DD` + `### Added/Changed/Fixed/Removed`).
 - **톤**: 사용자 관점, 1~2줄 불릿. 내부 파일 경로/내부 함수명/이슈 번호 미기재.
@@ -576,16 +596,32 @@ php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --sour
 
 ## 의존성 검증 — 설치 차단 사유 (UI 인라인 안내)
 
-미설치 번들 행과 설치 모달은 다음 4가지 사유로 설치 차단을 표시한다 (`LanguagePackService::resolveInstallBlockedReason()` 가 단일 SSoT). 모듈/플러그인 시스템과 동일 강도.
+미설치 번들 행과 설치 모달은 다음 3가지 사유로 설치 차단을 표시한다 (`LanguagePackService::resolveInstallBlockedReason()` 가 단일 SSoT).
 
 | 사유 키 | 발생 조건 |
 | ------- | --------- |
 | `core_locale_missing` | scope ≠ core + 코어 동일 locale 팩 미활성 |
 | `target_not_installed` | 대상 모듈/플러그인/템플릿이 DB 에 없음 |
-| `target_inactive` | 대상은 설치되었지만 status ≠ active |
 | `target_version_too_old` | manifest `requires.target_version` 미충족 |
 
 `LanguagePackResource::resourceMeta()` 가 차단 사유 존재 시 `abilities.can_install` 을 false 로 강제 — UI 행/모달 버튼이 권한과 무관하게 disabled.
+
+대상이 설치돼 있으나 꺼진 경우(`target_inactive`)는 **설치 차단 사유가 아니다** — 행의 `install_notice` 로 실려 설치 창이 「꺼진 채
+설치되고, 그 확장을 켠 뒤 켤 수 있다」 안내만 보이고 설치 버튼은 잠그지 않는다(`resolveInstallNotice()`). 언어팩을 **켜는 것**은
+여전히 대상이 켜져 있어야 한다(`activate()` 가 `target_inactive` 로 거부).
+
+### 꺼진 확장의 언어팩 — 꺼진 채 설치하고 확장을 켤 때 함께 켠다
+
+확장은 설치 직후 비활성이라, 확장 설치 창에서 함께 고른 그 확장 자신의 언어팩(예: Hello 모듈의 일본어 팩)은 설치 시점에 켤 수 없다.
+이 팩은 꺼진 채(`installed`) 설치되고 `deactivated_reason = awaiting_host`(「대상 켜짐 대기」)로 표시되며, 그 확장을 켤 때
+(`core.{modules,plugins,templates}.after_activate`) 함께 켜진다. 설치 응답은 이런 팩을 실패(`language_pack_failures`)가 아니라
+`language_packs_awaiting_host` 로 돌려주고, 설치 창은 「확장을 켜면 함께 켜집니다」 안내를 띄운다.
+
+- 대기 표시는 **켜 달라는 요청으로 설치한 팩**에만 붙는다(설치 창 함께 설치·`language-pack:install`·`language-pack:provision`).
+  언어팩 관리 화면의 개별 설치는 원래 켜지 않고 설치하므로 대기 표시가 없고, 확장을 켜도 그대로다 — 목록 스위치로 켠다.
+- 사용자가 끈 팩, 확장을 끌 때 함께 꺼진 팩(「언어팩 다시 켜기」 창이 따로 묻는다), 같은 언어 자리를 이미 다른 팩이 쓰는 경우는
+  확장을 켜도 건드리지 않는다.
+- 설치되지 않은 확장의 언어팩은 종전처럼 설치할 수 없다.
 
 ## is_protected 정책 (모듈/플러그인/템플릿과 일관)
 
@@ -600,7 +636,7 @@ ZIP 업로드 전 manifest 검증 결과를 사전 확인할 수 있다. 모듈/
 - 라우트: `POST /api/admin/{language-packs|modules|plugins|templates}/manifest-preview`
 - 응답: `{ manifest, validation: { errors[], is_valid, already_installed, existing_version } }`
 - 검증 실패 시에도 HTTP 200 — `validation.is_valid: false` + `errors[]` 노출
-- UI: 각 도메인의 수동 설치 모달(`_modal_manual_install.json`) 에 "manifest 미리보기" 버튼 → 별도 드로어 partial(`_drawer_manifest_preview.json`) 로 ZIP 업로드 + 결과 표시
+- UI: 각 도메인의 수동 설치 모달(`_modal_manual_install.g7.html`) 에 "manifest 미리보기" 버튼 → 별도 드로어 partial(`_drawer_manifest_preview.g7.html`) 로 ZIP 업로드 + 결과 표시
 - 드로어 작성 패턴: [modal-usage.md ZIP 파일 업로드 모달/드로어 패턴](../frontend/modal-usage.md#zip-파일-업로드-모달드로어-패턴-multipart-백엔드)
 
 ## 관련 파일
@@ -616,4 +652,4 @@ ZIP 업로드 전 manifest 검증 결과를 사전 확인할 수 있다. 모듈/
 - `app/Providers/LanguagePackServiceProvider.php`
 - `app/Http/Controllers/Api/Admin/LanguagePackController.php`
 - `database/migrations/2026_04_27_000001_create_language_packs_table.php`
-- `templates/_bundled/sirsoft-admin_basic/layouts/admin_language_pack_list.json`
+- `templates/_bundled/sirsoft-admin_basic/layouts/admin_language_pack_list.g7.html`

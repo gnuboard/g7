@@ -35,6 +35,7 @@ effects:
   - core_origin_action_unaffected_by_module_lang
   - extension_origin_resolved_from_loggable_type_fqcn
   - extension_origin_resolved_from_properties_when_loggable_null
+  - legacy_rows_resolve_origin_from_description_key  # 출처 주입 이전 행 — 설명 키 네임스페이스로 추론 (#138 실측 ⑧)
   - explicit_extension_origin_in_properties_preserved_over_auto_resolve
   - core_listener_does_not_inject_extension_origin_into_properties
   - module_listener_auto_injects_extension_origin

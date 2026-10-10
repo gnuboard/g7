@@ -1,0 +1,252 @@
+<!-- 게시판 설정 — 반응 유형 목록, 넓은 화면용 표 + 추가 폼. 좁은 화면용 카드
+  (`_reaction_type_cards`)와 같은 배열(`form.basic_defaults.reaction_types`)을 편집한다.
+
+  추가는 **임시 폼**(`reactionTypeForm`)에 담았다가 확인할 때 배열에 붙인다 — 취소하면 임시
+  폼만 버리면 되고 원본 배열은 손대지 않은 상태로 남는다. 필수값·중복 판정은 `<conditions>`
+  로 갈라 통과하면 배열에 반영하고, 아니면 오류 표시만 세운다.
+
+  코드는 만든 뒤 바꿀 수 없다 — 게시판의 `active_reaction_types` 와 이미 쌓인 반응 행이
+  코드로 이어져 있어, 바꾸면 그 연결이 끊긴다. 그래서 기존 행의 코드 칸은 읽기 전용이다.
+  아이콘 업로드도 행이 생긴 뒤에만 할 수 있다 — 업로드가 첨부를 곧바로 만들기 때문이다.
+  이름은 사이트 기본 언어 칸이 필수다(서버 LocaleRequiredTranslatable 과 같은 계약, 게시판 유형 이름과 같음 — 다국어 필수 언어는 사이트 기본 언어).
+  서버 오류는 이름 칸 전체 키(`.name`)로 오므로 행 이름 칸은 `.name.{사이트 기본 언어}` 다음에 `.name` 을 읽는다. -->
+<partial>
+  <div class="admin-card mt-3">
+    <div class="card-header">
+      <!-- `card-header` 는 justify 를 걸지 않는 가로 flex 라, 이 줄이 w-full 없이는
+        내용 폭으로 줄어 「유형 추가」 버튼이 제목에 달라붙는다. -->
+      <div class="flex-between w-full">
+        <div>
+          <div class="card-title">$t:sirsoft-board.admin.settings.reaction_types.title</div>
+        </div>
+        <button data-testid="reaction-type-add-btn" data-if="{{!_local.isAddingReactionType}}" type="button" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <!-- 유형 추가 시작. 빈 임시 폼을 세우고 이전 오류를 함께 지운다. -->
+            <set-state target="local" :isAddingReactionType="true" :reactionTypeFormErrors="null">
+              <field name="reactionTypeForm">
+                <field name="code" value=""/>
+                <field name="name">
+                  <field name="ko" value=""/>
+                  <field name="en" value=""/>
+                  <field name="ja" value=""/>
+                </field>
+                <field name="is_active" :value="true"/>
+              </field>
+            </set-state>
+          </on>
+          <icon name="plus" class="text-xs"/>
+          <span>$t:sirsoft-board.admin.settings.reaction_types.add_button</span>
+        </button>
+      </div>
+    </div>
+    <div data-testid="reaction-type-empty" data-if="{{(_local.form?.basic_defaults?.reaction_types ?? []).length === 0 &amp;&amp; !_local.isAddingReactionType}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.settings.reaction_types.empty</div>
+    <div data-ref="reaction_type_list" data-if="{{(_local.form?.basic_defaults?.reaction_types ?? []).length > 0 || _local.isAddingReactionType}}" class="overflow-x-clip">
+      <responsive on="portable" class="">
+        <include src="_reaction_type_cards.g7.html"/>
+      </responsive>
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th class="text-tertiary text-center font-medium px-2 py-2 w-10"/>
+            <th class="text-tertiary text-left font-medium px-4 py-2 w-32">$t:sirsoft-board.admin.settings.reaction_types.columns.code</th>
+            <th class="text-tertiary text-left font-medium px-4 py-2 w-56">$t:sirsoft-board.admin.settings.reaction_types.columns.name</th>
+            <th class="text-tertiary text-left font-medium px-4 py-2 w-48">$t:sirsoft-board.admin.settings.reaction_types.columns.icon</th>
+            <th class="text-tertiary text-center font-medium px-4 py-2 w-16">$t:sirsoft-board.admin.settings.reaction_types.columns.is_active</th>
+            <th class="text-tertiary text-center font-medium px-4 py-2 w-20">$t:sirsoft-board.admin.settings.reaction_types.columns.reaction_count</th>
+            <th class="text-tertiary text-center font-medium px-4 py-2 w-16">$t:common.delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sortable source="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => ({...r, _idx: i}))}}" item-var="row" item-key="code" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]" wrapper-element="tr"/>
+          <item-template>
+            <div class="border-t border-gray-200 dark:border-gray-700 contents">
+            <td class="px-2 py-2 text-center">
+              <!-- 끌어서 순서를 바꾼다. 손잡이를 따로 두는 것은 행 안의 입력·토글을 누를 때
+                끌기가 시작되지 않게 하기 위해서다(형제 화면 배송유형과 같은 방식). -->
+              <div data-testid="reaction-type-drag-{{row.code}}" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
+              </div>
+            </td>
+            <td class="px-4 py-2">
+              <span class="font-mono text-body">{{row.code}}</span>
+            </td>
+            <td class="px-4 py-2">
+              <multilingual-input data-type="composite" value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <!-- 기존 행 — 이름(언어별). -->
+                  <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
+                </on>
+              </multilingual-input>
+            </td>
+            <td class="px-4 py-2">
+              <div class="flex-center gap-2">
+                <img data-testid="reaction-type-icon-{{row.code}}" data-if="{{!!row.icon_url}}" src="{{row.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
+                <icon data-if="{{!row.icon_url}}" name="{{row.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
+                <div data-testid="reaction-type-uploader-{{row.code}}" class="flex-1 min-w-0">
+                  <file-uploader data-type="composite" collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{row.icon_attachment ? [row.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_title" confirmRemoveMessage="$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_message">
+                    <prop name="apiEndpoints">
+                      <field name="upload" value="/api/modules/sirsoft-board/admin/reaction-types/icons"/>
+                      <field name="delete" value="/api/modules/sirsoft-board/admin/reaction-types/icons/:id"/>
+                    </prop>
+                    <on type="change" event="onUploadComplete">
+                      <!-- 업로드가 끝나면 첨부 셋을 행에 심는다. 유형에 실제로 붙는 건 저장할 때다. -->
+                      <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, icon_attachment_id: $args[0]?.[0]?.id ?? null, icon_url: $args[0]?.[0]?.download_url ?? null, icon_attachment: $args[0]?.[0] ?? null} : r)}}" :hasChanges="true"/>
+                    </on>
+                    <on type="change" event="onRemove">
+                      <!-- 아이콘을 떼면 글꼴 아이콘 폴백으로 돌아간다. 업로더가 확인 창(confirmBeforeRemove)을 거친 뒤에만 오고,
+                  그때 서버의 첨부와 파일은 이미 지워졌다 — 저장 전이라도 되돌릴 수 없어 확인 창이 그 사실을 알린다. -->
+                      <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, icon_attachment_id: null, icon_url: null, icon_attachment: null} : r)}}" :hasChanges="true"/>
+                    </on>
+                    <on type="change" event="onUploadError">
+                      <!-- 업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다 -->
+                      <toast type="error" message="$t:sirsoft-board.admin.settings.reaction_types.messages.icon_upload_failed"/>
+                    </on>
+                    <on type="change" event="onDeleteError">
+                      <!-- 첨부 삭제 실패 — 아이콘 값은 이미 비워졌으므로 알림만 낸다 -->
+                      <toast type="error" message="$t:sirsoft-board.admin.settings.reaction_types.messages.icon_delete_failed"/>
+                    </on>
+                  </file-uploader>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <div data-testid="reaction-type-active-{{row.code}}">
+                <toggle data-type="composite" checked="{{row.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 끄면 회원 화면의 반응 버튼에서 빠진다. 이미 쌓인 반응 행은 그대로다. -->
+                    <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
+                  </on>
+                </toggle>
+              </div>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <span class="text-body">{{row.reaction_count ?? 0}}</span>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <!-- 반응이 쌓인 유형은 지울 수 없다 — 지우면 그 반응 행이 가리킬 유형이 없어진다.
+                disabled 버튼은 hover 이벤트가 죽어 툴팁이 뜨지 않으므로 래퍼 span 에 건다. -->
+              <div data-testid="reaction-type-delete-wrap-{{row.code}}" class="inline-block" title="{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}">
+                <button aria-label="$t:common.delete" data-testid="reaction-type-delete-{{row.code}}" type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}">
+                  <on type="click">
+                    <!-- 행을 빼고 남은 자리 번호를 다시 매긴다. 게시판이 고른 코드 목록에서도
+                      같이 빼야 없어진 코드를 가리키는 설정이 남지 않는다. -->
+                    <set-state confirm="$t:sirsoft-board.admin.settings.reaction_types.confirm_delete" target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).filter((_, i) => i !== row._idx).map((r, i) => ({...r, display_order: i}))}}" form.basic_defaults.active_reaction_types="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).filter(c => c !== row.code)}}" :hasChanges="true"/>
+                  </on>
+                  <icon name="fa-solid fa-trash" class="text-sm"/>
+                </button>
+              </div>
+            </td>
+            </div>
+          </item-template>
+          <on event="onSortEnd">
+            <!-- 끌어 놓은 결과를 배열 순서로 반영하고 자리 번호(display_order)를 다시 매긴다 —
+              순서 값이 배열 순서와 어긋나면 저장 뒤 화면과 회원 화면의 차례가 달라진다. -->
+            <set-state if="{{!_computed.isReadOnly}}" target="local" form.basic_defaults.reaction_types="{{$sortedItems.map((r, i) => ({...r, display_order: i}))}}" :hasChanges="true"/>
+          </on>
+        </tbody>
+        <tbody>
+            <!-- 추가 중인 임시 행. 기존 행과 **같은 칸 순서**로 두어, 만드는 중에도 완성된 뒤와
+              같은 자리에서 같은 것을 고른다(형제 화면 통화·마일리지 설정과 같은 방식). 연한 색으로
+              «아직 저장되지 않은 줄» 임을 알린다. -->
+            <tr data-ref="new_reaction_type_row" data-testid="reaction-type-draft-row" data-if="{{_local.isAddingReactionType}}" class="border-t border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
+              <td class="px-2 py-2 text-center align-top">
+                <icon name="fa-solid fa-plus" class="text-sm text-blue-500 dark:text-blue-400"/>
+              </td>
+              <td class="px-4 py-2 align-top">
+                <input data-testid="reaction-type-form-code" type="text" value="{{_local.reactionTypeForm?.code ?? ''}}" class="{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 코드는 소문자·앞뒤 공백 없는 형태로 맞춰 둔다. 저장한 뒤엔 바꿀 수 없다. -->
+                    <set-state target="local" reactionTypeForm.code="{{($event.target.value ?? '').trim().toLowerCase()}}"/>
+                  </on>
+                </input>
+                <span data-if="{{_local.reactionTypeFormErrors?.code === 'required'}}" class="form-error">$t:sirsoft-board.admin.settings.reaction_types.validation.code_required</span>
+                <span data-if="{{_local.reactionTypeFormErrors?.code === 'duplicate'}}" class="form-error">$t:sirsoft-board.admin.settings.reaction_types.validation.code_duplicate</span>
+                <span data-if="{{_local.reactionTypeFormErrors?.code === 'format'}}" class="form-error">$t:sirsoft-board.admin.settings.reaction_types.validation.code_format</span>
+              </td>
+              <td class="px-4 py-2 align-top">
+                <multilingual-input data-type="composite" value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 유형 이름(언어별). 회원 화면의 반응 버튼 문구가 된다. -->
+                    <set-state target="local" reactionTypeForm.name="{{$event.target.value}}"/>
+                  </on>
+                </multilingual-input>
+              </td>
+              <td class="px-4 py-2 align-top">
+                <!-- 유형이 아직 없어도 올릴 수 있다 — 업로드 API 의 `reaction_type_id` 가 선택이고
+                  저장할 때 `syncTypes()` 가 이어 붙인다(docs/api/reaction-types.md). -->
+                <div data-testid="reaction-type-uploader-new" class="min-w-0">
+                  <file-uploader data-type="composite" collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{_local.reactionTypeForm?.icon_attachment ? [_local.reactionTypeForm.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_title" confirmRemoveMessage="$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_message">
+                    <prop name="apiEndpoints">
+                      <field name="upload" value="/api/modules/sirsoft-board/admin/reaction-types/icons"/>
+                      <field name="delete" value="/api/modules/sirsoft-board/admin/reaction-types/icons/:id"/>
+                    </prop>
+                    <on type="change" event="onUploadComplete">
+                      <!-- 새 유형의 아이콘 — 유형이 아직 없어 첨부 ID·URL·첨부 객체를 폼에 두었다가 확인 시 행에 싣는다 -->
+                      <set-state target="local" reactionTypeForm.icon_attachment_id="{{$args[0]?.[0]?.id ?? null}}" reactionTypeForm.icon_url="{{$args[0]?.[0]?.download_url ?? null}}" reactionTypeForm.icon_attachment="{{$args[0]?.[0] ?? null}}"/>
+                    </on>
+                    <on type="change" event="onRemove">
+                      <!-- 아이콘 제거 — 세 값을 비워 글꼴 아이콘 폴백으로 돌아간다 -->
+                      <set-state target="local" :reactionTypeForm.icon_attachment_id="null" :reactionTypeForm.icon_url="null" :reactionTypeForm.icon_attachment="null"/>
+                    </on>
+                    <on type="change" event="onUploadError">
+                      <!-- 업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다 -->
+                      <toast type="error" message="$t:sirsoft-board.admin.settings.reaction_types.messages.icon_upload_failed"/>
+                    </on>
+                    <on type="change" event="onDeleteError">
+                      <!-- 첨부 삭제 실패 — 아이콘 값은 이미 비워졌으므로 알림만 낸다 -->
+                      <toast type="error" message="$t:sirsoft-board.admin.settings.reaction_types.messages.icon_delete_failed"/>
+                    </on>
+                  </file-uploader>
+                </div>
+              </td>
+              <td class="px-4 py-2 text-center align-top">
+                <div data-testid="reaction-type-active-new">
+                  <toggle data-type="composite" checked="{{_local.reactionTypeForm?.is_active ?? true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                    <on type="change">
+                      <!-- 새 유형은 「사용」으로 시작한다. 여기서 바로 꺼 둘 수도 있다. -->
+                      <set-state target="local" reactionTypeForm.is_active="{{!(_local.reactionTypeForm?.is_active ?? true)}}"/>
+                    </on>
+                  </toggle>
+                </div>
+              </td>
+              <td class="px-4 py-2 text-center align-top">
+                <span class="text-body">0</span>
+              </td>
+              <td class="px-4 py-2 text-center align-top">
+                <div class="flex-center gap-1">
+                  <button data-testid="reaction-type-form-confirm" type="button" class="p-1.5 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 board-confirm-button rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:sirsoft-board.admin.settings.reaction_types.form.confirm" disabled="{{_computed.isReadOnly}}">
+                    <on type="click">
+                      <!-- 추가 확인. 코드와 기본 언어 이름이 있고 코드가 이미 있는 것과 겹치지 않아야
+                        통과한다. 하나라도 어긋나면 배열은 건드리지 않고 어느 칸이 문제인지만 세운다.
+                        아이콘·사용 여부는 임시 폼에서 그대로 옮겨 붙인다. -->
+                      <conditions>
+                        <when if="{{(_local.reactionTypeForm?.code ?? '').trim() &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &gt;= 2 &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &lt;= 50 &amp;&amp; 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch =&gt; 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) &amp;&amp; (_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() &amp;&amp; !(_local.form?.basic_defaults?.reaction_types ?? []).some(t =&gt; t.code === (_local.reactionTypeForm?.code ?? '').trim())}}">
+                          <set-state target="local" form.basic_defaults.reaction_types="{{[...(_local.form?.basic_defaults?.reaction_types ?? []), {code: (_local.reactionTypeForm?.code ?? '').trim(), name: _local.reactionTypeForm?.name ?? {}, icon_name: null, icon_attachment_id: _local.reactionTypeForm?.icon_attachment_id ?? null, icon_url: _local.reactionTypeForm?.icon_url ?? null, icon_attachment: _local.reactionTypeForm?.icon_attachment ?? null, is_active: _local.reactionTypeForm?.is_active ?? true, reaction_count: 0, display_order: (_local.form?.basic_defaults?.reaction_types ?? []).length}]}}" :isAddingReactionType="false" :reactionTypeForm="null" :reactionTypeFormErrors="null" :hasChanges="true"/>
+                        </when>
+                        <else>
+                          <set-state target="local">
+                            <field name="reactionTypeFormErrors">
+                              <field name="code" value="{{!(_local.reactionTypeForm?.code ?? '').trim() ? 'required' : (!((_local.reactionTypeForm?.code ?? '').trim().length &gt;= 2 &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().length &lt;= 50 &amp;&amp; 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) &amp;&amp; (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch =&gt; 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch))) ? 'format' : ((_local.form?.basic_defaults?.reaction_types ?? []).some(t =&gt; t.code === (_local.reactionTypeForm?.code ?? '').trim()) ? 'duplicate' : null))}}"/>
+                              <field name="name" value="{{!(_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() ? true : null}}"/>
+                            </field>
+                          </set-state>
+                        </else>
+                      </conditions>
+                    </on>
+                    <icon name="fa-solid fa-check" class="text-sm"/>
+                  </button>
+                  <button data-testid="reaction-type-form-cancel" type="button" class="p-1.5 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.cancel" disabled="{{_computed.isReadOnly}}">
+                    <on type="click">
+                      <!-- 추가 취소. 임시 폼만 비우면 원본 배열은 그대로다. -->
+                      <set-state target="local" :isAddingReactionType="false" :reactionTypeForm="null" :reactionTypeFormErrors="null"/>
+                    </on>
+                    <icon name="fa-solid fa-xmark" class="text-sm"/>
+                  </button>
+                </div>
+              </td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</partial>

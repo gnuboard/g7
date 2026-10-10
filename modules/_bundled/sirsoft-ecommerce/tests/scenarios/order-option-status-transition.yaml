@@ -27,12 +27,14 @@ axes:
     - dbank             # 무통장 — 입금확인 경로
     - card_pg           # PG 카드 — completePayment 자동완료
     - mileage_full      # 전액 마일리지(0원) — finalizeZeroAmountPayment
+    - vbank_pg          # PG 가상계좌 — 계좌 발급 뒤 입금통보로 completePayment
   terminal_path:
     - complete_payment        # completePayment(PG)
     - fail_payment            # failPayment → CANCELLED (B1)
     - manual_deposit_confirm  # confirmManualDeposit → completePayment 위임 (B2)
     - admin_status_update     # OrderService::update → bulkUpdateOptionStatus
     - bulk_update             # OrderService::bulkUpdate 일괄
+    - vbank_issued            # PG 가상계좌 계좌 발급 직후 onVbankAccountIssued
   option_mix:
     - all_active          # 전 옵션 활성 — 전부 동기화
     - has_partial_cancel  # 일부 옵션 부분취소 — 보존 대상 혼재
@@ -45,6 +47,7 @@ exclusions:
   - { payment_method: mileage_full, terminal_path: manual_deposit_confirm, reason: "0원 주문은 입금 불필요" }
   - { payment_method: mileage_full, terminal_path: complete_payment, reason: "0원은 생성 시점 확정(finalize)" }
   - { terminal_path: manual_deposit_confirm, actor: member, reason: "입금확인은 관리자 전용 액션" }
+  - { payment_method: vbank_pg, terminal_path: manual_deposit_confirm, reason: "PG 가상계좌는 입금통보로 확정" }
   - { terminal_path: admin_status_update, actor: member, reason: "상태변경은 관리자 전용" }
   - { terminal_path: bulk_update, actor: member, reason: "일괄변경은 관리자 전용" }
 
@@ -55,13 +58,25 @@ effects:
   - fail_payment_preserves_already_cancelled_options                 # B1 syncExcludedValues
   - manual_deposit_confirm_syncs_option_status_via_complete_payment  # B2 위임
   - manual_deposit_confirm_rejects_amount_mismatch_422               # B2 정확일치
+  - manual_deposit_confirm_accepts_payment_currency_amount           # 소수 결제 통화(USD) 주문은 창이 안내한 결제 통화 금액($17.06)으로 결제완료된다 — 입금액을 최소 화폐단위로 바꿔 비교
+  - manual_deposit_record_keeps_payment_currency_amount              # 「기록만」 경로도 결제 통화 입금액을 센트까지 남긴다 (정수 절사 금지)
+  - manual_deposit_mismatch_reports_due_and_received_in_payment_currency # 불일치 진단 문구는 결제 통화로 예상 = 결제예정금액, 실제 = 입금액
+  - manual_deposit_confirm_rejects_non_dbank_order_422                # 무통장이 아닌 주문의 입금확인은 422 로 거절
+  - manual_deposit_confirm_requires_orders_update_permission         # 주문 수정 권한이 없으면 입금확인은 403
   - manual_deposit_confirm_records_depositor_name                    # B2 입금자명 기록
   - deposit_button_visible_by_payment_status_not_order_status        # 입금확인 버튼 노출 = payment.payment_status(ready/waiting_deposit) 기준 (order_status 무관)
   - create_order_payment_populates_started_at_buyer_vat_name_device  # 주문 생성 시 결제요청일시·구매자·부가세·결제명·디바이스 기록 (PG 콜백 없는 수단 포함)
   - dbank_account_info_summarizes_bank_account                       # getAccountInfo dbank 분기 (계좌 요약 표시)
   - manual_deposit_records_payment_only_without_order_transition     # markOrderComplete=false: 입금(payment)만 기록, 주문 상태 전이 없음
   - manual_deposit_reconciles_payment_only_for_already_completed_order # order_status=결제완료/payment=미입금 불일치: payment 만 정합화(부수효과 미재실행)
+  - manual_deposit_reconciles_order_totals_when_payment_already_paid # S2-D4: payment=PAID/주문 결제금액 0 불일치를 결제완료 일괄 전이가 정합화
+  # 2026-09-17 실측 주문 1496: 결제대기 → 상품준비중처럼 결제완료를 건너뛰는 일괄 전이도 같은 정합화를 탄다
+  - manual_deposit_reconciles_order_totals_when_bulk_status_skips_payment_complete
   - manual_deposit_rejects_when_payment_already_paid                 # payment 가 이미 PAID 면 입금확인 거부(422) / 서비스는 멱등
+  # 2026-10-03 실측: 상태를 먼저 상품준비중까지 올린 뒤 입금을 「기록만」 하면 주문 결제금액이 0 으로 남아 환불 예정액 0원
+  - manual_deposit_fills_order_paid_amount_when_status_already_past_payment
+  - manual_deposit_recorded_hook_carries_before_snapshot # 입금 기록 훅이 기록 전 주문 스냅샷을 세 번째 인자로 넘긴다
+  - manual_deposit_does_not_regress_order_already_past_payment       # 「결제완료로 처리」 체크여도 상품준비중 이후 주문은 되돌리지 않음
   - zero_amount_order_syncs_option_status_on_create
   - admin_status_update_syncs_option_status_excluding_cancelled
   - cancelled_option_not_revived_by_sync                             # syncExcludedValues
@@ -88,6 +103,67 @@ effects:
   # 브라우저 E2E (Playwright)
   - member_sees_option_status_transition_on_order_detail
   - member_can_open_review_modal_after_confirm
+  # 결제실패 race 가드 (Unit — OrderProcessingServiceTest)
+  - fail_payment_ignored_when_payment_already_paid                  # payment=PAID 면 failPayment 가 주문과 옵션을 취소하지 않고 실패 메타도 남기지 않음
+  # 관리자 입금확인 버튼과 모달, 핸들러 (Vitest — adminOrderConfirmDeposit.test.tsx)
+  - manual_deposit_confirm_seeds_page_local_before_open             # 입금확인 버튼은 JS 핸들러로 페이지 _local 을 시드한 뒤 모달을 연다 (선언적 openModal 금지)
+  - manual_deposit_confirm_rejects_amount_mismatch_422_inline_and_toast # 422 금액 불일치는 인라인 에러와 토스트를 함께 띄운다
+  - manual_deposit_confirm_success_closes_modal_and_refetches       # 성공 시 모달을 닫고 order, order_logs 를 다시 읽고 성공 토스트
+  - deposit_confirm_modal_is_partial_with_fixed_id                  # 입금확인 모달은 id=modal_confirm_deposit 인 Modal partial
+  - deposit_confirm_modal_inputs_share_page_local_scope             # 입금자명, 입금액 입력은 _local 바인딩과 target local setState 로 페이지 scope 공유
+  - deposit_confirm_submit_uses_js_handler_with_modal_values        # 확인 버튼은 선언적 apiCall 대신 confirmDeposit 핸들러에 입금액과 입금자명을 넘긴다
+  - deposit_confirm_modal_inline_errors_read_page_local             # 인라인 에러 표시는 _local.depositConfirmErrors 를 읽는다
+  - deposit_confirm_mark_order_complete_flows_from_checkbox_to_handler # 결제완료 처리 체크박스가 _local.markOrderComplete 를 토글하고 확인 버튼이 그 값을 넘긴다
+  - deposit_confirm_sends_mark_order_complete_as_boolean            # PATCH 본문의 mark_order_complete 는 문자열로 와도 boolean 으로 보낸다
+  # 주문 처리 서비스 일반 계약 (Unit — OrderProcessingServiceTest 회귀 가드)
+  - initial_status_is_pending_payment_for_deposit_methods           # 결제액이 있는 가상계좌 주문은 입금대기로 시작
+  - initial_status_is_pending_order_for_pg_methods                  # 결제액이 있는 카드, PG 주문은 주문대기로 시작
+  - initial_status_is_payment_complete_for_zero_amount              # 결제액 0원이면 결제수단과 무관하게 결제완료로 시작
+  - zero_amount_order_completes_payment_on_create                   # 전액 마일리지 주문은 생성 즉시 결제완료, 결제 레코드 PAID
+  - zero_amount_order_fires_payment_complete_hooks_on_create        # 전액 마일리지 주문 생성 시 결제완료 훅과 주문확인 훅 발화
+  - first_order_flag_true_only_for_member_without_orders            # 첫 주문 판정은 주문 이력 없는 회원만 true (비회원은 false)
+  - order_number_unique_timestamp_format                            # 주문번호는 Ymd-His 기반 형식이고 연속 채번해도 겹치지 않음
+  - order_number_recorded_in_sequence_codes                         # 채번한 주문번호가 시퀀스 코드 테이블에 기록됨
+  - create_order_from_temp_order_persists_order                     # 임시주문으로 만든 주문에 회원, 금액, 주문번호가 저장됨
+  - create_order_stores_orderer_locale_on_address                   # 주문 화면 언어가 배송지 orderer_locale 에 저장됨
+  - create_order_keeps_temp_order_for_pg_retry                      # PG 재결제를 위해 주문 생성 뒤에도 임시주문 유지
+  - create_order_saves_promotions_applied_snapshot                  # 적용 쿠폰이 promotions_applied_snapshot 에 기록됨
+  - create_order_saves_shipping_policy_snapshot_as_items_and_address # 배송정책 스냅샷은 items 배열과 address 로 나뉘어 저장됨
+  - create_order_saves_calculation_input_in_order_meta              # 재계산 입력이 order_meta 에 보존됨
+  - create_order_shippings_store_fee_breakdown_from_dto             # 주문 배송 행에 기본, 추가, 할인 배송비와 도서산간 여부 기록
+  - create_order_shippings_save_delivery_policy_snapshot            # 주문 배송 행에 배송정책 스냅샷 기록
+  - create_order_recalculates_from_stored_input                     # 주문 확정 시 저장된 입력으로 한 번 재계산
+  - create_order_blocked_when_recalculated_amount_drifts            # 재계산 금액이 저장 금액과 다르면 주문 차단
+  - purchase_restriction_enforced_at_order_creation                 # 구매 대상 제한 상품은 허용 역할 회원만 주문 가능
+  - order_meta_records_ordered_cart_items                           # order_meta 에 cart_id 가 있는 주문 항목만 장바구니 정보로 기록
+  - ordered_cart_items_cleared_by_ordered_quantity                  # 주문 수량만큼 장바구니를 차감하거나 삭제 (없는 행은 무시)
+  - cart_cleared_at_order_creation_for_order_placed_timing          # order_placed 타이밍은 주문 생성 시 장바구니 정리
+  - cart_kept_at_creation_for_payment_complete_timing               # payment_complete 타이밍은 생성 시 장바구니를 남기고 order_meta 에 보관
+  - complete_payment_clears_ordered_cart_items                      # 결제완료 시 주문한 장바구니 항목 삭제
+  - vbank_issue_clears_ordered_cart_items                           # 가상계좌 계좌 발급(입금 전) 시 주문한 장바구니 항목 정리
+  - cart_cleared_once_per_order                                     # 장바구니 정리는 주문당 한 번 — 발급 때 정리했으면 입금 완료 때 다시 차감하지 않음
+  - stock_deducted_at_order_creation_only_for_order_placed_timing   # 주문 생성 시 재고 차감은 order_placed 타이밍에서만
+  - stock_deducted_at_payment_complete_only_for_payment_complete_timing # 결제완료 시 재고 차감은 payment_complete 타이밍에서만
+  - complete_payment_validates_pg_amount_against_due_amount         # PG 금액은 결제예정금액과 같을 때만 통과 (구성요소 합 불일치, PG 금액 불일치 거부)
+  - complete_payment_validates_post_mileage_due_amount              # 마일리지 사용 주문은 차감 후 금액으로 검증
+  - complete_payment_validates_charge_in_payment_currency           # 기준 통화와 결제 통화가 다르면 결제 통화 환산액으로 검증
+  - payment_currency_chargeability_checked_before_charge            # 환율 0 또는 환산액 0 인 결제 통화는 청구 전에 차단
+  - complete_payment_records_pg_card_details                        # PG 승인 정보(거래번호, 카드 정보, 영수증)를 결제 레코드에 기록
+  - complete_payment_skips_amount_check_without_pg_amount           # PG 금액 없이 호출하면 금액 검증 없이 결제완료
+  - complete_payment_fires_before_and_after_hooks                   # 결제완료 전후 훅 발화
+  - complete_payment_deletes_temp_order                             # 결제완료 시 임시주문 삭제
+  - complete_payment_saves_member_shipping_address_when_requested   # 배송지 저장 요청이 있는 회원 주문만 결제완료 시 배송지 저장
+  - complete_payment_survives_address_save_failure                  # 배송지 저장 실패가 결제완료를 막지 않음
+  - complete_payment_stores_paid_amount_in_payment_currency         # 교차 통화 결제는 paid_amount_local 을 결제 통화로, paid_amount_base 를 기준 통화로 기록
+  - fail_payment_cancels_order_and_records_failure_meta             # 결제 전 주문의 결제실패는 주문 취소와 실패 코드, 메시지, 시각 기록
+  - fail_payment_ignores_order_past_payment                         # 이미 결제완료된 주문은 failPayment 가 상태를 바꾸지 않음
+  - fail_payment_fires_payment_failed_hook                          # 결제실패 훅에 실패 코드 전달
+  - payment_cancellation_marks_payment_cancelled                    # 결제 취소 기록 시 결제 상태 취소와 취소 시각 기록
+  - payment_cancellation_appends_cancel_history                     # 결제 취소 이력은 누적 기록
+  - payment_cancellation_tolerates_missing_payment                  # 결제 레코드 없는 주문도 오류 없이 반환
+  - find_by_order_number_returns_matching_order_or_null             # 주문번호 조회는 일치 주문 또는 null
+  - order_option_multi_currency_includes_earned_points              # 옵션 다통화 빌더가 적립 마일리지 컬럼을 포함
+  - pending_order_is_the_only_hidden_order_status                   # 목록에서 숨기는 주문 상태는 주문대기 하나뿐
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingServiceTest.php
@@ -98,6 +174,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderConfirmDeposit.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/orderReviewButton.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/order-option-status-review.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/deposit-confirm-past-payment.spec.ts
 
 validation:
   audit_rule: frontend-change-requires-e2e

@@ -107,5 +107,6 @@
             "label": "Adult Verification (NHN KCP only)",
             "description": "Map this purpose to the NHN KCP provider only. Mail/SMS providers do not return a date of birth, so adult status cannot be determined."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

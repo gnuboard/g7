@@ -1,0 +1,351 @@
+{
+    "comment": "회원 알림함의 검색 조건 영역. 다른 목록 화면과 같은 흐름이다 — 고른 값은 지역 `filter` 에\n  쌓였다가 검색 버튼이나 Enter 가 주소 질의로 옮길 때 조회된다.\n  검색 대상은 넷이고 **넷 다 서버 규칙에 들어 있다**: 수신자(이름·이메일)·제목·본문·전체.\n  발송 이력 화면의 셀렉트는 규칙에 없어 무시되는 장식이었는데(부록 B D7), 여기서는 같은 실수를\n  반복하지 않는다. 제목·본문은 표준 notifications 테이블의 `data` JSON 안에 있어 서버가\n  JSON 추출로 찾는다 — 화면에서는 그 차이가 보이지 않아야 한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Member Notification List Filter Section"
+    },
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "어디서 찾을지 고른다. 「전체」는 셋을 OR 로 묶는 것이라 가장 넓고 가장 느리다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "searchType",
+                                "className": "select-composite w-36",
+                                "value": "{{_local.filter.searchType || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:admin.member_notification.filter.search_type_all"
+                                    },
+                                    {
+                                        "value": "recipient",
+                                        "label": "$t:admin.member_notification.filter.search_type_recipient"
+                                    },
+                                    {
+                                        "value": "subject",
+                                        "label": "$t:admin.member_notification.filter.search_type_subject"
+                                    },
+                                    {
+                                        "value": "body",
+                                        "label": "$t:admin.member_notification.filter.search_type_body"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "수신자로 찾을 때는 이름과 이메일 둘 다 걸린다 — 운영자가 둘 중 무엇을 들고 있는지 모르기 때문이다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keydown",
+                                            "key": "Enter",
+                                            "actionRef": "searchMemberNotifications"
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:admin.member_notification.search_placeholder",
+                                        "className": "input pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-grid"
+            },
+            "children": [
+                {
+                    "id": "read_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.member_notification.filter.read_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "「전체」는 조건을 거는 것이 아니라 빼는 것이다 — 질의에서 read 가 아예 사라진다.\n                   「안 읽음」은 \"알림이 안 왔다\" 는 문의를 볼 때 먼저 좁히는 갈래다(왔지만 안 읽었을 수 있다).",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.read": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "readState",
+                                        "className": "select-composite w-36",
+                                        "value": "{{_local.filter.read || 'all'}}",
+                                        "options": [
+                                            {
+                                                "value": "all",
+                                                "label": "$t:admin.member_notification.filter.read_all"
+                                            },
+                                            {
+                                                "value": "unread",
+                                                "label": "$t:admin.member_notification.filter.read_unread"
+                                            },
+                                            {
+                                                "value": "read",
+                                                "label": "$t:admin.member_notification.filter.read_read"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "created_range_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.member_notification.filter.created_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "수신일 기준 시작일. 서버가 Y-m-d 만 받으므로 날짜 입력 그대로 넘긴다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.createdFrom": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "createdFrom",
+                                        "type": "date",
+                                        "aria-label": "$t:common.range_start|label={{$t('admin.member_notification.filter.created_label')}}",
+                                        "className": "input w-40",
+                                        "value": "{{_local.filter.createdFrom || ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "~"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "끝일. 시작일보다 앞서면 서버가 422 로 돌려보낸다 — 화면에서 막지 않고 메시지로 알린다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.createdTo": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "createdTo",
+                                        "type": "date",
+                                        "aria-label": "$t:common.range_end|label={{$t('admin.member_notification.filter.created_label')}}",
+                                        "className": "input w-40",
+                                        "value": "{{_local.filter.createdTo || ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchMemberNotifications"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "text": "$t:admin.member_notification.filter.search_button"
+                },
+                {
+                    "comment": "검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter": {
+                                            "searchType": "all",
+                                            "search": "",
+                                            "read": "all",
+                                            "createdFrom": "",
+                                            "createdTo": ""
+                                        }
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 회원 한정까지 포함해 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/member-notifications",
+                                        "mergeQuery": false
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "text": "$t:admin.member_notification.filter.reset_button"
+                }
+            ]
+        }
+    ]
+}

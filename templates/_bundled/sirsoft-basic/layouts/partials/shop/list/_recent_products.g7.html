@@ -1,0 +1,44 @@
+<!-- 최근 본 상품 가로 줄. 다른 두 줄과 달리 목록의 출처가 서버가 아니라 **브라우저 localStorage 의 id 목록**
+     이라, 로그인하지 않아도 남고 기기를 옮기면 사라진다. -->
+<partial description="최근 본 상품 섹션">
+  <div data-if="{{recentProducts.data &amp;&amp; recentProducts.data.length > 0}}" class="mb-12">
+    <isolated-state scope-id="recent-products-scroll">
+      <field name="scrollIdx" :value="0"/>
+    </isolated-state>
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <icon name="clock" class="text-xl"/>
+        <span>$t:shop.recent_products</span>
+      </h2>
+      <div class="flex gap-2">
+        <button type="button" aria-label="$t:common.prev" class="{{_isolated.scrollIdx <= 0 ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{_isolated.scrollIdx <= 0}}">
+          <on type="click">
+            <!-- 이전 — 자리를 옮긴 뒤 그 카드로 굴린다 -->
+            <sequence>
+              <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx - 1}}"/>
+              <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
+            </sequence>
+          </on>
+          <icon name="chevron-left" class="text-base"/>
+        </button>
+        <button type="button" aria-label="$t:common.next" class="{{(_isolated.scrollIdx + 4) >= (recentProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 4) >= (recentProducts.data.length)}}">
+          <responsive on="0-639" class="{{(_isolated.scrollIdx + 2) >= (recentProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 2) >= (recentProducts.data.length)}}"/>
+          <responsive on="640-1023" class="{{(_isolated.scrollIdx + 3) >= (recentProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 3) >= (recentProducts.data.length)}}"/>
+          <on type="click">
+            <!-- 다음 — 한 번에 몇 칸이 보이는지가 화면 폭마다 달라 버튼이 꺼지는 조건을 `responsive` 로 따로 잡는다 -->
+            <sequence>
+              <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx + 1}}"/>
+              <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
+            </sequence>
+          </on>
+          <icon name="chevron-right" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <div class="grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-x-hidden">
+      <div data-each="product, idx in {{recentProducts.data ?? []}}" id="recent-product-{{idx}}">
+        <product-card data-type="composite" product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
+      </div>
+    </div>
+  </div>
+</partial>

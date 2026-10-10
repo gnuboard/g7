@@ -3,7 +3,7 @@
  * @description 환경설정 SEO 탭 레이아웃 렌더링 테스트
  *
  * 테스트 대상:
- * - templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_seo.json
+ * - templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_seo.g7.html
  *
  * 검증 항목:
  * 1. SEO 탭 UI 구조 — TagInput(봇 UA), Toggle(캐시), NumberInput(TTL) 존재
@@ -188,7 +188,7 @@ function setupTestRegistry(): ComponentRegistry {
 }
 
 // ==============================
-// _tab_seo.json 레이아웃 구조 (Partial)
+// _tab_seo.g7.html 레이아웃 구조 (Partial)
 // ==============================
 
 const seoTabPartial: any = {
@@ -859,7 +859,7 @@ describe('환경설정 SEO 탭 레이아웃', () => {
 
   describe('저장 버튼 apiCall params에 _tab=seo', () => {
     it('부모 레이아웃의 apiCall body에 _tab과 해당 탭 데이터가 포함된다', () => {
-      // 부모 레이아웃(admin_settings.json)의 저장 버튼 apiCall body 표현식 검증
+      // 부모 레이아웃(admin_settings.g7.html)의 저장 버튼 apiCall body 표현식 검증
       // body: "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; return { _tab: tab, [tab]: form[tab] || {} }; })()}}"
       const bodyExpr = saveButtonApiCall.params.body;
 

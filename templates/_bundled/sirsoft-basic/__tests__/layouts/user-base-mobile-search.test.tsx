@@ -3,7 +3,7 @@
  * @description 모바일 메뉴 통합검색 기능 테스트
  *
  * 테스트 대상:
- * - templates/.../layouts/_user_base.json (모바일 검색바 섹션)
+ * - templates/.../layouts/_user_base.g7.html (모바일 검색바 섹션)
  *
  * 검증 항목:
  * - 검색 Input에 keydown Enter 액션이 정의되어 있는지
@@ -180,7 +180,7 @@ describe('모바일 메뉴 통합검색', () => {
   });
 
   it('데스크톱 검색과 동일한 navigate 핸들러 패턴을 사용한다', () => {
-    // _search_input.json의 keydown Enter 핸들러와 동일한 navigate 패턴 검증
+    // _search_input.g7.html의 keydown Enter 핸들러와 동일한 navigate 패턴 검증
     const inputComponent = mobileSearchLayout.components[0].children[0].children[1];
     const navigateAction = inputComponent.actions![0].actions![1];
 

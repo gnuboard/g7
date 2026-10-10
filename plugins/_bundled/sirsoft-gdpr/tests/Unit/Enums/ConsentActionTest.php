@@ -22,6 +22,7 @@ class ConsentActionTest extends PluginTestCase
 
     /**
      * @scenario entry=accept_all, subject=member, category=required
+     *
      * @effects consent_action_from_decision_granted_revoked_rejected
      */
     public function test_from_decision_returns_granted_when_value_true(): void

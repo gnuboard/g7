@@ -17,7 +17,7 @@
  * 검증 방식은 화면 눈으로 보기가 아니라 **나가는 API 요청에 필터가 실렸는가** 다 —
  * 이 결함의 관측 가능한 결과가 바로 그것이기 때문이다.
  *
- * @scenario list_filter_quoted_key_reaches_api
+ * @scenario case=list_filter_quoted_key_reaches_api
  * @effects filter_param_sent_to_server
  */
 import { test, expect, issueToken, authenticatePage } from '../fixtures/auth';
@@ -33,7 +33,7 @@ const SCREENS = [
   {
     name: '상품 목록 — 판매상태',
     path: '/admin/ecommerce/products',
-    permissions: ['sirsoft-ecommerce.product.read'],
+    permissions: ['sirsoft-ecommerce.products.read'],
     param: 'sales_status[]',
     value: 'selling',
     apiParam: 'sales_status',
@@ -42,7 +42,7 @@ const SCREENS = [
   {
     name: '주문 목록 — 결제수단',
     path: '/admin/ecommerce/orders',
-    permissions: ['sirsoft-ecommerce.order.read'],
+    permissions: ['sirsoft-ecommerce.orders.read'],
     param: 'payment_method[]',
     value: 'card',
     apiParam: 'payment_method',
@@ -60,7 +60,7 @@ const SCREENS = [
   {
     name: '본인인증 로그 — 상태',
     path: '/admin/identity/logs',
-    permissions: ['core.identity.logs.read'],
+    permissions: ['core.admin.identity.logs.read'],
     param: 'statuses[]',
     value: 'requested',
     apiParam: 'statuses',
@@ -70,7 +70,7 @@ const SCREENS = [
 
 test.describe('목록 필터 — 따옴표 키 인덱싱 바인딩이 서버까지 도달한다', () => {
   for (const screen of SCREENS) {
-    // @scenario list_filter_quoted_key_reaches_api
+    // @scenario case=list_filter_quoted_key_reaches_api
     // @effects filter_param_sent_to_server
     test(`${screen.name}: ?${screen.param} 가 API 요청에 실린다`, async ({ page }) => {
       // 관리자 목록 화면은 부트스트랩(레이아웃/번들/권한) 요청이 많아 여유를 둔다.

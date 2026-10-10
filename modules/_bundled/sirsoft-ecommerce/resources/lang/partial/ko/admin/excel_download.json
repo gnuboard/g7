@@ -47,7 +47,6 @@
   "modal": {
     "download_history": {
       "title": "다운로드 히스토리",
-      "description": "파일의 다운로드 기록을 확인할 수 있습니다",
       "file_content": "파일 내용",
       "category": "구분",
       "status": "상태",

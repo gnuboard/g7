@@ -274,6 +274,11 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             $runtime['admin'] = $existing['admin'];
         }
 
+        // 설치 계획 서명 키 — 재시도/재개 사이에 바뀌면 진행 중 워커가 계획 검증에 실패한다.
+        if (is_string($existing['plan_key'] ?? null) && $existing['plan_key'] !== '') {
+            $runtime['plan_key'] = $existing['plan_key'];
+        }
+
         // Read 커넥션은 use_read_db 플래그가 켜진 경우에만 포함한다 (판정 SSoT).
         // 플래그가 꺼져 있으면 db_read_host 에 잔존 값이 있어도 무시 → runtime 에 read 키
         // 미생성 → 하류(mergeRuntimeIntoEnv / InstallerRuntimeServiceProvider)가 write 로

@@ -1,0 +1,22 @@
+feature: 이커머스 관리자 회원 검색 — 빈 검색어 요청 차단 (#703)
+
+description: |
+  이커머스 관리자 화면 다섯 곳이 코어 회원 검색 API(`/api/admin/users/search`)를 검색어로 부른다.
+  이 API 는 keyword 가 비면 422 로 거절한다(공백만 있어도 서버 요청 정리 뒤 빈 값이 된다).
+    - 드롭다운 세 곳(환경설정 알림 템플릿 편집 창의 「특정 회원」 수신자, 주문 목록의 주문자 필터,
+      쿠폰 목록의 만든 사람 필터)은 조건이 없어 검색칸을 지울 때마다 빈 문자열로 요청해 422 가 났고,
+      실패 처리로 결과 목록까지 비워졌다.
+    - 입력칸 두 곳(마일리지 수동 지급/차감 창, 쿠폰 직접 발급 창)은 길이만 봐서 공백만 적으면 요청해
+      422 가 났고, 직접 발급 창에는 오류 토스트가 떴다. 요청을 건너뛸 때 이전 결과 목록도 남아 있었다.
+  검색어가 비거나 공백뿐이면 요청하지 않고, 입력칸의 이전 결과도 비우거나 숨긴다.
+
+axes:
+  search_term: [empty, blank, filled]
+
+effects:
+  - member_search_skips_empty_keyword
+  - member_search_blank_keyword_hides_previous_results
+  - member_search_sends_filled_keyword
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminMemberSearchBlankKeyword.test.ts

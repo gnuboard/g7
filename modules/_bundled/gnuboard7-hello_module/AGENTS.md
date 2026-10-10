@@ -53,11 +53,16 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | `src/lang/` | 백엔드 다국어 | ko·en 동시 반영 + 번들 ja 팩 동기화 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update gnuboard7-hello_module --force` (빌드 불필요) |
-| `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan module:update gnuboard7-hello_module --force` |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update gnuboard7-hello_module --force` (빌드 불필요) |
+| `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update gnuboard7-hello_module --force` |
+| `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update gnuboard7-hello_module --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update gnuboard7-hello_module --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan module:update gnuboard7-hello_module --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update gnuboard7-hello_module --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->
 
@@ -88,7 +93,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 1개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 1개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 0개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -122,7 +127,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:gnuboard7-hello_module` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 계층을 늘리기 전에 "이것이 샘플에 필요한가" 를 먼저 묻는다 — 샘플의 가치는 한눈에 읽히는 것이다
 - [ ] `manifest.hidden = true` 를 유지 (복제본에서만 제거)
@@ -143,6 +148,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | 검증 로직을 `MemoService` 에 넣기 | `MemoRequest` (FormRequest) | 샘플이 잘못된 본을 보이면 그것을 따라 한 모듈이 전부 같은 형태가 된다 |
 | `MemoService` 가 `MemoRepository` 구체 클래스를 타입힌트 | `MemoRepositoryInterface` | 위와 같은 이유 — 샘플은 규약의 본보기다 |
 | 훅 발행 없이 Service 안에서 로그·알림을 직접 수행 | 훅 발행 + 리스너 | 부가 작업이 Service 에 쌓이면 그 Service 를 재사용할 수 없다 |
+| 쓰기 버튼·폼을 권한과 무관하게 열어 두고 서버 403 에만 기대기 | 응답 `abilities` 로 `disabled`·읽기 전용 ([docs/frontend.md](docs/frontend.md#권한-게이트-abilities)) | 사용자가 다 입력한 뒤에야 거절된다. 샘플이 이 형태를 보여야 복제한 모듈도 따른다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -150,16 +156,19 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 3개 | `modules/_bundled/gnuboard7-hello_module/tests` |
-| Vitest | 0개 | — |
+| PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
+| Vitest | 4개 | — |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
 # PHPUnit (변경 범위만) (Bash)
 php vendor/bin/phpunit modules/_bundled/gnuboard7-hello_module/tests --filter='<대상클래스>'
+
+# Vitest (저장소 루트에서) (PowerShell)
+powershell -Command "npm run test:run -- modules/_bundled/gnuboard7-hello_module/<대상>"
 
 ```
 

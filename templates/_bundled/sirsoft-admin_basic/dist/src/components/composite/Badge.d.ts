@@ -6,6 +6,11 @@ export interface BadgeProps {
     /** 의미 기반 변형 (success/warning/danger/info/primary/secondary/text). 백엔드 Enum variant() 출력과 매핑 */
     variant?: string;
     text?: string;
+    /**
+     * 텍스트 앞에 그릴 아이콘 — 서버 상태 Enum 이 내보내는 의미 토큰(`status-*`)도 그대로 받는다
+     * (Icon 이 토큰을 글리프로 해석). 비어 있으면 그리지 않는다.
+     */
+    icon?: string;
     size?: 'sm' | 'md' | 'lg';
     className?: string;
     style?: React.CSSProperties;

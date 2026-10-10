@@ -1,0 +1,27 @@
+feature: TemplateApp 부팅·로케일·라우팅·상태 초기화 (기존 회귀 묶음, #639 에서 매니페스트 연결)
+
+description: |
+  TemplateApp 은 템플릿 엔진 부팅(인증 확인 → 확장 에셋 → 핸들러 등록 → 라우터), 로케일 전환(엔진 재초기화 + 현재
+  라우트 재렌더), SPA 이동 때 레이아웃 캐시·init_actions·레이아웃 단위 상태·_local 격리, 웹소켓 출처 필터를 맡는다.
+  이 매니페스트는 기존 회귀 테스트 파일을 소유한다(#639 에서 선행 skip 1건 — 로케일 변경 시 현재 라우트 재렌더 —
+  을 라우터 모의 보강으로 해소하며 연결).
+
+axes:
+  surface: [constructor, locale, storage, transition, routing, init_actions, state_init, local_isolation, handlers, websocket]
+
+effects:
+  - template_app_constructs_with_config
+  - template_app_locale_changes_reinitialize_engine_and_rerender
+  - template_app_tolerates_storage_failures
+  - template_app_drives_transition_state_on_route_change
+  - template_app_spa_navigation_keeps_layout_cache_coherent
+  - template_app_runs_init_actions_once_per_layout
+  - template_app_initializes_layout_level_state
+  - template_app_isolates_local_state_between_layouts
+  - template_app_registers_template_handlers_on_init
+  - template_app_filters_websocket_sources
+
+test_files:
+  - resources/js/core/__tests__/TemplateApp.test.ts
+
+# E2E axis 없음: 부팅·라우팅의 브라우저 표면은 코어 Playwright 스모크와 Chrome MCP 매트릭스가 덮는다.

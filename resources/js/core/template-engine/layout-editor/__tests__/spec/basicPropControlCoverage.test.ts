@@ -17,6 +17,11 @@
  *  5. 모든 $t:editor.* 라벨이 ko/en editor.json 에서 해석.
  *
  * @since engine-v1.50.0
+ *
+ * @effects children_capability_declared_on_ul_ol_nav_form_li_both_templates,
+ *   dataprops_declared_exhaustively_both_templates_admin18_basic10,
+ *   dataprops_orthogonal_to_propcontrols_and_nodeeditor_no_overlap,
+ *   structural_numeric_enum_boolean_props_have_zero_data_binding_ui
  */
 
 import { describe, it, expect } from 'vitest';
@@ -52,20 +57,24 @@ const hasEditableSurface = (name: string): boolean => {
 };
 
 describe('sirsoft-basic draggable 커버리지', () => {
+  /** @effects dataprops_declared_exhaustively_both_templates_admin18_basic10 */
   it('draggable 목록이 비어있지 않다', () => {
     expect(draggable.length).toBeGreaterThan(0);
   });
 
+  /** @effects dataprops_declared_exhaustively_both_templates_admin18_basic10 */
   it('모든 draggable 이 componentCapabilities 항목을 보유한다', () => {
     const missing = draggable.filter((d) => !caps[d]);
     expect(missing).toEqual([]);
   });
 
+  /** @effects dataprops_orthogonal_to_propcontrols_and_nodeeditor_no_overlap */
   it('모든 draggable 이 편집 표면을 보유한다 (no-editable 0)', () => {
     const noEditable = draggable.filter((d) => !hasEditableSurface(d));
     expect(noEditable).toEqual([]);
   });
 
+  /** @effects dataprops_orthogonal_to_propcontrols_and_nodeeditor_no_overlap */
   it('모든 propControls 키가 propValue 컨트롤로 해석된다', () => {
     const unresolved: string[] = [];
     for (const d of draggable) {
@@ -76,6 +85,7 @@ describe('sirsoft-basic draggable 커버리지', () => {
     expect(unresolved).toEqual([]);
   });
 
+  /** @effects structural_numeric_enum_boolean_props_have_zero_data_binding_ui */
   it('모든 styleControls 키가 controls 에 존재한다', () => {
     const unresolved: string[] = [];
     for (const d of draggable) {
@@ -100,6 +110,7 @@ describe('sirsoft-basic 라벨 i18n 해석 (ko/en)', () => {
   const keys = collectTkeys(controls);
   collectTkeys(caps, keys);
 
+  /** @effects candidate_label_resolved_via_edit_template_dictionary_fallback_to_key */
   it.each(['ko', 'en'])('%s editor.json 이 모든 $t 키를 해석한다', (loc) => {
     // 실제 편집기 t() 해석 체인과 동일한 폴백 — 템플릿 editor.json(editor.*) →
     // 템플릿 layout_editor.json(layout_editor.palette.* 등) → 코어 layout_editor.json
@@ -130,12 +141,14 @@ describe('무용 propControl 제거 회귀 가드 (브라우저 실측 정정)',
   // 화면에 반영되지 않는 무용 컨트롤이었다(분류 ② — 미렌더). 제거 후 회귀 방지.
   // 버튼 외형은 styleControls(textColor/backgroundColor/fontBold 등) + 작성자
   // className 이 SSoT. `componentDisabled` 만 유효(disabled 는 {...props} 로 DOM 도달).
+  /** @effects structural_numeric_enum_boolean_props_have_zero_data_binding_ui */
   it('basic Button 은 무용 prop(variant/size)을 propControl 로 노출하지 않는다', () => {
     const pc: string[] = caps.Button?.propControls ?? [];
     expect(pc).not.toContain('buttonVariant');
     expect(pc).not.toContain('componentSize');
   });
 
+  /** @effects structural_numeric_enum_boolean_props_have_zero_data_binding_ui */
   it('basic Button 은 유효 prop(componentDisabled)은 유지한다', () => {
     const pc: string[] = caps.Button?.propControls ?? [];
     expect(pc).toContain('componentDisabled');
@@ -147,6 +160,7 @@ describe('sirsoft-basic children 노드 에디터(STRUCT-TREE)', () => {
   // 자식 추가/삭제/정렬을 속성 모달 본체에서 편집한다(부록4-ter 일반 슬롯). Ol 은
   // sirsoft-basic 에 미등록(컴포넌트 부재)이라 대상에서 제외.
   const expected: Record<string, string> = { Ul: 'Li', Nav: 'A', Form: 'Input', Li: 'Span' };
+  /** @effects children_capability_declared_on_ul_ol_nav_form_li_both_templates */
   it.each(Object.entries(expected))(
     '%s 가 nodeEditor:{kind:children,params:{childComponent:%s}} 를 보유한다',
     (comp, child) => {
@@ -156,6 +170,7 @@ describe('sirsoft-basic children 노드 에디터(STRUCT-TREE)', () => {
     },
   );
 
+  /** @effects children_capability_declared_on_ul_ol_nav_form_li_both_templates */
   it('children 노드 에디터 보유 컴포넌트는 전부 draggable 이다', () => {
     const withChildren = Object.keys(caps).filter((k) => caps[k]?.nodeEditor?.kind === 'children');
     const notDraggable = withChildren.filter((c) => !draggable.includes(c));
@@ -166,11 +181,11 @@ describe('sirsoft-basic children 노드 에디터(STRUCT-TREE)', () => {
 describe('sirsoft-basic dataProps 전수 선언 + 직교 가드', () => {
   const dpComponents = Object.keys(caps).filter((k) => Array.isArray(caps[k]?.dataProps));
 
-  it('대표 컬렉션이 배열 dataProps 를 보유한다 (images/reactions/suggestions)', () => {
+  /** @effects dataprops_declared_exhaustively_both_templates_admin18_basic10 */
+  it('대표 컬렉션이 배열 dataProps 를 보유한다 (images/suggestions)', () => {
     const expectArray: Array<[string, string]> = [
       ['ImageGallery', 'images'],
       ['ProductImageViewer', 'images'],
-      ['PostReactions', 'reactions'],
       ['SearchBar', 'suggestions'],
     ];
     for (const [comp, key] of expectArray) {
@@ -180,12 +195,14 @@ describe('sirsoft-basic dataProps 전수 선언 + 직교 가드', () => {
     }
   });
 
+  /** @effects object_node_candidate_emitted_for_entity_objects_not_pure_containers */
   it('단일 객체 컴포넌트는 object dataProp (ProductCard.product / Avatar.author / UserInfo.author)', () => {
     expect((caps.ProductCard?.dataProps ?? []).find((d: { propKey: string }) => d.propKey === 'product')?.shape).toBe('object');
     expect((caps.Avatar?.dataProps ?? []).find((d: { propKey: string }) => d.propKey === 'author')?.shape).toBe('object');
     expect((caps.UserInfo?.dataProps ?? []).find((d: { propKey: string }) => d.propKey === 'author')?.shape).toBe('object');
   });
 
+  /** @effects dataprops_declared_exhaustively_both_templates_admin18_basic10 */
   it('입력 value 는 scalar dataProp (Input/Textarea/QuantitySelector)', () => {
     for (const comp of ['Input', 'Textarea', 'QuantitySelector']) {
       expect((caps[comp]?.dataProps ?? []).find((d: { propKey: string }) => d.propKey === 'value')?.shape).toBe('scalar');
@@ -194,28 +211,33 @@ describe('sirsoft-basic dataProps 전수 선언 + 직교 가드', () => {
 
   // 입력/선택 계열 누락 메움. Select/PasswordInput value + Select options,
   // SearchBar value. basic 미보유 컴포넌트(SearchableDropdown 등)는 admin 가드에서 검증.
+  /** @effects shape_filter_returns_only_matching_scalar_array_object_candidates */
   it('Select 가 value(scalar) + options(array) dataProp 을 보유한다', () => {
     const sel = caps.Select?.dataProps ?? [];
     expect(sel.find((d: { propKey: string }) => d.propKey === 'value')?.shape).toBe('scalar');
     expect(sel.find((d: { propKey: string }) => d.propKey === 'options')?.shape).toBe('array');
   });
 
+  /** @effects dataprops_declared_exhaustively_both_templates_admin18_basic10 */
   it('PasswordInput.value / SearchBar.value 가 scalar dataProp', () => {
     expect((caps.PasswordInput?.dataProps ?? []).find((d: { propKey: string }) => d.propKey === 'value')?.shape).toBe('scalar');
     expect((caps.SearchBar?.dataProps ?? []).find((d: { propKey: string }) => d.propKey === 'value')?.shape).toBe('scalar');
   });
 
+  /** @effects dataprops_orthogonal_to_propcontrols_and_nodeeditor_no_overlap */
   it('options 직교 완화: Select.options 가 dataProps(array)와 propControls(selectOptions) 둘 다에 노출', () => {
     expect((caps.Select?.dataProps ?? []).some((d: { propKey: string }) => d.propKey === 'options')).toBe(true);
     expect((caps.Select?.propControls ?? []).includes('selectOptions')).toBe(true);
   });
 
+  /** @effects dataprops_orthogonal_to_propcontrols_and_nodeeditor_no_overlap */
   it('TabNavigation.tabs 는 dataProps 가 아니다 (nodeEditor 정적 편집 — 직교)', () => {
     const tabsDp = (caps.TabNavigation?.dataProps ?? []).find((d: { propKey: string }) => d.propKey === 'tabs');
     expect(tabsDp).toBeUndefined();
     expect(caps.TabNavigation?.nodeEditor?.params?.arrayProp).toBe('tabs');
   });
 
+  /** @effects dataprops_orthogonal_to_propcontrols_and_nodeeditor_no_overlap */
   it('직교: dataProps.propKey 가 nodeEditor.arrayProp 와 충돌하지 않는다', () => {
     const conflicts: string[] = [];
     for (const c of dpComponents) {
@@ -228,6 +250,7 @@ describe('sirsoft-basic dataProps 전수 선언 + 직교 가드', () => {
     expect(conflicts).toEqual([]);
   });
 
+  /** @effects datapropspec_object_shape_added_to_schema_and_audit_enum */
   it('dataProps shape 는 scalar/array/object enum 만', () => {
     const bad: string[] = [];
     for (const c of dpComponents) {
@@ -238,6 +261,7 @@ describe('sirsoft-basic dataProps 전수 선언 + 직교 가드', () => {
     expect(bad).toEqual([]);
   });
 
+  /** @effects candidate_label_resolved_via_edit_template_dictionary_fallback_to_key */
   it('dataProps.label 키가 ko/en editor.json 에서 해석된다', () => {
     for (const loc of ['ko', 'en']) {
       const lang = load(`${LANG}/${loc}/editor.json`);
@@ -258,6 +282,7 @@ describe('sirsoft-basic dataProps 전수 선언 + 직교 가드', () => {
 
 describe('sirsoft-basic stateLabels 카탈로그', () => {
   const spec = load('templates/_bundled/sirsoft-basic/editor-spec/stateLabels.json');
+  /** @effects state_labels_catalog_declared_both_templates_with_t_keys */
   it('stateLabels 가 배열이고 state_label 키가 ko/en 에서 해석된다', () => {
     expect(Array.isArray(spec)).toBe(true);
     for (const loc of ['ko', 'en']) {

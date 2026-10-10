@@ -148,6 +148,14 @@ let debugMode = false;
 const pendingDataUpdates: Array<{ data: Record<string, any>; options?: UpdateOptions }> = [];
 
 /**
+ * 엔진 밖의 화면(오류 화면)이 루트 컨테이너를 차지해 React 루트를 내려놓은 상태인지 (engine-v1.79.0)
+ *
+ * 켜져 있는 동안 도착한 데이터 업데이트는 그릴 화면이 없으므로 버린다 — 큐에 남기면 다음 화면 렌더 뒤에
+ * 떠난 화면의 `_local` 이 새 화면에 흘러든다. 다음 `renderTemplate` 이 시작하면 끈다.
+ */
+let rootReleased = false;
+
+/**
  * 템플릿 메타데이터 로드
  *
  * 템플릿 컴포넌트 번들에 포함된 메타데이터를 가져옵니다.
@@ -434,7 +442,7 @@ function loadLayoutEditorBundle(): Promise<any> {
       layoutEditorLoadPromise = null; // 재시도 가능하도록 초기화
       logger.error(`편집기 번들 로드 실패 (${src})`, error);
 
-      throw new Error('편집기를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
+      throw new Error(ErrorDisplay.text('core.errors.layout_editor_bundle_failed'));
     }
 
     const chrome = (window as any).G7Core?.__LayoutEditorChrome;
@@ -443,7 +451,7 @@ function loadLayoutEditorBundle(): Promise<any> {
       layoutEditorLoadPromise = null;
       logger.error(`편집기 번들 로드됨 — 그러나 __LayoutEditorChrome 미노출 (${src})`);
 
-      throw new Error('편집기를 불러왔으나 초기화하지 못했습니다. 페이지를 새로고침해 주세요.');
+      throw new Error(ErrorDisplay.text('core.errors.layout_editor_init_failed'));
     }
 
     return chrome;
@@ -484,6 +492,14 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       throw new Error(`컨테이너를 찾을 수 없습니다: #${options.containerId}`);
     }
 
+    // 오류 화면이 비켜 준 컨테이너에 다시 그린다 — 오류 화면 DOM 을 걷고 새 루트를 만든다 (engine-v1.79.0)
+    if (rootReleased) {
+      rootReleased = false;
+      if (!state.reactRoot) {
+        container.replaceChildren();
+      }
+    }
+
     // 전역 변수 생성
     const globalVariables = createGlobalVariables();
 
@@ -520,13 +536,17 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
           LayoutEditorChrome = await loadLayoutEditorBundle();
         } catch (loadError) {
           logger.error('레이아웃 편집기 번들 로드 실패', loadError);
+          // 오류 화면이 컨테이너를 덮기 전에 React 루트를 내려놓는다 — SPA 로 들어왔으면 살아 있는 루트 위에
+          // 덮이게 된다 (engine-v1.79.0, O-K2-2 와 같은 규칙)
+          releaseTemplateRoot();
           // 컨테이너에 직접 에러 화면 렌더 (CSS 의존성 없는 인라인 스타일)
           ErrorDisplay.render(options.containerId, {
-            title: '레이아웃 편집기 로드 실패',
+            // 문구는 화면 언어를 따른다(ErrorDisplay 내장 문구) — 편집기 화면이 뜨지 않은 상태라 번역 파일에 기대지 않는다.
+            title: ErrorDisplay.text('core.errors.layout_editor_load_failed'),
             message:
               loadError instanceof Error
                 ? loadError.message
-                : '편집기 번들을 불러오지 못했습니다.',
+                : ErrorDisplay.text('core.errors.layout_editor_bundle_failed'),
             icon: 'fas fa-triangle-exclamation',
             showStack: false,
             showReloadButton: true,
@@ -732,6 +752,12 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
     // 초기화 확인
     if (!state.isInitialized) {
       throw new Error('템플릿 엔진이 초기화되지 않았습니다.');
+    }
+
+    // 오류 화면이 루트를 차지한 동안의 업데이트는 그릴 화면이 없다 — 큐에 남기지 않는다 (engine-v1.79.0)
+    if (rootReleased) {
+      logger.log('React 루트 반납 상태 - 데이터 업데이트 버림:', Object.keys(data));
+      return;
     }
 
     // 렌더링 확인 - React가 준비되지 않았으면 큐에 저장
@@ -940,6 +966,36 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
 }
 
 /**
+ * React 루트만 내려놓습니다 — 엔진 밖의 화면이 루트 컨테이너를 덮어쓰기 직전에 부릅니다.
+ *
+ * 오류 화면(ErrorDisplay)은 컨테이너를 `innerHTML` 로 바꾼다. 루트를 그대로 두면 React 가 지워진 노드를
+ * 계속 들고 있다가 다음 커밋(토스트 갱신 등)에서 `insertBefore`/`removeChild` NotFoundError 를 내고,
+ * 렌더 오류 경계가 다시 그리기를 반복해 콘솔 오류가 수백 건 쌓인다(7.1.0 실측 O-K2-2 — 제한 관리자가
+ * 403 화면으로 SPA 이동할 때 198건 + React #185). 레지스트리·번역·디스패처·현재 레이아웃 등 엔진 상태는
+ * 그대로 두며, 대기 중인 업데이트는 버리고, 다음 `renderTemplate` 이 새 루트를 만든다.
+ *
+ * @returns void
+ * @since engine-v1.79.0
+ */
+function releaseTemplateRoot(): void {
+  pendingDataUpdates.length = 0;
+
+  if (!state.reactRoot) {
+    return;
+  }
+
+  rootReleased = true;
+
+  try {
+    state.reactRoot.unmount();
+  } catch (error) {
+    logger.warn('React Root 반납 중 오류', error);
+  }
+
+  state.reactRoot = null;
+}
+
+/**
  * 템플릿 정리
  *
  * React Root를 언마운트하고 모든 상태를 초기화합니다.
@@ -954,6 +1010,9 @@ function destroyTemplate(): void {
       state.reactRoot.unmount();
       state.reactRoot = null;
     }
+
+    // 루트 반납 표식도 거둔다 — 남기면 재초기화 뒤 첫 렌더 전 업데이트가 큐 대신 버려진다 (engine-v1.79.0)
+    rootReleased = false;
 
     // 상태 초기화
     state.templateId = null;
@@ -1051,6 +1110,7 @@ export {
   renderTemplate,
   updateTemplateData,
   destroyTemplate,
+  releaseTemplateRoot,
   getState,
   getActionDispatcher,
   LayoutLoader,

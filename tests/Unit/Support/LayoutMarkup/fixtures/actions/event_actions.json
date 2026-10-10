@@ -1,0 +1,92 @@
+{
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "user-toolbar"
+    },
+    "children": [
+        {
+            "id": "save_btn",
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "apiCall",
+                    "target": "/api/admin/users",
+                    "params": {
+                        "method": "POST",
+                        "body": {
+                            "name": "{{_local.name}}",
+                            "email": "{{_local.email}}"
+                        }
+                    },
+                    "confirm": "$t:admin.users.confirm_save",
+                    "onSuccess": {
+                        "handler": "toast",
+                        "params": {
+                            "message": "$t:common.saved",
+                            "type": "success"
+                        }
+                    },
+                    "onError": {
+                        "handler": "toast",
+                        "params": {
+                            "message": "{{error.message}}",
+                            "type": "error"
+                        }
+                    }
+                }
+            ],
+            "text": "$t:common.save"
+        },
+        {
+            "id": "user_grid",
+            "type": "composite",
+            "name": "DataGrid",
+            "actions": [
+                {
+                    "event": "onRowAction",
+                    "handler": "switch",
+                    "params": {
+                        "value": "{{$args[0]}}"
+                    },
+                    "cases": {
+                        "edit": {
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/users/{{$args[1].uuid}}/edit"
+                            }
+                        },
+                        "delete": {
+                            "handler": "openModal",
+                            "target": "delete_confirm_modal"
+                        },
+                        "default": {
+                            "handler": "toast",
+                            "params": {
+                                "message": "$t:common.unknown_action",
+                                "type": "warning"
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "change",
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/users",
+                        "mergeQuery": true,
+                        "query": {
+                            "page": "{{$args[0]}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "data": "{{users?.data?.data ?? []}}"
+            }
+        }
+    ]
+}

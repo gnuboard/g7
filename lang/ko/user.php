@@ -7,12 +7,55 @@ return [
         'inactive' => '비활성',
         'blocked' => '차단',
         'withdrawn' => '탈퇴',
+        // pending_verification 은 Enum 에는 있었지만 이 배열에 없어 화면에 원시 키가 그대로
+        // 나오고 있었다 — 휴면을 더하면서 함께 채운다(라벨 배열은 Enum 전 case 를 덮어야 한다).
+        'pending_verification' => '가입대기',
+        'dormant' => '휴면',
+    ],
+
+    // 비밀번호 정책 (#736) — Enum label() 이 읽는다
+    'password_expiry_policy' => [
+        'inherit' => '역할·사이트 설정 따름',
+        'apply' => '적용',
+        'exempt' => '제외',
+    ],
+    'password_expiry_scope' => [
+        'all' => '전체 회원',
+        'admin' => '관리자만',
+        'selected' => '지정한 역할·회원만',
+    ],
+    'password_expiry_action' => [
+        'force' => '변경해야 로그인',
+        'remind' => '다음에 변경 허용',
+    ],
+    'password_change_reason' => [
+        'expired' => '비밀번호 사용 기간 만료',
+        'admin_assigned' => '관리자가 정해 준 비밀번호',
+    ],
+    'password_change_source' => [
+        'self' => '본인 변경',
+        'reset' => '비밀번호 재설정',
+        'admin' => '관리자 지정',
+        'login_required' => '로그인 시 변경',
+        'install' => '설치',
+        'register' => '회원가입',
+        'admin_create' => '관리자 등록',
+    ],
+
+    // 비밀번호 만료 대상 명단 (관리자 환경설정 > 보안)
+    'password_expiry_target' => [
+        'admin' => '관리자',
+        'member' => '회원',
+        'column_type' => '구분',
+        'column_expires_due' => '만료 예정일',
+        'column_expires_at' => '만료일',
     ],
 
     // 언어 라벨
     'language' => [
         'ko' => '한국어',
         'en' => 'English',
+        'ja' => '日本語',
     ],
 
     // 사용자 관리 메시지
@@ -45,6 +88,10 @@ return [
     'activity_log_failed' => '활동 기록을 가져오는데 실패했습니다.',
     'bulk_status_updated' => ':count명의 사용자 상태가 변경되었습니다.',
     'bulk_update_status_failed' => '사용자 상태 일괄 변경에 실패했습니다.',
+    'bulk_roles_updated' => ':count명의 역할을 변경했습니다. (제외 :skipped명)',
+    'bulk_roles_updated_with_unchanged' => ':count명의 역할을 변경했습니다. (제외 :skipped명, 이미 반영되어 변경 없음 :unchanged명)',
+    'bulk_roles_failed' => '회원 역할 일괄 변경에 실패했습니다.',
+    'bulk_roles_ceiling' => '내가 부여할 수 없는 권한이 담긴 역할이 포함되어 있어 처리하지 않았습니다.',
     'last_admin_role_cannot_remove' => '시스템에 관리자 역할을 가진 사용자가 본인뿐이므로 관리자 역할을 제거할 수 없습니다.',
 
     // 아바타 관련 메시지
@@ -73,6 +120,9 @@ return [
     'withdraw_admin_forbidden' => '관리자 계정은 탈퇴할 수 없습니다.',
     'withdraw_failed_unknown' => '알 수 없는 오류로 탈퇴 처리에 실패했습니다.',
 
+    // 일괄 상태 변경에서 제외된 대상의 사유
+    'bulk_status_out_of_scope' => '관리 범위 밖의 회원은 변경할 수 없습니다.',
+
     // 유효성 검사 메시지
     'validation' => [
         'page_integer' => '페이지 번호는 숫자여야 합니다.',
@@ -100,9 +150,10 @@ return [
         'email_max' => '이메일은 255자 이하여야 합니다.',
         'password_required' => '비밀번호는 필수입니다.',
         'password_confirmed' => '비밀번호 확인이 일치하지 않습니다.',
-        'password_min' => '비밀번호는 최소 8자 이상이어야 합니다.',
+        'password_min' => '비밀번호는 최소 :min자 이상이어야 합니다.',
         'current_password_required' => '현재 비밀번호를 입력해주세요.',
         'current_password_invalid' => '현재 비밀번호가 올바르지 않습니다.',
+        'password_expiry_policy_invalid' => '비밀번호 만료는 따름·적용·제외 중 하나여야 합니다.',
         'password_confirmation_required' => '비밀번호 확인을 입력해주세요.',
         'language_required' => '언어를 선택해주세요.',
         'language_invalid' => '지원하지 않는 언어입니다.',
@@ -142,5 +193,47 @@ return [
         'search_keyword_required' => '검색 키워드를 입력해주세요.',
         'exclude_user_id_uuid' => '제외할 사용자 ID는 유효한 UUID여야 합니다.',
         'exclude_user_id_exists' => '존재하지 않는 사용자입니다.',
+        // 회원 목록 필터 (#705)
+        'list_status_array' => '계정 상태 조건은 목록 형식이어야 합니다.',
+        'list_status_invalid' => '유효하지 않은 계정 상태입니다.',
+        'list_role_ids_array' => '권한 그룹 조건은 목록 형식이어야 합니다.',
+        'list_role_ids_invalid' => '존재하지 않는 권한 그룹입니다.',
+        'list_admin_scope_invalid' => '유효하지 않은 관리자 여부 조건입니다.',
+        'list_lock_state_invalid' => '유효하지 않은 계정 잠금 조건입니다.',
+        'list_date_invalid' => '날짜 형식이 올바르지 않습니다.',
+        'list_never_logged_in_invalid' => '로그인 이력 없음 조건은 참/거짓이어야 합니다.',
+        'list_status_changed_type_invalid' => '유효하지 않은 상태 변경 종류입니다.',
+        'list_verified_invalid' => '유효하지 않은 인증 여부 조건입니다.',
+        'list_ext_filters_invalid' => '확장 필터 조건의 형식이 올바르지 않습니다.',
+        'list_ext_filters_max' => '확장 필터 조건은 최대 20개까지 가능합니다.',
+    ],
+    // 회원 목록 필터의 검증 항목명 — UserListRequest::attributes() 가 읽는다 (#705)
+    'list_filter_attributes' => [
+        'status' => '계정 상태',
+        'role_ids' => '권한 그룹',
+        'admin_scope' => '관리자 여부',
+        'lock_state' => '계정 잠금',
+        'start_date' => '가입일 시작',
+        'end_date' => '가입일 종료',
+        'date_filter' => '가입일 기간',
+        'last_login_start' => '최근 로그인 시작',
+        'last_login_end' => '최근 로그인 종료',
+        'never_logged_in' => '로그인 이력 없음',
+        'dormant_start' => '휴면 전환일 시작',
+        'dormant_end' => '휴면 전환일 종료',
+        'status_changed_type' => '상태 변경 종류',
+        'status_changed_start' => '상태 변경일 시작',
+        'status_changed_end' => '상태 변경일 종료',
+        'language' => '언어',
+        'country' => '국가',
+        'email_verified' => '이메일 인증',
+        'identity_verified' => '본인인증',
+        'ext_filters' => '확장 필터',
+        'filters' => '검색 조건',
+        'filter_field' => '검색 대상',
+        'filter_value' => '검색어',
+        'filter_operator' => '검색 연산자',
+        'sort_by' => '정렬 기준',
+        'sort_order' => '정렬 순서',
     ],
 ];

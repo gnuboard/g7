@@ -1,51 +1,52 @@
 {
-  "version": "1.0.0",
-  "layout_name": "errors/403",
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:errors.403.title",
-    "is_error_layout": true,
-    "error_code": 403
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "error_container",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
-        },
-        "children": [
-          {
-            "id": "error_code",
-            "type": "basic",
-            "name": "H1",
-            "props": {
-              "className": "text-primary text-6xl font-bold mb-4"
-            },
-            "text": "403"
-          },
-          {
-            "id": "error_title",
-            "type": "basic",
-            "name": "H2",
-            "props": {
-              "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            },
-            "text": "$t:errors.403.title"
-          },
-          {
-            "id": "error_message",
-            "type": "basic",
-            "name": "Span",
-            "props": {
-              "className": "text-gray-500 dark:text-gray-400"
-            },
-            "text": "$t:errors.403.message"
-          }
+    "comment": "관리자 403 화면 — 로그인은 됐지만 권한이 없는 상태",
+    "version": "1.0.0",
+    "layout_name": "errors/403",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:errors.403.title",
+        "is_error_layout": true,
+        "error_code": 403
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "error_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
+                },
+                "children": [
+                    {
+                        "id": "error_code",
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                            "className": "text-primary text-6xl font-bold mb-4"
+                        },
+                        "text": "403"
+                    },
+                    {
+                        "id": "error_title",
+                        "type": "basic",
+                        "name": "H2",
+                        "props": {
+                            "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                        },
+                        "text": "$t:errors.403.title"
+                    },
+                    {
+                        "id": "error_message",
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400"
+                        },
+                        "text": "$t:errors.403.message"
+                    }
+                ]
+            }
         ]
-      }
-    ]
-  }
+    }
 }

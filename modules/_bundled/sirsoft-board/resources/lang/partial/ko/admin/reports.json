@@ -121,7 +121,7 @@
     "all_unchangeable_warning_message": "선택한 모든 신고가 변경 불가능한 상태입니다. (영구삭제 또는 이미 동일한 상태)",
     "permanent_delete_warning": "영구삭제 시 삭제된 게시물은 복구할 수 없습니다.",
     "status_change_success": "상태가 성공적으로 변경되었습니다.",
-    "status_change_success_with_count": "{{count}}개 신고를 {{status}}(으)로 변경했습니다.",
+    "status_change_success_with_count": "{{count}}개 신고를 「{{status}}」 상태로 변경했습니다.",
     "status_label_pending": "접수",
     "status_label_review": "검토",
     "status_label_rejected": "반려",
@@ -197,7 +197,8 @@
       "rejected": "반려",
       "suspended": "게시 중단",
       "deleted": "삭제",
-      "restored": "복구"
+      "restored": "복구",
+      "report_cancelled": "신고 취소"
     },
     "no_histories": "처리 내역이 없습니다.",
     "cancelled_badge": "취소됨 ({{cancelled_at}})",

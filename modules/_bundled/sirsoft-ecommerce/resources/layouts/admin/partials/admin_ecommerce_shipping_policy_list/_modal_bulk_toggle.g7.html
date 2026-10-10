@@ -1,0 +1,52 @@
+<!-- 배송정책 여러 건의 사용 여부를 한꺼번에 바꾸는 확인 창. 대상과 바꿀 값(`bulkToggleValue`)은
+  목록의 일괄 작업 줄이 정해 준다.
+  가운데 배지가 **바뀐 뒤의 상태**를 미리 보여 준다 — 이 창이 사용/중지 어느 쪽으로 가는지는
+  글자가 아니라 그 배지로만 구분된다.
+  `bulkToggleValue` 는 참·거짓이 아니라 **`'true'` 라는 글자**다(선택칸에서 온 값이라 그렇다).
+  성공하면 체크 목록과 함께 그 값도 비운다. -->
+<partial description="Shipping Policy Bulk Toggle Status Modal">
+  <modal data-type="composite" data-ref="bulk_toggle_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.title" size="medium">
+    <div>
+      <div>
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.message|count={{(_global.bulkSelectedItems || []).length}}</p>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+          <div class="flex-center gap-4">
+            <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active_label</span>
+            <span class="{{_global.bulkToggleValue === 'true' ? 'px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}">{{_global.bulkToggleValue === 'true' ? '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active' : '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive'}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkToggling}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.shipping_policy.common.cancel
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkToggling}}">
+        <on type="click">
+          <!-- 일괄 상태 변경 실행. 성공 갈래가 체크 목록과 선택한 값을 함께 비운다 — 값이 남으면 다음에 이 창이 지난번 방향으로 열린다. -->
+          <sequence>
+            <set-state target="global" :isBulkToggling="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk-toggle-active" method="PATCH">
+              <success>
+                <set-state target="global" :isBulkToggling="false" :bulkSelectedItems="[]" bulkToggleValue=""/>
+                <refetch-data-source dataSourceId="shipping_policies"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.bulk_toggled"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isBulkToggling="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body ids="{{_global.bulkSelectedItems}}" is_active="{{_global.bulkToggleValue === 'true'}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isBulkToggling}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isBulkToggling ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.changing' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.change'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

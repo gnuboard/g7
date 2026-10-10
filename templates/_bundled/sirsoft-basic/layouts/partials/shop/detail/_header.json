@@ -1,189 +1,192 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "상품명, 카테고리, 찜하기"
-  },
-  "type": "basic",
-  "name": "Div",
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex items-start justify-between"
-      },
-      "children": [
+    "comment": "상품 상세 맨 윗줄 — 상품명·카테고리 경로와 찜하기. 찜하기는 회원만 되므로 비회원이 누르면\n     로그인 안내 창으로 갈린다.",
+    "meta": {
+        "is_partial": true,
+        "description": "상품명, 카테고리, 찜하기"
+    },
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
-              },
-              "text": "{{product.data?.category_name}}"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-start justify-between"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center gap-2 mt-1"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "H1",
-                  "props": {
-                    "className": "text-xl font-bold text-gray-900 dark:text-white"
-                  },
-                  "text": "{{product.data?.name_localized}}"
-                },
-                {
-                  "comment": "라벨 뱃지",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{product.data?.labels?.length > 0}}",
-                  "props": {
-                    "className": "flex items-center gap-1 flex-wrap"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "iteration": {
-                        "source": "{{product.data?.labels ?? []}}",
-                        "item_var": "labelItem"
-                      },
-                      "props": {
-                        "className": "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium text-white",
-                        "style": "background-color: {{labelItem.color ?? '#6B7280'}}"
-                      },
-                      "text": "{{labelItem.name}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "우측 액션 그룹 (관리자 수정 링크 + 찜하기)",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex items-center gap-2 flex-shrink-0"
-          },
-          "children": [
-            {
-              "comment": "관리자 상품 수정 링크 (권한 게이트, 새 탭)",
-              "partial": "./_admin_edit_link.json"
-            },
-            {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_local.wishlistLoading}}"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "heart",
-                "iconStyle": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'solid' : 'regular'}}",
-                "size": "xl",
-                "className": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'text-red-500' : ''}} transition-colors"
-              }
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "conditions",
-              "conditions": [
-                {
-                  "comment": "비회원: 로그인 필요 안내",
-                  "if": "{{!_global.currentUser?.uuid}}",
-                  "then": {
-                    "handler": "toast",
-                    "params": {
-                      "type": "warning",
-                      "message": "$t:shop.wishlist_login_required"
-                    }
-                  }
-                },
-                {
-                  "comment": "회원: 찜하기 토글",
-                  "then": {
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "comment": "낙관적 UI: 즉시 아이콘 토글 + 로딩 상태",
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "wishlistLoading": true,
-                          "isWishlisted": "{{!(_local.isWishlisted ?? product.data?.is_wishlisted)}}"
-                        }
-                      },
-                      {
-                        "handler": "apiCall",
-                        "auth_mode": "required",
-                        "target": "/api/modules/sirsoft-ecommerce/wishlist/toggle",
-                        "params": {
-                          "method": "POST",
-                          "body": {
-                            "product_id": "{{product.data?.id}}"
-                          }
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "{{product.data?.category_name}}"
                         },
-                        "onSuccess": [
-                          {
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "wishlistLoading": false,
-                              "isWishlisted": "{{response.data.added}}"
-                            }
-                          },
-                          {
-                            "handler": "refetchDataSource",
-                            "params": {
-                              "dataSourceId": "product"
-                            }
-                          },
-                          {
-                            "handler": "toast",
-                            "params": {
-                              "type": "success",
-                              "message": "{{response.data.added ? '$t:shop.wishlist_added' : '$t:shop.wishlist_removed'}}"
-                            }
-                          }
-                        ],
-                        "onError": [
-                          {
-                            "comment": "실패 시 원래 상태로 복원",
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "wishlistLoading": false,
-                              "isWishlisted": "{{product.data?.is_wishlisted}}"
-                            }
-                          }
-                        ]
-                      }
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 mt-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H1",
+                                    "props": {
+                                        "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{product.data?.name_localized}}"
+                                },
+                                {
+                                    "comment": "라벨 뱃지",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{product.data?.labels?.length > 0}}",
+                                    "props": {
+                                        "className": "flex items-center gap-1 flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{product.data?.labels ?? []}}",
+                                                "item_var": "labelItem"
+                                            },
+                                            "props": {
+                                                "className": "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium text-white",
+                                                "style": "background-color: {{labelItem.color ?? '#6B7280'}}"
+                                            },
+                                            "text": "{{labelItem.name}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
                     ]
-                  }
+                },
+                {
+                    "comment": "우측 액션 그룹 (관리자 수정 링크 + 찜하기)",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2 flex-shrink-0"
+                    },
+                    "children": [
+                        {
+                            "comment": "관리자 상품 수정 링크 (권한 게이트, 새 탭)",
+                            "partial": "./_admin_edit_link.json"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "찜하기 — 회원이면 켜고 끄고, 비회원이면 로그인 안내 창으로 갈린다. 낙관적 갱신을 하지 않고\n                 서버 응답을 기다렸다 반영하므로 그동안 버튼이 잠긴다",
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "comment": "비회원: 로그인 필요 안내",
+                                            "if": "{{!_global.currentUser?.uuid}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "warning",
+                                                    "message": "$t:shop.wishlist_login_required"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "회원: 찜하기 토글",
+                                            "then": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "comment": "낙관적 UI: 즉시 아이콘 토글 + 로딩 상태",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "wishlistLoading": true,
+                                                            "isWishlisted": "{{!(_local.isWishlisted ?? product.data?.is_wishlisted)}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/modules/sirsoft-ecommerce/wishlist/toggle",
+                                                        "auth_mode": "required",
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": {
+                                                                "product_id": "{{product.data?.id}}"
+                                                            }
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "wishlistLoading": false,
+                                                                    "isWishlisted": "{{response.data.added}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "product"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{response.data.added ? '$t:shop.wishlist_added' : '$t:shop.wishlist_removed'}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": {
+                                                            "comment": "실패 시 원래 상태로 복원",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "wishlistLoading": false,
+                                                                "isWishlisted": "{{product.data?.is_wishlisted}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "aria-label": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? '$t:shop.product.remove_from_wishlist' : '$t:shop.product.add_to_wishlist'}}",
+                                "aria-pressed": "{{!!(_local.isWishlisted ?? product.data?.is_wishlisted)}}",
+                                "className": "p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.wishlistLoading}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "heart",
+                                        "iconStyle": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'solid' : 'regular'}}",
+                                        "size": "xl",
+                                        "className": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'text-red-500' : ''}} transition-colors"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        }
             ]
-          }
-      ]
-    }
-  ]
+        }
+    ]
 }

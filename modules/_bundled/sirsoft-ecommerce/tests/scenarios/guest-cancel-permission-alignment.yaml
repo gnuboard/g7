@@ -1,0 +1,20 @@
+feature: 비회원 주문 취소의 권한 정합 (#703)
+
+description: |
+  비회원 주문 상세의 can_cancel 은 주문 상태만 보고, 취소 창이 여는 사유 목록 API 는 「주문 취소」 권한을
+  요구했으며, 비회원 취소 API 는 권한 검사가 없었다. 운영자가 guest 역할의 취소 권한을 거두면 버튼은 남고
+  창이 사유를 못 불러왔다. 버튼·사유 목록·취소/환불 예상 API 가 같은 권한으로 판정된다.
+
+axes:
+  guest_cancel_permission: [granted, revoked]
+  surface: [order_detail_abilities, cancel_api]
+
+exclusions:
+  - { guest_cancel_permission: granted, surface: cancel_api, reason: "권한 보유 시 취소 성공은 기존 OrderControllerTest 비회원 취소 케이스가 고정" }
+
+effects:
+  - guest_can_cancel_follows_permission
+  - guest_cancel_api_requires_permission
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestCancelPermissionAlignmentTest.php

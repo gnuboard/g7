@@ -1,0 +1,23 @@
+feature: CKEditor 편집기가 레이아웃의 읽기 전용 값 변화를 따라간다
+
+description: |
+  편집기 조각은 마운트 때만 initEditor 를 불러, 편집기는 처음 받은 readOnly 로 굳었다. 권한 판정이 로드 뒤에
+  바뀌는 화면(페이지 작성 화면의 등록 권한 확인 등)에서 편집기가 먼저 그려지면 권한 있는 관리자에게도 잠긴
+  편집기가 남았다(7.1.0 전수 실측 O-F1-2). 조각 컨테이너가 같은 읽기 전용 식으로 상태 표식
+  `data-readonly="true|false"` 를 바꾸고, 핸들러가 그 속성 변화를 지켜보며 편집기(와 평문 폴백)의 읽기 전용 잠금을
+  켜고 끈다. 표식이 없는 예전 조각은 초기화 값을 쓴다. 표식은 스타일이 아니라 상태라 클래스로 두지 않는다(클래스로
+  두면 템플릿 CSS 어휘·safelist 검사에 스타일 없는 이름으로 잡힌다). 컨테이너에는 클래스를 두지 않는다 — 핸들러는 컨테이너를
+  id 로 찾고, 예전 고정 클래스 `ckeditor5-wrapper` 는 어느 CSS 에도 규칙이 없었다.
+
+axes:
+  case: [extension_attr, follow, fallback_textarea, legacy, init_handler]
+
+effects:
+  - container_readonly_attr_tracks_expression
+  - container_class_has_no_state_marker
+  - editor_readonly_follows_container_attr
+  - fallback_textarea_readonly_follows_container_attr
+  - legacy_container_keeps_init_value
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/readOnlySync.test.tsx

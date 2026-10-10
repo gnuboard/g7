@@ -1,0 +1,44 @@
+<!-- 주문 목록 — 검색조건 프리셋 이름 바꾸기 창. 바꾸는 것은 **이름뿐**이고 저장된 검색조건 자체는
+  건드리지 않는다(조건을 바꾸려면 새로 저장한다). 대상 프리셋과 편집 중인 이름은 관리 창이
+  `_global` 에 담아 둔 값을 읽는다 — 창은 별도 컨텍스트라 관리 창의 `_local` 을 보지 못한다. -->
+<partial description="Order List - Preset Edit Modal">
+  <modal data-type="composite" data-ref="modal_preset_edit" title="$t:sirsoft-ecommerce.admin.order.modal.preset_edit.title" size="sm">
+    <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder" class="input" value="{{_global.editingPresetName}}">
+      <on type="input">
+        <!-- 입력값을 `_global` 로 되돌려 담는다 — 저장 버튼의 잠금 조건과 아래 요청 본문이 같은 키를 읽으므로, 창 안 `_local` 에 두면 둘이 갈린다. -->
+        <set-state target="global" editingPresetName="{{$event.target.value}}"/>
+      </on>
+    </input>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.editingPresetName || _global.editingPresetName.trim() === '' || _global.isSaving}}">
+        <on type="click">
+          <!-- 프리셋 이름 저장. 공백만 남은 이름은 버튼 잠금이 먼저 막고, 보내는 것은 이름 하나뿐이라 저장된 조건은 그대로 남는다 -->
+          <sequence>
+            <set-state target="global" :isSaving="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}" method="PUT">
+              <success>
+                <set-state target="global" :isSaving="false"/>
+                <refetch-data-source dataSourceId="presets"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.updated"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isSaving="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body name="{{_global.editingPresetName}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isSaving}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

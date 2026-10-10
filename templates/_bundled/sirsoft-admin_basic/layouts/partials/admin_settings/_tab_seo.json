@@ -1,1350 +1,1365 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "환경설정 SEO 탭 콘텐츠"
-  },
-  "id": "tab_content_seo",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}",
-  "children": [
-    {
-      "id": "card_meta_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.seo.meta_settings"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.seo.meta_settings_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "field_meta_title_suffix",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.meta_title_suffix"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.meta_title_suffix",
-                    "placeholder": " | 그누보드7",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.meta_title_suffix_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_meta_description",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.meta_description"
-                },
-                {
-                  "type": "basic",
-                  "name": "Textarea",
-                  "props": {
-                    "name": "seo.meta_description",
-                    "rows": 3,
-                    "maxLength": 160,
-                    "placeholder": "$t:admin.settings.seo.meta_description_placeholder",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "resize-none"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.meta_description_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_meta_keywords",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.meta_keywords"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.meta_keywords",
-                    "placeholder": "CMS, 그누보드7, 오픈소스",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.meta_keywords_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.\n  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다).",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 SEO 탭 콘텐츠"
     },
-    {
-      "id": "card_generator_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "id": "tab_content_seo",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.seo.generator_settings"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.seo.generator_settings_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "toggle_generator_enabled",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.generator_enabled"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.seo.generator_enabled_desc"
-                    }
-                  ],
-                  "props": {}
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "seo.generator_enabled",
-                    "size": "md"
-                  }
-                }
-              ]
+            "id": "card_meta_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "id": "field_generator_content",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_local.form?.seo?.generator_enabled ? '' : 'opacity-50'}}"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.generator_content"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.generator_content",
-                    "maxLength": 200,
-                    "placeholder": "GnuBoard7 {{_global.appConfig?.version ?? ''}}",
-                    "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.generator_content_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "card_og_twitter_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.seo.og_twitter_settings"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.seo.og_twitter_settings_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.og_default_site_name"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.og_default_site_name",
-                    "placeholder": "GNUBOARD.NET",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.og_default_site_name_hint"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "grid-2col"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:admin.settings.seo.og_image_default_width"
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "number",
-                        "name": "seo.og_image_default_width",
-                        "min": "{{_local?.form?._meta?.limits?.seo_og_image_default_width_min ?? 0}}",
-                        "max": "{{_local?.form?._meta?.limits?.seo_og_image_default_width_max ?? 8000}}",
-                        "placeholder": "1200",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": ""
-                      }
-                    }
-                  ]
+                    "text": "$t:admin.settings.seo.meta_settings"
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:admin.settings.seo.og_image_default_height"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "number",
-                        "name": "seo.og_image_default_height",
-                        "min": "{{_local?.form?._meta?.limits?.seo_og_image_default_height_min ?? 0}}",
-                        "max": "{{_local?.form?._meta?.limits?.seo_og_image_default_height_max ?? 8000}}",
-                        "placeholder": "630",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": ""
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary"
-              },
-              "text": "$t:admin.settings.seo.og_image_default_size_hint"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.og_image_default"
+                    "text": "$t:admin.settings.seo.meta_settings_desc"
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-tertiary mb-2"
-                  },
-                  "text": "$t:admin.settings.seo.og_image_default_desc"
-                },
-                {
-                  "id": "og_image_default_uploader",
-                  "type": "composite",
-                  "name": "FileUploader",
-                  "props": {
-                    "collection": "og_image_default",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "maxFiles": 1,
-                    "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
-                    "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
-                    "imageCompression": {
-                      "maxSizeMB": 1,
-                      "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
                     },
-                    "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
-                    "autoUpload": false,
-                    "uploadTriggerEvent": "upload:og_image_default",
-                    "confirmBeforeRemove": true
-                  },
-                  "actions": [
-                    {
-                      "event": "onFilesChange",
-                      "type": "change",
-                      "if": "{{$args[0] && $args[0].length > 0}}",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "hasChanges": true
-                      }
-                    },
-                    {
-                      "event": "onUploadComplete",
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "hasChanges": true,
-                        "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
-                      }
-                    },
-                    {
-                      "event": "onUploadComplete",
-                      "type": "custom",
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:attachment.upload_success"
-                      }
-                    },
-                    {
-                      "event": "onUploadError",
-                      "type": "custom",
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{$args[0]}}"
-                      }
-                    },
-                    {
-                      "event": "onRemove",
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "hasChanges": true,
-                        "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
-                      }
-                    },
-                    {
-                      "event": "onRemove",
-                      "type": "custom",
-                      "handler": "toast",
-                      "params": {
-                        "type": "info",
-                        "message": "$t:attachment.deleted"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.twitter_default_card"
-                },
-                {
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "seo.twitter_default_card",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "options": [
-                      {
-                        "value": "summary_large_image",
-                        "label": "summary_large_image"
-                      },
-                      {
-                        "value": "summary",
-                        "label": "summary"
-                      },
-                      {
-                        "value": "app",
-                        "label": "app"
-                      },
-                      {
-                        "value": "player",
-                        "label": "player"
-                      }
-                    ],
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.twitter_default_card_hint"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.twitter_default_site"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.twitter_default_site",
-                    "placeholder": "@gnuboard",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.twitter_default_site_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "card_bot_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.seo.bot_settings"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.seo.bot_settings_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "notice_bot_library",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "alert-info"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "info-circle",
-                    "className": "flex-shrink-0 mt-0.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "font-semibold"
-                      },
-                      "text": "$t:admin.settings.seo.bot_library_notice_title"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "mt-1"
-                      },
-                      "text": "$t:admin.settings.seo.bot_library_notice_body"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "toggle_bot_detection_enabled",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.bot_detection_enabled"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.seo.bot_detection_enabled_desc"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "seo.bot_detection_enabled",
-                    "size": "md"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "toggle_bot_detection_library_enabled",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between {{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50'}}"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.bot_detection_library_enabled"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.seo.bot_detection_library_enabled_desc"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "seo.bot_detection_library_enabled",
-                    "size": "md",
-                    "disabled": "{{!_local.form?.seo?.bot_detection_enabled}}"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "field_bot_user_agents",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50 pointer-events-none'}}"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.bot_user_agents"
-                },
-                {
-                  "type": "composite",
-                  "name": "TagInput",
-                  "props": {
-                    "name": "seo.bot_user_agents",
-                    "creatable": true,
-                    "placeholder": "$t:admin.settings.seo.bot_user_agents_placeholder",
-                    "className": "w-full",
-                    "defaultVariant": "blue",
-                    "disabled": "{{!_local.form?.seo?.bot_detection_enabled}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.bot_user_agents_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "card_seo_cache_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.seo.seo_cache_settings"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.seo.seo_cache_settings_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "toggle_seo_cache_enabled",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.cache_enabled"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.seo.cache_enabled_desc"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "seo.cache_enabled",
-                    "size": "md"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "field_seo_cache_ttl",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.cache_ttl"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "seo.cache_ttl",
-                    "min": "{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}",
-                    "max": "{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}",
-                    "placeholder": "7200",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.cache_ttl_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "card_sitemap_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.seo.sitemap_settings"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.seo.sitemap_settings_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "toggle_sitemap_enabled",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.sitemap_enabled"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.seo.sitemap_enabled_desc"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "seo.sitemap_enabled",
-                    "size": "md"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "field_sitemap_schedule",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_schedule"
-                },
-                {
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "seo.sitemap_schedule",
-                    "className": "w-full",
-                    "options": [
-                      {
-                        "value": "hourly",
-                        "label": "$t:admin.settings.seo.sitemap_schedule_hourly"
-                      },
-                      {
-                        "value": "daily",
-                        "label": "$t:admin.settings.seo.sitemap_schedule_daily"
-                      },
-                      {
-                        "value": "weekly",
-                        "label": "$t:admin.settings.seo.sitemap_schedule_weekly"
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "id": "field_sitemap_schedule_time",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_schedule_time"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.sitemap_schedule_time",
-                    "placeholder": "02:00",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_schedule_time_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_sitemap_cache_ttl",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_cache_ttl"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "seo.sitemap_cache_ttl",
-                    "min": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}",
-                    "max": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}",
-                    "placeholder": "86400",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_cache_ttl_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_sitemap_urls_per_file",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_urls_per_file"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "seo.sitemap_urls_per_file",
-                    "min": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}",
-                    "max": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}",
-                    "placeholder": "50000",
-                    "className": ""
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_urls_per_file_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_sitemap_gzip",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.sitemap_gzip"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.seo.sitemap_gzip_desc"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "seo.sitemap_gzip",
-                    "size": "md"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "field_sitemap_hreflang_enabled",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.sitemap_hreflang_enabled"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.seo.sitemap_hreflang_enabled_desc"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "seo.sitemap_hreflang_enabled",
-                    "size": "md"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "sitemap_progress_block",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{['queued','running','writing','completed','failed'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-              "props": {
-                "className": "space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex items-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "$t:admin.settings.seo.sitemap_progress"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "px-2 py-0.5 rounded text-xs font-medium",
-                        "classMap": {
-                          "key": "{{sitemap_status?.data?.progress?.status ?? ''}}",
-                          "variants": {
-                            "queued": "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
-                            "running": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
-                            "writing": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
-                            "completed": "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
-                            "failed": "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
-                          }
-                        }
-                      },
-                      "text": "{{(sitemap_status?.data?.progress?.status === 'queued' && $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' && $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' && $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' && $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' && $t('admin.settings.seo.sitemap_status_failed')) || ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{sitemap_status?.data?.progress?.status === 'running' && (sitemap_status?.data?.progress?.phase ?? '') !== ''}}",
-                  "props": {
-                    "className": "text-label-subtle text-sm"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_progress_phase|phase={{sitemap_status?.data?.progress?.phase ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{Number(sitemap_status?.data?.progress?.urls ?? 0) > 0}}",
-                  "props": {
-                    "className": "text-label-subtle text-sm"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_progress_urls|count={{sitemap_status?.data?.progress?.urls ?? 0}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{sitemap_status?.data?.progress?.status === 'failed' && (sitemap_status?.data?.progress?.message ?? '') !== ''}}",
-                  "props": {
-                    "className": "text-red-600 dark:text-red-400 text-sm break-words"
-                  },
-                  "text": "{{sitemap_status?.data?.progress?.message ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-label-subtle text-xs"
-                  },
-                  "text": "{{sitemap_status?.data?.realtime_enabled === true ? $t('admin.settings.seo.sitemap_realtime_connected') : $t('admin.settings.seo.sitemap_polling')}}"
-                }
-              ]
-            },
-            {
-              "id": "sitemap_last_updated_block",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "space-y-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-heading block"
-                  },
-                  "text": "$t:admin.settings.seo.sitemap_last_updated_at"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex flex-col gap-2 md:flex-row md:items-center md:"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "disabled": true,
-                        "value": "{{sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at ?? '-'}}",
-                        "className": "md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "disabled": "{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-                        "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
-                      },
-                      "text": "{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}",
-                      "actions": [
+                    "children": [
                         {
-                          "type": "click",
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/admin/seo/sitemap/regenerate",
-                          "params": {
-                            "method": "POST"
-                          },
-                          "onSuccess": [
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "sitemap_status"
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "{{$t('admin.settings.seo.sitemap_update_success')}}"
-                              }
-                            }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"
-                              }
-                            }
-                          ]
+                            "id": "field_meta_title_suffix",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.meta_title_suffix"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.meta_title_suffix",
+                                        "placeholder": " | 그누보드7",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.meta_title_suffix_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_meta_description",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.meta_description"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "props": {
+                                        "name": "seo.meta_description",
+                                        "rows": 3,
+                                        "maxLength": 160,
+                                        "placeholder": "$t:admin.settings.seo.meta_description_placeholder",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "resize-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.meta_description_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_meta_keywords",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.meta_keywords"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.meta_keywords",
+                                        "placeholder": "CMS, 그누보드7, 오픈소스",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.meta_keywords_hint"
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "id": "card_generator_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.seo.generator_settings"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.seo.generator_settings_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_generator_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.generator_enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.seo.generator_enabled_desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "seo.generator_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "size": "md"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_generator_content",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "{{_local.form?.seo?.generator_enabled ? '' : 'opacity-50'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.generator_content"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.generator_content",
+                                        "maxLength": 200,
+                                        "placeholder": "GnuBoard7 {{_global.appConfig?.version ?? ''}}",
+                                        "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.generator_content_hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_og_twitter_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.seo.og_twitter_settings"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.seo.og_twitter_settings_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.og_default_site_name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.og_default_site_name",
+                                        "placeholder": "GNUBOARD.NET",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.og_default_site_name_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-2col"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.seo.og_image_default_width"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "seo.og_image_default_width",
+                                                "min": "{{_local?.form?._meta?.limits?.seo_og_image_default_width_min ?? 0}}",
+                                                "max": "{{_local?.form?._meta?.limits?.seo_og_image_default_width_max ?? 8000}}",
+                                                "placeholder": "1200",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": ""
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.seo.og_image_default_height"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "seo.og_image_default_height",
+                                                "min": "{{_local?.form?._meta?.limits?.seo_og_image_default_height_min ?? 0}}",
+                                                "max": "{{_local?.form?._meta?.limits?.seo_og_image_default_height_max ?? 8000}}",
+                                                "placeholder": "630",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": ""
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.settings.seo.og_image_default_size_hint"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.og_image_default"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary mb-2"
+                                    },
+                                    "text": "$t:admin.settings.seo.og_image_default_desc"
+                                },
+                                {
+                                    "id": "og_image_default_uploader",
+                                    "type": "composite",
+                                    "name": "FileUploader",
+                                    "actions": [
+                                        {
+                                            "comment": "파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다.",
+                                            "type": "change",
+                                            "event": "onFilesChange",
+                                            "handler": "setState",
+                                            "if": "{{$args[0] && $args[0].length > 0}}",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true
+                                            }
+                                        },
+                                        {
+                                            "comment": "업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다.",
+                                            "type": "change",
+                                            "event": "onUploadComplete",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                            "type": "custom",
+                                            "event": "onUploadComplete",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:attachment.upload_success"
+                                            }
+                                        },
+                                        {
+                                            "comment": "업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다.",
+                                            "type": "custom",
+                                            "event": "onUploadError",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{$args[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다).",
+                                            "type": "change",
+                                            "event": "onRemove",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                            "type": "custom",
+                                            "event": "onRemove",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:attachment.deleted"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "collection": "og_image_default",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "maxFiles": 1,
+                                        "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                        "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                        "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
+                                        "autoUpload": false,
+                                        "uploadTriggerEvent": "upload:og_image_default",
+                                        "confirmBeforeRemove": true,
+                                        "imageCompression": {
+                                            "maxSizeMB": 1,
+                                            "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.twitter_default_card"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "seo.twitter_default_card",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "",
+                                        "options": [
+                                            {
+                                                "value": "summary_large_image",
+                                                "label": "summary_large_image"
+                                            },
+                                            {
+                                                "value": "summary",
+                                                "label": "summary"
+                                            },
+                                            {
+                                                "value": "app",
+                                                "label": "app"
+                                            },
+                                            {
+                                                "value": "player",
+                                                "label": "player"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.twitter_default_card_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.twitter_default_site"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.twitter_default_site",
+                                        "placeholder": "@gnuboard",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.twitter_default_site_hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_bot_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.seo.bot_settings"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.seo.bot_settings_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "notice_bot_library",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "info-circle",
+                                        "className": "flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "font-semibold"
+                                            },
+                                            "text": "$t:admin.settings.seo.bot_library_notice_title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1"
+                                            },
+                                            "text": "$t:admin.settings.seo.bot_library_notice_body"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "toggle_bot_detection_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.bot_detection_enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.seo.bot_detection_enabled_desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "seo.bot_detection_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "size": "md"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "toggle_bot_detection_library_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between {{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.bot_detection_library_enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.seo.bot_detection_library_enabled_desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "seo.bot_detection_library_enabled",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_bot_user_agents",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "{{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50 pointer-events-none'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.bot_user_agents"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "props": {
+                                        "name": "seo.bot_user_agents",
+                                        "creatable": true,
+                                        "placeholder": "$t:admin.settings.seo.bot_user_agents_placeholder",
+                                        "className": "w-full",
+                                        "defaultVariant": "blue",
+                                        "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.bot_detection_enabled}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.bot_user_agents_hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_seo_cache_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.seo.seo_cache_settings"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.seo.seo_cache_settings_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_seo_cache_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.cache_enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.seo.cache_enabled_desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "seo.cache_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "size": "md"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_seo_cache_ttl",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.cache_ttl"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "seo.cache_ttl",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "min": "{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}",
+                                        "max": "{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}",
+                                        "placeholder": "7200",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.cache_ttl_hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_sitemap_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.seo.sitemap_settings"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.seo.sitemap_settings_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_sitemap_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.sitemap_enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.seo.sitemap_enabled_desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "seo.sitemap_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "size": "md"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_sitemap_schedule",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_schedule"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "seo.sitemap_schedule",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "w-full",
+                                        "options": [
+                                            {
+                                                "value": "hourly",
+                                                "label": "$t:admin.settings.seo.sitemap_schedule_hourly"
+                                            },
+                                            {
+                                                "value": "daily",
+                                                "label": "$t:admin.settings.seo.sitemap_schedule_daily"
+                                            },
+                                            {
+                                                "value": "weekly",
+                                                "label": "$t:admin.settings.seo.sitemap_schedule_weekly"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_sitemap_schedule_time",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_schedule_time"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.sitemap_schedule_time",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "placeholder": "02:00",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_schedule_time_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_sitemap_cache_ttl",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_cache_ttl"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "seo.sitemap_cache_ttl",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "min": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}",
+                                        "max": "{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}",
+                                        "placeholder": "86400",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_cache_ttl_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_sitemap_urls_per_file",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_urls_per_file"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "seo.sitemap_urls_per_file",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "min": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}",
+                                        "max": "{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}",
+                                        "placeholder": "50000",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_urls_per_file_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_sitemap_gzip",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.sitemap_gzip"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.seo.sitemap_gzip_desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "seo.sitemap_gzip",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "size": "md"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_sitemap_hreflang_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.sitemap_hreflang_enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.seo.sitemap_hreflang_enabled_desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "seo.sitemap_hreflang_enabled",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "size": "md"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sitemap_progress_block",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['queued','running','writing','completed','failed'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
+                            "props": {
+                                "className": "space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.seo.sitemap_progress"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "classMap": {
+                                                "key": "{{sitemap_status?.data?.progress?.status ?? ''}}",
+                                                "variants": {
+                                                    "queued": "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+                                                    "running": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
+                                                    "writing": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
+                                                    "completed": "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
+                                                    "failed": "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "px-2 py-0.5 rounded text-xs font-medium"
+                                            },
+                                            "text": "{{(sitemap_status?.data?.progress?.status === 'queued' && $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' && $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' && $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' && $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' && $t('admin.settings.seo.sitemap_status_failed')) || ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{sitemap_status?.data?.progress?.status === 'running' && (sitemap_status?.data?.progress?.phase ?? '') !== ''}}",
+                                    "props": {
+                                        "className": "text-label-subtle text-sm"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_progress_phase|phase={{sitemap_status?.data?.progress?.phase ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{Number(sitemap_status?.data?.progress?.urls ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "text-label-subtle text-sm"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_progress_urls|count={{sitemap_status?.data?.progress?.urls ?? 0}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{sitemap_status?.data?.progress?.status === 'failed' && (sitemap_status?.data?.progress?.message ?? '') !== ''}}",
+                                    "props": {
+                                        "className": "text-red-600 dark:text-red-400 text-sm break-words"
+                                    },
+                                    "text": "{{sitemap_status?.data?.progress?.message ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle text-xs"
+                                    },
+                                    "text": "{{sitemap_status?.data?.realtime_enabled === true ? $t('admin.settings.seo.sitemap_realtime_connected') : $t('admin.settings.seo.sitemap_polling')}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sitemap_last_updated_block",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading block"
+                                    },
+                                    "text": "$t:admin.settings.seo.sitemap_last_updated_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-col gap-2 md:flex-row md:items-center md:"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "disabled": true,
+                                                "value": "{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}",
+                                                "className": "md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
+                                            }
+                                        },
+                                        {
+                                            "comment": "사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "apiCall",
+                                                    "target": "/api/admin/seo/sitemap/regenerate",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "sitemap_status"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "{{$t('admin.settings.seo.sitemap_update_success')}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
+                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                            },
+                                            "text": "{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ],
-  "props": {}
+    ]
 }

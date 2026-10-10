@@ -1,0 +1,30 @@
+feature: 고객·회원 응답의 관리자 내부 메모 노출 게이트
+
+description: |
+  주문 상세와 마일리지 내역은 관리자 화면과 고객(마이페이지) 화면이 같은 Resource 를 쓴다.
+  관리자 메모(`admin_memo`)·마일리지 처리 메모(`memo`)·처리 관리자(`granted_by`)는 운영자가
+  내부용으로 남긴 값이라, 그 주문·마일리지의 주인인 고객에게도 보여서는 안 된다.
+
+  게이트는 코어의 `canExposeAdminNote()` 한 곳이 소유한다. 판정 근거는 이메일 게이트와 같은
+  "요청이 도달한 컨트롤러가 관리자 컨트롤러인가" 하나이며, 이메일 게이트와 달리 **본인 예외가 없다**.
+
+  가리는 것은 값뿐이다 — 키는 유지하고 값만 `null`. 고객용 적립 사유(`description`)는 그대로 둔다.
+
+axes:
+  case: [order_member_by_number, order_member_by_id, order_admin, mileage_member, mileage_admin]
+
+effects:
+  - order_admin_memo_null_for_member
+  - order_admin_memo_visible_to_admin
+  - mileage_memo_and_granted_by_null_for_member
+  - mileage_description_visible_to_member
+  - mileage_memo_and_granted_by_visible_to_admin
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminNoteExposureTest.php
+
+notes:
+  - |
+    비회원 주문 경로는 별도 Resource(`GuestOrderResource`)가 `admin_memo` 를 아예 싣지 않으며
+    기존 `Public/OrderControllerTest` 가 그 부재를 검증한다. 이 매니페스트는 그 빈칸이던
+    회원 경로와 마일리지를 덮는다.

@@ -1,0 +1,115 @@
+feature: 코드 편집기의 파일별 편집 버퍼
+
+description: |
+  관리자 코드 편집기의 편집 버퍼가 전역 변수 **한 벌**(`_global.editorMarkup`)이었다. 파일을 고르면
+  `refetch-data-source` 응답의 `init-global` 이 그 전역을 무조건 덮었고, 저장하지 않은 수정이
+  **아무 경고 없이 사라졌다**. 예외도 실패한 요청도 없어 화면에서만 드러나는 종류다.
+
+  같은 결함 클래스가 네 갈래에 있었다 — 레이아웃 파일 전환(D1), 커스텀 자산 파일 전환(D2),
+  커스텀 자산 대상 전환(D3), 레이아웃 ↔ 확장 조각 전환(D4).
+
+  고침은 방향을 뒤집는 것이다. 서버 본문은 `serverValue` prop 으로 **들어오기만** 하고, 편집 중인
+  값은 `CodeWorkspace` 안의 `Map<key, buffer>` 가 소유한다. 핵심 명제는 하나 —
+  **버퍼가 dirty 면 serverValue 를 무시한다.**
+
+axes:
+  branch: [layout, extension]
+  buffer_state: [clean, dirty]
+  leave: [file_switch, reload]
+
+axis_notes:
+  branch: >-
+    layout = 레이아웃 편집기(`CodeWorkspace`), extension = 커스텀 자산 모달(코어).
+    같은 결함 클래스의 두 표면이라 같은 명제를 양쪽에서 잰다.
+  buffer_state: dirty 는 «serverValue 를 무시한다», clean 은 «최신본을 받아들인다» 를 가른다.
+  leave: >-
+    file_switch = 같은 화면에서 다른 파일로. reload = 화면을 떠났다 돌아옴(초안 경로).
+    탭 전환은 file_switch 와 같은 경로(같은 `fileKey` 교체)라 축으로 세우지 않는다 —
+    탭 UI 자체는 `FileTabs.test.tsx` 가 따로 잠근다.
+
+effects:
+  - code_workspace_keeps_dirty_buffer_over_server_value   # dirty 버퍼는 재조회 응답에 덮이지 않는다
+  - code_workspace_refreshes_clean_buffer_from_server     # clean 버퍼는 최신본을 받아들인다
+  - code_workspace_raises_conflict_instead_of_overwriting # 판본이 오른 채 dirty 면 충돌 바 (자동 덮어쓰기 0)
+  - code_workspace_clears_dirty_after_save                # 저장 성공 시 clean 전환 + 초안 삭제
+  - code_workspace_evicts_clean_tabs_first                # 탭 상한 초과 시 dirty 탭은 남긴다
+  - code_workspace_uses_one_monaco_model_per_file         # 파일별 모델 — 커서·되돌리기가 섞이지 않는다
+  - code_editor_keeps_unsaved_edits_across_file_switches  # 브라우저에서 파일 왕복 후에도 편집분 유지
+  - code_editor_guards_reload_with_unsaved_edits          # 미저장 상태의 새로고침을 막아 세운다
+  - custom_asset_editor_keeps_unsaved_draft_across_files  # 커스텀 자산 모달도 같은 규칙 (D2)
+  - custom_asset_editor_confirms_before_discarding_on_target_switch # 대상 전환 시 확인 (D3)
+  - custom_asset_editor_indents_with_tab                  # 코드 입력칸의 Tab 은 들여쓰기 (§4.7)
+  - code_workspace_trims_drafts_to_byte_cap_oldest_first  # 초안 전체 상한(2MB) 초과 시 오래된 것부터 버린다 (§9.2)
+  - code_workspace_close_dialog_discards_on_request       # 3지선다 «저장하지 않고 닫기» (§4.3 표 6행)
+  - code_workspace_close_dialog_saves_then_closes         # 3지선다 «저장하고 닫기» — 저장 1회 → clean 뒤 닫힘
+  - code_workspace_conflict_bar_shows_diff                # 충돌 바 [차이 보기] — 서버 본문 ↔ 내 편집 (§7.7 표 7행)
+  - code_workspace_overlays_editor_while_fetching         # 본문 조회 중 오버레이, 편집기는 유지 (§7.7 표 4행)
+  - code_workspace_uses_smaller_font_on_mobile            # <768 이면 13px, 그 외 14px (§7.6)
+  - code_editor_reloads_file_list_on_missing_file_404     # 선언층: 본문 404 → 안내 토스트 + layout_files 재조회 (§7.7 표 5행)
+  - code_editor_hides_loaded_file_meta_for_missing_file_tab # 없는 파일 탭에 직전 파일의 설명·수정일·이력·JSON 을 그리지 않는다
+  - code_workspace_keeps_newer_draft_from_other_tab      # 같은 키는 더 나중에 적힌 초안이 남는다 — 옛 사본·지난 삭제가 새 초안을 덮지 않는다
+  - code_workspace_retires_rescued_missing_file          # 새 이름으로 살린 없는 파일은 탭과 초안을 거둔다
+  - code_editor_rename_sends_the_target_lock_version     # 트리에서 다른 파일 이름변경 — 그 파일의 잠금 번호를 보낸다(가짜 409 방지)
+  - editor_header_buttons_reference_named_actions # 머리말 버튼은 이름 붙은 동작을 참조한다
+  - code_editor_never_seeds_the_markup_buffer_from_a_refetch # 다시 받기가 편집 중인 마크업 버퍼를 덮지 않는다
+  - code_editor_tab_switch_syncs_route_query # 탭을 바꾸면 주소의 파일 쿼리가 따라간다
+  - code_editor_marks_json_view_stale_on_file_switch # 파일을 바꾸면 JSON 보기가 낡음으로 표시된다
+  - code_workspace_writes_drafts_to_local_storage # 초안을 localStorage 에 적는다
+  - code_workspace_drops_draft_after_save # 저장한 파일의 초안을 지운다
+  - code_workspace_offers_drafts_instead_of_restoring_them # 남은 초안은 바로 덮지 않고 복원을 제안한다
+  - code_workspace_restores_drafts_on_demand # 복원을 누르면 초안을 되살린다
+  - code_workspace_discards_drafts_on_demand # 버리기를 누르면 초안을 지운다
+  - code_workspace_shows_no_banner_without_drafts # 초안이 없으면 안내 줄을 띄우지 않는다
+  - code_workspace_survives_blocked_local_storage # localStorage 가 막혀도 편집은 계속된다
+  - code_workspace_flushes_drafts_on_pagehide # 페이지를 떠날 때 초안을 즉시 적는다
+  - code_workspace_flushes_drafts_on_visibility_hidden # 탭이 가려질 때 초안을 즉시 적는다
+  - code_workspace_retries_dropped_draft_write_on_next_interaction # 적기에 실패한 초안은 다음 입력 때 다시 적는다
+  - code_workspace_does_not_rewrite_when_storage_accepts # 적기에 성공하면 같은 초안을 다시 쓰지 않는다
+  - code_workspace_merges_drafts_from_other_tabs # 다른 탭의 초안을 합친다
+  - code_workspace_delete_beats_merge # 지운 초안은 합치기에서 되살아나지 않는다
+  - code_workspace_expires_stale_drafts # 7일 지난 초안은 제안하지 않는다
+  - code_workspace_prunes_expired_drafts_from_storage # 7일 지난 초안을 저장소에서 지운다
+  - code_workspace_marks_missing_file_tab # 없는 파일 탭에 표시를 단다
+  - code_workspace_shows_missing_file_bar_with_rescue # 없는 파일 탭에 살리기 안내 줄을 띄운다
+  - code_workspace_missing_file_is_read_only # 없는 파일 탭은 읽기 전용이다
+  - code_workspace_known_keys_empty_marks_nothing_missing # 알려진 파일 목록이 비면 아무 탭도 없는 파일로 표시하지 않는다
+  - code_workspace_seeds_buffer_from_server_on_first_visit # 처음 들어온 키는 서버 본문으로 버퍼를 만든다
+  - code_workspace_conflict_take_server_replaces_buffer # 충돌에서 [서버 것으로] 를 고르면 그때 서버 본문으로 바뀐다
+  - code_workspace_conflict_keep_mine_moves_the_baseline # 충돌에서 [내 것 유지] 는 편집분을 남기고 기준선만 옮긴다
+  - code_workspace_pushes_active_buffer_to_host # 활성 버퍼를 호스트(_global.editorMarkup)로 올린다
+  - code_workspace_separates_user_edits_from_buffer_sync # onUserEdit 는 사람이 고쳤을 때만 불린다
+  - code_workspace_opens_a_tab_per_visited_file # 들른 파일마다 탭이 쌓인다
+  - code_workspace_tab_click_asks_host_to_switch # 탭을 누르면 호스트에 전환을 요청한다
+  - code_workspace_confirms_before_closing_a_dirty_tab # 미저장 탭을 닫으려면 3지선다를 묻는다
+  - code_workspace_ignores_server_value_from_another_file # serverKey 가 다르면 그 본문으로 버퍼를 만들지 않는다
+  - code_workspace_without_server_key_keeps_legacy_behaviour # serverKey 가 없으면 대조하지 않는다
+  - code_workspace_does_not_report_user_edit_before_buffer_exists # 버퍼가 생기기 전의 change 는 편집이 아니다
+  - code_workspace_ignores_unchanged_echo # 값이 그대로인 change 는 편집으로 치지 않는다
+  - code_workspace_accepts_normalized_own_save_without_conflict # 내 저장이 서버 정규화 본문으로 돌아와도 충돌이 아니다
+  - code_workspace_keeps_edits_typed_after_save_dirty # 저장을 보낸 뒤 더 친 글자는 dirty 로 남는다
+  - code_workspace_still_flags_conflict_for_other_saves # 내 저장보다 판본이 더 올랐거나 다른 파일 기록이면 여전히 충돌
+  - code_editor_save_records_last_save_for_workspace # 저장 동작이 보낸 파일·본문과 응답 판본을 lastSave 로 넘긴다
+  # --- 7.1.0 전수 실측 I1 (2026-10-06) 에서 드러난 결함의 잠금
+  - code_workspace_close_dialog_reports_save_failure # «저장하고 닫기» 가 실패하면 창에 알리고 버튼을 다시 푼다
+  - code_workspace_restores_drafts_of_unopened_files # 열려 있지 않은 파일의 복원 초안이 서버 본문 도착 뒤에도 남는다
+  - code_workspace_does_not_resurrect_drafts_removed_by_other_tab # 다른 탭이 지운 초안을 병합 사본으로 되살리지 않는다
+  - code_workspace_retires_renamed_file_tab # 깨끗한 탭은 이름변경 뒤 옛 이름 탭을 거둔다(미저장 탭은 남긴다)
+  - code_editor_ignores_stale_echo_of_own_typing # 빠른 타이핑 중 늦게 돌아온 내 값이 모델을 덮지 않는다
+  - code_editor_applies_external_value # 내가 친 적 없는 바깥 값(서버 본문·초안 복원·읽기 전용)은 편집기에 들어간다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.buffers.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.drafts.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeEditor.staleEcho.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-multi-buffer.spec.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/CustomAssetsModal.test.tsx
+
+validation:
+  note: |
+    단위(`CodeWorkspace.buffers.test.tsx`)가 계획서 §4.3 의 버퍼 수명 표를 1:1 케이스로 잠그고,
+    브라우저 spec 이 **실제 Monaco 와 실제 재조회**를 거쳐도 같은 결과인지를 잰다 — 그 둘 사이
+    (모델 교체·재조회 타이밍)가 이 결함이 살던 자리이기 때문이다.
+
+    커스텀 자산 모달은 같은 결함 클래스의 두 번째 표면이라 코어 단위 테스트가 같은 두 명제
+    (파일 전환 시 초안 보존 · 대상 전환 시 확인)를 잠근다.

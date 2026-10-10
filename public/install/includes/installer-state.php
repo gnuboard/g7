@@ -80,12 +80,125 @@ function getInstallationState(): array
 }
 
 /**
+ * 설치 소유권 필드 목록.
+ *
+ * generation 이 더 높은 쪽이 이긴다 — 설치 워커·heartbeat 처럼 generation 을 올리지 않는
+ * 쓰기가 옛 사본을 저장해도 소유자 교체·설치 계획 서명이 되돌아가지 않게 한다.
+ *
+ * @return array<int, string> 소유권 필드 키
+ */
+function installerOwnershipStateKeys(): array
+{
+    return ['owner_hash', 'recovery_hash', 'generation', 'drop_confirm', 'install_plan_sig', 'existing_db_action'];
+}
+
+/**
+ * 디스크의 state.json 을 그대로 읽는다 (없거나 손상이면 null).
+ *
+ * @return array<string, mixed>|null 디스크 state
+ */
+function installerReadStateFile(): ?array
+{
+    clearstatcache(true, STATE_PATH);
+
+    if (! is_file(STATE_PATH)) {
+        return null;
+    }
+
+    $decoded = json_decode((string) @file_get_contents(STATE_PATH), true);
+
+    return is_array($decoded) ? $decoded : null;
+}
+
+/**
+ * state.json 쓰기를 프로세스 간 직렬화한다.
+ *
+ * 락 파일을 열 수 없으면(스토리지 부재 등) 락 없이 실행한다 — 쓰기 자체가 실패하며 기존 로그가 남는다.
+ *
+ * @param  callable(): bool  $callback  락 안에서 실행할 쓰기
+ * @return bool 콜백 결과
+ */
+function installerWithStateLock(callable $callback): bool
+{
+    $handle = @fopen(STATE_PATH.'.lock', 'c');
+    if ($handle === false) {
+        return $callback();
+    }
+
+    try {
+        flock($handle, LOCK_EX);
+
+        return $callback();
+    } finally {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    }
+}
+
+/**
  * 설치 상태 저장
+ *
+ * 디스크 generation 이 메모리 사본보다 높으면 소유권 필드는 디스크 값을 유지한다.
  *
  * @param  array  $state  저장할 상태 배열
  * @return bool 저장 성공 여부
  */
 function saveInstallationState(array $state): bool
+{
+    return installerWithStateLock(static function () use ($state): bool {
+        $disk = installerReadStateFile();
+
+        if ($disk !== null && (int) ($disk['generation'] ?? 0) > (int) ($state['generation'] ?? 0)) {
+            foreach (installerOwnershipStateKeys() as $key) {
+                if (array_key_exists($key, $disk)) {
+                    $state[$key] = $disk[$key];
+                } else {
+                    unset($state[$key]);
+                }
+            }
+        }
+
+        return installerWriteStateFile($state);
+    });
+}
+
+/**
+ * 설치 상태를 compare-and-swap 으로 저장한다.
+ *
+ * 디스크 generation 이 기대값과 같을 때만 generation+1 로 저장한다. 다르면 그 사이 다른
+ * 상태변경 요청이 먼저 커밋한 것이므로 false (호출부는 409 로 응답).
+ *
+ * @param  array  $state  저장할 상태 배열
+ * @param  int  $expectedGeneration  읽을 때의 generation
+ * @return bool 저장 성공 여부 (충돌·쓰기 실패 시 false)
+ */
+function saveInstallationStateCas(array $state, int $expectedGeneration): bool
+{
+    return installerWithStateLock(static function () use ($state, $expectedGeneration): bool {
+        $disk = installerReadStateFile();
+        $diskGeneration = $disk === null ? 0 : (int) ($disk['generation'] ?? 0);
+
+        if ($diskGeneration !== $expectedGeneration) {
+            $msg = "[installer-state] CAS 충돌: expected={$expectedGeneration}, disk={$diskGeneration}";
+            error_log($msg);
+            addLog($msg);
+
+            return false;
+        }
+
+        $state['generation'] = $expectedGeneration + 1;
+
+        return installerWriteStateFile($state);
+    });
+}
+
+/**
+ * state.json 을 원자적으로 기록한다 (락·병합은 호출부 책임).
+ *
+ * @param  array  $state  저장할 상태 배열
+ * @return bool 저장 성공 여부
+ */
+function installerWriteStateFile(array $state): bool
 {
     // storage 디렉토리 존재 여부 확인 (생성하지 않음)
     $storageDir = BASE_PATH.'/storage';
@@ -409,6 +522,62 @@ function releaseWorkerLock(string $workerId): void
     saveInstallationState($state);
 }
 
+/**
+ * db_cleanup 으로 무효화되는 task 인지 판정한다.
+ *
+ * db_cleanup 은 db_prefix 로 시작하는 테이블을 전부 DROP 한다. 따라서 "효과가 DB 행으로만
+ * 남는" task 는 마커가 completed 로 남아 있어도 실제 결과물이 사라진 상태가 된다. 재개 시
+ * runInstallationTasks() 는 completed 마커만 보고 건너뛰므로, 마커를 함께 제거하지 않으면
+ * 그 확장은 파일만 있고 DB 등록은 없는 유령 상태로 설치가 끝난다.
+ *
+ * 회귀 (이슈 #599 후속): 1차 시도에서 sirsoft-board 가 db_cleanup 보다 먼저 설치·활성화된 뒤
+ * 사용자가 재시도하면서 drop_tables 를 선택 → g7_modules 가 DROP 되어 board 행이 소멸.
+ * 그러나 module_install:sirsoft-board 마커는 살아남아 재설치가 스킵됨 → 뒤이은 사용자 템플릿
+ * 설치가 "필수 의존성 sirsoft-board (module)이 충족되지 않았습니다" 로 실패.
+ *
+ * 무효화 대상:
+ *  - db_cleanup / db_migrate / db_seed — 스키마·시드 자체
+ *  - {module,plugin,template,user_template}_{install,activate} — 확장 등록 행
+ *  - language_pack_install — 언어팩 등록 행
+ *  - create_settings_json / complete_flag / config_cache / route_cache / static_publish —
+ *    DB 상태를 읽어 산출물을 만드는 마무리 단계
+ *
+ * 보존 대상 (파일시스템·환경 효과라 DROP 과 무관):
+ *  - composer_check / composer_install / env_update / key_generate / dependency_precheck
+ *
+ * @param  string  $task  completed_tasks 항목 ("id" 또는 "id:target")
+ */
+function isTaskInvalidatedByDbCleanup(string $task): bool
+{
+    // "module_install:sirsoft-board" → "module_install"
+    $taskId = strstr($task, ':', true);
+    if ($taskId === false) {
+        $taskId = $task;
+    }
+
+    static $invalidated = [
+        'db_cleanup' => true,
+        'db_migrate' => true,
+        'db_seed' => true,
+        'template_install' => true,
+        'template_activate' => true,
+        'module_install' => true,
+        'module_activate' => true,
+        'plugin_install' => true,
+        'plugin_activate' => true,
+        'user_template_install' => true,
+        'user_template_activate' => true,
+        'language_pack_install' => true,
+        'create_settings_json' => true,
+        'complete_flag' => true,
+        'config_cache' => true,
+        'route_cache' => true,
+        'static_publish' => true,
+    ];
+
+    return isset($invalidated[$taskId]);
+}
+
 function applyExistingDbActionStateGuard(array $state, string $newAction): array
 {
     // 다른 워커가 활성 진행 중이면 state 변경 금지 — race 회피.
@@ -425,10 +594,9 @@ function applyExistingDbActionStateGuard(array $state, string $newAction): array
         // drop_tables 는 "처음부터 다시" — DB 관련 task 마커 일괄 제거.
         // SSE 가 cleanup + migrate 일부 진행 후 끊긴 상태에서 폴링 재진입 케이스를
         // 커버하려면 이전 액션이 drop_tables 였더라도 다시 reset 해야 한다.
-        $resetTasks = ['db_cleanup', 'db_migrate', 'db_seed'];
         $state['completed_tasks'] = array_values(array_filter(
             $state['completed_tasks'] ?? [],
-            fn ($t) => ! in_array($t, $resetTasks, true)
+            fn ($t) => ! isTaskInvalidatedByDbCleanup((string) $t)
         ));
     } else {
         // 키 정규화 — completed_tasks 가 부재인 경우 빈 배열 보장

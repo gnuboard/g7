@@ -1,0 +1,16 @@
+feature: "[입금확인] 토스트 — 서버 응답 문장 (S3-D4)"
+
+description: |
+  입금 기록·결제 이후 단계 기록에서 서버가 다른 문장을 주는데 토스트가 고정 문구였다(실측: Q10).
+
+axes:
+  response:
+    - post_payment_record
+    - record_only
+    - no_message
+
+effects:
+  - confirm_deposit_toast_uses_server_message # 서버 응답 message 를 먼저 띄우고, 없으면 모듈 문구
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/confirmDepositServerMessage.test.ts

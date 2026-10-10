@@ -109,6 +109,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=admin_list,opt_in=default
+     *
      * @effects list_omits_nested_country_setting_blocks, list_keeps_fields_the_screen_draws
      */
     public function test_list_carries_only_the_fields_the_screen_draws(): void
@@ -144,6 +145,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=admin_list,opt_in=default
+     *
      * @effects list_keeps_fields_the_screen_draws
      */
     public function test_list_still_computes_summaries_without_opt_in(): void
@@ -164,6 +166,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=admin_list,opt_in=default
+     *
      * @effects list_includes_inactive_country_settings
      */
     public function test_list_includes_inactive_country_settings(): void
@@ -185,6 +188,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=admin_list,opt_in=default
+     *
      * @effects summaries_count_only_active_settings_regardless_of_load_path
      */
     public function test_summaries_count_only_active_settings_regardless_of_load_path(): void
@@ -209,6 +213,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=admin_list,opt_in=with_country_settings
+     *
      * @effects opt_in_restores_full_country_settings
      */
     public function test_opt_in_restores_full_country_settings(): void
@@ -229,6 +234,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=admin_list,opt_in=with_country_settings
+     *
      * @effects opt_in_accepts_query_string_boolean_forms
      */
     public function test_opt_in_accepts_query_string_boolean_forms(): void
@@ -262,6 +268,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=admin_list,opt_in=default
+     *
      * @effects country_setting_queries_do_not_grow_with_rows
      */
     public function test_default_list_country_setting_queries_do_not_grow_with_rows(): void
@@ -272,6 +279,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=active_list,opt_in=default
+     *
      * @effects country_setting_queries_do_not_grow_with_rows
      */
     public function test_active_list_country_setting_queries_do_not_grow_with_rows(): void

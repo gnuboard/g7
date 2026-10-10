@@ -1,0 +1,18 @@
+feature: 이커머스 알림 발송 이력 샘플이 정의 전부를 실제 템플릿 문구로 채운다
+
+description: |
+  알림 발송 이력 샘플은 이커머스 활성 알림 정의(본인인증 목적·운영자 직접 메일 제외)를 건수가 허락하면 하나 이상씩 쓰고,
+  제목·본문은 그 정의의 알림 템플릿(ko)에 샘플 값을 넣어 만든다. 관리자 알림은 관리자에게 보낸 이력이다.
+
+axes:
+  seeder: [notification]
+
+effects:
+  - default_count
+  - ecommerce_scope_only
+  - ecommerce_definitions_only
+  - count_option
+  - every_definition_with_template_text
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/Seeders/Sample/NotificationLogSeederTest.php

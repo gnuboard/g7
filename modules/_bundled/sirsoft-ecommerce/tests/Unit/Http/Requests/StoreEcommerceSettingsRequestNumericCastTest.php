@@ -32,6 +32,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         return $request;
     }
 
+    /**
+     * @effects request_numeric_fields_cast_before_validation
+     */
     public function test_auto_cancel_days_string_is_cast_to_int(): void
     {
         $request = $this->resolve([
@@ -42,6 +45,35 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         $this->assertSame(5, $request->validated()['order_settings']['auto_cancel_days']);
     }
 
+    /**
+     * 취소 가능 상태가 validatedSettings에서 사라지지 않고 저장 계층까지 전달됩니다.
+     *
+     * @effects cancel_status_values_survive_both_tab_validations
+     */
+    public function test_cancel_policy_survives_validation_for_both_settings_tabs(): void
+    {
+        foreach (['order_settings' => 'cancellable_statuses', 'claim' => 'instant_cancel_statuses'] as $category => $key) {
+            foreach ([['payment_complete'], ['shipping', 'delivered', 'confirmed'], []] as $statuses) {
+                $request = $this->resolve(['_tab' => $category, $category => [$key => $statuses]]);
+                $this->assertSame($statuses, $request->validatedSettings()[$category][$key]);
+            }
+        }
+    }
+
+    /**
+     * 취소 완료 상태는 취소 정책으로 저장할 수 없습니다.
+     *
+     * @effects invalid_cancel_status_is_rejected
+     */
+    public function test_cancel_policy_rejects_invalid_order_statuses(): void
+    {
+        $this->expectException(ValidationException::class);
+        $this->resolve(['order_settings' => ['cancellable_statuses' => ['cancelled']]]);
+    }
+
+    /**
+     * @effects request_numeric_fields_cast_before_validation
+     */
     public function test_zero_padded_numeric_string_is_cast_to_int(): void
     {
         $request = $this->resolve([
@@ -52,6 +84,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         $this->assertSame(5, $request->validated()['order_settings']['auto_cancel_days']);
     }
 
+    /**
+     * @effects request_numeric_fields_cast_before_validation
+     */
     public function test_wildcard_nested_numeric_fields_are_cast(): void
     {
         $request = $this->resolve([
@@ -72,6 +107,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         $this->assertSame(1000, $rule['min_use_amount']);
     }
 
+    /**
+     * @effects request_validation_not_loosened
+     */
     public function test_non_numeric_string_is_not_cast_and_still_fails_validation(): void
     {
         $this->expectException(ValidationException::class);
@@ -82,6 +120,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects request_validation_not_loosened
+     */
     public function test_decimal_string_on_integer_field_still_fails_validation(): void
     {
         // 소수 문자열을 intval 로 통과시키면 검증이 느슨해진다 — 캐스트 대상에서 제외되어야 한다.
@@ -93,6 +134,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects request_validation_not_loosened
+     */
     public function test_string_fields_are_not_converted_to_numbers(): void
     {
         $request = $this->resolve([
@@ -114,6 +158,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * `ConvertEmptyStringsToNull` 로 null 이 되어 `nullable` 을 통과한다. 결과적으로
      * 화면에는 "저장되었습니다" 가 뜨지만 실제 값은 사라지고 소비처의 숨은 기본값으로
      * 동작해 관리자가 본 것과 실제 동작이 어긋난다.
+     *
+     * @effects request_validation_not_loosened
      */
     public function test_empty_auto_cancel_days_is_rejected(): void
     {
@@ -125,6 +171,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects request_validation_not_loosened
+     */
     public function test_null_auto_cancel_days_is_rejected(): void
     {
         $this->expectException(ValidationException::class);
@@ -139,6 +188,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * rules() 는 탭 구분 없이 적용되므로, auto_cancel_days 를 무조건 required 로 두면
      * 이 키를 보내지 않는 다른 탭 저장이 통째로 막힌다(마일리지 탭 저장 불가 회귀).
      * 필수는 "키가 왔을 때만" 적용되어야 한다.
+     *
+     * @effects request_validation_not_loosened
      */
     public function test_other_tab_save_is_not_blocked_by_auto_cancel_days_requirement(): void
     {
@@ -153,6 +204,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     /**
      * 자동취소 스위치를 꺼도 값 자체는 항상 함께 전송되므로(화면 실측 확인),
      * 필수화가 정상 저장 흐름을 깨지 않아야 한다.
+     *
+     * @effects request_numeric_fields_cast_before_validation
      */
     public function test_valid_value_passes_when_auto_cancel_disabled(): void
     {
@@ -167,6 +220,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     /**
      * rules() 에 integer/numeric 규칙을 가진 필드가 존재하는 한, 요청 정규화는
      * 그 목록을 rules() 에서 파생해야 한다(하드코딩 열거 금지 — 드리프트 방지).
+     *
+     * @effects request_numeric_fields_cast_before_validation
      */
     public function test_every_integer_rule_field_is_covered_by_derived_casting(): void
     {
@@ -174,6 +229,13 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
 
         $numericFields = [];
         foreach ($rules as $field => $fieldRules) {
+            // `Rule::forEach()` 같은 규칙 객체는 문자열로 변환되지 않는다 — 요청의 파생 로직
+            // (`numericCastTypeFor`)과 같은 이유로 건너뛴다. 이 가드가 없으면 10차가 배송사·배송유형
+            // 이름 규칙을 forEach 로 바꾼 뒤 이 테스트가 red 였는데 어느 배치도 돌리지 않아 드러나지 않았다.
+            if (! is_array($fieldRules) && ! is_string($fieldRules)) {
+                continue;
+            }
+
             $list = is_array($fieldRules) ? $fieldRules : explode('|', (string) $fieldRules);
             foreach ($list as $rule) {
                 if (is_string($rule) && in_array($rule, ['integer', 'numeric'], true)) {

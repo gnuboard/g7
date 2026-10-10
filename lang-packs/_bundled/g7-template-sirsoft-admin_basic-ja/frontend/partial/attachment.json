@@ -13,5 +13,9 @@
   "drag_to_reorder": "ドラッグして順序を変更",
   "reorder_failed": "順序変更に失敗しました。",
   "primary_image": "メイン画像",
-  "set_as_primary": "メイン画像に設定"
+  "set_as_primary": "メイン画像に設定",
+  "empty_file": "[{{name}}] 空のファイル（0バイト）はアップロードできません。",
+  "file_too_large": "[{{name}}] ファイルサイズ（{{size}}）が最大許容サイズ（{{max}}MB）を超えています。",
+  "type_not_allowed": "[{{name}}] 許可されていないファイル形式です。(許可: {{accept}})",
+  "upload_response_invalid": "アップロード応答を解釈できませんでした。"
 }

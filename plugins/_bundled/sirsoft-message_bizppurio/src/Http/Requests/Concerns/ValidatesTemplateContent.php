@@ -135,6 +135,8 @@ trait ValidatesTemplateContent
      * 선택된 templateMessageType/templateEmphasizeType 기준으로 무관 필드·빈 값을
      * 제거한다. 저장된 content 가 곧 kapi add/update 페이로드이므로(§3.1) 이 정돈이
      * 등록 시 불필요 필드 거부를 예방한다. prepareForValidation 에서 호출한다.
+     *
+     * @return void 반환값 없음
      */
     private function pruneContentPayload(): void
     {
@@ -241,6 +243,59 @@ trait ValidatesTemplateContent
      */
     private function contentRules(): array
     {
+        $rules = $this->fullContentRules();
+
+        return $this->isDraftSave() ? $this->relaxForDraft($rules) : $rules;
+    }
+
+    /**
+     * 이번 저장이 「저장」(임시 저장)인지 판정합니다.
+     *
+     * 「알림 템플릿 관리」 탭 작성 창의 「저장」과 알림 설정 [편집] 창 하단 「저장」은 `draft: true` 를
+     * 싣는다(두 화면이 같게 동작한다). 「저장 후 검수 신청」은 싣지 않으므로 종전대로 전부 검증한다.
+     *
+     * @return bool 임시 저장이면 true
+     */
+    private function isDraftSave(): bool
+    {
+        return $this->boolean('draft');
+    }
+
+    /**
+     * 임시 저장용으로 필수 조건만 걷어 낸 규칙을 돌려줍니다.
+     *
+     * 초안은 쓰다 만 상태를 남기는 자리다 — 본문·카테고리·유형별 필수값을 요구하면 모든 칸을
+     * 채우기 전까지 아무것도 남길 수 없다. 필수(`required*`)와 아이템 최소 개수만 빼고 유형 코드
+     * 허용값·최대 길이 같은 형식 제약은 그대로 둔다. 빠진 필수값은 검수 신청 때 전체 규칙으로 확인한다.
+     *
+     * @param  array<string, array<int, mixed>>  $rules  전체 규칙
+     * @return array<string, array<int, mixed>> 필수 조건을 걷어 낸 규칙
+     */
+    private function relaxForDraft(array $rules): array
+    {
+        foreach ($rules as $field => $fieldRules) {
+            $kept = array_values(array_filter(
+                $fieldRules,
+                static fn ($rule) => ! (is_string($rule) && (str_starts_with($rule, 'required') || str_starts_with($rule, 'min:'))),
+            ));
+
+            if (! in_array('nullable', $kept, true)) {
+                array_unshift($kept, 'nullable');
+            }
+
+            $rules[$field] = $kept;
+        }
+
+        return $rules;
+    }
+
+    /**
+     * content 하위의 전체(검수 신청 기준) 검증 규칙을 반환합니다.
+     *
+     * @return array<string, mixed>
+     */
+    private function fullContentRules(): array
+    {
         return [
             'content' => ['sometimes', 'nullable', 'array'],
             'content.templateName' => ['required_with:content', 'string', 'max:200'],
@@ -303,6 +358,7 @@ trait ValidatesTemplateContent
      *  - itemHighlight 는 썸네일(imageUrl) 유무에 따라 title≤30/21 · description≤19/13 (A-2)
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     private function validateContentConditionals(Validator $validator): void
     {
@@ -311,7 +367,8 @@ trait ValidatesTemplateContent
             return;
         }
 
-        foreach (['buttons', 'quickReplies'] as $group) {
+        // 링크 종류별 필수 칸은 필수 조건이라 임시 저장에서는 묻지 않는다(검수 신청 때 확인한다).
+        foreach ($this->isDraftSave() ? [] : ['buttons', 'quickReplies'] as $group) {
             $items = $content[$group] ?? null;
             if (! is_array($items)) {
                 continue;

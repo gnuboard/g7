@@ -2,7 +2,6 @@
 
 namespace App\Extension\Concerns;
 
-use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
@@ -49,16 +48,13 @@ trait ResolvesExtensionSharedRecords
                 ->getMenusByExtension(ExtensionOwnerType::from($type), $id)
                 ->count(),
             ],
+            // 본인인증 메시지도 7.1.0 부터 알림 정의(category=identity)에 함께 집계된다.
             ['notification_definitions', fn (string $type, string $id): int => app(NotificationDefinitionRepositoryInterface::class)
                 ->getByExtension($type, $id)
                 ->count(),
             ],
             ['identity_policies', fn (string $type, string $id): int => app(IdentityPolicyRepositoryInterface::class)
                 ->countBySource($type, $id),
-            ],
-            ['identity_message_definitions', fn (string $type, string $id): int => app(IdentityMessageDefinitionRepositoryInterface::class)
-                ->getByExtension($type, $id)
-                ->count(),
             ],
         ];
     }

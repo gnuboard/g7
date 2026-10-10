@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 관리자 주문 취소 모달 레이아웃 구조 검증 테스트
  *
@@ -16,6 +17,7 @@
 import { describe, it, expect } from 'vitest';
 
 import modalCancelOrder from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_cancel_order.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ========== 헬퍼 함수 ==========
 
@@ -377,7 +379,7 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
         // (모달 partial 분리 후 부모 _local 정리가 필요함)
         const footerDiv = modalCancelOrder.children[1];
         const closeBtn = footerDiv.children[0];
-        const clickAction = closeBtn.actions[0];
+        const clickAction = actionsOf(closeBtn)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
         const closeAction = (clickAction.params?.actions ?? clickAction.actions ?? []).find(
@@ -389,14 +391,16 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
     it('취소 실행 버튼이 executeCancelOrder 핸들러를 호출해야 함', () => {
         const footerDiv = modalCancelOrder.children[1];
         const cancelBtn = footerDiv.children[1];
-        const clickAction = cancelBtn.actions[0];
+        const clickAction = actionsOf(cancelBtn)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sirsoft-ecommerce.executeCancelOrder');
         expect(clickAction.params).toHaveProperty('orderId');
         expect(clickAction.params).toHaveProperty('cancelItems');
         expect(clickAction.params).toHaveProperty('cancelReason');
         expect(clickAction.params).toHaveProperty('cancelReasonDetail');
-        expect(clickAction.params).toHaveProperty('cancelPg');
+        // `cancelPg` 는 없앴다(P2) — 자리에 자동 전이 옵션(D7)이 들어왔다.
+        expect(clickAction.params).not.toHaveProperty('cancelPg');
+        expect(clickAction.params).toHaveProperty('autoAdvanceRefund');
         expect(clickAction.params).toHaveProperty('refundPriority');
     });
 

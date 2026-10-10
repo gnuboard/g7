@@ -157,6 +157,9 @@ class SmsChannelDriverTest extends PluginTestCase
         }
     }
 
+    /**
+     * @effects sms_skipped_when_template_row_inactive
+     */
     public function test_비활성_행이면_발송하지_않는다(): void
     {
         Bus::fake();
@@ -201,6 +204,9 @@ class SmsChannelDriverTest extends PluginTestCase
         ];
     }
 
+    /**
+     * @effects member_sms_uses_the_member_mobile
+     */
     public function test_회원은_mobile로_발송한다(): void
     {
         Bus::fake();
@@ -213,6 +219,9 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertSame('01012345678', $builder->calls[0]['to']);
     }
 
+    /**
+     * @effects guest_sms_uses_the_phone_carried_in_the_payload
+     */
     public function test_비회원은_data의_전화번호로_발송한다(): void
     {
         Bus::fake();
@@ -224,6 +233,33 @@ class SmsChannelDriverTest extends PluginTestCase
 
         Bus::assertDispatched(SendMessageJob::class);
         $this->assertSame('01099990000', $builder->calls[0]['to']);
+    }
+
+    /**
+     * 휴대폰을 등록하지 않은 회원이 수신자면 **발송하지 않는다.**
+     *
+     * 종전에는 `$notifiable->mobile ?? $data[번호]` 라, 그 알림이 나르는 **고객 번호로**
+     * 문자가 나갈 수 있었다. 지금은 주문 6종 화이트리스트가 우연히 막고 있을 뿐이고,
+     * 관리자 수신 알림이 늘면 그 우연이 깨진다.
+     *
+     * @effects member_without_mobile_never_borrows_the_customer_number
+     */
+    public function test_휴대폰_미등록_회원에게는_고객_번호를_빌려_쓰지_않는다(): void
+    {
+        Bus::fake();
+        $staff = User::factory()->create(['mobile' => null]);
+        $data = [SmsChannelDriver::RECIPIENT_PHONE_KEY => '010-9999-0000'];
+        $builder = $this->spyBuilder();
+
+        // 번호를 못 찾은 것으로 취급되어 기존 계약(건너뜀 예외)을 그대로 탄다.
+        $this->expectException(NotificationSendSkippedException::class);
+
+        try {
+            $this->makeDriver($this->templateRow(), $builder)->send($staff, $this->notification($data));
+        } finally {
+            Bus::assertNotDispatched(SendMessageJob::class);
+            $this->assertSame([], $builder->calls, '고객 번호가 발송 대상으로 넘어가면 안 됩니다.');
+        }
     }
 
     /**
@@ -326,6 +362,8 @@ class SmsChannelDriverTest extends PluginTestCase
      * 로케일 해석은 코어 NotificationContentBehavior 와 동일한 체인이다 —
      * `수신자 로케일 → fallback_locale → ''`. fallback_locale(ko) 이 비어 있으면
      * 발송하지 않는다(개편 전 코어 템플릿 경로와 같은 결과).
+     *
+     * @effects sms_skipped_when_fallback_locale_body_missing
      */
     public function test_fallback_locale에_본문이_없으면_발송하지_않는다(): void
     {
@@ -349,6 +387,8 @@ class SmsChannelDriverTest extends PluginTestCase
      * 모든 로케일이 빈 문자열이면 발송하지 않는다 (#597 §14.3).
      *
      * 맵이 존재한다는 사실만으로 게이트를 통과하면 빈 SMS 가 나간다.
+     *
+     * @effects sms_skipped_when_every_locale_body_is_empty
      */
     public function test_모든_로케일이_비어있으면_발송하지_않는다(): void
     {
@@ -365,6 +405,9 @@ class SmsChannelDriverTest extends PluginTestCase
         }
     }
 
+    /**
+     * @effects member_dispatch_row_records_the_member_id
+     */
     public function test_회원_발송_시_pending_이력을_생성하고_회원id를_기록한다(): void
     {
         Bus::fake();
@@ -379,6 +422,9 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertSame('order_confirmed', $dispatch->notification_type);
     }
 
+    /**
+     * @effects guest_dispatch_row_has_no_member_id
+     */
     public function test_비회원_발송_이력은_회원id가_null이다(): void
     {
         Bus::fake();
@@ -390,6 +436,9 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertNull(BizppurioDispatch::first()->to_user_id);
     }
 
+    /**
+     * @effects no_dispatch_row_when_nothing_is_sent
+     */
     public function test_발송하지_않으면_이력도_생성하지_않는다(): void
     {
         Bus::fake();
@@ -404,6 +453,9 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertDatabaseCount('bizppurio_dispatches', 0);
     }
 
+    /**
+     * @effects sms_skipped_when_no_phone_number_resolves
+     */
     public function test_전화번호가_없으면_예외를_던지고_발송하지_않는다(): void
     {
         Bus::fake();
@@ -437,6 +489,9 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertSame('lms', $longBuilder->calls[0]['type']);
     }
 
+    /**
+     * @effects non_generic_notifications_are_ignored
+     */
     public function test_generic_notification이_아니면_무시한다(): void
     {
         Bus::fake();
@@ -447,6 +502,9 @@ class SmsChannelDriverTest extends PluginTestCase
         Bus::assertNotDispatched(SendMessageJob::class);
     }
 
+    /**
+     * @effects test_mode_flag_is_snapshotted_on_the_dispatch_row
+     */
     public function test_검수_모드_설정값이_이력에_스냅샷으로_기록된다(): void
     {
         Bus::fake();
@@ -457,6 +515,9 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertTrue(BizppurioDispatch::first()->is_test_mode);
     }
 
+    /**
+     * @effects live_mode_flag_is_snapshotted_on_the_dispatch_row
+     */
     public function test_운영_모드_설정값도_이력에_스냅샷으로_기록된다(): void
     {
         Bus::fake();

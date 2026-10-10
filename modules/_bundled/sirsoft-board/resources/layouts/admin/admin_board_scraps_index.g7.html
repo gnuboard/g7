@@ -1,0 +1,318 @@
+<!-- 전 회원 스크랩 목록(전 게시판). 신고 현황 화면과 같은 짜임이다 — 검색 줄은 좁은 화면용과 넓은 화면용 두 벌이 나란히 있고(`responsive` 가 하나만 세운다) 같은 지역 상태를 공유하며, 검색 조립은 명명 액션 `searchBoardScraps` 한 자리에 모여 세 진입점(검색 버튼·PC 엔터·모바일 엔터)이 같은 규칙을 쓴다. 회원 상세에서 「이 회원 스크랩 보기」로 들어오면 `user_uuid` 가 붙고, 그때만 상단에 필터 배너가 선다 -->
+<layout name="admin_board_scraps_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-board.admin.scraps.page_title" description="$t:sirsoft-board.admin.scraps.page_description"/>
+  <!-- 스크랩 목록 본체 — 정렬은 스크랩일 하나뿐이라 sort_by 를 받지 않고 방향만 받는다. 게시판 필터 셀렉트의 선택지도 별도 데이터소스가 아니라 이 응답의 메타(`scraps.data.boards`)에서 온다 — 게시판 목록 API 는 게시판 관리 권한이 있어야 열려, 스크랩 조회 권한만 가진 매니저에게는 403 이 나고 셀렉트가 빈다(반응 관리와 같은 방식) -->
+  <data-source id="scraps" label_key="$t:sirsoft-board.editor.data_source.scraps" type="api" endpoint="/api/modules/sirsoft-board/admin/scraps" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort_order="{{query.sort_order || 'desc'}}" board_id="{{query.board_id}}" user_id="{{query.user_id}}" user_uuid="{{query.user_uuid}}" scrapped_at_from="{{query.scrapped_at_from}}" scrapped_at_to="{{query.scrapped_at_to}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="searchField" value="all"/>
+    <field name="searchQuery" value=""/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-board.scraps.view</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>scraps</wait-for>
+  </transition-overlay>
+  <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 페이지당 개수·정렬 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다. 회원 필터(user_id·user_uuid)는 여기서 건드리지 않는다 — 「이 회원의 스크랩 안에서 검색」이 자연스러운 동작이고, 해제는 전용 버튼이 한다 -->
+  <action name="searchBoardScraps">
+    <navigate path="/admin/boards/scraps" :mergeQuery="true">
+      <query page="" filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" board_id="{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}" scrapped_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.scrapped_at_from || '')}}" scrapped_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.scrapped_at_to || '')}}"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchField" value="{{query['filters[0][field]'] || 'all'}}"/>
+        <field name="searchQuery" value="{{query['filters[0][value]'] || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="board_scraps_content" class="admin-page-content-fluid">
+      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.scraps.page_title" description="$t:sirsoft-board.admin.scraps.page_description">
+        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:sirsoft-board.admin.scraps.refresh">
+          <on type="click">
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 -->
+            <navigate path="/admin/boards/scraps" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="arrows-rotate" class="text-xl"/>
+        </button>
+      </page-header>
+      <!-- 회원 필터 배너 — 회원 상세에서 건너온 상태라는 것을 화면이 말해 주지 않으면, 운영자는 전체 목록을 보고 있다고 믿고 건수를 읽는다 -->
+      <div data-ref="member_filter_banner" data-if="{{!!(query.user_id || query.user_uuid)}}" class="admin-card flex-center gap-2">
+        <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+        <span class="text-body flex-1">$t:sirsoft-board.admin.scraps.filters.member_filter_notice</span>
+        <button data-ref="member_filter_clear" class="px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+          <on type="click">
+            <!-- 회원 필터만 떼고 검색어·기간은 유지한다 — 배너가 말하는 것이 회원 한정뿐이므로 그것만 되돌린다.
+                 쪽수를 건드리는 이동이라 목록을 다시 세우는 셈이다 — 표 본문만 대기 표시로 덮고 이력에는 쌓지 않는다(쪽 이동·정렬과 같은 규칙) -->
+            <navigate path="/admin/boards/scraps" :mergeQuery="true" :replace="true" transition_overlay_target="scraps_data_grid__body">
+              <query user_id="" user_uuid="" page=""/>
+            </navigate>
+          </on>
+          <span>$t:sirsoft-board.admin.scraps.filters.member_filter_clear</span>
+        </button>
+      </div>
+      <include src="partials/admin_board_scraps_index/_partial_filter.g7.html"/>
+      <!-- 일괄 처리 줄은 **항상 세운다** — 저장소의 관리자 목록 21곳이 그렇게 하고, 버튼만
+        잠가 둔다. 고를 것이 있다는 사실 자체를 먼저 알려야 하고, 골랐다 풀 때마다 줄이
+        생겼다 사라지면 그 아래 표가 위아래로 흔들린다. 노출 여부는 권한으로 가른다
+        (형제 화면 회원 목록과 같은 규칙). -->
+      <div data-ref="bulk_actions_area" data-if="{{scraps?.data?.abilities?.can_manage === true}}" class="bulk-actions-bar">
+        <span data-ref="selected_count" class="text-body font-medium">$t:sirsoft-board.admin.scraps.selected_count|count={{(_global.selectedIds || []).length}}</span>
+        <div data-ref="bulk_buttons" class="flex gap-2 ml-auto">
+          <button data-ref="bulk_delete" data-testid="admin-scrap-bulk-delete" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{scraps?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
+            <on type="click">
+              <!-- 선택 삭제 — 확인 모달로 넘긴다. 삭제 권한이 없으면 버튼 자체가 잠겨 있어 여기까지 오지 않는다 -->
+              <open-modal target="bulk_delete_modal"/>
+            </on>
+            <span>$t:sirsoft-board.admin.scraps.actions.bulk_delete</span>
+          </button>
+        </div>
+      </div>
+      <!-- 건수 줄 — 형제 관리자 목록과 같은 자리. 필터를 걸었을 때 몇 건이 남았는지 표를 세지 않고 안다. -->
+      <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+        <span class="text-label">$t:sirsoft-board.admin.scraps.total_count|count={{scraps?.data?.pagination?.total ?? 0}}</span>
+      </div>
+      <data-grid data-type="composite" data-ref="scraps_data_grid" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-board.admin.scraps.table_empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+        <column field="created_at" header="$t:sirsoft-board.admin.scraps.columns.scrapped_at" :sortable="true">
+          <cell>
+            <!-- 스크랩 시각도 반응 관리와 같은 규약으로 초까지 밝힌다 — 「2시간 전」 상대 표기는 정리 대상을
+                 고를 때 선후를 가리지 못한다. 저장은 UTC, `created_at` 이 회원 표시 시간대로 환산된 값이다. -->
+            <span class="text-sm text-gray-900 dark:text-white whitespace-nowrap">{{row.created_at}}</span>
+          </cell>
+        </column>
+        <column field="member" header="$t:sirsoft-board.admin.scraps.columns.member">
+          <cell>
+            <div class="flex flex-col">
+              <div class="flex-center gap-2">
+                <action-menu data-type="composite" data-if="{{!!row.member?.uuid}}" position="right">
+                  <prop name="items">
+                    <item id="view_member" label="$t:sirsoft-board.admin.scraps.cell.view_member" iconName="user"/>
+                    <item id="search_member" label="$t:sirsoft-board.admin.scraps.cell.search_member" iconName="magnifying-glass"/>
+                  </prop>
+                  <on event="onItemClick">
+                    <!-- 반응 관리와 같은 두 갈래 — 상세는 새 창(이 목록의 검색 조건 보존), 「이 회원으로 검색」은
+                         같은 창에서 회원 조건만 갈아끼운다(user_uuid — 목록이 이미 읽는 필터). -->
+                    <switch>
+                      <case when="view_member">
+                        <open-window path="/admin/users/{{row.member?.uuid}}"/>
+                      </case>
+                      <case when="search_member">
+                        <navigate path="/admin/boards/scraps" :mergeQuery="true" :replace="true">
+                          <query user_uuid="{{row.member?.uuid}}" :page="1"/>
+                        </navigate>
+                      </case>
+                    </switch>
+                  </on>
+                  <span class="text-heading cursor-pointer hover:underline">{{row.member?.name}}</span>
+                </action-menu>
+                <span data-if="{{!row.member?.uuid}}" class="text-heading">{{row.member?.name}}</span>
+                <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.withdrawn</badge>
+              </div>
+              <span data-if="{{row.member?.email}}" class="text-tertiary">({{row.member?.email}})</span>
+            </div>
+          </cell>
+        </column>
+        <column field="board" header="$t:sirsoft-board.admin.scraps.columns.board_name">
+          <cell>
+            <div class="flex-center gap-2 flex-wrap">
+              <span data-if="{{!!row.board}}" class="text-sm">{{row.board?.name}}</span>
+              <badge data-type="composite" data-if="{{!row.board}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.board_deleted</badge>
+              <badge data-type="composite" data-if="{{row.board &amp;&amp; (!row.board.use_scrap || !row.board.is_active)}}" color="yellow" size="sm">$t:sirsoft-board.admin.scraps.badges.scrap_off</badge>
+            </div>
+          </cell>
+        </column>
+        <column field="post_title" header="$t:sirsoft-board.admin.scraps.columns.post_title" cellClassName="max-w-xs">
+          <cell>
+            <div class="flex-center gap-2">
+              <span data-if="{{!row.is_deleted &amp;&amp; !!row.board}}" class="font-medium truncate cursor-pointer hover:underline">
+                <on type="click">
+                  <!-- 살아 있는 글이고 게시판도 남아 있을 때만 원글로 건너뛴다 — 삭제글·게시판 삭제 행은 갈 곳이 없다 -->
+                  <navigate path="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}"/>
+                </on>
+                {{row.post_title}}
+              </span>
+              <span data-if="{{row.is_deleted || !row.board}}" class="font-medium truncate line-through text-gray-400 dark:text-gray-500">{{row.post_title}}</span>
+              <badge data-type="composite" data-if="{{row.is_deleted}}" color="red" size="sm">$t:sirsoft-board.admin.scraps.badges.deleted_post</badge>
+            </div>
+          </cell>
+        </column>
+        <column field="author_name" header="$t:sirsoft-board.admin.scraps.columns.author_name">
+          <cell>
+            <span class="text-heading">{{row.author_name ?? ''}}</span>
+          </cell>
+        </column>
+        <column field="post_status" header="$t:sirsoft-board.admin.scraps.columns.post_status">
+          <cell>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{row.post_status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.post_status === 'blinded' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : row.post_status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{row.post_status_label}}</span>
+          </cell>
+        </column>
+        <prop name="rowActions">
+          <item id="go_to_post" label="$t:sirsoft-board.admin.scraps.actions.go_to_post" iconName="file-lines" disabledField="board.slug"/>
+          <item id="go_to_member" label="$t:sirsoft-board.admin.scraps.actions.go_to_member" iconName="user"/>
+          <item id="delete" label="$t:sirsoft-board.admin.scraps.actions.delete" iconName="trash" disabledField="abilities.can_delete"/>
+        </prop>
+        <on type="change" event="onSelectionChange">
+          <!-- 체크한 행들을 전역에 모은다 — 위 일괄 삭제 버튼이 이 목록을 보고 잠기거나 풀린다 -->
+          <set-state target="global" selectedIds="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onSortChange">
+          <!-- 정렬 변경. 정렬 축이 스크랩일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다 -->
+          <sequence>
+            <!-- 순서가 달라지면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다 -->
+            <set-state target="global" :selectedIds="[]"/>
+            <navigate path="/admin/boards/scraps" :mergeQuery="true" :replace="true" transition_overlay_target="scraps_data_grid__body">
+              <query sort_order="{{$args[1]}}" :page="1"/>
+            </navigate>
+          </sequence>
+        </on>
+        <on type="change" event="onPageChange">
+          <!-- 페이지 이동. 걸려 있던 검색·필터는 그대로 두고 번호만 바꾼다 -->
+          <sequence>
+            <!-- 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 삭제에 실린다 — 먼저 비운다 -->
+            <set-state target="global" :selectedIds="[]"/>
+            <navigate path="/admin/boards/scraps" :mergeQuery="true" :replace="true" transition_overlay_target="scraps_data_grid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
+        </on>
+        <on event="onRowAction">
+          <!-- 행 메뉴 세 갈래 — 원글로, 회원 상세로, 또는 이 스크랩 한 건만 삭제. 게시판이 지워진 행(board 가 null)의 「게시글 보기」는 rowActions 의 disabledField="board.slug" 로 잠근다 — 잠그지 않으면 /admin/board//post/N 404 로 간다(제목 칸 링크와 같은 근거) -->
+          <switch>
+            <case when="go_to_post">
+              <navigate path="/admin/board/{{$args[1]?.board?.slug}}/post/{{$args[1]?.post_id}}"/>
+            </case>
+            <case when="go_to_member">
+              <navigate path="/admin/users/{{$args[1]?.member?.uuid}}"/>
+            </case>
+            <case when="delete">
+              <sequence>
+                <set-state target="global" deleteTarget="{{$args[1]}}"/>
+                <open-modal target="delete_modal"/>
+              </sequence>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+      <div data-ref="pagination_info" class="mt-4 text-label text-center">
+        <span>$t:sirsoft-board.admin.scraps.pagination_info|total={{scraps?.data?.pagination?.total ?? 0}}|from={{scraps?.data?.pagination?.from ?? 0}}|to={{scraps?.data?.pagination?.to ?? 0}}</span>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <!-- 단건 삭제 확인 — 지우는 것은 「그 회원이 담아 둔 표시」이지 글이 아니다. 그 사실을 본문이 분명히 말한다 -->
+    <modal data-type="composite" data-ref="delete_modal" title="$t:sirsoft-board.admin.scraps.modals.delete_title" size="sm">
+      <meta editor_label="$t:sirsoft-board.admin.scraps.modals.delete_editor_label"/>
+      <div class="py-2">
+        <p class="text-body">$t:sirsoft-board.admin.scraps.modals.delete_confirm</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapDeleteLoading}}">
+          <on type="click">
+            <!-- 확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다 -->
+            <set-state target="global" :scrapDeleteLoading="true"/>
+          </on>
+          <on type="click">
+            <!-- 스크랩 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다 -->
+            <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/scraps/{{_global.deleteTarget?.id}}" method="DELETE">
+              <success>
+                <set-state target="global" :scrapDeleteLoading="false"/>
+                <!-- 지운 행이 선택 목록에 남아 있으면 다음 일괄 삭제가 없는 ID 를 싣는다 -->
+                <set-state target="global" selectedIds="{{(_global.selectedIds || []).filter(v => v !== _global.deleteTarget?.id)}}"/>
+                <refetch-data-source dataSourceId="scraps"/>
+                <toast type="success" message="{{result.message}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :scrapDeleteLoading="false" errorMessage="{{error.message}}"/>
+                <open-modal target="error_modal"/>
+              </fail>
+            </api-call>
+          </on>
+          <span data-if="{{!_global.scrapDeleteLoading}}">$t:common.confirm</span>
+          <span data-if="{{_global.scrapDeleteLoading}}" class="flex-center gap-2">
+            <icon name="spinner" class="spinner-sm"/>
+            <span>$t:sirsoft-board.admin.scraps.modals.processing</span>
+          </span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택 삭제 확인 — 건수를 본문에 싣고, 회원 쪽 목록에서 사라진다는 것을 알린다 -->
+    <modal data-type="composite" data-ref="bulk_delete_modal" data-testid="admin-scrap-bulk-delete-modal" title="$t:sirsoft-board.admin.scraps.modals.bulk_delete_title" size="sm">
+      <meta editor_label="$t:sirsoft-board.admin.scraps.modals.bulk_delete_editor_label"/>
+      <div class="py-2">
+        <p class="text-body">$t:sirsoft-board.admin.scraps.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-testid="admin-scrap-bulk-delete-confirm" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapBulkDeleteLoading}}">
+          <on type="click">
+            <!-- 실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 지우므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다 -->
+            <set-state target="global" :scrapBulkDeleteLoading="true"/>
+          </on>
+          <on type="click">
+            <!-- 실행 ②  DELETE 본문에 ID 목록을 싣는다. 실패는 토스트가 아니라 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다 -->
+            <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/scraps/bulk" method="DELETE">
+              <success>
+                <set-state target="global" :scrapBulkDeleteLoading="false" :selectedIds="[]"/>
+                <refetch-data-source dataSourceId="scraps"/>
+                <toast type="success" message="{{result.message}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :scrapBulkDeleteLoading="false" errorMessage="{{error.message}}"/>
+                <open-modal target="error_modal"/>
+              </fail>
+              <body ids="{{_global.selectedIds}}"/>
+            </api-call>
+          </on>
+          <span data-if="{{!_global.scrapBulkDeleteLoading}}">$t:common.confirm</span>
+          <span data-if="{{_global.scrapBulkDeleteLoading}}" class="flex-center gap-2">
+            <icon name="spinner" class="spinner-sm"/>
+            <span>$t:sirsoft-board.admin.scraps.modals.processing</span>
+          </span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 삭제 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
+    <modal data-type="composite" data-ref="error_modal" title="$t:common.error" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

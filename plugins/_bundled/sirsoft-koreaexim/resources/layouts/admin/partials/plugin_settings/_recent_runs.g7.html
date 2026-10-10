@@ -1,0 +1,24 @@
+<partial description="최근 실행 다섯 건 요약">
+<!-- 설정 탭 하단의 최근 실행 5건 — 데이터소스 koreaeximRecentRuns(per_page 5)를 페이지 없이 그린다. 전체는 이력 탭에서 본다 -->
+<div class="admin-card mb-4">
+  <div class="flex-between">
+    <h3 class="card-title">$t:sirsoft-koreaexim.recent</h3>
+    <button type="button" class="btn btn-secondary">
+      <on type="click">
+        <!-- 이력 탭으로 이동 — 다른 쿼리는 유지한 채 tab 만 바꾼다 -->
+        <navigate path="/admin/plugins/sirsoft-koreaexim/settings" :mergeQuery="true"><query tab="history"/></navigate>
+      </on>
+      <span>$t:sirsoft-koreaexim.history_tab</span>
+    </button>
+  </div>
+  <data-grid data-type="composite" data-ref="koreaexim_recent_runs" data="{{koreaeximRecentRuns?.data?.data ?? []}}" :pagination="false" :selectable="false" emptyMessage="$t:sirsoft-koreaexim.empty">
+    <column field="search_date" header="$t:sirsoft-koreaexim.date"/>
+    <column field="trigger_label" header="$t:sirsoft-koreaexim.trigger"/>
+    <column field="status_label" header="$t:sirsoft-koreaexim.result">
+      <cell><span class="{{['success','partial','dry_run'].includes(row.status) ? 'text-green-700 dark:text-green-300' : ['no_data','skipped'].includes(row.status) ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}" title="{{row.message}}">{{row.status_label}}</span></cell>
+    </column>
+    <column field="applied_count" header="$t:sirsoft-koreaexim.applied"/>
+    <column field="request_count" header="$t:sirsoft-koreaexim.calls"/>
+  </data-grid>
+</div>
+</partial>

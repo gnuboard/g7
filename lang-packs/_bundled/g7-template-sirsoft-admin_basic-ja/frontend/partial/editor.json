@@ -1127,6 +1127,18 @@
     },
     "sh_description": {
       "label": "説明"
+    },
+    "ecg_view_mode": {
+      "label": "表示方法"
+    },
+    "ecg_min_card_width": {
+      "label": "カード最小幅(px)"
+    },
+    "ecg_max_columns": {
+      "label": "最大列数"
+    },
+    "ecg_pagination": {
+      "label": "ページネーション"
     }
   },
   "component": {
@@ -1215,7 +1227,10 @@
     "theme_toggle": "テーマ切り替え",
     "notification_center": "通知センター",
     "column_selector": "列セレクター",
-    "section_header": "セクションヘッダー"
+    "section_header": "セクションヘッダー",
+    "extension_card_grid": "拡張カードグリッド",
+    "line_chart": "折れ線グラフ",
+    "menu_access_tree": "メニューアクセスツリー"
   },
   "action": {
     "go_to_page": {
@@ -1292,6 +1307,20 @@
     "init_filter_visibility": {
       "label": "フィルター表示をリセット",
       "param_storage_key": "保存キー"
+    },
+    "persist_view_mode": {
+      "label": "表示方法の保存（保存後の再読込）",
+      "param_storage_key": "ブラウザストレージキー",
+      "param_state_key": "グローバル状態キー",
+      "param_value": "保存する値（リテラル）"
+    },
+    "set_analytics_period": {
+      "label": "統計期間プリセット",
+      "param_preset": "期間",
+      "preset_today": "今日",
+      "preset_7d": "7日",
+      "preset_30d": "30日",
+      "preset_this_month": "今月"
     }
   },
   "condition": {
@@ -1380,6 +1409,7 @@
       "seo": "SEOタブ",
       "notification_definitions": "通知定義タブ",
       "identity_policies": "本人認証ポリシータブ",
+      "privacy_retention": "個人情報の保有期間タブ",
       "basic_info": "基本情報タブ",
       "language_currency": "言語·通貨タブ",
       "order_settings": "注文設定タブ",
@@ -1389,14 +1419,62 @@
       "mileage": "マイレージタブ",
       "deposit": "デポジットタブ",
       "template_user": "ユーザーテンプレートタブ",
-      "template_admin": "管理者テンプレートタブ"
+      "template_admin": "管理者テンプレートタブ",
+      "connection": "連携タブ",
+      "alimtalk_templates": "アルリムトークテンプレートタブ",
+      "settings": "設定タブ",
+      "history": "実行履歴タブ"
     },
     "page_detail_default": "基本",
     "page_detail_attachments_open": "添付を展開",
     "order_detail_default": "通常注文",
     "order_detail_partially_cancelled": "部分キャンセル",
     "admin_base_default": "基本",
-    "sidebar_open": "モバイルメニュー展開"
+    "sidebar_open": "モバイルメニュー展開",
+    "extensions_list_view_gallery": "拡張リスト — ギャラリー表示",
+    "extensions_list_view_list": "拡張リスト — 一覧表示",
+    "settings_security_ip_restriction": "セキュリティタブ — IPアクセス制限",
+    "bizppurio_templates_not_ready": "アルリムトークテンプレートタブ — 準備未完了",
+    "bizppurio_template_new": "アルリムトークテンプレート — 新規作成",
+    "bizppurio_template_rejected": "アルリムトークテンプレート — 却下・付加情報",
+    "bizppurio_template_image": "アルリムトークテンプレート — 強調画像",
+    "bizppurio_template_item_list": "アルリムトークテンプレート — アイテムリスト",
+    "bizppurio_sms_edit": "代替SMS本文の編集",
+    "bizppurio_cancel_approval": "承認取り消しの確認",
+    "bizppurio_rejection_view": "却下理由の閲覧",
+    "bizppurio_delete_confirm": "テンプレート削除の確認",
+    "read_only": "読み取り専用 (権限なし)",
+    "notification_template_edit": "通知テンプレートの編集",
+    "notification_template_preview": "通知テンプレートのプレビュー",
+    "policy_history_open": "ポリシー版履歴を展開",
+    "cookie_category_expanded": "Cookie 分類の詳細を展開",
+    "filtered_by_search": "検索フィルター適用中",
+    "policy_version_snapshot": "ポリシー版のスナップショット",
+    "rows_selected": "行を選択 (一括操作)",
+    "delete_confirm": "削除の確認",
+    "withdraw_confirm": "退会の確認",
+    "bulk_delete_confirm": "一括削除の確認",
+    "editor_preview_open": "エディタープレビューを展開",
+    "marketing_channel_edit": "マーケティングチャネルの編集",
+    "marketing_channel_create": "マーケティングチャネルの追加",
+    "marketing_channel_deactivate": "マーケティングチャネル復元の確認",
+    "totp_enrolled": "登録済み",
+    "totp_not_enrolled": "未登録 (開始案内)",
+    "totp_enrolling": "発行中 (QR・確認コード)",
+    "totp_backup_codes": "バックアップコードの表示",
+    "totp_error": "認証コードのエラー",
+    "postcode_layer_mode": "レイヤー方式",
+    "postcode_popup_mode": "ポップアップ方式",
+    "hello_plugin_log_disabled": "ログ記録をオフ",
+    "bulk_publish_confirm": "一括公開の確認",
+    "bulk_unpublish_confirm": "一括公開取り消しの確認",
+    "version_restore_confirm": "版を戻す確認",
+    "version_preview": "版のプレビュー",
+    "modal_filled": "ウィンドウの内容を表示",
+    "uninstall_done": "削除完了",
+    "read_normal": "通常の投稿",
+    "attachments_replies_open": "添付・返信を展開",
+    "screen_filled": "画面の状態を表示"
   },
   "cell_border": {
     "side_all": "すべて",
@@ -1504,7 +1582,9 @@
     "admin_footer_quick_links": "クイックリンク",
     "notification_items": "通知項目",
     "notification_unread_count": "未読通知数",
-    "column_items": "列項目"
+    "column_items": "列項目",
+    "role_options": "ロール名ラベル",
+    "selected_menus": "選択されたメニュー"
   },
   "state_label": {
     "current_user": "現在のユーザー",
@@ -1535,7 +1615,7 @@
     "dashboard_templates": "ダッシュボードテンプレート",
     "extension_versions": "拡張バージョン履歴",
     "identityLogs": "本人認証ログ",
-    "identityMessages": "本人認証メッセージ",
+    "identityPolicyDefinitions": "本人認証ポリシー別文面があるポリシー",
     "identityProviders": "本人認証プロバイダー",
     "identityPurposes": "本人認証目的",
     "installed_modules": "インストール済みモジュール",
@@ -1580,7 +1660,38 @@
     "dashboard_recent_notifications": "ダッシュボード最近の通知",
     "sitemap_status": "サイトマップ生成ステータス",
     "sitemap_progress_ws": "サイトマップ生成進行中（リアルタイム）",
-    "staticCacheStatus": "初期画面静的ファイル状態"
+    "staticCacheStatus": "初期画面静的ファイル状態",
+    "layout_search": "レイアウト コンテンツ検索",
+    "memberNotifications": "会員通知箱",
+    "analytics_overview": "訪問者統計概要",
+    "analytics_realtime": "現在のアクセス者",
+    "analytics_realtime_ws": "現在のアクセス者ブロードキャスト",
+    "analytics_status": "訪問者統計収集ステータス",
+    "analytics_report": "訪問者統計レポート",
+    "analytics_registered": "登録済みの拡張機能の分類基準・コンバージョン",
+    "analytics_patterns": "曜日·時間帯パターン",
+    "analytics_visitors": "訪問者リスト",
+    "analytics_visitor": "訪問者詳細",
+    "analytics_bots": "ボット集計",
+    "analytics_diagnostics": "訪問者統計診断",
+    "analytics_archive_runs": "集計実行履歴",
+    "analytics_collect_failures": "ロード失敗ログ",
+    "analytics_archive_progress_ws": "再集計進捗率ブロードキャスト",
+    "analytics_settings": "訪問者統計設定",
+    "analytics_opt_out": "自分の訪問除外ステータス",
+    "analytics_storage": "訪問者統計ストレージ",
+    "analytics_notification_definitions": "訪問者統計アラート定義",
+    "analytics_subjects": "情報主体記録",
+    "dashboard_analytics": "ダッシュボード訪問者統計",
+    "analytics_referrer_urls": "流入元フルアドレス",
+    "privacyPreview": "個人情報処理対象件数",
+    "privacyTargets": "個人情報対策対象リスト",
+    "privacyManualRuns": "個人情報措置職権実行ステータス",
+    "analytics_row_trend": "訪問者統計の項目推移",
+    "role_menus_tree": "アクセス可能なメニューツリー",
+    "passwordExpiryPreview": "パスワード有効期限の対象件数",
+    "passwordExpiryManualRuns": "パスワード有効期限の手動実行状態",
+    "user_check": "会員登録権限の確認"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Board\Console\Commands;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
@@ -83,7 +82,7 @@ class AggregateBoardStatsCommand extends Command
      */
     private function runDryRun(): int
     {
-        $today = CarbonImmutable::today();
+        $today = $this->dashboardService->siteToday();
         $preview = [];
 
         for ($i = 0; $i < self::AGGREGATE_DAYS; $i++) {

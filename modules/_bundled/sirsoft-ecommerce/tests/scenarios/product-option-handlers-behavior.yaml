@@ -1,0 +1,13 @@
+feature: 상품옵션 추가·다통화 처리기
+
+description: |
+  상품 폼 상품옵션 처리기(productOptionHandlers)의 다통화 환산·기본 옵션·옵션 행 추가. 7.1.0 출시 점검 D3-1: 지원 언어 가짜를 코어 공개 API locale.supported() 모양으로 교체.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32]
+
+effects:
+  - product_option_handlers_behavior
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/productOptionHandlers.test.ts

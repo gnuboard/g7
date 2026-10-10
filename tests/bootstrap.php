@@ -146,6 +146,24 @@ if (file_exists($configCacheFile)) {
 }
 
 /*
+| 시작 때 지우는 것만으로는 부족하다 — 테스트가 도는 사이 같은 클론에서 확장을 반영하면
+| (`plugin:update`·`module:update`·`template:update` 는 config 캐시를 다시 굽는다) 그 뒤에 만들어지는
+| 테스트 앱이 캐시된 개발 config 로 부팅해 `.env.testing` 을 무시한다. 그러면 테스트가 개발 DB 에
+| 붙고 확장 저장소 디스크가 `storage/app` 을 가리킨다(2026-10-08 00:50 실측: 게시판 테스트 정리 쿼리가
+| 개발 DB 에서 실행됨, 2026-10-07 23:38 실측: GDPR 설정 테스트가 개발 사이트 설정 파일을 덮음).
+| 라우트 캐시(아래)와 같이 경로를 테스트 전용 위치로 돌려, 운영 캐시가 언제 다시 구워지든 읽지 않게 한다.
+| 자식 프로세스도 env 를 물려받으므로 같은 격리를 받는다.
+*/
+$testingConfigCache = 'storage/framework/testing/config.php';
+putenv('APP_CONFIG_CACHE='.$testingConfigCache);
+$_ENV['APP_CONFIG_CACHE'] = $testingConfigCache;
+$_SERVER['APP_CONFIG_CACHE'] = $testingConfigCache;
+if (file_exists(__DIR__.'/../'.$testingConfigCache)) {
+    // 테스트 안에서 config:cache 를 구운 잔재 — 다음 실행이 그 값으로 부팅하지 않게 지운다
+    unlink(__DIR__.'/../'.$testingConfigCache);
+}
+
+/*
 |--------------------------------------------------------------------------
 | 라우트 캐시 격리 (테스트 환경 보장)
 |--------------------------------------------------------------------------
@@ -206,6 +224,27 @@ foreach ([
     $_SERVER[$manifestEnvKey] = $manifestRelativePath;
 }
 unset($testingManifestDir, $manifestEnvKey, $manifestRelativePath);
+
+/*
+|--------------------------------------------------------------------------
+| 캐시 스토어 격리 (테스트 환경 보장)
+|--------------------------------------------------------------------------
+|
+| 테스트 캐시는 프로세스 전용 `array` 로 고정한다. `phpunit.xml` 도 array 를 지정하지만
+| `php artisan test --env=testing` 은 `.env.testing` 을 부모에서 적재해 자식 프로세스에 실제
+| 환경변수로 넘기므로 그 값(`CACHE_STORE=file`)이 이긴다 — phpunit 의 `<env force>` 는
+| `$_ENV`·putenv 만 바꾸고 Laravel 이 먼저 읽는 `$_SERVER` 는 그대로다.
+|
+| file 스토어는 개발 사이트와 같은 `storage/framework/cache/data`·같은 접두사다. 개발 쪽에서
+| 확장을 설치·업데이트·활성화하면 확장 활성 목록(`ext.plugins.active_identifiers`, 24시간)과
+| 미들웨어 인덱스가 거기 캐시되고, 테스트가 그것을 읽어 테스트 DB 에 없는 플러그인을 활성으로
+| 본다. 그 플러그인 미들웨어가 요청에 붙는데 allowlist 밖이라 ServiceProvider 바인딩은 없어,
+| HTTP 를 타는 테스트가 전부 500 으로 실패했다(2026-09-30, 토스 결제 테스트 35건).
+|
+*/
+putenv('CACHE_STORE=array');
+$_ENV['CACHE_STORE'] = 'array';
+$_SERVER['CACHE_STORE'] = 'array';
 
 // Composer 오토로더 로드
 $loader = require __DIR__.'/../vendor/autoload.php';

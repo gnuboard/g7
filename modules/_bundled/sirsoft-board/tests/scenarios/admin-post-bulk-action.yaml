@@ -1,0 +1,95 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
+#   이 매니페스트의 축은 화면이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이
+#   갈리는 분기가 아니다. 예컨대 표 컬럼 구성을 재는 테스트에 검색 대상·읽음 상태·회원
+#   한정 값을 곱해도 재는 대상이 달라지지 않는다 — 전개하면 인위적인 조합만 늘어난다.
+#   실제 커버리지 계약은 effects 목록이며, 선언한 항목은 모두 테스트가 재고 green 이다.
+
+feature: 관리자 게시글 일괄 삭제·블라인드·복구
+
+description: |
+  이슈 #524 WP-D. 관리자 게시글 목록에는 일괄 처리가 없었다. 스팸이 한꺼번에 들어오면 운영자가
+  한 건씩 스무 번을 눌러야 했고, 그 사이 목록이 다시 그려져 자리를 잃었다.
+
+  세 갈래(삭제·블라인드·복구)를 연다. 갈래마다 메서드와 경로가 다르지만 **확인 창은 하나**를
+  공유하고 무엇을 하는지는 `bulkPostAction` 이 정한다 — 창을 셋으로 늘리면 사유 입력·진행 표시·
+  실패 처리를 세 벌 유지해야 한다.
+
+  건너뛴 건은 조용히 버리지 않고 사유를 돌려준다(`already_deleted` · `has_replies` ·
+  `already_blinded` · `already_published` · `not_found`). 블라인드도 삭제된 글은 `already_deleted` 로 건너뛴다. 여러 건을 다루는 자리라 "몇 건이 왜 빠졌는지" 를
+  읽을 시간이 필요하다 — 그래서 실패는 토스트가 아니라 오류 창으로 세운다.
+
+  훅은 루프 **앞에서 한 번만** 발화한다(`sirsoft-board.post.before_bulk_action`). 항목마다
+  발화하면 활동 로그가 폭주하고, 본인인증(IDV) 정책이 건마다 428 을 던져 첫 건에서 멈춘다.
+  그 정책은 `IdentityVerificationRequiredException extends \Error` 라 `catch (\Exception)` 이
+  삼키지 못한다 — 컨트롤러가 `\Exception` 만 잡아 428 이 그대로 올라가게 둔다.
+
+# 입력 axis
+#  bulk_action: 갈래
+#  permission : 운영자 권한 (manage 없으면 체크 칸 자체가 없다)
+#  row_state  : 선택된 글의 상태 (건너뜀 사유를 가른다)
+axes:
+  bulk_action: [delete, blind, restore]
+  permission: [read, manage]
+  row_state: [published, blinded, deleted, has_replies]
+
+# 의미 없는 조합 컷:
+#  - 권한이 없으면 갈래와 무관하게 요청 자체가 막힌다
+#  - 답글이 달린 글은 삭제에서만 건너뛴다(블라인드·복구는 답글과 무관)
+exclusions:
+  - { permission: read, bulk_action: blind, reason: "권한 게이트는 갈래 무관 — delete 로 대표" }
+  - { permission: read, bulk_action: restore, reason: "권한 게이트는 갈래 무관 — delete 로 대표" }
+  - { bulk_action: blind, row_state: has_replies, reason: "답글 유무는 삭제에서만 건너뜀 사유" }
+  - { bulk_action: restore, row_state: has_replies, reason: "답글 유무는 삭제에서만 건너뜀 사유" }
+
+effects:
+  # 백엔드
+  - admin_post_bulk_requires_manage_permission
+  - admin_post_bulk_validates_ids
+  - admin_post_bulk_fires_hook_once
+  # 훅을 루프 앞에서 한 번만 발화하는 설계의 «값» — 정책이 켜지면 428 이고 DB 는 불변이다.
+  # 항목별 훅을 탔다면 첫 건만 지워진 채 428 이 났을 것이다.
+  - admin_post_bulk_returns_428_when_identity_policy_enabled
+  - admin_post_bulk_delete_skips_already_deleted
+  - admin_post_bulk_delete_skips_posts_with_replies
+  - admin_post_bulk_blind_changes_status
+  # 삭제된 글은 블라인드하지 않고 건너뛴다 — 블라인드하면 삭제가 풀린다 (7.1.0 실측 O-K3T-2)
+  - admin_post_bulk_blind_skips_deleted
+  # 다른 게시판 글·없는 번호는 「처리 중 오류」가 아니라 「찾을 수 없는 글」 (7.1.0 실측 O-K3-2)
+  - admin_post_bulk_skips_missing_with_not_found_reason
+  - admin_post_bulk_restore_restores_blinded_and_deleted
+  - admin_post_bulk_restore_skips_already_published
+  - admin_post_bulk_skipped_items_carry_title_and_reason_label
+  - admin_post_single_delete_behaviour_unchanged
+  # 단건 블라인드·복구 회귀 (부록 B D8 — 소유 매니페스트 없던 파일을 여기로 편입)
+  - admin_post_single_blind_changes_status
+  - admin_post_blind_rejects_unauthenticated
+  - admin_post_blind_requires_manage_permission
+  - admin_post_blind_missing_returns_404
+  - admin_post_blind_is_idempotent
+  - admin_post_blind_keeps_posts_count
+  - admin_post_blind_reason_length_boundary
+  - admin_post_single_restore_publishes
+  - admin_post_restore_requires_manage_permission
+  - admin_post_restore_missing_returns_404
+  - admin_post_restore_is_idempotent
+  # 레이아웃
+  - admin_post_bulk_selectable_requires_manage
+  - admin_post_bulk_selection_lifts_to_global
+  - admin_post_bulk_buttons_disabled_without_manage_or_selection
+  - admin_post_bulk_buttons_share_one_modal
+  - admin_post_bulk_clears_previous_reason
+  - admin_post_bulk_branches_have_distinct_method_and_path
+  - admin_post_bulk_sends_ids_and_reason
+  - admin_post_bulk_clears_selection_on_success
+  - admin_post_bulk_failure_opens_error_modal
+  - admin_post_bulk_confirm_guards_double_submit
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostBulkActionTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostBlindRestoreTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-posts-bulk.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-posts-bulk.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

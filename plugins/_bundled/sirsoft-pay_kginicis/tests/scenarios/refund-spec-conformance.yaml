@@ -1,0 +1,20 @@
+# e2e:allow 화면 변경 없음 — 결제사로 보내는 취소 요청(경로·필드·암호화)과 부분취소 지원 판정만 바뀐다.
+feature: 취소 요청 공식 사양 정합 (P-D7·P-D8·P-D11·가상계좌 환불 경로) — #747 C8
+
+description: |
+  KG이니시스 취소 매뉴얼(https://manual.inicis.com/pay/cancel.html) 기준.
+  에스크로·달이 바뀐 휴대폰 결제는 부분취소를 접수 단계에서 막고, 부분취소에 과세 고정값을 싣지 않으며,
+  입금된 가상계좌 환불은 /vacct 경로와 암호화한 환불계좌번호로 보내고, 부분취소 거래 ID 는 prtcTid 로 남긴다.
+
+axes:
+  method: [card, escrow, vbank]
+
+effects:
+  - partial_cancel_support_follows_kg_constraints
+  - partial_refund_omits_fixed_tax_fields
+  - vbank_refund_uses_vacct_endpoint_with_encrypted_account
+  - unpaid_vbank_close_keeps_plain_refund_endpoint
+  - partial_refund_transaction_id_is_prtc_tid
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/RefundSpecConformanceTest.php

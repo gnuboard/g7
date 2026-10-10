@@ -1,0 +1,194 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축이 8개(부과정책 10값 × 쿠폰슬롯 × 수량 × 과세 × 배송지 × 스냅샷 …)라 cross product
+#   전개가 수만 건으로 폭발한다. 이 매니페스트는 조합 전수가 아니라 **관측 결과(effects)**
+#   단위로 계약을 잠근다 — effects 축은 면제하지 않으므로 선언한 효과는 전부 어느 테스트가
+#   @effects 로 검증해야 한다.
+
+feature: 주문 계산 서비스 핵심 계약 (OrderCalculationService::calculate)
+
+description: |
+  `OrderCalculationService::calculate()` 가 장바구니·주문서·환불 재계산에서 공통으로
+  돌려주는 금액 구조의 계약이다. 이 서비스 하나가 아래를 모두 산출하므로, 어느 한
+  갈래가 틀어지면 화면 표기와 실제 청구/환불액이 어긋난다.
+
+    옵션별 소계   — 판매가 + 옵션 추가금 × 수량
+    상품/주문/배송비 쿠폰 — 슬롯별 적용 대상 판정 · 할인액 산출 · 아이템 안분
+    배송비        — 부과정책별 산출 · 정책 그룹별 독립 계산 · 도서산간 추가배송비 · 옵션 안분
+    과세/면세 분류 — 옵션별 tax_status 로 과세표준/면세금액 분리
+    마일리지      — 사용액 안분 · 적립 예정액 산출
+    최종 결제금액 — 음수 방지(0 하한)
+
+  두 가지 실행 모드를 같은 코드 경로가 처리한다.
+
+    통상 모드   — 상품·옵션·배송정책·쿠폰을 DB 현재 값으로 조회
+    스냅샷 모드 — 주문 시점에 굳은 값(productSnapshot / optionSnapshot / 정책·쿠폰 스냅샷)을
+                  쓴다. 환불·부분취소 재계산이 이 모드로 돌며, DB 가 그 뒤 바뀌어도
+                  주문 시점 금액을 재현해야 한다. 만료·범위 검증은 건너뛰되
+                  최소주문금액과 중복불가 검증은 그대로 수행한다.
+
+  이 파일은 계산 엔진의 **회귀 바닥**이다. 개별 결함 이슈(공개 #94 구간 경계·단위 환산,
+  A15/MP06 중복불가 슬롯 교차, P18 배송비 쿠폰 최소금액 기준, S3-D4 같은 옵션 다중 행)는
+  각자의 매니페스트가 따로 소유하고, 여기서는 그 결함들이 건드리지 않는 평시 계약을 잠근다.
+
+axes:
+  charge_policy:
+    - free
+    - fixed
+    - conditional_free
+    - range_amount
+    - range_quantity
+    - range_weight
+    - range_volume
+    - range_volume_weight
+    - per_quantity
+    - per_weight
+    - per_volume
+    - per_volume_weight
+    - per_amount
+    - api
+  coupon_slot:
+    - none            # 쿠폰 없음
+    - product         # 상품금액 쿠폰 (전체/특정상품/특정카테고리)
+    - order           # 주문금액 쿠폰
+    - shipping        # 배송비 쿠폰
+    - multi_slot      # 두 개 이상 슬롯 동시
+  discount_type:
+    - fixed           # 정액
+    - rate            # 정률
+    - rate_capped     # 정률 + 최대할인금액
+  quantity_shape:
+    - single          # 수량 1
+    - multi           # 수량 2 이상
+    - zero            # 수량 0 (계산 대상 제외)
+  policy_grouping:
+    - single_policy   # 배송정책 1개
+    - multi_policy    # 정책 그룹 2개 이상 (그룹별 독립 계산)
+  destination:
+    - domestic_normal # 국내 일반 지역
+    - domestic_island # 국내 도서산간 (추가배송비)
+    - overseas        # 해외 (국가별 설정)
+    - no_address      # 배송지 미입력
+  tax_composition:
+    - taxable_only
+    - tax_free_only
+    - mixed
+  execution_mode:
+    - live            # DB 현재 값
+    - snapshot        # 주문 시점 스냅샷 (환불 재계산)
+
+exclusions:
+  - { quantity_shape: zero, coupon_slot: product,
+      reason: "수량 0 아이템은 계산 진입 전에 제외되므로 쿠폰 슬롯 조합이 성립하지 않는다" }
+  - { destination: no_address, charge_policy: api,
+      reason: "외부 배송비 API 는 수신지 없이는 호출 자체가 성립하지 않는다" }
+  - { destination: overseas, charge_policy: conditional_free,
+      reason: "국가별 부과정책 분기는 별도 국가설정 축에서 잠그며, 조건부무료는 국내 경로로 충분하다" }
+
+effects:
+  # 옵션별 소계
+  - option_subtotal_is_unit_price_times_quantity   # 단일 옵션 소계 = (판매가+옵션추가금) × 수량
+  - summary_subtotal_sums_all_options              # 요약 소계 = 모든 옵션 소계의 합
+  - zero_quantity_option_excluded_from_calculation # 수량 0 옵션은 계산 대상에서 빠짐
+  - empty_cart_yields_zero_totals                  # 아이템이 없으면 모든 합계가 0
+
+  # 상품금액 쿠폰 — 적용 대상 판정
+  - product_coupon_scope_all_applies_to_every_item      # 전체 범위 쿠폰은 모든 옵션에 적용
+  - product_coupon_scope_products_applies_only_to_target # 특정상품 범위는 대상 상품에만
+  - product_coupon_scope_category_applies_only_to_member # 특정카테고리 범위는 그 카테고리 상품에만
+  - product_coupon_rate_discount_computed_on_subtotal    # 정률 할인은 옵션 소계 기준
+  - product_coupon_max_discount_caps_rate_amount         # 최대할인금액이 정률 할인액의 상한
+  - product_coupon_fixed_discount_multiplied_by_quantity # 정액 상품쿠폰은 수량만큼 곱해짐
+  - product_coupon_rate_discount_not_multiplied_by_quantity # 정률은 수량에 곱해지지 않음(소계에 이미 반영)
+  - product_coupon_fixed_discount_capped_by_item_subtotal   # 수량 곱 결과가 소계를 넘지 못함
+  - multiple_product_coupons_each_computed_on_original_subtotal # 다중 상품쿠폰은 각자 원가 기준 개별 산출 후 합산
+
+  # 주문금액 쿠폰
+  - order_coupon_discount_apportioned_by_amount_ratio  # 주문쿠폰 할인이 옵션 금액 비율로 안분
+  - order_coupon_rate_computed_after_product_discount  # 주문쿠폰 정률은 상품할인 차감 후 금액 기준
+  - order_coupon_fixed_not_multiplied_by_quantity      # 주문쿠폰 정액은 주문 전체 1회 (수량 무관)
+
+  # 안분 정확성
+  - apportioned_amounts_sum_to_original_discount   # 안분 합계가 원 할인액과 정확히 일치
+  - apportionment_remainder_assigned_to_last_item  # 끝전이 마지막 아이템에 붙음
+  - mileage_apportioned_by_subtotal_ratio          # 마일리지 사용액이 소계 비율로 안분
+
+  # 배송비 — 부과정책별 산출
+  - free_policy_charges_no_shipping                    # FREE 정책은 배송비 0원
+  - fixed_policy_charges_base_fee                      # FIXED 정책은 기본 배송비 그대로
+  - conditional_free_waives_fee_above_threshold        # 조건부무료: 기준금액 이상이면 0원
+  - conditional_free_charges_fee_below_threshold       # 조건부무료: 미달이면 기본 배송비
+  - range_policy_selects_tier_by_measured_value        # 구간 정책이 측정값(금액/수량/무게/부피)으로 구간 선택
+  - volumetric_weight_derived_from_divisor             # 부피무게 = 부피 ÷ divisor
+  - per_unit_policy_charges_ceil_units_times_base_fee  # 단위당 정책 = ceil(측정값÷단위) × 기본요금
+  - api_policy_uses_base_fee_without_endpoint          # API 정책에 엔드포인트가 없으면 기본 배송비
+  - api_policy_uses_remote_fee_on_success              # API 성공 응답의 배송비를 사용
+  - api_policy_falls_back_to_base_fee_on_failure       # API 실패·타임아웃이면 기본 배송비로 폴백
+
+  # 배송비 — 정책 그룹과 안분
+  - each_policy_group_computed_independently   # 정책 그룹별로 배송비가 독립 산출·합산
+  - same_policy_items_grouped_into_one_fee     # 같은 정책 상품은 한 그룹으로 묶여 배송비 1회
+  - shipping_fee_apportioned_to_options_by_ratio # 그룹 배송비가 옵션 금액 비율로 안분
+  - shipping_recalculated_when_quantity_changes  # 수량이 바뀌면 배송비가 다시 산출됨
+
+  # 배송비 — 도서산간 추가배송비
+  - extra_fee_charged_for_matching_zipcode      # 도서산간 패턴에 걸리면 추가배송비 부과
+  - extra_fee_not_charged_for_normal_zipcode    # 일반 지역은 추가배송비 없음
+  - extra_fee_not_charged_without_address       # 배송지가 없으면 추가배송비 없음
+  - extra_fee_not_charged_when_disabled         # 추가배송비 비활성 정책은 부과하지 않음
+  - extra_fee_multiplied_only_when_multiply_enabled # multiply 설정이 켜진 정책에서만 중복 부과
+  - extra_fee_charged_per_policy_group          # 정책 그룹마다 각자의 추가배송비 적용
+  - extra_fee_zipcode_pattern_matching_rules    # 정확 일치·범위 패턴·첫 매칭 우선 규칙
+  - extra_fee_charged_independently_of_base_fee # 기본 배송비가 0원이어도 추가배송비는 부과
+  - extra_fee_recalculated_on_address_change    # 배송지 변경에 따라 추가배송비가 붙고 떨어짐
+
+  # 배송비 — 국가별 설정
+  - shipping_uses_country_setting_of_address    # 수신지 국가코드에 해당하는 국가설정 적용
+  - shipping_falls_back_to_kr_without_country   # 국가코드가 없으면 KR 설정
+  - shipping_skipped_without_matching_country   # 매칭 국가설정이 없으면 배송비 0원
+  - extra_fee_limited_to_domestic_address       # 도서산간 추가배송비는 국내 주소에서만
+  - applied_policy_snapshot_records_country_setting # 적용 정책 스냅샷에 국가설정이 기록됨
+  - charge_policy_can_differ_per_country        # 같은 정책에서 국가마다 다른 부과정책
+
+  # 배송비 쿠폰
+  - shipping_coupon_discount_covers_base_and_extra # 배송비 쿠폰이 기본+추가배송비 합계에 적용
+  - shipping_coupon_discount_never_exceeds_fee     # 할인액이 배송비를 넘지 않음 (초과분 무시)
+  - shipping_coupon_applies_across_policy_groups   # 다중 정책 그룹의 배송비 총액 기준으로 적용
+
+  # 과세/면세
+  - taxable_only_order_has_zero_tax_free_amount  # 과세만 있으면 면세금액 0
+  - tax_free_only_order_has_zero_taxable_amount  # 면세만 있으면 과세금액 0
+  - mixed_tax_status_split_into_two_buckets      # 혼합 주문은 과세/면세로 나뉘어 집계
+
+  # 쿠폰 검증 규칙
+  - coupon_rejected_when_min_order_amount_not_met # 최소주문금액 미달이면 검증 오류
+  - coupon_applied_when_min_order_amount_met      # 충족이면 정상 적용
+  - product_coupon_rejected_without_target_in_cart # 대상 상품이 장바구니에 없으면 검증 오류
+  - expired_coupon_rejected                        # 유효기간이 지난 쿠폰은 검증 오류
+
+  # 마일리지·적립
+  - mileage_use_reduces_final_amount        # 마일리지 사용액만큼 결제금액이 줄어듦
+  - mileage_use_capped_by_payable_amount    # 결제금액을 넘는 사용 요청은 결제금액까지만
+  - points_earning_uses_default_rate        # 옵션 적립 설정이 없으면 기본 적립률로 산출
+
+  # 금액 하한
+  - final_amount_never_negative             # 할인·마일리지 합이 커도 최종금액은 0 이상
+
+  # 표시용 포맷
+  - coupon_discount_exposes_formatted_amounts # 쿠폰 할인액에 포맷 문자열이 함께 실림
+
+  # 스냅샷 모드
+  - snapshot_item_fields_override_db_values     # 스냅샷의 tax_status·무게·부피가 DB 현재값을 이김
+  - snapshot_null_falls_back_to_db_lookup       # 스냅샷이 없는 아이템은 DB 조회로 폴백
+  - snapshot_and_db_items_calculated_together   # 스냅샷·DB 아이템 혼합 계산이 성립
+  - snapshot_mileage_fields_used_for_earning    # 스냅샷 옵션의 적립 설정으로 적립액 산출
+  - snapshot_shipping_policy_used_for_fee       # 스냅샷 배송정책(구간·도서산간)으로 배송비 산출
+  - snapshot_mode_still_checks_min_order_amount # 스냅샷 모드에서도 최소주문금액은 검증
+  - snapshot_mode_skips_expiry_and_scope_checks # 스냅샷 모드는 만료·범위 검증을 건너뜀
+  - snapshot_mode_combines_all_coupon_types     # 스냅샷 모드에서 3종 쿠폰 동시 적용
+  - snapshot_mode_applies_quantity_to_fixed_product_coupon # 스냅샷 모드도 정액 상품쿠폰에 수량 반영
+
+  # 결손 설정에 대한 방어
+  - missing_shipping_policy_yields_zero_without_error # 삭제된 배송정책 참조가 예외 없이 0원 처리
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php

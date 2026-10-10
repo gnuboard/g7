@@ -1,0 +1,27 @@
+feature: 페이지 활동 로그 리스너
+
+description: |
+  페이지 생성·수정·삭제·공개 전환·버전 복원과 첨부 업로드·삭제가 관리자 활동 로그에 남는다.
+  로그 기록이 실패해도 원래 작업은 막지 않는다.
+
+  첨부 로그의 원본 파일명은 첨부 표의 실제 컬럼(original_filename)에서 읽는다 — 모의 객체는 없는 속성도
+  만들어 내므로, 실제 모델로 컬럼 이름을 잠근다(7.1.0 출시 점검: 컬럼 이름을 잘못 읽어 파일명이 늘 비어 있었다).
+
+axes:
+  case:
+    - hook_subscription
+    - page_lifecycle_log
+    - attachment_log
+    - attachment_log_reads_real_column
+    - log_failure_isolated
+    - null_attribute_fallback
+
+effects:
+  - hooks_subscribed_with_priority_20
+  - page_action_logged_with_description
+  - attachment_log_carries_original_filename
+  - logging_failure_does_not_propagate
+  - null_attributes_logged_as_empty
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/PageActivityLogListenerTest.php

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Public;
 
+use App\Analytics\TrackingRequestFactory;
+use App\Enums\Analytics\ActionType;
 use App\Enums\TotalRelation;
 use App\Extension\HookManager;
 use App\Http\Controllers\Api\Base\PublicBaseController;
@@ -70,14 +72,27 @@ class PublicSearchController extends PublicBaseController
         // 프론트엔드용 응답 구조로 변환 (훅을 통해 모듈이 처리)
         $response = $this->buildResponse($q, $results, $context);
 
+        // 방문자 통계에 검색어를 알린다. 결과 건수는 서버만 아는 값이라 브라우저
+        // 비콘으로는 남길 수 없다. 구독자가 없으면 아무 일도 일어나지 않는다.
+        HookManager::doAction(
+            'core.search.after_search',
+            TrackingRequestFactory::fromHttp($request, [
+                't' => ActionType::SiteSearch->value,
+                'q' => $q,
+                'tab' => $type,
+                'total' => $response['total'] ?? 0,
+            ])->toArray(),
+        );
+
         // 총 건수가 상한에 걸렸으면 "N건" 이 아니라 "N건 이상" 으로 알린다.
         // 세지 않은 값을 정확한 것처럼 말하지 않는다.
         $messageKey = ($response['total_is_exact'] ?? true)
             ? 'search.results_found'
             : 'search.results_found_at_least';
 
+        // 단·복수는 서식 없는 수로 고르고, 화면에는 천 단위 구분 기호를 단 수를 보인다.
         return $this->success(
-            __($messageKey, ['count' => number_format($response['total'])]),
+            trans_choice($messageKey, (int) $response['total'], ['count' => number_format($response['total'])]),
             $response
         );
     }

@@ -1,0 +1,87 @@
+<!-- 입금 한 건이 어떤 경로로 처리됐는지 시간순으로 보여 주는 창 — 자동 매칭·실패·수동 개입이
+  한 줄씩 쌓인다.
+  **아직 시안이다** — 데이터소스도 API 호출도 없고 타임라인 항목은 마크업에 박아 둔 예시다.
+  성공과 실패를 아이콘·배지 색으로 가르는 규칙이 여기서 정해지므로, 배선할 때 이 형태에
+  실제 이력을 반복 렌더로 채우면 된다. -->
+<partial description="입금 처리이력 모달">
+  <modal data-type="composite" data-ref="modal_process_history" title="$t:sirsoft-ecommerce.admin.deposit.modal.process_history.title" size="lg">
+    <div data-ref="deposit_info_card" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+      <div class="grid-2col">
+        <div>
+          <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name</span>
+          <div class="text-primary font-medium mt-1">김철수</div>
+        </div>
+        <div>
+          <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount</span>
+          <div class="text-blue-600 dark:text-blue-400 font-semibold mt-1">\89,000</div>
+        </div>
+      </div>
+      <div class="mt-4">
+        <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.order_number</span>
+        <div class="text-primary font-medium mt-1">ORD20240127-001</div>
+      </div>
+    </div>
+    <div data-ref="timeline_section">
+      <div class="text-label text-sm font-medium mb-4">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.timeline_title</div>
+      <div data-ref="timeline_list" class="stack-tight">
+        <div data-ref="timeline_item_success" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="flex-start gap-3">
+            <div class="flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0">
+              <icon name="zap" class="text-base icon-muted"/>
+            </div>
+            <div class="flex-1">
+              <div class="flex-center gap-2 mb-1">
+                <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.system_pg_webhook</span>
+                <span class="badge-status badge-status-success">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.match_complete</span>
+              </div>
+              <div class="text-secondary text-sm">2024-01-27 15:20:00</div>
+              <div class="text-secondary text-sm mt-1">주문번호 20240127-001과 자동 매칭 완료</div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="timeline_item_failed" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="flex-start gap-3">
+            <div class="flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0">
+              <icon name="code" class="text-base icon-muted"/>
+            </div>
+            <div class="flex-1">
+              <div class="flex-center gap-2 mb-1">
+                <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.webhook_receive</span>
+                <span class="badge-status badge-status-error">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.failed</span>
+                <span class="text-secondary text-sm">404</span>
+              </div>
+              <div class="text-secondary text-sm">2024-01-27 10:40:30</div>
+              <div class="text-secondary text-sm mt-1">https://api.pg.com/v1/webhook/notification</div>
+              <div class="bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm">주문번호가 존재하지 않습니다</div>
+              <div class="mt-3">
+                <button type="button" class="flex-center gap-1 text-sm text-secondary hover:text-gray-900 dark:hover:text-white">
+                  <icon name="chevron-up" class="text-base"/>
+                  <span>$t:sirsoft-ecommerce.admin.deposit.modal.process_history.toggle_detail_close</span>
+                </button>
+              </div>
+              <div data-ref="detail_section" class="mt-3 space-y-3">
+                <div>
+                  <div class="text-label text-xs mb-1">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.request_data</div>
+                  <div class="bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto">
+                    <pre class="text-primary whitespace-pre-wrap">{
+  "transactionId": "PG2024012700004"
+}</pre>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-label text-xs mb-1">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.response_data</div>
+                  <div class="bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto">
+                    <pre class="text-primary whitespace-pre-wrap">{
+  "success": false,
+  "error": "주문을 찾을 수 없습니다"
+}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </modal>
+</partial>

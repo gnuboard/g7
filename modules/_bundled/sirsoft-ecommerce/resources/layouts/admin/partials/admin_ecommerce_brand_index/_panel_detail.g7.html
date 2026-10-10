@@ -1,0 +1,13 @@
+<!-- 브랜드 화면 오른쪽 패널의 껍데기. 스스로 그리는 것은 아무것도 선택되지 않았을 때의 빈 안내뿐이고,
+  실제 내용인 보기·편집 두 조각을 나란히 끼워 둔다.
+  **셋이 동시에 붙어 있고 각자 자기 조건으로 나타난다** — 여기서 갈라 넣는 것이 아니라 각 조각이
+  `_global.panelMode` 를 보고 스스로 숨는다. 그래서 이 파일에는 조건이 빈 안내 하나뿐이다. -->
+<partial description="Brand Detail Panel - View/Form Container">
+  <div data-ref="detail_panel" class="admin-card col-span-2-lg">
+    <div class="row-stack">
+      <empty-state data-type="composite" data-ref="empty_state_panel" data-if="{{!_global.selectedBrandId &amp;&amp; _global.panelMode !== 'create' &amp;&amp; _global.panelMode !== 'edit'}}" icon="tag" title="$t:sirsoft-ecommerce.admin.brand.empty.title" description="$t:sirsoft-ecommerce.admin.brand.empty.description" class="py-16"/>
+      <include src="_panel_view.g7.html"/>
+      <include src="_panel_form.g7.html"/>
+    </div>
+  </div>
+</partial>

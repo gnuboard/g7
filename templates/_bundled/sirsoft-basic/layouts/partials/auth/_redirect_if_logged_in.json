@@ -1,32 +1,33 @@
 {
-  "meta": {
-    "is_partial": true
-  },
-  "comment": "로그인 상태일 때 홈으로 리다이렉트",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{_global?.currentUser?.uuid && !_local.isLoginAction}}",
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "lifecycle": {
-        "onMount": [
-          {
-            "handler": "toast",
-            "params": {
-              "message": "$t:auth.already_logged_in",
-              "type": "info"
+    "meta": {
+        "is_partial": true
+    },
+    "comment": "로그인 상태일 때 홈으로 리다이렉트",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global?.currentUser?.uuid && !_local.isLoginAction}}",
+    "children": [
+        {
+            "comment": "마운트되는 순간이 곧 되돌려 보내는 시점 — 조건이 참일 때만 이 노드가 그려지므로 별도 판정 없이 그리기 자체가 방아쇠다. 방금 로그인해서 온 경우(isLoginAction)는 위 조건에서 이미 걸러진다.",
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+                "onMount": [
+                    {
+                        "handler": "toast",
+                        "params": {
+                            "message": "$t:auth.already_logged_in",
+                            "type": "info"
+                        }
+                    },
+                    {
+                        "handler": "navigate",
+                        "params": {
+                            "path": "/"
+                        }
+                    }
+                ]
             }
-          },
-          {
-            "handler": "navigate",
-            "params": {
-              "path": "/"
-            }
-          }
-        ]
-      }
-    }
-  ]
+        }
+    ]
 }

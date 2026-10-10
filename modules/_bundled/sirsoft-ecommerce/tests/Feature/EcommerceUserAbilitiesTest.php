@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -35,6 +36,11 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     private Role $blockedRole;
 
+    /**
+     * 주문·취소 권한 역할(허용·차단)과 사용자를 세웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -105,6 +111,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
      * 취소 가능 상태(pending_payment)의 주문은 can_cancel이 true여야 합니다.
      *
      * 주의: pending_order 상태는 목록에서 기본 제외되므로 pending_payment으로 테스트합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_list
+     *
+     * @effects order_list_returns_can_cancel_true_for_cancellable_order
      */
     public function test_order_list_returns_can_cancel_true_for_cancellable_order(): void
     {
@@ -119,6 +131,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 취소 불가 상태(shipping)의 주문은 can_cancel이 false여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_list
+     *
+     * @effects order_list_returns_can_cancel_false_for_shipped_order
      */
     public function test_order_list_returns_can_cancel_false_for_shipped_order(): void
     {
@@ -133,6 +151,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 취소 권한이 없는 사용자의 주문은 can_cancel이 false여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_list
+     *
+     * @effects order_list_returns_can_cancel_false_without_cancel_permission
      */
     public function test_order_list_returns_can_cancel_false_without_cancel_permission(): void
     {
@@ -151,6 +175,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 취소 가능 상태의 주문 상세에서 can_cancel이 true여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_detail
+     *
+     * @effects order_detail_returns_can_cancel_true_for_cancellable_order
      */
     public function test_order_detail_returns_can_cancel_true_for_cancellable_order(): void
     {
@@ -167,6 +197,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 취소 불가 상태(shipping)의 주문 상세에서 can_cancel이 false여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_detail
+     *
+     * @effects order_detail_returns_can_cancel_false_for_shipped_order
      */
     public function test_order_detail_returns_can_cancel_false_for_shipped_order(): void
     {
@@ -181,6 +217,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 취소 권한이 없는 사용자의 주문 상세에서 can_cancel이 false여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_detail
+     *
+     * @effects order_detail_returns_can_cancel_false_without_cancel_permission
      */
     public function test_order_detail_returns_can_cancel_false_without_cancel_permission(): void
     {
@@ -201,6 +243,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 주문 생성 권한이 있는 사용자의 주문 컬렉션에 can_create가 true여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_collection
+     *
+     * @effects order_collection_returns_can_create_true_for_permitted_user
      */
     public function test_order_collection_returns_can_create_true_for_permitted_user(): void
     {
@@ -213,6 +261,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 주문 생성 권한이 없는 사용자의 주문 컬렉션에 can_create가 false여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=order_collection
+     *
+     * @effects order_collection_returns_can_create_false_for_blocked_user
      */
     public function test_order_collection_returns_can_create_false_for_blocked_user(): void
     {
@@ -229,6 +283,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 기본 배송지는 can_delete가 false여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=address
+     *
+     * @effects address_list_returns_can_delete_false_for_default_address
      */
     public function test_address_list_returns_can_delete_false_for_default_address(): void
     {
@@ -243,6 +303,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 기본 배송지가 아닌 배송지는 can_delete가 true여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=address
+     *
+     * @effects address_list_returns_can_delete_true_for_non_default_address
      */
     public function test_address_list_returns_can_delete_true_for_non_default_address(): void
     {
@@ -259,6 +325,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 배송지 리소스에 can_update가 true로 반환되어야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=address
+     *
+     * @effects address_resource_returns_can_update_true
      */
     public function test_address_resource_returns_can_update_true(): void
     {
@@ -273,6 +345,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 기본 배송지가 아닌 배송지는 can_set_default가 true여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=address
+     *
+     * @effects address_resource_returns_can_set_default_true_for_non_default
      */
     public function test_address_resource_returns_can_set_default_true_for_non_default(): void
     {
@@ -289,6 +367,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 기본 배송지는 can_set_default가 false여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=address
+     *
+     * @effects address_resource_returns_can_set_default_false_for_default
      */
     public function test_address_resource_returns_can_set_default_false_for_default(): void
     {
@@ -307,12 +391,20 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 권한 있는 사용자는 취소 가능 상태의 주문을 취소할 수 있어야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=cancel
+     *
+     * @effects permitted_user_can_cancel_cancellable_order
      */
     public function test_permitted_user_can_cancel_cancellable_order(): void
     {
         $order = Order::factory()->forUser($this->permittedUser)->create([
             'order_status' => OrderStatusEnum::PENDING_ORDER,
         ]);
+        // 취소는 주문 상품 행을 대상으로 한다 — 상품 행이 없는 주문은 「취소할 상품을 선택하세요」 422 로 막힌다.
+        OrderOption::factory()->forOrder($order)->create(['option_status' => OrderStatusEnum::PENDING_ORDER]);
 
         $response = $this->actingAs($this->permittedUser)
             ->postJson("/api/modules/sirsoft-ecommerce/user/orders/{$order->id}/cancel", [
@@ -328,6 +420,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 권한 없는 사용자(블랙리스트)의 주문 취소는 403이어야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=cancel
+     *
+     * @effects blocked_user_cannot_cancel_order
      */
     public function test_blocked_user_cannot_cancel_order(): void
     {
@@ -345,6 +443,12 @@ class EcommerceUserAbilitiesTest extends ModuleTestCase
 
     /**
      * 취소 불가 상태의 주문 취소 요청은 422여야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario subject=cancel
+     *
+     * @effects cancel_fails_for_non_cancellable_status
      */
     public function test_cancel_fails_for_non_cancellable_status(): void
     {

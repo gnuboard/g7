@@ -16,6 +16,10 @@ class OrderStatusTransitionTest extends ModuleTestCase
 {
     /**
      * 진행 순서 SSoT 가 취소 제외 9단계로 구성되는지 검증합니다.
+     *
+     * @effects progress_order_nine_steps_without_cancel
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_order_is_nine_steps_without_cancel(): void
     {
@@ -38,6 +42,10 @@ class OrderStatusTransitionTest extends ModuleTestCase
 
     /**
      * progressOrderValues 가 progressOrder 의 value 미러인지 검증합니다.
+     *
+     * @effects progress_order_values_mirror_enum
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_order_values_mirror_enum_order(): void
     {
@@ -50,6 +58,10 @@ class OrderStatusTransitionTest extends ModuleTestCase
     /**
      * 상태별 allowedTransitions 집합을 단언합니다.
      * (forward 점프 + 역방향 화이트리스트의 합집합)
+     *
+     * @effects allowed_transitions_per_status
+     *
+     * @return void 반환값 없음
      */
     public function test_allowed_transitions_per_status(): void
     {
@@ -119,6 +131,10 @@ class OrderStatusTransitionTest extends ModuleTestCase
 
     /**
      * SHIPPING_HOLD ↔ PREPARING 양방향이 모두 허용되는지 명시 단언합니다.
+     *
+     * @effects shipping_hold_preparing_bidirectional
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_hold_and_preparing_are_bidirectional(): void
     {
@@ -135,6 +151,10 @@ class OrderStatusTransitionTest extends ModuleTestCase
     /**
      * 취소 → 판매 반영 상태 복원(reactivation)은 허용, 결제 전 상태 복귀는 차단됨을 명시 단언합니다.
      * (취소 주문/옵션을 다시 판매 진행 상태로 되살리는 운영 기능 — 재고 재차감 동반. 2026-06-23)
+     *
+     * @effects cancelled_to_sales_status_reactivation_allowed, cancelled_to_pre_payment_status_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_cancelled_reactivation_to_sales_status_allowed_but_pre_payment_blocked(): void
     {
@@ -162,6 +182,14 @@ class OrderStatusTransitionTest extends ModuleTestCase
 
     /**
      * canTransitionTo 10×10 매트릭스 전수 단언.
+     *
+     * @param  string  $fromName  출발 상태 케이스 이름
+     * @param  string  $toName  목표 상태 케이스 이름
+     * @param  bool  $expected  기대 허용 여부
+     *
+     * @effects transition_matrix_100_pairs_match_reference
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('transitionMatrixProvider')]
     public function test_can_transition_matrix(string $fromName, string $toName, bool $expected): void
@@ -179,7 +207,7 @@ class OrderStatusTransitionTest extends ModuleTestCase
     /**
      * 10×10 = 100쌍 전이 매트릭스 데이터.
      *
-     * @return array<string, array{string, string, bool}>
+     * @return array<string, array{string, string, bool}> 「출발 -> 목표」 => [출발, 목표, 기대 허용 여부]
      */
     public static function transitionMatrixProvider(): array
     {
@@ -227,9 +255,12 @@ class OrderStatusTransitionTest extends ModuleTestCase
     /**
      * 기대 전이 허용 여부를 계산합니다 (Enum 구현과 독립적인 reference 모델).
      *
-     * @param  array<string, int>  $progress
-     * @param  array<string, array<string>>  $reverseWhitelist
+     * @param  string  $from  출발 상태 케이스 이름
+     * @param  string  $to  목표 상태 케이스 이름
+     * @param  array<string, int>  $progress  진행 순서 인덱스 (케이스 이름 => 순번)
+     * @param  array<string, array<string>>  $reverseWhitelist  역방향 허용 목록 (출발 => [목표, ...])
      * @param  array<string>  $salesEligible  취소 → 복원 허용 대상 판매 반영 상태
+     * @return bool 전이 허용 여부
      */
     private static function computeExpected(
         string $from,
@@ -264,5 +295,55 @@ class OrderStatusTransitionTest extends ModuleTestCase
         }
 
         return false;
+    }
+
+    /**
+     * 결제 전 → 판매 상태만 「결제 코스 진입」이다 — 취소 재활성·판매 간 이동·결제 전 간 이동은 아니다. (Q13)
+     *
+     * @effects manual_paid_transition_applies_three_items_by_default
+     *
+     * @return void 반환값 없음
+     */
+    public function test_moves_into_paid_course_truth_table(): void
+    {
+        $this->assertTrue(OrderStatusEnum::movesIntoPaidCourse('pending_order', 'payment_complete'));
+        $this->assertTrue(OrderStatusEnum::movesIntoPaidCourse(OrderStatusEnum::PENDING_PAYMENT, OrderStatusEnum::PREPARING));
+        $this->assertFalse(OrderStatusEnum::movesIntoPaidCourse('pending_order', 'pending_payment'));
+        $this->assertFalse(OrderStatusEnum::movesIntoPaidCourse('cancelled', 'payment_complete'));
+        $this->assertFalse(OrderStatusEnum::movesIntoPaidCourse('payment_complete', 'preparing'));
+        $this->assertFalse(OrderStatusEnum::movesIntoPaidCourse(null, 'payment_complete'));
+        $this->assertFalse(OrderStatusEnum::movesIntoPaidCourse('pending_order', 'cancelled'));
+    }
+
+    /**
+     * 취소 → 판매 상태만 재활성이다 — 클레임 코스 복귀는 아니다. (Q14)
+     *
+     * @effects reactivation_rededucts_mileage_restored_by_cancellation
+     *
+     * @return void 반환값 없음
+     */
+    public function test_revives_from_cancelled_truth_table(): void
+    {
+        $this->assertTrue(OrderStatusEnum::revivesFromCancelled('cancelled', 'payment_complete'));
+        $this->assertTrue(OrderStatusEnum::revivesFromCancelled(OrderStatusEnum::CANCELLED, OrderStatusEnum::CONFIRMED));
+        $this->assertFalse(OrderStatusEnum::revivesFromCancelled('cancelled', 'pending_order'));
+        $this->assertFalse(OrderStatusEnum::revivesFromCancelled('return_in_progress', 'delivered'));
+        $this->assertFalse(OrderStatusEnum::revivesFromCancelled('payment_complete', 'preparing'));
+    }
+
+    /**
+     * 부모 상태 파생 — 빈 활성 목록은 취소(행 없음은 null), 단일은 그 상태, 혼합은 가장 낮은 진행 상태.
+     *
+     * @effects option_bulk_parent_sync_is_atomic_with_effects
+     *
+     * @return void 반환값 없음
+     */
+    public function test_derive_parent_status(): void
+    {
+        $this->assertSame(OrderStatusEnum::CANCELLED, OrderStatusEnum::deriveParentStatus([]));
+        $this->assertNull(OrderStatusEnum::deriveParentStatus([], false));
+        $this->assertSame(OrderStatusEnum::SHIPPING, OrderStatusEnum::deriveParentStatus(['shipping', 'shipping']));
+        $this->assertSame(OrderStatusEnum::PENDING_ORDER, OrderStatusEnum::deriveParentStatus(['payment_complete', 'pending_order']));
+        $this->assertSame(OrderStatusEnum::PREPARING, OrderStatusEnum::deriveParentStatus(['delivered', 'preparing', 'shipping']));
     }
 }

@@ -1,241 +1,245 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "새 댓글 입력 폼 (댓글 작성 권한 있을 때만 표시)"
-  },
-  "type": "basic",
-  "name": "Div",
-  "if": "{{post?.data?.abilities?.can_write_comments && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
-  "props": {
-    "className": "p-4 border-t border-gray-200 dark:border-gray-700"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex gap-3"
-      },
-      "children": [
+    "comment": "댓글 입력창 — 쓸 수 없는 상태(권한 없음·블라인드·삭제된 글)면 통째로 그려지지 않는다. 비회원이면 이름·비밀번호 줄이 함께 나타나고, 그 비밀번호가 나중에 자기 댓글을 고치거나 지울 때의 열쇠가 된다.",
+    "meta": {
+        "is_partial": true,
+        "description": "새 댓글 입력 폼 (댓글 작성 권한 있을 때만 표시)"
+    },
+    "type": "basic",
+    "name": "Div",
+    "if": "{{post?.data?.abilities?.can_write_comments && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
+    "props": {
+        "className": "p-4 border-t border-gray-200 dark:border-gray-700"
+    },
+    "children": [
         {
-          "comment": "아바타 (로그인 시: 사용자 아바타, 비회원 시: 기본 아바타)",
-          "type": "composite",
-          "name": "Avatar",
-          "props": {
-            "name": "{{_global.currentUser?.name ?? _local.guest_comment_author_name ?? ''}}",
-            "avatar": "{{_global.currentUser?.avatar}}",
-            "size": "sm"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1 flex flex-col gap-3"
-          },
-          "children": [
-            {
-              "comment": "비회원 작성자 정보 입력 (이름/비밀번호)",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{!_global.currentUser?.uuid}}",
-              "props": {
-                "className": "flex flex-col sm:flex-row gap-3"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex gap-3"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "guest_author_name",
-                    "value": "{{_local.guest_comment_author_name ?? ''}}",
-                    "placeholder": "$t:board.guest_author_name",
-                    "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  },
-                  "actions": [
-                    {
-                      "type": "input",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "guest_comment_author_name": "{{$event.target.value}}"
-                      }
+                    "comment": "아바타 (로그인 시: 사용자 아바타, 비회원 시: 기본 아바타)",
+                    "type": "composite",
+                    "name": "Avatar",
+                    "props": {
+                        "name": "{{_global.currentUser?.name ?? _local.guest_comment_author_name ?? ''}}",
+                        "avatar": "{{_global.currentUser?.avatar}}",
+                        "size": "sm"
                     }
-                  ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "password",
-                    "name": "guest_password",
-                    "value": "{{_local.guest_comment_password ?? ''}}",
-                    "placeholder": "$t:board.guest_password",
-                    "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  },
-                  "actions": [
-                    {
-                      "type": "input",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "guest_comment_password": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "comment": "댓글 내용 입력",
-              "type": "basic",
-              "name": "Textarea",
-              "props": {
-                "name": "comment_content",
-                "value": "{{_local.new_comment_content ?? ''}}",
-                "placeholder": "$t:board.comment_placeholder",
-                "rows": 3,
-                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-              },
-              "actions": [
-                {
-                  "type": "input",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "new_comment_content": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "comment": "등록 버튼 (우측 정렬)",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-end"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                    "disabled": "{{_local.commentSubmitting === true}}"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex items-center gap-2"
-                      },
-                      "children": [
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 flex flex-col gap-3"
+                    },
+                    "children": [
                         {
-                          "type": "composite",
-                          "name": "Icon",
-                          "if": "{{!_local.commentSubmitting}}",
-                          "props": {
-                            "name": "paper-plane",
-                            "size": "sm"
-                          }
+                            "comment": "비회원 작성자 정보 입력 (이름/비밀번호)",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.currentUser?.uuid}}",
+                            "props": {
+                                "className": "flex flex-col sm:flex-row gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "비회원 이름 — 폼 자동바인딩이 아니라 손으로 담는다(이 조각은 form 안이 아니라서 이름만으로는 모이지 않는다). 위 아바타의 표시 이름도 이 값을 본다.",
+                                            "type": "input",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "guest_comment_author_name": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "guest_author_name",
+                                        "value": "{{_local.guest_comment_author_name ?? ''}}",
+                                        "placeholder": "$t:board.guest_author_name",
+                                        "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "비회원 비밀번호 — 이 댓글을 나중에 고치거나 지울 때 확인 창이 물어볼 값이다. 등록에 성공하면 곧바로 비운다.",
+                                            "type": "input",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "guest_comment_password": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "password",
+                                        "name": "guest_password",
+                                        "value": "{{_local.guest_comment_password ?? ''}}",
+                                        "placeholder": "$t:board.guest_password",
+                                        "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    }
+                                }
+                            ]
                         },
                         {
-                          "type": "composite",
-                          "name": "Icon",
-                          "if": "{{_local.commentSubmitting}}",
-                          "props": {
-                            "name": "spinner",
-                            "size": "sm",
-                            "className": "animate-spin"
-                          }
+                            "comment": "댓글 내용 입력",
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "type": "input",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "new_comment_content": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "comment_content",
+                                "value": "{{_local.new_comment_content ?? ''}}",
+                                "placeholder": "$t:board.comment_placeholder",
+                                "rows": 3,
+                                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                            }
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "{{_local.commentSubmitting ? '$t:board.comment_submitting' : '$t:board.comment_submit'}}"
+                            "comment": "등록 버튼 (우측 정렬)",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-end"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "댓글 등록 — 보내는 중이면 통째로 건너뛰어 연타로 같은 댓글이 두 번 달리는 것을 막는다(버튼 비활성화만으로는 이미 눌린 클릭을 못 막는다). 성공하면 입력칸과 답글 대상까지 비우고 글을 다시 받는다 — 댓글 목록이 글 응답에 실려 오기 때문이다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "if": "{{_local.commentSubmitting !== true}}",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "commentSubmitting": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "content": "{{_local.new_comment_content}}",
+                                                            "author_name": "{{_local.guest_comment_author_name}}",
+                                                            "password": "{{_local.guest_comment_password}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "new_comment_content": "",
+                                                                "guest_comment_author_name": "",
+                                                                "guest_comment_password": "",
+                                                                "replyToCommentId": null,
+                                                                "commentSubmitting": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "post"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "$t:board.comment_added"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "commentSubmitting": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                        "disabled": "{{_local.commentSubmitting === true}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{!_local.commentSubmitting}}",
+                                                    "props": {
+                                                        "name": "paper-plane",
+                                                        "size": "sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{_local.commentSubmitting}}",
+                                                    "props": {
+                                                        "name": "spinner",
+                                                        "size": "sm",
+                                                        "className": "animate-spin"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{_local.commentSubmitting ? '$t:board.comment_submitting' : '$t:board.comment_submit'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "if": "{{_local.commentSubmitting !== true}}",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "commentSubmitting": true
-                          }
-                        },
-                        {
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments",
-                          "params": {
-                            "method": "POST",
-                            "body": {
-                              "content": "{{_local.new_comment_content}}",
-                              "author_name": "{{_local.guest_comment_author_name}}",
-                              "password": "{{_local.guest_comment_password}}"
-                            }
-                          },
-                          "onSuccess": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "new_comment_content": "",
-                                "guest_comment_author_name": "",
-                                "guest_comment_password": "",
-                                "replyToCommentId": null,
-                                "commentSubmitting": false
-                              }
-                            },
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "post"
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "$t:board.comment_added"
-                              }
-                            }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "commentSubmitting": false
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message}}"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

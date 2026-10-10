@@ -1,340 +1,503 @@
 {
-  "target_layout": "_admin_base",
-  "init_actions": [
-    {
-      "comment": "관리자 헤더 표시 통화 복원 — 호스트 _admin_base 는 통화/이커머스를 모른다. 이커머스가 이 init 단계를 layout_extensions(init_actions 병합)로 기여한다. localStorage(g7_preferred_currency) → _global.preferredCurrency, 없으면 default_currency. 표시 전용(영속 저장 없음). 핸들러는 이커머스 모듈 소유.",
-      "handler": "sirsoft-ecommerce.initPreferredCurrency",
-      "params": {
-        "defaultCurrency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
-      }
-    },
-    {
-      "comment": "관리자 헤더 배송국가 복원 (표시 전용) — localStorage(g7_preferred_shipping_country) → _global.preferredShippingCountry, 없으면 default_country.",
-      "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
-      "params": {
-        "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
-      }
-    },
-    {
-      "comment": "셀렉터 통화 목록 파생 주입 (유저 헤더 미러). is_default 또는 환율>0 통화만. 셀렉터 if 게이트가 이 파생 상태(availableCurrencies)를 참조 → init_actions 실행 후에만 truthy → 첫 페인트 깜빡임(G7Config 원본 직접 참조 시 동기 truthy 로 잠깐 보였다 사라짐) 제거.",
-      "handler": "setState",
-      "params": {
-        "target": "global",
-        "availableCurrencies": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0)}}"
-      }
-    },
-    {
-      "comment": "헤더 배송국가 셀렉터 목록 파생 주입 (유저 헤더 미러). 활성 국가만 {code, name(현지화)} 형태로. 해외배송 활성 게이트는 셀렉터 if 가 international_shipping_enabled 로 별도 체크(유저 헤더 동형). 셀렉터 if 게이트가 이 파생 상태(availableShippingCountries)를 참조. 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선.",
-      "handler": "setState",
-      "params": {
-        "target": "global",
-        "availableShippingCountries": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}"
-      }
-    }
-  ],
-  "injections": [
-    {
-      "target_id": "header_currency_inject_anchor",
-      "position": "append_child",
-      "components": [
+    "comment": "관리자 헤더의 통화·배송국가 셀렉터. 관리자 템플릿은 통화를 모르고 자리(`header_currency` 슬롯)만\n  열어 두었으며, 이커머스가 그 자리를 채운다.\n  **이 셀렉터는 표시 전용이다** — 고른 값은 `_global` 과 브라우저 저장소에만 남고 서버로 가지\n  않는다. 사용자 헤더의 같은 이름 조각은 로그인 회원일 때 계정에 저장하지만(그 파일 참조), 관리자\n  쪽에는 그 호출이 없다. 관리자가 보는 금액 표기를 바꾸는 것이지 회원 설정을 바꾸는 것이 아니다.\n  숨김을 `if` 가 아니라 `hidden` 클래스로 하는 이유가 있다 — `init` 이 채우는 파생 목록\n  (`availableCurrencies`)이 준비되기 전에 마운트 게이트를 쓰면 첫 그림에서 잠깐 떴다 사라진다.\n  같은 이유로 목록은 설정 원본을 직접 읽지 않고 아래 `<init>` 이 만든 파생 상태만 본다.\n  좁은 화면에서는 이 조각이 관리자 드로어 안 아코디언으로 바뀐다 — `responsive` 가 여러 겹 붙어\n  있는 것은 그 형태 전환 때문이고, `className` 은 얕은 병합이 아니라 통째 교체라 숨김 조건식이\n  base 와 portable 양쪽에 중복돼 있다(한쪽만 고치면 다른 폭에서 계속 보인다).",
+    "target_layout": "_admin_base",
+    "priority": 320,
+    "init_actions": [
         {
-          "id": "ext_admin_header_currency_selector",
-          "comment": "관리자 헤더 통화+배송국가 공용 셀렉터 (이커머스 주입, D4). slot='header_currency' 로 SlotContext 등록 → header_right 의 SlotContainer 가 떙겨 렌더. 헤더는 이 조각을 모름. 관리자 헤더 = 자기 화면 표시 전용(세션/localStorage). 영속 저장 없음(표시 전용). 표시 제어: 기본 hidden(display:none) → init_actions 가 채운 파생 상태(availableCurrencies/availableShippingCountries)가 표시 조건을 만족할 때만 hidden 해제. if(마운트 게이트) 대신 className 토글이라 첫 페인트부터 무조건 숨김 → 깜빡임(떴다 사라짐) 원천 차단.",
-          "type": "basic",
-          "name": "Div",
-          "slot": "header_currency",
-          "props": { "className": "relative {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}" },
-          "responsive": {
-            "portable": {
-              "comment": "portable 에서는 이 조각이 관리자 템플릿 모바일 드로어(admin_drawer_prefs, 세로 블록) 안에 렌더된다. 펼친 목록이 컨테이너 폭을 채우도록 w-full. hidden 게이트 표현식은 그대로 유지(props 얕은 머지가 아니라 className 통째 교체이므로 표현식을 복제해야 함).",
-              "props": { "className": "relative w-full {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}" }
+            "comment": "관리자 헤더 표시 통화 복원 — 호스트 _admin_base 는 통화/이커머스를 모른다. 이커머스가 이 init 단계를 layout_extensions(init_actions 병합)로 기여한다. localStorage(g7_preferred_currency) → _global.preferredCurrency, 없으면 default_currency. 표시 전용(영속 저장 없음). 핸들러는 이커머스 모듈 소유.",
+            "handler": "sirsoft-ecommerce.initPreferredCurrency",
+            "params": {
+                "defaultCurrency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
             }
-          },
-          "children": [
-            {
-              "comment": "트리거 버튼 — 데스크톱은 absolute 드롭다운의 토글, portable(드로어 안)에서는 접기/펼치기 아코디언의 트리거. 두 경우 모두 같은 플래그(_local.showCurrencyDropdown)를 토글하므로 기본은 접힘이다. portable 에서는 드로어 폭을 꽉 채우는 행 형태(좌: '통화' 라벨, 우: 현재 통화·배송국가 요약 + chevron)로 바뀐다.",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors",
-                "aria-haspopup": "listbox",
-                "aria-expanded": "{{_local.showCurrencyDropdown ?? false}}",
-                "aria-label": "$t:sirsoft-ecommerce.common.currency_label"
-              },
-              "responsive": {
-                "portable": {
-                  "comment": "드로어 안에서는 언어 아코디언 트리거와 동일한 형태 — children 을 통째 교체해 '통화' 라벨 + 현재값 요약 + chevron 으로 구성한다(엔진은 responsive.children 을 완전 교체한다).",
-                  "props": {
-                    "className": "w-full flex items-center justify-between py-1 cursor-pointer",
-                    "aria-haspopup": "listbox",
-                    "aria-expanded": "{{_local.showCurrencyDropdown ?? false}}",
-                    "aria-label": "$t:sirsoft-ecommerce.common.currency_label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" },
-                      "text": "$t:sirsoft-ecommerce.common.currency_label"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300" },
-                      "children": [
-                        {
-                          "comment": "접힘 상태 요약 ① 현재 통화 코드",
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "font-medium" },
-                          "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
-                        },
-                        {
-                          "comment": "접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만).",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
-                          "props": { "className": "text-gray-500 dark:text-gray-400" },
-                          "text": "· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "chevron-down",
-                            "className": "{{_local.showCurrencyDropdown ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              },
-              "children": [
-                {
-                  "comment": "트리거 배송국가 코드 (해외배송 활성 시) — 관리자 헤더는 flag 없이 코드 병기",
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
-                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                  "text": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
-                },
-                { "type": "basic", "name": "Icon", "props": { "name": "coins", "className": "text-base" } },
-                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" },
-                { "type": "basic", "name": "Icon", "props": { "name": "chevron-down", "className": "text-xs" } }
-              ],
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": { "target": "local", "showCurrencyDropdown": "{{!_local.showCurrencyDropdown}}" }
-                }
-              ]
-            },
-            {
-              "comment": "드롭다운 메뉴 (통화 + 배송국가 2섹션). portable(0~1023px) 에서는 absolute 팝오버가 드로어 스크롤 경계에서 잘리므로 static 인라인 목록으로 전환한다. 표시 여부는 데스크톱과 동일하게 _local.showCurrencyDropdown 이 결정한다(responsive 에 if 를 두지 않으면 base if 를 그대로 상속) → 기본 접힘.",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_local.showCurrencyDropdown}}",
-              "props": {
-                "className": "absolute right-0 top-full mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden",
-                "role": "listbox"
-              },
-              "responsive": {
-                "portable": {
-                  "comment": "드로어 안에서는 패널이 곧 본문이므로 카드 크롬(테두리/배경/좌우 패딩)을 벗긴다. 크롬을 남기면 드로어 패딩 안에 패딩이 중첩되어 칩 가용폭이 199px 로 줄고, 같은 드로어의 언어 칩(224px)과 줄바꿈 위치가 어긋난다.",
-                  "props": {
-                    "className": "static w-full mt-2 bg-transparent border-0 shadow-none py-0",
-                    "role": "listbox"
-                  }
-                }
-              },
-              "children": [
-                {
-                  "comment": "섹션 라벨 '통화'. portable 에서는 아코디언 트리거 행이 이미 '통화' 라벨을 달고 있어 중복이므로 숨긴다(배송국가 라벨은 두 번째 섹션을 구분해야 하므로 유지).",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide" },
-                  "responsive": { "portable": { "if": "{{false}}" } },
-                  "text": "$t:sirsoft-ecommerce.common.currency_label"
-                },
-                {
-                  "comment": "옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록이라 기존 세로 목록 그대로. iteration 은 아래 Div 자신에 걸려 있어 항목 수만큼 복제되므로, 복제본들이 이 래퍼의 flex item 이 된다.",
-                  "type": "basic",
-                  "name": "Div",
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "flex flex-wrap gap-2 pb-1" }
-                    }
-                  },
-                  "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": { "source": "{{_global.availableCurrencies ?? []}}", "item_var": "currency" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
-                        "role": "option",
-                        "aria-selected": "{{_global.preferredCurrency === currency.code}}"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "props": {
-                            "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
-                            "role": "option",
-                            "aria-selected": "{{_global.preferredCurrency === currency.code}}"
-                          }
-                        }
-                      },
-                      "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-base" }, "text": "{{currency.flag}}" },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "flex-1" },
-                          "responsive": { "portable": { "props": { "className": "" } } },
-                          "children": [
-                            { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{currency.code}}" },
-                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400 ml-1" }, "text": "({{currency.symbol}})" }
-                          ]
-                        },
-                        {
-                          "comment": "portable(칩 나열)에서는 선택 상태가 배경/테두리 색으로 이미 표현되고 aria-selected 로도 전달되므로, 칩 폭을 아끼려 체크 아이콘을 숨긴다.",
-                          "type": "basic",
-                          "name": "Icon",
-                          "if": "{{_global.preferredCurrency === currency.code}}",
-                          "responsive": { "portable": { "if": "{{false}}" } },
-                          "props": { "name": "check", "className": "text-base" }
-                        }
-                      ],
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            { "handler": "setState", "params": { "target": "global", "preferredCurrency": "{{currency.code}}" } },
-                            { "handler": "saveToLocalStorage", "params": { "key": "g7_preferred_currency", "value": "{{currency.code}}" } },
-                            { "handler": "setState", "params": { "target": "local", "showCurrencyDropdown": false } }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-                  ]
-                },
-                {
-                  "comment": "── 구분선 ──",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
-                  "props": { "className": "my-1 border-t border-gray-200 dark:border-gray-700" }
-                },
-                {
-                  "comment": "── 배송국가 섹션 (표시 전용) ──",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide" },
-                      "responsive": { "portable": { "props": { "className": "py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" } } },
-                      "text": "$t:sirsoft-ecommerce.common.shipping_country_label"
-                    },
-                    {
-                      "comment": "옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록.",
-                      "type": "basic",
-                      "name": "Div",
-                      "responsive": {
-                        "portable": {
-                          "props": { "className": "flex flex-wrap gap-2 pb-1" }
-                        }
-                      },
-                      "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "iteration": { "source": "{{_global.availableShippingCountries ?? []}}", "item_var": "shipCountry" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Button",
-                          "props": {
-                            "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
-                            "role": "option",
-                            "aria-selected": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"
-                          },
-                          "responsive": {
-                            "portable": {
-                              "props": {
-                                "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
-                                "role": "option",
-                                "aria-selected": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"
-                              }
-                            }
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "flex-1 font-medium" },
-                              "responsive": { "portable": { "props": { "className": "font-medium" } } },
-                              "text": "{{shipCountry.name ?? shipCountry.code}}"
-                            },
-                            {
-                              "comment": "portable(칩 나열)에서는 선택 상태를 배경/테두리 색 + aria-selected 로 전달하므로 체크 아이콘을 숨긴다.",
-                              "type": "basic",
-                              "name": "Icon",
-                              "if": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}",
-                              "responsive": { "portable": { "if": "{{false}}" } },
-                              "props": { "name": "check", "className": "text-base" }
-                            }
-                          ],
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "sequence",
-                              "actions": [
-                                { "handler": "setState", "params": { "target": "global", "preferredShippingCountry": "{{shipCountry.code}}" } },
-                                { "handler": "saveToLocalStorage", "params": { "key": "g7_preferred_shipping_country", "value": "{{shipCountry.code}}" } },
-                                { "handler": "setState", "params": { "target": "local", "showCurrencyDropdown": false } }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "comment": "배경 클릭 시 닫기 — 데스크톱 드롭다운 전용. portable 은 항상 펼친 칩 목록이라 백드롭이 불필요(있으면 화면 전체를 덮어 클릭을 가로챈다).",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_local.showCurrencyDropdown}}",
-              "responsive": { "portable": { "if": "{{false}}" } },
-              "props": { "className": "fixed inset-0 z-40" },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": { "target": "local", "showCurrencyDropdown": false }
-                }
-              ]
+        },
+        {
+            "comment": "관리자 헤더 배송국가 복원 (표시 전용) — localStorage(g7_preferred_shipping_country) → _global.preferredShippingCountry, 없으면 default_country.",
+            "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
+            "params": {
+                "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
             }
-          ]
+        },
+        {
+            "comment": "셀렉터 통화 목록 파생 주입 (유저 헤더 미러). is_default 또는 환율>0 통화만. 셀렉터 if 게이트가 이 파생 상태(availableCurrencies)를 참조 → init_actions 실행 후에만 truthy → 첫 페인트 깜빡임(G7Config 원본 직접 참조 시 동기 truthy 로 잠깐 보였다 사라짐) 제거.",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "availableCurrencies": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0)}}"
+            }
+        },
+        {
+            "comment": "헤더 배송국가 셀렉터 목록 파생 주입 (유저 헤더 미러). 활성 국가만 {code, name(현지화)} 형태로. 해외배송 활성 게이트는 셀렉터 if 가 international_shipping_enabled 로 별도 체크(유저 헤더 동형). 셀렉터 if 게이트가 이 파생 상태(availableShippingCountries)를 참조. 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선.",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "availableShippingCountries": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}"
+            }
         }
-      ]
-    }
-  ],
-  "priority": 320
+    ],
+    "injections": [
+        {
+            "target_id": "header_currency_inject_anchor",
+            "position": "append_child",
+            "components": [
+                {
+                    "comment": "관리자 헤더 통화+배송국가 공용 셀렉터 (이커머스 주입, D4). slot='header_currency' 로 SlotContext 등록 → header_right 의 SlotContainer 가 떙겨 렌더. 헤더는 이 조각을 모름. 관리자 헤더 = 자기 화면 표시 전용(세션/localStorage). 영속 저장 없음(표시 전용). 표시 제어: 기본 hidden(display:none) → init_actions 가 채운 파생 상태(availableCurrencies/availableShippingCountries)가 표시 조건을 만족할 때만 hidden 해제. if(마운트 게이트) 대신 className 토글이라 첫 페인트부터 무조건 숨김 → 깜빡임(떴다 사라짐) 원천 차단.",
+                    "id": "ext_admin_header_currency_selector",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "header_currency",
+                    "responsive": {
+                        "portable": {
+                            "comment": "portable 에서는 이 조각이 관리자 템플릿 모바일 드로어(admin_drawer_prefs, 세로 블록) 안에 렌더된다. 펼친 목록이 컨테이너 폭을 채우도록 w-full. hidden 게이트 표현식은 그대로 유지(props 얕은 머지가 아니라 className 통째 교체이므로 표현식을 복제해야 함).",
+                            "props": {
+                                "className": "relative w-full {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "relative {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}"
+                    },
+                    "children": [
+                        {
+                            "comment": "트리거 버튼 — 데스크톱은 absolute 드롭다운의 토글, portable(드로어 안)에서는 접기/펼치기 아코디언의 트리거. 두 경우 모두 같은 플래그(_local.showCurrencyDropdown)를 토글하므로 기본은 접힘이다. portable 에서는 드로어 폭을 꽉 채우는 행 형태(좌: '통화' 라벨, 우: 현재 통화·배송국가 요약 + chevron)로 바뀐다.",
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "comment": "드로어 안에서는 언어 아코디언 트리거와 동일한 형태 — children 을 통째 교체해 '통화' 라벨 + 현재값 요약 + chevron 으로 구성한다(엔진은 responsive.children 을 완전 교체한다).",
+                                    "props": {
+                                        "className": "w-full flex items-center justify-between py-1 cursor-pointer",
+                                        "aria-haspopup": "listbox",
+                                        "aria-expanded": "{{_local.showCurrencyDropdown ?? false}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.common.currency_label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.common.currency_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "접힘 상태 요약 ① 현재 통화 코드",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium"
+                                                    },
+                                                    "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
+                                                },
+                                                {
+                                                    "comment": "접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만).",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "chevron-down",
+                                                        "className": "{{_local.showCurrencyDropdown ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "showCurrencyDropdown": "{{!_local.showCurrencyDropdown}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors",
+                                "aria-haspopup": "listbox",
+                                "aria-expanded": "{{_local.showCurrencyDropdown ?? false}}",
+                                "aria-label": "$t:sirsoft-ecommerce.common.currency_label"
+                            },
+                            "children": [
+                                {
+                                    "comment": "트리거 배송국가 코드 (해외배송 활성 시) — 관리자 헤더는 flag 없이 코드 병기",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "coins",
+                                        "className": "text-base"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium"
+                                    },
+                                    "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "chevron-down",
+                                        "className": "text-xs"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "드롭다운 메뉴 (통화 + 배송국가 2섹션). portable(0~1023px) 에서는 absolute 팝오버가 드로어 스크롤 경계에서 잘리므로 static 인라인 목록으로 전환한다. 표시 여부는 데스크톱과 동일하게 _local.showCurrencyDropdown 이 결정한다(responsive 에 if 를 두지 않으면 base if 를 그대로 상속) → 기본 접힘.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.showCurrencyDropdown}}",
+                            "responsive": {
+                                "portable": {
+                                    "comment": "드로어 안에서는 패널이 곧 본문이므로 카드 크롬(테두리/배경/좌우 패딩)을 벗긴다. 크롬을 남기면 드로어 패딩 안에 패딩이 중첩되어 칩 가용폭이 199px 로 줄고, 같은 드로어의 언어 칩(224px)과 줄바꿈 위치가 어긋난다.",
+                                    "props": {
+                                        "className": "static w-full mt-2 bg-transparent border-0 shadow-none py-0",
+                                        "role": "listbox"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "absolute right-0 top-full mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden",
+                                "role": "listbox"
+                            },
+                            "children": [
+                                {
+                                    "comment": "섹션 라벨 '통화'. portable 에서는 아코디언 트리거 행이 이미 '통화' 라벨을 달고 있어 중복이므로 숨긴다(배송국가 라벨은 두 번째 섹션을 구분해야 하므로 유지).",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "if": "{{false}}"
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.common.currency_label"
+                                },
+                                {
+                                    "comment": "옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록이라 기존 세로 목록 그대로. iteration 은 아래 Div 자신에 걸려 있어 항목 수만큼 복제되므로, 복제본들이 이 래퍼의 flex item 이 된다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "flex flex-wrap gap-2 pb-1"
+                                            }
+                                        }
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_global.availableCurrencies ?? []}}",
+                                                "item_var": "currency"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                                                                "role": "option",
+                                                                "aria-selected": "{{_global.preferredCurrency === currency.code}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "comment": "통화 선택 — 화면 상태와 브라우저 저장소 둘 다 바꾼다. `_global` 만 바꾸면 새로고침에\n                  되돌아가고, 저장소만 바꾸면 지금 화면이 안 바뀐다. 서버 호출은 없다(표시 전용).\n                  목록 닫기가 마지막인 것은 앞의 둘이 같은 클릭에서 먼저 반영되게 하기 위해서다.",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "preferredCurrency": "{{currency.code}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "saveToLocalStorage",
+                                                                    "params": {
+                                                                        "key": "g7_preferred_currency",
+                                                                        "value": "{{currency.code}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "showCurrencyDropdown": false
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                                                        "role": "option",
+                                                        "aria-selected": "{{_global.preferredCurrency === currency.code}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-base"
+                                                            },
+                                                            "text": "{{currency.flag}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": ""
+                                                                    }
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "className": "flex-1"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "font-medium"
+                                                                    },
+                                                                    "text": "{{currency.code}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                                    },
+                                                                    "text": "({{currency.symbol}})"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "portable(칩 나열)에서는 선택 상태가 배경/테두리 색으로 이미 표현되고 aria-selected 로도 전달되므로, 칩 폭을 아끼려 체크 아이콘을 숨긴다.",
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{_global.preferredCurrency === currency.code}}",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "if": "{{false}}"
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "name": "check",
+                                                                "className": "text-base"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "── 구분선 ──",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+                                    "props": {
+                                        "className": "my-1 border-t border-gray-200 dark:border-gray-700"
+                                    }
+                                },
+                                {
+                                    "comment": "── 배송국가 섹션 (표시 전용) ──",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.common.shipping_country_label"
+                                        },
+                                        {
+                                            "comment": "옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-2 pb-1"
+                                                    }
+                                                }
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{_global.availableShippingCountries ?? []}}",
+                                                        "item_var": "shipCountry"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                                                                        "role": "option",
+                                                                        "aria-selected": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "배송국가 선택 — 위 통화와 같은 두 자리(화면 상태 + 브라우저 저장소)만 건드린다.\n                    사용자 헤더 쪽은 여기서 장바구니·체크아웃을 다시 불러오지만, 관리자 화면에는\n                    다시 계산할 장바구니가 없어 그 호출이 없다.",
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "preferredShippingCountry": "{{shipCountry.code}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "saveToLocalStorage",
+                                                                            "params": {
+                                                                                "key": "g7_preferred_shipping_country",
+                                                                                "value": "{{shipCountry.code}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "showCurrencyDropdown": false
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                                                                "role": "option",
+                                                                "aria-selected": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "responsive": {
+                                                                        "portable": {
+                                                                            "props": {
+                                                                                "className": "font-medium"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "props": {
+                                                                        "className": "flex-1 font-medium"
+                                                                    },
+                                                                    "text": "{{shipCountry.name ?? shipCountry.code}}"
+                                                                },
+                                                                {
+                                                                    "comment": "portable(칩 나열)에서는 선택 상태를 배경/테두리 색 + aria-selected 로 전달하므로 체크 아이콘을 숨긴다.",
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "if": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}",
+                                                                    "responsive": {
+                                                                        "portable": {
+                                                                            "if": "{{false}}"
+                                                                        }
+                                                                    },
+                                                                    "props": {
+                                                                        "name": "check",
+                                                                        "className": "text-base"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "배경 클릭 시 닫기 — 데스크톱 드롭다운 전용. portable 은 항상 펼친 칩 목록이라 백드롭이 불필요(있으면 화면 전체를 덮어 클릭을 가로챈다).",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.showCurrencyDropdown}}",
+                            "responsive": {
+                                "portable": {
+                                    "if": "{{false}}"
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "showCurrencyDropdown": false
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "fixed inset-0 z-40"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

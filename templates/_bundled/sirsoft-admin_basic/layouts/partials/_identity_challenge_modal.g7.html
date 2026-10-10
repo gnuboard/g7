@@ -1,0 +1,107 @@
+<!-- 본인인증을 요구하는 응답(428)이 오면 인터셉터가 대신 띄우는 공통 창이다. 어느 화면에서
+  걸렸든 이 창 하나를 쓰고, 상태는 전부 `_global.identityChallenge` 한 네임스페이스에 모아
+  두어 인증을 건 쪽 → 이 창 → 결과 반환이 한 줄기로 이어진다.
+
+  화면은 인증 수단으로 갈린다 — 코어 메일이면 아래 코드 입력/링크 안내 UI 가 뜨고, 외부
+  인증 플러그인이면 확장 지점이 자기 UI 를 얹으면서 코어의 재전송·확인 버튼은 감춘다
+  (그쪽은 검증까지 플러그인이 책임진다). 닫기 버튼·ESC·바깥 클릭을 모두 막아 두었으므로
+  빠져나가는 길은 취소 버튼뿐이고, 그 길에서만 대기 중인 요청이 취소로 정리된다. -->
+<partial editor_label="$t:admin.modal_label.identity_challenge_modal" description="본인인증 공통 모달 (admin) — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일.">
+  <modal data-type="composite" data-ref="identity-challenge-modal" title="$t:admin.identity.challenge.title" size="sm" :showCloseButton="false" :closeOnBackdropClick="false" :closeOnEscape="false">
+    <!-- 코어 기본 OTP UI (text_code) — 코어 mail provider 또는 provider_id 미지정 케이스. 외부 provider 인 경우 아래 identity_provider_ui:provider 슬롯이 자기 UI 를 주입한다. -->
+    <div data-if="{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code' &amp;&amp; (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}" class="row-stack">
+      <p class="text-label">$t:admin.identity.challenge.code_subtitle</p>
+      <div data-if="{{_global.identityChallenge?.error}}" class="alert-danger" role="alert">
+        <span class="text-error-soft">{{_global.identityChallenge?.error ?? ''}}</span>
+      </div>
+      <input type="text" name="code" value="{{_global.identityChallenge?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" placeholder="$t:admin.identity.challenge.code_placeholder" :maxLength="10" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500">
+        <on event="onChange">
+          <!-- 코드를 고치기 시작하면 직전 실패 문구를 함께 지운다 — 이미 고친 값 위에 빨간 글씨가 남아 있지 않도록. -->
+          <set-state target="global" identityChallenge.code="{{$event.target.value}}" :identityChallenge.error="null"/>
+        </on>
+      </input>
+      <div class="flex-between text-xs" role="status" aria-live="polite">
+        <span data-if="{{(_global.identityChallenge?.remainingSeconds ?? 0) > 0}}" class="text-secondary">$t:admin.identity.challenge.remaining_time|minutes={{Math.floor((_global.identityChallenge?.remainingSeconds ?? 0) / 60)}}|seconds={{String((_global.identityChallenge?.remainingSeconds ?? 0) % 60).padStart(2, '0')}}</span>
+        <span data-if="{{(_global.identityChallenge?.remainingSeconds ?? 0) <= 0 &amp;&amp; _global.identityChallenge?.expires_at}}" class="text-red-600 dark:text-red-400">$t:admin.identity.challenge.expired</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:admin.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 0) - (_global.identityChallenge?.attempts ?? 0))}}</span>
+      </div>
+    </div>
+    <!-- 코어 기본 UI (link) — 코어 mail provider 또는 provider_id 미지정 케이스의 link 렌더힌트 -->
+    <div data-if="{{_global.identityChallenge?.render_hint === 'link' &amp;&amp; (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}" class="space-y-4 text-center py-2">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full">
+        <icon name="fas fa-envelope" class="text-2xl text-blue-600 dark:text-blue-400"/>
+      </div>
+      <p class="text-label">$t:admin.identity.challenge.link_subtitle</p>
+      <p class="text-tertiary">$t:admin.identity.challenge.check_spam</p>
+    </div>
+    <!-- 외부 IDV 플러그인 슬롯 — inicis/KCP/PortOne 등이 자기 provider_id 매칭 시 UI 주입 (mode: append). 코어 mail provider 또는 미지정 케이스에서는 마운트되지 않음. -->
+    <extension-point name="identity_provider_ui:provider" data-ref="identity_provider_ui_provider" data-if="{{_global.identityChallenge?.provider_id &amp;&amp; _global.identityChallenge?.provider_id !== 'g7:core.mail'}}">
+      <default/>
+    </extension-point>
+    <!-- 공통 액션 영역 — 취소 / 재전송 / 확인 -->
+    <div class="flex-between gap-2 mt-6 pt-4">
+      <button type="button" class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+        <on type="click">
+          <!-- 인증을 포기하고 나가는 유일한 길 — 창을 닫기 전에 서버 쪽 진행분을 정리하고, 인증을 기다리던 요청에는 「취소됨」을 돌려준다. -->
+          <sequence>
+            <!-- 서버 audit trail 정합 — challenge 발급된 경우에만 cancel API 호출, 실패해도 모달 닫기는 진행 -->
+            <api-call target="/api/identity/challenges/{{_global.identityChallenge.challenge_id}}/cancel" if="{{_global.identityChallenge?.challenge_id}}" method="POST">
+              <fail>
+                <suppress/>
+              </fail>
+            </api-call>
+            <resolve-identity-challenge result="cancelled"/>
+            <close-modal target="identity-challenge-modal"/>
+          </sequence>
+        </on>
+        $t:common.cancel
+      </button>
+      <div class="flex-center gap-2">
+        <!-- 재전송 — 코어 mail/SMS 등 코드/링크 발송형 provider 에서만 노출. 외부 plugin (팝업/SDK 호출형) 은 재전송 개념 없음. 가드 패턴: provider_id 미지정 또는 코어 mail 인 경우만 노출. -->
+        <button data-if="{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}" type="button" disabled="{{(_global.identityChallenge?.resendCooldown ?? 0) > 0 || (_global.identityChallenge?.resending ?? false) || (_global.identityChallenge?.verifying ?? false)}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :identityChallenge.resending="true" :identityChallenge.resendCooldown="30" :identityChallenge.error="null" identityChallenge.code=""/>
+              <api-call target="/api/identity/challenges" method="POST">
+                <success>
+                  <set-state target="global" :identityChallenge.resending="false" identityChallenge.challenge_id="{{response.data.id}}" identityChallenge.expires_at="{{response.data.expires_at}}" identityChallenge.render_hint="{{response.data.render_hint ?? _global.identityChallenge?.render_hint ?? 'text_code'}}" :identityChallenge.attempts="0" identityChallenge.code=""/>
+                  <action handler="rememberIdentityClaim" challenge_id="{{response.data.id ?? ''}}" claim_secret="{{response.data.claim_secret ?? ''}}"/>
+                  <toast type="success" message="$t:admin.identity.challenge.resend_success"/>
+                </success>
+                <fail>
+                  <set-state target="global" :identityChallenge.resending="false" identityChallenge.error="{{error.message ?? '$t:admin.identity.challenge.error_generic'}}" :identityChallenge.resendCooldown="0"/>
+                </fail>
+                <body purpose="{{_global.identityChallenge?.purpose ?? 'sensitive_action'}}" provider_id="{{_global.identityChallenge?.provider_id ?? null}}" policy_key="{{_global.identityChallenge?.policy_key ?? null}}" target="{{_global.identityChallenge?.target ?? null}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.identityChallenge?.resending ?? false}}" name="fas fa-spinner fa-spin" class="text-sm"/>
+          <span data-if="{{_global.identityChallenge?.resending ?? false}}">$t:common.processing</span>
+          <span data-if="{{!(_global.identityChallenge?.resending ?? false) &amp;&amp; (_global.identityChallenge?.resendCooldown ?? 0) > 0}}">$t:admin.identity.challenge.resend_cooldown|seconds={{_global.identityChallenge?.resendCooldown ?? 0}}</span>
+          <span data-if="{{!(_global.identityChallenge?.resending ?? false) &amp;&amp; (_global.identityChallenge?.resendCooldown ?? 0) <= 0}}">{{_global.identityChallenge?.render_hint === 'link' ? $t:admin.identity.challenge.resend_link : $t:admin.identity.challenge.resend}}</span>
+        </button>
+        <!-- 확인 (text_code 전용) — 외부 plugin 흐름은 plugin 이 자기 verify 책임지므로 코어 확인 버튼 미노출. 가드 패턴: provider_id 미지정 또는 코어 mail 인 경우만 노출. maxAttempts=0 (무제한) 케이스 정합화. -->
+        <button data-if="{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code' &amp;&amp; (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors" disabled="{{!_global.identityChallenge?.code || (_global.identityChallenge?.code ?? '').length < 4 || (_global.identityChallenge?.remainingSeconds ?? 0) <= 0 || ((_global.identityChallenge?.maxAttempts ?? 0) > 0 &amp;&amp; (_global.identityChallenge?.attempts ?? 0) >= (_global.identityChallenge?.maxAttempts ?? 0)) || (_global.identityChallenge?.verifying ?? false) || (_global.identityChallenge?.resending ?? false)}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :identityChallenge.verifying="true" :identityChallenge.error="null"/>
+              <api-call target="/api/identity/challenges/{{_global.identityChallenge?.challenge_id}}/verify" method="POST">
+                <success>
+                  <set-state target="global" :identityChallenge.verifying="false"/>
+                  <resolve-identity-challenge result="verified" token="{{response.data.verification_token}}"/>
+                  <close-modal target="identity-challenge-modal"/>
+                </success>
+                <fail>
+                  <set-state target="global" :identityChallenge.verifying="false" identityChallenge.error="{{error.message ?? '$t:admin.identity.challenge.error_generic'}}" identityChallenge.attempts="{{(_global.identityChallenge?.attempts ?? 0) + 1}}"/>
+                </fail>
+                <body code="{{_global.identityChallenge?.code ?? ''}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.identityChallenge?.verifying ?? false}}" name="fas fa-spinner fa-spin" class="text-sm"/>
+          <span>{{(_global.identityChallenge?.verifying ?? false) ? $t:common.processing : $t:admin.identity.challenge.verify}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

@@ -1,214 +1,216 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "스케줄 복제 확인 모달",
-    "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_duplicate_modal"
-  },
-  "id": "schedule_duplicate_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.schedules.modals.duplicate_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-gray-700 dark:text-gray-300"
-      },
-      "text": "$t:admin.schedules.modals.duplicate_confirm"
+    "comment": "예약 작업을 본떠 하나 더 만드는 창. 비슷한 작업을 여러 개 두는 일이 잦아 처음부터 채우는 대신\n  기존 것을 복사하는 길을 뒀다.\n  베낀 것이 **곧바로 돌지는 않는다** — 이름과 켜짐 여부를 서버가 어떻게 정하는지는 아래 안내\n  문구가 알려 준다. 복사된 뒤에는 목록에서 찾아 고쳐 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "스케줄 복제 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_duplicate_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2"
-      },
-      "children": [
+    "id": "schedule_duplicate_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.schedules.modals.duplicate_title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "$t:admin.schedules.form.name:"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-primary font-medium"
-              },
-              "text": "{{_global.selectedSchedule?.name}}"
-            }
-          ]
+            "text": "$t:admin.schedules.modals.duplicate_confirm"
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "$t:admin.schedules.form.type:"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-primary"
-              },
-              "text": "{{_global.selectedSchedule?.type_label}}"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "mt-4 text-label-subtle"
-      },
-      "text": "$t:admin.schedules.modals.duplicate_note"
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isDuplicating}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal",
-              "target": "schedule_duplicate_modal"
-            }
-          ],
-          "text": "$t:common.cancel"
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isDuplicating}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isDuplicating": true
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:admin.schedules.form.name:"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary font-medium"
+                            },
+                            "text": "{{_global.selectedSchedule?.name}}"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/duplicate",
-                  "params": {
-                    "method": "POST"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDuplicating": false
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.schedules.messages.duplicate_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "schedules"
-                      }
-                    },
-                    {
-                      "handler": "closeModal",
-                      "target": "schedule_duplicate_modal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isDuplicating": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message ?? '$t:admin.schedules.errors.duplicate_failed'}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:admin.schedules.form.type:"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary"
+                            },
+                            "text": "{{_global.selectedSchedule?.type_label}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isDuplicating}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "mt-4 text-label-subtle"
             },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{!_global.isDuplicating}}",
-              "props": {
-                "name": "copy",
-                "className": "w-4 h-4"
-              }
+            "text": "$t:admin.schedules.modals.duplicate_note"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.actions.duplicate'}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "schedule_duplicate_modal"
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isDuplicating}}"
+                    },
+                    "text": "$t:common.cancel"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "삭제 창과 달리 고른 작업을 비우지 않는다 — 베낀 뒤에도 원본이 목록에 그대로 있고, 이어서 실행이나 이력 창을 열 수 있다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isDuplicating": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/duplicate",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDuplicating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.schedules.messages.duplicate_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "schedules"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "schedule_duplicate_modal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDuplicating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.schedules.errors.duplicate_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isDuplicating}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isDuplicating}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{!_global.isDuplicating}}",
+                            "props": {
+                                "name": "copy",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.actions.duplicate'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -31,6 +31,9 @@ class GuestOrderAuthService
     /** 토큰 유효 시간 (분) */
     public const TOKEN_TTL_MINUTES = 30;
 
+    /**
+     * @param  OrderRepositoryInterface  $orderRepository  주문 저장소
+     */
     public function __construct(
         private OrderRepositoryInterface $orderRepository
     ) {}
@@ -89,6 +92,27 @@ class GuestOrderAuthService
         return [
             'order' => $order,
             'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ];
+    }
+
+    /**
+     * 방금 생성된 비회원 주문에 조회 토큰을 발급합니다 (주문 생성 응답 전용).
+     *
+     * 결제창 닫힘 보고처럼 결제 도중의 소유자 확인은 주문을 실제로 만든 브라우저만 가진
+     * 비밀이어야 한다. 결제 시작 시점의 게이트는 주문자 연락처(PII) 대조라 그 뒤에 발급하면
+     * 연락처를 아는 제3자도 토큰을 얻을 수 있으므로, 주문 생성 응답에서만 발급한다.
+     * 호출 측이 이 주문의 생성자임을 보장해야 한다 — 임의 주문번호로 호출하는 경로에 쓰지 않는다.
+     *
+     * @param  Order  $order  방금 생성된 비회원 주문
+     * @return array{token: string, expires_at: string} 발급 토큰과 만료시각(ISO 8601)
+     */
+    public function issueForOrder(Order $order): array
+    {
+        $expiresAt = Carbon::now()->addMinutes(self::TOKEN_TTL_MINUTES);
+
+        return [
+            'token' => $this->issueToken($order, $expiresAt),
             'expires_at' => $expiresAt->toIso8601String(),
         ];
     }
@@ -242,6 +266,7 @@ class GuestOrderAuthService
      * @param  string  $reason  실패 사유 코드 (mismatch)
      * @param  string  $orderNumber  주문번호
      * @param  string|null  $clientIp  요청 IP
+     * @return void
      */
     private function logFailure(string $reason, string $orderNumber, ?string $clientIp): void
     {

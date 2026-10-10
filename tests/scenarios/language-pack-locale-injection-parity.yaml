@@ -27,14 +27,29 @@ effects:
   - seeder_filter_injects_active_pack_locales
   - seeder_filter_injects_ja_for_real_seeder_payload
   - reset_default_data_includes_lang_pack_locales
+  - reset_default_data_channel_extension_copy_keeps_lang_pack_locales
+  - seeder_filter_passthrough_without_active_pack
   - identity_reset_default_preserves_lang_pack_locales
   - upgrade_resync_restores_wiped_pack_locales
   - upgrade_resync_restores_wiped_identity_locales
+  # 활성화·비활성화 훅 리스너(SyncDatabaseTranslations) — upgrade_resync 가 재발화하는 병합 경로 자체
+  - activation_adds_absent_pack_locale
+  - activation_preserves_user_overridden_locale_field
+  - activation_overwrites_locale_without_overrides
+  - deactivation_strips_pack_locale
+  - deactivation_preserves_user_overridden_locale_field
+  - activation_merges_identity_notification_locale
+  - deactivation_strips_identity_notification_locale
+  # 모듈·플러그인 범위 팩 비활성화가 확장 소유 권한·역할·메뉴·알림에 주입한 로케일까지 걷는다 (2026-10-08 g7_2 실측 후속)
+  - deactivation_strips_extension_pack_locale_from_owned_rows
+  - reactivation_restores_extension_pack_locale
+  - deactivation_keeps_bundled_with_extension_locale
 
 test_files:
   - tests/Feature/LanguagePack/NotificationSeedInjectionTest.php
   - tests/Feature/LanguagePack/IdentitySeedInjectionTest.php
   - tests/Feature/Upgrades/Upgrade709LangPackResyncTest.php
+  - tests/Unit/Listeners/LanguagePack/SyncDatabaseTranslationsTest.php
 
 validation:
   automated: "php artisan test --filter='NotificationSeedInjectionTest|IdentitySeedInjectionTest|Upgrade709LangPackResyncTest|SyncDatabaseTranslationsTest'"

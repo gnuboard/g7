@@ -236,4 +236,27 @@ class HasMultiCurrencyPricesTest extends ModuleTestCase
         // buildMultiCurrencyPrices에서 round()로 제거됨
         $this->assertEqualsWithDelta(45.05, $rounded, 0.0001);
     }
+
+    /**
+     * 절사 설정은 값을 만든 그 자리에서 지켜져야 한다.
+     *
+     * `buildMultiCurrencyPrices()` 는 절사 뒤 `round($x, $decimal_places)` 로 잔차를 지우지만,
+     * 그 정리 단계 없이 `applyRounding()` 만 부르는 호출부(주문·클레임·결제 금액)가 있었다.
+     * 되곱하기의 잔차는 `applyRounding()` 안에서 지워야 어느 호출부에서도 새지 않는다.
+     * 위 테스트는 오차 허용 단언이라 표현이 어긋나는 이 결함을 통과시킨다.
+     */
+    #[Test]
+    public function apply_rounding_은_설정_단위의_배수를_그대로_돌려준다(): void
+    {
+        $instance = $this->createTraitInstance();
+
+        $this->assertSame(45.05, $instance->exposeApplyRounding(45.0512, '0.01', 'round'));
+        $this->assertSame(1.88, $instance->exposeApplyRounding(1.875, '0.01', 'round'));
+        $this->assertSame(45.05, $instance->exposeApplyRounding(45.0599, '0.01', 'floor'));
+        $this->assertSame(45.06, $instance->exposeApplyRounding(45.0501, '0.01', 'ceil'));
+
+        // 정수 단위는 잔차가 없던 자리다 — 정규화가 값을 바꾸지 않아야 한다
+        $this->assertSame(3833.0, $instance->exposeApplyRounding(3833.295, '1', 'floor'));
+        $this->assertSame(1.5, $instance->exposeApplyRounding(1.7, '0.5', 'floor'));
+    }
 }

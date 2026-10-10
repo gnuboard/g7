@@ -1,0 +1,70 @@
+feature: engine_computed_scope
+
+description: |
+  템플릿 엔진 표현식·computed 평가 성능 개선 (공개 이슈 140, engine-v1.74.0).
+
+  레이아웃 `computed` 가 렌더되는 모든 DynamicRenderer 인스턴스마다, 재렌더마다 전량 재평가되고,
+  표현식 1회 평가가 정규식 전처리·변수 추출·토큰화·파싱을 매번 처음부터 했다. 둘이 곱해져 제보 규모
+  화면에서 키 입력마다 메인스레드가 0.5초 안팎 멈췄다.
+
+  핵심 동작:
+    - 전처리·변수 추출·AST 는 입력 문자열만으로 정해지므로 모듈 스코프 캐시(값은 담지 않음)
+    - computed 는 상태 스코프 단위로 1회 계산하고, 입력이 같은 자식은 부모 값을 물려받는다.
+      경계(루트급·iteration 항목·격리 상태·$parent·extensionPoint·미적용 _localInit·편집 모드)는 계산
+    - 뒤쪽 키·자기·대상 불명 참조가 있는 정의는 물려받기를 끄고 종전처럼 전 렌더러가 계산(D12)
+    - computed 계산 지점(렌더·액션 sequence·라우트 진입·편집기 미리보기)이 공용 평가기 하나를 쓴다 —
+      정의 순서 참조, 앞뒤 공백 무시, 파이프·$switch·리터럴 규칙 통일
+    - 안전 스위치 G7Core.engineFlags 로 기능별로 끄면 수정 전 계산 경로
+
+axes:
+  layer: [expression_cache, ast_cache, engine_flags, computed_evaluator, render_scope, action_sequence, route_entry, translation, structure, browser]
+
+effects:
+  - compile_cache_reuses_preprocess_across_instances
+  - compile_cache_holds_no_values
+  - ast_cache_reuses_parse_without_value_caching
+  - ast_cache_rethrows_same_error_every_hit
+  - security_blocks_survive_cache_hits
+  - ast_is_deep_frozen
+  - caches_are_bounded_fifo
+  - engine_flags_default_and_config_merge
+  - engine_flags_off_restores_prior_path
+  - computed_definition_order_reference
+  - computed_later_key_reads_previous
+  - computed_switch_pipe_literal_trim_rules
+  - computed_failure_policy_per_site
+  - computed_inheritance_disabled_by_back_reference
+  - computed_evaluated_once_per_scope
+  - computed_boundaries_recompute
+  - computed_shadow_verification_reports_mismatch
+  - late_context_keys_locked_to_token_rule
+  - sequence_computed_keeps_switch_and_literal_keys
+  - route_entry_computed_uses_shared_evaluator
+  - route_entry_computed_security_blocked
+  - replace_params_regex_reused_behavior_preserved
+  - pipe_branch_scan_covers_computed_evaluator
+  - browser_computed_latest_across_parent_child_item_modal
+  - computed_expression_and_switch_values
+  - computed_namespace_and_alias_read
+  - computed_prop_path_skips_value_cache
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ExpressionCompileCache.test.ts
+  - resources/js/core/template-engine/__tests__/SafeExpressionEvaluator.astCache.test.ts
+  - resources/js/core/template-engine/__tests__/EngineFlags.test.ts
+  - resources/js/core/template-engine/__tests__/ComputedEvaluator.test.ts
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.computedScope.test.tsx
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.computedLateKeys.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.sequenceComputed.test.ts
+  - resources/js/core/__tests__/TemplateApp.calculateComputed.test.ts
+  - resources/js/core/template-engine/__tests__/TranslationEngine.replaceParams.cache.test.ts
+  - resources/js/core/template-engine/__tests__/pipeBranchParity.test.ts
+  - resources/js/core/template-engine/__tests__/computed.test.ts
+  - tests/Playwright/specs/engine-computed-scope.spec.ts
+
+notes: |
+  단위 테스트는 렌더 사이클(React 커밋·useLayoutEffect 클리어·브라우저 스케줄링)을 모사하지 못하므로
+  잠금 역할만 한다. 실제 판정(성능 합격선·그림자 검증 불일치 0·표시값 전후 동일)은 브라우저 실측이다.
+
+  파이프·$switch·iteration 변수·$parent computed 는 번들 레이아웃에 사용처가 없어, 미리보기 API 로 등록한
+  합성 변형 레이아웃과 E2E(`engine-computed-scope.spec.ts`)로만 브라우저에서 검증된다.

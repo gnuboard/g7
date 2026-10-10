@@ -1,0 +1,72 @@
+# audit:allow test-scenario-coverage reason: 기존 API 의 계약을 사후 등재한 매니페스트. 축 조합 전수가 아니라 이미 통과 중인 회귀 테스트 14건의 소유권을 명시하는 것이 목적이다.
+
+feature: 플러그인 설정 API (조회 · 저장 · 레이아웃)
+
+description: |
+  `/api/admin/plugins/{identifier}/settings` 계열 3개 엔드포인트의 계약을 고정한다.
+
+  배경:
+    - 이 테스트 파일은 매니페스트 없이 존재해 `test-scenario-reverse-mapping` 이 상시 red 였다.
+      2026-09-15 플러그인 설정 레이아웃 소스 규약 수렴 작업에서 함께 등재한다.
+    - 레이아웃 엔드포인트가 돌려주는 구조는 `version` · `meta` · `slots` 다. 종전 테스트는
+      존재한 적 없는 `schema` 키를 단언해 red 였고, 번들 플러그인 12개 전수 실측으로
+      그 키가 어디에도 없음을 확인한 뒤 실제 계약으로 정정했다.
+    - 레이아웃 소스 해석(`.g7.html` 우선 → 짝 `.json`)은 별도 축이라
+      `tests/scenarios/layout-markup.yaml` 이 소유한다. 여기서는 API 표면만 본다.
+
+axes:
+  endpoint: [show, update, layout]
+  authentication: [none, authenticated]
+  permission: [granted, denied]
+  plugin_existence: [installed, nonexistent]
+  payload_scope: [within_schema, outside_schema, out_of_range]
+
+exclusions:
+  - { authentication: none, permission: granted, reason: "비인증은 권한 판정 이전에 401 로 끊긴다" }
+  - { endpoint: show, payload_scope: outside_schema, reason: "조회는 본문을 받지 않는다" }
+  - { endpoint: layout, payload_scope: outside_schema, reason: "레이아웃 조회는 본문을 받지 않는다" }
+  - { plugin_existence: nonexistent, payload_scope: outside_schema, reason: "플러그인 부재가 먼저 404 로 끊긴다" }
+  - { endpoint: show, payload_scope: out_of_range, reason: "조회는 본문을 받지 않는다" }
+  - { endpoint: layout, payload_scope: out_of_range, reason: "레이아웃 조회는 본문을 받지 않는다" }
+  - { plugin_existence: nonexistent, payload_scope: out_of_range, reason: "플러그인 부재가 먼저 404 로 끊긴다" }
+
+effects:
+  # 7.1.0 abilities 게이트(G19) — 화면이 읽기 전용을 정할 저장 권한, 저장 본문의 권한 값은 버린다
+  - show_response_includes_abilities_can_update_true
+  - show_response_includes_abilities_can_update_false
+  - update_discards_abilities_key
+  # 인증·권한 가드 — 세 엔드포인트가 같은 순서로 끊는다
+  - show_without_authentication_returns_401
+  - show_without_permission_returns_403
+  - update_without_authentication_returns_401
+  - update_without_permission_returns_403
+  - layout_without_authentication_returns_401
+
+  # 플러그인 식별자 해석
+  - show_for_nonexistent_plugin_returns_404
+  - update_for_nonexistent_plugin_returns_error
+  - layout_for_nonexistent_plugin_returns_404
+
+  # 정상 경로
+  - show_returns_settings_for_installed_plugin
+  - update_saves_settings_for_installed_plugin
+  - layout_returns_layout_for_installed_plugin
+
+  # 저장 경계 — 스키마 밖 필드는 반영하지 않는다
+  - update_ignores_fields_outside_settings_schema
+  # 저장 경계 — 스키마가 정한 숫자 범위(min·max) 밖이면 422
+  - update_rejects_out_of_range_plugin_setting
+
+  # 응답 구조 계약
+  - show_response_has_documented_structure
+  - update_response_includes_updated_settings
+
+test_files:
+  - tests/Feature/Api/Admin/PluginSettingsControllerTest.php
+
+validation:
+  audit_rule: test-scenario-reverse-mapping
+  note: |
+    각 테스트의 @scenario/@effects 마킹이 위 축·effects 와 1:1 로 연결된다.
+    레이아웃 소스 우선순위(마크업 우선)의 회귀 가드는 이 파일이 아니라
+    tests/Unit/Support/LayoutMarkup/PluginSettingsLayoutSourceTest.php 에 있다.

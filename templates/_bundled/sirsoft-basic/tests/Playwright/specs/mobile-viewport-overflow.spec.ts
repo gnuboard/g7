@@ -72,7 +72,25 @@ async function overflowingElements(page: Page): Promise<Array<{ id: string; cls:
   });
 }
 
+/**
+ * 햄버거 단추로 드로어를 연다 — 메뉴 단추의 aria-expanded 가 true 가 될 때까지 다시 누른다.
+ *
+ * `page.goto` 는 문서 load 에서 돌아오므로, 엔진이 단추 핸들러를 붙이기 전에 누른 클릭은 아무 일도 하지 않는다.
+ * 그러면 드로어는 화면 밖에 그대로 있고 다음 단계의 드로어 안 단추 클릭이 「element is outside of the viewport」로
+ * 30초를 다 쓴다(파일 전체 실행에서 앞 테스트 뒤에 붙을 때 재현, 단독 실행은 통과).
+ */
+async function openDrawer(page: Page): Promise<void> {
+  const toggle = page.locator('#mobile_menu_toggle');
+  await expect(toggle).toBeVisible({ timeout: 15_000 });
+  await expect(async () => {
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true', { timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+}
+
 test.describe('모바일 헤더/드로어 (390px)', () => {
+  // @scenario case=home_no_overflow
+  // @effects document_no_horizontal_overflow
   test('@smoke 홈에서 문서가 가로로 넘치지 않는다', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
@@ -82,6 +100,8 @@ test.describe('모바일 헤더/드로어 (390px)', () => {
     expect(await overflowingElements(page)).toEqual([]);
   });
 
+  // @scenario case=header_right_group_slim
+  // @effects header_has_no_language_currency_selector
   test('헤더 우측 그룹에 언어/통화 셀렉터가 없다', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
@@ -95,10 +115,12 @@ test.describe('모바일 헤더/드로어 (390px)', () => {
    * 드로어 선호설정은 언어 / 통화·배송국가 두 개의 독립 아코디언이며 기본은 접힘이다.
    * 전부 펼쳐 두면 드로어가 세로로 길어져 정작 메뉴가 스크롤 밖으로 밀린다.
    */
+  // @scenario case=drawer_prefs_collapsed
+  // @effects drawer_prefs_collapsed_with_summary
   test('드로어 선호설정은 기본 접힘이고 트리거에 현재값을 요약 표기한다 (비회원 포함)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.locator('#mobile_menu_toggle').click();
+    await openDrawer(page);
 
     const prefs = page.locator('#mobile_drawer_prefs');
     await expect(prefs).toBeVisible();
@@ -135,10 +157,12 @@ test.describe('모바일 헤더/드로어 (390px)', () => {
     expect(await docOverflow(page)).toBe(0);
   });
 
+  // @scenario case=drawer_prefs_expanded
+  // @effects chips_inline_within_viewport
   test('아코디언을 펼치면 언어/통화 칩이 가로로 나열되고 뷰포트를 넘지 않는다', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.locator('#mobile_menu_toggle').click();
+    await openDrawer(page);
 
     const prefs = page.locator('#mobile_drawer_prefs');
     await expect(prefs).toBeVisible();
@@ -173,10 +197,12 @@ test.describe('모바일 헤더/드로어 (390px)', () => {
     expect(await docOverflow(page)).toBe(0);
   });
 
+  // @scenario case=drawer_accordions_independent
+  // @effects accordions_toggle_independently
   test('언어와 통화 아코디언은 독립적으로 개폐된다', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.locator('#mobile_menu_toggle').click();
+    await openDrawer(page);
 
     const langToggle = page.locator('#mobile_drawer_language_toggle');
     const currencyRoot = page.locator('#mobile_drawer_currency_wrap [id^="ext_header_currency_selector"]');
@@ -194,6 +220,8 @@ test.describe('모바일 헤더/드로어 (390px)', () => {
     await expect(currencyRoot.locator('[role="listbox"]')).toHaveCount(1);
   });
 
+  // @scenario case=narrow_320_menu_reachable
+  // @effects menu_button_in_viewport
   test('320px 에서도 햄버거 버튼을 누를 수 있다 (내비게이션 접근성)', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 844 });
     await page.goto('/');
@@ -212,6 +240,8 @@ test.describe('모바일 헤더/드로어 (390px)', () => {
 });
 
 test.describe('데스크톱 회귀 방지 (1280px)', () => {
+  // @scenario case=desktop_currency_dropdown
+  // @effects desktop_currency_dropdown_absolute
   test('헤더 통화 셀렉터는 여전히 absolute 드롭다운이다', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/');
@@ -236,6 +266,8 @@ test.describe('데스크톱 회귀 방지 (1280px)', () => {
 });
 
 test.describe('비회원 폼/칩 (390px)', () => {
+  // @scenario case=guest_write_form_stacked
+  // @effects guest_fields_stack_vertically
   test('게시판 글쓰기폼의 이름/비밀번호가 세로로 쌓인다', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/board/free/write');
@@ -249,6 +281,8 @@ test.describe('비회원 폼/칩 (390px)', () => {
     expect(await docOverflow(page)).toBe(0);
   });
 
+  // @scenario case=coupon_chip_single_line
+  // @effects coupon_chip_label_nowrap
   test('상품 상세의 쿠폰 칩 라벨이 한 줄을 유지한다', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/shop/products/105');

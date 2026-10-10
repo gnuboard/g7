@@ -1,0 +1,30 @@
+feature: 마이페이지 주문 상세 › 나이스페이먼츠 영수증 링크를 플러그인 API 주소로 그린다
+
+description: |
+  주문 상세의 결제 정보 카드에 붙는 나이스페이먼츠 영수증 링크는 결제사 주소(npg.nicepay.co.kr)를 조각에 글자 그대로
+  적고 있었다. 그 조각을 레이아웃 편집기에서 저장하면 저장 게이트(외부 URL 금지)가 거절하고, 번들 레이아웃
+  전수 검사도 이 조각에서 실패했다(develop-7.1.0 17차 병합에서 드러남). 조각은 이제 마운트 때 플러그인의
+  영수증 조회 API 를 불러 `payment_receipt_url` 를 로컬 상태에 담고 그 값으로 링크를 그린다.
+  회원은 토큰(auth_mode=optional), 비회원은 조회 토큰 헤더(X-Guest-Order-Token)로 같은 API 를 부른다 —
+  회원 주문 상세와 비회원 주문 상세가 같은 조각을 쓰기 때문이다. 주소를 받지 못하면 링크를 그리지 않는다.
+  이 카드는 주소에 주문번호가 없는 신청서 상세(회원·비회원)에서도 쓰이므로 주문번호는 주소가 아니라 불러온
+  주문(order.data.order_number)에서 읽는다.
+
+  E2E 는 두지 않는다 — 로컬·CI 에 나이스페이먼츠 결제 완료 주문 픽스처가 없어 화면까지 재현하지 못한다.
+  대신 설치되는 조각 원본(JSON)과 저작본(.g7.html)을 엔진 바인딩에 넣어 링크 주소·표시 여부를 단언하고,
+  API 응답은 플러그인 PHPUnit 이 잠근다.
+
+axes:
+  viewer: [member, guest]
+  receipt: [issued, missing]
+
+effects:
+  - receipt_link_uses_api_url
+  - guest_token_header_sent
+  - link_hidden_without_url
+  - no_external_url_literal_in_fragment
+  - order_number_from_loaded_order
+  - response_uses_common_envelope
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/mypageReceiptLinkFromApi.test.ts

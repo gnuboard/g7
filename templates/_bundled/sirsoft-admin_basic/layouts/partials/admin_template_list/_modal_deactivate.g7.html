@@ -1,0 +1,48 @@
+<!-- 템플릿 비활성 확인 창 — 활성 창과 짝이다. 모듈·플러그인은 스위치 하나가 양방향을 겸하지만
+  템플릿은 결과가 서로 달라(켜기=교체 / 끄기=해제) 창을 둘로 갈라 두었다.
+  취소는 활성 창과 같이 카드 목록을 다시 마운트해 스위치 모양만 되돌린다. -->
+<partial description="템플릿 비활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_deactivate_modal">
+  <modal data-type="composite" data-ref="template_deactivate_modal" title="$t:admin.templates.modals.deactivate_title" size="sm">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.deactivate_confirm|name={{_global.selectedTemplate.name}}</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isTemplateDeactivating}}">
+        <on type="click">
+          <!-- 취소 — 카드 목록을 다시 마운트해 눌린 스위치 모양을 되돌린다(서버에 다시 묻지 않는다). -->
+          <sequence>
+            <close-modal/>
+            <remount componentId="template_card_grid"/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeactivating}}">
+        <on type="click">
+          <!-- 비활성 실행 — 목록과 확장 번들을 함께 갱신한다.
+               활성 창과 달리 화면을 다시 읽지 않는다(끄는 쪽은 지금 보는 화면을 갈아치우지 않는다). -->
+          <sequence>
+            <set-state target="global" :isTemplateDeactivating="true"/>
+            <api-call :auth_required="true" target="/api/admin/templates/deactivate" method="POST">
+              <success>
+                <set-state target="global" :isTemplateDeactivating="false"/>
+                <toast type="success" message="$t:admin.templates.deactivate_success"/>
+                <refetch-data-source dataSourceId="templates"/>
+                <reload-extensions/>
+                <close-modal/>
+                <set-state target="global" :selectedTemplate="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :isTemplateDeactivating="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body template_name="{{_global.selectedTemplate.identifier}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isTemplateDeactivating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isTemplateDeactivating ? '$t:admin.templates.deactivating' : '$t:admin.templates.actions.deactivate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -28,6 +28,7 @@ return [
         'provider_not_configured' => '現金領収書発行プロバイダーが設定されていません。',
         'no_provider_handled' => '現金領収書発行リクエストを処理したプロバイダーがありません。',
         'no_issuable_amount' => '発行可能な現金性金額がありません。',
+        'currency_conversion_failed' => '決済通貨に換算できなかったため、現金領収書を発行しませんでした。注文の通貨情報をご確認ください。',
         'identifier_unavailable' => '再発行に必要な識別番号を復号化できません。管理者が識別番号を再入力して発行する必要があります。',
         'payment_not_found' => '決済情報が見つかりません。',
         'not_cash_payment' => '銀行振込注文のみ現金領収書を発行できます。',

@@ -1,0 +1,70 @@
+<!-- 템플릿 활성 확인 창. 템플릿은 종류마다 하나만 활성이라 **켜는 것이 곧 교체**다 — 그래서 모듈처럼
+  토글로 바로 뒤집지 않고 이 창을 거친다.
+  취소도 그냥 닫지 않고 카드 목록을 다시 마운트한다 — 스위치가 눌린 모양으로 남기 때문이다.
+  **관리자 템플릿을 켠 경우에만 화면을 통째로 다시 읽는다** — 지금 보고 있는 화면 자체가 방금 바뀐
+  템플릿에서 나오므로 새로 받지 않으면 옛 화면이 남는다(사용자 템플릿은 이 화면과 무관하다).
+  필요한 확장이 갖춰지지 않아 409 가 오면 실패로 보지 않고 강제 활성 창으로 넘긴다. -->
+<partial description="템플릿 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_activate_modal">
+  <modal data-type="composite" data-ref="template_activate_modal" title="$t:admin.templates.modals.activate_title" size="sm">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.activate_confirm|name={{_global.selectedTemplate.name}}</p>
+      <p class="mt-2 text-label-subtle">$t:admin.templates.modals.activate_description</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isTemplateActivating}}">
+        <on type="click">
+          <!-- 취소 — 목록을 다시 받는 대신 **카드 목록을 통째로 다시 마운트**한다. 값이 바뀐 것이
+               아니라 눌린 스위치 모양만 되돌리면 되므로 서버에 다시 묻지 않는다. -->
+          <sequence>
+            <close-modal/>
+            <remount componentId="template_card_grid"/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateActivating}}">
+        <on type="click">
+          <!-- 활성 실행 — 성공하면 목록을 다시 받고 프론트의 확장 번들도 새로 싣는다
+               (템플릿이 바뀌면 화면을 그리는 컴포넌트가 통째로 갈린다). -->
+          <sequence>
+            <set-state target="global" :isTemplateActivating="true"/>
+            <api-call :auth_required="true" target="/api/admin/templates/activate" method="POST">
+              <success>
+                <set-state target="global" :isTemplateActivating="false"/>
+                <close-modal/>
+                <toast type="success" message="$t:admin.templates.activate_success"/>
+                <refetch-data-source dataSourceId="templates"/>
+                <reload-extensions/>
+                <!-- 템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).
+                     관리자 템플릿은 새 화면을 그리려고 페이지를 새로 고치는데, 창을 띄운 경우에는 새로 고침을
+                     창이 닫힐 때로 미룬다(`reactivateLanguagePacksRefreshAfter`) — 곧바로 고치면 창이 사라진다. -->
+                <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}" reactivateLanguagePacksRefreshAfter="{{_global.selectedTemplate?.type === 'admin'}}"/>
+                <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="template_reactivate_language_packs_modal"/>
+                <conditions>
+                  <when if="{{_global.selectedTemplate.type === 'admin' &amp;&amp; !((response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage'))}}">
+                    <refresh :delayMs="800"/>
+                  </when>
+                </conditions>
+                <set-state target="global" :selectedTemplate="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :isTemplateActivating="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <error-handling>
+                <on-code code="409">
+                  <set-state target="global" :isTemplateActivating="false" activateWarningData="{{error.errors}}"/>
+                  <close-modal/>
+                  <open-modal target="template_force_activate_modal"/>
+                </on-code>
+              </error-handling>
+              <body template_name="{{_global.selectedTemplate.identifier}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isTemplateActivating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isTemplateActivating ? '$t:admin.templates.activating' : '$t:admin.templates.actions.activate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

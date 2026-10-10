@@ -1,246 +1,249 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "배송설정 - 배송가능국가 테이블"
-  },
-  "id": "shipping_country_table_container",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "table-container"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(_local.form?.shipping?.available_countries ?? []).length === 0}}",
-      "props": {
-        "className": "p-8 text-center text-label-subtle"
-      },
-      "children": [
+    "comment": "쇼핑몰 설정 — 배송 국가 목록, 넓은 화면용 표. 좁은 화면용 카드(`_shipping_country_cards`)와\n  같은 배열을 편집한다. 해외배송을 껐다면 이 목록은 남되 쓰이지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "배송설정 - 배송가능국가 테이블"
+    },
+    "id": "shipping_country_table_container",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "table-container"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "globe",
-            "className": "text-2xl text-gray-300 dark:text-gray-600 mb-2"
-          }
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form?.shipping?.available_countries ?? []).length === 0}}",
+            "props": {
+                "className": "p-8 text-center text-label-subtle"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "globe",
+                        "className": "text-2xl text-gray-300 dark:text-gray-600 mb-2"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.empty"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "P",
-          "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.empty"
-        }
-      ]
-    },
-    {
-      "id": "country_list",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(_local.form?.shipping?.available_countries ?? []).length > 0}}",
-      "props": {
-        "className": "overflow-x-auto"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "partial": "_shipping_country_cards.json"
-            }
-          ]
-        }
-      },
-      "children": [
-        {
-          "id": "country_table",
-          "type": "basic",
-          "name": "Table",
-          "props": {
-            "className": "table"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Thead",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Tr",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "w-24"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_code"
+            "id": "country_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form?.shipping?.available_countries ?? []).length > 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": ""
                     },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "w-24 text-center"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.is_active"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "w-20"
-                      },
-                      "text": ""
-                    }
-                  ]
+                    "children": [
+                        {
+                            "partial": "_shipping_country_cards.json"
+                        }
+                    ]
                 }
-              ]
             },
-            {
-              "type": "basic",
-              "name": "Tbody",
-              "children": [
+            "props": {
+                "className": "overflow-x-auto"
+            },
+            "children": [
                 {
-                  "id": "country_row_{{countryIndex}}",
-                  "type": "basic",
-                  "name": "Tr",
-                  "iteration": {
-                    "source": "(_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))",
-                    "item_var": "country",
-                    "index_var": "countryIndex"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Td",
-                      "props": {
-                        "className": "font-mono text-sm font-medium"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "{{'fi fi-' + (country.code?.toLowerCase() ?? '') + ' fis rounded'}}"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{country.code}}"
-                            }
-                          ]
-                        }
-                      ]
+                    "id": "country_table",
+                    "type": "basic",
+                    "name": "Table",
+                    "props": {
+                        "className": "table"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Td",
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "{{$localized(country.name, 'sirsoft-ecommerce::settings.countries.' + (country.code ?? '') + '.name')}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Td",
-                      "props": {
-                        "className": "text-center"
-                      },
-                      "children": [
-                        {
-                          "type": "composite",
-                          "name": "Toggle",
-                          "props": {
-                            "checked": "{{country.is_active ?? false}}",
-                            "size": "sm",
-                            "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) && country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "form.shipping.available_countries": "{{(_local.form?.shipping?.available_countries ?? []).map((c, i) => i === country._idx ? {...c, is_active: !(c.is_active ?? false)} : c)}}",
-                                "hasChanges": true
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Td",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Button",
-                          "if": "{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}",
-                          "props": {
-                            "type": "button",
-                            "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                            "title": "$t:common.delete",
-                            "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "form.shipping.available_countries": "{{(_local.form?.shipping?.available_countries ?? []).filter((_, i) => i !== country._idx)}}",
-                                "hasChanges": true
-                              }
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": {
-                                "name": "trash",
-                                "className": "text-sm"
-                              }
-                            }
-                          ]
+                            "type": "basic",
+                            "name": "Thead",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "w-24"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_code"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "w-24 text-center"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.is_active"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "w-20"
+                                            },
+                                            "text": ""
+                                        }
+                                    ]
+                                }
+                            ]
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}",
-                          "props": {
-                            "className": "text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full"
-                          },
-                          "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge"
+                            "type": "basic",
+                            "name": "Tbody",
+                            "children": [
+                                {
+                                    "id": "country_row_{{countryIndex}}",
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "iteration": {
+                                        "source": "(_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))",
+                                        "item_var": "country",
+                                        "index_var": "countryIndex"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "font-mono text-sm font-medium"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "{{'fi fi-' + (country.code?.toLowerCase() ?? '') + ' fis rounded'}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{country.code}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{$localized(country.name, 'sirsoft-ecommerce::settings.countries.' + (country.code ?? '') + '.name')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "props": {
+                                                "className": "text-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "사용 여부. 끄면 주문 시 그 나라를 고를 수 없게 된다.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.shipping.available_countries": "{{(_local.form?.shipping?.available_countries ?? []).map((c, i) => i === country._idx ? {...c, is_active: !(c.is_active ?? false)} : c)}}",
+                                                                "hasChanges": true
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "checked": "{{country.is_active ?? false}}",
+                                                        "size": "sm",
+                                                        "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) && country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Td",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "국가 삭제.",
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.shipping.available_countries": "{{(_local.form?.shipping?.available_countries ?? []).filter((_, i) => i !== country._idx)}}",
+                                                                "hasChanges": true
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "title": "$t:common.delete",
+                                                        "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "trash",
+                                                                "className": "text-sm"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}",
+                                                    "props": {
+                                                        "className": "text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

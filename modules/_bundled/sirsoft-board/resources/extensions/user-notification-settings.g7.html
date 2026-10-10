@@ -1,0 +1,71 @@
+<!-- 관리자 회원 «편집» 폼에 알림 수신 설정 네 가지를 체크박스로 덧붙인다 — 탭 목록에 항목 하나(inject_props) + 확장 슬롯에 본문(append_child). 값은 부모 폼의 _local.form 에 함께 실려 저장된다(이 조각에는 저장 액션이 없다). 체크박스는 자동 바인딩을 끄고 change 에서 checked 불리언을 직접 쓴다 — 엔진 자동 바인딩은 값이 이미 불리언일 때만 checked 로 묶어, 값이 없는 회원 등록 화면에서는 클릭해도 빈 문자열이 쓰이고 체크가 켜지지 않았다 -->
+<extension target-layout="admin_user_form" priority="300">
+  <inject target-id="user_form_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_notification" label="$t:sirsoft-board.admin.users.form.sections.notification_settings" iconName="cubes"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_form_content" position="append_child">
+    <div data-ref="ext_notification_form_content" id="ext_notification" class="scroll-mt-32 mt-6">
+      <div data-ref="section_notification_settings" class="admin-card">
+        <div class="flex-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="bell" class="text-gray-600 dark:text-gray-400 text-xl"/>
+            <h3 class="section-heading">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
+          </div>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <div class="grid-2col-responsive">
+          <div data-ref="field_notify_post_complete">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
+                <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
+                  <set-state target="local" form.notify_post_complete="{{$event.target.checked}}"/>
+                </on>
+              </input>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.post_complete</span>
+            </label>
+          </div>
+          <div data-ref="field_notify_post_reply">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="notify_post_reply" checked="{{_local.form?.notify_post_reply ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
+                <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
+                  <set-state target="local" form.notify_post_reply="{{$event.target.checked}}"/>
+                </on>
+              </input>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.post_reply</span>
+            </label>
+          </div>
+          <div data-ref="field_notify_comment">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="notify_comment" checked="{{_local.form?.notify_comment ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
+                <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
+                  <set-state target="local" form.notify_comment="{{$event.target.checked}}"/>
+                </on>
+              </input>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.comment</span>
+            </label>
+          </div>
+          <div data-ref="field_notify_reply_comment">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="notify_reply_comment" checked="{{_local.form?.notify_reply_comment ?? false}}" :autoBinding="false" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
+                <on type="change">
+                  <!-- checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다 -->
+                  <set-state target="local" form.notify_reply_comment="{{$event.target.checked}}"/>
+                </on>
+              </input>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.users.form.notifications.reply_comment</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

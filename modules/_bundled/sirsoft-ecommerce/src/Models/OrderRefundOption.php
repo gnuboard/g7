@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 
 /**
  * 주문 환불 옵션별 상세 모델
@@ -36,6 +36,7 @@ class OrderRefundOption extends Model
         'shipping_amount',
         'refund_amount',
         'completed_at',
+        'reject_reason',
         'processed_by',
     ];
 
@@ -47,7 +48,7 @@ class OrderRefundOption extends Model
     protected function casts(): array
     {
         return [
-            'option_status' => RefundOptionStatusEnum::class,
+            'option_status' => RefundStatusEnum::class,
             'quantity' => 'integer',
             'unit_price' => 'decimal:2',
             'subtotal_amount' => 'decimal:2',

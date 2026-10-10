@@ -1,0 +1,37 @@
+feature: 쇼핑몰 설정 클레임 탭 — 사유 카탈로그 명시 삭제와 변경 흔적 (#599 S0-D2)
+
+description: |
+  통합 실측 세션0 이 환경설정 › 클레임 정책 탭에서 만든 실측용 사유 3건이 이틀 사이 DB 에서
+  사라졌다. 모듈 업데이트(시더의 stale 정리)는 지우지 않았고(3 → 3), 사유를 만들거나 지운
+  흔적이 활동로그에 없어 원인을 확정하지 못했다. 지울 수 있는 경로가 하나뿐이었다 — 설정 탭
+  저장이 **「DB 에는 있는데 페이로드에 없는 행」을 삭제로 읽는 것**.
+
+  ① 다른 운영자(또는 다른 탭)가 화면을 연 **뒤에** 만들어진 사유는 그 화면의 페이로드에
+     없다. 그 화면에서 아무 사유도 건드리지 않고 「저장」만 눌러도 그 사유는 사라진다.
+     응답은 200 이고 화면은 저장 성공으로 보인다. 삭제는 운영자가 휴지통으로 **지목한 id**
+     (`{type}_reasons_deleted`)로만 일어나야 하고, 페이로드에 없는 행은 손대지 않는다.
+
+  ② 설정 탭 저장은 리포지토리를 직접 불러 상세 REST 경로가 쏘는 훅을 건너뛰었다. 카탈로그
+     생성·수정·삭제가 활동로그에 「설정 저장 (claim)」 한 줄로만 남아, 무엇이 언제 누구 손에
+     지워졌는지 되짚을 수 없다. 두 경로가 같은 훅을 쏘고 활동로그가 그 훅을 듣는다.
+
+  기존 가드(사용 중인 사유 삭제 거절 · 파일 쓰기 전 판정)는 명시 삭제 경로에서도 그대로 선다.
+
+# axis 의미:
+#   reason_type — 사유 카탈로그 3종. 세 블록이 정본 복제라 유형이 유일한 직교 축이다.
+axes:
+  reason_type: [exchange, return, refund]
+
+effects:
+  # ① 페이로드 부재는 삭제가 아니다
+  - settings_claim_save_keeps_rows_missing_from_the_payload
+  # ① 지목한 id 만 지운다 — 지목되지 않은 부재 행은 그대로
+  - settings_claim_explicit_deletion_removes_only_listed_ids
+  # ① 지목했더라도 사용 중이면 400 · 파일 쓰기 전 거절
+  - settings_claim_explicit_deletion_of_a_used_reason_is_rejected
+  # ② 생성·삭제가 활동로그 한 줄씩
+  - settings_claim_reason_creation_is_logged
+  - settings_claim_reason_deletion_is_logged
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsClaimReasonDeletionTest.php

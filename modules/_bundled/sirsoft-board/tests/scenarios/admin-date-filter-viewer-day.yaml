@@ -1,0 +1,22 @@
+feature: 게시판 관리자 목록 날짜 필터 — 보는 사람의 시간대 하루 · 빠른 기간 버튼
+
+description: |
+  관리자 게시글·신고·스크랩·반응 목록의 날짜 조건이 날짜를 UTC 하루로 잘라(공용 applyDateRangeFilter 또는
+  'Y-m-d 00:00:00' 문자열 연결) 한국 시간 새벽 행이 그날 필터에서 빠졌고, 신고 통계는 종료일 하루가 통째로
+  빠졌다. 목록이 날짜를 보는 사람의 시간대로 그리므로 applyViewerDateRangeFilter 로 같은 하루를 자른다.
+  신고·스크랩·반응 목록의 빠른 기간 버튼은 div 라 키보드로 누를 수 없었고 toISOString()(UTC 날짜)으로 오늘을
+  만들어 한국 시간 오전 9시 전에는 어제가 채워졌다 — button + 브라우저 달력 날짜로 바꾼다(7.1.0 영역 C 후속).
+
+axes:
+  surface: [board_admin_posts, board_admin_scraps, board_admin_reactions, board_admin_reports, board_admin_quick_date]
+
+effects:
+  - board_admin_date_filters_follow_viewer_timezone_day
+  - quick_date_buttons_are_keyboard_buttons
+  - quick_date_uses_local_calendar_day
+  # 7.1.0 R-B: 빠른 기간의 「오늘」은 브라우저가 아니라 계정 시간대(회원 → 사이트 기본)의 날짜
+  - quick_date_uses_account_timezone
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminDateFilterViewerDayTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-quick-date-buttons.test.ts

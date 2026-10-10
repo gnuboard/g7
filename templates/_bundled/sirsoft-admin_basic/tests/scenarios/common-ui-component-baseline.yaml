@@ -1,0 +1,54 @@
+feature: 관리자 공통 UI 컴포넌트 기본 계약 — 아이콘·칩 체크박스·머리말·탭·테마 전환·토스트·토글
+
+description: |
+  관리자 화면 전반이 쓰는 공통 컴포넌트 7종의 렌더·상호작용 기본 계약. 7.1.0 영역 J 실측(D-J4·D-J5)에서
+  꾸밈 아이콘을 접근성 트리에서 숨기고(`role="img"`·글리프 영어 이름 제거), 테마 전환 단추 이름을 번역 문구로
+  바꾸고(「Toggle theme」 → 「화면 테마」), 토글의 실제 체크박스를 sr-only 로 숨겨 보이는 트랙이 스위치 역할을
+  맡게 하면서 기존 단위 테스트의 선택자가 함께 바뀌었다. 소유 매니페스트가 없던 그 테스트 파일들을 이 매니페스트가
+  컴포넌트 축으로 묶는다. 접근 가능한 이름 자체의 계약은 `common-ui-accessible-names.yaml`·`toggle-accessible-name.yaml`,
+  탭 편집 모드 측정 마커는 `tests/scenarios/layout-editor-tabnav-inplace.yaml` 이 따로 잠근다.
+
+axes:
+  component: [icon, chip_checkbox, page_header, tab_navigation, theme_toggle, toast, toggle]
+
+effects:
+  # 아이콘
+  - icon_renders_fontawesome_classes_from_props        # 이름·스타일·크기·애니메이션·고정폭·색·사용자 속성이 Font Awesome 클래스로 반영된다
+  - status_tokens_map_to_template_glyphs               # 라이브러리 중립 상태 토큰 21종이 전부 템플릿 글리프로 그려진다
+  # 칩 체크박스
+  - chip_checkbox_renders_label_icon_and_hidden_input  # 라벨·선택 아이콘·숨은 체크박스 입력과 value 를 그린다
+  - chip_checkbox_applies_variant_or_custom_color_styles
+  - chip_checkbox_change_reaches_handler
+  # 페이지 머리말
+  - page_header_renders_title_description_breadcrumb_tabs_actions
+  - page_header_tab_and_action_clicks_dispatch         # 탭·액션 클릭이 콜백을 부르고 비활성 액션은 부르지 않는다
+  # 탭 내비게이션
+  - tab_navigation_renders_tabs_with_icon_badge_disabled_variants
+  - tab_navigation_click_changes_only_to_other_enabled_tab
+  - tab_navigation_mobile_renders_select_dropdown
+  - tab_navigation_exposes_wai_aria_tabs_with_keyboard # tablist/tab·aria-selected·roving tabindex·화살표/Home/End
+  # 테마 전환
+  - theme_toggle_button_named_by_locale
+  - theme_toggle_applies_and_persists_selected_mode
+  - theme_toggle_dropdown_opens_closes_and_marks_current
+  # 토스트
+  - toast_renders_stack_at_position_with_type_style
+  - toast_removes_manually_or_after_duration
+  - toast_announces_politely_with_named_close_button
+  # 토글
+  - toggle_reflects_checked_value_and_changes_on_click
+  - toggle_applies_size_disabled_and_dark_styles
+  - toggle_exposes_switch_role_name_and_keyboard
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Icon.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ChipCheckbox.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/PageHeader.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigation.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ThemeToggle.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toast.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toggle.test.tsx
+
+notes: |
+  e2e_browser=not_applicable — 컴포넌트 단위 계약이라 jsdom 렌더(Vitest)로 잠근다. 실제 화면에서의 접근 가능한 이름과
+  다크 모드 외형은 7.1.0 영역 J 브라우저 실측(라이트/다크 × 데스크톱/모바일)이 확인했다.

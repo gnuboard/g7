@@ -61,7 +61,8 @@
   "target_screen": {
     "products": "商品",
     "orders": "注文",
-    "customers": "顧客"
+    "customers": "顧客",
+    "claims": "キャンセル/返品/交換"
   },
   "price_type": {
     "list_price": "定価",
@@ -191,5 +192,71 @@
     "US": "アメリカ",
     "CN": "中国",
     "JP": "日本"
+  },
+  "claim_type": {
+    "exchange": "交換",
+    "return": "返品",
+    "refund": "返金",
+    "cancel": "キャンセル"
+  },
+  "exchange_status": {
+    "requested": "交換申請",
+    "payment_pending": "交換決済待機",
+    "paid": "交換決済完了",
+    "approved": "交換承認",
+    "on_hold": "交換保留",
+    "rejected": "交換却下",
+    "collection_ready": "交換回収準備中",
+    "collecting": "交換回収中",
+    "collected": "交換回収到着",
+    "redelivery_ready": "交換発送準備中",
+    "redelivering": "交換発送中",
+    "redelivered": "交換発送到着",
+    "completed": "交換完了",
+    "withdrawn": "交換取消"
+  },
+  "return_status": {
+    "requested": "返品申請",
+    "payment_pending": "返品決済待機",
+    "paid": "返品決済完了",
+    "approved": "返品承認",
+    "on_hold": "返品保留",
+    "rejected": "返品却下",
+    "collection_ready": "返品回収準備中",
+    "collecting": "返品回収中",
+    "collected": "返品回収到着",
+    "completed": "返品完了",
+    "withdrawn": "返品取消"
+  },
+  "refund_status": {
+    "requested": "返金申請",
+    "approved": "返金承認",
+    "processing": "返金処理中",
+    "on_hold": "返金保留",
+    "completed": "返金完了",
+    "rejected": "返金却下",
+    "withdrawn": "返金取消"
+  },
+  "cancel_status": {
+    "requested": "キャンセル申請",
+    "completed": "キャンセル完了"
+  },
+  "claim_reason_fault_type": {
+    "customer": "顧客帰責",
+    "seller": "販売者帰責",
+    "carrier": "配送業者帰責"
+  },
+  "claim_charge_method": {
+    "pay_on_request": "申請時決済",
+    "pay_on_approval": "承認後決済",
+    "deduct_from_refund": "返金額から差引"
+  },
+  "cancel_type": {
+    "full": "全体キャンセル",
+    "partial": "部分キャンセル"
+  },
+  "claim_shipping_fee_mode": {
+    "fixed": "固定金額",
+    "original_policy": "元の配送ポリシー再計算"
   }
 }

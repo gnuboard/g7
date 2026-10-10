@@ -1,0 +1,840 @@
+{
+    "comment": "e2e:allow 2026-09-21 회원 배송지 화면 전면 재작성 — Playwright spec 대신 **작성자가 직접 브라우저로 관통 실측**했다(로그인 → 회원 2명 다중선택 → 28건→10건 → 「이 회원으로 검색」 10건→5건, 콘솔 오류 0). 전용 시드(저장 배송지를 가진 회원 다수 + manage 권한 운영자)가 필요해 기존 admin spec 의 시드로는 세울 수 없고, 그 시드 신설은 별도 과제다. 구조 회귀는 레이아웃 계약 테스트 18건이 막는다.\n\n  회원 배송지 목록 — 검색 필터. 쿠폰·주문·상품 목록의 같은 영역과 구조가 같다(검색 줄 + 컬럼\n  선택 + 필터 격자 + 실행 버튼). **다른 점은 덜어낸 것들이다** — 슬롯 등록 영역·검색 편집 모드·\n  상세검색 토글·프리셋이 없다. 필터가 넷(검색어·회원·등록일·기본 배송지)이라 접어 둘 이유가 없고,\n  접는 장치가 있으면 「지금 무엇으로 좁혀져 있나」 를 두 군데서 읽어야 한다(2026-09-21 요구사항).\n\n  회원 한정은 검색 대상/검색어와 **다른 축**이라 전용 칸이 쥔다. 회원 수가 많아 선택지를 미리\n  받아 둘 수 없으므로 입력할 때마다 코어 회원 검색을 친다(300ms 로 묶는다). 고른 회원은 uuid 로\n  담고 이름표는 따로 남긴다 — 검색 결과 목록은 다음 검색어에 통째로 갈리므로, 거기서만 라벨을\n  찾으면 이미 고른 회원이 uuid 로만 남는다.\n\n  입력 중인 값은 `_local.filter` 에 모이고 조회는 URL 로 나간다(셸의 `searchUserAddresses`).",
+    "meta": {
+        "is_partial": true,
+        "description": "User Address List - Filter Section"
+    },
+    "id": "filter_card",
+    "type": "basic",
+    "name": "Div",
+    "dataKey": "filter",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "row-stack gap-2 mb-4"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex-center flex-wrap gap-2 mb-4"
+            },
+            "children": [
+                {
+                    "id": "search_row_line1",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex-center gap-2 w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex-center gap-2 flex-1 min-w-[280px]"
+                    },
+                    "children": [
+                        {
+                            "id": "search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-24"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "검색어를 어느 칸에서 찾을지. 범위를 좁히면 서버가 훑는 칸이 줄어든다.\n                 회원은 여기에 없다 — 아래 전용 칸이 쥔다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "filter.searchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "searchField",
+                                "className": "w-32",
+                                "value": "{{_local.filter.searchField || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:common.all"
+                                    },
+                                    {
+                                        "value": "recipient",
+                                        "label": "$t:sirsoft-ecommerce.admin.user_addresses.search_fields.recipient"
+                                    },
+                                    {
+                                        "value": "address",
+                                        "label": "$t:sirsoft-ecommerce.admin.user_addresses.search_fields.address"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "input flex-1"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "타이핑은 담기만 한다 — 실제 조회는 Enter 나 검색 버튼이다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "filter.searchKeyword": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "type": "keypress",
+                                    "key": "Enter",
+                                    "actionRef": "searchUserAddresses"
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "searchKeyword",
+                                "className": "input flex-1 min-w-[200px]",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.user_addresses.search.placeholder",
+                                "value": "{{_local.filter.searchKeyword || ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "search_row_line2",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex-center gap-2 ml-auto"
+                    },
+                    "children": [
+                        {
+                            "id": "column_selector",
+                            "type": "composite",
+                            "name": "ColumnSelector",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-full",
+                                        "triggerClassName": "w-full justify-center",
+                                        "labelClassName": "inline"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "고른 열은 ColumnSelector 가 `id` 와 로그인 사용자로 키를 만들어 브라우저에 남긴다",
+                                    "type": "change",
+                                    "event": "onColumnVisibilityChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleColumns": "{{$args[0]}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "id": "admin_user_address_list_columns",
+                                "visibleColumns": "{{_local.visibleColumns}}",
+                                "triggerLabel": "$t:sirsoft-ecommerce.admin.user_addresses.search.column_select",
+                                "menuTitle": "$t:common.column_selector_title",
+                                "menuDescription": "$t:common.column_selector_description",
+                                "position": "right",
+                                "columns": [
+                                    {
+                                        "field": "created_at",
+                                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.created_at"
+                                    },
+                                    {
+                                        "field": "member",
+                                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.member"
+                                    },
+                                    {
+                                        "field": "recipient",
+                                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.recipient",
+                                        "required": true
+                                    },
+                                    {
+                                        "field": "contact",
+                                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.contact"
+                                    },
+                                    {
+                                        "field": "address_summary",
+                                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.address"
+                                    }
+                                ],
+                                "defaultColumns": [
+                                    "created_at",
+                                    "member",
+                                    "recipient",
+                                    "contact",
+                                    "address_summary"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_rows",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-grid"
+            },
+            "children": [
+                {
+                    "id": "member_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-28"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.member"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2 flex-1"
+                            },
+                            "children": [
+                                {
+                                    "id": "member_filter_dropdown",
+                                    "type": "composite",
+                                    "name": "SearchableDropdown",
+                                    "actions": [
+                                        {
+                                            "comment": "응답을 그대로 쓰지 않고 `{value,label,description}` 으로 접는다 — 드롭다운이 그 세 키만 읽는다.\n                   실패하면 이전 결과를 남기지 않고 비운다(방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다).\n                   늦게 온 옛 응답 가드: 지금 검색어를 먼저 담고, 결과에는 **응답이 실어 온 검색어**(`meta.keyword`)를\n                   도장한다 — 두 값이 같을 때만 후보를 보인다(마일리지 수동 지급·쿠폰 직접 발급 창과 같은 가드).\n                   `$event`·`$args` 로 도장하면 그것은 응답이 도착한 순간의 입력이라, 한 글자가 부른 큰 옛 응답이\n                   늦게 와서 지금 검색어의 것으로 둔갑한다. 서버가 검색어를 trim 하므로 지금 값도 trim 해 견준다.\n                   검색칸을 비우거나 공백만 적으면 요청하지 않는다 — 코어 회원 검색은 빈 keyword 를 422 로 거절한다.",
+                                            "event": "onSearch",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "memberSearchKeyword": "{{$args[0] ?? ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/admin/users/search",
+                                                    "if": "{{String($args[0] ?? '').trim() !== ''}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "GET",
+                                                        "query": {
+                                                            "keyword": "{{$args[0]}}"
+                                                        }
+                                                    },
+                                                    "debounce": 300,
+                                                    "onSuccess": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "memberSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}",
+                                                            "memberSearchResultsKeyword": "{{response?.meta?.keyword ?? ''}}"
+                                                        }
+                                                    },
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "memberSearchResults": [],
+                                                            "memberSearchResultsKeyword": null
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "고른 회원은 uuid 로 담는다(동명이인이 있고, 이름을 바꿔도 같은 사람을 가리켜야 한다).\n                   이름표는 지금 화면에 있는 후보(검색 결과 + 이미 고른 칩)에서 골라 따로 남긴다",
+                                            "type": "change",
+                                            "event": "onChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.memberUuids": "{{$args[0] ?? []}}",
+                                                "filter.memberOptions": "{{[...(_local.filter?.memberOptions ?? []), ...(_local.memberSearchResults ?? [])].filter((o, i, arr) => arr.findIndex(x => x.value === o.value) === i && ($args[0] ?? []).includes(o.value))}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "multiple": true,
+                                        "options": "{{(_local.memberSearchResultsKeyword ?? null) === (_local.memberSearchKeyword ?? '').trim() ? (_local.memberSearchResults ?? []) : []}}",
+                                        "value": "{{_local.filter.memberUuids ?? []}}",
+                                        "triggerLabel": "$t:sirsoft-ecommerce.admin.user_addresses.filter.member_select",
+                                        "selectedCountLabel": "$t:sirsoft-ecommerce.admin.user_addresses.filter.member_selected_count",
+                                        "searchPlaceholder": "$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_placeholder",
+                                        "noResultsText": "$t:common.no_results",
+                                        "initialText": "$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_initial",
+                                        "className": "w-64"
+                                    }
+                                },
+                                {
+                                    "id": "member_filter_chips",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_local.filter?.memberOptions ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_local.filter?.memberOptions ?? []}}",
+                                                "item_var": "member",
+                                                "index_var": "memberIndex"
+                                            },
+                                            "props": {
+                                                "className": "flex-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{member.label}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "칩 하나만 뗀다 — 두 칸(uuid·이름표)을 같은 손짓으로 함께 줄여야 어긋나지 않는다",
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.memberUuids": "{{(_local.filter?.memberUuids ?? []).filter(v => v !== member.value)}}",
+                                                                "filter.memberOptions": "{{(_local.filter?.memberOptions ?? []).filter(o => o.value !== member.value)}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                        "aria-label": "$t:sirsoft-ecommerce.common.remove"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "xmark",
+                                                                "className": "text-xs"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "created_at_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-28"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.created_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "calendar",
+                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "등록일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.startDate": "{{$event.target.value}}",
+                                                        "filter.dateQuick": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}",
+                                                "type": "date",
+                                                "name": "startDate",
+                                                "value": "{{_local.filter.startDate || ''}}",
+                                                "className": "input w-36"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "등록일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.endDate": "{{$event.target.value}}",
+                                                        "filter.dateQuick": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}",
+                                                "type": "date",
+                                                "name": "endDate",
+                                                "value": "{{_local.filter.endDate || ''}}",
+                                                "className": "input w-36"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "actions": [
+                                                {
+                                                    "comment": "빠른 기간. 날짜 계산은 핸들러가 하고 결과를 $prev 로 받아 담는다 — 표현식에 날짜 산술을 두지 않는다. 오늘.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "sirsoft-ecommerce.setDateRange",
+                                                            "params": {
+                                                                "preset": "today"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.startDate": "{{$prev.startDate}}",
+                                                                "filter.endDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.common.date.today"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "actions": [
+                                                {
+                                                    "comment": "1주일. 눌린 표시는 dateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "sirsoft-ecommerce.setDateRange",
+                                                            "params": {
+                                                                "preset": "week"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.startDate": "{{$prev.startDate}}",
+                                                                "filter.endDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.common.date.week"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "actions": [
+                                                {
+                                                    "comment": "3개월.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "sirsoft-ecommerce.setDateRange",
+                                                            "params": {
+                                                                "preset": "3months"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.startDate": "{{$prev.startDate}}",
+                                                                "filter.endDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.common.date.3months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "actions": [
+                                                {
+                                                    "comment": "1년. 배송지는 한 번 담아 두면 오래 남는 데이터라 긴 구간을 함께 둔다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "sirsoft-ecommerce.setDateRange",
+                                                            "params": {
+                                                                "preset": "1year"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.startDate": "{{$prev.startDate}}",
+                                                                "filter.endDate": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.common.date.1year"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "is_default_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-28"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "기본 배송지 여부 — 전체. 하나만 고르는 값이라 \"전체\" 도 값(`all`)이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.isDefault": "all"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "isDefault",
+                                                "value": "all",
+                                                "checked": "{{(_local.filter.isDefault || 'all') === 'all'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:common.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "기본 배송지만. 회원마다 한 건이므로 「회원 수만큼」 이 나온다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.isDefault": "1"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "isDefault",
+                                                "value": "1",
+                                                "checked": "{{_local.filter.isDefault === '1'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default_only"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "기본 제외. 정리 대상을 고를 때 쓰는 갈래다 — 기본 배송지는 지우면 회원이 다시 골라야 한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.isDefault": "0"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "isDefault",
+                                                "value": "0",
+                                                "checked": "{{_local.filter.isDefault === '0'}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default_except"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-2 w-full border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex-center justify-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+            },
+            "children": [
+                {
+                    "id": "search_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchUserAddresses"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.search"
+                },
+                {
+                    "id": "reset_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-outline flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "resetUserAddressFilters"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-outline"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.reset"
+                }
+            ]
+        }
+    ]
+}

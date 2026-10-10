@@ -5101,7 +5101,9 @@ export class G7DevToolsCore {
             let source: 'AuthManager' | 'G7Core.state' | 'unknown' = 'unknown';
 
             // 사용자 정보 - AuthManager의 getUser() 먼저 확인
-            let user = auth?.getUser?.();
+            const validUser = (value: any) => value && !Array.isArray(value)
+                && typeof value === 'object' && value.id != null ? value : undefined;
+            let user = validUser(auth?.getUser?.());
             if (user) {
                 source = 'AuthManager';
             }
@@ -5110,7 +5112,8 @@ export class G7DevToolsCore {
             if (!user) {
                 const state = g7Core?.state?.get?.();
                 // user 또는 currentUser 필드 확인 (Admin: user, User: currentUser)
-                user = state?._global?.user || state?._global?.currentUser || state?.user || state?.currentUser;
+                user = [state?._global?.user, state?._global?.currentUser, state?.user, state?.currentUser]
+                    .map(validUser).find(Boolean);
                 if (user) {
                     source = 'G7Core.state';
                 }
@@ -5128,7 +5131,8 @@ export class G7DevToolsCore {
             }
 
             // 인증 여부: 토큰이 있고 (user가 있거나 AuthManager가 인증됨)
-            const isAuthenticated = !!accessToken && (!!user || isAuthManagerAuthenticated);
+            const isAuthenticated = !!accessToken && (typeof auth?.isAuthenticated === 'function'
+                ? isAuthManagerAuthenticated : !!user);
 
             // 토큰 미리보기 (앞 10자 + ... + 뒤 6자)
             let accessTokenPreview: string | undefined;

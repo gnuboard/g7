@@ -1,0 +1,37 @@
+<!-- 클레임 목록 — 검색 프리셋 관리 창. 저장해 둔 조건 묶음의 이름을 바꾸거나 지우고 새 프리셋 저장 창을 여는데, 그 창들은 이 창을 닫지 않고 위에 겹쳐 떴다가 닫히면 이 창으로 돌아온다. -->
+<partial description="Claim List - Preset Management Modal">
+  <modal data-type="composite" data-ref="modal_claim_preset_manage" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.title" size="md">
+    <div data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.empty</div>
+    <div data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="stack-tight">
+      <div data-each="presetItem in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <span class="text-heading">{{presetItem.name}}</span>
+        <div class="flex-center gap-2">
+          <!-- 연필 버튼 — 이름 바꾸기 창을 이 창 위에 겹쳐 연다. 반복 변수 presetItem 은 이 목록 안에서만 살아 있으므로, 입력칸이 현재 이름으로 시작하도록 id 와 이름을 _global 로 옮겨 담고 연다. -->
+          <button aria-label="$t:common.edit" type="button" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <on type="click">
+              <set-state target="global" editingPresetId="{{presetItem.id}}" editingPresetName="{{presetItem.name}}"/>
+              <open-modal target="modal_claim_preset_edit"/>
+            </on>
+            <icon name="pen-to-square" class="text-sm"/>
+          </button>
+          <!-- 휴지통 버튼 — 삭제 확인 창을 겹쳐 연다. 확인 창은 문장에 프리셋 이름을 넣지만 목록을 따로 조회하지 않으므로 id 와 함께 이름도 _global 로 넘긴다. -->
+          <button aria-label="$t:common.delete" type="button" class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+            <on type="click">
+              <set-state target="global" deletingPresetId="{{presetItem.id}}" deletingPresetName="{{presetItem.name}}"/>
+              <open-modal target="modal_claim_preset_delete_confirm"/>
+            </on>
+            <icon name="trash" class="text-sm"/>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="mt-6">
+      <button type="button" class="w-full px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
+        <on type="click">
+          <open-modal target="modal_claim_preset_save"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.claim.modal.preset_manage.add_new
+      </button>
+    </div>
+  </modal>
+</partial>

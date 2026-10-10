@@ -1,0 +1,38 @@
+feature: 꺼진 확장에도 그 확장의 언어팩을 꺼진 채 설치하고, 확장을 켤 때 함께 켠다
+
+description: |
+  설치 직후 확장은 비활성이라, 확장 설치 창에서 함께 고른 그 확장 자신의 추가 언어팩(예: Hello 모듈의 일본어 팩)이
+  「대상 비활성」으로 늘 거절됐다(Q-G2 D-Q2-2 — 실패 경고 토스트만 띄움). 결정(2026-10-08) 「비활성으로 설치해 둠」:
+  대상 확장이 설치돼 있고 꺼져 있으면 언어팩 설치를 허용해 꺼진 채(installed) 두고, 켜 달라는 요청으로 설치된 팩만
+  「대상 켜짐 대기」(deactivated_reason=awaiting_host)로 표시해 그 확장을 켤 때(after_activate) 함께 켠다.
+  미설치 대상·버전 미달은 종전처럼 거절하고, 언어팩을 켜는 것은 여전히 대상이 켜져 있어야 한다. 켜 달라고 하지 않은 팩·
+  사용자가 끈 팩·같은 언어 자리를 이미 다른 팩이 쓰는 경우는 확장을 켜도 건드리지 않는다. 언어팩 화면의 개별 설치도 같은
+  규칙(설치 허용 + 안내)이고, 그 화면은 원래 켜지 않고 설치하므로 대기 표시가 붙지 않는다.
+
+axes:
+  case:
+    - inactive_host_install_with_activation
+    - inactive_host_install_without_activation
+    - uninstalled_host_rejected
+    - inactive_host_version_too_old_rejected
+    - activate_while_host_inactive_rejected
+    - host_activation_turns_on_awaiting
+    - host_activation_plugin_and_template_hooks
+    - host_activation_leaves_user_choices
+    - host_activation_slot_occupied
+    - bundled_list_inactive_host_installable
+    - install_modal_cascade_reports_awaiting
+    - install_modal_awaiting_toast_shown
+    - bundled_modal_inactive_host_notice
+
+effects:
+  - language_pack_installed_off_for_inactive_host
+  - uninstalled_or_too_old_host_still_rejected
+  - activation_still_requires_active_host
+  - awaiting_language_pack_activated_with_host
+  - user_choices_untouched_on_host_activation
+  - install_modal_reports_awaiting_instead_of_failure
+
+test_files:
+  - tests/Feature/LanguagePack/InstallForInactiveHostTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-install-language-pack-awaiting-host.test.tsx

@@ -1,7 +1,7 @@
 {
+    "comment": "글쓰기·수정 — 한 화면이 셋을 겸한다(새 글 / 수정 / 답글). 무엇인지는 주소가 정한다: 글 번호가 있으면 수정, 질의에 부모 글이 있으면 답글, 둘 다 없으면 새 글.",
     "version": "1.0.0",
     "layout_name": "board/form",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "title": "{{route.id ? '$t:board.edit_post' : '$t:board.new_post'}} - {{form_meta?.data?.board?.name || ''}}",
@@ -20,7 +20,6 @@
             "refetchOnMount": true,
             "initLocal": "form",
             "loading_strategy": "blocking",
-            "_comment_verify_token": "검증 토큰은 자격증명이라 헤더로 보낸다 — 쿼리로 실으면 웹서버 접근 기록과 Referer 에 그대로 남는다. 빈 값은 엔진이 헤더에서 제외한다.",
             "headers": {
                 "X-Board-Post-Verify-Token": "{{_local.verificationToken ?? ''}}"
             },
@@ -28,15 +27,21 @@
                 "post_id": "{{route?.id ?? ''}}",
                 "parent_id": "{{query?.parent_id ?? ''}}"
             },
-            "onSuccess": {
-                "comment": "refetch 후 _local.form을 응답값으로 직접 덮어씌우기 (비밀글 content 반영)",
-                "handler": "setState",
-                "params": {
-                    "target": "local",
-                    "form": "{{response.data.data}}"
+            "onSuccess": [
+                {
+                    "comment": "refetch 후 _local.form을 응답값으로 직접 덮어씌우기 (비밀글 content 반영)",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "form": "{{response.data.data}}"
+                    }
                 }
-            },
+            ],
             "errorHandling": {
+                "401": {
+                    "comment": "로그인이 필요한 게시판 — 안내와 이동은 form_meta 가 맡고 여기서는 조용히 넘긴다(두 번 뜨지 않게)",
+                    "handler": "suppress"
+                },
                 "403": {
                     "comment": "권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원)",
                     "handler": "showErrorPage",
@@ -50,7 +55,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "폼에 채울 값 — 수정이면 기존 글 내용이, 새 글이면 빈 값이 온다. 비회원 비밀글은 비밀번호를 확인해 받은 표(verificationToken)를 함께 보내야 본문이 실려 오므로, 확인 뒤 다시 받아 폼을 통째로 갈아 끼운다. 이 응답 전에는 폼을 그리지 않는다. 검증 토큰은 자격증명이라 헤더로 보낸다 — 쿼리로 실으면 웹서버 접근 기록과 Referer 에 그대로 남는다. 빈 값은 엔진이 헤더에서 제외한다."
         },
         {
             "id": "form_meta",
@@ -62,7 +68,6 @@
             "auth_mode": "optional",
             "cache": false,
             "refetchOnMount": true,
-            "_comment_verify_token": "검증 토큰은 자격증명이라 헤더로 보낸다 — 쿼리로 실으면 웹서버 접근 기록과 Referer 에 그대로 남는다. 빈 값은 엔진이 헤더에서 제외한다.",
             "headers": {
                 "X-Board-Post-Verify-Token": "{{_local.verificationToken ?? ''}}"
             },
@@ -71,6 +76,22 @@
                 "parent_id": "{{query?.parent_id ?? ''}}"
             },
             "errorHandling": {
+                "401": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "comment": "로그인이 필요한 게시판 — 목록·상세와 같게 안내하고 로그인 뒤 이 폼으로 돌아온다",
+                            "handler": "toast",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:board.login_required"
+                            }
+                        },
+                        {
+                            "handler": "redirectToLoginWithReturn"
+                        }
+                    ]
+                },
                 "403": {
                     "comment": "권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원)",
                     "handler": "showErrorPage",
@@ -84,16 +105,18 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "폼의 틀 — 게시판 이름, 고를 수 있는 분류, 켜져 있는 입력 항목처럼 «무엇을 그릴지» 를 담는다. 값(form_data)과 갈라 둔 것은 이쪽은 비밀글 확인 전에도 그려야 하기 때문이다. 검증 토큰은 자격증명이라 헤더로 보낸다 — 쿼리로 실으면 웹서버 접근 기록과 Referer 에 그대로 남는다. 빈 값은 엔진이 헤더에서 제외한다."
         }
     ],
+    "permissions": [],
     "init_actions": [
         {
             "comment": "tempKey 생성",
             "handler": "setState",
             "params": {
                 "target": "local",
-                "tempKey": "{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"
+                "tempKey": "{{$uuid()}}"
             }
         }
     ],
@@ -106,9 +129,9 @@
             {
                 "type": "layout",
                 "name": "Container",
-                "blur_until_loaded": true,
                 "dataKey": "form",
                 "trackChanges": true,
+                "blur_until_loaded": true,
                 "props": {
                     "className": "py-8 max-w-4xl mx-auto"
                 },

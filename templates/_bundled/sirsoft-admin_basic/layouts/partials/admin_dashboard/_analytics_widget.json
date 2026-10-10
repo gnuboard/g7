@@ -1,0 +1,331 @@
+{
+    "comment": "대시보드 방문자 통계 카드. 개요 API 한 응답(`dashboard_analytics`, 7일 프리셋)에서 KPI 4·최근 7일 방문자 선·\n  지금 접속자 수를 그린다. 통계 읽기 권한이 없으면 소스가 403 을 받아 데이터가 비고, 카드는 `if` 로 아예\n  그려지지 않는다(오류 토스트도 없다 — 권한 없는 카드가 대시보드를 시끄럽게 하면 안 된다). 읽기 권한이 있는데\n  응답이 실패하면 카드가 사라지는 대신 제자리에서 알리고 다시 받는다 — 카드가 말없이 빠지면 어느 숫자가 비었는지\n  알 수 없다. 수집이 꺼져 있으면 숫자가 멈춘 이유를 배지로 알린다.",
+    "meta": {
+        "is_partial": true,
+        "description": "대시보드 — 방문자 통계 카드 (KPI 4 · 7일 추이 · 지금 접속자)"
+    },
+    "id": "dashboard_analytics_widget",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{!!dashboard_analytics?.data?.kpi || (dashboard_analytics?.widget_error === true && _computed.canReadAnalytics === true)}}",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "dashboard_analytics"
+    },
+    "props": {
+        "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6 mb-6"
+    },
+    "children": [
+        {
+            "id": "dashboard_analytics_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-start justify-between mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "dashboard_analytics_title",
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "section-heading"
+                            },
+                            "text": "$t:admin.analytics.dashboard_widget.title"
+                        },
+                        {
+                            "id": "dashboard_analytics_off_badge",
+                            "type": "composite",
+                            "name": "Badge",
+                            "if": "{{dashboard_analytics?.data?.meta?.collection_enabled === false}}",
+                            "props": {
+                                "color": "yellow",
+                                "text": "$t:admin.analytics.dashboard_widget.collection_off",
+                                "size": "sm"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "dashboard_analytics_more_btn",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/analytics"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                    },
+                    "text": "$t:admin.analytics.dashboard_widget.detail"
+                }
+            ]
+        },
+        {
+            "id": "dashboard_analytics_error",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{dashboard_analytics?.widget_error === true && !dashboard_analytics?.data?.kpi}}",
+            "props": {
+                "className": "alert-danger flex-center gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "triangle-exclamation",
+                        "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-error-soft flex-1"
+                    },
+                    "text": "$t:admin.analytics.alerts.load_failed"
+                },
+                {
+                    "id": "dashboard_analytics_retry",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "dashboard_analytics"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary btn-sm"
+                    },
+                    "text": "$t:admin.analytics.alerts.load_failed_retry"
+                }
+            ]
+        },
+        {
+            "id": "dashboard_analytics_body",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!dashboard_analytics?.data?.kpi}}",
+            "props": {
+                "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-center"
+            },
+            "children": [
+                {
+                    "id": "dashboard_analytics_kpis",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-2 gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-white dark:bg-slate-700 rounded-lg p-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.analytics.dashboard_widget.today"
+                                },
+                                {
+                                    "id": "dashboard_analytics_today",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{(dashboard_analytics?.data?.kpi?.today ?? 0) | number}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-white dark:bg-slate-700 rounded-lg p-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.analytics.dashboard_widget.yesterday"
+                                },
+                                {
+                                    "id": "dashboard_analytics_yesterday",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{(dashboard_analytics?.data?.kpi?.yesterday ?? 0) | number}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-white dark:bg-slate-700 rounded-lg p-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.analytics.dashboard_widget.max"
+                                },
+                                {
+                                    "id": "dashboard_analytics_max",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{(dashboard_analytics?.data?.kpi?.max?.value ?? 0) | number}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "{{dashboard_analytics?.data?.kpi?.max?.date ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-white dark:bg-slate-700 rounded-lg p-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.analytics.dashboard_widget.total"
+                                },
+                                {
+                                    "id": "dashboard_analytics_total",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{(dashboard_analytics?.data?.kpi?.total ?? 0) | number}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "dashboard_analytics_chart_wrap",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-white dark:bg-slate-700 rounded-lg p-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label-subtle mb-2"
+                            },
+                            "text": "$t:admin.analytics.dashboard_widget.trend"
+                        },
+                        {
+                            "id": "dashboard_analytics_chart",
+                            "type": "composite",
+                            "name": "LineChart",
+                            "props": {
+                                "labels": "{{(dashboard_analytics?.data?.series?.points ?? []).map(p => String(p.ts ?? '').slice(5, 10))}}",
+                                "datasets": "{{[{label: $t('admin.analytics.common.visitors'), data: (dashboard_analytics?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}]}}",
+                                "height": 140,
+                                "showYAxis": false,
+                                "showYGrid": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "dashboard_analytics_realtime",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-700 rounded-lg p-4 h-full"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"
+                            }
+                        },
+                        {
+                            "id": "dashboard_analytics_now",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xl font-semibold text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:admin.analytics.dashboard_widget.now|count={{(dashboard_analytics?.data?.realtime?.count ?? 0) | number}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/analytics/realtime"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            },
+                            "text": "$t:admin.analytics.overview.realtime_link"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

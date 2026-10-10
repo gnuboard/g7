@@ -151,6 +151,9 @@
       "label": "아바타",
       "default_alt": "사용자 아바타"
     },
+    "visitor_counter": {
+      "label": "방문자 카운터"
+    },
     "user_info": {
       "label": "사용자 정보",
       "default_name": "사용자명"
@@ -161,9 +164,6 @@
     "product_image_viewer": {
       "label": "상품 이미지 뷰어",
       "default_alt": "상품 이미지"
-    },
-    "post_reactions": {
-      "label": "게시글 반응"
     },
     "group": {
       "design": "디자인",

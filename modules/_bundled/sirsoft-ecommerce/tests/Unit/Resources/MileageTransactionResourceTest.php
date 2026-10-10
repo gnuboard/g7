@@ -14,6 +14,12 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class MileageTransactionResourceTest extends ModuleTestCase
 {
+    /**
+     * make Tx 를 처리합니다.
+     *
+     * @param  string  $type  type 값
+     * @return MileageTransaction 결과
+     */
     private function makeTx(string $type = 'purchase_earn'): MileageTransaction
     {
         $user = User::factory()->create();
@@ -27,6 +33,10 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * Resource: type_label / 배지 그룹 / 표시분류 + *_formatted 동반.
+     *
+     * @effects row_data_carries_badge_group_display_category_and_formatted_timestamps
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_exposes_badge_and_display_category(): void
     {
@@ -35,7 +45,7 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
         $this->assertSame('refund_restore', $array['type']);
         $this->assertSame('teal', $array['admin_badge_group']);   // 복원계
-        $this->assertSame('adjust', $array['user_display_category']); // 사용자 4분류
+        $this->assertSame('earn', $array['user_display_category']); // 잔액 증가 → '적립'
         $this->assertNotEmpty($array['type_label']);
 
         // *_at 원시 + *_formatted 사용자 타임존 동반
@@ -49,6 +59,10 @@ class MileageTransactionResourceTest extends ModuleTestCase
      *
      * `roundToCurrency` 는 자릿수 0인 통화(KRW 등)를 정수로, 자릿수가 있는 통화를 float 로
      * 반환한다. 1000.0 처럼 의미 없는 소수부가 응답에 노출되지 않도록 한 의도된 계약이다.
+     *
+     * @effects row_amounts_are_normalized_to_the_currency_precision_with_formatted_twins
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_amounts_are_normalized_to_currency_precision(): void
     {
@@ -67,6 +81,10 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * Collection: data + abilities(can_manage) 구조.
+     *
+     * @effects collection_wraps_rows_with_the_can_manage_ability
+     *
+     * @return void 반환값 없음
      */
     public function test_collection_structure_with_abilities(): void
     {
@@ -84,6 +102,10 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * 적립계 + 소멸 집계(expired_amount) 기준 expiry_state 계산: active/partial/fully.
+     *
+     * @effects earning_row_exposes_expired_amount_and_state
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_expiry_state_by_expired_amount(): void
     {
@@ -109,6 +131,10 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * 비적립계(사용)는 소멸 집계가 있어도 expiry_state=active (적립계만 의미).
+     *
+     * @effects non_earning_row_stays_active_even_with_an_expired_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_non_earning_expiry_state_is_active(): void
     {
@@ -122,6 +148,10 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * can_edit_expiry: 적립계 + 미소멸 + 잔여>0 일 때만 true.
+     *
+     * @effects row_data_exposes_can_edit_ability
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_can_edit_expiry_flag(): void
     {
@@ -142,6 +172,10 @@ class MileageTransactionResourceTest extends ModuleTestCase
 
     /**
      * adminBadgeGroup 5색 매핑이 Resource 에 정확히 노출.
+     *
+     * @effects row_badge_group_matches_the_five_color_map_for_every_type
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_badge_group_for_each_type(): void
     {
@@ -158,5 +192,25 @@ class MileageTransactionResourceTest extends ModuleTestCase
             $array = (new MileageTransactionResource($tx))->toArray(Request::create('/'));
             $this->assertSame($expected, $array['admin_badge_group'], "{$type} 배지 그룹");
         }
+    }
+
+    /**
+     * 환불 지급(refund_credit)은 복원계 배지·적립 분류로 보이고, 유효기간을 편집할 수 없다(Q2).
+     *
+     * @effects refund_credit_row_is_teal_earn_and_expiry_locked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_refund_credit_cannot_edit_expiry(): void
+    {
+        $tx = $this->makeTx('refund_credit');
+        $tx->expires_at = null;
+        $array = (new MileageTransactionResource($tx))->toArray(Request::create('/'));
+
+        $this->assertSame(__('sirsoft-ecommerce::enums.mileage_transaction_type.refund_credit'), $array['type_label']);
+        $this->assertSame('환불 지급', $array['type_label']);
+        $this->assertSame('teal', $array['admin_badge_group']);
+        $this->assertSame('earn', $array['user_display_category']);
+        $this->assertFalse($array['can_edit_expiry']);
     }
 }

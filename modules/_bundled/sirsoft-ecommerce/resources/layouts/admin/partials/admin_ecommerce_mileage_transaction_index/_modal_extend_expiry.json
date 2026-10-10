@@ -1,281 +1,295 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "마일리지 일괄 유효기간 연장 모달 (지급계 lot 대상 + G7 표준 검증 피드백 + 로딩 상태). user_id 는 uuid 전송 (코어 UserResource 가 id 미노출)."
-  },
-  "id": "modal_extend_expiry",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.title",
-    "size": "sm",
-    "closeOnOverlayClick": false
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
-      "children": [
-        {
-          "id": "extend_error_banner",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.mileageExtend?.errors}}",
-          "props": {
-            "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "triangle-exclamation",
-                    "size": "md",
-                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-sm font-medium text-red-800 dark:text-red-200"
-                      },
-                      "text": "{{_global.mileageExtend?.errors?.message ?? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.validation_error')}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Ul",
-                      "if": "{{_global.mileageExtend?.errors?.errors && Object.keys(_global.mileageExtend.errors.errors).length > 0}}",
-                      "props": {
-                        "className": "mt-1 list-disc list-inside space-y-0.5"
-                      },
-                      "iteration": {
-                        "source": "Object.entries(_global.mileageExtend?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])",
-                        "item_var": "msg"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Li",
-                          "props": {
-                            "className": "text-xs text-red-700 dark:text-red-300"
-                          },
-                          "text": "{{msg}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-sm text-gray-600 dark:text-gray-400"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.selected_lots|count={{(_global.mileageExtend?.lotIds ?? []).length}}"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "value": "{{_global.mileageExtend?.days ?? 30}}",
-                    "min": "1",
-                    "className": "{{_global.mileageExtend?.errors?.errors?.days ? 'input w-24 text-center input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-24 text-center'}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "input",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "mileageExtend.days": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-sm text-gray-600 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days_suffix"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_global.mileageExtend?.errors?.errors?.days}}",
-              "props": {
-                "className": "form-error"
-              },
-              "text": "{{_global.mileageExtend?.errors?.errors?.days?.[0] ?? ''}}"
-            }
-          ]
-        }
-      ]
+    "comment": "고른 적립건들의 유효기간을 한꺼번에 며칠씩 미루는 창.\n  대상을 여기서 고르지 않는다 — 표에서 체크한 적립건 id 묶음을 `_global.mileageExtend` 에 담아\n  넘겨받는다. 회원은 보내지 않는다 — 여러 회원의 적립건을 함께 고를 수 있고, 서버가 적립건별\n  주인 회원을 찾아 전부 연장한다(한 회원만 지정하면 다른 회원의 적립건이 조용히 빠진다).\n  실행 버튼의 잠금 조건은 셋이다 — 저장 중이거나, 일수가 1 미만이거나, 고른 적립건이 없으면\n  눌리지 않는다. 셋 다 서버에 가기 전에 거를 수 있는 것들이다.\n  바깥을 눌러도 닫히지 않는다 — 입력 중 실수로 사라지는 것을 막는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마일리지 일괄 유효기간 연장 모달 (지급계 lot 대상 + G7 표준 검증 피드백 + 로딩 상태). 회원 미지정 — 여러 회원의 적립건을 함께 연장."
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-2 mt-6"
-      },
-      "children": [
+    "id": "modal_extend_expiry",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.title",
+        "size": "sm",
+        "closeOnOverlayClick": false
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "disabled": "{{_global.mileageExtend?.isSaving ?? false}}",
-            "className": "btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.cancel"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "id": "extend_error_banner",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.mileageExtend?.errors}}",
+                    "props": {
+                        "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "size": "md",
+                                        "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                            },
+                                            "text": "{{_global.mileageExtend?.errors?.message ?? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.validation_error')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Ul",
+                                            "if": "{{_global.mileageExtend?.errors?.errors && Object.keys(_global.mileageExtend.errors.errors).length > 0}}",
+                                            "iteration": {
+                                                "source": "Object.entries(_global.mileageExtend?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])",
+                                                "item_var": "msg"
+                                            },
+                                            "props": {
+                                                "className": "mt-1 list-disc list-inside space-y-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "props": {
+                                                        "className": "text-xs text-red-700 dark:text-red-300"
+                                                    },
+                                                    "text": "{{msg}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.selected_lots|count={{(_global.mileageExtend?.lotIds ?? []).length}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "연장 일수. 입력칸이 주는 값은 글자라, 실행 액션이 보낼 때 숫자로 바꾼다(잠금 조건도 마찬가지). 여기서 바꾸지 않는 것은 입력 중 빈 칸을 0 으로 만들지 않기 위해서다.",
+                                            "type": "input",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageExtend.days": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "value": "{{_global.mileageExtend?.days ?? 30}}",
+                                        "min": "1",
+                                        "className": "{{_global.mileageExtend?.errors?.errors?.days ? 'input w-24 text-center input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-24 text-center'}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days_suffix|count={{_global.mileageExtend?.days ?? 30}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.mileageExtend?.errors?.errors?.days}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_global.mileageExtend?.errors?.errors?.days?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "id": "extend_submit_button",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "disabled": "{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0 || !_global.mileageExtend?.userId}}",
-            "className": "flex items-center gap-2 btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "params": {
-                "actions": [
-                  {
-                    "handler": "setState",
-                    "params": {
-                      "target": "global",
-                      "mileageExtend.isSaving": true,
-                      "mileageExtend.errors": null
-                    }
-                  },
-                  {
-                    "handler": "apiCall",
-                    "auth_required": true,
-                    "target": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions/extend-expiry",
-                    "params": {
-                      "method": "POST",
-                      "body": "{{({ user_id: _global.mileageExtend?.userId, lot_ids: _global.mileageExtend?.lotIds ?? [], days: Number(_global.mileageExtend?.days ?? 0) })}}"
-                    },
-                    "onSuccess": [
-                      {
-                        "handler": "closeModal"
-                      },
-                      {
-                        "handler": "refetchDataSource",
-                        "params": {
-                          "dataSourceId": "transactions"
-                        }
-                      },
-                      {
-                        "handler": "toast",
-                        "params": {
-                          "type": "success",
-                          "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.extend_success"
-                        }
-                      },
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "mileageExtend": null
-                        }
-                      }
-                    ],
-                    "onError": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "mileageExtend.isSaving": false,
-                          "mileageExtend.errors": "{{error}}"
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.mileageExtend?.isSaving}}",
-              "props": {
-                "name": "spinner",
-                "size": "sm",
-                "className": "animate-spin"
-              }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-2 mt-6"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.mileageExtend?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.submit')}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.mileageExtend?.isSaving ?? false}}",
+                        "className": "btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.cancel"
+                        }
+                    ]
+                },
+                {
+                    "id": "extend_submit_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄 연장 실행. 적립건 묶음·일수 둘을 그대로 보낸다(회원은 서버가 적립건에서 찾는다).\n            성공 갈래에서 `mileageExtend` 와 목록 화면의 표 선택(`$parent._local.selectedItems`)을 함께\n            비우는 것은 다음 연장에 이전 선택이 남지 않게 하기 위해서다 — 표 선택이 남으면 체크가 켜진 채\n            버튼이 다시 눌려 같은 적립건이 한 번 더 연장된다. 실패 갈래는 창을 닫지 않고 서버 응답을\n            통째로 담아 위 배너에 넘기며, 선택은 고쳐서 다시 시도할 수 있게 그대로 둔다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "mileageExtend.isSaving": true,
+                                        "mileageExtend.errors": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions/extend-expiry",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": "{{({ lot_ids: _global.mileageExtend?.lotIds ?? [], days: Number(_global.mileageExtend?.days ?? 0) })}}"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "comment": "표 선택 해제는 창을 닫기 **전에** 한다 — 창이 닫히면 `$parent` 가 가리킬 레이아웃 문맥이 사라져 쓰기가 버려진다.\n                  두 자리에 같은 값을 쓴다(docs/frontend/modal-usage.md 「부모 폼 커밋」): 창의 `$parent._local` 쓰기는 액션이 읽는\n                  `_global._local` 미러에서 빠지므로, 화면 쪽만 비우면 다음 [일괄 연장]이 옛 선택을 실어 보낼 수 있다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "_local.selectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "selectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "transactions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.extend_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageExtend": null
+                                            }
+                                        }
+                                    ],
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "mileageExtend.isSaving": false,
+                                            "mileageExtend.errors": "{{error}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0}}",
+                        "className": "flex items-center gap-2 btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.mileageExtend?.isSaving}}",
+                            "props": {
+                                "name": "spinner",
+                                "size": "sm",
+                                "className": "animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.mileageExtend?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_extend.submit')}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

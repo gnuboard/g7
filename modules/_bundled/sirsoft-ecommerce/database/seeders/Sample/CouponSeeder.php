@@ -21,6 +21,8 @@ class CouponSeeder extends Seeder
 {
     /**
      * 쿠폰 시더를 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -38,6 +40,8 @@ class CouponSeeder extends Seeder
 
     /**
      * 기존 쿠폰 데이터를 삭제합니다.
+     *
+     * @return void 반환값 없음
      */
     private function deleteExistingData(): void
     {
@@ -1349,6 +1353,7 @@ class CouponSeeder extends Seeder
      * target_scope에 따라 상품/카테고리 피벗 테이블을 연결합니다.
      *
      * @param  array<int, Coupon>  $coupons  생성된 쿠폰 배열
+     * @return void 반환값 없음
      */
     private function attachTargetScopes(array $coupons): void
     {
@@ -1403,6 +1408,7 @@ class CouponSeeder extends Seeder
      * 모든 쿠폰을 모든 사용자에게 사용 가능한 상태로 발급합니다.
      *
      * @param  array<int, Coupon>  $coupons  생성된 쿠폰 배열
+     * @return void 반환값 없음
      */
     private function createIssueRecords(array $coupons): void
     {
@@ -1429,23 +1435,25 @@ class CouponSeeder extends Seeder
                     continue;
                 }
             }
+            // 발급 수는 총 발급 수량을 넘지 않는다 (발급 이력이 「총 수량」보다 많은 쿠폰을 만들지 않음)
             $targetUserIds = $userIds;
+            shuffle($targetUserIds);
+            if ($coupon->total_quantity !== null) {
+                $targetUserIds = array_slice($targetUserIds, 0, max(0, (int) $coupon->total_quantity));
+            }
 
             foreach ($targetUserIds as $userId) {
-                $issuedAt = $now->copy()->subDays(rand(1, 7));
+                // 발급 시각은 쿠폰의 발급 기간 안 (중지·만료 쿠폰도 그 기간에 발급된 것으로)
+                $issuedAt = $this->issuedAtWithinWindow($coupon, $now);
 
-                // 만료일 계산 (충분히 긴 유효기간 설정)
+                // 만료일: 발급일 기준 일수 또는 쿠폰 유효기간 종료일 — 연장하지 않는다
                 $expiredAt = null;
                 if ($coupon->valid_type === 'days_from_issue' && $coupon->valid_days) {
                     $expiredAt = $issuedAt->copy()->addDays($coupon->valid_days);
                 } elseif ($coupon->valid_to) {
                     $expiredAt = $coupon->valid_to;
                 }
-
-                // 만료일이 이미 지났으면 미래로 연장
-                if ($expiredAt && $expiredAt->lt($now)) {
-                    $expiredAt = $now->copy()->addDays(30);
-                }
+                $isExpired = $expiredAt !== null && $expiredAt->lt($now);
 
                 // 쿠폰 코드 (download 방식만)
                 $couponCode = null;
@@ -1457,7 +1465,8 @@ class CouponSeeder extends Seeder
                     'coupon_id' => $coupon->id,
                     'user_id' => $userId,
                     'coupon_code' => $couponCode,
-                    'status' => 'available', // 모두 사용 가능한 상태로 발급
+                    // 유효기간이 지난 발급분은 만료 상태 (사용 가능으로 남기면 지난 쿠폰이 주문서에 뜬다)
+                    'status' => $isExpired ? 'expired' : 'available',
                     'issued_at' => $issuedAt,
                     'expired_at' => $expiredAt,
                     'used_at' => null,
@@ -1478,6 +1487,25 @@ class CouponSeeder extends Seeder
             }
         }
 
-        $this->command->line("  - 발급 내역 {$totalIssues}건 생성 완료 (다운로드 쿠폰은 약 1/3만 발급)");
+        $this->command->line("  - 발급 내역 {$totalIssues}건 생성 완료 (다운로드 쿠폰은 약 1/3만 발급, 총 수량 상한 준수)");
+    }
+
+    /**
+     * 쿠폰의 발급 기간 안에서 발급 시각을 고릅니다 (기간이 없으면 최근 1~7일).
+     *
+     * @param  Coupon  $coupon  쿠폰
+     * @param  Carbon  $now  현재 시각
+     * @return Carbon 발급 시각
+     */
+    private function issuedAtWithinWindow(Coupon $coupon, Carbon $now): Carbon
+    {
+        $from = $coupon->issue_from instanceof Carbon ? $coupon->issue_from->copy() : null;
+        $to = $coupon->issue_to instanceof Carbon ? $coupon->issue_to->copy()->min($now) : $now->copy();
+
+        if ($from === null || $from->greaterThanOrEqualTo($to)) {
+            return $to->copy()->subDays(rand(1, 7));
+        }
+
+        return Carbon::createFromTimestamp(rand($from->getTimestamp(), $to->getTimestamp()));
     }
 }

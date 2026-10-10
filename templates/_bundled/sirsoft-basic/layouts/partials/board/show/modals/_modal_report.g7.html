@@ -1,0 +1,126 @@
+<partial description="공용 신고 모달 - 게시글/댓글" editor_label="$t:user.modal_label.board_show.board_report_modal">
+  <!-- 공용 신고 모달 - modals 섹션이므로 _global 사용 (페이지 _local 접근 불가) -->
+  <modal data-type="composite" data-ref="board_report_modal" id="board_report_modal" title="{{_global.reportModal.type === 'comment' ? '$t:board.post.report_comment' : '$t:board.post.report_post'}}" size="lg">
+    <div class="space-y-4">
+      <!-- 안내 배너 -->
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div class="flex items-start gap-3">
+          <icon name="info-circle" size="lg" class="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+          <div>
+            <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">$t:board.post.report_notice_title</p>
+            <p class="text-sm text-yellow-700 dark:text-yellow-300">$t:board.post.report_notice_content</p>
+          </div>
+        </div>
+      </div>
+      <!-- 신고 대상 댓글 내용 표시 (댓글 신고 시에만) -->
+      <div data-if="{{_global.reportModal.type === 'comment' &amp;&amp; _global.reportModal.comment_content}}" class="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">$t:board.post.report_target_comment</p>
+        <div data-if="{{_global.reportModal.comment_author_name}}" class="flex items-center gap-2 mb-2">
+          <avatar data-type="composite" name="{{_global.reportModal.comment_author_name}}" avatar="{{_global.reportModal.comment_author_avatar}}" size="xs"/>
+          <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{_global.reportModal.comment_author_name}}</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500/80">{{_global.reportModal.comment_created_at}}</span>
+        </div>
+        <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">{{_global.reportModal.comment_content}}</p>
+      </div>
+      <!-- 신고 사유 선택 (Label + native Select + Option) -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:board.post.report_reason</label>
+        <select value="{{_global.reportForm?.reason_type ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <on type="change">
+            <!-- 신고 사유 선택 — 고를 수 있는 사유는 게시판 설정에서 오므로 게시판마다 다르다. 이 창은 modals 소속이라 화면의 _local 을 못 보고, 그래서 입력값을 전역에 담는다. -->
+            <set-state target="global">
+              <field name="reportForm">
+                <field name="reason_type" value="{{$event.target.value}}"/>
+              </field>
+            </set-state>
+          </on>
+          <option value="" :selected="true">$t:board.post.select_reason</option>
+          <!-- API에서 받은 report_types 배열을 iteration으로 Option 생성 -->
+          <option data-each="type, idx in {{post?.data?.board?.report_types ?? []}}" value="{{type.value}}">{{type.label}}</option>
+        </select>
+      </div>
+      <!-- 상세 내용 입력 (Label + Textarea) -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:board.post.report_detail</label>
+        <textarea placeholder="$t:board.post.report_detail_placeholder" value="{{_global.reportForm?.reason_detail ?? ''}}" :rows="4" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :minLength="3" :maxLength="1000">
+          <on type="change">
+            <!-- 상세 사유 입력 — 사유 선택과 같은 전역 묶음에 쌓인다. 입력 자체는 막지 않고 비어 있는지는 보낼 때 본다. -->
+            <set-state target="global">
+              <field name="reportForm">
+                <field name="reason_detail" value="{{$event.target.value}}"/>
+              </field>
+            </set-state>
+          </on>
+        </textarea>
+      </div>
+      <!-- 버튼 영역 -->
+      <div class="flex justify-end gap-2 mt-6">
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <on type="click">
+            <!-- 취소 — 적던 사유를 비우고 닫는다. 전역에 남겨 두면 다음에 다른 글을 신고하려 열 때 앞의 내용이 그대로 보인다. -->
+            <sequence>
+              <set-state target="global">
+                <field name="reportForm">
+                  <field name="reason_type" value=""/>
+                  <field name="reason_detail" value=""/>
+                </field>
+              </set-state>
+              <close-modal/>
+            </sequence>
+          </on>
+          $t:common.cancel
+        </button>
+        <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting === true}}">
+          <on type="click">
+            <!-- 신고 보내기 — 사유와 상세를 차례로 확인해 비어 있으면 그 자리에서 알리고 멈춘다. 성공하면 창을 닫고 글을 다시 받아 «신고됨» 표시가 새로고침 없이 바뀌게 하고, 실패(이미 신고함·권한 없음 등)해도 창을 닫아 오류 안내만 남긴다 — 열린 채로 두면 무엇이 막혔는지 모른 채 다시 누르게 된다. -->
+            <conditions if="{{_global.reportSubmitting !== true}}">
+              <!-- 1. 신고 사유 미선택 시 toast -->
+              <when if="{{!_global.reportForm?.reason_type}}">
+                <toast type="error" message="$t:board.post.report_reason_required"/>
+              </when>
+              <!-- 2. 상세 사유 미입력 시 toast -->
+              <when if="{{!_global.reportForm?.reason_detail?.trim()}}">
+                <toast type="error" message="$t:board.post.report_detail_required"/>
+              </when>
+              <!-- 3. 검증 통과 → 제출 -->
+              <else>
+                <set-state target="global" :reportSubmitting="true"/>
+                <api-call target="{{_global.reportModal?.apiEndpoint}}" :auth_required="true" method="POST">
+                  <success>
+                    <set-state target="global" :reportSubmitting="false">
+                      <field name="reportForm">
+                        <field name="reason_type" value=""/>
+                        <field name="reason_detail" value=""/>
+                      </field>
+                    </set-state>
+                    <set-state target="global">
+                      <field name="reportModal">
+                        <field name="type" :value="null"/>
+                        <field name="apiEndpoint" value=""/>
+                      </field>
+                    </set-state>
+                    <toast type="success" message="$t:board.post.report_submitted"/>
+                    <close-modal/>
+                    <!-- 신고 성공 후 게시글 데이터 재조회 → is_already_reported 갱신 → 버튼이 즉시 '신고됨'으로 전환 (게시글/댓글 공통). 새로고침 없이 반영 (이슈 #413-60 증상2) -->
+                    <refetch-data-source dataSourceId="post"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :reportSubmitting="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                    <!-- 신고 실패(409 중복/403/422) 시 모달을 닫는다 → 에러 토스트만 화면에 노출되어 '진행 불가'처럼 보이던 현상 해소 (이슈 #413-60 증상1, 설계 결정: 모달 닫고 토스트) -->
+                    <close-modal/>
+                  </fail>
+                  <body reason_type="{{_global.reportForm?.reason_type}}" reason_detail="{{_global.reportForm?.reason_detail}}"/>
+                </api-call>
+              </else>
+            </conditions>
+          </on>
+          <div class="flex items-center gap-2">
+            <icon data-if="{{_global.reportSubmitting}}" name="spinner" size="sm" class="animate-spin"/>
+            <span>$t:board.post.submit_report</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

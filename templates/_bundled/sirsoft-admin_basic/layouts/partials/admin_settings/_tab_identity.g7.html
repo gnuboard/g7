@@ -1,0 +1,13 @@
+<!-- 본인인증 탭의 **껍데기**. 내용은 없고 하위 조각 넷(기본·제공자·정책·메시지)을 담기만 한다.
+  탭 안에 다시 탭이 있는 유일한 자리인데, 그 하위 탭 막대는 이 조각이 아니라 **부모 화면의 고정 머리**에
+  있다 — 스크롤해도 붙어 있어야 하기 때문이다(하위 조각들의 `scroll-mt-*` 여백이 그 높이를 비켜 둔 것). -->
+<partial description="환경설정 본인인증(IDV) 탭 컨테이너 — sub-tab 은 admin_settings.json 의 sticky_header 안에 위치 (게시판 환경설정 패턴), 본 partial 은 4 서브섹션 partial 만 포함">
+  <div data-ref="tab_content_identity" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}">
+    <include src="partials/admin_settings/_tab_identity_basic.g7.html"/>
+    <include src="partials/admin_settings/_tab_identity_providers.g7.html"/>
+    <div data-ref="identity_section_policies" class="scroll-mt-44">
+      <include src="partials/admin_settings/_tab_identity_policies.g7.html"/>
+    </div>
+    <include src="partials/admin_settings/_tab_identity_messages.g7.html"/>
+  </div>
+</partial>

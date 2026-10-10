@@ -1,6 +1,7 @@
 {
   "load_failed": "Could not load {label}.",
   "load_failed_multiple": "Could not load {count} items.",
+  "layout_script": "a page feature script",
   "module_styles": "module styles",
   "plugin_styles": "plugin styles",
   "retry": "Retry",

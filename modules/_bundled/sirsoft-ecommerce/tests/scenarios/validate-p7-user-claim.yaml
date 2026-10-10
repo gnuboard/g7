@@ -1,0 +1,47 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 결함 회귀 묶음이라 축이 서로 독립이다(화면·선택 방식·차액 부호·우선순위 출처·문구 해석). 교차 조합에 뜻이 없고, 효과마다 그 효과를 여는 조합을 테스트 docblock 이 직접 적는다.
+feature: "#599 validate P7 — 사용자 클레임 진입·작성 핸들러와 기본 배송지 카드"
+
+description: |
+  브랜치 검증(2026-09-23)이 사용자 화면에서 찾은 결함 가운데 이커머스 모듈 쪽(핸들러·주입 조각)을 잠근다.
+
+  ① 주문상세 전체선택이 `claimable` 판정을 무시해 잠긴 칸까지 골랐다 — 신청 버튼이 전부 꺼졌다.
+  ② 수정 화면의 교환 차액이 서버의 부호 붙은 표기를 받아 화면이 부호를 한 번 더 붙였다(`--5,000원`).
+  ③ 수정 화면 환불 우선순위를 금액 분해로만 역산해 PG 우선 신청서가 마일리지 우선으로 뒤집혔다.
+     응답에 `refund_priority` 가 있으면 그 값을 쓰고, 없으면 종전 역산으로 떨어진다.
+  ④ 제출이 첨부 업로드 대기 **앞** 의 로컬 스냅샷으로 본문을 만들었다.
+  ⑤ 안내 문구가 템플릿 키 + 죽은 한국어 폴백이라 다른 템플릿에서 키 원문이 떴다 — 모듈 키로 옮기고
+     키가 그대로 돌아오면 폴백 문구로 떨어진다.
+  ⑥ 기본 배송지 카드가 사용자 템플릿에 없는 `Badge` 를 써서 배지 자리가 조용히 비었다.
+  ⑦ (P7-B) 등록 계좌 프리필이 가린 모양으로 온다. 서버는 세 칸이 모두 가린 모양 그대로일 때만 원문으로
+     되돌리므로, 한 칸을 고치면 나머지 가린 칸을 비우고 별표가 섞인 계좌는 제출하지 않는다.
+
+axes:
+  screen: [order_detail, claim_edit, mypage_profile]
+  selection: [select_all, single]
+  price_difference: [negative]
+  refund_priority: [pg_first, missing]
+  apply_handler: [submit, toggle, reason]
+  upload: [pending]
+  locale: [translated, missing]
+  address: [default, none]
+  prefill: [masked, plain]
+  edit: [untouched, account_partial, holder_replaced, bank_changed, mixed_submit]
+
+effects:
+  - order_detail_select_all_follows_claimable
+  - claim_edit_price_difference_is_unsigned
+  - claim_edit_refund_priority_prefers_saved_value
+  - claim_apply_submit_reads_latest_local_after_upload
+  - claim_apply_messages_use_module_keys
+  - mypage_address_card_uses_user_template_components
+  - claim_refund_account_masked_prefill_is_all_or_nothing
+  - claim_refund_account_masked_value_never_mixes_on_submit
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/validateP7UserClaimHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/mypageProfileAddressCard.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/validateP7RefundAccountMask.test.ts
+
+notes: |
+  `refund_priority` 필드를 응답에 싣는 일은 백엔드 몫이다(ClaimResource). 이 매니페스트는 화면이
+  그 필드를 우선하고, 없을 때 종전 역산으로 떨어지는지만 본다.

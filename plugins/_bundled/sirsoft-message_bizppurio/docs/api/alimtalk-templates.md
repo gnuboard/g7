@@ -10,7 +10,7 @@
 1. 이 문서는 알림톡 템플릿 작성 모달의 참조 조회(카테고리·발신프로필) 엔드포인트 레퍼런스입니다
 2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 실시간 템플릿 목록/상세 화면(구 Phase 5)은 DB 기반 라이프사이클(templates.md)로 대체되어 제거됐습니다
-4. kapi 실패는 422 + errors.bizppurio_message(카카오 사유 원문) 규약을 따릅니다
+4. kapi 실패는 422 + errors.bizppurio_message(카카오 사유 원문) 규약을 따릅니다. 비즈뿌리오 서버에 닿지 못하면(타임아웃·DNS·프록시) errors 없이 연결 실패 안내 422 입니다
 5. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 ```
 
@@ -51,7 +51,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
   "success": true,
-  "message": "성공적으로 처리되었습니다.",
+  "message": "알림톡 카테고리를 불러왔습니다.",
   "data": {
     "categories": [
       { "code": "001001", "name": "회원가입", "groupName": "회원" },
@@ -74,7 +74,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 템플릿 등록에 사용할 카카오 카테고리 전체(대분류·소분류)를 조회한다(`data.categories`). 작성 모달의
 카테고리 셀렉트가 소비하며, 선택된 소분류 코드가 템플릿 생성/수정의 `content.categoryCode` 값이 된다.
-kapi 자격증명 미설정·호출 실패 시 422 + `errors.bizppurio_message`(카카오 사유 원문) 를 반환한다.
+kapi 자격증명 미설정·호출 실패 시 422 + `errors.bizppurio_message`(카카오 사유 원문) 를 반환한다. 서버에 연결하지 못하면 `messages.error.connection_failed` 안내 422 를 반환한다(errors 없음).
 
 
 ### GET /api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/profiles
@@ -107,7 +107,7 @@ Authorization: Bearer {YOUR_TOKEN}
 ```json
 {
   "success": true,
-  "message": "성공적으로 처리되었습니다.",
+  "message": "알림톡 발신 프로필을 불러왔습니다.",
   "data": {
     "profiles": [
       { "senderKey": "05aa099bcbc5220a8c0b2...", "name": "@우리상점", "status": "A", "block": false, "dormant": false }
@@ -128,4 +128,4 @@ Authorization: Bearer {YOUR_TOKEN}
 **설명**
 
 발신프로필(사용중) 상태 정보를 조회한다(`data.profiles`). 작성 모달의 발신프로필 셀렉트·상태 표시가
-소비한다. kapi 자격증명 미설정·호출 실패 시 422 + `errors.bizppurio_message`(카카오 사유 원문) 를 반환한다.
+소비한다. kapi 자격증명 미설정·호출 실패 시 422 + `errors.bizppurio_message`(카카오 사유 원문) 를 반환한다. 서버에 연결하지 못하면 `messages.error.connection_failed` 안내 422 를 반환한다(errors 없음).

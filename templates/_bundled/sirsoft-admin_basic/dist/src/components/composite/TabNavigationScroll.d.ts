@@ -10,6 +10,12 @@ export interface Tab {
     /** 탭 아이콘 (Font Awesome 아이콘명) */
     iconName?: IconName;
     disabled?: boolean;
+    /**
+     * 표시 조건. 레이아웃의 `if="{{...}}"` 가 평가된 값이며, 키가 있고 값이 거짓(false·undefined·null·빈 문자열·0)이면
+     * 탭을 그리지 않는다 — 노드의 `if` 와 같은 뜻이다(`{{route?.id}}` 처럼 거짓이 undefined 로 오는 식도 숨는다).
+     * 확장이 끼워 넣는 탭은 이동할 본문 카드와 같은 조건을 달아, 카드가 없을 때 갈 곳 없는 빈 탭이 남지 않게 한다.
+     */
+    if?: unknown;
     /** 개별 탭의 스크롤 오프셋 (우선순위: 개별 > 공통 > 기본값) */
     scrollOffset?: number;
     /** 개별 탭의 스크롤 딜레이 (우선순위: 개별 > 공통 > 기본값) */

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage [cross_product] reason: task-runner.php 는 진입과 함께 SSE 를 실행하는 파일이라 include 불가 — 조합은 순수 함수 단위 effect 로 검증하고, 분기 순서는 소스 문자열로 잠근다.
+# audit:allow test-scenario-coverage[cross_product] reason: task-runner.php 는 진입과 함께 SSE 를 실행하는 파일이라 include 불가 — 조합은 순수 함수 단위 effect 로 검증하고, 분기 순서는 소스 문자열로 잠근다.
 
 feature: 인스톨러 vendor 재사용 경로의 개발용(require-dev) 패키지 감지·안내와 컴파일 캐시 정리
 

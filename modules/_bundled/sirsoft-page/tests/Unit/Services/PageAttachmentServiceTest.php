@@ -22,11 +22,17 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     private User $adminUser;
 
+    /**
+     * 페이지 수정 권한을 가진 관리자로 로그인하고 저장소를 모킹한 서비스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->adminUser = $this->createAdminUser([]);
+        // 페이지에 붙는 업로드·삭제는 서비스가 수정 권한을 직접 본다(7.1.0 abilities 게이트 page-hello N1·#4)
+        $this->adminUser = $this->createAdminUser(['sirsoft-page.pages.read', 'sirsoft-page.pages.create', 'sirsoft-page.pages.update']);
         $this->actingAs($this->adminUser);
 
         // StorageInterface 모킹
@@ -44,6 +50,11 @@ class PageAttachmentServiceTest extends ModuleTestCase
         $this->service = app(PageAttachmentService::class);
     }
 
+    /**
+     * Mockery 기대값을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -54,6 +65,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 파일을 페이지에 업로드할 수 있는지 확인
+     *
+     * @effects page_attachment_upload_creates_row_for_page
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_creates_attachment_for_page(): void
     {
@@ -76,6 +91,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * temp_key로 임시 업로드할 수 있는지 확인
+     *
+     * @effects page_attachment_upload_with_temp_key_creates_temp_row
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_creates_temp_attachment(): void
     {
@@ -89,6 +108,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 업로드 시 order가 자동 증가하는지 확인
+     *
+     * @effects page_attachment_upload_increments_order
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_auto_increments_order(): void
     {
@@ -110,6 +133,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 이미지 업로드 시 메타데이터(width, height)가 저장되는지 확인
+     *
+     * @effects page_attachment_image_upload_stores_dimensions_in_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_image_stores_dimensions_in_meta(): void
     {
@@ -132,6 +159,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 임시 첨부파일을 페이지에 연결할 수 있는지 확인
+     *
+     * @effects temp_attachments_linked_to_page_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_link_temp_attachments_moves_to_page(): void
     {
@@ -163,6 +194,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
      * 이커머스 ProductImageService::linkTempImages 와 동일하게, getByTempKey 가
      * order 순으로 반환한 순서대로 order 를 1,2,3 으로 재배치한다. (생성 모드의
      * 드래그 재정렬은 미지원 — 업로드 순서가 SSoT, 재정렬은 수정 모드 reorder API)
+     *
+     * @effects temp_attachments_linked_in_upload_order_1_to_n
+     *
+     * @return void 반환값 없음
      */
     public function test_link_reassigns_order_by_upload_sequence(): void
     {
@@ -189,6 +224,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 첨부파일을 삭제할 수 있는지 확인
+     *
+     * @effects page_attachment_delete_hard_deletes_row
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_attachment_hard_deletes(): void
     {
@@ -211,6 +250,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 첨부파일 순서를 변경할 수 있는지 확인
+     *
+     * @effects page_attachment_reorder_updates_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_reorder_changes_attachment_orders(): void
     {
@@ -242,6 +285,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 해시로 첨부파일을 조회할 수 있는지 확인
+     *
+     * @effects page_attachment_lookup_by_hash_returns_row
+     *
+     * @return void 반환값 없음
      */
     public function test_get_by_hash_returns_attachment(): void
     {
@@ -262,6 +309,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 존재하지 않는 해시로 조회 시 null을 반환하는지 확인
+     *
+     * @effects page_attachment_lookup_by_unknown_hash_returns_null
+     *
+     * @return void 반환값 없음
      */
     public function test_get_by_hash_returns_null_for_nonexistent(): void
     {
@@ -274,6 +325,10 @@ class PageAttachmentServiceTest extends ModuleTestCase
 
     /**
      * 페이지의 첨부파일 목록을 조회할 수 있는지 확인
+     *
+     * @effects page_attachment_list_by_page_id_returns_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_get_by_page_id_returns_attachments(): void
     {

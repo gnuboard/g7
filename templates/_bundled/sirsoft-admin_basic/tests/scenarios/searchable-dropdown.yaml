@@ -1,0 +1,66 @@
+feature: searchable_dropdown
+
+description: |
+  검색으로 골라 넣는 드롭다운. 관리자 화면 여러 곳이 이 하나를 공유한다 — 알림 템플릿의
+  역할·사용자 수신자, 회원 폼, 활동 로그 필터.
+
+  이 컴포넌트가 지켜야 하는 것 중 **화면을 잃는 대가가 큰** 축이 하나 있다. 옵션은 화면마다
+  다른 곳에서 온다(검색 API 응답, 현재 선택값 시드, 확장이 주입한 목록). 그중 하나가 문자열이
+  아닌 라벨을 흘리면 종전에는 `opt.label.toLowerCase is not a function` 이 나면서 **드롭다운
+  전체가 언마운트**됐다. 예외가 렌더 중에 나서 오류 경계가 그 서브트리만 걷어내므로, 화면은
+  멀쩡히 남고 그 칸만 없어진다 — 콘솔을 보지 않으면 "원래 그런 화면" 으로 읽힌다.
+
+  실측(§9 T-D2)에서 알림 템플릿 수정 창의 역할 칸이 **검색어 첫 글자**에 사라지는 것으로
+  드러났고, 그때 `options` 는 `[{value: [], label: [], description: []}]` 이었다. 공급하는
+  쪽(레이아웃 식)이 빈 선택값에서 유령 항목을 만들지 않게 고쳤고, 받는 쪽인 이 컴포넌트도
+  한 항목 때문에 자기 화면을 잃지 않도록 라벨·설명을 문자열로 좁혀 비교한다.
+
+axes:
+  interaction:
+    - open_close
+    - search
+    - selection
+    - props
+  selection_mode:
+    - single
+    - multiple
+
+exclusions:
+  - { interaction: open_close, selection_mode: multiple, reason: "열고 닫는 계약은 선택 모드와 무관하다 — 단일 축이 대표한다" }
+  - { interaction: search, selection_mode: multiple, reason: "필터링은 선택 모드와 무관하다 — 단일 축이 대표한다" }
+  - { interaction: props, selection_mode: multiple, reason: "prop 전달 계약은 선택 모드와 무관하다" }
+
+effects:
+  # 열기·닫기
+  - dropdown_renders_with_a_default_trigger
+  - clicking_the_trigger_opens_the_list_with_a_search_box
+  - escape_closes_the_list
+  - clicking_outside_closes_the_list
+  - disabled_dropdown_refuses_to_open
+  # 검색
+  - typing_filters_options_by_label
+  - typing_filters_options_by_description
+  - no_match_shows_the_no_results_text
+  - typing_calls_the_on_search_callback
+  - empty_options_show_the_initial_hint
+  # 한 항목이 이상해도 화면을 지킨다 (T-D2 회귀)
+  - searchable_dropdown_survives_a_non_string_label
+  # 선택
+  - single_select_closes_after_choosing
+  - multi_select_keeps_the_list_open_for_more
+  - multi_select_toggles_a_chosen_option_off
+  - value_prop_seeds_the_current_selection
+  - unknown_value_falls_back_to_the_trigger_label
+  - seeded_selection_shows_its_label
+  - seeded_multi_selection_shows_the_count
+  - multi_selection_shows_how_many_are_chosen
+  # prop 전달
+  - trigger_label_prop_names_the_button
+  - search_placeholder_prop_reaches_the_input
+  - class_name_prop_reaches_the_container
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/SearchableDropdown.test.tsx
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -1,0 +1,1726 @@
+{
+    "comment": "수집 진단 — 「숫자가 안 늘어나는 이유」를 한 화면에서 찾는다. 상태 카드 넉 장(수집·큐·집계·저장소)은\n  각각 한 줄 요약행이고, 아래에 오늘 제외 사유·집계 실행 이력·최근 실패 로그가 온다.\n  수동 집계·재집계 버튼은 update 권한이 있어야 활성이다(읽기 계정에는 잠긴 채 보인다).\n  재집계 진행률은 **방송이 기본, 폴링이 폴백**이다 — 소켓이 있으면 `analytics.archive.progress` 방송이\n  실행 이력 행 한 줄을 실어 오고, 없으면 진단 응답의 `running_run_id` 가 있는 동안 2초마다 다시 받는다.\n  진행 상태의 출처는 언제나 실행 이력 행 하나라 두 길이 같은 값을 본다.\n  인자가 있는 문구는 `$t:키|인자=` 뒤에 바인딩 식을 붙여 쓴다 — 식 안의 `$t()` 헬퍼는 키만 받아 인자를 버린다.",
+    "version": "1.0.0",
+    "layout_name": "admin_analytics_diagnostics",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.analytics.diagnostics.title"
+    },
+    "data_sources": [
+        {
+            "id": "analytics_diagnostics",
+            "label_key": "$t:editor.data_source.analytics_diagnostics",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "collection": {
+                        "enabled": true,
+                        "mode": "full",
+                        "effective_mode": "full",
+                        "last_tracked_at": null,
+                        "tracked_today": 0,
+                        "excluded_today": {},
+                        "ip_mask_octets": 0
+                    },
+                    "queue": {
+                        "pending_jobs": 0,
+                        "failed_jobs": 0,
+                        "countable": false,
+                        "backlogged": false
+                    },
+                    "archive": {
+                        "last_hour_run": null,
+                        "last_day_run": null,
+                        "lag_hours": null,
+                        "running_run_id": null
+                    },
+                    "storage": {
+                        "tables": [],
+                        "exact": {
+                            "analytics_visits": 0,
+                            "analytics_actions": 0
+                        },
+                        "over_limit": false
+                    },
+                    "geoip": {
+                        "enabled": false,
+                        "db_present": false
+                    },
+                    "trusted_proxy": {
+                        "trusted_configured": false,
+                        "status": "ok"
+                    },
+                    "broadcasting": {
+                        "configured": false
+                    },
+                    "cloud_ranges": {
+                        "enabled": false
+                    },
+                    "failures_24h": 0
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "onSuccess": [
+                {
+                    "comment": "재집계는 늘 워커가 맡아 202 에 run_id 가 없다 — 응답 직후엔 실행 행이 아직 없을 수 있다.\n           행이 생길 때까지의 유예를 세어 두고(모달이 15 를 넣는다) 그 동안은 행이 없어도 폴링을 건다.\n           유예는 폴링 한 번마다 1 씩 줄어 워커가 영영 안 뜨면 30초 뒤 저절로 멎는다(#682 S3 라운드 6).",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "analyticsReaggWait": "{{(_global.analyticsReaggWait ?? 0) > 0 ? (_global.analyticsReaggWait - 1) : 0}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.broadcasting?.configured !== true && (!!response?.data?.data?.archive?.running_run_id || (_global.analyticsReaggWait ?? 0) > 0)}}",
+                    "params": {
+                        "id": "analytics_archive_poll",
+                        "intervalMs": 2000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "analytics_diagnostics"
+                                }
+                            },
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "analytics_archive_runs"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{!response?.data?.data?.archive?.running_run_id && (_global.analyticsReaggWait ?? 0) <= 0}}",
+                    "params": {
+                        "id": "analytics_archive_poll"
+                    }
+                }
+            ],
+            "comment": "진단 한 장. 응답에 실행 중 이력이 있고 소켓이 없으면 2초 폴링을 걸고, 끝나면 멈춘다."
+        },
+        {
+            "id": "analytics_archive_runs",
+            "label_key": "$t:editor.data_source.analytics_archive_runs",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/archive-runs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.runs_page || 1}}",
+                "per_page": 10
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "total": 0
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가\n         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다.",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "집계 실행 이력 — 진행률 바의 출처."
+        },
+        {
+            "id": "analytics_collect_failures",
+            "label_key": "$t:editor.data_source.analytics_collect_failures",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/collect-failures",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.failures_page || 1}}",
+                "per_page": 10,
+                "reason": "{{query.reason}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "total": 0
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가\n         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다.",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "최근 적재 실패 로그."
+        },
+        {
+            "id": "analytics_archive_progress_ws",
+            "label_key": "$t:editor.data_source.analytics_archive_progress_ws",
+            "type": "websocket",
+            "channel": "core.admin.analytics",
+            "event": "analytics.archive.progress",
+            "channel_type": "private",
+            "onReceive": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "analyticsArchiveProgress": "{{$args[0]?.data ?? null}}"
+                    }
+                },
+                {
+                    "comment": "진행률 바는 이력 표의 행 위에만 그려진다 — 큐가 맡은 재집계는 방송이 먼저 오고 행은 아직\n           표에 없을 수 있다. 처음 보는 실행 번호면 그때 한 번 표를 다시 받는다(#682 S3 라운드 6).\n           청크마다 오는 나머지 running 방송은 이미 행이 있으므로 재요청하지 않는다.",
+                    "handler": "refetchDataSource",
+                    "if": "{{$args[0]?.data?.status === 'running' && !!$args[0]?.data?.id && !(analytics_archive_runs?.data?.data ?? []).some(r => r.id === $args[0]?.data?.id)}}",
+                    "params": {
+                        "dataSourceId": "analytics_archive_runs"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{['success', 'failed', 'skipped'].includes($args[0]?.data?.status ?? '')}}",
+                    "params": {
+                        "dataSourceId": "analytics_archive_runs"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{['success', 'failed', 'skipped'].includes($args[0]?.data?.status ?? '')}}",
+                    "params": {
+                        "dataSourceId": "analytics_diagnostics"
+                    }
+                }
+            ],
+            "comment": "재집계 진행률 방송. 받은 행을 전역에 두고 진행률 바가 이력 표의 같은 행보다 우선해 읽는다. 끝난 방송이면 이력·진단을 다시 받는다."
+        }
+    ],
+    "initLocal": {
+        "running": ""
+    },
+    "computed": {
+        "canUpdate": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update')}}",
+        "runningRunId": "{{analytics_diagnostics?.data?.archive?.running_run_id ?? null}}"
+    },
+    "permissions": [
+        "core.analytics.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "analytics_diagnostics",
+            "analytics_archive_runs",
+            "analytics_collect_failures"
+        ]
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "analytics_diagnostics_content",
+                "type": "basic",
+                "name": "Div",
+                "lifecycle": {
+                    "onUnmount": [
+                        {
+                            "handler": "stopInterval",
+                            "params": {
+                                "id": "analytics_archive_poll"
+                            }
+                        }
+                    ]
+                },
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between flex-wrap gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.analytics.diagnostics.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:admin.analytics.diagnostics.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 flex-wrap"
+                                },
+                                "children": [
+                                    {
+                                        "comment": "이 화면은 시각을 여섯 자리(기간 시작·끝·시작 시각·마지막 적재·마지막 시간 집계·마지막\n            일 집계) 찍는다. 공통 조각 `_partial_status_alerts` 는 순환 안내 때문에 여기 없으므로\n            같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).\n            보는 사람의 시간대가 사이트와 같으면 군더더기라 띄우지 않는다.",
+                                        "id": "site_timezone_badge",
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{analytics_diagnostics?.data?.timezone_differs === true}}",
+                                        "props": {
+                                            "color": "blue",
+                                            "size": "sm",
+                                            "text": "$t:admin.analytics.common.site_timezone_badge|timezone={{analytics_diagnostics?.data?.timezone ?? ''}}"
+                                        }
+                                    },
+                                    {
+                                        "id": "refresh_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "새로고침 — 이 화면이 받는 세 소스(진단·집계 이력·실패 로그)를 한꺼번에 다시 받는다. 하나만 받으면 상태 카드와\n                   이력 표가 서로 다른 시각의 값을 보인다.",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "analytics_diagnostics"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "analytics_archive_runs"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "analytics_collect_failures"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "aria-label": "$t:admin.analytics.common.refresh"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "refresh",
+                                                    "className": "text-xl"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "확장이 잘못 선언해 버려진 목표·차원의 사유. 이 화면 말고는 볼 곳이 없다 — 비워 두면 운영자는 「전환이\n      왜 안 쌓이는지」를 나중에 `unknown_goal` 실패로만 간접적으로 안다. 경고가 없으면 그리지 않는다.",
+                        "id": "alert_declaration_warnings",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(analytics_diagnostics?.data?.declaration_warnings ?? []).length > 0}}",
+                        "props": {
+                            "className": "alert-warning mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-1 min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-warning-soft font-medium"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.declaration_warnings_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-warning-soft text-sm"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.declaration_warnings_description"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{analytics_diagnostics?.data?.declaration_warnings ?? []}}",
+                                                    "item_var": "warning",
+                                                    "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "text-sm font-mono break-all text-warning-soft mt-1"
+                                                },
+                                                "text": "{{warning}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "status_cards",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_diagnostics"
+                        },
+                        "props": {
+                            "className": "grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "card_collection",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "satellite-dish",
+                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-heading"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.cards.collection"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "color": "{{analytics_diagnostics?.data?.collection?.enabled ? 'green' : 'red'}}",
+                                                    "text": "{{analytics_diagnostics?.data?.collection?.enabled ? $t('admin.analytics.diagnostics.fields.enabled_on') : $t('admin.analytics.diagnostics.fields.enabled_off')}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "color": "blue",
+                                                    "text": "{{$t('admin.analytics.settings.privacy.modes.' + (analytics_diagnostics?.data?.collection?.effective_mode ?? 'full') + '.title')}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}",
+                                                "props": {
+                                                    "color": "yellow",
+                                                    "text": "{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.diagnostics.fields.anonymous_for_unconsented') : $t('admin.analytics.diagnostics.fields.anonymous_fallback')}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.tracked_today|count={{(analytics_diagnostics?.data?.collection?.tracked_today ?? 0) | number}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.last_tracked|at={{analytics_diagnostics?.data?.collection?.last_tracked_at | datetime | default('-')}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}",
+                                                "props": {
+                                                    "className": "text-hint w-full"
+                                                },
+                                                "text": "{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.alerts.consent_cookie_fallback') : $t('admin.analytics.alerts.consent_fallback')}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "card_queue",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "layer-group",
+                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-heading"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.cards.queue"
+                                            },
+                                            {
+                                                "comment": "연결 이름(`database` 등)은 .env 설정값이라 알려진 것만 사람 말로 바꾸고, 사이트가 따로 정한 이름은 그대로 보인다.",
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "color": "gray",
+                                                    "text": "{{['sync', 'database', 'redis', 'sqs', 'beanstalkd'].includes(analytics_diagnostics?.data?.queue?.connection ?? '') ? $t('admin.analytics.diagnostics.queue_connections.' + analytics_diagnostics.data.queue.connection) : (analytics_diagnostics?.data?.queue?.connection ?? '-')}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{analytics_diagnostics?.data?.queue?.countable === false}}",
+                                                "props": {
+                                                    "color": "gray",
+                                                    "text": "$t:admin.analytics.diagnostics.fields.queue_not_countable",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{analytics_diagnostics?.data?.queue?.countable !== false}}",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.pending_jobs|count={{(analytics_diagnostics?.data?.queue?.pending_jobs ?? 0) | number}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{analytics_diagnostics?.data?.queue?.countable !== false}}",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.failed_jobs|count={{(analytics_diagnostics?.data?.queue?.failed_jobs ?? 0) | number}}"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{analytics_diagnostics?.data?.queue?.backlogged === true}}",
+                                                "props": {
+                                                    "color": "red",
+                                                    "text": "$t:admin.analytics.diagnostics.fields.backlogged",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{analytics_diagnostics?.data?.queue?.worker_hint === true}}",
+                                                "props": {
+                                                    "className": "text-hint w-full"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.worker_hint"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "card_archive",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "database",
+                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-heading"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.cards.archive"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.last_hour_run|at={{analytics_diagnostics?.data?.archive?.last_hour_run | datetime | default('-')}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.last_day_run|at={{analytics_diagnostics?.data?.archive?.last_day_run | datetime | default('-')}}"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{(analytics_diagnostics?.data?.archive?.lag_hours ?? 0) > 2}}",
+                                                "props": {
+                                                    "color": "yellow",
+                                                    "text": "$t:admin.analytics.diagnostics.fields.lag_hours|hours={{analytics_diagnostics?.data?.archive?.lag_hours ?? 0}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "comment": "스케줄러가 매시 집계를 최근에 돌렸는가 — 화면 열 때 집계가 숫자를 맞춰도 어제 확정·정리·메일 보고서는 스케줄러만 돌린다.\n                 판정 근거가 없으면(설치 직후) 배지를 띄우지 않는다.",
+                                                "id": "scheduler_last_run",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.scheduler_last_run|at={{analytics_diagnostics?.data?.archive?.scheduler?.last_run_at | datetime | default('-')}}"
+                                            },
+                                            {
+                                                "id": "scheduler_missing_badge",
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{analytics_diagnostics?.data?.archive?.scheduler?.alive === false}}",
+                                                "props": {
+                                                    "color": "yellow",
+                                                    "text": "$t:admin.analytics.diagnostics.fields.scheduler_missing",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{!!_computed.runningRunId}}",
+                                                "props": {
+                                                    "color": "blue",
+                                                    "text": "$t:admin.analytics.diagnostics.fields.running|id={{analytics_diagnostics.data.archive.running_run_id}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "color": "{{analytics_diagnostics?.data?.broadcasting?.configured ? 'green' : 'gray'}}",
+                                                    "text": "{{analytics_diagnostics?.data?.broadcasting?.configured ? $t('admin.analytics.diagnostics.progress_source.ws') : $t('admin.analytics.diagnostics.progress_source.polling')}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "comment": "집계 실행은 이 카드 안에서 한다 — 「집계가 6시간 밀렸다」를 읽은 자리에서 바로 돌릴 수\n                 있어야 한다(계획서 §4.11 진단 와이어프레임의 `ml-auto` 버튼). 화면 위로 올라가지 않는다.",
+                                                "id": "card_archive_actions",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "ml-auto flex-center gap-2 flex-wrap"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "archive_hour_button",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "직전 시간 + 오늘치를 그 자리에서 집계한다(202 + run_id). 끝나면 진단·이력을 다시 받는다.",
+                                                                "type": "click",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "running": "hour"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "apiCall",
+                                                                        "target": "/api/admin/analytics/archive-runs",
+                                                                        "auth_required": true,
+                                                                        "params": {
+                                                                            "method": "POST",
+                                                                            "body": {
+                                                                                "run_type": "hour"
+                                                                            }
+                                                                        },
+                                                                        "onSuccess": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "running": ""
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "자물쇠를 다른 집계가 쥐고 있으면 이력에 「건너뜀」만 남는다 — 돌았다고 알리지 않는다.",
+                                                                                "handler": "toast",
+                                                                                "if": "{{response?.data?.status !== 'skipped'}}",
+                                                                                "params": {
+                                                                                    "type": "success",
+                                                                                    "message": "$t:admin.analytics.diagnostics.started_toast"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "if": "{{response?.data?.status === 'skipped'}}",
+                                                                                "params": {
+                                                                                    "type": "info",
+                                                                                    "message": "$t:admin.analytics.diagnostics.skipped_toast"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "analytics_diagnostics"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "analytics_archive_runs"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "onError": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "running": ""
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{error.message}}"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "disabled": "{{!_computed.canUpdate || _local.running !== '' || !!_computed.runningRunId}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "if": "{{_local.running === 'hour'}}",
+                                                                "props": {
+                                                                    "name": "spinner",
+                                                                    "spin": true,
+                                                                    "className": "text-sm"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "if": "{{_local.running !== 'hour'}}",
+                                                                "props": {
+                                                                    "name": "clock",
+                                                                    "size": "sm"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.analytics.diagnostics.buttons.archive_hour"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "finalize_yesterday_button",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "어제 확정 — 사이트 날짜 기준 전날 하루를 확정본으로 집계한다(시간 집계와 같은 API, `run_type=day`). 누르는 동안\n                     두 집계 버튼이 함께 잠겨(`running`) 겹쳐 돌리지 못하고, 실행 중인 이력이 있어도 잠긴다.",
+                                                                "type": "click",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "running": "day"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "apiCall",
+                                                                        "target": "/api/admin/analytics/archive-runs",
+                                                                        "auth_required": true,
+                                                                        "params": {
+                                                                            "method": "POST",
+                                                                            "body": {
+                                                                                "run_type": "day"
+                                                                            }
+                                                                        },
+                                                                        "onSuccess": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "running": ""
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "자물쇠를 다른 집계가 쥐고 있으면 이력에 「건너뜀」만 남는다 — 돌았다고 알리지 않는다.",
+                                                                                "handler": "toast",
+                                                                                "if": "{{response?.data?.status !== 'skipped'}}",
+                                                                                "params": {
+                                                                                    "type": "success",
+                                                                                    "message": "$t:admin.analytics.diagnostics.started_toast"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "if": "{{response?.data?.status === 'skipped'}}",
+                                                                                "params": {
+                                                                                    "type": "info",
+                                                                                    "message": "$t:admin.analytics.diagnostics.skipped_toast"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "analytics_diagnostics"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "analytics_archive_runs"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "onError": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "running": ""
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{error.message}}"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "disabled": "{{!_computed.canUpdate || _local.running !== '' || !!_computed.runningRunId}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "if": "{{_local.running === 'day'}}",
+                                                                "props": {
+                                                                    "name": "spinner",
+                                                                    "spin": true,
+                                                                    "className": "text-sm"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "if": "{{_local.running !== 'day'}}",
+                                                                "props": {
+                                                                    "name": "calendar-check",
+                                                                    "size": "sm"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.analytics.diagnostics.buttons.finalize_yesterday"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "reaggregate_button",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "구간 재집계 창 열기 — 지난번 입력(시작·종료·확정일 포함 여부)을 비운 채로 연다. 위 두 버튼과 달리 실행 중에도\n                     잠그지 않고 권한만 본다 — 기간을 받아 워커에게 넘기는 일은 창이 맡는다.",
+                                                                "type": "click",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "analyticsReagg": {
+                                                                                "from": "",
+                                                                                "to": "",
+                                                                                "force": false
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "analytics_reaggregate_modal"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-primary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "disabled": "{{!_computed.canUpdate}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "rotate",
+                                                                    "size": "sm"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.analytics.diagnostics.buttons.reaggregate"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "card_storage",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "hard-drive",
+                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-heading"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.cards.storage"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.visits_rows|count={{(analytics_diagnostics?.data?.storage?.exact?.analytics_visits ?? 0) | number}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.actions_rows|count={{(analytics_diagnostics?.data?.storage?.exact?.analytics_actions ?? 0) | number}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.storage_mb|mb={{Math.round(((analytics_diagnostics?.data?.storage?.tables ?? []).reduce((s, t) => s + ((t.data_bytes ?? 0) + (t.index_bytes ?? 0)), 0)) / 1048576 * 10) / 10}}"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{analytics_diagnostics?.data?.storage?.over_limit === true}}",
+                                                "props": {
+                                                    "color": "red",
+                                                    "text": "$t:admin.analytics.diagnostics.fields.over_limit",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "color": "{{analytics_diagnostics?.data?.geoip?.enabled && analytics_diagnostics?.data?.geoip?.db_present ? 'green' : 'gray'}}",
+                                                    "text": "{{'GeoIP ' + (analytics_diagnostics?.data?.geoip?.enabled && analytics_diagnostics?.data?.geoip?.db_present ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "color": "{{analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? 'red' : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? 'green' : 'gray')}}",
+                                                    "text": "{{'TrustedProxy ' + (analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? $t('admin.analytics.diagnostics.fields.trusted_proxy_warning') : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off')))}}",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "color": "{{analytics_diagnostics?.data?.cloud_ranges?.enabled ? 'green' : 'gray'}}",
+                                                    "text": "{{$t('admin.analytics.diagnostics.fields.cloud_ranges') + ' ' + (analytics_diagnostics?.data?.cloud_ranges?.enabled ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}",
+                                                    "size": "sm"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "exclusions_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "admin-card mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-between mb-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.analytics.diagnostics.exclusions_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-hint"
+                                        },
+                                        "text": "$t:admin.analytics.diagnostics.exclusion_note"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "사유가 열두 가지라 배지로 늘어놓으면 줄바꿈에 묻혀 어느 사유가 큰지 읽기 어렵다 — 건수를\n             나란히 세우는 표로 둔다(계획서 §4.10·§4.11 이 「표」로 못박은 자리).",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "id": "exclusions_grid",
+                                        "type": "composite",
+                                        "name": "DataGrid",
+                                        "props": {
+                                            "data": "{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1], label: (analytics_diagnostics?.data?.collection?.excluded_reason_labels ?? [])[e[0]] }))}}",
+                                            "pagination": false,
+                                            "idField": "reason",
+                                            "selectable": false,
+                                            "sortable": false,
+                                            "emptyMessage": "$t:admin.analytics.diagnostics.exclusions_empty",
+                                            "columns": [
+                                                {
+                                                    "field": "reason",
+                                                    "header": "$t:admin.analytics.diagnostics.exclusion_columns.reason",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-body"
+                                                            },
+                                                            "text": "{{row.label || $t('admin.analytics.diagnostics.exclusion_reasons.' + row.reason)}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "count",
+                                                    "header": "$t:admin.analytics.diagnostics.exclusion_columns.count",
+                                                    "width": "120px",
+                                                    "align": "right",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "{{(row.count ?? 0) | number}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "runs_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_archive_runs"
+                        },
+                        "props": {
+                            "className": "admin-card mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H2",
+                                "props": {
+                                    "className": "section-heading mb-3"
+                                },
+                                "text": "$t:admin.analytics.diagnostics.runs_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "id": "archive_runs_grid",
+                                        "type": "composite",
+                                        "name": "DataGrid",
+                                        "actions": [
+                                            {
+                                                "comment": "집계 이력의 쪽 이동 — 이력 전용 키 `runs_page` 를 쓴다. 같은 화면의 실패 로그가 `failures_page` 를 따로 쓰므로\n                   한쪽 표를 넘겨도 다른 표의 쪽이 따라 움직이지 않는다.",
+                                                "type": "action",
+                                                "event": "onPageChange",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/analytics/diagnostics",
+                                                    "mergeQuery": true,
+                                                    "replace": true,
+                                                    "query": {
+                                                        "runs_page": "{{$args[0]}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "data": "{{analytics_archive_runs?.data?.data ?? []}}",
+                                            "pagination": true,
+                                            "serverSidePagination": true,
+                                            "serverCurrentPage": "{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}",
+                                            "serverTotalPages": "{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}",
+                                            "pageSize": 10,
+                                            "alwaysShowPagination": true,
+                                            "idField": "id",
+                                            "selectable": false,
+                                            "sortable": false,
+                                            "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                            "columns": [
+                                                {
+                                                    "field": "run_type",
+                                                    "header": "$t:admin.analytics.diagnostics.run_columns.type",
+                                                    "width": "120px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-heading"
+                                                            },
+                                                            "text": "{{$t('admin.analytics.diagnostics.run_types.' + (row.run_type ?? 'day'))}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "period_start",
+                                                    "header": "$t:admin.analytics.diagnostics.run_columns.period",
+                                                    "width": "220px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "comment": "집계 경계는 사이트 표준시의 자정~자정이고 저장만 UTC 다(`AnalyticsClock::dayRangeUtc`).\n                     원문을 그대로 자르면 KST 사이트에서 「15:00 ~ 15:00」으로 보여, 같은 표의 「시작」 열과\n                     기준이 갈린다 — 운영자가 9시간 어긋난 구간을 읽는다(#682 S3 라운드 6).",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "{{row.period_start | datetime | default('-')}} ~ {{row.period_end | datetime | default('-')}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "status",
+                                                    "header": "$t:admin.analytics.diagnostics.run_columns.status",
+                                                    "width": "200px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "comment": "건너뛴 행은 그 이유(다른 집계가 같은 기간을 돌리는 중·이미 확정·보존 기간 밖)를 배지 아래 그대로 보인다 —\n                     배지만 있으면 운영자는 왜 안 돌았는지 알 수 없다(7.1.0 실측 O-E5). 서버가 보는 사람의 언어로 바꿔 싣는다.\n                     실패 행의 error 는 예외 원문이라 조회 권한 화면에 그리지 않는다.",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex flex-col items-start gap-1"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "props": {
+                                                                        "color": "{{row.status === 'success' ? 'green' : (row.status === 'failed' ? 'red' : (row.status === 'running' ? 'blue' : 'gray'))}}",
+                                                                        "text": "{{$t('admin.analytics.diagnostics.run_status.' + (row.status ?? 'running'))}}",
+                                                                        "size": "sm"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{row.status === 'skipped' && !!row.error}}",
+                                                                    "props": {
+                                                                        "className": "text-hint whitespace-normal"
+                                                                    },
+                                                                    "text": "{{row.error}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "progress_percent",
+                                                    "header": "$t:admin.analytics.diagnostics.run_columns.progress",
+                                                    "width": "160px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-center gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-1 h-2 rounded bg-gray-100 dark:bg-gray-700"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "id": "run_progress_bar",
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "h-2 rounded {{row.status === 'failed' ? 'bg-red-500 dark:bg-red-400' : 'bg-blue-500 dark:bg-blue-400'}}",
+                                                                                "style": {
+                                                                                    "width": "{{((_global.analyticsArchiveProgress?.id === row.id ? _global.analyticsArchiveProgress?.progress_percent : row.progress_percent) ?? 0) + '%'}}"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-hint w-10 text-right"
+                                                                    },
+                                                                    "text": "{{((_global.analyticsArchiveProgress?.id === row.id ? _global.analyticsArchiveProgress?.progress_percent : row.progress_percent) ?? 0)}}%"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "processed_visits",
+                                                    "header": "$t:admin.analytics.diagnostics.run_columns.processed",
+                                                    "width": "120px",
+                                                    "align": "right",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "{{((_global.analyticsArchiveProgress?.id === row.id ? _global.analyticsArchiveProgress?.processed_visits : row.processed_visits) ?? 0) | number}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "trigger",
+                                                    "header": "$t:admin.analytics.diagnostics.run_columns.trigger",
+                                                    "width": "90px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "{{row.trigger ? $t('admin.analytics.diagnostics.run_triggers.' + row.trigger) : '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "started_at",
+                                                    "header": "$t:admin.analytics.diagnostics.run_columns.started",
+                                                    "width": "160px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "{{row.started_at | datetime | default('-')}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "failures_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_collect_failures"
+                        },
+                        "props": {
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-between flex-wrap gap-3 mb-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.analytics.diagnostics.failures_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.failures_24h|count={{(analytics_diagnostics?.data?.failures_24h ?? 0) | number}}"
+                                            },
+                                            {
+                                                "id": "failure_reason",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "실패 사유 필터 — 질의 `reason` 에 싣고(전체면 키를 지운다) 실패 로그만 1쪽으로 돌린다. 집계 이력의 쪽은 건드리지 않는다.",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/diagnostics",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "query": {
+                                                                "reason": "{{$event.target.value || undefined}}",
+                                                                "failures_page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "name": "analytics_failure_reason",
+                                                    "className": "w-40",
+                                                    "value": "{{query.reason || ''}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "",
+                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.all"
+                                                        },
+                                                        {
+                                                            "value": "validation",
+                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.validation"
+                                                        },
+                                                        {
+                                                            "value": "max_actions",
+                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.max_actions"
+                                                        },
+                                                        {
+                                                            "value": "db_error",
+                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.db_error"
+                                                        },
+                                                        {
+                                                            "value": "listener_exception",
+                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.listener_exception"
+                                                        },
+                                                        {
+                                                            "value": "unknown_goal",
+                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.unknown_goal"
+                                                        },
+                                                        {
+                                                            "value": "unknown_dimension",
+                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.unknown_dimension"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "comment": "실패 로그 조건 초기화 — 사유 필터를 걷고 첫 쪽으로. 이미 전체면 잠근다.",
+                                                "id": "failure_filter_reset",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/diagnostics",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "query": {
+                                                                "reason": "{{undefined}}",
+                                                                "failures_page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-secondary btn-sm flex-center gap-1.5",
+                                                    "disabled": "{{!query.reason}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "rotate-left",
+                                                            "size": "sm"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:common.reset"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "id": "collect_failures_grid",
+                                        "type": "composite",
+                                        "name": "DataGrid",
+                                        "actions": [
+                                            {
+                                                "comment": "실패 로그의 쪽 이동 — `failures_page` 만 바꾼다. 걸어 둔 사유 필터(`reason`)는 병합으로 그대로 남는다.",
+                                                "type": "action",
+                                                "event": "onPageChange",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/analytics/diagnostics",
+                                                    "mergeQuery": true,
+                                                    "replace": true,
+                                                    "query": {
+                                                        "failures_page": "{{$args[0]}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "data": "{{analytics_collect_failures?.data?.data ?? []}}",
+                                            "pagination": true,
+                                            "serverSidePagination": true,
+                                            "serverCurrentPage": "{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}",
+                                            "serverTotalPages": "{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}",
+                                            "pageSize": 10,
+                                            "alwaysShowPagination": true,
+                                            "idField": "id",
+                                            "selectable": false,
+                                            "sortable": false,
+                                            "emptyMessage": "$t:admin.analytics.diagnostics.failures_empty",
+                                            "columns": [
+                                                {
+                                                    "field": "occurred_at",
+                                                    "header": "$t:admin.analytics.diagnostics.failure_columns.time",
+                                                    "width": "160px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "{{row.occurred_at | datetime | default('-')}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "reason",
+                                                    "header": "$t:admin.analytics.diagnostics.failure_columns.reason",
+                                                    "width": "140px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "props": {
+                                                                "color": "red",
+                                                                "text": "{{$t('admin.analytics.diagnostics.failure_reasons.' + (row.reason ?? 'db_error'))}}",
+                                                                "size": "sm"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "message",
+                                                    "header": "$t:admin.analytics.diagnostics.failure_columns.message",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-body break-all"
+                                                            },
+                                                            "text": "{{row.message ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "url",
+                                                    "header": "$t:admin.analytics.diagnostics.failure_columns.url",
+                                                    "width": "220px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label break-all"
+                                                            },
+                                                            "text": "{{row.url ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "ip",
+                                                    "header": "{{(analytics_diagnostics?.data?.collection?.ip_mask_octets ?? 0) > 0 ? $t('admin.analytics.diagnostics.failure_columns.ip_masked') : $t('admin.analytics.diagnostics.failure_columns.ip')}}",
+                                                    "width": "150px",
+                                                    "cellChildren": [
+                                                        {
+                                                            "comment": "열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은\n                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8).",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-center flex-wrap gap-1"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-label font-mono"
+                                                                    },
+                                                                    "text": "{{row.ip ?? '-'}}"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{row.ip_masked === false}}",
+                                                                    "props": {
+                                                                        "color": "yellow",
+                                                                        "text": "$t:admin.analytics.common.ip_not_masked",
+                                                                        "size": "sm"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "확장이 자기 수집 상태를 붙이는 자리 — 값은 진단 응답의 `extensions.{식별자}`(서버 필터 `core.analytics.diagnostics_sections`)로 온다.",
+                        "type": "extension_point",
+                        "name": "analytics_diagnostics_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "구간 재집계 창.",
+            "partial": "partials/admin_analytics/_modal_reaggregate.json"
+        }
+    ]
+}

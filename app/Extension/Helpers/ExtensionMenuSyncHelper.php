@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Contracts\Extension\UpgradeStepInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -101,9 +102,13 @@ class ExtensionMenuSyncHelper
             return false;
         };
 
-        $updateData = [
-            'parent_id' => $parentId,
-        ];
+        $updateData = [];
+
+        // parent_id 도 운영자가 옮겼으면(user_overrides 에 기록) 보존한다 — 종전엔 무조건 정의값으로 덮어
+        // 옮긴 메뉴가 업데이트마다 원위치됐다(#727 D5-③).
+        if (! $isFieldOverridden('parent_id')) {
+            $updateData['parent_id'] = $parentId;
+        }
 
         // is_active 는 운영자가 user_overrides 로 마킹한 경우 보존, 아니면 정의값으로 갱신
         if (! $isFieldOverridden('is_active')) {
@@ -202,6 +207,7 @@ class ExtensionMenuSyncHelper
      * 신규 메뉴에 관리자 역할과 현재 사용자(설치자) 역할을 자동 부여합니다.
      *
      * @param  Menu  $menu  생성된 메뉴
+     * @return void 반환값 없음
      */
     private function grantDefaultRoles(Menu $menu): void
     {
@@ -259,7 +265,7 @@ class ExtensionMenuSyncHelper
      * @param  array  $currentSlugs  현재 유효한 메뉴 슬러그 목록
      * @return int 삭제된 메뉴 수
      *
-     * @see \App\Contracts\Extension\UpgradeStepInterface
+     * @see UpgradeStepInterface
      */
     public function cleanupStaleMenus(
         ExtensionOwnerType $extensionType,

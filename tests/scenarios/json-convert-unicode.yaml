@@ -1,0 +1,31 @@
+feature: 다국어 값의 유니코드 이스케이프 변환 커맨드 (json:convert-unicode)
+
+description: |
+  MySQL FULLTEXT(ngram)은 실제 UTF-8 바이트만 토큰화하므로, `\uXXXX` 로 저장된 다국어 JSON 문자열을
+  UTF-8 로 다시 쓴다.
+
+  대상 탐색(2026-09-28 결정): 종전에는 코어 커맨드가 이커머스·게시판·페이지 테이블 이름 8개를
+  직접 적어 두었다. 이제 DB 스키마의 FULLTEXT 인덱스 컬럼을 대상으로 삼는다 — 변환이 필요한 까닭이
+  FULLTEXT 토큰화이므로 그 인덱스가 곧 대상이고, 다국어 값은 JSON 타입이 아니라 TEXT 컬럼에 담겨
+  컬럼 타입으로는 찾을 수 없다. 확장이 설치·삭제돼도 목록이 저절로 맞는다.
+
+  순회는 키셋(`chunkById`) — 콜백이 필터 컬럼을 다시 써 행이 결과에서 빠지므로 OFFSET 순회는
+  아직 변환되지 않은 행을 건너뛴다(#84).
+
+axes:
+  target: [single_table, discovered, unknown_table]
+  mode: [apply, dry_run]
+
+exclusions:
+  - { target: discovered, mode: dry_run, reason: "탐색은 적용 경로로 증명한다 — 드라이런은 단일 테이블 축이 덮는다" }
+  - { target: unknown_table, mode: dry_run, reason: "알 수 없는 테이블은 모드와 무관하게 변환 전에 거부된다" }
+
+effects:
+  - keyset_iteration_converts_every_escaped_row
+  - converted_value_preserves_original_payload
+  - dry_run_leaves_rows_untouched
+  - targets_are_discovered_from_fulltext_indexes_without_table_list
+  - unknown_or_unindexed_table_is_rejected
+
+test_files:
+  - tests/Feature/Console/ConvertJsonUnicodeEscapesTest.php

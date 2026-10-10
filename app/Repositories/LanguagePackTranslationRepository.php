@@ -5,8 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\LanguagePackTranslationRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\LanguagePackScope;
-use App\Models\IdentityMessageDefinition;
-use App\Models\IdentityMessageTemplate;
+use App\Enums\LanguagePackSourceType;
 use App\Models\LanguagePack;
 use App\Models\Menu;
 use App\Models\Module;
@@ -22,8 +21,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * 언어팩 활성/비활성 시 DB JSON 다국어 컬럼을 일괄 동기화하는 집계 Repository.
  *
- * 10 개 모델 (Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/
- * NotificationTemplate/IdentityMessageDefinition/IdentityMessageTemplate) 에 대한 영속
+ * 8 개 모델 (Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/
+ * NotificationTemplate) 에 대한 영속
  * 책임을 단일 진입점으로 캡슐화. Listener/Service 는 본 Repository 만 호출.
  *
  * 동작 정책은 인터페이스 PHPDoc 참조.
@@ -55,14 +54,16 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             if (! empty($seedBundle['roles'])) {
                 $this->applyByIdentifier(Role::class, $pack, $seedBundle['roles'], $locale, ['name', 'description'], 'identifier', $audit);
             }
-            if (! empty($seedBundle['menus']) && $pack->scope !== LanguagePackScope::Plugin->value) {
+            // 플러그인 팩도 메뉴를 시드한다. 종전에는 plugin 스코프만 제외돼 있었는데, 플러그인은
+            // 자기 메뉴를 심을 수 있으므로(실측 2026-09-12: `sirsoft-ckeditor5-uploads`,
+            // `sirsoft-gdpr-consent-log`) 그 행만 영원히 번역 경로가 없었다 — ja 로케일에서
+            // 좌측 메뉴 두 칸만 원문으로 남았다. 제외에 사유 주석이 없었고, 모듈 팩은 같은
+            // 경로로 이미 메뉴를 시드하고 있어 위험도 차이도 없다.
+            if (! empty($seedBundle['menus'])) {
                 $this->applyByIdentifier(Menu::class, $pack, $seedBundle['menus'], $locale, ['name'], 'slug', $audit);
             }
             if (! empty($seedBundle['notifications'])) {
                 $this->applyNotifications($pack, $seedBundle['notifications'], $locale, $audit);
-            }
-            if (! empty($seedBundle['identity_messages'])) {
-                $this->applyIdentityMessages($pack, $seedBundle['identity_messages'], $locale, $audit);
             }
             if (! empty($seedBundle['manifest'])) {
                 $this->applyManifest($pack, $seedBundle['manifest'], $locale, $audit);
@@ -102,6 +103,19 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
         $audit = [];
         $locale = $pack->locale;
 
+        // 확장에 내장된 언어팩(ko·en)은 그 확장 매니페스트 자신의 언어다. 확장을 끌 때 함께 꺼지는데,
+        // 여기서 그 언어 키를 지우면 다시 켜도 채울 seed 가 없어 확장 이름·설명이 `[]` 로 남는다.
+        if ($pack->source_type === LanguagePackSourceType::BundledWithExtension->value) {
+            return $audit;
+        }
+
+        // 모듈·플러그인 범위 팩은 활성화 때 확장 행뿐 아니라 그 확장이 소유한 권한·역할·메뉴·알림에도
+        // 로케일을 넣는다(applySeedFromPack). 종전에는 확장 행만 걷어, 팩을 끈 뒤에도 그 문구가 남았다.
+        if (in_array($pack->scope, [LanguagePackScope::Module->value, LanguagePackScope::Plugin->value], true)
+            && $pack->target_identifier) {
+            $this->stripExtensionOwnedRows($pack, $locale, $audit);
+        }
+
         $modelMaps = [
             LanguagePackScope::Core->value => [
                 Permission::class => ['name', 'description'],
@@ -136,18 +150,65 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             });
         }
 
-        $this->stripIdentityMessages($pack, $locale, $audit);
-
         return $audit;
+    }
+
+    /**
+     * 모듈·플러그인 범위 팩이 그 확장 소유 권한·역할·메뉴·알림 정의·알림 템플릿에 넣은 로케일을 걷습니다.
+     *
+     * 소유 판정은 주입(applyByIdentifier·applyNotifications)과 같은 기준(extension_type +
+     * extension_identifier)이다. 운영자 수정(user_overrides 의 `컬럼.로케일`)은 stripLocaleColumns 가 보존한다.
+     *
+     * @param  LanguagePack  $pack  비활성화된 모듈·플러그인 범위 언어팩
+     * @param  string  $locale  제거할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
+     */
+    protected function stripExtensionOwnedRows(LanguagePack $pack, string $locale, array &$audit): void
+    {
+        $owned = [
+            Permission::class => ['name', 'description'],
+            Role::class => ['name', 'description'],
+            Menu::class => ['name'],
+            NotificationDefinition::class => ['name', 'description'],
+        ];
+
+        foreach ($owned as $modelClass => $columns) {
+            $query = $modelClass::query();
+            $this->scopeOwnership($query, $pack);
+
+            $query->get()->each(function (Model $row) use ($columns, $locale, &$audit) {
+                $this->stripLocaleColumns($row, $locale, $columns, $audit);
+            });
+        }
+
+        $definitionQuery = NotificationDefinition::query();
+        $this->scopeOwnership($definitionQuery, $pack);
+        $definitionIds = $definitionQuery->pluck('id');
+
+        if ($definitionIds->isEmpty()) {
+            return;
+        }
+
+        NotificationTemplate::query()
+            ->whereIn('definition_id', $definitionIds)
+            ->get()
+            ->each(function (NotificationTemplate $tpl) use ($locale, &$audit) {
+                $this->stripLocaleColumns($tpl, $locale, ['subject', 'body'], $audit);
+            });
     }
 
     /**
      * 식별자 컬럼 (identifier/slug) 기반 단순 매칭 모델의 JSON 컬럼에 locale 키를 병합합니다.
      *
-     * @param  class-string<Model>  $modelClass
-     * @param  array<string, array<string, mixed>>  $seed
-     * @param  array<int, string>  $columns
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  class-string<Model>  $modelClass  대상 모델 클래스
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, array<string, mixed>>  $seed  식별자 → 컬럼별 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, string>  $columns  병합 대상 다국어 컬럼
+     * @param  string  $matchColumn  seed 키와 대조할 컬럼 (identifier/slug)
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
      */
     protected function applyByIdentifier(
         string $modelClass,
@@ -174,8 +235,11 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 알림 Definition × Template 의 다국어 컬럼을 병합합니다.
      *
-     * @param  array<string, array<string, mixed>>  $seed
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, array<string, mixed>>  $seed  정의 키 → 컬럼별 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
      */
     protected function applyNotifications(LanguagePack $pack, array $seed, string $locale, array &$audit): void
     {
@@ -230,65 +294,13 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     }
 
     /**
-     * IDV 메시지 Definition × Template 의 다국어 컬럼을 병합합니다.
-     *
-     * @param  array<string, array<string, mixed>>  $seed
-     * @param  array<int, array<string, mixed>>  $audit
-     */
-    protected function applyIdentityMessages(LanguagePack $pack, array $seed, string $locale, array &$audit): void
-    {
-        if (! in_array($pack->scope, [
-            LanguagePackScope::Core->value,
-            LanguagePackScope::Module->value,
-            LanguagePackScope::Plugin->value,
-        ], true)) {
-            return;
-        }
-
-        $defQuery = IdentityMessageDefinition::query();
-        if ($pack->scope === LanguagePackScope::Core->value) {
-            $defQuery->where('extension_type', 'core')->where('extension_identifier', 'core');
-        } else {
-            $extType = $pack->scope === LanguagePackScope::Module->value ? 'module' : 'plugin';
-            $defQuery->where('extension_type', $extType)
-                ->where('extension_identifier', $pack->target_identifier);
-        }
-
-        $defQuery->get()->each(function (IdentityMessageDefinition $def) use ($seed, $locale, &$audit) {
-            $compositeKey = $this->identityMessageCompositeKey($def);
-            $entry = ($compositeKey && isset($seed[$compositeKey])) ? $seed[$compositeKey] : null;
-            if (! $entry) {
-                return;
-            }
-
-            if (isset($entry['definition'])) {
-                $this->mergeLocaleColumns($def, $entry['definition'], $locale, ['name', 'description'], $audit);
-            }
-
-            $templates = $entry['templates'] ?? [];
-            if (empty($templates)) {
-                return;
-            }
-
-            IdentityMessageTemplate::query()
-                ->where('definition_id', $def->id)
-                ->whereIn('channel', array_keys($templates))
-                ->get()
-                ->each(function (IdentityMessageTemplate $tpl) use ($templates, $locale, &$audit) {
-                    $tplSeed = $templates[$tpl->channel] ?? null;
-                    if (! $tplSeed) {
-                        return;
-                    }
-                    $this->mergeLocaleColumns($tpl, $tplSeed, $locale, ['subject', 'body'], $audit);
-                });
-        });
-    }
-
-    /**
      * 확장 manifest 의 name/description JSON 컬럼에 locale 키를 병합합니다.
      *
-     * @param  array<string, mixed>  $seed
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, mixed>  $seed  name/description 평탄 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
      */
     protected function applyManifest(LanguagePack $pack, array $seed, string $locale, array &$audit): void
     {
@@ -320,43 +332,11 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     }
 
     /**
-     * 비활성화 시 IDV 메시지 Definition × Template 의 locale 키를 제거합니다.
-     *
-     * @param  array<int, array<string, mixed>>  $audit
-     */
-    protected function stripIdentityMessages(LanguagePack $pack, string $locale, array &$audit): void
-    {
-        if (! in_array($pack->scope, [
-            LanguagePackScope::Core->value,
-            LanguagePackScope::Module->value,
-            LanguagePackScope::Plugin->value,
-        ], true)) {
-            return;
-        }
-
-        $defQuery = IdentityMessageDefinition::query();
-        if ($pack->scope === LanguagePackScope::Core->value) {
-            $defQuery->where('extension_type', 'core')->where('extension_identifier', 'core');
-        } else {
-            $extType = $pack->scope === LanguagePackScope::Module->value ? 'module' : 'plugin';
-            $defQuery->where('extension_type', $extType)
-                ->where('extension_identifier', $pack->target_identifier);
-        }
-
-        $defQuery->get()->each(function (IdentityMessageDefinition $def) use ($locale, &$audit) {
-            $this->stripLocaleColumns($def, $locale, ['name', 'description'], $audit);
-
-            IdentityMessageTemplate::query()
-                ->where('definition_id', $def->id)
-                ->get()
-                ->each(function (IdentityMessageTemplate $tpl) use ($locale, &$audit) {
-                    $this->stripLocaleColumns($tpl, $locale, ['subject', 'body'], $audit);
-                });
-        });
-    }
-
-    /**
      * 쿼리 빌더에 언어팩 scope 별 소유권 필터를 적용합니다.
+     *
+     * @param  Builder  $query  대상 쿼리 빌더
+     * @param  LanguagePack  $pack  소유권 기준이 될 언어팩
+     * @return void 반환값 없음
      */
     protected function scopeOwnership(Builder $query, LanguagePack $pack): void
     {
@@ -386,30 +366,14 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     }
 
     /**
-     * IdentityMessageDefinition 의 provider_id+scope_type+scope_value 를 seed 키 형식으로 합성합니다.
-     *
-     * LanguagePackSeedInjector::identityMessageCompositeKey 와 동일 규칙.
-     */
-    protected function identityMessageCompositeKey(IdentityMessageDefinition $def): ?string
-    {
-        $provider = $def->provider_id ?? null;
-        $scopeType = is_object($def->scope_type) ? $def->scope_type->value : $def->scope_type;
-        $scopeValue = $def->scope_value ?? '';
-        if (! $provider || ! $scopeType) {
-            return null;
-        }
-        $channel = str_contains($provider, '.mail') ? 'mail' : 'sms';
-        $suffix = $scopeValue !== '' ? "{$scopeType}.{$scopeValue}" : $scopeType;
-
-        return "{$channel}.{$suffix}";
-    }
-
-    /**
      * 단일 row 의 다국어 컬럼들에 locale 키를 병합하고 audit 항목을 누적합니다.
      *
-     * @param  array<string, mixed>  $entry
-     * @param  array<int, string>  $columns
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  Model  $row  대상 레코드
+     * @param  array<string, mixed>  $entry  컬럼별 번역 값
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, string>  $columns  병합 대상 다국어 컬럼
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
      */
     protected function mergeLocaleColumns(Model $row, array $entry, string $locale, array $columns, array &$audit): void
     {
@@ -455,8 +419,11 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     /**
      * 단일 row 의 다국어 컬럼들에서 locale 키를 제거하고 audit 항목을 누적합니다.
      *
-     * @param  array<int, string>  $columns
-     * @param  array<int, array<string, mixed>>  $audit
+     * @param  Model  $row  대상 레코드
+     * @param  string  $locale  제거할 로케일
+     * @param  array<int, string>  $columns  제거 대상 다국어 컬럼
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
      */
     protected function stripLocaleColumns(Model $row, string $locale, array $columns, array &$audit): void
     {

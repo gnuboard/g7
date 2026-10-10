@@ -1,0 +1,17 @@
+feature: 페이지에 연결되지 않은 임시 첨부 삭제
+
+description: |
+  작성 화면은 [저장]을 누를 때 첨부를 먼저 올리고 페이지를 만든다. 페이지 저장이 422 로 실패하면 첨부는
+  임시 첨부(page_id 없음)로 남아 업로더 목록에 보인다. 이 첨부를 지우면 부모 페이지가 없다는 이유로
+  스코프 검사가 막고 그 거절이 500 「첨부파일 삭제에 실패했습니다」로 나갔다(7.1.0 전수 실측 영역 L, L-D4).
+  임시 첨부는 올린 사람만 지우고, 스코프 거절은 403 으로 돌려준다.
+
+axes:
+  actor: [uploader, other_admin]
+
+effects:
+  - own_temp_attachment_deleted
+  - others_temp_attachment_rejected_with_403
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/TempAttachmentDeleteTest.php

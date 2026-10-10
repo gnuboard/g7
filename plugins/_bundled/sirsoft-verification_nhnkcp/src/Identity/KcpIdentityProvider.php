@@ -9,6 +9,7 @@ use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -267,6 +268,8 @@ class KcpIdentityProvider implements IdentityVerificationInterface
                 'call_url' => $registration['call_url'],
                 'reg_cert_key' => $registration['reg_cert_key'],
                 'is_test_mode' => $this->isTestMode(),
+                // 결과 창(postMessage)의 출처 검증 기준 — 요청 Host 가 아니라 사이트 주소의 origin.
+                'siteOrigin' => SiteUrl::origin(),
             ],
             metadata: ['ordr_idxx' => $ordrIdxx],
         );
@@ -773,6 +776,7 @@ class KcpIdentityProvider implements IdentityVerificationInterface
      * @param  IdentityVerificationLog  $log  대상 로그
      * @param  string  $failureCode  실패 사유 코드
      * @param  array<string, mixed>  $extra  사유별 부가 정보 (PII 제외)
+     * @return void 반환값 없음
      */
     protected function markFailed(IdentityVerificationLog $log, string $failureCode, array $extra = []): void
     {
@@ -805,7 +809,9 @@ class KcpIdentityProvider implements IdentityVerificationInterface
      */
     protected function callbackUrl(): string
     {
-        return url('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/callback');
+        // 보안: 거래등록 복귀 주소는 KCP 에 등록되어 인증 결과가 그대로 실려 가는 주소다 — 요청 Host 로
+        // 만들면 위조 Host 로 시작한 거래의 결과·토큰이 공격자 도메인으로 간다. 언제나 사이트 주소.
+        return SiteUrl::absolute('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/callback');
     }
 
     /**

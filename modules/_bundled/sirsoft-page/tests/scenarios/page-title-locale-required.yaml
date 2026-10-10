@@ -1,0 +1,16 @@
+feature: 페이지 제목 다국어 필수 문구의 칸 이름
+
+description: |
+  페이지 생성·수정에서 제목을 비우면 「한국어(ko) 값은 필수입니다.」처럼 칸 이름 없이 나왔다(7.1.0 전수 실측 K4).
+  코어 규칙(LocaleRequiredTranslatable)은 요청에 표시 이름이 있는 칸에만 칸 이름을 싣는다. 결정
+  (2026-10-08 「코어 요청 6종 모두 칸 이름 넣기」)으로 두 요청에 제목·본문 표시 이름(ko 「페이지 제목」·「페이지 본문」,
+  en 「page title」·「page content」, ja 팩 「ページタイトル」·「ページ本文」)을 둔다.
+
+axes:
+  locale: [ko, en]
+
+effects:
+  - page_title_locale_required_message_names_field
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageTitleLocaleRequiredMessageTest.php

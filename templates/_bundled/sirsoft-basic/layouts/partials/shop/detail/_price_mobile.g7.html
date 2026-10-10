@@ -1,0 +1,22 @@
+<!-- 좁은 화면 전용 가격 줄 — 넓은 화면에서는 구매 카드 안에 가격이 있지만, 좁은 화면에서는 그 카드가
+     아래로 밀려 첫 화면에 값이 안 보이므로 상단에 따로 둔다. -->
+<partial description="모바일용 상품 가격 표시">
+  <div>
+    <!-- 할인 전 금액 (취소선, 할인 있을 때) -->
+    <div data-if="{{product.data?.discount_rate > 0}}" class="mb-1">
+      <span class="text-sm text-gray-500 dark:text-gray-400 line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}</span>
+    </div>
+    <!-- 할인율 + 판매가 (할인 있을 때) -->
+    <div data-if="{{product.data?.discount_rate > 0}}" class="flex items-center gap-2">
+      <span class="text-lg font-bold text-red-500">{{product.data?.discount_rate}}%</span>
+      <span class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</span>
+    </div>
+    <!-- 판매가 (할인 없을 때) -->
+    <div data-if="{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}" class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</div>
+    <!-- 배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가, 모바일 가격 영역) -->
+    <div data-if="{{product.data?.is_shippable_to_selected_country === false}}" class="flex items-center gap-1.5 mt-1.5">
+      <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400 shrink-0"/>
+      <span class="text-sm font-medium text-red-600 dark:text-red-400">$t:shop.shippability.not_shippable</span>
+    </div>
+  </div>
+</partial>

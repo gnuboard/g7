@@ -1,4 +1,5 @@
 {
+    "comment": "한 언어 자리에는 팩 하나만 켜 둘 수 있어, 이미 켜진 것이 있는데 다른 팩을 켜려 하면 서버가\n  409 로 막고 이 창이 뜬다. **실패가 아니라 고르라는 뜻**이다 — 그래서 여는 자리(목록 스위치)가\n  오류 알림 대신 이 창을 띄운다.\n  누르면 강제로 밀어 켜고 먼저 켜져 있던 팩은 꺼진다. 취소해도 목록을 다시 받는데, 눌렀다가\n  되돌아온 스위치를 서버 값으로 맞춰 놓기 위해서다.",
     "meta": {
         "is_partial": true,
         "description": "동일 슬롯에 이미 활성 언어팩이 있을 때 교체 확인 모달 (모듈 force_activate 패턴)",
@@ -104,13 +105,9 @@
             },
             "children": [
                 {
+                    "comment": "기존 팩을 대체하고 설치한다. 같은 로케일 자리는 하나만 활성일 수 있어 어느 쪽을 남길지 운영자가 골라야 한다",
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
-                    },
-                    "text": "$t:admin.language_packs.slot_conflict_modal.cancel",
                     "actions": [
                         {
                             "event": "onClick",
@@ -137,22 +134,23 @@
                                 }
                             ]
                         }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
+                    ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-md"
+                        "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
                     },
-                    "text": "$t:admin.language_packs.slot_conflict_modal.confirm",
+                    "text": "$t:admin.language_packs.slot_conflict_modal.cancel"
+                },
+                {
+                    "comment": "기존 팩을 그대로 두고 이번 설치만 비활성으로 둔다",
+                    "type": "basic",
+                    "name": "Button",
                     "actions": [
                         {
                             "event": "onClick",
                             "handler": "apiCall",
-                            "auth_required": true,
                             "target": "/api/admin/language-packs/{{_global.slotConflictTargetId}}/activate",
+                            "auth_required": true,
                             "params": {
                                 "method": "POST",
                                 "body": {
@@ -190,17 +188,20 @@
                                     "handler": "reloadExtensions"
                                 }
                             ],
-                            "onError": [
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "error",
-                                        "message": "{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
-                                    }
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
                                 }
-                            ]
+                            }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-md"
+                    },
+                    "text": "$t:admin.language_packs.slot_conflict_modal.confirm"
                 }
             ]
         }

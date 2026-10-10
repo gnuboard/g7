@@ -131,6 +131,8 @@ id_ed25519
 !plugins/_bundled/*/bin/pub.key
 
 .claude/tmp/
+# 하네스 스크립트의 작업용 스크래치(언어팩 빌드 누락 키 목록 등) — 산출물 아님
+.agents/tmp/
 
 # ===== Playwright E2E =====
 tests/Playwright/.auth/

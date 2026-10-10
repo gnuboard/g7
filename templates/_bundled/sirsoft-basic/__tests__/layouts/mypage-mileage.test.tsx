@@ -3,9 +3,9 @@
  * @description 마이페이지 마일리지 내역 화면 레이아웃 회귀 테스트 (§15)
  *
  * 테스트 대상:
- * - templates/.../layouts/mypage/mileage.json
- * - templates/.../layouts/partials/mypage/mileage/_list.json
- * - templates/.../layouts/partials/mypage/_tab_navigation.json
+ * - templates/.../layouts/mypage/mileage.g7.html
+ * - templates/.../layouts/partials/mypage/mileage/_list.g7.html
+ * - templates/.../layouts/partials/mypage/_tab_navigation.g7.html
  * - templates/.../routes.json
  *
  * 검증 항목:
@@ -61,26 +61,46 @@ const routes = loadJson('routes.json');
 describe('mypage/mileage 레이아웃 (§15)', () => {
   // ── 레이아웃 구조 ──
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('_user_base 를 extends 한다', () => {
     expect(mileageLayout.extends).toBe('_user_base');
   });
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('computed.currentTab 이 mileage 다', () => {
     expect(mileageLayout.computed?.currentTab).toBe('mileage');
   });
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('balance / history 데이터소스 2종을 갖는다', () => {
     const ids = mileageLayout.data_sources.map((d: any) => d.id);
     expect(ids).toContain('mileage_balance');
     expect(ids).toContain('mileage_history');
   });
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('balance 데이터소스 endpoint 가 잔액 API 를 가리킨다', () => {
     const ds = mileageLayout.data_sources.find((d: any) => d.id === 'mileage_balance');
     expect(ds.endpoint).toBe('/api/modules/sirsoft-ecommerce/user/mileage');
     expect(ds.auth_required).toBe(true);
   });
 
+  /**
+   * @scenario actor=member
+   * @effects user_mileage_history_filters_by_four_display_categories
+   */
   it('history 데이터소스 endpoint 와 page/category/per_page 파라미터를 갖는다', () => {
     const ds = mileageLayout.data_sources.find((d: any) => d.id === 'mileage_history');
     expect(ds.endpoint).toBe('/api/modules/sirsoft-ecommerce/user/mileage/history');
@@ -90,6 +110,10 @@ describe('mypage/mileage 레이아웃 (§15)', () => {
     expect(ds.auth_required).toBe(true);
   });
 
+  /**
+   * @scenario actor=member
+   * @effects user_mileage_history_filters_by_four_display_categories
+   */
   it('init_actions 에 mileageCategory/mileagePage 초기화가 있다', () => {
     const init = mileageLayout.init_actions[0];
     expect(init.handler).toBe('setState');
@@ -98,6 +122,10 @@ describe('mypage/mileage 레이아웃 (§15)', () => {
     expect(init.params).toHaveProperty('mileagePage');
   });
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('탭 컨텐츠 슬롯에 마일리지 _list partial 을 포함한다', () => {
     const s = serialize(mileageLayout);
     expect(s).toContain('partials/mypage/mileage/_list.json');
@@ -106,6 +134,10 @@ describe('mypage/mileage 레이아웃 (§15)', () => {
 });
 
 describe('mypage/_tab_navigation 마일리지 탭', () => {
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('tabs 배열에 mileage 탭이 추가되어 있다', () => {
     const tabs = tabNav.props.tabs;
     const mileageTab = tabs.find((t: any) => t.id === 'mileage');
@@ -114,6 +146,10 @@ describe('mypage/_tab_navigation 마일리지 탭', () => {
     expect(mileageTab.iconName).toBe('coins');
   });
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('mileage 탭이 orders 와 wishlist 사이에 위치한다', () => {
     const ids = tabNav.props.tabs.map((t: any) => t.id);
     expect(ids.indexOf('mileage')).toBeGreaterThan(ids.indexOf('orders'));
@@ -122,6 +158,10 @@ describe('mypage/_tab_navigation 마일리지 탭', () => {
 });
 
 describe('routes.json /mypage/mileage', () => {
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('마일리지 라우트가 등록되어 있다', () => {
     const route = routes.routes.find((r: any) => r.path === '/mypage/mileage');
     expect(route).toBeDefined();
@@ -133,6 +173,10 @@ describe('routes.json /mypage/mileage', () => {
 describe('mypage/mileage _list partial', () => {
   // ── 요약 카드 4종 ──
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('요약 카드 4종 (available/expiring_soon/total_earned/total_used) 을 바인딩한다', () => {
     const s = serialize(listPartial);
     expect(s).toContain('mileage_balance?.data?.mileage?.available');
@@ -143,6 +187,10 @@ describe('mypage/mileage _list partial', () => {
 
   // ── 4분류 필터 ──
 
+  /**
+   * @scenario actor=member
+   * @effects user_mileage_history_filters_by_four_display_categories
+   */
   it('4분류 필터 5버튼(전체/적립/사용/소멸/조정) 이 존재한다', () => {
     const labels = ['filter.all', 'filter.earn', 'filter.use', 'filter.expire', 'filter.adjust'];
     const s = serialize(listPartial);
@@ -151,6 +199,10 @@ describe('mypage/mileage _list partial', () => {
     }
   });
 
+  /**
+   * @scenario actor=member
+   * @effects user_mileage_history_filters_by_four_display_categories
+   */
   it('"전체" 필터 버튼이 선택 시 active 되도록 non-empty key(all) variant 를 사용한다 (회귀 차단)', () => {
     // mileageCategory 가 빈 문자열('')일 때 classMap key 가 falsy 가 되어 variant 매칭이 안 되던 버그.
     // 다른 필터 버튼(earn/use/expire/adjust)처럼 non-empty key 로 맞춰야 active 스타일이 적용된다.
@@ -168,6 +220,10 @@ describe('mypage/mileage _list partial', () => {
     expect(Object.keys(allButton.classMap.variants)).not.toContain('');
   });
 
+  /**
+   * @scenario actor=member
+   * @effects user_mileage_history_filters_by_four_display_categories
+   */
   it('각 필터 버튼이 navigate 로 query.category 를 전달한다', () => {
     const buttons = collectNodes(
       listPartial,
@@ -188,6 +244,10 @@ describe('mypage/mileage _list partial', () => {
 
   // ── 4분류 배지 매핑 ──
 
+  /**
+   * @scenario actor=member
+   * @effects user_display_category_collapses_restore_admin_into_adjust
+   */
   it('user_display_category 4분류 배지 variants(earn/use/expire/adjust) 를 매핑한다', () => {
     const badges = collectNodes(
       listPartial,
@@ -208,14 +268,23 @@ describe('mypage/mileage _list partial', () => {
     }
   });
 
-  it('금액에 부호(+) 및 amount_formatted 를 표시한다', () => {
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_history_amount_is_signed_points_not_currency
+   */
+  it('금액에 부호(+) 와 숫자 + P 를 표시한다 (통화 서식 amount_formatted 는 「240원 P」 가 되어 쓰지 않는다)', () => {
     const s = serialize(listPartial);
-    expect(s).toContain('tx.amount_formatted');
+    expect(s).toContain('Number(tx.amount ?? 0).toLocaleString()');
+    expect(s).not.toContain('tx.amount_formatted');
     expect(s).toContain("tx.amount >= 0 ? '+' : ''");
   });
 
   // ── 페이지네이션 ──
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('Pagination 컴포넌트가 history pagination 경로를 바인딩한다', () => {
     const pagination = collectNodes(listPartial, (n) => n.name === 'Pagination')[0];
     expect(pagination).toBeDefined();
@@ -227,6 +296,10 @@ describe('mypage/mileage _list partial', () => {
 
   // ── 빈 상태 ──
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('내역 없음 빈 상태를 렌더한다', () => {
     const s = serialize(listPartial);
     expect(s).toContain('$t:mypage.mileage.empty');
@@ -234,6 +307,10 @@ describe('mypage/mileage _list partial', () => {
 
   // ── 다크모드 쌍 ──
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('카드/배경 클래스에 다크모드 쌍이 포함된다', () => {
     const s = serialize(listPartial);
     expect(s).toContain('dark:bg-gray-800');
@@ -242,6 +319,10 @@ describe('mypage/mileage _list partial', () => {
 
   // ── 마일리지 비활성화 안내 (mileage.enabled=false) ──
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('비활성화 안내 블록이 enabled=false 조건으로 노출된다', () => {
     const notice = collectNodes(
       listPartial,
@@ -251,6 +332,10 @@ describe('mypage/mileage _list partial', () => {
     expect(serialize(notice)).toContain('$t:mypage.mileage.disabled_notice');
   });
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('요약 카드·필터는 enabled=true 일 때만 노출된다', () => {
     const enabledGated = collectNodes(
       listPartial,
@@ -260,6 +345,10 @@ describe('mypage/mileage _list partial', () => {
     expect(enabledGated.length).toBeGreaterThanOrEqual(2);
   });
 
+  /**
+   * @scenario actor=member
+   * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
+   */
   it('내역 없음 빈 상태가 enabled 조건과 결합되어 비활성 시 중복 노출되지 않는다', () => {
     const empty = collectNodes(
       listPartial,

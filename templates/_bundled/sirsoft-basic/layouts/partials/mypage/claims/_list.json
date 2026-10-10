@@ -1,0 +1,1221 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "클레임 신청내역 목록 (유형 서브탭 + 신청서 단위 카드 + 페이지네이션)",
+        "editor_label": "$t:user.modal_label.mypage_claims.list"
+    },
+    "comment": "§6-1 — 서브탭 4종(교환/반품/환불/취소) × 신청서 단위 카드. 카드 본문은 PC 4열(신청상품·사유·배송조회·금액), 모바일은 1단 스택이다. 유형마다 4열째의 구성이 다르므로 유형 분기는 그 열 안에서만 한다 — 카드 골격을 유형별로 복제하면 헤더·액션 규칙을 네 곳에서 고쳐야 한다.\n서브탭은 라우트가 아니라 ?type= 으로 왕복한다. 유형마다 서버가 **다른 테이블**을 읽으므로(교환/반품/환불/취소) 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다 — 그래서 탭 전환만은 목록 상태를 승계하지 않고 page 를 함께 초기화한다.\n셸이 _local.claimWithdrawApiBase / isGuest / withdrawRefreshDataSourceId 를 세운다. 철회 확인 모달(_modal_withdraw.json)은 그 값만 읽으므로 이 파일은 [철회] 버튼과 대상 번호만 넘긴다. 주문상세 셸은 claimDetailLinkMode 를 더 세운다 — 회원(mypage/orders/show)은 new_window(신청번호가 새 창 상세 링크), 비회원(shop/guest_order_show)은 same_window(번호가 같은 창에서 상세로 이동 — 조회 토큰이 탭에 묶여 새 창에 실리지 않는다). 어느 쪽이든 푸터 [상세보기]는 서지 않는다. 신청내역 목록 화면은 세우지 않는다.\n화면 주소도 셸이 준다 — 이 목록은 회원 신청내역(/mypage/claims)과 비회원 주문상세의 '이 주문의 클레임' 섹션이 같이 쓰는데, 두 화면의 주소 모양이 다르다. 셋을 셸이 세운다: claimListPath(이 목록을 소유한 화면 — 서브탭·페이지 왕복의 목적지) / claimDetailPathBase(상세·수정 주소의 앞부분) / claimEmptyCtaPath(빈 목록에서 나갈 곳). partial 이 주소를 리터럴로 들면 비회원이 회원 전용 주소로 보내져 로그인 화면이 열린다 — 오류도 토스트도 남지 않는다.",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "comment": "유형 서브탭 — 진입 시 주소(query.type)를 읽고, 조작 시 claimsType/claimsPage와 주소를 함께 갱신한 뒤 claims만 다시 조회한다. 주문 전체 재조회나 컴포넌트 재마운트 없이 선택·포커스·스크롤을 유지한다. 주소에 유형이 없을 때만 응답의 claim_type(주문상세 셸이 type 을 비워 보내면 서버가 접수 건이 있는 첫 유형을 골라 돌려준다)을 읽고, 그것도 없으면 교환이다(신청내역 목록 화면은 늘 유형을 실어 보내므로 종전 그대로 교환).",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 mb-3 overflow-x-auto"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 mb-4 overflow-x-auto"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "iteration": {
+                        "source": "{{[{ id: 'exchange', label: $t('claim.list.tab_exchange') }, { id: 'return', label: $t('claim.list.tab_return') }, { id: 'refund', label: $t('claim.list.tab_refund') }, { id: 'cancel', label: $t('claim.list.tab_cancel') }]}}",
+                        "item_var": "tab"
+                    },
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "if": "{{_local.claimsLoading !== true && claims?.data != null}}",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "claimsType": "{{tab.id}}",
+                                        "claimsPage": 1,
+                                        "claimsLoading": true
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다.",
+                                    "handler": "replaceUrl",
+                                    "params": {
+                                        "path": "{{_local.claimListPath ?? ''}}",
+                                        "scroll": "preserve",
+                                        "query": {
+                                            "type": "{{tab.id}}",
+                                            "page": "1"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "claims",
+                                        "sync": true
+                                    },
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "claimsLoading": false
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "claimsLoading": false
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "aria-disabled": "{{_local.claimsLoading === true || claims?.data == null}}",
+                        "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_local.claimsLoading === true && (_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "text-sm animate-spin mr-1",
+                                "aria-hidden": true
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{tab.label}}"
+                        },
+                        {
+                            "comment": "서브탭 건수 뱃지 (F12). 서버는 매 요청 네 유형을 세어 `counts` 로 실어 보내는데 구매자 화면은 그 값을 그리지 않아, 어느 탭에 무엇이 있는지 눌러 보기 전에는 알 수 없었다(관리자 화면에는 있는 표기다). 0건인 탭에는 세우지 않는다 — 0 을 나란히 그리면 '아직 세지 않음' 과 구분되지 않는다.",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(claims?.data?.counts?.[tab.id] ?? 0) > 0}}",
+                            "props": {
+                                "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}}"
+                            },
+                            "text": "{{claims?.data?.counts?.[tab.id] ?? 0}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "신청서 카드 반복 — 카드 사이 간격은 부모가 준다. 반복 노드는 자기 자신이 복제되므로 그 노드의 space-y 는 카드 사이에 걸리지 않는다.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(claims.data?.data ?? []).length > 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "space-y-3"
+                    }
+                }
+            },
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{claims.data?.data ?? []}}",
+                        "item_var": "claim"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                            },
+                            "children": [
+                                {
+                                    "comment": "카드 헤더 — 좌: 클레임번호·신청일·주문번호 / 우: 상태 배지 + 액션([수정][철회]). 액션은 승인 전 상태에서만 선다(서버 판정 is_editable / is_withdrawable — 화면이 상태 문자열로 재현하면 상태가 늘 때마다 갈린다).",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-start justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "회원 주문상세 셸(claimDetailLinkMode: new_window)에서는 신청번호 자체가 새 창 상세 링크다 — 주문 상세의 작업 맥락을 잃지 않기 위해서다. 신청내역 목록 화면은 이 값을 세우지 않으므로 종전대로 글자만 두고 푸터 [상세보기]가 같은 창으로 이동한다. 경로는 셸이 준 claimDetailPathBase 를 쓴다.",
+                                                    "id": "claim_list_number_link_{{claim.claim_number}}",
+                                                    "type": "basic",
+                                                    "name": "A",
+                                                    "if": "{{_local.claimDetailLinkMode === 'new_window'}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate",
+                                                        "href": "{{(_local.claimDetailPathBase ?? '') + '/' + (claim.claim_number ?? '')}}",
+                                                        "target": "_blank",
+                                                        "rel": "noopener noreferrer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{claim.claim_number ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "arrow-up-right-from-square",
+                                                                "className": "text-xs"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "비회원 주문상세 셸(claimDetailLinkMode: same_window)은 번호가 같은 창에서 상세로 간다 — 비회원 조회 토큰은 탭에 묶여(sessionStorage) 새 창에 실리지 않으므로, 새 창으로 열면 조회 폼으로 되돌아간다. 목록 상태(서브탭·페이지)를 물려주어 뒤로 돌아왔을 때 보던 자리가 남게 한다.",
+                                                    "id": "claim_list_number_button_{{claim.claim_number}}",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.claimDetailLinkMode === 'same_window'}}",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "{{(_local.claimDetailPathBase ?? '') + '/' + (claim.claim_number ?? '')}}",
+                                                                "mergeQuery": true,
+                                                                "query": {}
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate cursor-pointer",
+                                                        "role": "link"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{claim.claim_number ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "chevron-right",
+                                                                "className": "text-xs"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "claim_list_number_text_{{claim.claim_number}}",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{!_local.claimDetailLinkMode}}",
+                                                    "props": {
+                                                        "className": "text-sm font-semibold text-gray-900 dark:text-white truncate"
+                                                    },
+                                                    "text": "{{claim.claim_number ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                    },
+                                                    "text": "$t:claim.list.requested_at|at={{claim.requested_at_formatted ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                    },
+                                                    "text": "$t:claim.list.order_number|number={{claim.order_number ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col items-end gap-2 flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "판매자 접수 뱃지(D8) — 판매자가 고객을 대신해 접수한 신청서. 고객은 이 신청을 고치거나 철회할 수 없다(서버가 is_editable/is_withdrawable 를 끈다).",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{claim.request_source === 'admin'}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                    },
+                                                    "text": "{{claim.request_source_label ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "상태 배지 — 라벨은 유형 접두 정확 명칭이다(D28, enums 단일 출처). 화면이 자기 어휘를 두면 그 화면만 옛 이름으로 남는다.",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "classMap": {
+                                                        "base": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                                                        "key": "{{claim.status_variant}}",
+                                                        "variants": {
+                                                            "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                                                            "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+                                                            "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                                                            "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                                            "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                            "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                                                            "dark": "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                                        },
+                                                        "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "상태 아이콘 — 서버가 상태 Enum 에서 실어 준 값(status_icon). 진행 단계 스텝퍼와 같은 그림이다.",
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!!claim.status_icon}}",
+                                                            "props": {
+                                                                "name": "{{claim.status_icon}}",
+                                                                "className": "text-xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{claim.status_label ?? claim.status ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim.is_editable === true || claim.is_withdrawable === true}}",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "[수정] — 승인 전에만. edit 라우트는 클레임 번호만 받고 유형은 서버가 번호로 해석한다.",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{claim.is_editable === true}}",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number + '/edit'}}",
+                                                                        "mergeQuery": true,
+                                                                        "query": {}
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "px-2.5 py-1 text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                            },
+                                                            "text": "$t:claim.list.edit"
+                                                        },
+                                                        {
+                                                            "comment": "[철회] — 확인 절차는 공용 모달(_modal_withdraw.json)이 소유한다. 여기서는 대상 번호만 넘긴다.",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{claim.is_withdrawable === true}}",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "sirsoft-ecommerce.openClaimWithdraw",
+                                                                    "params": {
+                                                                        "claimNumber": "{{claim.claim_number}}",
+                                                                        "claimLabel": "{{claim.claim_type_label ?? ''}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "px-2.5 py-1 text-xs font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                                                            },
+                                                            "text": "$t:claim.list.withdraw"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "카드 본문 4열 — PC 는 grid, 모바일은 1단 세로. 모바일에서도 열 제목을 남겨야 어느 값인지 알 수 있다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "flex flex-col gap-3 pt-3"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "grid grid-cols-12 gap-4 pt-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "1열 신청상품 — 교환은 상품마다 교환대상(⇄)을 함께 그린다(D29 — 교환 방식은 상품 속성).",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "space-y-2"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "col-span-5 space-y-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:claim.list.col_items"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{claim.items ?? []}}",
+                                                        "item_var": "item"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Img",
+                                                                    "if": "{{item.thumbnail_url}}",
+                                                                    "props": {
+                                                                        "src": "{{item.thumbnail_url}}",
+                                                                        "alt": "{{item.product_name ?? ''}}",
+                                                                        "className": "w-full h-full object-cover"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{!item.thumbnail_url}}",
+                                                                    "props": {
+                                                                        "className": "w-full h-full flex items-center justify-center"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "image",
+                                                                                "className": "text-xl text-gray-400 dark:text-gray-500"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-1 min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-sm font-medium text-gray-900 dark:text-white truncate"
+                                                                    },
+                                                                    "text": "{{item.product_name ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate"
+                                                                    },
+                                                                    "text": "{{item.product_option_name ?? ''}} · {{item.quantity ?? 0}}$t:shop.count_unit"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-xs text-gray-900 dark:text-white mt-0.5"
+                                                                    },
+                                                                    "text": "{{item.subtotal_amount_formatted ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "comment": "보조 통화 — 바로 위 소계(subtotal_amount_formatted)와 같은 값의 다른 표기다. 읽는 필드가 어긋나면 두 줄이 서로 다른 금액이 되는데 둘 다 정상 서식이라 어긋난 흔적이 남지 않는다(2026-09-01 실측: 소계 자리에 교환 차액이 그려져 동일상품 교환이 `28,000원 / $0.00` 이 됐고, 차액 필드가 없는 반품·취소·환불은 이 줄이 통째로 비었다). 선택 통화와 같은 코드는 빼고 나열한다.",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "iteration": {
+                                                                        "source": "{{Object.entries(item.mc_subtotal_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                                        "item_var": "currency"
+                                                                    },
+                                                                    "props": {
+                                                                        "className": "flex flex-wrap gap-x-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                            },
+                                                                            "text": "{{currency[1]?.formatted ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "교환 대상 — 옵션을 바꾼 상품만. 동일상품 교환은 대상 줄이 없다(차액도 없다).",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{item.is_option_change === true}}",
+                                                                    "props": {
+                                                                        "className": "text-xs text-indigo-600 dark:text-indigo-400 mt-1 truncate"
+                                                                    },
+                                                                    "text": "⇄ {{item.new_option_label ?? ''}} {{(item.price_difference ?? 0) !== 0 ? item.price_difference_formatted : ''}}"
+                                                                },
+                                                                {
+                                                                    "comment": "이 교환에 얹은 추가옵션 — 신청 시점에 이름과 추가금이 동결된 값이다. 추가금은 위 차액에 이미 합산돼 있으므로 이름만 나열한다.",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(item.new_additional_options ?? []).length > 0}}",
+                                                                    "props": {
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate"
+                                                                    },
+                                                                    "text": "+ {{(item.new_additional_options ?? []).map(o => o.custom_text ? (o.name + ' (' + o.custom_text + ')') : o.name).join(', ')}}"
+                                                                },
+                                                                {
+                                                                    "comment": "보조 통화 — 바로 위 줄이 끝에 붙인 옵션 차액과 같은 값의 다른 표기다. 게이트는 그 차액이 실제로 그려지는 조건(`is_option_change && 차액 ≠ 0`)과 **같아야 한다** — 동일상품 교환·동가 옵션변경은 차액이 안 그려지는데 이 줄만 돌면 근거 없는 0 만 남는다.",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{item.is_option_change === true && (item.price_difference ?? 0) !== 0}}",
+                                                                    "iteration": {
+                                                                        "source": "{{Object.entries(item.mc_price_difference ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                                        "item_var": "currency"
+                                                                    },
+                                                                    "props": {
+                                                                        "className": "flex flex-wrap gap-x-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                            },
+                                                                            "text": "{{currency[1]?.formatted ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "상품 단위 상태 — 헤더 상태와 다를 수 있다(운영자가 상품 단위로 전이할 수 있다, D25). 다를 때만 그린다.",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!!item.status_label && item.status_label !== claim.status_label}}",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 mt-1"
+                                                                    },
+                                                                    "text": "{{item.status_label}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(claim.items ?? []).length === 0}}",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "—"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "2열 사유 — 사유명과 귀책. 귀책이 배송비 부담 주체를 정하므로 함께 둔다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "col-span-2 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:claim.list.col_reason"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{claim.reason_label ?? '—'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{!!claim.fault_type_label}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "({{claim.fault_type_label}})"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "3열 배송조회 — 회수(교환·반품)와 재발송(교환)이 한 열에 선다. 환불·취소는 회수 배송이 없어 '—' 다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "col-span-2 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:claim.list.col_tracking"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{claim.claim_type !== 'exchange' && claim.claim_type !== 'return'}}",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "—"
+                                                },
+                                                {
+                                                    "comment": "송장은 상품 행마다 있어(#599) 한 신청서에 운송장이 여럿일 수 있다 — 목록 한 줄에는 방향별 첫 운송장과 「외 N개」만 적고(서버 `tracking_summary`), 운송장별 조회 링크는 상세의 배송 카드가 맡는다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim.claim_type === 'exchange' || claim.claim_type === 'return'}}",
+                                                    "props": {
+                                                        "className": "space-y-0.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:claim.list.collection"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!!claim.tracking_summary?.collection?.first}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-900 dark:text-white break-all"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{claim.tracking_summary?.collection?.first ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{(claim.tracking_summary?.collection?.count ?? 0) > 1}}",
+                                                                    "props": {
+                                                                        "className": "ml-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:claim.list.tracking_more|more={{(claim.tracking_summary?.collection?.count ?? 0) - 1}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!claim.tracking_summary?.collection?.first}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "—"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "재발송 — 교환만.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim.claim_type === 'exchange'}}",
+                                                    "props": {
+                                                        "className": "space-y-0.5 pt-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:claim.list.redelivery"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!!claim.tracking_summary?.redelivery?.first}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-900 dark:text-white break-all"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{claim.tracking_summary?.redelivery?.first ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{(claim.tracking_summary?.redelivery?.count ?? 0) > 1}}",
+                                                                    "props": {
+                                                                        "className": "ml-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:claim.list.tracking_more|more={{(claim.tracking_summary?.redelivery?.count ?? 0) - 1}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!claim.tracking_summary?.redelivery?.first}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "—"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "4열 금액 — 유형마다 구성이 다르다(§6-1). 부호는 한 컬럼 안에서 +/− 로 구분한다(D1): 청구는 +, 환불은 −. 반품 행에는 환불액을 싣지 않는다 — 그 금액은 환불신청서가 접수되기 전에는 도메인 어디에도 없고(접수는 완료 처리 때 일어난다, D26), 접수된 뒤에는 환불 서브탭의 자기 행이 확정 금액을 든다. 화면이 미리보기를 행마다 다시 돌려 추정치를 세우면 목록 한 번이 페이지 크기만큼의 계산이 되고, 그 수는 실제 환불액과 다를 수 있다. 관리자 목록도 같은 근거로 반품 행에 환불액을 싣지 않는다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "col-span-3 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:claim.list.col_amount"
+                                                },
+                                                {
+                                                    "comment": "교환·반품의 클레임 배송비 — 교환은 왕복, 반품은 편도(회수). 0원이면 줄을 세우지 않는다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(claim.claim_type === 'exchange' || claim.claim_type === 'return') && (claim.claim_shipping_fee ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "flex items-baseline justify-between gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{claim.claim_type === 'exchange' ? $t('claim.list.round_trip_shipping_fee') : $t('claim.list.collection_shipping_fee')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                            },
+                                                            "text": "+{{claim.claim_shipping_fee_formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "보조 통화 — 바로 위 클레임 배송비와 같은 값의 다른 표기다. 게이트는 그 줄과 **같아야 한다**(0원이면 배송비 줄이 서지 않는다).",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(claim.claim_type === 'exchange' || claim.claim_type === 'return') && (claim.claim_shipping_fee ?? 0) > 0}}",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(claim.mc_claim_shipping_fee ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "currency"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-2 justify-end"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{currency[1]?.formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "교환의 추가 상품금액 — 고가 옵션으로 바꾼 차액.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim.claim_type === 'exchange' && (claim.additional_product_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "flex items-baseline justify-between gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:claim.list.additional_product_amount"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                            },
+                                                            "text": "+{{claim.additional_product_amount_formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "보조 통화 — 바로 위 기준 통화 줄과 같은 값의 다른 표기다. 게이트도 그 줄과 **같아야 한다** — 차액이 0 인 신청에서 기준 줄은 서지 않는데 이 iteration 만 돌면 근거 없는 `$0.00 ¥0` 만 남는다. 같은 카드의 총 청구액 줄은 이미 병기하므로 이 줄만 비면 표기가 갈린다(S17 트랙 A F-1).",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim.claim_type === 'exchange' && (claim.additional_product_amount ?? 0) > 0}}",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(claim.mc_additional_product_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "additionalAmountCurrency"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-2 justify-end"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "{{additionalAmountCurrency[1]?.formatted ?? additionalAmountCurrency[1] ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "교환의 환불 상품금액 — 저가 옵션으로 바꿔 차액이 돌아오는 경우.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim.claim_type === 'exchange' && (claim.refund_product_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "flex items-baseline justify-between gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:claim.list.refund_product_amount"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "−{{claim.refund_product_amount_formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "보조 통화 — 바로 위 기준 통화 줄과 같은 값의 다른 표기다. 게이트도 그 줄과 **같아야 한다** — 차액이 0 인 신청에서 기준 줄은 서지 않는데 이 iteration 만 돌면 근거 없는 `$0.00 ¥0` 만 남는다. 같은 카드의 총 청구액 줄은 이미 병기하므로 이 줄만 비면 표기가 갈린다(S17 트랙 A F-1).",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim.claim_type === 'exchange' && (claim.refund_product_amount ?? 0) > 0}}",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(claim.mc_refund_product_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "refundAmountCurrency"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-2 justify-end"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "{{refundAmountCurrency[1]?.formatted ?? refundAmountCurrency[1] ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "환불·취소의 환불액 — 환불 신청서 자신이 확정 금액을 든다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(claim.claim_type === 'refund' || claim.claim_type === 'cancel') && (claim.refund_amount ?? 0) >= 0}}",
+                                                    "props": {
+                                                        "className": "flex items-baseline justify-between gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:claim.list.refund_amount"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "−{{claim.claim_type === 'refund' ? (claim.refund_total_formatted ?? '') : (claim.refund_amount_formatted ?? '')}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "보조 통화 — 바로 위 환불액과 같은 값의 다른 표기다. 읽는 필드는 그 줄의 분기와 **같아야 한다**: 환불은 기준 줄이 현금+마일리지 합(`refund_total_formatted`)이므로 합계 필드를, 취소는 현금분(`refund_amount_formatted`)이므로 현금 필드를 읽는다. 어긋나면 두 줄이 서로 다른 금액이 되는데 둘 다 정상 서식이라 흔적이 남지 않는다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(claim.claim_type === 'refund' || claim.claim_type === 'cancel') && (claim.refund_amount ?? 0) >= 0}}",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries((claim.claim_type === 'refund' ? claim.mc_refund_total : claim.mc_refund_amount) ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "currency"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-2 justify-end"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{currency[1]?.formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "소계 — 교환·반품의 총 청구액. 청구가 없는 신청(0원 자동 승인 등)에는 줄을 세우지 않는다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(claim.claim_type === 'exchange' || claim.claim_type === 'return') && (claim.total_charge_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "flex items-baseline justify-between gap-2 pt-1 border-t border-gray-100 dark:border-gray-700"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs font-medium text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:claim.list.total_charge"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-bold text-gray-900 dark:text-white"
+                                                            },
+                                                            "text": "{{claim.total_charge_amount_formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "보조 통화 — 총 청구액의 다통화 표기(주문 도메인 mc_* 규약). 게이트는 총 청구액 줄과 **같아야 한다** — 청구가 0원인 신청(차감 방식 반품·0원 자동 승인)에서 그 줄은 서지 않는데 이 iteration 만 돌면 금액 열에 근거 없는 `$0.00 ¥0 元0.00 €0.00` 만 남는다(2026-09-01 비회원 실측). 구매자는 그 0 이 무엇의 0 인지 알 수 없다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(claim.claim_type === 'exchange' || claim.claim_type === 'return') && (claim.total_charge_amount ?? 0) > 0}}",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(claim.mc_total_charge_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "currency"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-2 justify-end"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{currency[1]?.formatted ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "청구방식 — 언제·무엇으로 청구되는지. 청구가 있는 신청에만 선다.",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{!!claim.charge_method_label && (claim.total_charge_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 text-right"
+                                                    },
+                                                    "text": "{{claim.charge_method_label}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "카드 푸터 — 상세보기. 목록 상태(서브탭·페이지)를 그대로 물려주어 뒤로 돌아왔을 때 보던 자리가 남게 한다. 주문상세 셸(claimDetailLinkMode 가 선 곳)에서는 번호 자체가 링크라 이 푸터가 중복이므로 세우지 않는다.",
+                                    "id": "claim_list_card_footer_{{claim.claim_number}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!_local.claimDetailLinkMode}}",
+                                    "props": {
+                                        "className": "flex justify-end pt-3 mt-3 border-t border-gray-100 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "[상세보기] — 지금 이 푸터가 서는 곳은 회원 신청내역 목록뿐이지만, 주소는 리터럴로 들지 않고 셸이 준 상세 주소 앞부분에 신청번호를 잇는다. 다른 셸이 푸터를 켜도 자기 상세 화면으로 가게 하기 위해서다.",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number}}",
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:claim.list.detail"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "chevron-right",
+                                                        "className": "text-xs"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "빈 목록 — 유형 서브탭마다 따로 판정된다. '없음' 과 '아직 못 불러왔음' 은 다르므로 로딩 중에는 세우지 않는다.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!claims.data && (claims.data?.data ?? []).length === 0}}",
+            "props": {
+                "className": "flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "rotate-left",
+                        "className": "text-5xl text-gray-300 dark:text-gray-600"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-4 text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:claim.list.empty"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 이 목록 밖으로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 목적지가 알지 못하는 파라미터가 실린다. 목적지는 셸이 정한다(회원=주문 내역, 비회원=상품 목록 — 비회원에게는 주문 내역 화면이 없다).",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{_local.claimEmptyCtaPath ?? ''}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "mt-4 px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                    },
+                    "text": "$t:claim.list.go_orders"
+                }
+            ]
+        },
+        {
+            "comment": "페이지 조회 중 표시를 위한 고정 높이 영역 — 로딩 여부에 따라 페이지 길이가 바뀌지 않게 한다.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{((claims.data?.pagination?.last_page ?? 0) > 1) || (claims.data?.pagination?.has_more_pages === true) || ((claims.data?.pagination?.current_page ?? 1) > 1)}}",
+            "props": {
+                "className": "h-5 mt-2 flex items-center justify-center",
+                "aria-busy": "{{_local.claimsLoading === true}}"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "if": "{{_local.claimsLoading === true}}",
+                    "props": {
+                        "name": "spinner",
+                        "className": "text-sm text-gray-500 dark:text-gray-400 animate-spin"
+                    }
+                }
+            ]
+        },
+        {
+            "comment": "총 건수가 상한에 잘렸으면 last_page가 null로 오고 마지막 페이지 점프만 감춘다.",
+            "type": "composite",
+            "name": "Pagination",
+            "if": "{{((claims.data?.pagination?.last_page ?? 0) > 1) || (claims.data?.pagination?.has_more_pages === true) || ((claims.data?.pagination?.current_page ?? 1) > 1)}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "currentPage": "{{claims.data?.pagination?.current_page}}",
+                        "totalPages": "{{claims.data?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{claims.data?.pagination?.has_more_pages ?? false}}",
+                        "className": "mt-3"
+                    }
+                }
+            },
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "handler": "sequence",
+                    "if": "{{_local.claimsLoading !== true}}",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "claimsPage": "{{$args[0]}}",
+                                "claimsLoading": true
+                            }
+                        },
+                        {
+                            "handler": "replaceUrl",
+                            "params": {
+                                "path": "{{_local.claimListPath ?? ''}}",
+                                "mergeQuery": true,
+                                "scroll": "preserve",
+                                "query": {
+                                    "page": "{{$args[0]}}"
+                                }
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "claims",
+                                "sync": true
+                            },
+                            "onError": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "claimsLoading": false
+                                }
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "claimsLoading": false
+                            }
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "currentPage": "{{claims.data?.pagination?.current_page}}",
+                "totalPages": "{{claims.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{claims.data?.pagination?.has_more_pages ?? false}}",
+                "className": "mt-4"
+            }
+        }
+    ]
+}

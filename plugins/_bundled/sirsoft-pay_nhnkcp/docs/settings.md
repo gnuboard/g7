@@ -16,7 +16,7 @@
 | `redirect_fail_url` | `string` | `{shopBase}/checkout` | 결제 실패 리다이렉트 URL |
 | `use_escrow` | `boolean` | `false` | 에스크로 결제 활성화 |
 | `escrow_test_site_cd` | `string` | - | 테스트 에스크로 사이트 코드 |
-| `vbank_expire_days` | `integer` | `3` | 가상계좌 입금 만료(일) |
+| `vbank_expire_days` | `integer` | `3` | 가상계좌 입금 만료(일) — 사용 안 함 |
 | `easy_pay_allow_with_other_pg` | `boolean` | `false` | - |
 | `easy_pay_payco` | `boolean` | `false` | - |
 | `easy_pay_naverpay` | `boolean` | `false` | - |
@@ -24,7 +24,7 @@
 | `easy_pay_kakaopay` | `boolean` | `false` | - |
 | `easy_pay_applepay` | `boolean` | `false` | - |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -55,7 +55,7 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:menus END -->
 
 <!-- @intent START -->
-설정 화면(`plugin_settings.json`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
+설정 화면(`plugin_settings.g7.html`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
 접근합니다 — PG 플러그인마다 전용 사이드바 메뉴를 만들면 PG 를 여러 개 설치했을 때 메뉴가
 난립합니다.
 <!-- @intent END -->
@@ -86,7 +86,7 @@ _등록하는 메뉴가 없습니다._
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.1.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
@@ -94,8 +94,9 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-`sirsoft-ecommerce >=1.1.0` 하드 의존은 §data-model.md 에서 설명한 구조(결제 상태는
+`sirsoft-ecommerce >=1.3.0` 하드 의존은 §data-model.md 에서 설명한 구조(결제 상태는
 이커머스가 소유, 이 플러그인은 절차만 소유)의 직접적 결과입니다 — 이커머스 없이는 이
 플러그인이 다룰 주문 자체가 존재하지 않습니다. 이커머스의 PG 등록 훅이나 `Order` 모델
 구조가 바뀌면 이 최소 버전을 올려야 합니다(§코어 AGENTS.md "확장 → 확장 동기화").
+최소 버전 1.3.0 은 관리자 주문 목록 결제수단 칸의 표시 자리(확장점 `admin_order_list_payment_method_badges`)와 표시 라벨 필터 훅(`sirsoft-ecommerce.order.filter_payment_method_display_label`)이 도입된 버전입니다.
 <!-- @intent END -->

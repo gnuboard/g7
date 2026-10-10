@@ -8,25 +8,30 @@ use App\Models\IdentityVerificationLog;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
  * IdentityVerificationLogRepository 의 검증 토큰 조회 만료 검증.
  *
- * 회귀 배경(KVE-2026-2029): findVerifiedForToken() 이 status/consumed_at 만 보고
+ * 회귀 배경: findVerifiedForToken() 이 status/consumed_at 만 보고
  * expires_at 술어를 갖지 않아, 만료된 본인인증 토큰이 무기한 유효하게 취급됐다.
  * 이 저장소를 공유하는 소비자(정책 미들웨어·정책 서비스·회원가입/비밀번호재설정
  * 리스너·IdvTokenRule)가 전부 같은 결함을 물려받았으므로 저장소 단일 지점에서 닫는다.
- *
- * @group identity
- * @group unit
  */
+#[Group('identity')]
+#[Group('unit')]
 class IdentityVerificationLogRepositoryTest extends TestCase
 {
     use DatabaseTransactions;
 
     private IdentityVerificationLogRepositoryInterface $repository;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,7 @@ class IdentityVerificationLogRepositoryTest extends TestCase
      * 검증 완료 로그를 생성합니다.
      *
      * @param  array<string, mixed>  $overrides  덮어쓸 속성
+     * @return IdentityVerificationLog 만든 검증 완료 로그
      */
     private function makeVerifiedLog(array $overrides = []): IdentityVerificationLog
     {
@@ -58,6 +64,12 @@ class IdentityVerificationLogRepositoryTest extends TestCase
 
     /**
      * 미만료 검증 토큰은 조회된다 (정상 흐름 불변).
+     *
+     * @scenario lookup=verified_token, record_condition=unexpired_token
+     *
+     * @effects unexpired_verified_token_is_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_unexpired_verified_token_is_returned(): void
     {
@@ -73,7 +85,13 @@ class IdentityVerificationLogRepositoryTest extends TestCase
     }
 
     /**
-     * 만료된 검증 토큰은 조회되지 않는다 (KVE-2026-2029).
+     * 만료된 검증 토큰은 조회되지 않는다.
+     *
+     * @scenario lookup=verified_token, record_condition=expired_token
+     *
+     * @effects expired_verified_token_is_not_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_expired_verified_token_is_not_returned(): void
     {
@@ -91,6 +109,12 @@ class IdentityVerificationLogRepositoryTest extends TestCase
 
     /**
      * 만료 경계: 1초 전은 통과, 1초 후는 차단.
+     *
+     * @scenario lookup=verified_token, record_condition=expired_token
+     *
+     * @effects expiry_boundary_is_closed_strictly
+     *
+     * @return void 반환값 없음
      */
     public function test_expiry_boundary_is_closed_strictly(): void
     {
@@ -114,6 +138,12 @@ class IdentityVerificationLogRepositoryTest extends TestCase
      *
      * 보안 토큰은 모든 provider 가 challenge 생성 시 expires_at 을 세팅한다.
      * NULL 은 정상 발급 산물이 아니므로 허용 분기를 두지 않는다.
+     *
+     * @scenario lookup=verified_token, record_condition=token_without_expiry
+     *
+     * @effects token_without_expiry_is_not_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_token_without_expiry_is_not_returned(): void
     {
@@ -131,6 +161,12 @@ class IdentityVerificationLogRepositoryTest extends TestCase
 
     /**
      * 이미 소비된 토큰은 조회되지 않는다 (기존 동작 보존).
+     *
+     * @scenario lookup=verified_token, record_condition=consumed_token
+     *
+     * @effects consumed_token_is_not_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_consumed_token_is_not_returned(): void
     {
@@ -148,6 +184,12 @@ class IdentityVerificationLogRepositoryTest extends TestCase
 
     /**
      * 목적(purpose)이 다르면 조회되지 않는다 (기존 동작 보존).
+     *
+     * @scenario lookup=verified_token, record_condition=other_purpose_token
+     *
+     * @effects token_with_other_purpose_is_not_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_token_with_other_purpose_is_not_returned(): void
     {

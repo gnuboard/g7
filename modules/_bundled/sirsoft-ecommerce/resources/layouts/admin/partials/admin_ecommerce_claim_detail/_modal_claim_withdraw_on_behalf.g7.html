@@ -1,0 +1,33 @@
+<partial description="Claim Withdraw On Behalf Modal (S14)">
+  <!-- 고객 요청 대리 철회 모달 (S14). 고객이 전화로 「신청 취소해 주세요」 하면 운영자는 반려가 아니라 철회를 한다 — 반려는 고객에게 「반려되었습니다」 가 나가 기록이 사실과 다르다. 사유는 필수이고 고객 알림에 「고객님 요청으로 판매자가 철회했습니다」 가 붙는다. 문맥은 `_global.claimWithdrawContext`(신청서 식별)와 입력 사유 `_global.claimWithdrawReason` 이다 — 모달은 부모 `_local` 을 해석하지 못한다. -->
+  <modal data-type="composite" data-ref="modal_claim_withdraw_on_behalf" title="$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.title" size="md">
+    <div class="space-y-4">
+      <p data-ref="cwo_001_description" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.description</p>
+      <textarea data-ref="cwo_002_reason" name="withdrawReason" :rows="3" :maxLength="2000" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.reason_placeholder" value="{{_global.claimWithdrawReason ?? ''}}">
+        <on type="change">
+          <!-- 대리 철회 사유 입력값을 _global 에 둔다 — 철회 핸들러가 _global 에서 읽는다 -->
+          <set-state target="global" claimWithdrawReason="{{$event.target.value}}"/>
+        </on>
+      </textarea>
+      <div class="flex justify-end gap-2 pt-2">
+        <button data-ref="cwo_003_cancel" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button data-ref="cwo_004_confirm" type="button" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isWithdrawingClaim === true || (_global.claimWithdrawReason ?? '').trim() === ''}}">
+          <on type="click">
+            <!-- 고객 요청으로 신청서를 대리 철회한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
+            <action handler="sirsoft-ecommerce.withdrawClaimOnBehalf" pathSegment="{{_global.claimWithdrawContext?.pathSegment ?? ''}}" claimId="{{_global.claimWithdrawContext?.claimId ?? null}}" reason="{{_global.claimWithdrawReason ?? ''}}">
+              <fail>
+                <suppress/>
+              </fail>
+            </action>
+          </on>
+          $t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.confirm
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

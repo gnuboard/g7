@@ -113,7 +113,7 @@ describe('DataBindingEngine - Pipe Integration', () => {
       expect(result).toBe('2024-03-01');
     });
 
-    it('board/show.json 패턴: 작성일시 표시', () => {
+    it('board/show.g7.html 패턴: 작성일시 표시', () => {
       const context = { post: { data: { created_at: '2024-01-15T14:30:00' } } };
       const result = engine.resolveBindings(
         '{{post.data.created_at | datetime}}',
@@ -123,7 +123,7 @@ describe('DataBindingEngine - Pipe Integration', () => {
       expect(result).toContain('14:30');
     });
 
-    it('admin_dashboard.json 패턴: 숫자 포맷', () => {
+    it('admin_dashboard.g7.html 패턴: 숫자 포맷', () => {
       const context = { dashboard_stats: { data: { total_users: { count: 12345 } } } };
       const result = engine.resolveBindings(
         '{{dashboard_stats?.data?.total_users?.count | number}}',

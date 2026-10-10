@@ -31,6 +31,8 @@ export interface ChipCheckboxProps {
   className?: string;
   style?: React.CSSProperties;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  /** 비활성 — 체크 입력을 막고 흐리게 보인다(레이아웃 읽기 전용 게이트) */
+  disabled?: boolean;
   /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */
@@ -97,12 +99,15 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
   className = '',
   style,
   onChange,
+  disabled = false,
   id,
   editorAttrs,
 }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
-  const baseStyles = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border cursor-pointer transition-all';
+  const baseStyles = `inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+  }`;
 
   // customColor가 있으면 variant 무시, 직접 스타일 계산
   if (customColor) {
@@ -137,7 +142,8 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
           type="checkbox"
           value={value}
           checked={checked}
-          onChange={(e) => { onChange?.(e); }}
+          disabled={disabled}
+          onChange={(e) => { if (!disabled) onChange?.(e); }}
           className="hidden"
         />
         {icon && (
@@ -181,7 +187,8 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
         type="checkbox"
         value={value}
         checked={checked}
-        onChange={(e) => { onChange?.(e); }}
+        disabled={disabled}
+        onChange={(e) => { if (!disabled) onChange?.(e); }}
         className="hidden"
       />
       {icon && (

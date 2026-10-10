@@ -187,7 +187,7 @@ HTTP/1.1 200
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | meta_title | body | string | 아니오 | max 200 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | string | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.category.create_validation_rules`).
 
@@ -212,7 +212,7 @@ Content-Type: application/json
     "is_active": true,
     "meta_title": "예시 제목",
     "meta_description": "예시 내용입니다.",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
@@ -295,21 +295,22 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 새 카테고리를 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.create` 권한이 필요하며, `CategoryService::createCategory()`가 검증된 데이터로 저장한 뒤 `CategoryResource`를 201로 반환합니다. `name`(다국어 배열)과 `slug`는 필수이고, `parent_id`를 지정하면 해당 카테고리의 하위로 배치되어 path/depth가 계산됩니다. `temp_key`로 사전 업로드해 둔 임시 이미지를 이 시점에 카테고리에 연결할 수 있으며, `sirsoft-ecommerce.category.create_validation_rules` 필터로 확장이 추가 파라미터를 검증에 주입할 수 있습니다.
+**설명** 새 카테고리를 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.create` 권한이 필요하며, `CategoryService::createCategory()`가 검증된 데이터로 저장한 뒤 `CategoryResource`를 201로 반환합니다. `name`(다국어 배열)과 `slug`는 필수이고, `parent_id`를 지정하면 해당 카테고리의 하위로 배치되어 path/depth가 계산됩니다. `temp_key`로 사전 업로드해 둔 임시 이미지를 이 시점에 카테고리에 연결할 수 있으며, `sirsoft-ecommerce.category.create_validation_rules` 필터로 확장이 추가 파라미터를 검증에 주입할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「카테고리명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Category Name field is required.").
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/categories/images
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.categories.images.upload-temp -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.categories.images.upload-temp`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController@uploadImage`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.categories.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.categories.create|sirsoft-ecommerce.categories.update`
+- **권한 메모(1.3.0)**: 임시 업로드는 등록 화면도 쓰므로 `categories.create` 또는 `categories.update`(OR) 로 판정한다.
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -334,7 +335,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -723,7 +724,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | categoryId | path | string | 예 | — | 대상 category의 식별자 |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -748,7 +749,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -906,7 +907,7 @@ HTTP/1.1 200
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | meta_title | body | string | 아니오 | max 200 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | string | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.category.update_validation_rules`).
 
@@ -931,7 +932,7 @@ Content-Type: application/json
     "is_active": true,
     "meta_title": "예시 제목",
     "meta_description": "예시 내용입니다.",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
@@ -1017,7 +1018,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 기존 카테고리(path의 `category`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.update` 권한이 필요하며, `CategoryService::updateCategory()`가 검증된 데이터로 갱신한 뒤 `CategoryResource`를 반환합니다. `name`과 `slug`는 필수이고, `parent_id`를 변경하면 계층 위치(path/depth)가 재계산됩니다. `temp_key`로 임시 업로드한 이미지를 이 시점에 연결할 수 있으며, 대상이 없거나 처리 중 예외가 발생하면 404 또는 400을 반환합니다. `sirsoft-ecommerce.category.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다. `parent_id`에는 자기 자신이나 자신의 하위 카테고리를 지정할 수 없습니다 — 순환이 만들어지는 요청은 422(`parent_id`)로 거절됩니다.
+**설명** 기존 카테고리(path의 `category`)를 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.categories.update` 권한이 필요하며, `CategoryService::updateCategory()`가 검증된 데이터로 갱신한 뒤 `CategoryResource`를 반환합니다. `name`과 `slug`는 필수이고, `parent_id`를 변경하면 계층 위치(path/depth)가 재계산됩니다. `temp_key`로 임시 업로드한 이미지를 이 시점에 연결할 수 있으며, 대상이 없거나 처리 중 예외가 발생하면 404 또는 400을 반환합니다. `sirsoft-ecommerce.category.update_validation_rules` 필터로 확장이 검증 규칙을 추가할 수 있습니다. `parent_id`에는 자기 자신이나 자신의 하위 카테고리를 지정할 수 없습니다 — 순환이 만들어지는 요청은 422(`parent_id`)로 거절됩니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「카테고리명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Category Name field is required.").
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/categories/{id}

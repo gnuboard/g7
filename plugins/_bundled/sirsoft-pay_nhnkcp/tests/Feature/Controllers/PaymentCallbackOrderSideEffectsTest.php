@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Feature\Controllers;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use App\Services\PluginSettingsService;
 use Modules\Sirsoft\Ecommerce\Database\Factories\CartFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
@@ -22,10 +23,13 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\MileageTransactionListener;
+use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
@@ -40,6 +44,11 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
      */
     private ?array $hookSnapshot = null;
 
+    /**
+     * 훅 매니저 상태를 저장해 두고 마일리지 사용 리스너를 등록한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +57,11 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         $this->registerMileageTransactionListener();
     }
 
+    /**
+     * 저장해 둔 훅 매니저 상태로 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->restoreHookManager();
@@ -55,6 +69,19 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         parent::tearDown();
     }
 
+    /**
+     * 카드 승인 콜백이 주문을 결제완료로 바꾸면서 재고 차감, 쿠폰 사용 확정, 장바구니 삭제, 마일리지 차감까지 반영한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario path=card_auth_callback
+     *
+     * @effects kcp_card_approval_completes_the_order_with_the_paid_amount,
+     *   kcp_card_approval_deducts_option_and_product_stock,
+     *   kcp_card_approval_confirms_the_used_coupon_on_the_order,
+     *   kcp_card_approval_removes_the_ordered_cart_items,
+     *   kcp_card_approval_deducts_the_used_mileage
+     */
     public function test_auth_callback_completes_order_and_applies_ecommerce_side_effects(): void
     {
         $fixture = $this->createPendingCardOrderFixture();
@@ -119,14 +146,9 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
     }
 
     /**
-     * @return array{
-     *     user: User,
-     *     order: Order,
-     *     product: \Modules\Sirsoft\Ecommerce\Models\Product,
-     *     productOption: \Modules\Sirsoft\Ecommerce\Models\ProductOption,
-     *     cart: \Modules\Sirsoft\Ecommerce\Models\Cart,
-     *     couponIssue: CouponIssue
-     * }
+     * 쿠폰·마일리지·장바구니가 걸린 결제 대기 카드 주문 픽스처를 만든다.
+     *
+     * @return array{user: User, order: Order, product: Product, productOption: ProductOption, cart: Cart, couponIssue: CouponIssue} 픽스처 모델 묶음
      */
     private function createPendingCardOrderFixture(): array
     {
@@ -162,7 +184,7 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         ]);
 
         $order = OrderFactory::new()->forUser($user)->create([
-            'order_number' => 'ORD-KCP-SIDE-' . random_int(10000, 99999),
+            'order_number' => 'ORD-KCP-SIDE-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PENDING_ORDER,
             'currency' => 'KRW',
             'currency_snapshot' => self::krwCurrencySnapshot(),
@@ -232,7 +254,7 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
             'payment_status' => PaymentStatusEnum::READY,
             'pg_provider' => 'nhnkcp',
             'transaction_id' => null,
-            'merchant_order_id' => 'MO-' . $order->order_number,
+            'merchant_order_id' => 'MO-'.$order->order_number,
             'payment_method' => PaymentMethodEnum::CARD,
             'paid_amount_local' => 0,
             'paid_amount_base' => 0,
@@ -252,6 +274,12 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         return compact('user', 'order', 'product', 'productOption', 'cart', 'couponIssue');
     }
 
+    /**
+     * 주문 금액 정액 할인 쿠폰과 그 쿠폰의 사용 처리된 발급 건을 만든다.
+     *
+     * @param  User  $user  쿠폰을 받은 회원
+     * @return CouponIssue 사용 처리된 쿠폰 발급 건
+     */
     private function createUsedCouponIssue(User $user): CouponIssue
     {
         $coupon = Coupon::create([
@@ -280,7 +308,7 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         return CouponIssue::create([
             'coupon_id' => $coupon->id,
             'user_id' => $user->id,
-            'coupon_code' => 'KCP-SIDE-' . strtoupper(uniqid()),
+            'coupon_code' => 'KCP-SIDE-'.strtoupper(uniqid()),
             'status' => CouponIssueRecordStatus::USED,
             'issued_at' => now()->subHour(),
             'expired_at' => now()->addMonth(),
@@ -289,6 +317,12 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 테스트 모드 site_cd 와 리다이렉트 경로를 담은 플러그인 설정을 mock 으로 주입한다.
+     *
+     * @param  array<string, mixed>  $overrides  기본값을 덮어쓸 설정
+     * @return void 반환값 없음
+     */
     private function mockPluginSettings(array $overrides = []): void
     {
         $defaults = [
@@ -301,11 +335,17 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
             'redirect_fail_url' => '/shop/checkout',
         ];
 
-        $mock = $this->createMock(\App\Services\PluginSettingsService::class);
+        $mock = $this->createMock(PluginSettingsService::class);
         $mock->method('get')->willReturn(array_merge($defaults, $overrides));
-        $this->app->instance(\App\Services\PluginSettingsService::class, $mock);
+        $this->app->instance(PluginSettingsService::class, $mock);
     }
 
+    /**
+     * NhnKcpApiService::approvePayment() 가 CLI 실행 없이 주어진 응답을 돌려주도록 mock 을 주입한다.
+     *
+     * @param  array<string, mixed>  $cliResponse  approvePayment 가 돌려줄 응답
+     * @return void 반환값 없음
+     */
     private function mockApiService(array $cliResponse): void
     {
         $mock = $this->createMock(NhnKcpApiService::class);
@@ -313,6 +353,14 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         $this->app->instance(NhnKcpApiService::class, $mock);
     }
 
+    /**
+     * KCP CLI 정상 승인 응답을 흉내 낸 배열을 만든다.
+     *
+     * @param  string  $tno  거래번호
+     * @param  string  $ordrIdxx  주문번호
+     * @param  int  $amount  승인 금액
+     * @return array<string, mixed> CLI 승인 응답
+     */
     private function makeCliResponse(string $tno, string $ordrIdxx, int $amount): array
     {
         return [
@@ -321,6 +369,8 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
             'tno' => $tno,
             'ordr_idxx' => $ordrIdxx,
             'good_mny' => $amount,
+            // 서버-서버 승인 응답의 승인 금액 — 결제완료 확정의 유일한 금액 근거
+            'amount' => (string) $amount,
             'app_no' => 'APP12345',
             'card_no' => '4330****1234',
             'card_name' => '신한카드',
@@ -330,12 +380,20 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 결제창이 인증 콜백으로 보내는 기본 파라미터를 만든다.
+     *
+     * @param  string  $ordrIdxx  주문번호
+     * @param  int  $goodMny  결제창 금액
+     * @param  array<string, mixed>  $overrides  덮어쓸 파라미터
+     * @return array<string, mixed> 콜백 파라미터
+     */
     private function makeCallbackParams(string $ordrIdxx, int $goodMny, array $overrides = []): array
     {
         return array_merge([
             'res_cd' => '0000',
             'res_msg' => '정상처리',
-            'tno' => 'KCP_TNO_' . uniqid(),
+            'tno' => 'KCP_TNO_'.uniqid(),
             'ordr_idxx' => $ordrIdxx,
             'good_mny' => $goodMny,
             'enc_data' => base64_encode('encrypted_payment_data'),
@@ -344,6 +402,11 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         ], $overrides);
     }
 
+    /**
+     * KRW 단일 통화 주문의 통화 스냅샷을 돌려준다.
+     *
+     * @return array<string, mixed> 통화 스냅샷
+     */
     private static function krwCurrencySnapshot(): array
     {
         return [
@@ -362,12 +425,22 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 마일리지 사용 훅에 이커머스 마일리지 거래 리스너를 건다.
+     *
+     * @return void 반환값 없음
+     */
     private function registerMileageTransactionListener(): void
     {
         $listener = app(MileageTransactionListener::class);
         HookManager::addAction('sirsoft-ecommerce.mileage.use', [$listener, 'handleUse'], 10);
     }
 
+    /**
+     * 테스트가 건 훅이 다음 테스트로 새지 않도록 훅 매니저의 등록 상태를 저장한다.
+     *
+     * @return void 반환값 없음
+     */
     private function snapshotHookManager(): void
     {
         $ref = new \ReflectionClass(HookManager::class);
@@ -386,6 +459,11 @@ class PaymentCallbackOrderSideEffectsTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 저장해 둔 훅 매니저 등록 상태를 되돌리고 스냅샷을 비운다.
+     *
+     * @return void 반환값 없음
+     */
     private function restoreHookManager(): void
     {
         if ($this->hookSnapshot === null) {

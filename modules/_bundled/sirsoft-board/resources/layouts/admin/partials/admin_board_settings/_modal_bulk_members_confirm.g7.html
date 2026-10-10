@@ -1,0 +1,56 @@
+<!-- 게시판 관리자·스텝 일괄 지정 확인 창. 무엇을(구분·작업·회원) 어디에(전체/고른 게시판) 적용할지 다시 보여 주고 실행한다.
+  성공하면 회원 칸만 비우고 대상·구분·작업은 남긴다 — 같은 게시판들에 다른 회원을 이어서 지정하기 쉽게. 결과(변경 수·제외 사유)는
+  카드에 남긴다. 실패는 창 안에 문구로 남긴다. 연타는 실행 버튼의 디바운스가 한 번으로 모은다. -->
+<partial description="게시판 관리자·스텝 일괄 지정 확인 모달" editor_label="$t:sirsoft-board.admin.settings.bulk_members.confirm_title">
+  <modal data-type="composite" data-ref="bulk_members_confirm_modal" title="$t:sirsoft-board.admin.settings.bulk_members.confirm_title" size="sm">
+    <div class="space-y-3">
+      <p class="text-label">{{_global.boardBulkMembers?.mode === 'remove' ? ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_manager) : ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_add_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_add_manager)}}</p>
+      <div class="text-sm text-gray-700 dark:text-gray-300">
+        <span class="font-medium">$t:sirsoft-board.admin.settings.bulk_members.target_label</span>
+        <span data-if="{{_global.boardBulkMembers?.all !== false}}" class="ml-2">$t:sirsoft-board.admin.settings.bulk_members.target_all</span>
+        <span data-if="{{_global.boardBulkMembers?.all === false}}" class="ml-2">$t:sirsoft-board.admin.settings.bulk_members.boards_count|count={{(_global.boardBulkMembers?.boardIds ?? []).length}}</span>
+      </div>
+      <div class="flex flex-wrap gap-1">
+        <span data-each="member in {{(_global.boardBulkMembers?.users ?? []).slice(0, 10)}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{member.name}}</span>
+      </div>
+      <p data-if="{{_global.boardBulkMembers?.mode === 'remove' &amp;&amp; (_global.boardBulkMembers?.type ?? 'manager') === 'manager'}}" class="text-tertiary">$t:sirsoft-board.admin.settings.bulk_members.hint</p>
+      <div data-ref="bulk_members_confirm_error" data-if="{{!!_global.boardBulkMembers?.error}}" class="alert-danger text-sm">{{_global.boardBulkMembers?.error}}</div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="bulk_members_confirm_button" type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 일괄 지정 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아 300ms 디바운스로 연타를 한 번으로 모은다 -->
+          <sequence :debounce="300">
+            <set-state target="global" :boardBulkMembers.isApplying="true" :boardBulkMembers.error="null"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards/bulk-members" method="POST">
+              <success>
+                <sequence>
+                  <set-state target="global" :boardBulkMembers.isApplying="false" boardBulkMembers.result="{{response.data}}" :boardBulkMembers.userUuids="[]" :boardBulkMembers.users="[]"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <close-modal/>
+                </sequence>
+              </success>
+              <fail>
+                <set-state target="global" :boardBulkMembers.isApplying="false" boardBulkMembers.error="{{error.errors?.user_uuids?.[0] ?? error.errors?.board_ids?.[0] ?? error.message ?? '$t:sirsoft-board.admin.settings.bulk_members.failed'}}"/>
+              </fail>
+              <error-handling>
+                <on-code code="403">
+                  <set-state target="global" :boardBulkMembers.isApplying="false" boardBulkMembers.error="{{error.message ?? '$t:auth.permission_denied'}}"/>
+                </on-code>
+              </error-handling>
+              <body apply_all="{{_global.boardBulkMembers?.all !== false}}" board_ids="{{_global.boardBulkMembers?.all === false ? (_global.boardBulkMembers?.boardIds ?? []) : undefined}}" user_uuids="{{_global.boardBulkMembers?.userUuids ?? []}}" member_type="{{_global.boardBulkMembers?.type ?? 'manager'}}" mode="{{_global.boardBulkMembers?.mode ?? 'add'}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.boardBulkMembers?.isApplying === true}}" name="spinner" size="sm" :spin="true"/>
+        <span>$t:sirsoft-board.admin.settings.bulk_members.apply</span>
+      </button>
+    </div>
+  </modal>
+</partial>

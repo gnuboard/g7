@@ -179,6 +179,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $search  검색어
      * @param  string  $searchType  검색 유형 (all, action, description, ip_address)
+     * @return void 반환값 없음
      */
     private function applyBilingualSearch($query, string $search, string $searchType): void
     {
@@ -326,12 +327,38 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
      * 다시 막지 않고 실제로 지우는 자리에서 한 번 막는다.
      *
      * @param  int  $days  보존 기간 (일)
+     * @param  array<int, string>  $exceptActions  이 파기에서 빼는 액션(따로 더 오래 보관하는 액션)
      * @return int 삭제된 건수
      */
-    public function deleteOlderThan(int $days): int
+    public function deleteOlderThan(int $days, array $exceptActions = []): int
     {
+        $query = ActivityLog::where('created_at', '<', now()->subDays(max(1, $days)));
+
+        if ($exceptActions !== []) {
+            $query->whereNotIn('action', array_values($exceptActions));
+        }
+
+        return $this->deleteInBatches($query);
+    }
+
+    /**
+     * 지정한 액션의 로그 중 보존 기간이 지난 것만 삭제합니다.
+     *
+     * 보존 기간 하한(1일)은 deleteOlderThan 과 같은 이유로 여기서 막는다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @param  array<int, string>  $actions  대상 액션 (비어 있으면 아무것도 지우지 않는다)
+     * @return int 삭제된 건수
+     */
+    public function deleteOlderThanForActions(int $days, array $actions): int
+    {
+        if ($actions === []) {
+            return 0;
+        }
+
         return $this->deleteInBatches(
             ActivityLog::where('created_at', '<', now()->subDays(max(1, $days)))
+                ->whereIn('action', array_values($actions))
         );
     }
 }

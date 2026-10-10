@@ -11,8 +11,9 @@ class PaymentCloseReportRequest extends FormRequest
     /**
      * 결제창 닫힘 보고 요청을 허용합니다.
      *
-     * 인증은 요구하지 않는다 — 결제창 컨텍스트에서 호출되기 때문이다. 대신 컨트롤러가
-     * 구매자 정보·금액 대조로 자격을 검증한다.
+     * 로그인을 강제하지 않는다 — 비회원도 결제창을 닫을 수 있기 때문이다. 대신 컨트롤러가
+     * 주문 소유자(회원 본인 로그인 / 비회원 조회 토큰)와 금액을 확인한다. 주문자 이메일·전화번호는
+     * 제3자도 알 수 있어 소유 증명이 아니므로 받지 않는다.
      *
      * @return bool 요청 허용 여부
      */
@@ -31,8 +32,6 @@ class PaymentCloseReportRequest extends FormRequest
         return [
             'orderId' => ['required', 'string', 'max:40'],
             'amount' => ['required', 'integer', 'min:1'],
-            'buyer_email' => ['nullable', 'string', 'max:255'],
-            'buyer_phone' => ['nullable', 'string', 'max:30'],
             'reason' => ['nullable', 'string', 'max:160'],
             'code' => ['nullable', 'string', 'max:60'],
         ];

@@ -12,6 +12,7 @@
 3. event: 커스텀 콜백 (CodeEditor, DataGrid) → $args[0]
 4. 핸들러명 정확히: apiCall (❌ api), navigate (❌ goto)
 5. 조합: sequence(순차), parallel(병렬), onSuccess/onError
+6. sequence 안의 연속 setState 는 병합 주의 (같은 경로를 나눠 갱신하면 앞 값이 덮인다)
 ```
 
 ---
@@ -33,7 +34,9 @@
 1. [개요](#개요)
 2. [액션 정의 구조](#액션-정의-구조)
 3. [내장 핸들러 목록](#내장-핸들러-목록)
-4. [주의사항](#주의사항)
+4. [이벤트 전파 제어 — 액션 키 `stopPropagation`](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550)
+5. [Debounce 옵션](#debounce-옵션)
+6. [주의사항](#주의사항)
 
 ---
 
@@ -85,6 +88,7 @@
 | `onError` | array | ❌ | 실패 시 실행할 후속 액션 (단일 또는 배열) |
 | `confirm` | string | ❌ | 실행 전 확인 대화상자 메시지 |
 | `key` | string | ❌ | 키보드 이벤트 필터 (Enter, Escape 등) |
+| `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.68.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550) |
 | `cases` | object | ❌ | switch 핸들러용 케이스별 액션 정의 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |
 | `debounce` | number \| object | ❌ | 연속 호출 제어 (300 또는 { delay, leading, trailing }) |
@@ -97,6 +101,26 @@
 ### actionRef로 named_actions 참조 (engine-v1.19.0+)
 
 `named_actions`에 정의된 재사용 가능한 액션을 `actionRef`로 참조합니다. 동일한 액션이 여러 컴포넌트에서 반복될 때 중복을 제거합니다.
+
+```html
+<action name="searchProducts">
+  <navigate path="/admin/products" :replace="true" :mergeQuery="true">
+    <query :page="1" search_keyword="{{$computed.keyword || null}}"/>
+  </navigate>
+</action>
+<button>
+  <on type="click">
+    <action-ref name="searchProducts"/>
+  </on>
+</button>
+<input>
+  <on type="keypress" key="Enter">
+    <action-ref name="searchProducts"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 레이아웃 최상위에 named_actions 정의
@@ -137,6 +161,19 @@
 
 핸들러 실행 결과를 상태(`_local`, `_global`, `_isolated`)에 저장합니다. 커스텀 핸들러가 반환한 값을 레이아웃에서 활용할 때 사용합니다.
 
+```html
+<on type="click">
+  <action handler="sirsoft-ecommerce.buildProductColumns" :baseColumns="[]" currencies="{{ecommerceSettings?.data?.language_currency?.currencies}}">
+    <field name="resultTo">
+      <field name="target" value="_local"/>
+      <field name="key" value="productColumns"/>
+    </field>
+  </action>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "sirsoft-ecommerce.buildProductColumns",
@@ -168,6 +205,20 @@
 | `deep` | 중첩 객체까지 재귀 병합 (기본값) |
 
 #### 동적 key 예시
+
+```html
+<on type="click">
+  <action handler="sirsoft-ecommerce.calculatePrice" optionId="{{option.id}}">
+    <field name="resultTo">
+      <field name="target" value="_local"/>
+      <field name="key" value="calculatedPrices.{{option.id}}"/>
+      <field name="merge" value="shallow"/>
+    </field>
+  </action>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -262,6 +313,20 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 #### 예시: DataGrid onRowAction 처리
 
+```html
+<data-grid>
+  <on event="onRowAction">
+    <switch on="{{$args[0].actionId}}">
+      <case when="delete">
+        <api-call target="/api/modules/sirsoft-ecommerce/items/{{$args[0].row.id}}" method="DELETE"/>
+      </case>
+    </switch>
+  </on>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -276,7 +341,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
       "cases": {
         "delete": {
           "handler": "apiCall",
-          "target": "/api/items/{{$args[0].row.id}}",
+          "target": "/api/modules/sirsoft-ecommerce/items/{{$args[0].row.id}}",
           "params": { "method": "DELETE" }
         }
       }
@@ -360,8 +425,12 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `navigate` | 페이지 이동 | - | path, mergeQuery, query |
 | `navigateBack` | 브라우저 뒤로가기 | - | - |
 | `navigateForward` | 브라우저 앞으로가기 | - | - |
-| `apiCall` | API 호출 | 엔드포인트 URL | method, body, headers |
+| `apiCall` | API 호출. 로그인 토큰·CSRF 헤더는 사이트와 같은 출처의 주소에만 실림 | 엔드포인트 URL | method, body, headers |
 | `login` | 로그인 (토큰 저장) | 인증 타입 (admin/user) | body (email, password) |
+| `loginTwoFactor` | 2단계 인증번호 확인 → 로그인 완료 (토큰 저장, engine-v1.65.0+) | 인증 타입 (admin/user) | body (challenge_id, code) |
+| `loginTwoFactorResend` | 인증번호 재발송 (기존 challenge 취소 후 새로 발행, engine-v1.65.0+) | 인증 타입 (admin/user) | body (challenge_id) |
+| `loginPasswordChange` | 로그인 비밀번호 변경 단계 완료 → 새 토큰 발급 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id, password, password_confirmation) |
+| `loginPasswordChangePostpone` | 로그인 비밀번호 변경 단계 연기 → 로그인 완료 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id) |
 | `logout` | 로그아웃 | - | - |
 | `setState` | 상태 변경 | - | target (global/local), 상태 값들 |
 | `setError` | 에러 상태 설정 | 에러 메시지 | - |
@@ -378,11 +447,73 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `reloadRoutes` (deprecated) | 라우트 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `reloadTranslations` (deprecated) | 다국어 파일 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `refresh` | 현재 페이지 전체 새로고침 | - | - |
-| `stopPropagation` | 이벤트 전파 중지 | - | - |
-| `preventDefault` | 기본 동작 방지 | - | - |
 | `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target, containerId, layout |
+| `openWindow` | 새 창/탭 열기 | URL | features, name |
+| `redirect` | **같은 탭**으로 통째 이동 (SPA 라우팅 밖). 사이트 안의 절대 경로만 따라가며 외부 주소·실행 스킴은 첫 화면(`/`)으로 대체 | - | url, replace |
+| `replaceUrl` | refetch 없이 URL 만 치환 | - | path, query, mergeQuery |
+| `scrollIntoView` | 요소로 스크롤 | 대상 요소 ID | behavior, block |
+| `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, items |
+| `updateDataSource` | 데이터 소스 항목 갱신 | - | dataSourceId, items |
+| `updateProductField` | 상품 필드 갱신 (이커머스 작성 보조) | - | 필드 경로·값 |
+| `updateOptionField` | 상품 옵션 필드 갱신 | - | 필드 경로·값 |
+| `conditions` | 조건 목록 평가 후 분기 | - | conditions (else 키 없음) |
+| `suppress` | 에러 전파 차단 (무의미한 setState 대체) | - | - |
+| `startInterval` | 주기 실행 시작 | - | id, intervalMs, actions |
+| `stopInterval` | 주기 실행 중지 | - | id |
+| `saveToLocalStorage` | localStorage 저장 | 키 | value |
+| `loadFromLocalStorage` | localStorage 읽기 | 키 | resultTo |
+| `setLocale` | 앱 언어 변경 | - | locale |
+| `emitEvent` | 커스텀 이벤트 발화 | 이벤트명 | payload |
+| `refreshConsent` | 방문자 동의 스냅샷(`_global.consent`) 다시 읽기 — 사용자 템플릿 전용, 구독자(`consent:changed`)가 끝날 때까지(최대 3초) 기다린 뒤 다음 액션으로 진행 (engine-v1.78.0) | - | - |
+| `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | src | id, async |
+| `callExternal` | 외부 SDK 함수 호출 | 함수 경로 | args |
+| `callExternalEmbed` | 외부 SDK 임베드 호출 | 함수 경로 | args, container |
+| `ensureIdentityVerified` | 본인인증 필요 여부 확인·유도 | - | purpose, channel |
+| `resolveIdentityChallenge` | 본인인증 챌린지 응답 처리 | - | challenge |
+| `reloadModuleHandlers` | 모듈 핸들러 번들 재로드 | - | moduleId |
+| `reloadPluginHandlers` | 플러그인 핸들러 번들 재로드 | - | pluginId |
+
+> **이 표는 전수다 (49종).** 코드상 SSoT 는 [`ActionHandlerManifest::CORE_HANDLERS`](../../app/Support/LayoutMarkup/ActionHandlerManifest.php) 이고, 엔진 실등록(`ActionDispatcher` switch 32 + `registerDefaultHandlers` 17)과 이름 집합이 양방향 일치한다. 핸들러를 추가하면 매니페스트와 이 표를 함께 갱신한다 — 두 집합의 일치는 계약 표면 커버리지 검사가 자동으로 대조한다.
 
 > **상세 문서**: 각 핸들러별 상세 사용법은 [actions-handlers.md](actions-handlers.md) 참조
+
+---
+
+## 이벤트 전파 제어 — 액션 키 `stopPropagation` (engine-v1.68.0)
+
+`stopPropagation`·`preventDefault` 는 **핸들러가 아니다**. `registerHandler` 등록도 `ActionType` 유니온 항목도 없어 엔진 소비처가 0이다 — `handler: "stopPropagation"` / `handler: "preventDefault"` 로 적으면 미등록 핸들러라 무동작한다.
+
+상위로의 이벤트 전파를 막으려면 **진입점 액션의 최상위 키 `stopPropagation: true`** 를 쓴다(opt-in). 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 바깥 행 클릭을 막을 때 사용한다. 이벤트 객체를 쥔 진입점 액션에서만 의미가 있다(`sequence`/`parallel` 안쪽 액션에는 이벤트 객체가 없어 무효).
+
+```html
+<on type="click">
+  <action handler="toggleRowSelection" :stopPropagation="true"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "type": "click",
+  "handler": "toggleRowSelection",
+  "stopPropagation": true
+}
+```
+
+소스 SSoT `.g7.html` 에서는 핸들러 태그의 **타입 리터럴 속성**(`:attr`)으로 얹는다 — 불리언이므로
+`:stopPropagation="true"` 이고 `stopPropagation="true"` (문자열)로 적지 않는다. 배치 규칙은
+[layout-markup.md §8 액션](layout-markup.md) 의 top-level 목록이 SSoT 다.
+
+```html
+<on event="click">
+  <api-call :stopPropagation="true" :auth_required="true" target="/api/admin/menus/{{row.id}}/toggle-active" method="PATCH"/>
+</on>
+```
+
+> `preventDefault` 는 대응 액션 키가 없다. `<a href>` 의 기본 네비게이션 차단 등은 엔진이 액션 존재 시 자동 처리하므로 마크업에서 별도 지정하지 않는다.
+
+> **동명이의 주의 — 컴포넌트 prop `stopPropagation` 은 이 액션 키가 아니다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation?: boolean` 을 갖고 자기 클릭 핸들러 안에서 `e.stopPropagation()` 을 호출한다([UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`). 소스 코퍼스에서 이 이름의 **다수파는 prop 쪽**(게시판 목록 4파일)이므로, `<user-info :stopPropagation="true"/>` 처럼 **노드 속성 자리**에 있으면 컴포넌트 prop 이고, `<on>` 아래 핸들러 태그 속성 자리에 있으면 액션 키다. 배치 자리가 둘을 가른다.
 
 ---
 
@@ -391,6 +522,14 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 연속 호출되는 액션의 실행을 제어하여 성능을 최적화합니다. 텍스트 입력 필드의 실시간 업데이트 등에 유용합니다.
 
 ### 기본 사용법
+
+```html
+<on type="change">
+  <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" field="selling_price" value="{{$event.target.value}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -406,6 +545,20 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 ```
 
 ### 상세 설정
+
+```html
+<on type="change">
+  <action handler="myHandler">
+    <field name="debounce">
+      <field name="delay" :value="500"/>
+      <field name="leading" :value="false"/>
+      <field name="trailing" :value="true"/>
+    </field>
+  </action>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -428,6 +581,10 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `trailing` | boolean | true | 마지막 호출 후 실행 |
 
 ### 주의사항
+
+**debounce 는 이벤트에 바로 묶인 진입점 액션에서만 적용된다.** `<conditions>` 의 `<when>`·`<switch>` 의 `<case>`·`<sequence>`·`onSuccess`/`onError` 처럼 다른 액션 안쪽에 놓인 액션은 바깥 흐름이 기다려 결과·순서를 이어받으므로 늦출 수 없고, 그 자리의 `debounce` 는 무시된 채 이벤트마다 바로 실행된다. 분기마다 늦추고 싶으면 감싸는 진입점에 단다(`<conditions :debounce="600">`·`<sequence :debounce="300">`). 안쪽에 적으면 컴파일 lint 가 `nested_action_debounce_ignored` 경고를 낸다.
+
+**한 부품·한 이벤트에 debounce 액션과 바로 실행하는 액션을 섞지 않는다.** 엔진은 바로 실행하는 액션을 돌리기 전에 대기 중인 debounce 를 모두 즉시 실행한다(저장 직전 최신 입력을 반영하려는 동작). 그래서 섞어 두면 debounce 액션도 입력할 때마다 실행된다. 기다리게 하려면 그 이벤트의 액션을 모두 debounce 로 맞춘다. 섞으면 컴파일 lint 가 `mixed_debounce_flushed` 경고를, 화면 편집기 [동작] 탭이 그 칸에 경고를 보인다(동작은 바뀌지 않는다).
 
 ```text
 debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니다
@@ -466,6 +623,22 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 2. params vs target 구분
 
+순서대로 `navigate` 는 `params.path`, `apiCall` 은 `target` 으로 URL, `openModal` 은 `target` 으로 모달 ID 를 받는다.
+
+```html
+<on type="click">
+  <navigate path="/admin/users"/>
+</on>
+<on type="click">
+  <api-call target="/api/admin/users"/>
+</on>
+<on type="click">
+  <open-modal target="confirm_modal"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // navigate: params.path 사용
 {
@@ -487,6 +660,19 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 ```
 
 ### 3. 상태 변경 target 타입
+
+앞은 전역 상태 변경, 뒤는 로컬 상태 변경이다.
+
+```html
+<on type="click">
+  <set-state target="global" :selectedIds="[]"/>
+</on>
+<on type="click">
+  <set-state target="local" :isEditing="true"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 전역 상태 변경
@@ -510,6 +696,22 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 4. 후속 액션 체인
 
+```html
+<on type="click">
+  <api-call target="/api/admin/users/{{row.id}}" method="DELETE">
+    <success>
+      <toast type="success" message="삭제되었습니다"/>
+      <navigate path="/admin/users"/>
+    </success>
+    <fail>
+      <toast type="error" message="삭제 실패"/>
+    </fail>
+  </api-call>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "apiCall",
@@ -527,6 +729,14 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 5. 확인 다이얼로그
 
+```html
+<on type="click">
+  <api-call target="/api/admin/users/{{row.id}}" confirm="정말 삭제하시겠습니까?" method="DELETE"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "apiCall",
@@ -537,6 +747,14 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 ```
 
 ### 6. 키보드 이벤트 필터링
+
+```html
+<on type="keydown" key="Enter">
+  <navigate path="/admin/search"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

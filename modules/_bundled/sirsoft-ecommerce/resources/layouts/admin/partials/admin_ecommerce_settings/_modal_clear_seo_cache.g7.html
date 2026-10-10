@@ -1,0 +1,52 @@
+<!-- 쇼핑몰 설정 — SEO 캐시 비우기 확인 창. 검색엔진용으로 미리 구워 둔 페이지를 지운다.
+  지운 뒤에는 다음 방문 때 다시 만들어지므로 데이터가 사라지는 동작은 아니지만, 트래픽이
+  많은 몰에서는 잠깐 느려질 수 있어 되묻는다. -->
+<partial description="SEO 캐시 삭제 확인 모달">
+  <modal data-type="composite" data-ref="modal_clear_seo_cache" title="$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm_title" size="md">
+    <div class="relative">
+      <!-- 삭제 중 오버레이 (spinner + blur) -->
+      <div data-if="{{$parent._local.isClearingCache}}" class="flex-center absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-10 justify-center rounded-lg">
+        <div class="flex-center flex-col gap-2">
+          <icon name="spinner" class="text-2xl text-blue-500 dark:text-blue-400 animate-spin"/>
+          <span class="text-sm text-gray-600 dark:text-gray-300 font-medium">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache</span>
+        </div>
+      </div>
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm</span>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-secondary" disabled="{{$parent._local.isClearingCache === true}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="seo_clear_cache_confirm" data-if="{{$parent._local.isClearingCache !== true}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed?.isReadOnly !== false}}">
+          <on type="click">
+            <!-- 캐시 비우기. 성공·실패 어느 쪽이든 처리중 표시를 먼저 내린다 — 실패하면 창을 열어 둔 채 다시 시도할 수 있어야 한다 -->
+            <sequence>
+              <set-state target="$parent._local" :isClearingCache="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/settings/clear-cache" method="POST">
+                <success>
+                  <set-state target="$parent._local" :isClearingCache="false"/>
+                  <refetch-data-source dataSourceId="seoStats"/>
+                  <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="$parent._local" :isClearingCache="false"/>
+                  <toast type="error" message="{{error.message ?? $t('sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_failed')}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache</span>
+        </button>
+        <button data-if="{{$parent._local.isClearingCache === true}}" type="button" class="btn btn-danger" :disabled="true">
+          <span>$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

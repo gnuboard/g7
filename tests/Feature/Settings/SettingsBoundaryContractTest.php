@@ -22,7 +22,7 @@ class SettingsBoundaryContractTest extends TestCase
     /**
      * 검사 대상: 설정 키 → 한계값 키 접두사
      *
-     * @return array<string, string>
+     * @return array<string, string> 설정 키 → 한계값 키 접두사 맵
      */
     private function boundKeys(): array
     {
@@ -40,6 +40,14 @@ class SettingsBoundaryContractTest extends TestCase
             'security.auth_token_lifetime' => 'security_auth_token_lifetime',
             'security.max_login_attempts' => 'security_max_login_attempts',
             'security.login_lockout_time' => 'security_login_lockout_time',
+            'security.password_repeated_chars_length' => 'security_password_repeated_chars_length',
+            'security.password_sequential_chars_length' => 'security_password_sequential_chars_length',
+            'security.password_reuse_count' => 'security_password_reuse_count',
+            'security.password_expiry_days' => 'security_password_expiry_days',
+            'security.password_expiry_notice_days' => 'security_password_expiry_notice_days',
+            'security.password_expiry_remind_days' => 'security_password_expiry_remind_days',
+            'security.password_expiry_batch_size' => 'security_password_expiry_batch_size',
+            'security.activity_log_retention_days' => 'security_activity_log_retention_days',
             'advanced.layout_cache_ttl' => 'advanced_cache_ttl',
             'advanced.stats_cache_ttl' => 'advanced_cache_ttl',
             'advanced.seo_cache_ttl' => 'advanced_cache_ttl',
@@ -95,6 +103,10 @@ class SettingsBoundaryContractTest extends TestCase
 
     /**
      * 저장 규칙의 경계값이 한계값 설정과 일치하는지 확인합니다.
+     *
+     * @effects settings_save_rules_follow_shared_limits
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function save_rules_use_the_shared_limit_values(): void
@@ -128,6 +140,10 @@ class SettingsBoundaryContractTest extends TestCase
      * 한계값 설정이 바뀌면 규칙도 따라 바뀌는지 확인합니다.
      *
      * 배선이 풀려 리터럴로 되돌아가면 이 테스트가 먼저 깨진다.
+     *
+     * @effects settings_save_rules_follow_shared_limits
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function changing_a_limit_changes_the_rule(): void
@@ -146,6 +162,10 @@ class SettingsBoundaryContractTest extends TestCase
      * "security.password min length 필드는 64를 초과하면 안 됩니다" 처럼 내부 식별자가 노출된다.
      * 규칙에 필드를 추가하면서 항목명을 빠뜨리는 것이 이 결함의 유일한 경로이므로,
      * 규칙 키 전수와 항목명 전수를 직접 대조한다.
+     *
+     * @effects every_setting_field_has_attribute_label
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function every_setting_field_has_a_translated_attribute_label(): void
@@ -177,6 +197,10 @@ class SettingsBoundaryContractTest extends TestCase
      *
      * `attributes()` 에 키를 채워도 lang 파일에 항목이 없으면 `validation.attributes.xxx`
      * 라는 키 문자열이 그대로 화면에 나온다 — 내부 식별자 노출이라는 결과는 같다.
+     *
+     * @effects every_setting_field_has_attribute_label
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function attribute_labels_resolve_to_real_translations(): void

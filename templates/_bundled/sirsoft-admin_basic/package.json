@@ -1,6 +1,6 @@
 {
     "name": "sirsoft-admin_basic",
-    "version": "1.0.9",
+    "version": "1.1.0",
     "description": "Gnuboard7 Basic Admin Template Components",
     "type": "module",
     "main": "dist/components.js",
@@ -40,6 +40,7 @@
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4.2.2",
+        "@tailwindcss/typography": "^0.5.20",
         "@tailwindcss/vite": "^4.0.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",

@@ -3,7 +3,7 @@
  * @description 사용자 알림 목록 페이지 레이아웃 테스트
  *
  * 테스트 대상:
- * - templates/.../mypage/notifications.json
+ * - templates/.../mypage/notifications.g7.html
  *
  * 검증 항목:
  * - 레이아웃 구조 (extends, data_sources)
@@ -63,7 +63,7 @@ function setupTestRegistry(): ComponentRegistry {
   return registry;
 }
 
-// ========== 테스트용 레이아웃 (mypage/notifications.json 기반) ==========
+// ========== 테스트용 레이아웃 (mypage/notifications.g7.html 기반) ==========
 
 const notificationsLayout = {
   version: '1.0.0',

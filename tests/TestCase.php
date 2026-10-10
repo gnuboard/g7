@@ -4,13 +4,22 @@ namespace Tests;
 
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\HookListenerRegistrar;
+use App\Extension\HookManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Helpers\PermissionHelper;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Support\AssetUrl;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Bootstrap\LoadConfiguration;
+use Illuminate\Foundation\Testing\CachedState;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Foundation\Testing\WithCachedConfig;
+use Illuminate\Foundation\Testing\WithCachedRoutes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\TestingDatabaseGuard;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -46,6 +55,8 @@ abstract class TestCase extends BaseTestCase
      * provider 자동 등록 가드가 올바른 시점에 적용됩니다.
      *
      * settings 디스크는 앱 부팅 직후 페이크로 대체합니다 (아래 fakeSettingsDisk).
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -74,6 +85,45 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * 앱을 만들되, 설정을 읽은 직후 — 서비스 제공자가 부팅하며 DB 를 읽기 전에 — 테스트 전용 DB 에 붙는지 확인합니다.
+     *
+     * 부팅 단계부터 DB 를 읽으므로(확장 목록·설정 등) 부팅이 끝난 뒤나 `afterApplicationCreated` 콜백(트레이트 초기화
+     * 뒤)에서 확인하면 이미 개발 DB 에 붙은 뒤다. 그래서 `LoadConfiguration` 부트스트래퍼 직후에 판정을 건다
+     * (TestingDatabaseGuard 주석 참조). 그 밖의 본문은 프레임워크 `TestCase::createApplication()` 과 같다 —
+     * 프레임워크를 올릴 때 그쪽 본문이 바뀌었는지 함께 대조한다.
+     *
+     * @return Application 테스트 앱
+     */
+    public function createApplication()
+    {
+        $app = require Application::inferBasePath().'/bootstrap/app.php';
+
+        $app->afterBootstrapping(LoadConfiguration::class, function ($app): void {
+            $connection = (string) $app['config']->get('database.default');
+            TestingDatabaseGuard::assertConnectionIsTesting(
+                $connection,
+                (array) $app['config']->get("database.connections.{$connection}", [])
+            );
+        });
+
+        $this->traitsUsedByTest = array_flip(class_uses_recursive(static::class));
+
+        if (isset(CachedState::$cachedConfig) &&
+            isset($this->traitsUsedByTest[WithCachedConfig::class])) {
+            $this->markConfigCached($app);
+        }
+
+        if (isset(CachedState::$cachedRoutes) &&
+            isset($this->traitsUsedByTest[WithCachedRoutes::class])) {
+            $app->booting(fn () => $this->markRoutesCached($app));
+        }
+
+        $app->make(Kernel::class)->bootstrap();
+
+        return $app;
+    }
+
+    /**
      * settings 디스크를 페이크로 대체하여 실제 설정 파일을 보호합니다.
      *
      * `settings` 디스크의 root 는 `storage/app/settings` 로, 개발/운영 환경이 실제로
@@ -87,6 +137,8 @@ abstract class TestCase extends BaseTestCase
      * 설정 *읽기* 는 부팅 시 Config(`g7_settings.*`)로 이미 적재된 뒤이므로 이 페이크의
      * 영향을 받지 않습니다. 저장소를 직접 읽어야 하는 테스트는 페이크 디스크에 직접
      * 값을 넣고 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     private function fakeSettingsDisk(): void
     {
@@ -112,12 +164,51 @@ abstract class TestCase extends BaseTestCase
      * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로, 2단계 인증을 켜야 하는
      * 테스트는 `config(['g7_settings.core.security.two_factor_auth' => true])` 로 자기 전제를
      * 명시한다 (자식 `setUp()` 은 `parent::setUp()` 뒤에 실행되므로 그 지정이 이긴다).
+     *
+     * @return void 반환값 없음
      */
     private function pinEnvironmentDependentSettings(): void
     {
         config([
             'g7_settings.core.general.asset_url_mode' => AssetUrl::MODE_EXTENSION,
             'g7_settings.core.security.two_factor_auth' => false,
+            // 적용 범위도 함께 고정한다. `two_factor_auth` 만 고정하면 이 키가 사이트 저장값
+            // ('admin') 을 그대로 읽어, 2단계 인증을 켠 테스트가 **일반 회원 경로에서만**
+            // 조용히 건너뛴다 — 관리자 케이스는 통과하므로 원인이 더 가려진다.
+            'g7_settings.core.security.two_factor_scope' => 'all',
+            // IP 접근 제한도 꺼 둔다. 개발 사이트에서 켜 두면 전역 미들웨어가 테스트 요청(127.0.0.1)을
+            // 관리자 영역·규칙 경로에서 무더기로 403 으로 끊는데, 실패 메시지는 원인을 가리키지 않는다.
+            // 제한을 검증하는 테스트는 이 세 키를 자기 setUp 에서 명시한다.
+            'g7_settings.core.security.ip_restriction_enabled' => false,
+            'g7_settings.core.security.admin_allowed_ips' => [],
+            'g7_settings.core.security.ip_restriction_rules' => [],
+            // 사이트 주소도 고정한다. 부팅 시 개발 사이트의 `general.site_url` 이 `app.url` 을 덮어쓰는데,
+            // 리다이렉트·콜백·링크·사이트맵 주소는 요청 Host 가 아니라 이 값으로 만들어지므로(SiteUrl)
+            // 테스트 요청(http://localhost)과 다른 개발 사이트 주소가 결과에 섞인다. 다른 주소를 검증하는
+            // 테스트는 자기 setUp 에서 `app.url` 을 명시한다.
+            'app.url' => 'http://localhost',
+            'g7_settings.core.general.site_url' => 'http://localhost',
+            // 비밀번호 정책(#736)도 전부 기본값(꺼짐)으로 고정한다. 개발 사이트에서 만료·작성 규칙을 켜 두면
+            // 로그인이 토큰 대신 변경 단계를 돌려주고, 가입·변경 테스트의 비밀번호가 조합·반복 규칙에 걸려
+            // 그 환경에서만 무더기로 깨진다. 정책을 검증하는 테스트는 해당 키를 자기 setUp 에서 명시한다.
+            'g7_settings.core.security.password_require_char_types' => false,
+            'g7_settings.core.security.password_block_identifier' => false,
+            'g7_settings.core.security.password_block_repeated_chars' => false,
+            'g7_settings.core.security.password_repeated_chars_length' => 4,
+            'g7_settings.core.security.password_block_sequential_chars' => false,
+            'g7_settings.core.security.password_sequential_chars_length' => 4,
+            'g7_settings.core.security.password_reuse_prevention_enabled' => false,
+            'g7_settings.core.security.password_reuse_count' => 3,
+            'g7_settings.core.security.password_expiry_enabled' => false,
+            'g7_settings.core.security.password_expiry_days' => 90,
+            'g7_settings.core.security.password_expiry_notice_days' => 7,
+            'g7_settings.core.security.password_expiry_scope' => 'all',
+            'g7_settings.core.security.password_expiry_action' => 'force',
+            'g7_settings.core.security.password_expiry_remind_days' => 30,
+            'g7_settings.core.security.password_expiry_batch_size' => 1000,
+            // 활동 로그 보관 기간(#736 D14) — 사이트 저장값이 파기 테스트로 새지 않게 기본값으로 고정
+            'g7_settings.core.security.activity_log_retention_days' => 365,
+            'g7_settings.core.security.password_expiry_started_at' => null,
         ]);
     }
 
@@ -130,6 +221,8 @@ abstract class TestCase extends BaseTestCase
      * "메일이 설정된 사이트" 를 만들어야 합니다.
      *
      * (설정 미비 시 발송하지 않는 것은 의도된 제품 동작이므로 기본값은 그대로 둡니다)
+     *
+     * @return void 반환값 없음
      */
     protected function enableMailChannelReadiness(): void
     {
@@ -150,6 +243,8 @@ abstract class TestCase extends BaseTestCase
      *
      * 프로세스 내 다음 테스트 클래스가 stale allowlist 를 물려받지 않도록
      * 보장합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -160,6 +255,19 @@ abstract class TestCase extends BaseTestCase
         // 누수를 차단한다 (프로덕션은 단일 부팅이라 무관 — 테스트 격리 전용).
         EnforceIdentityPolicyListener::resetDynamicSubscriptions();
 
+        // 훅 등록 정적 상태를 초기화한다. 두 가지를 동시에 해결한다.
+        //
+        // ① **격리** — 테스트가 `HookManager::addAction()` 으로 붙인 스파이·스텁이 프로세스 내
+        //    다음 테스트까지 살아남아 엉뚱한 곳에서 발화한다.
+        // ② **메모리** — 그 클로저들이 `$this`(TestCase 인스턴스)를 캡처하므로, 정리하지 않으면
+        //    **테스트마다 앱 컨테이너가 통째로 GC 되지 못하고 쌓인다**. 훅을 등록하는 테스트 파일이
+        //    75개라 전량 스위트가 `memory_limit`(1G)을 소진하고 중간에 죽었다 — 그 뒤 결과 전부를
+        //    신호로 쓸 수 없게 만드는 사고였다.
+        //
+        // 둘은 **짝으로** 비워야 한다. 등록 이력만 남으면 다음 앱 부팅에서 리스너가 "이미 등록됨"
+        // 으로 건너뛰어져 훅이 통째로 사라진다.
+        HookManager::resetAll();
+        HookListenerRegistrar::clear();
         $this->purgeIdleDatabaseConnections();
 
         parent::tearDown();
@@ -173,6 +281,8 @@ abstract class TestCase extends BaseTestCase
      * 테스트 수만큼 연결이 누적된다 — DB 를 쓰는 테스트가 151개(max_connections)를
      * 넘는 클래스/스위트는 그 지점부터 전부 1040 Too many connections 로 실패한다.
      * 트랜잭션 진행 중인 연결은 건드리지 않는다 (트레이트의 롤백 콜백이 처리).
+     *
+     * @return void 반환값 없음
      */
     protected function purgeIdleDatabaseConnections(): void
     {
@@ -195,7 +305,7 @@ abstract class TestCase extends BaseTestCase
      * selfExtension() 으로 반환한 자기 확장을 자동으로 포함합니다.
      * → 확장 테스트 클래스는 자기 확장을 명시하지 않아도 격리에서 허용됩니다.
      *
-     * @return array<string>
+     * @return array<string> 이 테스트에서 로딩을 허용할 확장 식별자 목록
      */
     protected function resolveAllowedExtensions(): array
     {
@@ -254,7 +364,7 @@ abstract class TestCase extends BaseTestCase
      * → beforeRefreshingDatabase()는 RefreshDatabase 트레이트에 의해 가려지므로
      *   setUpTraits() 오버라이드로 마이그레이션 경로를 먼저 등록합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function setUpTraits()
     {
@@ -282,6 +392,8 @@ abstract class TestCase extends BaseTestCase
      * `$migrator->path()` 는 동일 경로 중복 등록을 무시하므로 안전하다. selfExtension()
      * (확장 자체 테스트) 은 ModuleTestCase / PluginTestCase 가 migrateFreshUsing() 으로
      * 자기 마이그레이션을 직접 처리하므로 여기서 별도 추가하지 않는다.
+     *
+     * @return void 반환값 없음
      */
     private function loadExtensionMigrations(): void
     {
@@ -317,6 +429,8 @@ abstract class TestCase extends BaseTestCase
      *
      * 현재 프로세스의 커넥션은 제외하고,
      * 테스트 DB 에 연결된 다른 모든 커넥션을 KILL 합니다.
+     *
+     * @return void 반환값 없음
      */
     private function killStaleTestingConnections(): void
     {

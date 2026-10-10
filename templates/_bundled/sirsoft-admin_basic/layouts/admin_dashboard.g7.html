@@ -1,0 +1,545 @@
+<!-- 관리자 첫 화면. 8개 소스를 한꺼번에 받아 요약 카드 · 최근 활동 · 확장 3종 요약 · 경고 · 최근 알림을 깐다.
+  소스마다 `fallback` 을 붙인 것이 이 화면의 성격이다 — 한 API 가 실패해도 그 칸만 0/빈 목록으로
+  내려앉고 나머지는 그대로 뜬다. 대시보드가 통째로 하얗게 되는 것이 가장 나쁜 실패이기 때문이다.
+  경고(`dashboard_alerts`)만 `background` 로 받는다 — 첫 그림에 필수가 아니라 진입을 늦추지 않는다.
+  화면 전환 대기(`transition-overlay`)도 그래서 경고를 기다리는 목록에서 빼 두었다. -->
+<layout name="admin_dashboard" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.dashboard.title" description="$t:admin.dashboard.description" :auth_required="true"/>
+  <!-- 상단 요약 카드용 집계(회원 수·확장 3종·언어팩·시스템 상태). 실패 시 폴백이 0 과 '-' 를 채워
+       카드 자리를 유지한다 — 아래 웹소켓이 같은 소스를 갱신 대상으로 삼는다. -->
+  <data-source id="dashboard_stats" label_key="$t:editor.data_source.dashboard_stats" type="api" endpoint="/api/admin/dashboard/stats" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="total_users">
+          <field name="count" :value="0"/>
+          <field name="change_display" value="-"/>
+        </field>
+        <field name="installed_modules">
+          <field name="total" :value="0"/>
+          <field name="active" :value="0"/>
+        </field>
+        <field name="active_plugins">
+          <field name="total" :value="0"/>
+          <field name="active" :value="0"/>
+        </field>
+        <field name="installed_templates">
+          <field name="total" :value="0"/>
+          <field name="active" :value="0"/>
+        </field>
+        <field name="language_packs">
+          <field name="total" :value="0"/>
+          <field name="active" :value="0"/>
+        </field>
+        <field name="system_status">
+          <field name="label" value="-"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 최근 활동 로그. 활동 로그 화면과 달리 필터·페이지 없이 서버가 정한 최근분만 받는다. -->
+  <data-source id="dashboard_activities" label_key="$t:editor.data_source.dashboard_activities" type="api" endpoint="/api/admin/dashboard/activities" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 모듈 요약 5건. 모듈 목록 화면과 **같은 API** 를 쓰되 5건으로 잘라 받는다(요약 전용 API 를 따로
+       두지 않는다). 전체는 모듈 관리 화면으로 넘긴다. -->
+  <data-source id="dashboard_modules" label_key="$t:editor.data_source.dashboard_modules" type="api" endpoint="/api/admin/modules/installed" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params per_page="5"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="5"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 플러그인 요약 5건 — 위 모듈과 같은 형태다. -->
+  <data-source id="dashboard_plugins" label_key="$t:editor.data_source.dashboard_plugins" type="api" endpoint="/api/admin/plugins/installed" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params per_page="5"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="5"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 템플릿 요약 5건 — 위 둘과 같은 형태다. -->
+  <data-source id="dashboard_templates" label_key="$t:editor.data_source.dashboard_templates" type="api" endpoint="/api/admin/templates" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params per_page="5"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="5"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 확장 경고(코어 비호환·복구 가능 등). 유일한 `background` 소스다 — 첫 그림을 막지 않는다.
+       각 경고는 자기 처리 엔드포인트와 그 엔드포인트를 부를 수 있는지(abilities.can_recover·can_dismiss)를
+       응답에 담아 오므로, 아래 버튼은 그 값으로 잠그고 주소를 그대로 호출한다. 시스템 알림 권한이 없으면
+       403 이 정상이라 토스트 없이 빈 목록으로 둔다(경고 블록도 같은 권한으로 숨겨진다). -->
+  <data-source id="dashboard_alerts" label_key="$t:editor.data_source.dashboard_alerts" type="api" endpoint="/api/admin/dashboard/alerts" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 최근 알림 요약. 헤더 알림 센터(`notifications`)와는 별개 소스다 — 이쪽은 읽음 여부로 거르지
+       않고 최근분을 그대로 보여 준다. -->
+  <data-source id="dashboard_recent_notifications" label_key="$t:editor.data_source.dashboard_recent_notifications" type="api" endpoint="/api/admin/dashboard/recent-notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 방문자 통계 카드용 개요(7일). 통계 읽기 권한이 없으면 403 이 오는데, 카드는 데이터 유무로 스스로 빠지므로
+       오류를 삼킨다 — 권한 없는 카드가 대시보드에 토스트를 띄우면 안 된다. 첫 그림에 필수가 아니라 background 다.
+       그 밖의 실패는 `widget_error` 만 남기고 500 토스트도 삼킨다 — 카드가 사라지는 대신 제자리에서 알리고
+       다시 받으므로, 대시보드 전체에 띄울 말이 없다. -->
+  <data-source id="dashboard_analytics" label_key="$t:editor.data_source.dashboard_analytics" type="api" endpoint="/api/admin/analytics/overview" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params preset="7d"/>
+    <fallback>
+      <field name="data" :value="null"/>
+      <field name="widget_error" :value="true"/>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="500">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 집계가 서버에서 바뀌면 위 `dashboard_stats` 를 자동으로 다시 받는다(`target_source`).
+       받아서 할 일이 갱신뿐이라 `on-receive` 블록이 없다 — 관리자 공용 채널이다. -->
+  <data-source id="dashboard_stats_ws" label_key="$t:editor.data_source.dashboard_stats_ws" type="websocket" channel="core.admin.dashboard" event="dashboard.stats.updated" channel_type="private" target_source="dashboard_stats"/>
+  <permissions>
+    <permission>core.dashboard.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>dashboard_stats</wait-for>
+    <wait-for>dashboard_activities</wait-for>
+    <wait-for>dashboard_modules</wait-for>
+    <wait-for>dashboard_plugins</wait-for>
+    <wait-for>dashboard_templates</wait-for>
+    <wait-for>dashboard_recent_notifications</wait-for>
+  </transition-overlay>
+  <init>
+    <action handler="checkAssetUrlModeDrift"/>
+  </init>
+  <computed name="canReadAnalytics">{{(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read')}}</computed>
+  <slot name="content">
+    <div data-ref="dashboard_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between mb-6">
+        <h1 data-ref="page_title" class="text-primary text-xl sm:text-2xl font-semibold">$t:admin.dashboard.title</h1>
+        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.dashboard.refresh">
+          <on type="click">
+            <!-- 새로고침 — 이 화면의 소스 7개를 모두 다시 부른다(웹소켓 소스는 받는 쪽이라 제외).
+                 하나라도 빠뜨리면 그 칸만 옛 값으로 남아, 화면 안에서 시점이 갈린다. -->
+            <sequence>
+              <refetch-data-source dataSourceId="dashboard_stats"/>
+              <refetch-data-source dataSourceId="dashboard_activities"/>
+              <refetch-data-source dataSourceId="dashboard_modules"/>
+              <refetch-data-source dataSourceId="dashboard_plugins"/>
+              <refetch-data-source dataSourceId="dashboard_templates"/>
+              <refetch-data-source dataSourceId="dashboard_alerts"/>
+              <refetch-data-source dataSourceId="dashboard_recent_notifications"/>
+              <toast type="success" message="$t:admin.dashboard.refreshed"/>
+            </sequence>
+          </on>
+          <icon data-ref="refresh_icon" name="refresh" size="md"/>
+        </button>
+      </div>
+      <div data-ref="asset_url_mode_drift_alert" data-if="{{_global.assetUrlModeDrift}}" class="flex items-start gap-3 p-4 mb-6 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <icon data-ref="asset_url_mode_drift_icon" name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5"/>
+        <div data-ref="asset_url_mode_drift_body" class="flex-1 min-w-0">
+          <div data-ref="asset_url_mode_drift_title" class="text-sm font-semibold text-amber-900 dark:text-amber-200">$t:admin.dashboard.asset_url_mode_drift_title</div>
+          <p data-ref="asset_url_mode_drift_desc" class="mt-1 text-sm text-amber-800 dark:text-amber-300">$t:admin.dashboard.asset_url_mode_drift_description</p>
+          <!-- 자산 주소 방식이 어긋났다는 경고에서 설정 화면으로 바로 보낸다 — 대시보드에서 문제를 알리고 고칠 자리까지 데려가는 것이 이 링크의 몫이다 -->
+          <button data-ref="asset_url_mode_drift_link" type="button" class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer">
+            <on type="click">
+              <navigate path="/admin/settings">
+                <query tab="general"/>
+              </navigate>
+            </on>
+            $t:admin.dashboard.asset_url_mode_drift_action
+          </button>
+        </div>
+      </div>
+      <div data-ref="dashboard_alert_banners" data-if="{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning').length) > 0}}" class="space-y-3 mb-6">
+        <permissions>
+          <permission>core.dashboard.alerts</permission>
+        </permissions>
+        <div data-ref="top_alert_item_{{$idx}}" data-each="alert, $idx in {{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning')}}" class="{{alert.type === 'warning' ? 'flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700')}}">
+          <icon data-ref="top_alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
+          <div data-ref="top_alert_content_{{$idx}}" class="flex-1 min-w-0">
+            <p data-ref="top_alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
+            <p data-ref="top_alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
+            <p data-ref="top_alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
+            <p data-ref="top_alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
+            <div data-ref="top_alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
+              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
+                <on type="click">
+                  <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.
+                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.
+                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다. -->
+                  <api-call :auth_required="true" target="{{alert.recover_endpoint}}" method="POST">
+                    <success>
+                      <toast type="success" message="{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"/>
+                      <refetch-data-source dataSourceId="dashboard_alerts"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <icon name="check-circle" size="xs"/>
+                <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
+                <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
+              </button>
+              <button data-ref="top_alert_navigate_button_{{$idx}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+                <on type="click">
+                  <!-- 복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —
+                       버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.
+                       절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다. -->
+                  <navigate path="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"/>
+                </on>
+                <icon name="arrow-right" size="xs"/>
+                <span data-if="{{!!alert.action_label}}">{{alert.action_label}}</span>
+                <span data-if="{{!alert.action_label}}">$t:extensions.alerts.open_action</span>
+              </button>
+              <button data-ref="top_alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed" aria-label="$t:extensions.alerts.dismiss_action" disabled="{{alert.abilities?.can_dismiss !== true}}">
+                <on type="click">
+                  <!-- 닫기는 조치가 아니라 「이 확장의 이 알림을 더 보지 않겠다」는 기록이다 — 서버에 남겨야 새로고침마다 되살아나지 않는다. 그래서 토스트 없이 목록만 다시 받는다. -->
+                  <api-call :auth_required="true" target="/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss" method="POST">
+                    <success>
+                      <refetch-data-source dataSourceId="dashboard_alerts"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <icon name="times" size="xs"/>
+                <span>$t:extensions.alerts.dismiss_action</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="quick_menu" class="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 lg:mb-8">
+        <a data-ref="qm_users" href="/admin/users" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+          <icon name="users" class="text-lg md:text-xl"/>
+          <span class="text-center leading-tight">$t:admin.dashboard.quick_menu.users</span>
+        </a>
+        <a data-ref="qm_settings" href="/admin/settings" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+          <icon name="cog" class="text-lg md:text-xl"/>
+          <span class="text-center leading-tight">$t:admin.dashboard.quick_menu.settings</span>
+        </a>
+        <a data-ref="qm_modules" href="/admin/modules" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+          <icon name="puzzle-piece" class="text-lg md:text-xl"/>
+          <span class="text-center leading-tight">$t:admin.dashboard.quick_menu.modules</span>
+        </a>
+        <extension-point name="admin_dashboard_quick_menu" class="contents">
+          <default/>
+        </extension-point>
+      </div>
+      <extension-point name="admin_dashboard_commerce">
+        <default/>
+      </extension-point>
+      <extension-point name="admin_dashboard_community">
+        <default/>
+      </extension-point>
+      <!-- 방문자 통계 카드 — 확장이 카드 안팎에 자기 지표를 덧붙일 수 있게 확장 지점으로 감싼다. -->
+      <extension-point name="admin_dashboard_analytics" class="contents">
+        <default>
+          <include src="partials/admin_dashboard/_analytics_widget.g7.html"/>
+        </default>
+      </extension-point>
+      <div data-ref="middle_section_grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+        <div data-ref="recent_notifications_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+          <blur-until-loaded sources="dashboard_recent_notifications"/>
+          <permissions>
+            <permission>core.notification-logs.read</permission>
+          </permissions>
+          <div data-ref="recent_notifications_header" class="flex-start justify-between mb-4">
+            <div>
+              <h2 data-ref="recent_notifications_title" class="section-heading">$t:admin.dashboard.recent_notifications.title</h2>
+              <p data-ref="recent_notifications_subtitle" class="text-label-subtle">$t:admin.dashboard.recent_notifications.subtitle</p>
+            </div>
+            <button data-ref="recent_notifications_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/notification-logs"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
+          </div>
+          <p data-ref="recent_notifications_empty" data-if="{{(dashboard_recent_notifications?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:admin.dashboard.recent_notifications.empty</p>
+          <div data-ref="recent_notifications_list" data-if="{{(dashboard_recent_notifications?.data ?? []).length > 0}}" class="mb-4">
+            <div data-ref="recent_notification_item_{{$idx}}" data-each="notification, $idx in dashboard_recent_notifications?.data" class="flex-start gap-3">
+              <div data-ref="recent_notification_dot_{{$idx}}" class="{{notification?.status === 'failed' ? 'w-2 h-2 mt-2 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0' : (notification?.status === 'skipped' ? 'w-2 h-2 mt-2 rounded-full bg-slate-400 dark:bg-slate-300 flex-shrink-0' : 'w-2 h-2 mt-2 rounded-full bg-emerald-500 dark:bg-emerald-400 flex-shrink-0')}}"/>
+              <div data-ref="recent_notification_content_{{$idx}}" class="flex-1 min-w-0">
+                <p data-ref="recent_notification_subject_{{$idx}}" class="text-heading truncate">{{notification?.subject ?? ''}}</p>
+                <p data-ref="recent_notification_recipient_{{$idx}}" class="text-label-subtle truncate">{{notification?.recipient ?? ''}}</p>
+              </div>
+              <span data-ref="recent_notification_time_{{$idx}}" class="text-hint whitespace-nowrap">{{notification?.time ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="recent_activity_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+          <blur-until-loaded sources="dashboard_activities"/>
+          <permissions>
+            <permission>core.dashboard.activities</permission>
+          </permissions>
+          <div data-ref="recent_activity_header" class="flex-start justify-between mb-4">
+            <div>
+              <h2 data-ref="recent_activity_title" class="section-heading">$t:admin.dashboard.recent_activity.title</h2>
+              <p data-ref="recent_activity_subtitle" class="text-label-subtle">$t:admin.dashboard.recent_activity.subtitle</p>
+            </div>
+            <button data-ref="activity_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/activity-logs"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
+          </div>
+          <div data-ref="activity_list">
+            <div data-ref="activity_item_{{$idx}}" data-each="activity, $idx in dashboard_activities?.data" class="flex-start gap-3">
+              <div data-ref="activity_dot_{{$idx}}" class="w-2 h-2 mt-2 rounded-full bg-blue-500 dark:bg-blue-400 flex-shrink-0"/>
+              <div data-ref="activity_content_{{$idx}}" class="flex-1 min-w-0">
+                <p data-ref="activity_title_{{$idx}}" class="text-heading">{{activity.title}}</p>
+                <p data-ref="activity_desc_{{$idx}}" class="text-label-subtle">{{activity.description}}</p>
+              </div>
+              <span data-ref="activity_time_{{$idx}}" class="text-hint whitespace-nowrap">{{activity.time}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 설치 현황 칩 4개(모듈·플러그인·템플릿·언어팩)는 바로 아래 상태 카드 세 장이 세는 것과 같은 것을
+        센다 — 화면 맨 위에 떼어 두면 「3/3」이 무엇의 3인지 알 수 없다. 카드 바로 위에 붙여 둔다
+        (#682 라운드 4, 검수 지적 ⑧). 언어팩은 상태 카드가 없어 칩이 유일한 요약이다. -->
+      <div data-ref="secondary_stats_badges" class="flex-center flex-wrap gap-2 md:gap-3 mb-4">
+        <blur-until-loaded sources="dashboard_stats"/>
+        <div data-ref="modules_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+          <permissions>
+            <permission>core.modules.read</permission>
+          </permissions>
+          <on type="click">
+            <navigate path="/admin/modules"/>
+          </on>
+          <icon data-ref="modules_badge_icon" name="cube" size="sm"/>
+          <span data-ref="modules_badge_label">$t:admin.dashboard.stats.installed_modules</span>
+          <span data-ref="modules_badge_value" class="font-bold">{{dashboard_stats?.data?.installed_modules?.active ?? 0}}/{{dashboard_stats?.data?.installed_modules?.total ?? 0}}</span>
+        </div>
+        <div data-ref="plugins_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+          <permissions>
+            <permission>core.plugins.read</permission>
+          </permissions>
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <icon data-ref="plugins_badge_icon" name="puzzle-piece" size="sm"/>
+          <span data-ref="plugins_badge_label">$t:admin.dashboard.stats.active_plugins</span>
+          <span data-ref="plugins_badge_value" class="font-bold">{{dashboard_stats?.data?.active_plugins?.active ?? 0}}/{{dashboard_stats?.data?.active_plugins?.total ?? 0}}</span>
+        </div>
+        <div data-ref="templates_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+          <permissions>
+            <permission>core.templates.read</permission>
+          </permissions>
+          <on type="click">
+            <navigate path="/admin/templates/admin"/>
+          </on>
+          <icon data-ref="templates_badge_icon" name="palette" size="sm"/>
+          <span data-ref="templates_badge_label">$t:admin.dashboard.stats.active_templates</span>
+          <span data-ref="templates_badge_value" class="font-bold">{{dashboard_stats?.data?.installed_templates?.active ?? 0}}/{{dashboard_stats?.data?.installed_templates?.total ?? 0}}</span>
+        </div>
+        <div data-ref="language_packs_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+          <permissions>
+            <permission>core.language_packs.read</permission>
+          </permissions>
+          <on type="click">
+            <navigate path="/admin/settings?tab=language_packs"/>
+          </on>
+          <icon data-ref="language_packs_badge_icon" name="language" size="sm"/>
+          <span data-ref="language_packs_badge_label">$t:admin.dashboard.stats.active_language_packs</span>
+          <span data-ref="language_packs_badge_value" class="font-bold">{{dashboard_stats?.data?.language_packs?.active ?? 0}}/{{dashboard_stats?.data?.language_packs?.total ?? 0}}</span>
+        </div>
+      </div>
+      <div data-ref="extension_status_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div data-ref="module_status_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+          <blur-until-loaded sources="dashboard_modules"/>
+          <permissions>
+            <permission>core.modules.read</permission>
+          </permissions>
+          <div data-ref="module_status_header" class="flex-between mb-4">
+            <div data-ref="module_header_left" class="flex-center gap-2">
+              <div data-ref="module_header_text">
+                <h2 data-ref="module_status_title" class="section-heading">$t:admin.dashboard.module_status.title</h2>
+                <p data-ref="module_status_subtitle" class="text-label-subtle">$t:admin.dashboard.module_status.subtitle</p>
+              </div>
+            </div>
+            <button data-ref="module_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/modules"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
+          </div>
+          <div data-ref="module_list">
+            <div data-ref="module_item_{{$idx}}" data-each="module, $idx in dashboard_modules?.data?.data" class="flex-between py-2">
+              <div data-ref="module_info_{{$idx}}">
+                <p data-ref="module_name_{{$idx}}" class="text-heading">{{module.name}}</p>
+                <p data-ref="module_version_{{$idx}}" class="text-tertiary">v{{module.version}}</p>
+              </div>
+              <span data-ref="module_badge_{{$idx}}" class="{{module.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}">{{module.status === 'active' ? '$t:admin.dashboard.module_status.active' : '$t:admin.dashboard.module_status.inactive'}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="plugin_status_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+          <blur-until-loaded sources="dashboard_plugins"/>
+          <permissions>
+            <permission>core.plugins.read</permission>
+          </permissions>
+          <div data-ref="plugin_status_header" class="flex-between mb-4">
+            <div data-ref="plugin_header_left" class="flex-center gap-2">
+              <div data-ref="plugin_header_text">
+                <h2 data-ref="plugin_status_title" class="section-heading">$t:admin.dashboard.plugin_status.title</h2>
+                <p data-ref="plugin_status_subtitle" class="text-label-subtle">$t:admin.dashboard.plugin_status.subtitle</p>
+              </div>
+            </div>
+            <button data-ref="plugin_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/plugins"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
+          </div>
+          <div data-ref="plugin_list">
+            <div data-ref="plugin_item_{{$idx}}" data-each="plugin, $idx in dashboard_plugins?.data?.data" class="flex-between py-2">
+              <div data-ref="plugin_info_{{$idx}}">
+                <p data-ref="plugin_name_{{$idx}}" class="text-heading">{{plugin.name}}</p>
+                <p data-ref="plugin_version_{{$idx}}" class="text-tertiary">v{{plugin.version}}</p>
+              </div>
+              <span data-ref="plugin_badge_{{$idx}}" class="{{plugin.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}">{{plugin.status === 'active' ? '$t:admin.dashboard.plugin_status.active' : '$t:admin.dashboard.plugin_status.inactive'}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="template_status_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+          <blur-until-loaded sources="dashboard_templates"/>
+          <permissions>
+            <permission>core.templates.read</permission>
+          </permissions>
+          <div data-ref="template_status_header" class="flex-between mb-4">
+            <div data-ref="template_header_left" class="flex-center gap-2">
+              <div data-ref="template_header_text">
+                <h2 data-ref="template_status_title" class="section-heading">$t:admin.dashboard.template_status.title</h2>
+                <p data-ref="template_status_subtitle" class="text-label-subtle">$t:admin.dashboard.template_status.subtitle</p>
+              </div>
+            </div>
+            <button data-ref="template_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/templates/admin"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
+          </div>
+          <div data-ref="template_list">
+            <div data-ref="template_item_{{$idx}}" data-each="template, $idx in dashboard_templates?.data?.data" class="flex-between py-2">
+              <div data-ref="template_info_{{$idx}}">
+                <p data-ref="template_name_{{$idx}}" class="text-heading">{{template.name}}</p>
+                <p data-ref="template_version_{{$idx}}" class="text-tertiary">v{{template.version}}</p>
+              </div>
+              <span data-ref="template_badge_{{$idx}}" class="{{template.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}">{{template.status === 'active' ? '$t:admin.dashboard.template_status.active' : '$t:admin.dashboard.template_status.inactive'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="bottom_section_grid" class="mt-4 sm:mt-6">
+        <div data-ref="system_alerts_card" data-if="{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning').length) > 0}}" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+          <blur-until-loaded sources="dashboard_alerts"/>
+          <permissions>
+            <permission>core.dashboard.alerts</permission>
+          </permissions>
+          <div data-ref="system_alerts_header" class="mb-4">
+            <h2 data-ref="system_alerts_title" class="section-heading">$t:admin.dashboard.system_alerts.title</h2>
+            <p data-ref="system_alerts_subtitle" class="text-label-subtle">$t:admin.dashboard.system_alerts.subtitle</p>
+          </div>
+          <div data-ref="alerts_list" class="space-y-3">
+            <div data-ref="alert_item_{{$idx}}" data-each="alert, $idx in {{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning')}}" class="{{alert.type === 'warning' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}">
+              <icon data-ref="alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
+              <div data-ref="alert_content_{{$idx}}" class="flex-1 min-w-0">
+                <p data-ref="alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
+                <p data-ref="alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
+                <p data-ref="alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
+                <p data-ref="alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
+                <div data-ref="alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
+                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
+                    <on type="click">
+                      <!-- 복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —
+                           복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.
+                           같은 이유로 버튼이 뜨는 조건도 경고 종류가 아니라 복구 주소의 유무이고,
+                           버튼 글자·성공 안내도 경고가 실어 오면 그것을 쓴다(없으면 공통 문구).
+                           성공하면 경고 목록만 다시 받는다(그 경고가 사라졌는지가 결과다). -->
+                      <api-call :auth_required="true" target="{{alert.recover_endpoint}}" method="POST">
+                        <success>
+                          <toast type="success" message="{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"/>
+                          <refetch-data-source dataSourceId="dashboard_alerts"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                    <icon name="check-circle" size="xs"/>
+                    <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
+                    <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
+                  </button>
+                  <button data-ref="alert_navigate_button_{{$idx}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+                    <on type="click">
+                      <!-- 복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —
+                           버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.
+                           절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다. -->
+                      <navigate path="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"/>
+                    </on>
+                    <icon name="arrow-right" size="xs"/>
+                    <span data-if="{{!!alert.action_label}}">{{alert.action_label}}</span>
+                    <span data-if="{{!alert.action_label}}">$t:extensions.alerts.open_action</span>
+                  </button>
+                  <button data-ref="alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed" aria-label="$t:extensions.alerts.dismiss_action" disabled="{{alert.abilities?.can_dismiss !== true}}">
+                    <on type="click">
+                      <!-- 경고 숨기기. 복구와 달리 확장 종류·식별자로 주소를 조립한다(경고가 그 둘을 실어
+                           오지 않으면 버튼 자체가 렌더되지 않는다). 실패 갈래를 두지 않는다 — 실패하면
+                           경고가 그대로 남는 것이 곧 결과라 따로 알릴 것이 없다. -->
+                      <api-call :auth_required="true" target="/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss" method="POST">
+                        <success>
+                          <refetch-data-source dataSourceId="dashboard_alerts"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                    <icon name="times" size="xs"/>
+                    <span>$t:extensions.alerts.dismiss_action</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

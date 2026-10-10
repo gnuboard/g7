@@ -1,0 +1,37 @@
+<!-- 목록이 비었을 때의 안내 셋 — «글이 없다»와 «찾은 것이 없다»와 «이 페이지에 없다»는 사용자에게 다른 상황이라 문구도 빠져나갈 길도 다르다. 셋의 조건은 서로 겹치지 않게 갈라 두었다. -->
+<partial description="게시판 목록 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음)">
+  <div>
+    <!-- 해당 페이지에 게시글 없음 (page 파라미터 존재 + 데이터 0건) -->
+    <div data-if="{{posts?.data?.board?.slug &amp;&amp; query.page &amp;&amp; Number(query.page) > 1 &amp;&amp; posts?.data?.data?.length === 0}}" class="flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl">
+      <div class="text-6xl mb-4">📄</div>
+      <p class="text-gray-600 dark:text-gray-400 mb-2">$t:board.no_posts_on_page</p>
+      <button class="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4">
+        <on type="click">
+          <!-- 페이지만 되돌린다 — 검색어/분류/필터는 그대로 유지 (#75). page: "" 는 파라미터 제거 = 1페이지. -->
+          <navigate path="/board/{{route.slug}}" :mergeQuery="true">
+            <query page=""/>
+          </navigate>
+        </on>
+        $t:board.go_to_first_page
+      </button>
+    </div>
+    <!-- 게시글 없음 (검색 아닐 때 + 공지 제외 일반 게시글 0개) -->
+    <div data-if="{{posts?.data?.board?.slug &amp;&amp; !query.search &amp;&amp; !query.category &amp;&amp; (!query.page || Number(query.page) <= 1) &amp;&amp; posts?.data?.pagination?.total === 0}}" class="flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl">
+      <div class="text-6xl mb-4">📝</div>
+      <p class="text-gray-600 dark:text-gray-400">$t:board.no_posts</p>
+    </div>
+    <!-- 검색 결과 없음 (검색 시 + 공지 제외 일반 게시글 0개) -->
+    <div data-if="{{posts?.data?.board?.slug &amp;&amp; (query.search || query.category) &amp;&amp; posts?.data?.pagination?.total === 0}}" class="flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl">
+      <div class="text-6xl mb-4">🔍</div>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">$t:board.no_search_results</p>
+      <!-- 검색 초기화 버튼 -->
+      <button class="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer">
+        <on type="click">
+          <!-- audit:allow layout-list-context-navigate-merge-query 검색 초기화 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+          <navigate path="/board/{{route.slug}}" :mergeQuery="false"/>
+        </on>
+        $t:board.clear_search
+      </button>
+    </div>
+  </div>
+</partial>

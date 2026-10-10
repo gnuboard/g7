@@ -56,19 +56,28 @@ function walkFiles(dir: string, exts: string[]): string[] {
 }
 
 describe('chrome i18n coverage', () => {
+  // @scenario admin_ui_locale=en
+  // @effects chrome_i18n_keys_have_ko_en_parity
   it('lang/partial/ko/layout_editor.json 과 lang/partial/en/layout_editor.json 의 키 집합이 동일하다', () => {
     const ko = loadJSON('lang/partial/ko/layout_editor.json');
     const en = loadJSON('lang/partial/en/layout_editor.json');
     const koKeys = new Set(flattenKeys(ko));
     const enKeys = new Set(flattenKeys(en));
+    // 수에 따른 변형 키(`키_one` 등, engine-v1.78.7)는 그 언어의 복수 범주에만 있다 — ko 는 범주가 other 뿐이라 두지 않는다.
+    const isPluralVariant = (k: string, keys: Set<string>) => {
+      const m = k.match(/^(.*)_(zero|one|two|few|many)$/);
+      return m !== null && keys.has(m[1]);
+    };
 
     const missingInEn = [...koKeys].filter((k) => !enKeys.has(k));
-    const missingInKo = [...enKeys].filter((k) => !koKeys.has(k));
+    const missingInKo = [...enKeys].filter((k) => !koKeys.has(k) && !isPluralVariant(k, enKeys));
 
     expect(missingInEn).toEqual([]);
     expect(missingInKo).toEqual([]);
   });
 
+  // @scenario admin_ui_locale=en
+  // @effects chrome_i18n_keys_have_ko_en_parity
   it('lang/{ko,en}.json 엔트리에 layout_editor $partial 등록되어 있다', () => {
     const ko = loadJSON('lang/ko.json');
     const en = loadJSON('lang/en.json');
@@ -78,6 +87,8 @@ describe('chrome i18n coverage', () => {
     expect(en.layout_editor.$partial).toBe('partial/en/layout_editor.json');
   });
 
+  // @scenario admin_ui_locale=en
+  // @effects chrome_strings_render_via_layout_editor_t_keys_no_hardcoded_text
   it('layout-editor/ 컴포넌트 .tsx 에 평문 한국어 사용자 대면 문자열이 없다', () => {
     const files = walkFiles(layoutEditorDir, ['.tsx']);
     expect(files.length).toBeGreaterThan(0);
@@ -159,6 +170,8 @@ describe('action.event 라벨 커버리지', () => {
     return events;
   }
 
+  // @scenario admin_ui_locale=en
+  // @effects chrome_strings_render_via_layout_editor_t_keys_no_hardcoded_text
   it('번들 editor-spec 의 모든 events 가 코어 action.event (ko/en) 에 친화 명칭으로 정의됨', () => {
     const ko = loadJSON('lang/partial/ko/layout_editor.json');
     const en = loadJSON('lang/partial/en/layout_editor.json');
@@ -183,6 +196,8 @@ describe('action.event 라벨 커버리지', () => {
 // layout-editor *.tsx 전수에서 `ariaLabel:` 우변이 `'layout_editor.…'` 문자열 리터럴인
 // 경우를 차단한다(EditorCanvasOverlay 회귀 방지).
 describe('ariaLabel raw 키 노출 가드', () => {
+  // @scenario admin_ui_locale=en
+  // @effects chrome_strings_render_via_layout_editor_t_keys_no_hardcoded_text
   it('layout-editor 컴포넌트의 ariaLabel 에 layout_editor.* 키 원문 리터럴이 없다', () => {
     const files = walkFiles(layoutEditorDir, ['.tsx', '.ts']);
     const offenders: string[] = [];

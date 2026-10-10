@@ -1,0 +1,27 @@
+feature: 편집기 프리뷰 샘플 커버리지 판정 (ext:docgen)
+
+description: |
+  확장 레이아웃의 data_source 중 편집기 프리뷰 샘플이 없는 것을 ext:docgen 이 문서에 적는다.
+  샘플이 없으면 편집기 캔버스에서 그 자리만 빈 화면이 되는데, 실제 화면은 정상이라 오류도
+  경고도 남지 않는다 — 문서의 그 줄이 유일한 신호다.
+
+  레이아웃 목록은 저작 경로를 싣는다(짝 .g7.html 이 있으면 그 경로). 판정기가 그 목록을
+  JSON 으로 읽으면 마크업 저작 확장에서는 모든 파싱이 실패하고 그 실패가 조용히 접혀
+  미커버 집합이 항상 빈 배열이 된다 = 「전부 커버」의 무조건 출력.
+
+  2026-09-21 실측(이슈 #636 S3) — sirsoft-gdpr 의 신규 data_source 2종이 그렇게 통과했고,
+  검증 라운드 둘이 그 출력을 근거로 부수의무를 닫았다. 이 시나리오가 그 접힘을 잠근다.
+
+axes:
+  authoring_path: [markup]
+
+effects:
+  - uncovered_data_source_is_reported_for_markup_authored_layout
+  - layout_list_carries_the_authoring_path
+
+test_files:
+  - tests/Feature/Documentation/EditorSpecSampleCoverageTest.php
+
+notes: |
+  축이 markup 하나인 이유: json 저작 경로는 종전 판본이 이미 덮고 있었고 회귀한 적이 없다.
+  새 축을 만들지 않고 실제로 접혔던 자리만 잠근다.

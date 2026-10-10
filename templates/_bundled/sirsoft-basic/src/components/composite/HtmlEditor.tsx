@@ -92,6 +92,11 @@ export interface HtmlEditorProps {
    */
   readOnly?: boolean;
 
+  /**
+   * 비활성 — readOnly 와 같이 다룬다(관리자 템플릿 HtmlEditor 와 같은 계약)
+   */
+  disabled?: boolean;
+
     /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */
@@ -136,10 +141,13 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
   className = '',
   name = 'content',
   htmlFieldName = 'content_mode',
-  readOnly = false,
+  readOnly: readOnlyProp = false,
+  disabled = false,
   id,
   editorAttrs,
 }) => {
+  // disabled 도 읽기 전용으로 다룬다(레이아웃 읽기 전용 게이트 계약)
+  const readOnly = readOnlyProp || disabled;
   // HTML 모드 내부 상태 (Toggle과 동기화)
   const [isHtml, setIsHtml] = useState(isHtmlProp);
 

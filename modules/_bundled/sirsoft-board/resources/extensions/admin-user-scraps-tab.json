@@ -1,0 +1,217 @@
+{
+    "comment": "회원 상세 화면에 스크랩 탭을 하나 더 얹는 조각. 마일리지 탭과 같은 짜임으로 주입이 **두 군데**로\n  갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에 항목을 덧붙이고(`append`), 그 탭이 펼칠\n  본문은 별도 앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은 `id`(`ext_board_scraps`)\n  하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.\n\n  이 탭은 **요약만** 낸다(결정 R1) — 건수와 최근 스크랩 시각, 그리고 「이 회원 스크랩 목록 보기」\n  링크. 목록 자체는 스크랩 관리 화면이 검색·필터·일괄 삭제까지 갖추고 있으므로, 같은 표를 회원 상세\n  안에 한 벌 더 두지 않고 그 화면으로 회원 uuid 를 실어 보낸다.\n\n  `board_scraps` 는 UserScrapInfoListener 가 **관리자 응답에만** 넣으므로, 프로필(/api/me)에서는\n  이 조각 전체가 조건(`!!user?.data?.board_scraps`)에서 걸러진다.",
+    "target_layout": "admin_user_detail",
+    "priority": 310,
+    "injections": [
+        {
+            "target_id": "user_detail_tabs",
+            "position": "inject_props",
+            "props": {
+                "tabs": {
+                    "_append": [
+                        {
+                            "id": "ext_board_scraps",
+                            "label": "$t:sirsoft-board.admin.users.scraps.tab_label",
+                            "iconName": "bookmark",
+                            "if": "{{!!user?.data?.board_scraps}}"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "target_id": "extension_tab_content",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "ext_board_scraps_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!user?.data?.board_scraps}}",
+                    "props": {
+                        "id": "ext_board_scraps",
+                        "className": "scroll-mt-32"
+                    },
+                    "children": [
+                        {
+                            "id": "section_board_scraps",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "admin-card"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "bookmark",
+                                                        "className": "text-xl text-gray-600 dark:text-gray-400"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "H3",
+                                                    "props": {
+                                                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.users.scraps.title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "ExtensionBadge",
+                                            "props": {
+                                                "type": "module",
+                                                "identifier": "sirsoft-board",
+                                                "installedModules": "{{_global.installedModules}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4 mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "field_scrap_count",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.users.scraps.count"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-lg font-semibold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.users.scraps.count_unit|count={{user?.data?.board_scraps?.count ?? 0}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_latest_scrapped_at",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.users.scraps.latest_scrapped_at"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-lg font-semibold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{user?.data?.board_scraps?.latest_scrapped_at ?? '-'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "0건이면 링크를 숨긴다 — 눌러 봐야 빈 목록이고, 그 사실은 위 숫자가 이미 말한다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(user?.data?.board_scraps?.count ?? 0) === 0}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-base flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.users.scraps.none"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "이동은 `navigate` 액션으로 한다. `href=\"{{식}}\"` 은 렌더 시 prop 값이 undefined 가 되어\n          DOM 에 속성 자체가 실리지 않는다(2026-09-15 브라우저 실측) — 링크가 조용히 죽는다.\n          같은 화면의 표에서 쓰는 `navigate path=\"…{{식}}\"` 은 정상 평가된다.",
+                                    "id": "view_member_scraps",
+                                    "type": "basic",
+                                    "name": "A",
+                                    "if": "{{(user?.data?.board_scraps?.count ?? 0) > 0}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/boards/scraps",
+                                                "query": {
+                                                    "user_uuid": "{{user?.data?.uuid ?? ''}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "user-scraps-link",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "list",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.users.scraps.view_list"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

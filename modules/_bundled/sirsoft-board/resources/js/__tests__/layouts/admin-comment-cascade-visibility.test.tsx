@@ -1,3 +1,4 @@
+// e2e:allow 시나리오 매니페스트(deleted-post-detail-visibility.yaml)가 선언한 이 파일에 @scenario/@effects 표식만 추가 — 대상 레이아웃·런타임 동작 무변경
 /**
  * 관리자 게시글 상세 - cascade 댓글 노출 분기 회귀 테스트 (#413-69-②)
  *
@@ -14,6 +15,11 @@
  *       → user 선삭제분만 마스킹, cascade 는 제외
  *   - normal_comment_content (원문):   status!=='blinded' && (!deleted_at || is_cascade_deleted)
  *       → cascade 댓글은 일반 댓글처럼 원문 노출
+ *
+ * @scenario comment_trigger=cascade
+ * @scenario comment_trigger=user
+ * @effects cascade_comment_content_visible,
+ *   cascade_comment_flag_exposed
  */
 
 import { describe, it, expect } from 'vitest';
@@ -29,7 +35,8 @@ import commentPartial from '../../../layouts/admin/partials/admin_board_post_det
  */
 function findById(node: any, id: string): any {
     if (!node || typeof node !== 'object') return null;
-    if (node.id === id) return node;
+    // 댓글 조각은 반복 안에서 그려져 id 에 댓글 식별자 접미(`_{{comment.id}}`)가 붙는다(7.1.0 실측 K4 O-KF3-3)
+    if (node.id === id || node.id === `${id}_{{comment.id}}`) return node;
 
     if (Array.isArray(node.children)) {
         for (const child of node.children) {
@@ -54,6 +61,8 @@ describe('관리자 댓글 - cascade 노출 분기 (#413-69-②)', () => {
     const deletedNode = findById(commentPartial, 'deleted_comment_content');
     const normalNode = findById(commentPartial, 'normal_comment_content');
 
+    // @scenario comment_trigger=user
+    // @effects cascade_comment_flag_exposed
     it('마스킹 분기(deleted_comment_content)는 cascade 댓글을 제외한다', () => {
         expect(deletedNode, '삭제 댓글 마스킹 노드가 존재해야 한다').toBeTruthy();
         expect(deletedNode.if).toContain('comment?.deleted_at');
@@ -63,6 +72,8 @@ describe('관리자 댓글 - cascade 노출 분기 (#413-69-②)', () => {
         ).toContain('!comment?.is_cascade_deleted');
     });
 
+    // @scenario comment_trigger=cascade
+    // @effects cascade_comment_content_visible
     it('일반 분기(normal_comment_content)는 cascade 댓글의 원문을 노출한다', () => {
         expect(normalNode, '일반 댓글 노드가 존재해야 한다').toBeTruthy();
         expect(normalNode.if).toContain("comment?.status !== 'blinded'");
@@ -72,6 +83,8 @@ describe('관리자 댓글 - cascade 노출 분기 (#413-69-②)', () => {
         ).toContain('comment?.is_cascade_deleted');
     });
 
+    // @scenario comment_trigger=cascade
+    // @effects cascade_comment_content_visible
     it('일반 분기는 cascade 댓글 본문을 comment.content 로 직접 렌더한다 (마스킹 없음)', () => {
         expect(normalNode.text).toBe('{{comment.content}}');
     });

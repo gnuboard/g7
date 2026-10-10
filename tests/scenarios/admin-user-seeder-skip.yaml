@@ -1,0 +1,23 @@
+feature: admin_user_seeder_skip
+
+description: |
+  설치가 끝난 사이트에서 db:seed --sample --force 가 관리자 시더의 환경 변수 요구 예외로 멈춰 샘플 회원을 만들 수 없던 문제(W3 실측)와,
+  환경 변수가 있으면 회원 전체를 지우고 관리자를 새로 만들던 위험. 최고관리자가 이미 있거나 설치 환경 변수가 없으면 안내 후 건너뛴다.
+  빈 DB 에 환경 변수를 넣고 부르는 설치 마법사 경로는 종전과 같다.
+
+coverage_strategy: full
+
+axes:
+  admin_exists: [yes, no]
+  installer_env: [present, absent]
+
+exclusions:
+  - { admin_exists: yes, installer_env: absent, reason: "환경 변수가 없으면 최고관리자 유무와 무관하게 같은 건너뜀 분기 — admin_exists=no/absent 가 잰다" }
+
+effects:
+  - admin_seeder_skips_without_installer_env
+  - admin_seeder_keeps_existing_users_when_super_admin_exists
+  - admin_seeder_creates_super_admin_on_install
+
+test_files:
+  - tests/Feature/Database/AdminUserSeederSkipTest.php

@@ -8,6 +8,7 @@
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
 | `GdprPolicyVersion` | `gdpr_policy_versions` | 5 | createdBy→User | - |
+| `GdprPrivacyNoticeLog` | `gdpr_privacy_notice_logs` | 7 | user→User | - |
 | `GdprUserConsent` | `gdpr_user_consents` | 11 | user→User | - |
 | `GdprUserConsentHistory` | `gdpr_user_consent_histories` | 9 | user→User | - |
 <!-- @generated:models END -->
@@ -27,6 +28,7 @@
 | 테이블 | 모델 |
 |---|---|
 | `gdpr_policy_versions` | `GdprPolicyVersion` |
+| `gdpr_privacy_notice_logs` | `GdprPrivacyNoticeLog` |
 | `gdpr_user_consent_histories` | `GdprUserConsentHistory` |
 | `gdpr_user_consents` | `GdprUserConsent` |
 <!-- @generated:tables END -->
@@ -41,7 +43,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 4개.
+마이그레이션 5개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -49,6 +51,7 @@
 | `2026_04_27_000002_create_gdpr_user_consent_histories_table.php` | `gdpr_user_consent_histories` | `gdpr_user_consent_histories` | ✅ |
 | `2026_05_12_000003_create_gdpr_policy_versions_table.php` | `gdpr_policy_versions` | `gdpr_policy_versions` | ✅ |
 | `2026_07_14_000001_add_rejection_to_gdpr_user_consents.php` | - | `gdpr_user_consents` | ✅ |
+| `2026_09_19_000001_create_gdpr_privacy_notice_logs_table.php` | `gdpr_privacy_notice_logs` | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -66,6 +69,7 @@
 | `ConsentSource` | `string` | 6 | `banner`, `preference_center`, `register`, `mypage`, `mypage_renew_all`, `withdraw` |
 | `CookieCategory` | `string` | 4 | `cookie_necessary`, `cookie_functional`, `cookie_analytics`, `cookie_marketing` |
 | `GdprPolicyChangeType` | `string` | 3 | `material`, `non_material`, `initial` |
+| `PrivacyNoticeStatus` | `string` | 3 | `queued`, `sent`, `failed` |
 <!-- @generated:enums END -->
 
 <!-- @intent START -->
@@ -104,6 +108,8 @@ case입니다 — 두 지점 모두 enum이 아닌 `'withdraw'` 리터럴을 직
 |---|---|---|
 | `GdprPolicyVersionRepository` | 구현 | GDPR 정책 버전 Repository 구현체 (immutable append-only) |
 | `GdprPolicyVersionRepositoryInterface` | 인터페이스 | GDPR 정책 버전 Repository 인터페이스 (immutable append-only) |
+| `GdprPrivacyNoticeRepository` | 구현 | 개인정보 연간 통지 대상과 불변 이력을 조회합니다. |
+| `GdprPrivacyNoticeRepositoryInterface` | 인터페이스 | 통지 대상과 추가 전용 증적의 접근 계약. |
 | `GdprUserConsentHistoryRepository` | 구현 | GDPR 동의 변경 이력 Repository 구현체 (immutable append-only) |
 | `GdprUserConsentHistoryRepositoryInterface` | 인터페이스 | GDPR 동의 변경 이력 Repository 인터페이스 (immutable append-only) |
 | `GdprUserConsentRepository` | 구현 | GDPR 사용자 현재 동의 상태 Repository 구현체 |

@@ -21,6 +21,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class ExtraFeeTemplateController extends AdminBaseController
 {
+    /**
+     * 추가배송비 템플릿 서비스를 주입받습니다.
+     *
+     * @param  ExtraFeeTemplateService  $extraFeeTemplateService  추가배송비 템플릿 CRUD·일괄 처리 서비스
+     */
     public function __construct(
         private ExtraFeeTemplateService $extraFeeTemplateService
     ) {}
@@ -227,7 +232,9 @@ class ExtraFeeTemplateController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.extra_fee_template.bulk_deleted',
-                ['deleted_count' => $count]
+                ['deleted_count' => $count],
+                200,
+                ['count' => $count]
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
@@ -259,7 +266,9 @@ class ExtraFeeTemplateController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.extra_fee_template.bulk_toggled',
-                ['updated_count' => $count]
+                ['updated_count' => $count],
+                200,
+                ['count' => $count]
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
@@ -288,7 +297,8 @@ class ExtraFeeTemplateController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.extra_fee_template.bulk_created',
                 ['created_count' => $count],
-                201
+                201,
+                ['count' => $count]
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');

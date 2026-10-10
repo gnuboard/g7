@@ -1,0 +1,34 @@
+feature: sirsoft-admin_basic 머리글 접근성과 업로더 기본값 브라우저 회귀
+
+description: |
+  7.1.0 종합 단계에서 고친 관리자 프론트 동작을 브라우저로 고정한다.
+  언어 메뉴는 이름 있는 listbox 이고 단추에서 ↓ 로 열면 현재 언어 항목에 초점이 간다. ↓ 로 옮겨 Enter 로 고르면 회원 언어 저장
+  PATCH /api/admin/users/me/language 가 한 번만 나가고(종전 두 번), Esc 는 닫고 단추로 초점을 돌린다.
+  테마 단추 이름은 ko 「화면 테마」, en 「Theme」 이다. 대시보드, 회원 목록, 환경설정에 이름 없는 단추와 링크가 없다.
+  FileUploader 를 initialFiles 없이 놓아도 렌더가 가라앉는다(대시보드 레이아웃 응답에 업로더를 덧붙여 재현).
+
+axes:
+  case:
+    - language_listbox_keyboard
+    - language_save_once
+    - theme_name_locale
+    - icon_only_controls_named
+    - uploader_without_initial_files
+
+effects:
+  - listbox_opens_on_current_option
+  - arrow_enter_selects
+  - escape_closes_and_returns_focus
+  - language_patch_once
+  - theme_name_follows_locale
+  - no_unnamed_controls
+  - uploader_render_settles
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/header-accessibility.spec.ts
+
+notes: |
+  회원 언어를 바꾸는 describe 는 serial 이고 afterAll 이 시작 언어로 되돌린다. 계정은 G7_E2E_ADMIN_EMAIL 과
+  G7_E2E_ADMIN_PASSWORD_FILE 이 있으면 그 계정, 없으면 발급 토큰이다.
+  수정 전 번들(HEAD 의 dist/js/components.iife.js)을 route 로 끼운 같은 spec 은 5건 실패(listbox 없음, 이름 없는 단추 3줄씩,
+  업로더 아래 DOM 변이 5초 713,556건)였다.

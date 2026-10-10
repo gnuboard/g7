@@ -2,5 +2,8 @@
     "preset": "laravel",
     "rules": {
         "no_superfluous_phpdoc_tags": false
-    }
+    },
+    "notPath": [
+        "public/install/api/scan-extensions.php"
+    ]
 }

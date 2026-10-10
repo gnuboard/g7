@@ -1,0 +1,14 @@
+feature: 모듈 목록 응답 메타의 활성 모듈 수는 실제 활성 모듈 수다
+
+description: |
+  모듈 목록 행은 매니저가 만든 배열이고 활성 여부는 status 로 온다. 응답 메타가 행에 없는 is_active 로 세어
+  활성 모듈이 있어도 meta.active_modules 가 늘 0 이었다(#736 F 영역 실측 O-F2). 플러그인 목록처럼 상태로 센다.
+
+axes:
+  case: [status_active_rows]
+
+effects:
+  - module_list_meta_counts_active_by_status
+
+test_files:
+  - tests/Unit/Resources/ModuleCollectionMetaTest.php

@@ -291,6 +291,15 @@ test.describe('목록 페이지네이션 (지연 조인)', () => {
           await next.click();
           await page.waitForTimeout(1_000);
         }
+
+        // 총 건수가 상한에 걸린 목록은 마지막 페이지 자체가 정의되지 않는다 — 끝 페이지
+        // 점프 컨트롤이 없고 "다음" 은 끝까지 열려 있는 것이 설계된 동작이다(그 상태는
+        // bounded-total 쪽에서 따로 단언한다). 여기서 비활성을 기다리면 영원히 실패한다.
+        if ((await last.count()) === 0 && ! (await isNextDisabled(page))) {
+          test.skip(true, `${screen.name} 총 건수 상한 목록 — 마지막 페이지가 정의되지 않는다`);
+
+          return;
+        }
       }
 
       // 고정 대기 대신 상태가 바뀔 때까지 폴링한다 — 병렬 실행에서 서버 응답이 늦어도

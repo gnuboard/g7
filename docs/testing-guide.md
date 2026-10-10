@@ -29,6 +29,7 @@
 - [테스트 실행 중 발견한 무관 에러 처리](#테스트-실행-중-발견한-무관-에러-처리)
 - [필수 원칙](#필수-원칙)
 - [모듈/플러그인 프론트엔드 테스트 독립성](#모듈플러그인-프론트엔드-테스트-독립성)
+- [DB 를 쓰지 않는 테스트의 커넥션 반납](#db-를-쓰지-않는-테스트의-커넥션-반납)
 - [DDL 트랜잭션 격리 문제](#ddl-트랜잭션-격리-문제)
 - [테스트 작성 패턴](#테스트-작성-패턴)
 - [체크리스트](#체크리스트)
@@ -108,6 +109,29 @@ _bundled 코드 변경 시 module.json 버전 올리기 필수 (업데이트 감
 ```
 
 ---
+
+## DB 를 쓰지 않는 테스트의 커넥션 반납
+
+```
+RefreshDatabase 를 안 쓰는 테스트가 70여 개를 넘기면 SQLSTATE[HY000] [1040] Too many connections
+→ 원인은 테스트 코드가 아니라 커넥션 누수. tearDown 에서 DB::disconnect() 로 반납한다.
+```
+
+DB 를 직접 쓰지 않는 테스트라도 `__()` 다국어 조회 등으로 커넥션이 열린다. `RefreshDatabase` 를 쓰는 테스트는 트레이트가 뒷정리로 `disconnect()` 를 해 주지만, 안 쓰는 테스트는 그 경로가 없어 커넥션이 **테스트당 2개씩**(read/write 분리) 쌓인다. 한 프로세스에서 한도를 넘기는 순간, 그 뒤로 실행되는 **엉뚱한 테스트들이 무더기로** 실패한다 — 실패 지점과 원인 지점이 달라서 원인을 테스트 코드에서 찾으면 시간을 버린다.
+
+증상 판별: 개별 실행은 통과하는데 스위트로 묶으면 `[1040] Too many connections` 가 나고, 실패 건수가 실행 순서 뒷부분에 몰린다.
+
+조치 — 해당 테스트군의 베이스 클래스에서 커넥션을 반납한다:
+
+```php
+protected function tearDown(): void
+{
+    DB::disconnect();
+    parent::tearDown();
+}
+```
+
+`Tests\TestCase` 를 고치지 않는다. 그쪽은 `RefreshDatabase` 테스트와 공유하는데 그 커넥션에는 열린 트랜잭션이 걸려 있어, 뒷정리 순서를 건드리면 롤백이 깨진다. 실제 사례는 `tests/Unit/Support/LayoutMarkup/LayoutMarkupTestCase.php` 참조.
 
 ## 확장 테스트 베이스 클래스
 
@@ -275,6 +299,8 @@ $this->assertSame(20000, $seo['sitemap_urls_per_file']);
 
 ## 기능 단위 시나리오 매트릭스
 
+테스트 코드를 추가하기 전에 소유 시나리오의 입력 조건과 후속 효과를 정의·갱신한다. 기존 테스트 파일에 메서드만 추가하는 경우도 같다. `test_files`로 파일을 연결하고 각 테스트에 `@scenario` 또는 `@effects`를 붙인다. 클래스·파일 상단의 포괄적 마킹이 새 테스트의 매핑을 대신하지 않는다. 매핑 표시는 실제 단언과 대조해야 하며 작성 순서와 단언의 의미는 자동 검증만으로 증명할 수 없다.
+
 ```text
 필수: 신규 기능 또는 도메인 표면 변경 시 시나리오 매니페스트 작성/갱신 (tests/scenarios/<feature>.yaml)
 필수: 매니페스트의 입력 axis cross product 와 후속 효과 체인을 모두 테스트로 커버
@@ -293,6 +319,17 @@ $this->assertSame(20000, $seo['sitemap_urls_per_file']);
 6. 새 모듈/플러그인의 도메인 기능 추가
 
 매니페스트 면제(트리거 외): 단순 리팩토링, 번역 키 추가, 렌더링/스타일 수정, DTO 필드 추가만, 테스트 코드 자체 수정.
+
+### 커버리지 검사 면제는 축 한정으로 적는다
+
+`test-scenario-coverage` 룰은 네 축(`cross_product` · `effects` · `sub_flows` · `test_files`)을 검사한다. 면제가 필요하면 **침묵시킬 축만** 대괄호에 적는다 — 적지 않은 축은 계속 검사된다.
+
+```yaml
+# audit:allow test-scenario-coverage[cross_product] reason: 9축 105,840 조합은 전개가 무의미하고 핵심 회귀는 test_files 가 커버
+feature: ...
+```
+
+대괄호를 생략하면 **네 축 전부**가 침묵한다. 그 형태는 레거시이며 새 매니페스트에서 쓰지 않는다 — 사유에 "핵심 회귀 가드는 `test_files` 의 통과 테스트로 커버" 라고 적으면서 정작 그 `test_files` 존재 검사까지 끄는 자기무효가 되기 때문이다(전면 면제분에서 `test_files` 미존재 34건이 실측됐다). 전면 면제 뒤에 쌓인 결손은 `test-scenario-allow-debt` 가드가 계량·래칫으로 잠그고 있어 더 늘 수 없다.
 
 ### 매니페스트 위치
 
@@ -364,7 +401,7 @@ public function test_pg_payment_member_with_mileage_to_jeju(): void { ... }
 
 TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
 
-정적 검사가 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출한다 (자동 차단).
+자동 검증이 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출한다 (자동 차단).
 
 #### 항목 구분자는 쉼표뿐이다
 
@@ -386,7 +423,41 @@ TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
  */
 ```
 
-구분자 형식은 정적 검사가 강제한다 (자동 차단).
+구분자 형식은 자동 검증이 강제한다 (자동 차단).
+
+#### 한 docblock 은 조합 하나를 덮는다
+
+마커 추출기는 docblock 하나에서 `@scenario` 를 **한 건만** 읽는다. 같은 docblock 에 두 번째 줄을
+더하면 그 조합은 등록되지 않고, cross product 대조가 그 칸을 미커버로 낸다.
+
+DataProvider 로 한 메서드가 여러 조합을 실제로 돌리는 경우는 그래서 다르게 적는다 — 나머지
+조합은 메서드 **바깥의 라인 주석** `// @scenario …` 로 병기한다. 라인 주석 경로의 추출기는
+파일 전체를 훑으므로 PHP 에서도 동작한다.
+
+```php
+// 이 DataProvider 가 함께 검증하는 24조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+// @scenario fee_mode=fixed, claim_type=return, currency=order_snapshot
+// @scenario fee_mode=fixed, claim_type=return, currency=no_snapshot
+// ... (행렬 전건)
+
+/**
+ * @effects claim_shipping_fee_fixed_mode_uses_the_declared_amount
+ */
+#[DataProvider('fixedModeCustomerAxisProvider')]
+public function test_fixed_mode_charges_the_declared_amount(...): void { ... }
+```
+
+병기한 조합은 **그 DataProvider 가 실제로 도는 행**이어야 한다. 행렬과 주석이 어긋나면 커버리지는
+초록인데 그 칸을 아무도 재지 않는 상태가 된다 — 라인 주석은 마커일 뿐 실행되지 않으므로, 주석을
+먼저 늘리고 행을 나중에 채우는 순서는 쓰지 않는다.
+
+#### 마커와 매니페스트는 양방향으로 맞춘다
+
+cross product·effects 대조는 **매니페스트 → 마커** 한 방향이다. 반대 방향 — 테스트가 `@effects X` 로 회귀 핀을 걸었는데 매니페스트의 `effects` 에 `X` 가 없는 경우 — 는 어떤 검사도 잡지 않고 초록으로 남는다.
+
+매니페스트가 커버리지의 단일 출처이므로, 그 누락은 **커버리지가 실제보다 작게 보이는** 결과를 낳는다. 매니페스트만 읽는 다음 작업자에게 그 축은 "덮이지 않은 것" 이고, 하필 빠진 것이 넓게 깨지던 결함의 회귀 핀이면 그 결함이 다시 열린 것처럼 읽힌다.
+
+매니페스트나 그 `test_files` 를 손댄 작업은 두 수를 함께 센다 — `effects` 항목 수와, 그 파일들의 `@effects` 마커가 참조하는 이름의 수. 어긋나면 어느 쪽이 빠졌는지 확인하고 맞춘다.
 
 ### cross product 폭발 관리
 
@@ -395,6 +466,32 @@ TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
 1. `exclusions` 로 의미 없는 조합 제외 (이유 명시 필수)
 2. **Pairwise (all-pairs)** 전략 허용: 매니페스트에 `coverage_strategy: pairwise` 명시 시 모든 axis 쌍의 모든 조합만 커버 (n축 → O(n²) 케이스). 단순 분기형 axis(true/false) 가 많을 때 유효
 3. 그래도 폭발하면 **상위 axis 분리**: 매니페스트를 도메인별로 분할 (예: `order_payment_pg_toss_member.yaml`, `order_payment_pg_toss_guest.yaml`)
+
+#### 여러 세션에 나눠 채우는 매니페스트
+
+축을 늘리면 선언 셀이 곱으로 커져 한 세션에 다 채우지 못할 때가 있다. 이때 축을 **아직 선언하지
+않는** 선택지는 두지 않는다 — 선언하지 않은 축은 모집단에서 빠질 뿐 검사가 울리지 않으므로,
+"재지 않았다" 가 코드 어디에도 남지 않는다.
+
+축은 전부 선언하고, 아직 차례가 오지 않은 몫을 `exclusions` 로 남긴다. 커버리지 검사에는 "미커버"
+를 선언하는 필드가 없어 그것이 유일한 표현 수단이다.
+
+```yaml
+exclusions:
+  # ↓ 제외가 아니라 이월이다. 실재하는 조합이고 언젠가 재어야 하며, 담당이 정해져 있다.
+  - { fee_mode: original_policy, fault: seller, reason: "이월(2단계) — 원 정책 모드의 판매자 귀책 24셀. 제외가 아니라 아직 재지 않은 칸이다" }
+```
+
+검사는 **제외와 이월을 구분하지 못한다.** 둘을 가르는 것은 사유 문구뿐이므로 세 가지를 반드시 적는다 —
+이월이라는 사실 · 셀 수 · 담당(후속 세션/이슈). 셋 중 하나라도 빠지면 다음 사람이 그것을 영구 제외로
+읽고, 그 칸은 다시 열리지 않는다.
+
+담당 세션은 자기 몫의 `exclusions` 줄을 지우는 것으로 착수한다. 지우는 즉시 검사가 미커버 셀을
+열거하므로 몫을 따로 셀 필요가 없다. 마지막 몫까지 지워져 `exclusions` 에 이월 줄이 남지 않는 것이
+그 축이 다 채워졌다는 신호다.
+
+이월이 남아 있는 동안 그 매니페스트의 **선언 셀 수는 전체 곱이 아니라 개방된 수**다. 진척을 적을
+때 둘을 섞지 않는다.
 
 ### 대규모 시나리오 축(scale)
 
@@ -646,6 +743,9 @@ public function comment_count_updates_after_comment_creation(): void
 
 ```
 필수: 테스트 통과 = 작업 완료 (작성만으로 불충분)
+필수: 테스트 출력은 파일로 저장. 결과 열람만을 위한 재실행은 금지하며, 수정·새 실패·사용자 재실행 요청에 따른 재검증은 수행한다
+필수: .env.testing 이 없으면 생성 필요를 먼저 알리고 기존 사용자 허가를 확인한 뒤 예시 파일에서 생성한다
+필수: 백엔드 테스트 전 테스트 DB 가 개발 DB 와 다른지 확인한다 (접속 정보는 출력하지 않는다)
 ```
 
 ---
@@ -1550,3 +1650,136 @@ php artisan test
 
 ---
 
+## 테스트 프로토콜
+```text
+기능 구현 = 테스트 코드 작성 필수
+신규 기능 / 도메인 표면 변경 = 시나리오 매니페스트(tests/scenarios/<feature>.yaml) 작성 의무 — 입력 axis cross product + 후속 효과 체인 전수 커버
+테스트 통과 = 작업 완료 (작성만으로는 완료가 아니다)
+기존 테스트 있음 → 변경사항 반영하여 수정 후 실행
+기능 구현 시 관련된 모든 계층(백엔드+프론트엔드+레이아웃 렌더링) 테스트 필수
+주의: 모듈/플러그인 프론트엔드 테스트는 독립 vitest.config.ts 사용 (루트 config 포함 금지)
+필수: 도메인 매트릭스 = 테스트 위치/형식 가이드. 입력 조합 망라 의무는 시나리오 매니페스트가 SSoT
+필수: 버그 수정은 먼저 실패하는 회귀 테스트 → fail 확인 → 수정 → green 4단계
+필수: 테스트 중 발견한 무관 에러도 같은 작업에서 처리 (stale test 또는 로직 수정)
+필수: 릴리스 전 composer test-smoke 통과
+필수: 프론트엔드(레이아웃 .g7.html·.json / 컴포넌트 TSX / 엔진 TS / 핸들러 TS) 변경 = Playwright E2E spec 동반 추가/수정 + npm run test:e2e 실행
+      자동 검증이 차단 / 면제는 변경 파일 헤더 `// e2e:allow <사유>`
+```
+
+> 상세: [docs/testing-guide.md](testing-guide.md) — 기능 단위 시나리오 매트릭스, 도메인 매트릭스, Pre-release Smoke Suite, 회귀 테스트 4단계, 무관 에러 처리
+
+### 그누보드7 레이아웃 렌더링 테스트
+
+```text
+그누보드7 레이아웃 테스트는 브라우저 기반 E2E가 아니다
+Vitest + createLayoutTest() 유틸리티 사용 → 추가 인프라 불필요
+"인프라 부족" 을 이유로 레이아웃 테스트를 건너뛰지 않는다
+레이아웃 테스트는 해당 레이아웃이 속한 확장 디렉토리에 작성
+모듈 테스트: modules/_bundled/{id}/resources/js/__tests__/layouts/
+템플릿 테스트: templates/_bundled/{id}/__tests__/layouts/
+코어 테스트: resources/js/core/template-engine/__tests__/layouts/
+```
+
+| 특성 | 설명 |
+|------|------|
+| **테스트 환경** | Vitest (jsdom) - 브라우저 불필요 |
+| **렌더링** | DynamicRenderer를 통한 실제 React 렌더링 |
+| **유틸리티** | `createLayoutTest()` - 이미 구축됨 |
+| **API 모킹** | `mockApi()` - fetch 자동 모킹 |
+| **상태 관리** | `getState()`, `setState()` - 즉시 사용 가능 |
+| **액션 트리거** | `triggerAction()` - 핸들러 실행 |
+
+```typescript
+import { createLayoutTest, screen } from '../utils/layoutTestUtils';
+
+const testUtils = createLayoutTest(layoutJson);
+testUtils.mockApi('products', { response: { data: [] } });
+await testUtils.render();
+expect(screen.getByTestId('element')).toBeInTheDocument();
+testUtils.cleanup();
+```
+
+### 테스트 작성 트리거
+
+| 수정 대상 | 테스트 파일 위치 | 테스트 유형 |
+|----------|-----------------|-------------|
+| `app/Models/*.php` | `tests/Unit/Models/*Test.php` | 모델 메서드, 관계, 스코프 |
+| `app/Services/*.php` | `tests/Unit/Services/*Test.php` | 비즈니스 로직 |
+| `app/Enums/*.php` | `tests/Unit/Enums/*Test.php` | Enum 메서드 |
+| `app/Http/Controllers/**/*.php` | `tests/Feature/**/*Test.php` | API 엔드포인트 |
+| `database/migrations/*.php` | 해당 모델/서비스 테스트에서 검증 | 스키마 변경 |
+| `templates/**/src/components/**/*.tsx` | `templates/**/__tests__/*.test.tsx` | 컴포넌트 |
+| `resources/js/core/**/*.ts` | `resources/js/core/__tests__/*.test.ts` | 템플릿 엔진 |
+| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 |
+| `modules/**/resources/layouts/**/*.{json,g7.html}` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
+| `templates/**/layouts/**/*.{json,g7.html}` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+| `plugins/**/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 플러그인 레이아웃 렌더링 |
+| `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` | 확장 주입 fragment 렌더링 |
+
+### 기능 구현 시 전 계층 테스트
+
+| 작업 유형 | 백엔드 (PHPUnit) | 프론트엔드 (Vitest) | 레이아웃 렌더링 (Vitest) |
+| ---------- | ----------------- | ------------------- | ---------------------- |
+| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 렌더링 테스트 (`.g7.html` 소스는 컴파일된 JSON 을 렌더 검증) |
+| 기존 화면 수정 | 변경된 API 테스트 | 변경된 컴포넌트 테스트 | 레이아웃 렌더링 회귀 테스트 |
+| 데이터 흐름 변경 | Service/Repository 테스트 | 상태 관리 테스트 | 데이터 바인딩 렌더링 테스트 |
+
+### Windows 환경 테스트 규칙
+
+```text
+프론트엔드 (npm/Vitest) → PowerShell 래퍼 필수
+백엔드 (PHPUnit/Laravel) → Bash 직접 실행
+```
+
+**프론트엔드 (템플릿 디렉토리에서 실행 권장)**:
+
+```bash
+# 템플릿 디렉토리에서 실행 (해당 템플릿만 테스트)
+cd templates/sirsoft-admin_basic
+powershell -Command "npm run test:run"              # 전체
+powershell -Command "npm run test:run -- DataGrid"  # 특정 테스트
+
+# 루트에서 실행 (모든 테스트)
+powershell -Command "npm run test:run"
+powershell -Command "npm run test:run -- template-engine"  # 코어 테스트
+```
+
+**백엔드**:
+
+```bash
+php artisan test
+php artisan test --filter=TestName
+```
+
+**_bundled 확장 테스트 (활성 디렉토리 복사 불필요)**:
+
+```bash
+# _bundled 모듈 테스트 직접 실행
+php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests
+php vendor/bin/phpunit --filter=ShippingPolicyControllerTest modules/_bundled/sirsoft-ecommerce/tests
+
+# _bundled 모듈 프론트엔드 테스트
+cd modules/_bundled/sirsoft-ecommerce
+powershell -Command "npm run test:run"
+```
+
+### 필수 준수 사항
+
+```text
+필수: 기능 구현 시 모든 계층(백엔드+프론트엔드+레이아웃) 테스트 포함
+필수: 테스트 통과 확인 후 완료 선언 (기존 테스트 유지 — 삭제/skip 금지)
+필수: createLayoutTest() 유틸리티 활용 (추가 인프라 불필요)
+```
+
+> 상세: [testing-guide.md](testing-guide.md) | [layout-testing.md](frontend/layout-testing.md)
+
+## npm install 규칙
+기본 `npm install`은 `package-lock.json`을 자동 수정할 수 있으므로, lock 파일 변경 의도가 없는 의존성 복구나 작업 환경 재구성에는 `npm install --package-lock=false`를 사용합니다.
+
+| 상황 | 권장 명령어 | 비고 |
+| ---- | ----------- | ---- |
+| 누락 의존성 복구 / 작업 환경 재구성 | `npm install --package-lock=false` | lock 파일 변경 없이 설치 |
+| clean install | `npm ci` | `package.json`과 `package-lock.json`이 동기화된 경우 |
+| 의존성 신규 추가/업데이트 | `npm install <pkg>` | lock 변경이 작업 범위에 포함된 경우만 |
+
+lock 파일 변경 의도가 없는 상황에서 `npm install` 단독 실행을 피합니다. `module.json`, `plugin.json`, `template.json`의 `version`을 바꾸면 해당 확장의 `package.json`, `package-lock.json`, `composer.json` 버전도 함께 동기화합니다. 의존성 재설치 없이 lock 파일의 version 필드만 갱신할 때는 `npm install --package-lock-only`를 사용합니다.

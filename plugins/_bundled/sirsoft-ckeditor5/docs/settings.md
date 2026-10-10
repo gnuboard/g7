@@ -15,7 +15,7 @@
 | `unusedImageCleanup` | `boolean` | `false` | 미사용 이미지 자동 정리 |
 | `unusedImageRetentionDays` | `integer` | `30` | 미사용 이미지 보존기간 (일) |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -32,12 +32,26 @@
 않는 디스크 값이 들어오면 `resolvePublicAssetDisk()` 가 스트리밍 서빙으로 안전하게 폴백하므로,
 설정 오타가 이미지 소실로 이어지지는 않습니다.
 
+저장했던 디스크를 등록하던 확장이 꺼져 값이 카탈로그에서 사라지면, 코어의 설정 응답이 값을
+실제 동작인 스트리밍(`none`)으로 바꿔 싣고 옛 디스크 이름을 `public_asset_disk_unavailable`
+로 함께 내려줍니다. 설정 화면은 이 키가 있을 때 선택 칸 아래에 "쓸 수 없게 된 디스크" 안내
+(`role="status"`)를 보여 줍니다 — 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이기 때문입니다.
+저장 성공 핸들러는 이 키를 **응답값**(`response.data?.public_asset_disk_unavailable ?? null`)으로
+덮어씁니다. 뒤따르는 `settings` 재조회는 응답에 없는 폼 키를 지우지 않으므로, 이 덮어쓰기를
+빼면 새 디스크를 골라 저장한 뒤에도 옛 안내가 남습니다. 이 키는 화면 표시용이라 저장 시
+스키마 whitelist 가 걸러 설정에 남지 않습니다.
+
 `unusedImageCleanup` 의 기본값이 `false` 인 것은 **의도적인 보수 설정**입니다. 참조 판정이
 다른 확장들의 훅 등록에 의존하므로 사이트마다 정확도가 다를 수 있고, 잘못 지운 이미지는
 되돌릴 수 없습니다.
 
-설정 화면은 `resources/layouts/admin/plugin_settings.json` 이 그립니다 — 코어가 플러그인
+설정 화면은 `resources/layouts/admin/plugin_settings.g7.html` 이 그립니다 — 코어가 플러그인
 디렉토리의 이 고정 경로를 찾으므로 파일 이름을 바꾸면 설정 화면 자체가 사라집니다.
+
+저장에 성공하면 화면이 전역 상태 `plugins.sirsoft-ckeditor5` 하나만 새 값으로 바꿉니다. 전역
+`plugins` 는 코어 소유 공개 계약이라 확장은 자기 식별자 하위 키에만 쓸 수 있습니다 — 예전처럼
+`plugins` 전체를 사본으로 다시 쓰면 그 사이 다른 확장이 바꾼 값을 되돌릴 수 있고, 정적 검사
+(`state-contract-write-ownership`)가 막습니다.
 <!-- @intent END -->
 
 ## 권한
@@ -73,7 +87,7 @@
 갑니다.
 
 설정 화면은 이 메뉴에 없습니다 — 코어의 플러그인 목록에서 이 플러그인의 설정으로 들어가는
-공통 경로를 씁니다. 플러그인 설정은 코어가 `resources/layouts/admin/plugin_settings.json` 을
+공통 경로를 씁니다. 플러그인 설정은 코어가 `resources/layouts/admin/plugin_settings.g7.html` 을
 찾아 그리므로 자체 메뉴가 필요하지 않습니다.
 
 메뉴는 권한과 짝을 이룰 때만 보입니다 — `sirsoft-ckeditor5.uploads.read` 가 없는 역할에는

@@ -1,0 +1,114 @@
+<!-- 브랜드 보기 패널. 값을 새로 불러오지 않고 목록이 전역에 실어 둔 행(`_global.selectedBrand`)만
+  읽는다 — 상세 API 가 따로 없다는 뜻이고, 화면에 안 나오는 필드가 있으면 원인은 목록 응답에 있다.
+  아래 두 버튼이 이 화면의 유일한 출구다: 편집은 같은 값을 폼의 `_local.form` 으로 옮겨 담아
+  편집 모드로 넘기고, 삭제는 확인 창이 필요한 값을 `_global.modal_data` 에 채운 뒤 창을 연다.
+  두 버튼 모두 서버가 내려준 권한(`abilities`)으로 잠긴다 — 권한이 없으면 눌리지 않는다. -->
+<partial description="Brand View Panel - Read-only Brand Details">
+  <div data-ref="view_panel" data-if="{{_global.selectedBrandId &amp;&amp; _global.panelMode === 'view'}}">
+    <div data-ref="view_header" class="px-4 panel-header">
+      <h3 class="text-heading">$t:sirsoft-ecommerce.admin.brand.info.title</h3>
+    </div>
+    <div data-ref="view_content" class="divider-list p-4">
+      <div class="py-4 first:pt-0">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.brand.info.basic</h4>
+        <div class="grid-2col-responsive">
+          <div>
+            <div>
+              <span class="form-sub-label">$t:sirsoft-ecommerce.admin.brand.info.slug</span>
+              <span class="text-primary block text-sm font-mono">{{_global.selectedBrand?.slug}}</span>
+            </div>
+            <div class="">
+              <span class="form-sub-label">$t:sirsoft-ecommerce.admin.brand.info.name</span>
+              <div data-each="nameEntry in {{Object.entries(_global.selectedBrand?.name || {})}}">
+                <div data-if="{{nameEntry[1]}}">
+                  <span class="text-hint inline-block w-8 uppercase">{{nameEntry[0]}}</span>
+                  <span class="text-primary text-sm">{{nameEntry[1]}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div>
+              <span class="form-sub-label">$t:sirsoft-ecommerce.admin.brand.info.website</span>
+              <a data-if="{{_global.selectedBrand?.website}}" href="{{_global.selectedBrand?.website}}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+                <span>{{_global.selectedBrand?.website}}</span>
+                <icon name="external-link" class="text-xs"/>
+              </a>
+              <span data-if="{{!_global.selectedBrand?.website}}" class="block text-sm text-gray-400 dark:text-gray-500">-</span>
+            </div>
+            <div>
+              <span class="form-sub-label">$t:sirsoft-ecommerce.admin.brand.info.status</span>
+              <span data-if="{{_global.selectedBrand?.is_active}}" class="inline-block px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded">$t:sirsoft-ecommerce.common.active</span>
+              <span data-if="{{!_global.selectedBrand?.is_active}}" class="text-secondary inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:sirsoft-ecommerce.common.inactive</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_statistics" class="py-4">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.brand.info.statistics</h4>
+        <div class="grid grid-cols-1 gap-3">
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div class="flex-center gap-3">
+              <div class="flex-center w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg justify-center">
+                <icon name="box" size="lg" class="text-blue-600 dark:text-blue-400"/>
+              </div>
+              <div>
+                <p class="text-xs text-secondary">$t:sirsoft-ecommerce.admin.brand.info.products_count</p>
+                <p class="text-page-heading">{{_global.selectedBrand?.products_count ?? 0}}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="py-4 last:pb-0">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.brand.info.system</h4>
+        <div class="grid-2col-responsive">
+          <div>
+            <div class="text-tertiary">$t:sirsoft-ecommerce.common.created_at</div>
+            <div class="flex-center text-primary gap-1.5 text-sm">
+              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+              <span>{{_global.selectedBrand?.created_at}}</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-tertiary">$t:sirsoft-ecommerce.common.updated_at</div>
+            <div class="flex-center text-primary gap-1.5 text-sm">
+              <icon name="clock" class="text-base text-gray-400 dark:text-gray-500"/>
+              <span>{{_global.selectedBrand?.updated_at}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="view_footer" class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex-center gap-3">
+        <button disabled="{{_global.selectedBrand?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 편집 진입 — 모드를 바꾸는 것만으로는 빈 폼이 뜬다. 보고 있던 브랜드를 폼의 `_local.form` 에 부어 주는 이 자리가 편집 초깃값의 유일한 출처다(폼은 상세를 다시 부르지 않는다). -->
+            <sequence>
+              <set-state target="global" panelMode="edit"/>
+              <set-state target="local" form="{{_global.selectedBrand}}" :isSaving="false" :errors="null"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.common.edit
+        </button>
+        <button class="flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.selectedBrand?.abilities?.can_delete !== true}}">
+          <on type="click">
+            <!-- 삭제 확인 창 열기 — 창은 스스로 조회하지 않으므로 필요한 셋(id·이름·연결 상품 수)을 여기서 채워 넘긴다. 특히 상품 수는 창의 삭제 버튼 잠금 조건이라, 빠뜨리면 0 으로 읽혀 막아야 할 삭제가 열린다. -->
+            <sequence>
+              <set-state target="global">
+                <field name="modal_data">
+                  <field name="brandId" value="{{_global.selectedBrandId}}"/>
+                  <field name="brandName" value="{{$localized(_global.selectedBrand?.name)}}"/>
+                  <field name="productsCount" value="{{_global.selectedBrand?.products_count ?? 0}}"/>
+                </field>
+              </set-state>
+              <open-modal target="delete_confirm_modal"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.common.delete
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

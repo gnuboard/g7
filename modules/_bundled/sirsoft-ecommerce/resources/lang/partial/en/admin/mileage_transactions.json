@@ -68,7 +68,8 @@
     "partial_expired": "Partially Expired",
     "expired_amount": "{{amount}} expired",
     "unlimited": "Unlimited",
-    "none": "-"
+    "none": "-",
+    "deleted_member": "Deleted member"
   },
   "row_action": {
     "expand": "View Detail",
@@ -119,10 +120,12 @@
   "modal_extend": {
     "title": "Extend Expiry",
     "days": "Extension Days",
-    "days_suffix": "day(s)",
+    "days_suffix": "days",
+    "days_suffix_one": "day",
     "submit": "Extend",
     "submitting": "Processing...",
-    "selected_lots": "Extend expiry for {{count}} selected grant lot(s).",
+    "selected_lots": "Extend expiry for {{count}} selected grant lots.",
+    "selected_lots_one": "Extend expiry for {{count}} selected grant lot.",
     "validation_error": "Please check your input.",
     "field_days": "Extension days"
   },

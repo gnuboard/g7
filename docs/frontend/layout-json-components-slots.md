@@ -94,6 +94,20 @@
 
 사용자가 체크박스를 클릭하면 필터가 "기본 필터"와 "상세 필터" 사이를 이동:
 
+```html
+<div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
+  <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
+    <on type="change">
+      <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"/>
+      <save-to-local-storage key="g7_product_filter_visible_filters" value="{{}}"/>
+    </on>
+  </input>
+  <span>$t:category_label</span>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "category_filter_row",
@@ -144,6 +158,17 @@
 ```
 
 **SlotContainer 배치**:
+
+```html
+<div data-ref="basic_filter_section">
+  <slot-container data-ref="basic_filters_slot" slotId="basic_filters" class="flex flex-col"/>
+</div>
+<div data-ref="detail_filter_wrapper" data-if="{{_local.showDetailFilter}}">
+  <slot-container data-ref="detail_filters_slot" slotId="detail_filters" class="flex flex-col"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -285,6 +310,22 @@
 ```
 
 ### component_layout 기본 구조
+
+```html
+<rich-select value="{{_global.selectedFile}}" options="{{files?.data?.map(f => ({ value: f.name, label: f.name, name: f.name, size: f.size }))}}" placeholder="$t:common.select_file">
+  <template slot="item">
+    <div class="flex flex-col">
+      <span>{{item.name}}</span>
+      <span>{{item.size}}</span>
+    </div>
+  </template>
+  <template slot="selected">
+    <span>{{item.name}}</span>
+  </template>
+</rich-select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

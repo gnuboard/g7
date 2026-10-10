@@ -1,0 +1,23 @@
+feature: 사용자 템플릿 접근성 — 가입 동의 칸 이름·모바일 서랍 Esc·아바타 미리보기 대체 글
+
+description: |
+  7.1.0 잔여 관측 O-N6·O-N7(→ R-18·R-21·R-22)에서 화면 낭독기와 키보드 사용자가 막히던 세 곳.
+    - 회원가입 필수 동의 체크박스에 접근 가능한 이름이 없었고, 곁 문구가 label 이라 「전문 보기」 버튼 이름이
+      「(필수)」로 읽혔다 — 체크박스에 번역 aria-label 을 달고 곁 문구는 label 이 아닌 요소로 둔다.
+    - 모바일 메뉴 서랍이 Esc 로 닫히지 않았다 — 화면 뿌리가 Esc 를 받아 서랍이 열려 있을 때만 닫는다.
+    - 아바타 업로더 미리보기 그림의 대체 글이 영어 고정 「Preview」였다 — 번역 키를 거친다.
+
+axes:
+  surface: [user_register, user_mobile_drawer, user_avatar_uploader]
+
+effects:
+  - register_required_agreements_have_accessible_names
+  - mobile_drawer_closes_on_escape
+  # 닫힌 모바일 서랍은 Tab·화면 읽기에서 빠진다(2026-10-07 재실측)
+  - closed_mobile_drawer_is_hidden_from_keyboard_and_screen_readers
+  - avatar_preview_alt_is_translated
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/auth-register-terms-checkbox-name.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/user-base-mobile-drawer-escape.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/AvatarUploader.previewAlt.test.tsx

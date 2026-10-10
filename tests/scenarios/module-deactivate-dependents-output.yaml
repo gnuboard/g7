@@ -1,0 +1,17 @@
+feature: module:deactivate — 비활성화를 거절할 때 의존하는 확장 안내
+
+description: |
+  Hello 플러그인(Hello 모듈에 의존)을 켜 둔 채 module:deactivate 를 실행하면 거절(종료 코드 1)은 됐지만
+  「의존하는 템플릿 목록:」 제목만 나오고 목록이 비어 무엇 때문에 거절됐는지 알 수 없었다(7.1.0 전수 실측 M3).
+  모듈 관리자는 의존하는 템플릿, 모듈, 플러그인을 모두 돌려주는데 명령은 템플릿만 출력했다. plugin:deactivate 와 같이
+  세 종류를 모두, 있는 것만 보여 준다. 축 dependent 는 의존하는 확장의 종류다.
+
+axes:
+  dependent: [plugin, module, template]
+
+effects:
+  - lists_dependent_plugins_and_modules
+  - lists_dependent_templates_as_before
+
+test_files:
+  - tests/Feature/Console/Commands/Module/DeactivateModuleDependentsOutputTest.php

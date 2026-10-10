@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 상세설명 구획. 편집기는 플러그인이 갈아 끼울 수 있는 자리(`extension-point`)로 두고,\n  설치된 플러그인이 없으면 기본 편집기가 선다. 본문은 언어별로 나뉘고, 글/HTML 중 어느 모드로\n  저장할지도 함께 기억한다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Description Section"
@@ -13,6 +14,17 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.descriptionExpanded": "{{!_local.ui.descriptionExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -41,16 +53,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.descriptionExpanded": "{{!_local.ui.descriptionExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -75,35 +77,25 @@
                             "type": "extension_point",
                             "name": "html_editor",
                             "props": {
-                                "name": "description",
                                 "multilingual": true,
                                 "value": "{{_local.form?.description ?? ''}}",
                                 "rows": 15,
                                 "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
                                 "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                "disabled": "{{_computed.isReadOnly}}",
                                 "showHtmlModeToggle": true,
-                                "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
+                                "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}",
+                                "name": "description"
                             },
                             "default": [
                                 {
                                     "type": "composite",
                                     "name": "HtmlEditor",
-                                    "props": {
-                                        "name": "description",
-                                        "multilingual": true,
-                                        "value": "{{_local.form?.description ?? ''}}",
-                                        "rows": 15,
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
-                                        "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
-                                        "showHtmlModeToggle": true,
-                                        "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
-                                    },
                                     "actions": [
                                         {
-                                            "event": "onChange",
+                                            "comment": "본문이 바뀌면 변경 표시를 세운다 — 저장 버튼이 이 표시를 보고 열린다",
                                             "type": "change",
+                                            "event": "onChange",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
@@ -112,8 +104,9 @@
                                             }
                                         },
                                         {
-                                            "event": "onIsHtmlChange",
+                                            "comment": "글/HTML 모드 전환도 저장 대상이다 — 앞단이 이 값을 보고 본문을 그대로 뿌릴지 escape 할지 가른다",
                                             "type": "change",
+                                            "event": "onIsHtmlChange",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
@@ -121,7 +114,18 @@
                                                 "hasChanges": true
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "description",
+                                        "multilingual": true,
+                                        "value": "{{_local.form?.description ?? ''}}",
+                                        "rows": 15,
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "showHtmlModeToggle": true,
+                                        "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
+                                    }
                                 }
                             ]
                         }

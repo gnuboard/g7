@@ -1,0 +1,68 @@
+feature: 사용자 글쓰기 경로의 특권 필드 권한 검사 (공지 지정 · 상태 · 비밀글 전환 · 작성자명)
+
+description: |
+  커뮤니티 제보(2026-09-17): 게시판 관리 권한이 없는 일반 회원이 글 작성·수정 요청에
+  is_notice=true 를 실어 보내면 공지로 등록됐다. 화면은 공지 옵션을 관리 권한자에게만
+  보여 줬지만 UI 은닉일 뿐 서버가 검사하지 않았다. 전수 조사에서 같은 계열 결함 3건을
+  함께 찾았다.
+
+  계층 결정 (확정):
+    - 게이트는 컨트롤러(User\PostController). FormRequest 에 권한 검사를 두지 않는다
+    - 거부는 403 오류. 조용히 false 로 바꾸지 않는다
+    - 공지 등록 권한(posts.write-notice) 신설 — 기본 admin, 게시판 관리자·스텝은 자동 주입
+    - 게시판 관리 권한(admin.manage / manager)은 상위 권한이라 공지 지정도 인정
+    - status 는 FormRequest 허용값 축소(published 만) — 권한 검사가 아니라 허용값 문제
+    - 수정 경로는 값이 "바뀔 때만" 판정한다. 수정 폼이 서버가 준 기존 값을 통째로 되돌려
+      보내므로, 권한자가 공지로 지정한 글을 작성자가 고칠 때 같은 값이 다시 오는 것은 통과
+  기존 설치본: 1.2.0 업그레이드가 기존 게시판마다 권한 행을 만들고(05), 저장된 기본 권한
+  설정에 키를 기입한다(04) — 기입하지 않으면 업그레이드 뒤 새로 만든 게시판의 스텝이
+  공지를 등록할 수 없다.
+
+axes:
+  case:
+    - member_store_notice_denied
+    - member_update_notice_denied
+    - member_unset_notice_denied
+    - author_resends_existing_notice
+    - notice_holder_store_notice
+    - manager_store_notice
+    - step_store_notice
+    - guest_store_notice_rejected
+    - member_store_plain
+    - member_store_blinded_rejected
+    - member_comment_blinded_rejected
+    - member_update_secret_on_disabled_board_denied
+    - existing_secret_resent_on_disabled_board
+    - always_board_update_keeps_secret
+    - member_author_name_ignored
+    - form_meta_exposes_notice_ability
+    - upgrade_seeds_existing_boards
+    - upgrade_backfills_saved_defaults
+
+exclusions: []
+
+effects:
+  - notice_request_forbidden_without_permission
+  - no_post_row_created_on_denied_store
+  - post_notice_flag_unchanged_on_denied_update
+  - unchanged_notice_value_passes_for_author
+  - notice_permission_holder_can_set_notice
+  - board_manager_role_injected_with_notice_permission
+  - board_step_role_injected_with_notice_permission
+  - guest_notice_rejected_by_validation
+  - plain_post_unaffected
+  - privileged_status_rejected_by_validation
+  - comment_privileged_status_rejected_by_validation
+  - secret_toggle_forbidden_on_disabled_board
+  - existing_secret_value_passes_on_disabled_board
+  - secret_forced_on_always_board
+  - member_author_name_not_persisted
+  - notice_ability_follows_notice_permission
+  - existing_board_gets_notice_permission_with_default_roles
+  - upgrade_seed_is_idempotent
+  - saved_default_permissions_gain_notice_key
+  - operator_adjusted_default_left_untouched
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostNoticePermissionTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/WriteNoticePermissionUpgradeTest.php

@@ -1,25 +1,11 @@
 {
+    "comment": "회원 등록·수정 폼. **한 레이아웃이 두 모드를 겸한다** — `route.id` 유무로 제목·요청 메서드·주소가\n  갈리고, 등록 모드에서는 아래 회원 조회 자체가 돌지 않는다(`if=\"{{route?.id}}\"`).\n  입력값은 `_local.form` 한 덩어리로 모아 두었다가 저장 때 통째로 보낸다.\n  탭 5개는 화면을 나눌 뿐 저장은 한 번이다 — 어느 탭에 있든 하단 저장 버튼이 전부를 낸다.\n  저장은 코어 회원 API 한 번뿐이다 — 모듈이 주입한 칸(예: 이커머스 통화·배송국가)도 `_local.form` 에\n  실려 같은 요청으로 가고, 그 모듈이 코어 훅으로 검증·저장한다. 검증 오류도 같은 `_local.errors` 로 돌아온다.",
     "version": "1.0.0",
     "layout_name": "admin_user_form",
-    "permissions": {
-        "or": [
-            "core.users.create",
-            "core.users.update"
-        ]
-    },
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}",
-        "description": "{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"
-    },
-    "state": {
-        "activeTab": "basic_info"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "user",
-            "roles"
-        ]
+        "description": "{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"
     },
     "data_sources": [
         {
@@ -34,7 +20,7 @@
             "initLocal": "form",
             "refetchOnMount": true,
             "errorCondition": {
-                "if": "{{response?.data?.abilities?.can_update !== true}}",
+                "if": "{{response?.data?.abilities?.can_update === false}}",
                 "errorCode": 403
             },
             "errorHandling": {
@@ -59,7 +45,43 @@
             },
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "수정할 회원. 응답을 `_local.form` 으로 바로 풀어 폼 초기값을 만든다(`initLocal`).\n       권한을 **응답 뒤에 한 번 더 본다** — 조회는 되지만 수정 권한이 없는 경우가 있어\n       `abilities.can_update` 가 false 면 스스로 403 으로 접는다(응답에 abilities 가 아예 없으면 접지 않고 저장 때 서버가 막는다). 어떤 실패든 화면을 에러로 갈아끼우는\n       이유는, 폼이 빈 채로 뜨면 \"새 회원 등록\" 으로 읽히고 저장하면 엉뚱한 것이 만들어지기 때문이다."
+        },
+        {
+            "id": "user_check",
+            "label_key": "$t:editor.data_source.user_check",
+            "type": "api",
+            "endpoint": "/api/admin/users",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{!route?.id}}",
+            "params": {
+                "per_page": 1
+            },
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_create === false}}",
+                "errorCode": 403
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다(역할 폼의 role_check 와 같은 방식). 목록 응답의\n       `abilities.can_create` 가 false 면 화면을 403 으로 접는다 — 수정 권한만 가진 운영자가 등록 화면에 들어와\n       폼을 다 채운 뒤 저장에서 403 을 받는 것을 막는다. 받은 데이터 자체는 화면에서 쓰지 않는다."
         },
         {
             "id": "roles",
@@ -86,9 +108,19 @@
             },
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "부여 가능한 역할 목록(활성 역할만). 회원 조회와 달리 실패해도 화면을 접지 않고 토스트만 띄운다 —\n       역할 칸이 비는 것이지 폼 전체가 못 쓰게 되는 것은 아니다. 403 만 예외로 에러 화면이다."
         }
     ],
+    "initLocal": {
+        "activeTab": "basic_info"
+    },
+    "permissions": {
+        "or": [
+            "core.users.create",
+            "core.users.update"
+        ]
+    },
     "defines": {
         "countryList": [
             {
@@ -285,6 +317,45 @@
             }
         ]
     },
+    "transition_overlay": {
+        "wait_for": [
+            "user",
+            "user_check",
+            "roles"
+        ]
+    },
+    "init_actions": [
+        {
+            "comment": "생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다.",
+            "handler": "setState",
+            "if": "{{!route?.id}}",
+            "params": {
+                "target": "local",
+                "form": null,
+                "hasChanges": false
+            }
+        },
+        {
+            "comment": "생성 모드 기본값 — 비밀번호 만료 개별 설정은 「역할·사이트 설정 따름」에서 시작한다(#736). 위에서 form 을 비운 뒤라\n         이 한 키만 담긴다.",
+            "handler": "setState",
+            "if": "{{!route?.id}}",
+            "params": {
+                "target": "local",
+                "form.password_expiry_policy": "inherit"
+            }
+        },
+        {
+            "comment": "수정 모드: 다른 회원의 수정 화면에서 SPA 로 넘어오면 `_local.form` 이 남고, 회원 데이터 소스(initLocal)는 기록에 있는 키만\n         덮어써 비밀번호 칸은 그대로 남는다 — 직전 회원에 입력하다 만 비밀번호가 이 회원 폼에 실려 저장되면 이 회원의 비밀번호가\n         바뀌고 다음 로그인 때 변경을 요구받는다(#736 S2 실측). 진입마다 세 칸을 비운다.",
+            "handler": "setState",
+            "if": "{{!!route?.id}}",
+            "params": {
+                "target": "local",
+                "form.password": "",
+                "form.password_confirmation": "",
+                "form.current_password": ""
+            }
+        }
+    ],
     "slots": {
         "content": [
             {
@@ -317,6 +388,17 @@
                                 "id": "user_form_tabs",
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
+                                "actions": [
+                                    {
+                                        "comment": "탭 전환은 화면만 바꾼다 — 입력값은 `_local.form` 에 그대로 남으므로 탭을 옮겨 다녀도\n                 쓰던 것이 사라지지 않는다(탭마다 저장하지 않는 이유).",
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeTab": "{{$event.value}}"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "activeTabId": "{{_local.activeTab ?? 'basic_info'}}",
                                     "enableScrollSpy": true,
@@ -344,19 +426,19 @@
                                             "id": "activity_info",
                                             "label": "$t:admin.users.detail.tabs.activity_info",
                                             "if": "{{route?.id}}"
+                                        },
+                                        {
+                                            "id": "consent_info",
+                                            "label": "$t:admin.users.detail.tabs.consent_info",
+                                            "if": "{{route?.id}}"
+                                        },
+                                        {
+                                            "id": "notifications_info",
+                                            "label": "$t:admin.users.detail.tabs.notifications_info",
+                                            "if": "{{route?.id}}"
                                         }
                                     ]
-                                },
-                                "actions": [
-                                    {
-                                        "type": "change",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "activeTab": "{{$event.value}}"
-                                        }
-                                    }
-                                ]
+                                }
                             }
                         ]
                     },
@@ -469,12 +551,12 @@
                                                         "type": "basic",
                                                         "name": "Ul",
                                                         "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                        "props": {
-                                                            "className": "mt-2 list-disc list-inside space-y-1"
-                                                        },
                                                         "iteration": {
                                                             "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                             "item_var": "message"
+                                                        },
+                                                        "props": {
+                                                            "className": "mt-2 list-disc list-inside space-y-1"
                                                         },
                                                         "children": [
                                                             {
@@ -545,61 +627,13 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면\n                 상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라\n                 잠긴다(종전과 같다).",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
                                                     "className": "grid-2col-responsive"
                                                 },
                                                 "children": [
-                                                    {
-                                                        "id": "field_email_top",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "text": "$t:admin.users.form.fields.email"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "text-red-500 ml-1"
-                                                                        },
-                                                                        "text": "*"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "email",
-                                                                    "name": "email",
-                                                                    "placeholder": "$t:admin.users.form.fields.email",
-                                                                    "disabled": "{{!!route?.id}}",
-                                                                    "className": ""
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{_local.errors?.email}}",
-                                                                "props": {
-                                                                    "className": "text-red-500 text-xs mt-1"
-                                                                },
-                                                                "text": "{{_local.errors?.email?.[0] ?? ''}}"
-                                                            }
-                                                        ]
-                                                    },
                                                     {
                                                         "id": "field_name",
                                                         "type": "basic",
@@ -647,11 +681,37 @@
                                                                 "text": "{{_local.errors?.name?.[0] ?? ''}}"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "id": "field_nickname",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.nickname"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "name": "nickname",
+                                                                    "placeholder": "$t:admin.users.form.fields.nickname",
+                                                                    "className": ""
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             },
                                             {
-                                                "id": "field_nickname",
+                                                "comment": "역할. 수정에서는 필수이고, 등록에서는 비워 두면 서버가 기본 역할(일반 사용자)을 준다 —\n                 역할 부여 권한이 없는 운영자는 이 칸이 잠긴 채 등록하므로, 등록에서 필수로 표시하면\n                 채울 수 없는 칸을 요구하는 셈이 된다. 잠금 판정에서 회원 응답의 `can_assign_roles` 는 수정 모드에서만\n                 읽는다 — 수정 → 등록 SPA 이동 뒤에도 `user` 데이터소스에 직전 회원 응답이 남아 있다.",
+                                                "id": "field_roles",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "children": [
@@ -661,21 +721,150 @@
                                                         "props": {
                                                             "className": "form-label"
                                                         },
-                                                        "text": "$t:admin.users.form.fields.nickname"
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.users.form.fields.role"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!!route?.id}}",
+                                                                "props": {
+                                                                    "className": "text-red-500 ml-1"
+                                                                },
+                                                                "text": "*"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "TagInput",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "역할 선택. 표시값은 저장된 `role_ids` 를 먼저 보고 없으면 조회 응답의 역할 객체에서\n                       id 만 뽑아 쓰지만(수정 진입 직후), 저장에 실리는 것은 언제나 이 `role_ids` 다.",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form": {
+                                                                        "role_ids": "{{$event.target.value}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "name": "role_ids",
+                                                            "value": "{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}",
+                                                            "options": "{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}",
+                                                            "placeholder": "$t:admin.users.form.fields.role_placeholder",
+                                                            "noOptionsMessage": "$t:admin.users.form.fields.role_no_options",
+                                                            "className": "w-full",
+                                                            "defaultVariant": "blue",
+                                                            "disabled": "{{route?.id ? user?.data?.abilities?.can_assign_roles !== true : roles?.data?.abilities?.can_assign_roles !== true}}"
+                                                        }
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Input",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.role_ids || _local.errors?.roles}}",
                                                         "props": {
-                                                            "type": "text",
-                                                            "name": "nickname",
-                                                            "placeholder": "$t:admin.users.form.fields.nickname",
-                                                            "className": ""
+                                                            "className": "text-red-500 text-xs mt-1"
+                                                        },
+                                                        "text": "{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!route?.id}}",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                        },
+                                                        "text": "$t:admin.users.form.fields.role_default_hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_status",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.form.fields.status"
+                                                    },
+                                                    {
+                                                        "comment": "커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다.\n                   수정 모드에만 탈퇴·휴면·가입대기를 둔다 — 셋 다 \"그 상태가 되기까지의 이력\"(탈퇴 처리·장기 미접속·인증 미완료)이 전제라 생성으로 건너뛰면 그 이력을 가진 회원과 구분되지 않는다. 휴면이 빠져 있으면 휴면 회원을 열었을 때 select 값이 옵션에 없어 칸이 빈다.",
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.status": "{{$event.target.value}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "name": "status",
+                                                            "className": "w-full",
+                                                            "value": "{{_local.form?.status ?? 'active'}}",
+                                                            "options": "{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}, {label: '$t:admin.users.form.status_options.dormant', value: 'dormant'}, {label: '$t:admin.users.form.status_options.pending_verification', value: 'pending_verification'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}"
                                                         }
                                                     }
                                                 ]
                                             },
                                             {
+                                                "comment": "이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는\n                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에\n                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.\n                 `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,\n                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 영역 C 실측). 새 회원은 늘 미인증으로 시작한다.",
+                                                "id": "field_email_verified",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.email_verification"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-center gap-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "if": "{{!!route?.id && user?.data?.email_verified_at}}",
+                                                                "props": {
+                                                                    "name": "check-circle",
+                                                                    "className": "text-base text-green-500"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{route?.id && user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_password_group",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
@@ -774,9 +963,83 @@
                                                 ]
                                             },
                                             {
-                                                "id": "field_roles",
+                                                "comment": "켜진 비밀번호 규칙을 한 줄로 안내한다(보안 환경설정 값 — 서버가 같은 규칙으로 검사한다). 재사용 금지는 본인 계정일 때만\n                 검사하므로(다른 회원에게 정해 주는 비밀번호는 검사하지 않는다) 본인일 때만 붙인다.",
+                                                "id": "password_rules_hint",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!_global.settings?.security?.require_password_special_char}}",
+                                                        "text": "$t:auth.password_rules.special"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!_global.settings?.security?.password_require_char_types}}",
+                                                        "text": "$t:auth.password_rules.char_types"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!_global.settings?.security?.password_block_identifier}}",
+                                                        "text": "$t:auth.password_rules.identifier"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!_global.settings?.security?.password_block_repeated_chars}}",
+                                                        "text": "$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!_global.settings?.security?.password_block_sequential_chars}}",
+                                                        "text": "$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_global.settings?.security?.password_reuse_prevention_enabled}}",
+                                                        "text": "$t:auth.password_rules.reuse|count={{_global.settings?.security?.password_reuse_count ?? 3}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "다른 회원의 비밀번호를 정해 주면 그 회원은 다음 로그인 때 본인이 바꿔야 한다(D11 — 서버가 플래그를 세운다).\n                 등록은 늘 그렇다. 저장 전에 미리 알려 운영자가 의도를 확인하게 한다.",
+                                                "id": "password_admin_assigned_notice",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{!!_local.form?.password && !(!!route?.id && route?.id === current_user?.data?.uuid)}}",
+                                                "props": {
+                                                    "className": "alert-info"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-info-soft"
+                                                        },
+                                                        "text": "{{route?.id ? '$t:admin.users.form.password_policy.admin_assigned_notice' : '$t:admin.users.form.password_policy.create_notice'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "본인 계정의 비밀번호를 바꿀 때만 현재 비밀번호를 묻는다(D19). 서버는 화면과 별개로 행위자 = 대상을 판정해\n                 같은 확인과 재사용 검사를 한다 — 이 칸은 그 요구를 미리 보여 주는 자리다.",
+                                                "id": "field_current_password",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password}}",
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -788,88 +1051,45 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "text": "$t:admin.users.form.fields.role"
+                                                                "text": "$t:admin.users.form.password_policy.current_password"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-red-500 ml-1"
+                                                                    "className": "text-red-500 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
                                                         ]
                                                     },
                                                     {
-                                                        "type": "composite",
-                                                        "name": "TagInput",
+                                                        "type": "basic",
+                                                        "name": "Input",
                                                         "props": {
-                                                            "name": "role_ids",
-                                                            "value": "{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}",
-                                                            "options": "{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}",
-                                                            "placeholder": "$t:admin.users.form.fields.role_placeholder",
-                                                            "noOptionsMessage": "$t:admin.users.form.fields.role_no_options",
-                                                            "className": "w-full",
-                                                            "defaultVariant": "blue",
-                                                            "disabled": "{{user?.data?.abilities?.can_assign_roles !== true && roles?.data?.abilities?.can_assign_roles !== true}}"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form": {
-                                                                        "role_ids": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            }
-                                                        ]
+                                                            "type": "password",
+                                                            "name": "current_password",
+                                                            "autoComplete": "current-password",
+                                                            "placeholder": "$t:admin.users.form.password_policy.current_password",
+                                                            "className": "{{_local.errors?.current_password ? 'input-error' : ''}}"
+                                                        }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{_local.errors?.role_ids || _local.errors?.roles}}",
+                                                        "if": "{{_local.errors?.current_password}}",
                                                         "props": {
-                                                            "className": "text-red-500 text-xs mt-1"
+                                                            "className": "text-red-500 dark:text-red-400 text-xs mt-1"
                                                         },
-                                                        "text": "{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}"
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "field_status",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.status"
+                                                        "text": "{{_local.errors?.current_password?.[0] ?? ''}}"
                                                     },
                                                     {
-                                                        "comment": "커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다.",
-                                                        "type": "composite",
-                                                        "name": "Select",
+                                                        "type": "basic",
+                                                        "name": "P",
                                                         "props": {
-                                                            "name": "status",
-                                                            "className": "w-full",
-                                                            "value": "{{_local.form?.status ?? 'active'}}",
-                                                            "options": "{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}"
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
                                                         },
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.status": "{{$event.target.value}}"
-                                                                }
-                                                            }
-                                                        ]
+                                                        "text": "$t:admin.users.form.password_policy.current_password_hint"
                                                     }
                                                 ]
                                             }
@@ -901,6 +1121,89 @@
                                             "className": "row-stack"
                                         },
                                         "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_email",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:admin.users.form.fields.email"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-red-500 ml-1"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "email",
+                                                                    "name": "email",
+                                                                    "placeholder": "$t:admin.users.form.fields.email",
+                                                                    "disabled": "{{!!route?.id}}",
+                                                                    "className": ""
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.errors?.email}}",
+                                                                "props": {
+                                                                    "className": "text-red-500 text-xs mt-1"
+                                                                },
+                                                                "text": "{{_local.errors?.email?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_homepage",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.homepage"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "url",
+                                                                    "name": "homepage",
+                                                                    "placeholder": "https://",
+                                                                    "className": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
@@ -959,31 +1262,6 @@
                                                         ]
                                                     }
                                                 ]
-                                            },
-                                            {
-                                                "id": "field_homepage",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.homepage"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "url",
-                                                            "name": "homepage",
-                                                            "placeholder": "https://",
-                                                            "className": ""
-                                                        }
-                                                    }
-                                                ]
                                             }
                                         ]
                                     }
@@ -1013,6 +1291,106 @@
                                             "className": "row-stack"
                                         },
                                         "children": [
+                                            {
+                                                "id": "field_country",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.form.fields.country"
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "SearchableDropdown",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가\n                       이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다.",
+                                                                "type": "change",
+                                                                "event": "onChange",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.country": "{{$args[0]}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "options": "{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}",
+                                                            "value": "{{_local.form?.country ?? ''}}",
+                                                            "triggerLabel": "$t:admin.users.form.fields.country_select",
+                                                            "searchPlaceholder": "$t:admin.users.form.fields.country_search",
+                                                            "noResultsText": "$t:common.no_results",
+                                                            "className": "w-full"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_language",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.language"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "name": "language",
+                                                                    "className": "w-full",
+                                                                    "defaultValue": "{{$locale}}",
+                                                                    "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_timezone",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.timezone"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "name": "timezone",
+                                                                    "className": "w-full",
+                                                                    "defaultValue": "Asia/Seoul",
+                                                                    "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
+                                                                    "searchable": true,
+                                                                    "searchPlaceholder": "{{$t('common.search')}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
                                             {
                                                 "id": "field_address",
                                                 "type": "basic",
@@ -1089,106 +1467,6 @@
                                                             "placeholder": "$t:admin.users.form.fields.address_detail",
                                                             "className": ""
                                                         }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "field_country",
-                                                "if": false,
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.country"
-                                                    },
-                                                    {
-                                                        "type": "composite",
-                                                        "name": "SearchableDropdown",
-                                                        "props": {
-                                                            "options": "{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}",
-                                                            "value": "{{_local.form?.country ?? ''}}",
-                                                            "triggerLabel": "$t:admin.users.form.fields.country_select",
-                                                            "searchPlaceholder": "$t:admin.users.form.fields.country_search",
-                                                            "noResultsText": "$t:common.no_results",
-                                                            "className": "w-full"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "event": "onChange",
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.country": "{{$args[0]}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "grid-2col-responsive"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "id": "field_language",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.language"
-                                                            },
-                                                            {
-                                                                "type": "composite",
-                                                                "name": "Select",
-                                                                "props": {
-                                                                    "name": "language",
-                                                                    "className": "w-full",
-                                                                    "defaultValue": "{{$locale}}",
-                                                                    "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "field_timezone",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.timezone"
-                                                            },
-                                                            {
-                                                                "type": "composite",
-                                                                "name": "Select",
-                                                                "props": {
-                                                                    "name": "timezone",
-                                                                    "className": "w-full",
-                                                                    "defaultValue": "Asia/Seoul",
-                                                                    "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
-                                                                    "searchable": true,
-                                                                    "searchPlaceholder": "{{$t('common.search')}}"
-                                                                }
-                                                            }
-                                                        ]
                                                     }
                                                 ]
                                             }
@@ -1325,10 +1603,18 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "일곱 항목 모두 **시스템이 적는 기록**이라 잠근 채로 둔다. 종전에는 가입일·마지막\n                 로그인·IP 셋만 있어, 상세에서 본 잠금 상태·탈퇴일시·차단일시가 수정 화면에서\n                 사라졌다(요구사항 2026-09-21). 휴면 전환일도 상세에 있는 기록이라 같은 이유로\n                 함께 세운다. 잠금은 상세 헤더의 「잠금 해제」 버튼이 푼다.\n                 3열 고정은 규약(§6-0)대로 `md:` 대신 responsive 로 가른다.",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "portable": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-1 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                                                    "className": "grid grid-cols-3 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1382,6 +1668,48 @@
                                                         ]
                                                     },
                                                     {
+                                                        "id": "field_lock_status",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.lock_status"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.locked_permanently === true}}",
+                                                                "props": {
+                                                                    "className": "text-error-soft text-sm py-2"
+                                                                },
+                                                                "text": "$t:admin.users.detail.locked_permanently_value"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.locked_permanently !== true && user?.data?.is_locked === true}}",
+                                                                "props": {
+                                                                    "className": "text-error-soft text-sm py-2"
+                                                                },
+                                                                "text": "$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.is_locked !== true}}",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm py-2"
+                                                                },
+                                                                "text": "$t:admin.users.detail.not_locked_value"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
                                                         "id": "field_ip_address",
                                                         "type": "basic",
                                                         "name": "Div",
@@ -1405,6 +1733,81 @@
                                                                 }
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "id": "field_withdrawn_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.withdrawn_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.withdrawn_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_blocked_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.blocked_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.blocked_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_dormant_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.dormant_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.dormant_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             }
@@ -1413,13 +1816,450 @@
                                 ]
                             },
                             {
+                                "comment": "비밀번호(#736) — 상세의 「비밀번호」 구획과 같은 자리·같은 순서로 선다(#599 상세↔수정 정합).\n             마지막 변경·만료 예정·다음 로그인 때 변경 필요·연기 종료는 서버가 적는 기록이라 잠긴 글자로 두고(등록 모드에는 회원이 없어 숨긴다),\n             고칠 수 있는 것은 만료 개별 설정 하나다 — 등록 모드에서도 보인다.",
+                                "id": "section_password_info",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "id": "password_info",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.detail.password.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "grid-2col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "field_password_changed_at",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id}}",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.changed_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.password_status?.changed_at ?? '-'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_password_expires_at",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id}}",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.expires_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!user?.data?.password_status?.applies}}",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.not_applies"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{user?.data?.password_status?.applies && user?.data?.password_status?.expired}}",
+                                                        "props": {
+                                                            "className": "text-error-soft text-sm"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.expired|date={{user?.data?.password_status?.expires_at ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{user?.data?.password_status?.applies && !user?.data?.password_status?.expired}}",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.expires_value|date={{user?.data?.password_status?.expires_at ?? '-'}}|days={{user?.data?.password_status?.days_left ?? 0}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_password_change_required",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id}}",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.change_required"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.password_status?.change_required ? '$t:admin.users.detail.password.yes' : '$t:admin.users.detail.password.no'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_password_postponed_until",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id && user?.data?.password_status?.postponed_until}}",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.postponed_until"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.password_status?.postponed_until ?? '-'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_password_expiry_policy",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "mt-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "text": "$t:admin.users.form.password_policy.expiry"
+                                            },
+                                            {
+                                                "comment": "만료 개별 설정 — 고른 값을 폼에 담는다(커스텀 Select 는 value 제어 전용이라 상태 칸 선택과 같은 방식).",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.password_expiry_policy": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "name": "password_expiry_policy",
+                                                    "className": "w-full",
+                                                    "value": "{{_local.form?.password_expiry_policy ?? 'inherit'}}",
+                                                    "error": "{{_local.errors?.password_expiry_policy?.[0] ?? ''}}",
+                                                    "options": "{{[{label: '$t:admin.users.form.password_policy.expiry_inherit', value: 'inherit'}, {label: '$t:admin.users.form.password_policy.expiry_apply', value: 'apply'}, {label: '$t:admin.users.form.password_policy.expiry_exempt', value: 'exempt'}]}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                },
+                                                "text": "$t:admin.users.form.password_policy.expiry_hint"
+                                            },
+                                            {
+                                                "comment": "현재 판정(수정 화면) — 저장된 설정 기준이다. 방금 고른 값은 저장해야 판정에 반영된다.",
+                                                "id": "password_expiry_status_line",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{!!route?.id && user?.data?.password_status}}",
+                                                "props": {
+                                                    "className": "text-xs text-gray-700 dark:text-gray-300 mt-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{user?.data?.password_status?.applies && user?.data?.password_status?.expired}}",
+                                                        "text": "$t:admin.users.form.password_policy.status_expired"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{user?.data?.password_status?.applies && user?.data?.password_status?.expires_at && !user?.data?.password_status?.expired}}",
+                                                        "text": "$t:admin.users.form.password_policy.status_applies|date={{user?.data?.password_status?.expires_at | date}}|days={{user?.data?.password_status?.days_left ?? 0}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!user?.data?.password_status?.applies}}",
+                                                        "text": "$t:admin.users.form.password_policy.status_not_applies"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "동의정보 — 회원이 언제 동의했는가는 기록이지 설정이 아니라 잠긴 채로 세운다.\n             동의를 되돌리는 일은 회원 본인의 화면(마이페이지)이나 GDPR 플러그인이 맡는다.\n\n             **고칠 수 없는 값인데도 이 구획과 아래 알림함 구획을 수정 화면에 세우는 이유**는,\n             상세에서 본 것을 수정 화면에서 찾지 못하면 「고칠 수 있는데 칸이 없는 것」 인지\n             「원래 고칠 수 없는 것」 인지 화면이 말해 주지 않기 때문이다(요구사항 2026-09-21 —\n             상세에 나오는 것은 수정 화면에도 같은 자리·같은 양식으로 선다). 등록 모드에는\n             회원이 아직 없어 둘 다 빈 값이라 `route?.id` 로 닫는다.",
+                                "id": "section_consent_info",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{route?.id}}",
+                                "props": {
+                                    "id": "consent_info",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.detail.consent_history"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_terms_consent",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.consent_type.terms"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.terms_consent?.agreed_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_privacy_consent",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.consent_type.privacy"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.privacy_consent?.agreed_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "알림함 요약 — 건수는 읽기 전용이고, 실제 수신함은 전용 목록이 소유한다(상세와 같다).",
+                                "id": "section_notifications_info",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{route?.id}}",
+                                "props": {
+                                    "id": "notifications_info",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.detail.tabs.notifications_info"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_notifications_total",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.notifications.total"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.notifications_summary?.total ?? 0}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_notifications_unread",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.notifications.unread"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.notifications_summary?.unread ?? 0}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.\n               회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다.",
+                                                "id": "notifications_inbox_link",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.member-notifications.read'))}}",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다",
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/member-notifications",
+                                                                    "query": {
+                                                                        "user_uuid": "{{user?.data?.uuid}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-secondary"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.users.detail.notifications.view_inbox"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "모듈/플러그인 확장 UI가 동적으로 주입되는 영역",
                                 "id": "extension_form_content",
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
                                     "className": "mt-6"
-                                },
-                                "comment": "모듈/플러그인 확장 UI가 동적으로 주입되는 영역"
+                                }
                             }
                         ]
                     },
@@ -1435,15 +2275,15 @@
                                 "id": "footer_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigateBack"
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1453,13 +2293,10 @@
                                 ]
                             },
                             {
+                                "comment": "수정 모드에서는 회원 정보가 폼에 채워지기 전까지 저장을 막는다 — 시드 전에 누르면 빈 본문이 나가 화면에는 값이 보이는데 \"이름은 필수입니다\" 로 거절된다.",
                                 "id": "footer_save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{_global.isSaving || (route?.id && !_local.form?.email)}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1478,6 +2315,7 @@
                                             },
                                             {
                                                 "then": {
+                                                    "comment": "저장. 등록/수정 한 자리에서 주소와 메서드를 함께 가른다.\n                     검증 실패는 필드별 오류를 `_local.errors` 에 담아 각 칸 아래에 띄우고, 403·500 은\n                     필드 오류가 아니므로 문구만 다르게 낸다 — 어느 갈래든 진행 표시를 반드시 끈다\n                     (한 갈래라도 빠뜨리면 저장 버튼이 영영 잠긴다).",
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
@@ -1489,55 +2327,11 @@
                                                         },
                                                         {
                                                             "handler": "apiCall",
-                                                            "auth_required": true,
                                                             "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
+                                                            "auth_required": true,
                                                             "params": {
                                                                 "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                                 "body": "{{_local.form}}"
-                                                            },
-                                                            "errorHandling": {
-                                                                "403": {
-                                                                    "handler": "sequence",
-                                                                    "params": {
-                                                                        "actions": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "isSaving": false
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "error",
-                                                                                    "message": "$t:auth.permission_denied"
-                                                                                }
-                                                                            }
-                                                                        ]
-                                                                    }
-                                                                },
-                                                                "500": {
-                                                                    "handler": "sequence",
-                                                                    "params": {
-                                                                        "actions": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "isSaving": false
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "error",
-                                                                                    "message": "$t:errors.server_error"
-                                                                                }
-                                                                            }
-                                                                        ]
-                                                                    }
-                                                                }
                                                             },
                                                             "onSuccess": [
                                                                 {
@@ -1546,46 +2340,6 @@
                                                                         "target": "global",
                                                                         "isSaving": false
                                                                     }
-                                                                },
-                                                                {
-                                                                    "comment": "회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH.",
-                                                                    "if": "{{route?.id && _local.form?.ecommerce_preferred_currency}}",
-                                                                    "handler": "apiCall",
-                                                                    "auth_required": true,
-                                                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}",
-                                                                    "params": {
-                                                                        "method": "PATCH",
-                                                                        "body": "{{ { currency: _local.form.ecommerce_preferred_currency } }}"
-                                                                    },
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "error",
-                                                                                "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "comment": "회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만.",
-                                                                    "if": "{{route?.id && _local.form?.ecommerce_preferred_shipping_country}}",
-                                                                    "handler": "apiCall",
-                                                                    "auth_required": true,
-                                                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}",
-                                                                    "params": {
-                                                                        "method": "PATCH",
-                                                                        "body": "{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"
-                                                                    },
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "error",
-                                                                                "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                                            }
-                                                                        }
-                                                                    ]
                                                                 },
                                                                 {
                                                                     "handler": "toast",
@@ -1625,7 +2379,47 @@
                                                                         "message": "{{error.message ?? '$t:admin.users.form.validation_error'}}"
                                                                     }
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "errorHandling": {
+                                                                "403": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "isSaving": false
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "$t:auth.permission_denied"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "500": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "isSaving": false
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "$t:errors.server_error"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
                                                         }
                                                     ]
                                                 }
@@ -1633,6 +2427,10 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{_global.isSaving || (route?.id && !_local.form?.email)}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1658,18 +2456,18 @@
                                         "name": "Span",
                                         "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
                                     }
-                                ],
-                                "comment": "수정 모드에서는 회원 정보가 폼에 채워지기 전까지 저장을 막는다 — 시드 전에 누르면 빈 본문이 나가 화면에는 값이 보이는데 \"이름은 필수입니다\" 로 거절된다."
+                                ]
                             }
                         ]
                     }
                 ]
             },
             {
+                "comment": "modals 섹션이 아닌 페이지 트리에 두는 이유: modals 는 별도 컨텍스트라 _local.form 이 해석되지 않는다.",
                 "id": "withdraw_confirm_dialog",
                 "type": "composite",
                 "name": "Modal",
-                "comment": "modals 섹션이 아닌 페이지 트리에 두는 이유: modals 는 별도 컨텍스트라 _local.form 이 해석되지 않는다.",
+                "if": "{{_local.showWithdrawConfirm === true}}",
                 "props": {
                     "isOpen": true,
                     "title": "$t:admin.users.modals.withdraw_confirm_title",
@@ -1748,12 +2546,9 @@
                                 "id": "withdraw_confirm_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "탈퇴 확인 취소. 확인 문구만 접고 폼은 그대로 둔다",
                                         "type": "click",
                                         "handler": "setState",
                                         "params": {
@@ -1762,6 +2557,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1774,13 +2573,9 @@
                                 "id": "withdraw_confirm_submit_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{_global.isSaving}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "탈퇴 실행. 확인 문구를 먼저 접는 것은 요청이 끝난 뒤 화면이 바뀌어도 확인 창이 남지 않게 하기 위해서다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1800,55 +2595,11 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                     "body": "{{_local.form}}"
-                                                },
-                                                "errorHandling": {
-                                                    "403": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isSaving": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:auth.permission_denied"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    },
-                                                    "500": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isSaving": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:errors.server_error"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    }
                                                 },
                                                 "onSuccess": [
                                                     {
@@ -1857,46 +2608,6 @@
                                                             "target": "global",
                                                             "isSaving": false
                                                         }
-                                                    },
-                                                    {
-                                                        "comment": "회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH.",
-                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_currency}}",
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}",
-                                                        "params": {
-                                                            "method": "PATCH",
-                                                            "body": "{{ { currency: _local.form.ecommerce_preferred_currency } }}"
-                                                        },
-                                                        "onError": [
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "comment": "회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만.",
-                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_shipping_country}}",
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}",
-                                                        "params": {
-                                                            "method": "PATCH",
-                                                            "body": "{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"
-                                                        },
-                                                        "onError": [
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message ?? '$t:common.error_occurred'}}"
-                                                                }
-                                                            }
-                                                        ]
                                                     },
                                                     {
                                                         "handler": "toast",
@@ -1936,11 +2647,56 @@
                                                             "message": "{{error.message ?? '$t:admin.users.form.validation_error'}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "errorHandling": {
+                                                    "403": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isSaving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:auth.permission_denied"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    "500": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isSaving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:errors.server_error"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
                                             }
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_global.isSaving}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1951,8 +2707,7 @@
                             }
                         ]
                     }
-                ],
-                "if": "{{_local.showWithdrawConfirm === true}}"
+                ]
             }
         ]
     }

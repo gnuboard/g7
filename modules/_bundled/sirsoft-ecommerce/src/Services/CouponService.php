@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
@@ -21,6 +22,13 @@ class CouponService
 {
     use ReappliesPermissionScope;
 
+    /**
+     * 쿠폰 서비스를 생성합니다.
+     *
+     * @param  CouponRepositoryInterface  $repository  쿠폰 Repository
+     * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
+     * @param  CouponIssueRepositoryInterface  $issueRepository  쿠폰 발급 Repository
+     */
     public function __construct(
         protected CouponRepositoryInterface $repository,
         protected UserCouponService $userCouponService,
@@ -301,12 +309,17 @@ class CouponService
                 $userId = (int) $userId;
 
                 try {
-                    $couponIssue = $this->userCouponService->issueDirectlyToUser($coupon, $userId);
-                    $issued++;
+                    // 회원별 세이브포인트(B8) — 발급 행 생성 뒤 발급 수 증가나 훅이 실패하면 그 회원의 발급만 되돌린다.
+                    // 없으면 발급 행은 커밋되는데 건너뜀으로 보고되고 발급 수는 늘지 않아, 한도를 넘겨 발급될 수 있었다.
+                    DB::transaction(function () use ($coupon, $userId) {
+                        $couponIssue = $this->userCouponService->issueDirectlyToUser($coupon, $userId);
 
-                    // 발급 성공 1건당 활동로그 (per-item)
-                    HookManager::doAction('sirsoft-ecommerce.coupon.after_direct_issue', $coupon, $couponIssue, $userId);
+                        // 발급 성공 1건당 활동로그 (per-item)
+                        HookManager::doAction('sirsoft-ecommerce.coupon.after_direct_issue', $coupon, $couponIssue, $userId);
+                    });
+                    $issued++;
                 } catch (\Exception $e) {
+                    ConcurrencyErrors::rethrowIfConcurrencyError($e);
                     $skipped[] = ['user_id' => $userId, 'reason' => $e->getMessage()];
                 }
             }

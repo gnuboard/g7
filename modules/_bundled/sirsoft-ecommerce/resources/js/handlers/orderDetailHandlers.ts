@@ -9,6 +9,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { manualPaidRequestFields, refreshManualPaidPreview, resetManualPaidState, SALES_STATUSES } from './manualPaidEffectsHandlers';
 import { formatAmountInCurrency } from './calculateCurrencyPrices';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -17,6 +18,29 @@ const logger = ((window as any).G7Core?.createLogger?.('Ecom:OrderDetail')) ?? {
     warn: (...args: unknown[]) => console.warn('[Ecom:OrderDetail]', ...args),
     error: (...args: unknown[]) => console.error('[Ecom:OrderDetail]', ...args),
 };
+
+/**
+ * 실패 응답에서 운영자에게 보일 서버 사유를 꺼냅니다. (없으면 null)
+ *
+ * 5xx 본문(`Server Error`)과 본문 없는 응답·전송 실패의 axios 원문(`Request failed with status code 500`·
+ * `Network Error`)은 사유가 아니다 — 띄우면 운영자가 영문 내부 문구를 읽는다. 부르는 쪽의 번역된 폴백으로
+ * 넘긴다(목록 일괄처리 S1-D12 와 같은 기준). 그래서 `error.message` 는 읽지 않는다.
+ *
+ * @param error 오류 객체 (axios 오류 또는 `{ data: 응답 }` 을 실은 Error)
+ * @param preferDetail true 면 진단 문구(`errors.detail`)를 문장보다 먼저 쓴다
+ * @returns 서버 사유 또는 null
+ */
+function serverReasonOf(error: any, preferDetail = false): string | null {
+    const status = Number(error?.response?.status ?? error?.status ?? 0);
+
+    if (status >= 500) return null;
+
+    const data = error?.response?.data ?? error?.data ?? {};
+    const detail = preferDetail && typeof data?.errors?.detail === 'string' && data.errors.detail !== '' ? data.errors.detail : null;
+    const message = typeof data?.message === 'string' && data.message !== '' ? data.message : null;
+
+    return detail ?? message;
+}
 
 /**
  * 커스텀 핸들러에 전달되는 액션 객체 인터페이스
@@ -207,7 +231,7 @@ export function toggleAllProductsHandler(
  * @param _action 액션 객체
  * @param _context 액션 컨텍스트
  */
-export function buildOrderDetailBulkConfirmDataHandler(
+export async function buildOrderDetailBulkConfirmDataHandler(
     action: ActionWithParams<{
         selectedProducts?: number[];
         batchOrderStatus?: string;
@@ -215,7 +239,7 @@ export function buildOrderDetailBulkConfirmDataHandler(
         batchTrackingNumber?: string;
     }>,
     _context: ActionContext
-): void {
+): Promise<void> {
     const G7Core = (window as any).G7Core;
     if (!G7Core) return;
 
@@ -247,9 +271,13 @@ export function buildOrderDetailBulkConfirmDataHandler(
         return;
     }
 
-    // 취소 상태 선택 시 → cancelPg 여부에 따라 모달 분기
+    // 취소 상태 선택 시 → 언제나 취소·환불 모달(클레임 접수)로 보낸다.
+    //
+    // 예전에는 `cancelPg` 체크박스로 "PG 없이 주문 상태만 변경" 경로가 갈라졌다. 그 경로는
+    // 환불신청서도 취소신청서도 만들지 않고 상품만 `cancelled` 로 옮겨, 재고는 돌아오는데
+    // 돈·결제행·주문 합계는 그대로인 취소를 원장에 근거 없이 남겼다(그렇게 취소된 주문은
+    // 이후 입금확인·입금통보로 되살아난다). 취소의 입구는 하나다.
     if (batchOrderStatus === 'cancelled') {
-        const cancelPg = params.cancelPg ?? true;
         const orderData = G7Core.dataSource?.get?.('order')?.data;
         const options = orderData?.options || [];
 
@@ -261,7 +289,13 @@ export function buildOrderDetailBulkConfirmDataHandler(
             .map((optionId: number) => {
                 const opt = options.find((o: { id: number }) => o.id === optionId);
                 if (!opt || opt.option_status === 'cancelled') return null;
-                const quantity = opt.quantity ?? 1;
+                // S1-D16: 수량 상한은 원 수량이 아니라 **진행 중인 클레임을 민 가용 수량**이다.
+                // 서버는 선점을 알고 422 로 거절하므로, 원 수량을 쓰면 운영자가
+                // 고를 수 없는 수를 고르고 제출한 뒤에야 한도를 알게 된다.
+                // 필드가 없는 구버전 응답은 종전대로 원 수량으로 폴백한다.
+                const available = opt.available_quantity ?? opt.quantity ?? 1;
+                if (available <= 0) return null;
+                const quantity = available;
 
                 return {
                     id: opt.id,
@@ -293,8 +327,8 @@ export function buildOrderDetailBulkConfirmDataHandler(
             return;
         }
 
-        if (cancelPg) {
-            // PG 결제 취소 포함 → 취소/환불 모달 (환불예정금액 실시간 표시)
+        {
+            // 취소·환불 모달 (환불예정금액 실시간 표시)
             // 모달 열기 전에 페이지 _local에 모든 취소 관련 상태 초기화
             // (사용자 취소 모달과 동일 패턴 — onMount setState 미사용)
             // 참고: modals 섹션의 isolated scope에서 onMount setState는
@@ -303,7 +337,10 @@ export function buildOrderDetailBulkConfirmDataHandler(
                 cancelItems,
                 cancelReason: '',
                 cancelReasonDetail: '',
-                cancelPg: true,
+                // 「환불까지 한 번에 처리」 는 **열 때마다 꺼진 채** 시작한다(기본 꺼짐 — D7).
+                // 초기화하지 않으면 앞 취소에서 켠 체크가 같은 화면의 다음 모달에 남아, 운영자가
+                // 의식하지 못한 채 자동 승인·환불완료(PG 실환불)가 나간다.
+                autoAdvanceRefund: false,
                 refundPriority: 'pg_first',
                 refundEstimate: null,
                 refundLoading: false,
@@ -321,18 +358,6 @@ export function buildOrderDetailBulkConfirmDataHandler(
                     params: { orderId, cancelItems },
                 });
             }
-        } else {
-            // PG 결제 취소 미포함 → 단순 상태 변경 확인 모달
-            const changeQuantities: Record<number, number> = {};
-            for (const item of cancelItems) {
-                changeQuantities[item.id] = item.quantity;
-            }
-            G7Core.state.setLocal({
-                bulkConfirmItems: cancelItems,
-                changeQuantities,
-                batchOrderStatus,
-            });
-            G7Core.modal?.open?.('modal_batch_change_confirm');
         }
         return;
     }
@@ -382,7 +407,76 @@ export function buildOrderDetailBulkConfirmDataHandler(
         batchTrackingNumber,
     });
 
+    // 수동 결제 처리 항목(Q13) — 창을 열 때마다 세 체크를 모두 켠 채 다시 시작한다.
+    // 수량을 바꿀 때 미리보기를 다시 부를 재료는 `_global` 에 둔다 — 수량 입력은 창의 격리 scope 에서
+    // 돌아 페이지 `_local` 을 읽지 못한다.
+    resetManualPaidState();
+    G7Core.state.set?.({
+        manualPaidContext: {
+            orderNumber: orderData?.order_number ?? '',
+            selectedProducts,
+            status: batchOrderStatus,
+            carrierId: batchCarrierId,
+            trackingNumber: batchTrackingNumber,
+        },
+    }, { merge: 'shallow' });
+
     G7Core.modal?.open?.('modal_batch_change_confirm');
+
+    // 창을 먼저 띄우고 그 안에서 미리보기를 불러온다. 판매 상태로 가는 변경만 대상이다.
+    if (SALES_STATUSES.includes(batchOrderStatus) && orderData?.order_number) {
+        await refreshDetailManualPaidPreview(
+            String(orderData.order_number),
+            selectedProducts,
+            changeQuantities,
+            batchOrderStatus,
+            batchCarrierId,
+            batchTrackingNumber,
+        );
+    }
+}
+
+/**
+ * 주문상세 확인 창의 수동 결제 처리 미리보기를 다시 부릅니다.
+ *
+ * 수량을 줄이면 부모 주문의 파생 상태가 바뀌어(혼합 → 가장 낮은 상태) 결제 코스 진입 여부가 달라지므로
+ * 수량을 바꿀 때마다 다시 부른다. 늦게 도착한 옛 응답은 세대 카운터가 버린다.
+ *
+ * @param orderNumber 주문번호
+ * @param selectedProducts 선택 상품 행 ID
+ * @param changeQuantities 행별 변경 수량
+ * @param status 목표 상태
+ * @param carrierId 택배사 ID
+ * @param trackingNumber 송장번호
+ * @returns 반영 여부
+ */
+async function refreshDetailManualPaidPreview(
+    orderNumber: string,
+    selectedProducts: number[],
+    changeQuantities: Record<number, number>,
+    status: string,
+    carrierId?: string,
+    trackingNumber?: string,
+): Promise<boolean> {
+    const G7Core = (window as any).G7Core;
+    const options = G7Core?.dataSource?.get?.('order')?.data?.options || [];
+
+    const items = selectedProducts.map((optionId: number) => {
+        const option = options.find((opt: { id: number }) => opt.id === optionId);
+
+        return { option_id: optionId, quantity: changeQuantities?.[optionId] ?? option?.quantity ?? 1 };
+    });
+
+    return refreshManualPaidPreview({
+        kind: 'options',
+        orderNumber,
+        body: {
+            items,
+            status,
+            ...(carrierId ? { carrier_id: carrierId } : {}),
+            ...(trackingNumber ? { tracking_number: trackingNumber } : {}),
+        },
+    });
 }
 
 /**
@@ -466,6 +560,8 @@ export async function processOrderDetailBulkChangeHandler(
     if (batchTrackingNumber) {
         body.tracking_number = batchTrackingNumber;
     }
+    // 확인 창에서 고른 세 항목 — 판매 상태로 가는 요청에만 싣는다(서버는 미지정을 「켬」으로 본다).
+    Object.assign(body, manualPaidRequestFields(batchOrderStatus));
 
     try {
         const response = await G7Core.api.patch(
@@ -493,20 +589,21 @@ export async function processOrderDetailBulkChangeHandler(
                 batchTrackingNumber: '',
                 changeQuantities: {},
             });
+            G7Core.state.set?.({ manualPaidPreview: null });
         } else {
-            throw new Error(response?.message || '상태 변경에 실패했습니다.');
+            throw Object.assign(new Error('Bulk status change failed'), { data: response });
         }
     } catch (error: any) {
         logger.error('[processOrderDetailBulkChange] API 호출 실패:', error);
-        // 서버 422 검증 메시지(상태 전이 차단 사유 등)를 우선 노출한다.
-        // 고정 문구로 사유를 가리지 않도록 error.response.data.message 를 먼저 추출한다(confirmDeposit 동일 패턴).
-        const errorData = error?.response?.data || error?.data || {};
-        const serverMessage = errorData?.message || error?.message;
+        // 서버 422 검증 메시지(상태 전이 차단 사유 등)를 우선 노출한다. 사유가 아닌 원문은 번역된 폴백으로.
         G7Core.toast?.error?.(
-            serverMessage
+            serverReasonOf(error)
             ?? G7Core.t?.('sirsoft-ecommerce.admin.order.detail.handler.bulk_change_failed')
             ?? '상태 변경에 실패했습니다.'
         );
+        // 실패를 삼키면 확인 창의 성공 분기(`<close-modal/>`)가 돌아 창이 닫히고 운영자가 고른 항목(수량·결제 처리 세 항목)이
+        // 사라진다. 다시 던져 레이아웃 `<fail>` 분기(창 유지)로 넘긴다 — 사유 토스트는 여기서 한 번만 띄운다.
+        throw error;
     }
 }
 
@@ -551,11 +648,15 @@ export async function saveAdminMemoHandler(
                 ?? '관리자 메모가 저장되었습니다.'
             );
         } else {
-            throw new Error(response?.message);
+            throw Object.assign(new Error('Admin memo save failed'), { data: response });
         }
     } catch (error: any) {
         logger.error('[saveAdminMemo] 저장 실패:', error);
-        G7Core.toast?.error?.(error?.message ?? '메모 저장에 실패했습니다.');
+        G7Core.toast?.error?.(
+            serverReasonOf(error)
+            ?? G7Core.t?.('sirsoft-ecommerce.admin.order.detail.handler.memo_save_failed')
+            ?? '관리자 메모 저장에 실패했습니다.'
+        );
     }
 }
 
@@ -594,6 +695,19 @@ export function updateChangeQuantityHandler(
     currentQuantities[optionId] = clamped;
 
     G7Core.state.setLocal({ changeQuantities: currentQuantities });
+
+    // 수량이 바뀌면 부모 파생 상태가 바뀌어 수동 결제 처리 해당 여부가 달라진다(Q13) — 미리보기를 다시 부른다.
+    const context = G7Core.state.get?.()?.manualPaidContext;
+    if (context && SALES_STATUSES.includes(context.status) && context.orderNumber && Array.isArray(context.selectedProducts)) {
+        void refreshDetailManualPaidPreview(
+            String(context.orderNumber),
+            context.selectedProducts,
+            currentQuantities,
+            context.status,
+            context.carrierId,
+            context.trackingNumber,
+        );
+    }
 }
 
 /**
@@ -710,24 +824,31 @@ export async function confirmDepositHandler(
 
         if (response?.success) {
             G7Core.state.setLocal({ isConfirmingDeposit: false, depositConfirmErrors: null });
+            // 안내는 서버가 실제 결과(결제완료 처리 / 입금만 기록 / 결제 이후 단계라 상태 유지)에 맞춰 준
+            // 문장을 그대로 띄운다 — 화면이 고정 문구를 들면 기록만 했거나 상태를 그대로 둔 사실이
+            // 운영자에게 전해지지 않는다(S3-D4). 문장이 없는 응답에서만 모듈 문구로 떨어진다.
+            const serverMessage = typeof response?.message === 'string' && response.message !== ''
+                ? response.message
+                : null;
             G7Core.toast?.success?.(
-                G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm_success')
-                ?? '입금이 확인되어 결제완료 처리되었습니다.'
+                serverMessage
+                ?? G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm_success')
+                ?? '입금이 확인되어 처리되었습니다.'
             );
             G7Core.modal?.close?.('modal_confirm_deposit');
             G7Core.dispatch?.({ handler: 'refetchDataSource', params: { dataSourceId: 'order' } });
             G7Core.dispatch?.({ handler: 'refetchDataSource', params: { dataSourceId: 'order_logs' } });
         } else {
-            throw new Error(response?.message || 'Deposit confirm failed');
+            throw Object.assign(new Error('Deposit confirm failed'), { data: response });
         }
     } catch (error: any) {
         logger.error('[confirmDeposit] 실패:', error);
 
-        const errorData = error?.response?.data || error?.data || {};
         // 428(본인인증 필요)은 ApiClient(G7Core.api) 인터셉터가 중앙에서 처리한다 —
         // 본인인증 모달 → verify → confirm-deposit 자동 재실행 후 성공 응답이 위 try 의 response 로
         // 돌아오므로(아래 catch 에 도달하지 않음), 여기서 별도 428 분기는 불필요(이중 모달 방지).
-        const detailMessage = errorData?.errors?.detail || errorData?.message || error?.message || '';
+        // 422 는 금액 불일치 진단(errors.detail)이 문장보다 구체적이라 먼저 띄운다.
+        const detailMessage = serverReasonOf(error, true) ?? '';
         const fallbackMessage = G7Core.t?.('sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm_failed')
             ?? '입금 확인에 실패했습니다.';
 

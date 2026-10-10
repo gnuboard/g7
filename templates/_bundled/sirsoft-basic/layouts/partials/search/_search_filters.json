@@ -1,85 +1,151 @@
 {
-  "meta": { "is_partial": true, "description": "검색 필터 (게시글/상품 탭)" },
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(query?.type === 'posts' || query?.type === 'products') && query?.q}}",
-  "props": { "className": "flex flex-wrap gap-2 mb-4" },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Select",
-      "if": "{{query?.type === 'posts'}}",
-      "props": {
-        "name": "boardFilter",
-        "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
-        "value": "{{query?.board_slug ?? ''}}"
-      },
-      "children": [
-        { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:search.filter.all_boards" },
-        {
-          "type": "basic",
-          "name": "Option",
-          "iteration": { "source": "{{searchResults?.data?.posts?.available_boards ?? []}}", "item_var": "board" },
-          "props": { "value": "{{board?.slug}}" },
-          "text": "{{board?.name}}"
-        }
-      ],
-      "actions": [
-        {
-          "comment": "같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다",
-          "type": "change",
-          "handler": "navigate",
-          "params": { "path": "/search", "mergeQuery": true, "query": { "board_slug": "{{$event.target.value}}", "page": "", "cursor": "" } }
-        }
-      ]
+    "comment": "검색 결과 좁히기 — 전체 탭에는 뜻이 없어(종류가 섞여 있다) 글·상품 탭에서만 나온다. 고를 수 있는 정렬도 탭마다 다르므로 상자를 나눠 두었다.",
+    "meta": {
+        "is_partial": true,
+        "description": "검색 필터 (게시글/상품 탭)"
     },
-    {
-      "type": "composite",
-      "name": "Select",
-      "if": "{{query?.type === 'posts'}}",
-      "props": {
-        "name": "sortBy",
-        "className": "w-32",
-        "value": "{{query?.sort ?? 'relevance'}}",
-        "options": [
-          { "value": "relevance", "label": "$t:search.sort.relevance" },
-          { "value": "latest", "label": "$t:search.sort.latest" },
-          { "value": "popular", "label": "$t:search.sort.popular" }
-        ]
-      },
-      "actions": [
-        {
-          "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
-          "type": "change",
-          "handler": "navigate",
-          "params": { "path": "/search", "mergeQuery": true, "query": { "sort": "{{$event.target.value}}", "page": "", "cursor": "" } }
-        }
-      ]
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(query?.type === 'posts' || query?.type === 'products') && query?.q}}",
+    "props": {
+        "className": "flex flex-wrap gap-2 mb-4"
     },
-    {
-      "type": "composite",
-      "name": "Select",
-      "if": "{{query?.type === 'products'}}",
-      "props": {
-        "name": "sortBy",
-        "className": "w-32",
-        "value": "{{query?.sort ?? 'relevance'}}",
-        "options": [
-          { "value": "relevance", "label": "$t:search.sort.relevance" },
-          { "value": "latest", "label": "$t:search.sort.latest" },
-          { "value": "price_asc", "label": "$t:search.sort.price_asc" },
-          { "value": "price_desc", "label": "$t:search.sort.price_desc" },
-          { "value": "popular", "label": "$t:search.sort.popular" }
-        ]
-      },
-      "actions": [
+    "children": [
         {
-          "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
-          "type": "change",
-          "handler": "navigate",
-          "params": { "path": "/search", "mergeQuery": true, "query": { "sort": "{{$event.target.value}}", "page": "", "cursor": "" } }
+            "type": "basic",
+            "name": "Select",
+            "if": "{{query?.type === 'posts'}}",
+            "actions": [
+                {
+                    "comment": "같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다",
+                    "type": "change",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "mergeQuery": true,
+                        "query": {
+                            "board_slug": "{{$event.target.value}}",
+                            "page": "",
+                            "cursor": ""
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "name": "boardFilter",
+                "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
+                "value": "{{query?.board_slug ?? ''}}"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Option",
+                    "props": {
+                        "value": ""
+                    },
+                    "text": "$t:search.filter.all_boards"
+                },
+                {
+                    "type": "basic",
+                    "name": "Option",
+                    "iteration": {
+                        "source": "{{searchResults?.data?.posts?.available_boards ?? []}}",
+                        "item_var": "board"
+                    },
+                    "props": {
+                        "value": "{{board?.slug}}"
+                    },
+                    "text": "{{board?.name}}"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Select",
+            "if": "{{query?.type === 'posts'}}",
+            "actions": [
+                {
+                    "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
+                    "type": "change",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "mergeQuery": true,
+                        "query": {
+                            "sort": "{{$event.target.value}}",
+                            "page": "",
+                            "cursor": ""
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "name": "sortBy",
+                "className": "w-32",
+                "value": "{{query?.sort ?? 'relevance'}}",
+                "options": [
+                    {
+                        "value": "relevance",
+                        "label": "$t:search.sort.relevance"
+                    },
+                    {
+                        "value": "latest",
+                        "label": "$t:search.sort.latest"
+                    },
+                    {
+                        "value": "popular",
+                        "label": "$t:search.sort.popular"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Select",
+            "if": "{{query?.type === 'products'}}",
+            "actions": [
+                {
+                    "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
+                    "type": "change",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "mergeQuery": true,
+                        "query": {
+                            "sort": "{{$event.target.value}}",
+                            "page": "",
+                            "cursor": ""
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "name": "sortBy",
+                "className": "w-32",
+                "value": "{{query?.sort ?? 'relevance'}}",
+                "options": [
+                    {
+                        "value": "relevance",
+                        "label": "$t:search.sort.relevance"
+                    },
+                    {
+                        "value": "latest",
+                        "label": "$t:search.sort.latest"
+                    },
+                    {
+                        "value": "price_asc",
+                        "label": "$t:search.sort.price_asc"
+                    },
+                    {
+                        "value": "price_desc",
+                        "label": "$t:search.sort.price_desc"
+                    },
+                    {
+                        "value": "popular",
+                        "label": "$t:search.sort.popular"
+                    }
+                ]
+            }
         }
-      ]
-    }
-  ]
+    ]
 }

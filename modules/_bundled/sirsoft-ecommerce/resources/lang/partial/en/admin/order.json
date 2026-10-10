@@ -10,6 +10,7 @@
   },
   "detail": {
     "title": "Order Details",
+    "progress_title": "Progress",
     "description": "View order details",
     "placeholder": "Order details will be displayed here",
     "order_number": "Order Number",
@@ -61,7 +62,8 @@
       },
       "earn_status": {
         "earned": "Earned",
-        "pending": "Pending"
+        "pending": "Pending",
+        "cancelled": "Not Earned"
       },
       "summary": {
         "total": "Total",
@@ -129,9 +131,11 @@
       "activity_log": "Activity Log"
     },
     "handler": {
-      "bulk_change_success": "Status of {{count}} option(s) has been changed.",
+      "bulk_change_success": "Status of {{count}} options has been changed.",
+      "bulk_change_success_one": "Status of {{count}} option has been changed.",
       "bulk_change_failed": "Failed to change status.",
       "memo_save_success": "Admin memo has been saved.",
+      "memo_save_failed": "Failed to save the admin memo.",
       "address_save_success": "Delivery info has been saved."
     },
     "batch_modal": {
@@ -156,6 +160,7 @@
         "message": "Message",
         "message_placeholder": "Enter message content",
         "char_count": "{{count}} chars",
+        "char_count_one": "{{count}} char",
         "plugin_label": "SMS Plugin",
         "cancel": "Cancel",
         "send": "Send"
@@ -168,6 +173,7 @@
         "message": "Message",
         "message_placeholder": "Enter message content",
         "char_count": "{{count}} chars",
+        "char_count_one": "{{count}} char",
         "cancel": "Cancel",
         "send": "Send",
         "validation_error": "Please check the input values.",
@@ -199,15 +205,19 @@
         "due_amount": "Amount Due",
         "mark_order_complete": "Mark the order as paid",
         "mark_order_complete_hint": "When checked, the order status is changed to paid along with recording the deposit (including mileage earning, stock deduction, and notifications). When unchecked, only the deposit is recorded.",
+        "past_payment_hint": "This order is already at {{status}}, so only the deposit and the paid amount are recorded and the order status is left unchanged.",
         "cancel": "Cancel",
         "confirm": "Confirm Deposit",
-        "confirm_success": "The deposit has been recorded."
+        "confirm_success": "The deposit has been recorded.",
+        "confirm_failed": "Failed to confirm the deposit."
       },
       "batch_change": {
         "title": "Batch Change Confirmation",
-        "confirm_message": "Are you sure you want to batch change {{count}} selected product(s)?",
+        "confirm_message": "Are you sure you want to batch change {{count}} selected products?",
+        "confirm_message_one": "Are you sure you want to batch change {{count}} selected product?",
         "confirm_prefix": "Change",
-        "confirm_count": "{{count}} selected product(s) to",
+        "confirm_count": "{{count}} selected products to",
+        "confirm_count_one": "{{count}} selected product to",
         "confirm_status": "{{status}}",
         "confirm_suffix": "?",
         "status_label": "Status:",
@@ -224,7 +234,7 @@
       },
       "cancel": {
         "title": "Cancel Order",
-        "description": "Cancel the order for selected products.",
+        "description": "Cancelling does not refund immediately. A refund request is created and the cancellation is confirmed only after approval and refund completion.",
         "validation_error_title": "Please check your input",
         "pg_error_title": "PG Refund Failed",
         "pg_error_description": "PG refund processing failed. Please check the error details and try again, or process the refund directly through the PG admin dashboard.",
@@ -232,8 +242,10 @@
         "unit_price_col": "Unit Price",
         "cancel_quantity_col": "Cancel Qty",
         "status_col": "Status",
-        "cancel_pg": "Also cancel PG payment",
-        "cancel_pg_description": "If unchecked, only the order status will be changed and PG refund must be processed separately.",
+        "auto_advance_refund_label": "Process the refund in one step",
+        "auto_advance_refund_hint": "When checked, the refund request is created and advanced through approval and completion automatically. Refunds that require a bank transfer stop at the request stage; an operator approves them, sends the money and completes them with [Refund].",
+        "auto_advance_refund_no_permission": "You cannot turn this on without the refund execution permission. An administrator with that permission completes the refund request from the claim detail.",
+        "auto_advance_refund_blocked_hint": "This order's payment method needs a person to transfer the money, so the request stops at the requested state even if you check this. Approve it and then complete the transfer with [Refund].",
         "cancel_reason_type_label": "Cancel Reason",
         "reason_placeholder": "Select cancel reason",
         "reason": {
@@ -255,7 +267,7 @@
         "refund_product_amount": "Product Refund",
         "refund_shipping_diff": "Shipping Difference",
         "refund_discount_diff": "Discount Adjustment",
-        "refund_points_amount": "Points Refund",
+        "refund_points_amount": "Used mileage returned",
         "refund_total": "Total Estimated Refund",
         "remaining_pg_balance": "Remaining PG Balance",
         "remaining_points_balance": "Remaining Points Balance",
@@ -286,107 +298,51 @@
         "close_btn": "Close",
         "estimate_failed": "Failed to calculate estimated refund.",
         "cancel_success": "Order has been cancelled.",
+        "refund_request_created": "A refund request has been filed. The cancellation is confirmed once it is approved and the refund completes.",
+        "refund_request_created_no_claim_access": "Refund request {{number}} has been filed. An operator with claim permission must approve it and complete the refund to confirm the cancellation.",
+        "refund_request_auto_stopped": "The refund request was submitted, but automatic processing stopped because this payment method cannot be refunded automatically. Approve the request and complete it with [Refund] to confirm the cancellation.",
         "cancel_failed": "Failed to cancel order.",
         "refund_bank_label": "Refund account",
         "refund_bank_select": "Select bank",
         "refund_bank_account_placeholder": "Account number (no hyphens)",
         "refund_bank_holder_placeholder": "Account holder",
         "refund_bank_required_hint": "A refund account is required for a paid virtual account order.",
-        "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required."
+        "refund_bank_empty_hint": "No banks are registered for refund accounts. Register them first under Settings > Order settings > Manage banks.",
+        "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required.",
+        "partial_unsupported": "This payment method supports full cancellation only. Cancelling part of the items or quantities will be rejected by the payment gateway.",
+        "partial_unsupported_vbank_awaiting": "Orders awaiting a virtual account deposit can only be cancelled in full. The issued account amount cannot be changed, so a partial cancellation would leave the customer's deposit unconfirmed."
       }
     },
     "claim_history": {
+      "source_claim": "Source request {{number}}",
       "title": "Claim History",
-      "tabs": {
-        "refund": "Refund History",
-        "return": "Return History",
-        "exchange": "Exchange History"
+      "readonly_badge": "Read-only",
+      "subtabs": {
+        "exchange": "Exchange",
+        "return": "Return",
+        "cancel": "Cancellation",
+        "refund": "Refund"
       },
-      "view_refund_management": "View in Refund Management",
-      "view_return_management": "View in Return Management",
-      "view_exchange_management": "View in Exchange Management",
-      "empty": {
-        "refund": "No refund history",
-        "return": "No return history",
-        "exchange": "No exchange history"
-      },
-      "sort": {
-        "label": "Sort",
-        "request_date_desc": "Request Date (Latest)"
-      },
-      "per_page": "Per Page",
-      "items_count": "{{count}} items",
+      "empty": "No claims have been submitted.",
+      "unavailable": "Could not load the claim history.",
       "columns": {
-        "request_date": "Request Date",
-        "refund_number": "Refund No.",
-        "return_number": "Return No.",
-        "exchange_number": "Exchange No.",
-        "product_info": "Product Info",
-        "amount_info": "Amount Info",
+        "claim_number": "Request No.",
+        "product": "Product",
         "quantity": "Qty",
-        "refund_method": "Refund Method",
-        "refund_status": "Refund Status",
-        "return_status": "Return Status",
-        "exchange_status": "Exchange Status",
-        "refund_reason": "Refund Reason",
-        "return_reason": "Return Reason",
-        "exchange_reason": "Exchange Reason"
+        "amount": "Amount",
+        "status": "Status"
       },
-      "amount": {
-        "actual_price": "Actual Price",
-        "expected_refund": "Expected Refund",
-        "actual_refund": "Actual Refund",
-        "return_request": "Return Request",
-        "original_order": "Original Order",
-        "order_quantity": "Order",
-        "difference": "Difference"
+      "reject_reason": "Rejection reason",
+      "shipping_fee": "Round-trip shipping fee",
+      "total_charge": "Total charge",
+      "original_product": "Original",
+      "exchange_product": "Exchange",
+      "amount_type": {
+        "charge": "Additional charge",
+        "refund": "Refund",
+        "none": "-"
       },
-      "method": {
-        "direct_refund": "Direct Refund",
-        "deposit": "Deposit"
-      },
-      "status": {
-        "refund_rejected": "Refund Rejected",
-        "refund_hold": "Refund Hold",
-        "refund_approved": "Refund Approved",
-        "refund_completed": "Refund Completed",
-        "return_requested": "Return Requested",
-        "return_pickup_in_progress": "Pickup In Progress",
-        "return_pickup_completed": "Pickup Completed",
-        "return_completed": "Return Completed",
-        "exchange_requested": "Exchange Requested",
-        "exchange_shipping": "Exchange Shipping",
-        "exchange_completed": "Exchange Completed"
-      },
-      "delivery": {
-        "carrier": "Carrier",
-        "tracking_number": "Tracking No.",
-        "pickup_carrier": "Pickup Carrier",
-        "pickup_tracking": "Pickup Tracking No.",
-        "shipping_carrier": "Shipping Carrier",
-        "shipping_tracking": "Shipping Tracking No.",
-        "pickup_fee": "Pickup Fee",
-        "round_trip_fee": "Round Trip Fee"
-      },
-      "reason": {
-        "customer_fault": "Customer",
-        "seller_fault": "Seller",
-        "simple_change": "Simple Change of Mind",
-        "wrong_color": "Wrong Color",
-        "defect": "Defect",
-        "defective_product": "Defective Product",
-        "color_change": "Color Change",
-        "size_exchange": "Size Exchange"
-      },
-      "product": {
-        "original_product": "Original Product",
-        "exchange_product": "Exchange Product",
-        "same_product": "Same Product Exchange",
-        "same_product_exchange": "Same Product Exchange",
-        "size": "Size",
-        "color": "Color",
-        "capacity": "Capacity"
-      }
+      "pending_refund_badge": "Refund not filed"
     },
     "payment_info": {
       "title": "Payment Info",
@@ -425,7 +381,9 @@
       "cancelled_amount": "Cancelled Amount",
       "refunded_amount": "Refunded Amount",
       "refund_status": "Refund Status",
-      "refund_points_amount": "Mileage Refund",
+      "refund_points_amount": "Used mileage returned",
+      "refund_mileage_credit_amount": "└ Refunded as mileage (cash portion)",
+      "claim_additional_paid": "Claim additional payments",
       "payment_currency": "Payment currency: {{currency}}",
       "charged_in_payment_currency": "Charged {{amount}} in {{currency}}"
     },
@@ -439,6 +397,7 @@
       "per_page": "Per Page:",
       "per_page_option": "{{count}}",
       "items_count": "{{count}} items",
+      "items_count_one": "{{count}} item",
       "columns": {
         "date": "Date",
         "actor": "Actor",
@@ -479,6 +438,7 @@
       "issue": "Issue cash receipt",
       "cancel": "Cancel",
       "cancel_issue": "Cancel issuance",
+      "cancel_confirm": "This cancels the cash receipt with the payment provider and cannot be undone. Continue?",
       "reissue": "Reissue manually",
       "view_receipt": "View receipt",
       "history": "Issue history ({{count}})",
@@ -488,6 +448,15 @@
       "cancel_failed": "Failed to cancel the cash receipt issuance.",
       "reissue_failed": "Reissue failed",
       "reissue_success": "The cash receipt has been reissued."
+    },
+    "deposit_after_cancel": {
+      "warning": "{{amount}} was deposited to the virtual account of this cancelled order. It is not refunded automatically — please refund the customer."
+    },
+    "vbank_close_failed": {
+      "warning": "This order was cancelled before deposit, but the virtual account could not be closed at the payment provider. Close it in the provider's admin console so the customer cannot deposit."
+    },
+    "tax_invoice": {
+      "needs_review": "This order has cancellations, but an issued tax invoice remains. Tax invoice cancellation or re-issuance is not automated — handle it directly with the tax authority."
     }
   },
   "preset": {
@@ -529,6 +498,7 @@
   },
   "filter": {
     "date": "Date",
+    "date_type_select": "Date basis",
     "date_type": {
       "order_date": "Order Date",
       "payment_date": "Payment Date",
@@ -536,6 +506,7 @@
     },
     "start_date": "Start Date",
     "end_date": "End Date",
+    "site_day_notice": "Filtered by the same site time zone ({{timezone}}) day as the dashboard \"Today\" badges. Change the dates or period and search to switch back to your own time zone.",
     "date_quick": {
       "today": "Today",
       "week": "1 Week",
@@ -611,6 +582,7 @@
     "category": "Product Category",
     "category_level": "Category {{level}}",
     "price": "Purchase Amount",
+    "currency_select": "Currency",
     "min_price": "Min Amount",
     "max_price": "Max Amount",
     "currency": "KRW",
@@ -644,6 +616,20 @@
       "all": "All",
       "member": "Member",
       "guest": "Guest"
+    },
+    "claim": {
+      "block_title": "Claim criteria",
+      "block_hint": "Filters orders by the type and status of claims filed against them. If no per-type status is selected, orders are filtered regardless of claim type. Selecting a fault excludes cancellations, which carry no fault information.",
+      "presence": "Claim",
+      "presence_none": "No claim",
+      "presence_any": "Has claim",
+      "presence_active": "In progress only",
+      "exchange": "Exchange",
+      "return": "Return",
+      "refund": "Refund",
+      "cancel": "Cancel",
+      "fault": "Fault",
+      "requested_at": "Claim filed on"
     }
   },
   "action": {
@@ -711,8 +697,10 @@
       "description": "Select the range of orders to download.",
       "option_search": "Download with current search conditions",
       "option_search_desc": "Total {{count}} orders will be downloaded.",
+      "option_search_desc_one": "Total {{count}} order will be downloaded.",
       "option_selected": "Download selected orders only",
       "option_selected_desc": "{{count}} orders will be downloaded.",
+      "option_selected_desc_one": "{{count}} order will be downloaded.",
       "cancel": "Cancel",
       "download": "Download"
     },
@@ -738,8 +726,8 @@
     }
   },
   "status": {
-    "waiting": "Waiting",
-    "payment_pending": "Payment Pending",
+    "waiting": "Pending Order",
+    "payment_pending": "Pending Payment",
     "payment_complete": "Payment Complete",
     "shipping_hold": "Shipping Hold",
     "preparing": "Preparing",
@@ -747,10 +735,12 @@
     "shipping": "Shipping",
     "delivered": "Delivered",
     "cancelled": "Cancelled",
+    "returned": "Returned",
     "confirmed": "Confirmed"
   },
   "datagrid": {
-    "total_count": "Total {count} items"
+    "total_count": "Total {count} items",
+    "total_count_one": "Total {count} item"
   },
   "message": {
     "no_orders": "No orders found"
@@ -773,10 +763,13 @@
     "description": "Select the range of orders to download",
     "download": "Download",
     "download_success": "Excel file has been downloaded",
+    "download_failed": "Failed to download the Excel file",
     "option_search": "Download with current search criteria",
     "option_search_desc": "Total {{count}} orders will be downloaded",
+    "option_search_desc_one": "Total {{count}} order will be downloaded",
     "option_selected": "Download selected orders only",
-    "option_selected_desc": "{{count}} orders will be downloaded"
+    "option_selected_desc": "{{count}} orders will be downloaded",
+    "option_selected_desc_one": "{{count}} order will be downloaded"
   },
   "bulk": {
     "selected_count": "{{count}} selected",
@@ -793,12 +786,14 @@
     "tracking_placeholder": "Enter tracking number",
     "confirm_title": "Confirm Bulk Changes",
     "confirm_message": "The following changes will be applied to {{count}} selected orders.",
+    "confirm_message_one": "The following changes will be applied to {{count}} selected order.",
     "confirm_status_label": "Order Status: ",
     "confirm_carrier_label": "Carrier: ",
     "confirm_tracking_label": "Tracking Number: ",
     "confirm_cancel": "Cancel",
     "confirm_apply": "Apply Changes",
-    "confirm_no_changes": "No changes to apply."
+    "confirm_no_changes": "No changes to apply.",
+    "error": "Bulk update failed."
   },
   "column": {
     "no": "NO",
@@ -817,6 +812,7 @@
     "delivery_method": "Delivery",
     "country": "Country",
     "device": "Device",
+    "claim": "Claim",
     "first_order": "First Order",
     "action": "Actions"
   },
@@ -856,6 +852,91 @@
       "reshipping": "Exchange Reshipping",
       "reshipping_completed": "Exchange Reshipping Completed",
       "completed": "Exchange Completed"
+    }
+  },
+  "claim_request": {
+    "button_exchange": "File exchange",
+    "button_return": "File return",
+    "button_cancel_refund": "File cancel/refund",
+    "gate_hint": "The selected items cannot be filed in their current state — exchanges/returns need shipped, delivered or confirmed items; cancel/refund needs items not yet shipped.",
+    "no_permission": "You do not have permission to file exchanges, returns or cancellations.",
+    "context_load_failed": "Could not load whether claims can be filed. Please refresh.",
+    "title_exchange": "File exchange (on behalf of customer)",
+    "title_return": "File return (on behalf of customer)",
+    "editor_label": "Exchange / return on behalf of customer dialog",
+    "description": "Filed on behalf of the customer. The request period and requestable-status settings do not apply.",
+    "same_option": "Same option",
+    "sold_out": "Sold out",
+    "reason": "Reason",
+    "reason_placeholder": "Select a reason",
+    "seller_fault": "Seller fault",
+    "reason_detail_placeholder": "Details (e.g. call notes)",
+    "charge_method": "Charge method",
+    "charge_method_auto": "Auto (choose if there is a charge)",
+    "redelivery_address": "Reshipping address",
+    "recipient_name": "Recipient",
+    "phone": "Phone",
+    "zipcode": "Postal code",
+    "address1": "Address",
+    "address2": "Address details",
+    "city": "City",
+    "state": "State / Province",
+    "shipping_fee": "Shipping fee",
+    "total_charge": "Charge {{amount}}",
+    "refund_estimate": "Estimated refund {{amount}}",
+    "preview_needs_reason": "Select a reason to calculate the fee and charge.",
+    "preview_error": "Could not calculate the charge.",
+    "approve": "Approve on filing",
+    "approve_no_permission": "You lack the claim status change permission, so this files the request only. An administrator with that permission approves it from the claim detail.",
+    "customer_notice": "The customer is notified that the seller filed on their behalf, and cannot withdraw or edit this request.",
+    "submit": "File",
+    "success": "Filed on behalf of the customer.",
+    "error": "Could not file the request.",
+    "reason_required": "Select a reason."
+  },
+  "manual_paid": {
+    "title": "Payment processing items",
+    "description": "{{count}} of the selected orders are unpaid or cancelled. Choose what to apply with this change.",
+    "description_single": "This order is unpaid or cancelled. Choose what to apply with this change.",
+    "loading": "Checking payment processing items…",
+    "preview_error": "Could not load the payment processing items. Close and try again.",
+    "stock_label": "Deduct stock ({{count}} orders)",
+    "stock_label_one": "Deduct stock ({{count}} order)",
+    "stock_label_single": "Deduct stock ({{count}} items)",
+    "stock_label_single_one": "Deduct stock ({{count}} item)",
+    "stock_hint": "Reduces product stock by the ordered quantity.",
+    "stock_off_warning": "If stock is not deducted now, cancelling this order later will not return stock.",
+    "mileage_label": "Deduct used mileage ({{count}} orders, {{amount}})",
+    "mileage_label_one": "Deduct used mileage ({{count}} order, {{amount}})",
+    "mileage_label_single": "Deduct used mileage ({{amount}})",
+    "mileage_hint": "Deducts the mileage used on this order from the member's balance. When reviving a cancelled order, mileage returned at cancellation is deducted again.",
+    "mileage_short_warning": "Not enough balance — these orders would block the change: {{order_numbers}}",
+    "mileage_short_warning_single": "The member's mileage balance ({{balance}}) is too low, so the change will be refused. Turn off the deduction to proceed.",
+    "mileage_off_warning": "If mileage is not deducted, no mileage will be returned on a later refund.",
+    "record_label": "Record payment amount ({{count}} orders, {{amount}})",
+    "record_label_one": "Record payment amount ({{count}} order, {{amount}})",
+    "record_label_single": "Record payment amount ({{amount}})",
+    "record_hint": "Records the amount due as received. Keep this on only if you confirmed the approval in the PG console. The PG transaction ID is not recorded.",
+    "record_off_warning": "If not recorded, the paid amount stays at 0, so nothing can be refunded in cash on a later cancellation or return.",
+    "auto_sync_note": "For {{count}} orders with a recorded deposit, the paid amount is set from that deposit.",
+    "auto_sync_note_one": "For {{count}} order with a recorded deposit, the paid amount is set from that deposit.",
+    "auto_sync_note_single": "The paid amount will be set to the recorded deposit of {{amount}}.",
+    "never_paid_note": "For {{count}} cancelled orders without a payment record, keeping \"Record payment amount\" on records the revived order total as received. If off, it remains as an amount due.",
+    "never_paid_note_one": "For {{count}} cancelled order without a payment record, keeping \"Record payment amount\" on records the revived order total as received. If off, it remains as an amount due.",
+    "never_paid_note_single": "This order was cancelled without a payment record. Keeping \"Record payment amount\" on records the revived total as received; if off, it remains as an amount due.",
+    "restoration_label": "Revive cancelled items and recalculate order totals ({{count}} orders, {{quantity}} items)",
+    "restoration_label_one": "Revive cancelled items and recalculate order totals ({{count}} order, {{quantity}} items)",
+    "restoration_label_single": "Revives {{quantity}} cancelled items and recalculates the order total from {{before}} to {{after}}",
+    "restoration_hint": "Restores the order amount, shipping, discounts and coupon usage that cancellation set to 0, using the original order terms. Cancellation and refund records are kept.",
+    "restoration_hint_partial": "Recalculates the order amount, shipping and discounts including the revived items. Cancellation and refund records are kept.",
+    "restoration_coupon_conflict": "These orders cannot be revived because their coupon was already used by another order: {{order_numbers}}",
+    "restoration_coupon_conflict_single": "This order cannot be revived because its coupon ({{coupons}}) was already used by another order.",
+    "restoration_legacy_snapshot": "For {{count}} orders the original coupon details are missing, so totals are recalculated with the current coupon details and may differ from the original.",
+    "restoration_legacy_snapshot_one": "For {{count}} order the original coupon details are missing, so totals are recalculated with the current coupon details and may differ from the original.",
+    "restoration_legacy_snapshot_single": "The original coupon details are missing, so the total is recalculated with the current coupon details and may differ from the original.",
+    "warning": {
+      "pg_already_cancelled": "The card or other PG payment of this order has already been cancelled. Later refunds must be made by bank transfer or mileage.",
+      "pg_already_cancelled_orders": "The card or other PG payment has already been cancelled for these orders ({{order_numbers}}). Later refunds must be made by bank transfer or mileage."
     }
   }
 }

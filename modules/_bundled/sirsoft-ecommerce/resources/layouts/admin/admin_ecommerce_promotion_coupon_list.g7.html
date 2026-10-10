@@ -1,0 +1,213 @@
+<!-- 쿠폰 목록 (운영자) — 조회·발급이력·직접발급·상태변경을 한 화면에서 처리한다. 검색 항목이 많아
+  운영자마다 쓰는 필터가 달라서, 어떤 필터를 펼쳐 둘지는 사용자별 설정으로 따로 불러온다.
+  조회 조건은 전부 URL 쿼리에 실리고 진입 시 `<init>` 이 그것을 필터 입력값으로 되돌려 담는다. -->
+<layout name="admin_ecommerce_promotion_coupon_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.promotion_coupon.title"/>
+  <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다 -->
+  <data-source id="coupons" label_key="$t:sirsoft-ecommerce.editor.data_source.coupons" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/promotion-coupons" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 10}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" target_type="{{query.target_type}}" discount_type="{{query.discount_type}}" issue_status="{{query.issue_status}}" issue_method="{{query.issue_method}}" issue_condition="{{query.issue_condition}}" min_benefit_amount="{{query.min_benefit_amount}}" max_benefit_amount="{{query.max_benefit_amount}}" min_order_amount="{{query.min_order_amount}}" created_start_date="{{query.created_start_date}}" created_end_date="{{query.created_end_date}}" valid_start_date="{{query.valid_start_date}}" valid_end_date="{{query.valid_end_date}}" issue_start_date="{{query.issue_start_date}}" issue_end_date="{{query.issue_end_date}}" created_by="{{query.created_by}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 발급이력 창 전용. 어느 쿠폰을 열었는지가 정해져야 부를 수 있어 자동 조회를 끄고, 그 값이 전역에서 바뀔 때마다(창 열기·쪽 넘김·회원 필터) 다시 받는다 -->
+  <data-source id="couponIssues" label_key="$t:sirsoft-ecommerce.editor.data_source.couponIssues" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive" fetch_condition="{{!!_global.issueHistoryCoupon?.id}}">
+    <field name="depends_on">
+      <item>_global.issueHistoryCoupon</item>
+    </field>
+    <params page="{{_global.issueHistoryPage || 1}}" per_page="{{_global.issueHistoryPerPage || 10}}" user_id="{{_global.issueHistoryFilterUser?.uuid}}"/>
+  </data-source>
+  <init-local>
+    <field name="visibleFilters">
+      <item>searchField</item>
+      <item>searchKeyword</item>
+      <item>targetType</item>
+      <item>issueStatus</item>
+      <item>createdAt</item>
+    </field>
+    <field name="showDetailFilter" :value="false"/>
+    <field name="isEditMode" :value="false"/>
+    <field name="filter">
+      <field name="searchField" value="all"/>
+      <field name="searchKeyword" value=""/>
+      <field name="targetType" value="all"/>
+      <field name="discountType" value="all"/>
+      <field name="issueStatus" value="all"/>
+      <field name="issueMethod" value="all"/>
+      <field name="issueCondition" value="all"/>
+      <field name="minBenefitAmount" value=""/>
+      <field name="maxBenefitAmount" value=""/>
+      <field name="minOrderAmount" value=""/>
+      <field name="createdStartDate" value=""/>
+      <field name="createdEndDate" value=""/>
+      <field name="createdDateQuick" value=""/>
+      <field name="validStartDate" value=""/>
+      <field name="validEndDate" value=""/>
+      <field name="issueStartDate" value=""/>
+      <field name="issueEndDate" value=""/>
+      <field name="createdBy" value=""/>
+    </field>
+    <field name="creatorSearchResults" :value="[]"/>
+    <field name="selectedItems" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="visibleColumns">
+      <item>target_type_label</item>
+      <item>name</item>
+      <item>benefit_formatted</item>
+      <item>valid_period_formatted</item>
+      <item>issue_period_formatted</item>
+      <item>issue_count_formatted</item>
+      <item>issue_method_label</item>
+      <item>issue_condition_label</item>
+      <item>issue_status_label</item>
+      <item>created_at</item>
+      <item>created_by_name</item>
+    </field>
+    <field name="sortBy" value="created_at_desc"/>
+    <field name="perPage" value="10"/>
+  </init-local>
+  <init-global>
+    <field name="bulkSelectedItems" :value="[]"/>
+    <field name="bulkIssueStatus" value=""/>
+    <field name="isChangingStatus" :value="false"/>
+    <field name="deleteTarget" :value="null"/>
+    <field name="isDeleting" :value="false"/>
+    <field name="issueHistoryCoupon" :value="null"/>
+    <field name="issueHistoryPage" :value="1"/>
+    <field name="issueHistoryPerPage" :value="10"/>
+    <field name="issueHistoryFilterUser" :value="null"/>
+    <field name="directIssueCoupon" :value="null"/>
+    <field name="directIssueSelectedUsers" :value="[]"/>
+    <field name="directIssueSearchKeyword" value=""/>
+    <field name="directIssueSearchResults" :value="[]"/>
+    <field name="directIssueSearchResultsKeyword" :value="null"/>
+    <field name="directIssueSubmitting" :value="false"/>
+    <field name="cancelIssueTarget" :value="null"/>
+    <field name="cancelIssueSubmitting" :value="false"/>
+  </init-global>
+  <computed name="filterSearchField">{{_local.filter.searchField ?? query.search_field ?? 'all'}}</computed>
+  <computed name="filterSearchKeyword">{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}</computed>
+  <computed name="filterTargetType">{{_local.filter.targetType ?? query.target_type ?? 'all'}}</computed>
+  <computed name="filterDiscountType">{{_local.filter.discountType ?? query.discount_type ?? 'all'}}</computed>
+  <computed name="filterIssueStatus">{{_local.filter.issueStatus ?? query.issue_status ?? 'all'}}</computed>
+  <computed name="filterIssueMethod">{{_local.filter.issueMethod ?? query.issue_method ?? 'all'}}</computed>
+  <computed name="filterIssueCondition">{{_local.filter.issueCondition ?? query.issue_condition ?? 'all'}}</computed>
+  <computed name="filterMinBenefitAmount">{{_local.filter.minBenefitAmount ?? query.min_benefit_amount ?? ''}}</computed>
+  <computed name="filterMaxBenefitAmount">{{_local.filter.maxBenefitAmount ?? query.max_benefit_amount ?? ''}}</computed>
+  <computed name="filterMinOrderAmount">{{_local.filter.minOrderAmount ?? query.min_order_amount ?? ''}}</computed>
+  <computed name="filterCreatedStartDate">{{_local.filter.createdStartDate ?? query.created_start_date ?? ''}}</computed>
+  <computed name="filterCreatedEndDate">{{_local.filter.createdEndDate ?? query.created_end_date ?? ''}}</computed>
+  <computed name="filterValidStartDate">{{_local.filter.validStartDate ?? query.valid_start_date ?? ''}}</computed>
+  <computed name="filterValidEndDate">{{_local.filter.validEndDate ?? query.valid_end_date ?? ''}}</computed>
+  <computed name="filterIssueStartDate">{{_local.filter.issueStartDate ?? query.issue_start_date ?? ''}}</computed>
+  <computed name="filterIssueEndDate">{{_local.filter.issueEndDate ?? query.issue_end_date ?? ''}}</computed>
+  <computed name="filterCreatedBy">{{_local.filter.createdBy ?? query.created_by ?? ''}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.promotion-coupon.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>coupons</wait-for>
+    <wait-for>couponIssues</wait-for>
+  </transition-overlay>
+  <!-- 필터 적용 — 입력칸이 열일곱이라 필터 조각·초기화 버튼이 이 액션 하나를 공유한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고, 조건이 바뀌었으니 쪽수는 1로 되돌린다 -->
+  <action name="searchCoupons">
+    <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true" :replace="true" transition_overlay_target="pc_data_table__body">
+      <query search_field="{{_local.filter.searchField !== 'all' ? _local.filter.searchField : ''}}" search_keyword="{{_local.filter.searchKeyword}}" target_type="{{_local.filter.targetType !== 'all' ? _local.filter.targetType : ''}}" discount_type="{{_local.filter.discountType !== 'all' ? _local.filter.discountType : ''}}" issue_status="{{_local.filter.issueStatus !== 'all' ? _local.filter.issueStatus : ''}}" issue_method="{{_local.filter.issueMethod !== 'all' ? _local.filter.issueMethod : ''}}" issue_condition="{{_local.filter.issueCondition !== 'all' ? _local.filter.issueCondition : ''}}" min_benefit_amount="{{_local.filter.minBenefitAmount}}" max_benefit_amount="{{_local.filter.maxBenefitAmount}}" min_order_amount="{{_local.filter.minOrderAmount}}" created_start_date="{{_local.filter.createdStartDate}}" created_end_date="{{_local.filter.createdEndDate}}" valid_start_date="{{_local.filter.validStartDate}}" valid_end_date="{{_local.filter.validEndDate}}" issue_start_date="{{_local.filter.issueStartDate}}" issue_end_date="{{_local.filter.issueEndDate}}" created_by="{{_local.filter.createdBy}}" :page="1"/>
+    </navigate>
+  </action>
+  <init>
+    <action handler="sirsoft-ecommerce.loadVisibleFilters" id="admin_ecommerce_promotion_coupon_filters">
+      <field name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>targetType</item>
+        <item>issueStatus</item>
+        <item>createdAt</item>
+      </field>
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="visibleFilters"/>
+      </field>
+    </action>
+    <set-state target="global">
+      <field name="_local">
+        <field name="showDetailFilter" value="{{!!(query.discount_type || query.issue_method || query.issue_condition || query.min_benefit_amount || query.max_benefit_amount || query.min_order_amount || query.valid_start_date || query.valid_end_date || query.issue_start_date || query.issue_end_date || query.created_by)}}"/>
+        <field name="filter">
+          <field name="searchField" value="{{query.search_field || 'all'}}"/>
+          <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+          <field name="targetType" value="{{query.target_type || 'all'}}"/>
+          <field name="discountType" value="{{query.discount_type || 'all'}}"/>
+          <field name="issueStatus" value="{{query.issue_status || 'all'}}"/>
+          <field name="issueMethod" value="{{query.issue_method || 'all'}}"/>
+          <field name="issueCondition" value="{{query.issue_condition || 'all'}}"/>
+          <field name="minBenefitAmount" value="{{query.min_benefit_amount || ''}}"/>
+          <field name="maxBenefitAmount" value="{{query.max_benefit_amount || ''}}"/>
+          <field name="minOrderAmount" value="{{query.min_order_amount || ''}}"/>
+          <field name="createdStartDate" value="{{query.created_start_date || ''}}"/>
+          <field name="createdEndDate" value="{{query.created_end_date || ''}}"/>
+          <field name="validStartDate" value="{{query.valid_start_date || ''}}"/>
+          <field name="validEndDate" value="{{query.valid_end_date || ''}}"/>
+          <field name="issueStartDate" value="{{query.issue_start_date || ''}}"/>
+          <field name="issueEndDate" value="{{query.issue_end_date || ''}}"/>
+          <field name="createdBy" value="{{query.created_by || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+    <api-call if="{{!!query.created_by}}" :auth_required="true" target="/api/admin/users/search" method="GET">
+      <success>
+        <set-state target="local" creatorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+      </success>
+      <query uuid="{{query.created_by}}"/>
+    </api-call>
+  </init>
+  <slot name="content">
+    <div data-ref="coupon_list_content" class="admin-page-content">
+      <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_ecommerce_promotion_coupon_filters" visibleFilters="{{_local.visibleFilters}}">
+        <prop name="defaultFilters">
+          <item>searchField</item>
+          <item>searchKeyword</item>
+          <item>targetType</item>
+          <item>issueStatus</item>
+          <item>createdAt</item>
+        </prop>
+        <on type="change" event="onFilterVisibilityChange">
+          <!-- 화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 설정으로 직접 처리하므로 여기서 다시 보내지 않는다 -->
+          <set-state target="_local" visibleFilters="{{$args[0]}}"/>
+        </on>
+      </filter-visibility-selector>
+      <div data-ref="page_header" class="flex-between mb-6">
+        <div>
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.promotion_coupon.title</h1>
+          <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.promotion_coupon.description</p>
+        </div>
+        <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{coupons?.data?.abilities?.can_create !== true}}">
+          <on type="click">
+            <!-- 쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75). -->
+            <navigate path="/admin/ecommerce/promotion-coupon-create" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="plus" class="text-base mr-2"/>
+          <span>$t:sirsoft-ecommerce.admin.promotion_coupon.actions.create</span>
+        </button>
+      </div>
+      <include src="partials/admin_ecommerce_promotion_coupon_list/_partial_filter_section.g7.html"/>
+      <include src="partials/admin_ecommerce_promotion_coupon_list/_partial_coupon_datagrid.g7.html"/>
+    </div>
+  </slot>
+  <!-- 선택한 쿠폰들의 발급 상태(발급중/중지)를 한꺼번에 바꾸기 전 확인 -->
+  <modal src="partials/admin_ecommerce_promotion_coupon_list/_modal_status_change_confirm.g7.html"/>
+  <!-- 발급이력 — 누구에게 언제 나갔는지 보고, 회원으로 좁혀 볼 수 있다 -->
+  <modal src="partials/admin_ecommerce_promotion_coupon_list/_modal_issue_history.g7.html"/>
+  <!-- 직접 발급 — 회원을 찾아 골라 이 쿠폰을 바로 지급한다 -->
+  <modal src="partials/admin_ecommerce_promotion_coupon_list/_modal_direct_issue.g7.html"/>
+  <!-- 쿠폰 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_promotion_coupon_list/_modal_delete_confirm.g7.html"/>
+  <!-- 발급 취소 확인 — 발급이력에서 이미 나간 한 건을 되돌린다 -->
+  <modal src="partials/admin_ecommerce_promotion_coupon_list/_modal_cancel_issue_confirm.g7.html"/>
+</layout>

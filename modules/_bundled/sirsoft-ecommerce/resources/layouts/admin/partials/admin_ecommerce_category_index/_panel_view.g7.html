@@ -1,0 +1,182 @@
+<!-- 분류 보기 패널. 트리가 전역에 실어 둔 행(`_global.selectedCategory`)만 읽고 상세를 따로 부르지
+  않는다 — 화면에 안 나오는 값이 있으면 원인은 트리 응답에 있다.
+  아래 두 버튼이 출구다. 편집은 보고 있던 분류를 폼의 `_local.form` 으로 옮기면서 **새 `tempKey`
+  를 함께 발급한다** — 이미지 업로드가 아직 분류 id 가 없는 순간에도 파일을 어딘가에 묶어 둬야
+  해서 쓰는 임시 키이고, 편집에 들어갈 때마다 새로 뽑아야 이전 편집의 임시 파일이 딸려오지 않는다.
+  삭제 버튼은 창만 연다. 형제 화면(브랜드·공지)은 `_global.modal_data` 에 값을 실어 넘기지만
+  여기서는 창이 `_global.selectedCategory` 를 직접 보므로 실어 보낼 것이 없다 — 그 전역 칸은
+  여러 화면이 나눠 쓰는 자리라, 아무도 읽지 않을 값을 넣어 두면 다음 화면에 남는다. -->
+<partial description="Category View Panel - Read-only Category Details">
+  <div data-ref="view_panel" data-if="{{_global.selectedCategoryId &amp;&amp; _global.panelMode === 'view'}}">
+    <div data-ref="view_header" class="px-4 panel-header">
+      <h3 class="text-heading">$t:sirsoft-ecommerce.admin.category.info.title</h3>
+    </div>
+    <div data-ref="view_content" class="divider-list p-4">
+      <div data-ref="section_basic_info" class="py-4 first:pt-0">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.category.info.basic</h4>
+        <div class="grid-2col-responsive">
+          <div>
+            <span class="form-sub-label">$t:sirsoft-ecommerce.admin.category.info.slug</span>
+            <span class="text-primary block text-sm font-mono">{{_global.selectedCategory?.slug}}</span>
+          </div>
+          <div>
+            <div>
+              <span class="form-sub-label">$t:sirsoft-ecommerce.admin.category.info.status</span>
+              <span data-if="{{_global.selectedCategory?.is_active}}" class="inline-block px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:sirsoft-ecommerce.common.active</span>
+              <span data-if="{{!_global.selectedCategory?.is_active}}" class="text-secondary inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:sirsoft-ecommerce.common.inactive</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid-2col-responsive mt-4">
+          <div>
+            <span class="form-sub-label">$t:sirsoft-ecommerce.admin.category.info.name</span>
+            <div data-each="nameEntry in {{Object.entries(_global.selectedCategory?.name || {})}}">
+              <div data-if="{{nameEntry[1]}}">
+                <span class="text-hint inline-block w-8 uppercase">{{nameEntry[0]}}</span>
+                <span class="text-primary text-sm">{{nameEntry[1]}}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span class="form-sub-label">$t:sirsoft-ecommerce.admin.category.info.description</span>
+            <div data-each="descEntry in {{Object.entries(_global.selectedCategory?.description || {})}}">
+              <div data-if="{{descEntry[1]}}">
+                <span class="text-hint inline-block w-8 align-top uppercase">{{descEntry[0]}}</span>
+                <span class="inline text-body whitespace-pre-wrap">{{descEntry[1]}}</span>
+              </div>
+            </div>
+            <span data-if="{{!_global.selectedCategory?.description || Object.keys(_global.selectedCategory?.description || {}).length === 0}}" class="block text-sm text-gray-400 dark:text-gray-500">-</span>
+          </div>
+        </div>
+        <div class="mt-4">
+          <span class="form-sub-label">$t:sirsoft-ecommerce.admin.category.info.image</span>
+          <div data-if="{{_global.selectedCategory?.images &amp;&amp; _global.selectedCategory?.images?.length > 0}}">
+            <div>
+              <div>
+                <div data-each="image in {{_global.selectedCategory?.images ?? []}}">
+                  <img src="{{image?.download_url}}" alt="{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}" class="w-full max-h-56 py-2 object-contain rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-75 hover:shadow-md transition-all bg-gray-50 dark:bg-gray-800">
+                    <on type="click">
+                      <!-- 섬네일을 눌러 원본 창을 연다. 미리보기 창은 스스로 이미지를 고르지 않으므로
+                        주소와 대체문구를 여기서 `_global.imagePreview` 에 채워 넘긴다.
+                        대체문구는 이미지에 붙은 설명이 없으면 분류 이름으로 대신한다 — 창 제목이
+                        빈칸으로 열리는 것을 막는 자리다. -->
+                      <sequence>
+                        <set-state target="global">
+                          <field name="imagePreview">
+                            <field name="imageUrl" value="{{image?.download_url}}"/>
+                            <field name="imageAlt" value="{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="modal_image_preview"/>
+                      </sequence>
+                    </on>
+                  </img>
+                </div>
+              </div>
+              <p class="text-tertiary italic">$t:sirsoft-ecommerce.admin.category.info.image_click_to_enlarge</p>
+            </div>
+          </div>
+          <div data-if="{{!_global.selectedCategory?.images || _global.selectedCategory?.images?.length === 0}}" class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+            <span class="text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.category.info.no_image</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_hierarchy" class="py-4">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.category.info.hierarchy_info</h4>
+        <div class="grid-2col-responsive">
+          <div>
+            <div class="text-tertiary">$t:sirsoft-ecommerce.admin.category.info.parent_category</div>
+            <div class="text-primary text-sm">
+              <span data-if="{{!_global.selectedCategory?.parent_id || _global.selectedCategory?.parent_id === 0}}">$t:sirsoft-ecommerce.admin.category.form.parent_top_level</span>
+              <span data-if="{{_global.selectedCategory?.parent_id &amp;&amp; _global.selectedCategory?.parent_id !== 0}}">{{$localized(_global.selectedCategory?.parent?.name)}}</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-tertiary">$t:sirsoft-ecommerce.admin.category.info.order</div>
+            <div class="text-primary text-sm">{{_global.selectedCategory?.sort_order ?? 0}}</div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_seo" data-if="{{_global.selectedCategory?.meta_title || _global.selectedCategory?.meta_description}}" class="py-4">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.category.info.seo</h4>
+        <div>
+          <div data-if="{{_global.selectedCategory?.meta_title}}" class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:sirsoft-ecommerce.admin.category.form.meta_title</span>
+            <span class="text-primary text-sm">{{_global.selectedCategory?.meta_title}}</span>
+          </div>
+          <div data-if="{{_global.selectedCategory?.meta_description}}" class="flex-start">
+            <span class="w-24 text-label-subtle shrink-0">$t:sirsoft-ecommerce.admin.category.form.meta_description</span>
+            <p class="text-body">{{_global.selectedCategory?.meta_description}}</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_statistics" class="py-4">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.category.info.statistics</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div class="flex-center gap-3">
+              <div class="flex-center w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg justify-center">
+                <icon name="box" size="lg" class="text-blue-600 dark:text-blue-400"/>
+              </div>
+              <div>
+                <p class="text-xs text-secondary">$t:sirsoft-ecommerce.admin.category.info.product_count</p>
+                <p class="text-page-heading">{{_global.selectedCategory?.products_count ?? 0}}</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div class="flex-center gap-3">
+              <div class="flex-center w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg justify-center">
+                <icon name="folder-tree" size="lg" class="text-purple-600 dark:text-purple-400"/>
+              </div>
+              <div>
+                <p class="text-xs text-secondary">$t:sirsoft-ecommerce.admin.category.info.subcategory_count</p>
+                <p class="text-page-heading">{{_global.selectedCategory?.children?.length ?? 0}}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_system_info" class="py-4 last:pb-0">
+        <h4 class="text-table-header mb-3">$t:sirsoft-ecommerce.admin.category.info.system</h4>
+        <div class="grid-2col-responsive">
+          <div>
+            <div class="text-tertiary">$t:sirsoft-ecommerce.common.created_at</div>
+            <div class="flex-center text-primary gap-1.5 text-sm">
+              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+              <span>{{_global.selectedCategory?.created_at}}</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-tertiary">$t:sirsoft-ecommerce.common.updated_at</div>
+            <div class="flex-center text-primary gap-1.5 text-sm">
+              <icon name="clock" class="text-base text-gray-400 dark:text-gray-500"/>
+              <span>{{_global.selectedCategory?.updated_at}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="view_footer" class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex-center gap-3">
+        <button disabled="{{_global.selectedCategory?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 편집 진입 — 모드 전환과 함께 임시 업로드 키를 새로 뽑고, 보고 있던 분류를 폼의 `_local.form` 에 부어 준다. 폼은 상세를 다시 부르지 않으므로 이 자리가 편집 초깃값의 유일한 출처다. -->
+            <sequence>
+              <set-state target="global" panelMode="edit" tempKey="{{$uuid()}}"/>
+              <set-state target="local" form="{{_global.selectedCategory }}" :isSaving="false" :errors="null"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.common.edit
+        </button>
+        <button class="flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.selectedCategory?.abilities?.can_delete !== true}}">
+          <on type="click">
+            <!-- 삭제 확인 창 열기. 창이 `_global.selectedCategory` 를 직접 보므로 넘길 값이 없다 — 하위·상품 수도 그 안의 `children_count`/`products_count` 로 판단한다. -->
+            <open-modal target="modal_delete_confirm"/>
+          </on>
+          $t:sirsoft-ecommerce.common.delete
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

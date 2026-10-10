@@ -12,7 +12,9 @@ _소유 모델이 없습니다._
 결제 상태는 이 플러그인이 아니라 `sirsoft-ecommerce`의 `Order`/`OrderPayment` 모델이
 소유합니다(§AGENTS.md "설계 원칙"). 가상계좌 웹훅 검증에 쓰는 secret 조차 별도 테이블이
 아니라 `OrderPayment.payment_meta`(JSON 컬럼)의 `toss_secret` 키에 저장됩니다 — 이 값은
-그 주문 하나에만 의미가 있어 독립 테이블을 둘 이유가 없습니다.
+그 주문 하나에만 의미가 있어 독립 테이블을 둘 이유가 없습니다. 토스가 승인·발급한 금액 중
+주문 청구액과 대조를 마친 값도 같은 JSON 의 `toss_approved_amount` 키에 남으며, 입금통보
+웹훅은 이 값을 결제완료 금액 근거로 씁니다.
 <!-- @intent END -->
 
 ## 소유 테이블

@@ -80,13 +80,13 @@ class ReportRepository implements ReportRepositoryInterface
             $query->byBoard($filters['board_id']);
         }
 
-        // 날짜 필터 (개별 처리)
-        if (! empty($filters['reported_at_from'])) {
-            $query->where('created_at', '>=', $filters['reported_at_from'].' 00:00:00');
-        }
-        if (! empty($filters['reported_at_to'])) {
-            $query->where('created_at', '<=', $filters['reported_at_to'].' 23:59:59');
-        }
+        // 날짜 필터 (개별 처리) — 목록은 접수일을 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
+            $query,
+            'created_at',
+            $filters['reported_at_from'] ?? null,
+            $filters['reported_at_to'] ?? null
+        );
 
         // 지연 조인: inner 는 id 만 훑고, 관계 로딩은 해당 페이지에만 적용된다
         return $this->paginateWithDeferredJoin(
@@ -219,8 +219,14 @@ class ReportRepository implements ReportRepositoryInterface
             $query->byBoard($filters['board_id']);
         }
 
+        // 목록과 같은 하루로 자른다 — 종료일을 'Y-m-d' 그대로 비교하면 그날 하루가 통째로 빠진다.
         if (! empty($filters['reported_at_from']) && ! empty($filters['reported_at_to'])) {
-            $query->byDateRange($filters['reported_at_from'], $filters['reported_at_to']);
+            $this->applyViewerDateRangeFilter(
+                $query,
+                'created_at',
+                $filters['reported_at_from'],
+                $filters['reported_at_to']
+            );
         }
 
         // 상태별 통계
@@ -307,13 +313,13 @@ class ReportRepository implements ReportRepositoryInterface
             $query->where('board_id', $filters['board_id']);
         }
 
-        // 날짜 필터
-        if (! empty($filters['reported_at_from'])) {
-            $query->where('last_reported_at', '>=', $filters['reported_at_from'].' 00:00:00');
-        }
-        if (! empty($filters['reported_at_to'])) {
-            $query->where('last_reported_at', '<=', $filters['reported_at_to'].' 23:59:59');
-        }
+        // 날짜 필터 — 목록은 마지막 신고일을 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
+            $query,
+            'last_reported_at',
+            $filters['reported_at_from'] ?? null,
+            $filters['reported_at_to'] ?? null
+        );
 
         // 검색
         $this->applySearchConditions($query, $filters, ['post_title']);
@@ -388,6 +394,7 @@ class ReportRepository implements ReportRepositoryInterface
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건 (search, search_field 키 사용)
      * @param  array  $extraFields  추가 검색 필드 목록
+     * @return void
      */
     private function applySearchConditions($query, array $filters, array $extraFields = []): void
     {
@@ -461,7 +468,10 @@ class ReportRepository implements ReportRepositoryInterface
     }
 
     /**
-     * 사용자의 오늘(자정 기준) 전체 신고 건수를 boards_report_logs 기준으로 조회합니다.
+     * 사용자의 오늘 전체 신고 건수를 boards_report_logs 기준으로 조회합니다.
+     *
+     * 「오늘」은 신고하는 사람 자신의 하루다(보는 사람 시간대 — 7.1.0 O-CF3 · 원칙 「화면은 유저 시간대,
+     * 기록은 UTC」). UTC 자정으로 자르면 한국 시간 새벽 0~9시 신고가 전날 한도에 섞인다.
      *
      * @param  int  $userId  사용자 ID
      * @return int 오늘 신고 건수
@@ -470,7 +480,7 @@ class ReportRepository implements ReportRepositoryInterface
     {
         // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 범위 조건으로 준다.
         $query = ReportLog::where('reporter_id', $userId);
-        $this->applyDayFilter($query, 'created_at', today());
+        $this->applyViewerTodayFilter($query, 'created_at');
 
         return $query->count();
     }
@@ -698,5 +708,251 @@ class ReportRepository implements ReportRepositoryInterface
         PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
 
         return $query->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateLogsByReporter(int $reporterId, array $filters, int $perPage): LengthAwarePaginator
+    {
+        $query = ReportLog::query()
+            ->where('reporter_id', $reporterId)
+            ->with(['report' => fn ($q) => $q->withTrashed()->with('board:id,slug,name')]);
+
+        // 케이스 기준 필터는 whereHas 로 — 로그는 케이스의 상태·대상을 갖지 않는다.
+        $caseFilters = array_filter([
+            'status' => $filters['status'] ?? null,
+            'target_type' => $filters['target_type'] ?? null,
+            'board_slug' => $filters['board_slug'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        if ($caseFilters !== []) {
+            $query->whereHas('report', function (Builder $r) use ($caseFilters) {
+                $r->withTrashed();
+
+                if (isset($caseFilters['status'])) {
+                    $r->where('status', $caseFilters['status']);
+                }
+
+                if (isset($caseFilters['target_type'])) {
+                    $r->where('target_type', $caseFilters['target_type']);
+                }
+
+                if (isset($caseFilters['board_slug'])) {
+                    $r->whereHas('board', fn (Builder $b) => $b->where('slug', $caseFilters['board_slug']));
+                }
+            });
+        }
+
+        $this->applyReporterSearch($query, (string) ($filters['search_field'] ?? 'title_content'), $filters['search'] ?? null);
+
+        $direction = ($filters['sort'] ?? 'latest') === 'oldest' ? 'asc' : 'desc';
+
+        /** @var LengthAwarePaginator $paginator */
+        $paginator = $query
+            ->orderBy('created_at', $direction)
+            ->orderBy('id', $direction)
+            // 목록이 실제로 쓰는 컬럼만 — metadata(IP/UA)는 신고자 화면에 싣지 않으므로
+            // 아예 읽지 않는다. 본인 로그만 보는 화면이라 OFFSET 이 크게 자라지 않는다.
+            ->paginate($perPage, ['id', 'report_id', 'reporter_id', 'snapshot', 'reason_type', 'reason_detail', 'created_at']);
+
+        $this->hydrateReportLogParentPosts($paginator->getCollection());
+
+        return $paginator;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countLogsByReporter(int $reporterId): int
+    {
+        return ReportLog::query()->where('reporter_id', $reporterId)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findLogByIdAndReporter(int $logId, int $reporterId): ?ReportLog
+    {
+        return ReportLog::query()
+            ->where('id', $logId)
+            ->where('reporter_id', $reporterId)
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteLog(int $logId): bool
+    {
+        return (bool) ReportLog::query()->where('id', $logId)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countLogsByReport(int $reportId): int
+    {
+        return ReportLog::query()->where('report_id', $reportId)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function latestLogCreatedAt(int $reportId)
+    {
+        return ReportLog::query()->where('report_id', $reportId)->max('created_at');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countLogsByReportSince(int $reportId, ?\DateTimeInterface $since): int
+    {
+        return ReportLog::query()
+            ->where('report_id', $reportId)
+            ->when($since, fn (Builder $query) => $query->where('created_at', '>=', $since))
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findLatestLogByReport(int $reportId): ?ReportLog
+    {
+        return ReportLog::query()
+            ->where('report_id', $reportId)
+            ->latest()
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * 댓글 대상 신고 로그의 부모 글 ID 를 일괄 프리로드합니다.
+     *
+     * 댓글 신고는 대상이 댓글이라 "어느 글의 댓글인지" 를 알아야 이동 링크를 만든다 —
+     * 로그마다 조회하면 N+1 이므로 한 번에 맵으로 싣는다.
+     *
+     * @param  \Illuminate\Support\Collection<int, ReportLog>  $logs  신고 로그 목록
+     * @return void
+     */
+    private function hydrateReportLogParentPosts($logs): void
+    {
+        $commentIds = $logs
+            ->filter(fn ($log) => $log->report?->target_type?->value === 'comment')
+            ->map(fn ($log) => (int) $log->report->target_id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($commentIds === []) {
+            return;
+        }
+
+        $postIds = Comment::query()
+            ->withTrashed()
+            ->whereIn('id', $commentIds)
+            ->pluck('post_id', 'id');
+
+        foreach ($logs as $log) {
+            if ($log->report?->target_type?->value !== 'comment') {
+                continue;
+            }
+
+            $log->parent_post_id_preloaded = $postIds[(int) $log->report->target_id] ?? null;
+        }
+    }
+
+    /**
+     * 신고자 목록의 검색 조건을 적용합니다.
+     *
+     * 제목·내용은 신고 시점 스냅샷(JSON)에서 찾는다 — 원본이 수정·삭제돼도 신고자가
+     * "무엇을 신고했는지" 는 스냅샷 기준이어야 목록이 흔들리지 않는다.
+     * FULLTEXT 는 쓰지 않는다(JSON 추출값 대상).
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  string  $field  검색 대상
+     * @param  string|null  $search  검색어
+     * @return void
+     */
+    private function applyReporterSearch(Builder $query, string $field, ?string $search): void
+    {
+        if ($search === null || trim($search) === '') {
+            return;
+        }
+
+        $like = '%'.addcslashes(trim($search), '%_'.chr(92)).'%';
+
+        $query->where(function (Builder $outer) use ($field, $like) {
+            if (in_array($field, ['title', 'title_content'], true)) {
+                $outer->orWhereRaw('JSON_UNQUOTE(JSON_EXTRACT(snapshot, "$.title")) LIKE ?', [$like]);
+            }
+
+            if (in_array($field, ['content', 'title_content'], true)) {
+                $outer->orWhereRaw('JSON_UNQUOTE(JSON_EXTRACT(snapshot, "$.content")) LIKE ?', [$like]);
+            }
+
+            if ($field === 'reason') {
+                $outer->orWhere('reason_detail', 'like', $like);
+            }
+        });
+    }
+
+    /**
+     * 신고 대상의 스냅샷에서 개인정보 필드를 덮어씁니다 (개인정보 보유기간 처리, 이슈 #636).
+     *
+     * 스냅샷에 그 키가 없는 로그는 건드리지 않는다. 수정 시각을 바꾸지 않도록 타임스탬프를
+     * 끄고 모델 이벤트 없이 저장한다 — 파기는 신고 처리 이력이 아니다.
+     *
+     * @param  string  $targetType  신고 대상 종류 (post|comment)
+     * @param  array<int, int>  $targetIds  대상 ID 목록
+     * @param  array<string, string>  $replacements  스냅샷 키 => 치환값
+     * @return int 갱신한 신고 로그 수
+     */
+    public function scrubSnapshotsForTargets(string $targetType, array $targetIds, array $replacements): int
+    {
+        if ($targetIds === [] || $replacements === []) {
+            return 0;
+        }
+
+        $reportIds = Report::withTrashed()
+            ->where('target_type', $targetType)
+            ->whereIn('target_id', $targetIds)
+            ->pluck('id')
+            ->all();
+
+        if ($reportIds === []) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        ReportLog::query()
+            ->whereIn('report_id', $reportIds)
+            ->whereNotNull('snapshot')
+            ->chunkById(200, function ($logs) use ($replacements, &$updated) {
+                foreach ($logs as $log) {
+                    $snapshot = is_array($log->snapshot) ? $log->snapshot : [];
+                    $changed = false;
+
+                    foreach ($replacements as $key => $value) {
+                        if (array_key_exists($key, $snapshot) && $snapshot[$key] !== $value) {
+                            $snapshot[$key] = $value;
+                            $changed = true;
+                        }
+                    }
+
+                    if (! $changed) {
+                        continue;
+                    }
+
+                    $log->snapshot = $snapshot;
+                    $log->timestamps = false;
+                    $log->saveQuietly();
+                    $updated++;
+                }
+            });
+
+        return $updated;
     }
 }

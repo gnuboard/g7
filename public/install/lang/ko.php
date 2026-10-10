@@ -146,6 +146,8 @@ return [
     'env_hardening_hint_option_strict' => '명령줄 사용자 = 웹 서버 사용자 (단일 사용자 환경)',
     'env_hardening_hint_option_group' => '명령줄 사용자 ≠ 웹 서버 사용자 (자체 구축 서버 등 — 그룹 읽기 허용 절충안)',
     'env_hardening_hint_note' => '명령 실행 전 환경을 확인하세요. 잘못된 권한 적용 시 웹 서버가 .env 를 읽지 못해 사이트가 응답하지 않을 수 있습니다.',
+    'cron_hint_title' => '예약 작업(cron) 등록',
+    'cron_hint_body' => '매분 아래 명령을 실행하도록 cron 에 등록하세요. 등록하지 않으면 방문자 통계는 관리자가 화면을 열 때 집계되지만, 주문 자동취소·오래된 데이터 정리·메일 보고서 같은 예약 작업은 동작하지 않습니다.',
 
     // Step 5: 완료
     'installation_info' => '설치 정보',
@@ -290,6 +292,7 @@ return [
     'task_create_settings_json' => '설정 파일 생성',
     'task_complete_flag' => '설치 완료 처리',
     'task_config_cache' => '설정 캐시 생성',
+    'task_route_cache' => '라우트 캐시 생성',
     'task_static_publish' => '부트스트랩 리소스 정적 게시',
     'task_unknown' => '알 수 없는 작업',
 
@@ -396,11 +399,13 @@ return [
     // 에러 메시지 - Worker (Cache)
     'error_cache_clear_failed' => '캐시 클리어에 실패했습니다',
     'error_config_cache_failed' => '설정 캐시 생성에 실패했습니다',
+    'error_route_cache_failed' => '라우트 캐시 생성에 실패했습니다 (사이트는 정상 동작하며, 확장을 설치·변경하면 다시 생성됩니다)',
     'error_static_publish_failed' => '부트스트랩 리소스 정적 게시에 실패했습니다 (사이트는 API 경로로 정상 동작합니다)',
 
     // 로그 메시지 - Worker (Cache)
     'log_cache_clear_success' => '캐시 클리어 완료',
     'log_config_cache_success' => '설정 캐시 생성 완료',
+    'log_route_cache_success' => '라우트 캐시 생성 완료',
     'log_static_publish_success' => '부트스트랩 리소스 정적 게시 완료',
 
     // 에러 메시지 - Worker (Settings JSON)
@@ -949,5 +954,35 @@ ini_set(\'zlib.output_compression\', \'off\');
     'required_files_fix_guide_combined' => '.env 파일 생성 및 권한 설정이 필요합니다. 아래 명령어를 실행해주세요:',
 
     // 상대경로 병기 안내
+    'storage_windows_readonly' => 'Storage 폴더에 읽기 전용(ReadOnly) 속성이 걸려 있습니다.',
+    'storage_windows_readonly_message' => '이 속성은 ACL(접근 권한)이 아니라 파일 속성이라 icacls 명령으로는 해제되지 않습니다. 아래 attrib 명령으로 읽기 전용 속성을 먼저 해제하세요.',
+    'permission_readonly_fix_guide' => '읽기 전용 속성을 해제하려면 아래 명령을 실행하세요:',
+    'permission_readonly_hint' => '※ 압축 해제·백업 복원·동기화 도구가 ReadOnly 속성을 남기는 경우가 많습니다. 속성 해제 후에도 실패하면 이어서 icacls 로 권한을 부여하세요.',
     'or_relative_path' => '또는 그누보드7 루트 디렉토리에서:',
+
+    // 설치 소유권 (다른 브라우저 세션의 상태변경 차단)
+    'error_ownership_conflict' => '다른 브라우저 세션이 이 설치를 진행 중입니다. 설치를 시작한 브라우저에서 계속하거나 복구 토큰으로 소유권을 되찾으세요.',
+    'error_csrf_invalid' => '요청 검증 토큰이 유효하지 않습니다. 페이지를 새로고침한 후 다시 시도해주세요.',
+    'error_state_conflict' => '다른 요청이 먼저 설치 상태를 변경했습니다. 페이지를 새로고침한 후 다시 시도해주세요.',
+    'error_db_config_changed' => '데이터베이스 연결 테스트 후 연결 설정이 변경되었습니다. 현재 설정으로 연결 테스트를 다시 수행해주세요.',
+    'error_install_plan_unverified' => '확인된 설치 계획이 없어 작업을 실행하지 않았습니다. 설치 화면에서 설치를 다시 시작해주세요.',
+    'error_finalize_not_ready' => '설치가 아직 완료되지 않았습니다.',
+    'drop_confirm_rejected' => '기존 테이블 삭제 확인이 유효하지 않아 기존 테이블을 삭제하지 않고 진행합니다. 삭제가 필요하면 Step 3 에서 데이터베이스 연결 테스트와 삭제 동의를 다시 진행해주세요.',
+    'log_drop_confirm_rejected' => '[경고] 기존 테이블 삭제 확인이 유효하지 않아 삭제 없이 진행합니다 (사유: :reason)',
+    'recovery_token_notice_title' => '복구 토큰을 안전한 곳에 보관하세요',
+    'recovery_token_notice_desc' => '브라우저를 닫거나 세션이 만료되면 이 설치는 다른 브라우저에서 이어갈 수 없습니다. 그때 아래 복구 토큰을 입력해야 설치를 계속할 수 있습니다. 토큰은 이 브라우저에만 표시됩니다.',
+    'recovery_token_copy' => '복사',
+    'ownership_locked_title' => '다른 세션에서 진행 중인 설치',
+    'ownership_locked_desc' => '이 설치는 다른 브라우저 세션이 진행하고 있어 이 화면에서는 설치 상태를 바꿀 수 없습니다. 설치를 시작한 본인이라면 설치 중 안내받은 복구 토큰을 입력해 이어서 진행하세요.',
+    'recovery_token_label' => '복구 토큰',
+    'recovery_token_placeholder' => 'xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx',
+    'recovery_submit' => '소유권 되찾기',
+    'recovery_success' => '소유권을 되찾았습니다. 설치 화면으로 이동합니다. 새 복구 토큰이 발급되었으니 다시 보관해주세요.',
+    'error_recovery_token_invalid' => '복구 토큰이 올바르지 않습니다.',
+    'error_recovery_rate_limited' => '복구 토큰 입력 실패가 너무 많습니다. 15분 후 다시 시도해주세요.',
+    'error_recovery_unavailable' => '되찾을 진행 중 설치가 없습니다. 페이지를 새로고침해주세요.',
+    'ownership_reset_hint' => '복구 토큰을 잃어버렸다면 서버에서 storage/installer-state.json 파일을 삭제한 뒤 처음부터 다시 설치하세요.',
+    'log_ownership_claimed' => '[소유권] 설치 소유 세션이 지정되었습니다.',
+    'log_ownership_reclaimed' => '[소유권] 복구 토큰으로 설치 소유권을 되찾았습니다.',
+    'log_ownership_reclaim_failed' => '[소유권] 복구 토큰 불일치로 소유권 되찾기를 거부했습니다.',
 ];

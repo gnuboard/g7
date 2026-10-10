@@ -1,0 +1,152 @@
+<!-- 회원가입 폼 조각 — 입력값은 registerForm 한 덩어리로 모여 그대로 전송된다. 필드를 늘리는 것은 확장의 몫이라(아래 주입 앵커) 이 조각은 코어가 아는 필드만 안다. -->
+<partial description="회원가입 폼">
+  <form data-key="registerForm" id="registerForm" class="space-y-4 relative">
+    <on type="submit">
+      <!-- 가입 요청 — 본인인증을 거쳐 왔다면 URL 에 남은 인증 토큰을 폼 값에 얹어 함께 보낸다. 실패 응답의 오류는 필드별로 갈라 각 입력 아래에 붙고, 필드에 속하지 않는 것(플러그인이 낸 오류 등)은 위쪽 안내 상자에 목록으로 모인다. -->
+      <sequence>
+        <set-state target="local" :isRegistering="true" :registerError="null" :errors="null"/>
+        <api-call target="/api/auth/register" method="POST" body="{{Object.assign({}, _local.registerForm, query.verification_token ? { verification_token: query.verification_token } : {})}}">
+          <success>
+            <set-state target="local" :isRegistering="false"/>
+            <toast type="success" message="$t:auth.register_success"/>
+            <navigate path="/login"/>
+          </success>
+          <fail>
+            <set-state target="local" :isRegistering="false" errors="{{error.response?.errors ?? error.errors}}" registerError="{{error.response?.message ?? error.message}}"/>
+          </fail>
+        </api-call>
+      </sequence>
+    </on>
+    <!-- 로딩 오버레이 (블러 처리) -->
+    <div data-if="{{_local?.isRegistering}}" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+      <div class="flex flex-col items-center gap-2">
+        <!-- 로딩 스피너 -->
+        <div class="w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin"/>
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:auth.register.processing</span>
+      </div>
+    </div>
+    <!-- API 에러 메시지 표시 — 전체 응답 message + form field 외 errors (identity/verification_token 등 plugin 기여 에러) -->
+    <div data-if="{{_local?.registerError}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <p class="text-sm font-medium text-red-600 dark:text-red-400">{{_local.registerError}}</p>
+      <!-- 비-form-field 에러 메시지 (identity / verification_token 등 plugin 기여 에러)를 추가 안내 -->
+      <ul data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })" class="mt-2 list-disc list-inside space-y-1">
+        <li class="text-sm text-red-600 dark:text-red-400">{{message}}</li>
+      </ul>
+    </div>
+    <!-- 이메일 필드 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:auth.email</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <input type="email" name="email" placeholder="$t:auth.email_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}"/>
+      <span data-if="{{_local.errors?.email}}" class="text-red-500 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
+    </div>
+    <!-- 비밀번호 필드 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:auth.password</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <!-- 규칙·자리표시 숫자는 보안 환경설정 값을 따른다(#736) — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다. -->
+      <password-input name="password" placeholder="$t:auth.register.password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}" :showToggle="true" :showValidation="true" enableRules="{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}" error="{{_local.errors?.password?.[0] ?? ''}}"/>
+      <!-- 화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다(#736). -->
+      <p data-if="{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}" class="mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400">
+        <span>$t:auth.password_rules.server_intro</span>
+        <span data-if="{{!!_global.settings?.security?.password_block_identifier}}">$t:auth.password_rules.identifier</span>
+        <span data-if="{{!!_global.settings?.security?.password_block_repeated_chars}}">$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}</span>
+        <span data-if="{{!!_global.settings?.security?.password_block_sequential_chars}}">$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}</span>
+      </p>
+    </div>
+    <!-- 비밀번호 확인 필드 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:auth.password_confirm</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <password-input name="password_confirmation" placeholder="$t:auth.password_confirm_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}" :showToggle="true" :isConfirmField="true" confirmTarget="{{_local.registerForm?.password ?? ''}}" error="{{_local.errors?.password_confirmation?.[0] ?? ''}}"/>
+    </div>
+    <!-- 이름 필드 (필수) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:auth.name</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <input type="text" name="name" placeholder="$t:auth.name_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}"/>
+      <span data-if="{{_local.errors?.name}}" class="text-red-500 text-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
+    </div>
+    <!-- 닉네임 필드 (선택) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.nickname</label>
+      <input type="text" name="nickname" placeholder="$t:auth.nickname_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
+      <span data-if="{{_local.errors?.nickname}}" class="text-red-500 text-xs mt-1">{{_local.errors?.nickname?.[0] ?? ''}}</span>
+    </div>
+    <!-- 휴대폰번호 필드 (선택) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.mobile</label>
+      <input type="tel" name="mobile" placeholder="$t:auth.mobile_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
+      <span data-if="{{_local.errors?.mobile}}" class="text-red-500 text-xs mt-1">{{_local.errors?.mobile?.[0] ?? ''}}</span>
+    </div>
+    <!-- 전화번호 필드 (선택) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.phone</label>
+      <input type="tel" name="phone" placeholder="$t:auth.phone_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
+      <span data-if="{{_local.errors?.phone}}" class="text-red-500 text-xs mt-1">{{_local.errors?.phone?.[0] ?? ''}}</span>
+    </div>
+    <!-- 언어 설정 필드 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.language</label>
+      <select name="language" value="{{_local?.registerForm?.language ?? $locale ?? 'ko'}}" options="{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
+    </div>
+    <!-- 확장 주입 앵커 — 모듈이 layout_extensions 로 가입폼 추가 필드(결제 통화 등)를 주입한다. 미설치 시 빈 슬롯(렌더 영향 없음). -->
+    <div data-ref="register_extension_fields"/>
+    <!-- 약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면
+         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 N O-N6). -->
+    <div class="space-y-2 pt-2">
+      <div>
+        <div class="flex items-center gap-2">
+          <checkbox name="agree_terms" value="1" aria-label="$t:auth.agree_terms_label" :required="true" disabled="{{_local?.isRegistering}}"/>
+          <div class="text-sm text-gray-700 dark:text-gray-300">
+            <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <on type="click">
+                <!-- 약관 전문 보기 — 모달을 열기 전에 본문을 받아 온다(가입 화면 진입 때는 부르지 않는 데이터소스라 여기서 처음 채워진다). -->
+                <sequence>
+                  <refetch-data-source dataSourceId="termsContent"/>
+                  <open-modal target="termsModal"/>
+                </sequence>
+              </on>
+              $t:auth.terms
+            </button>
+            <span> $t:auth.agree_required</span>
+          </div>
+        </div>
+        <span data-if="{{_local.errors?.agree_terms}}" class="text-red-500 text-xs mt-1 ml-6">{{_local.errors?.agree_terms?.[0] ?? ''}}</span>
+      </div>
+      <div data-ref="register_privacy_agreement">
+        <div class="flex items-center gap-2">
+          <checkbox name="agree_privacy" value="1" aria-label="$t:auth.agree_privacy_label" :required="true" disabled="{{_local?.isRegistering}}"/>
+          <div class="text-sm text-gray-700 dark:text-gray-300">
+            <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <on type="click">
+                <!-- 방침 전문 보기 — 약관 쪽과 같은 흐름이고 받아오는 문서만 다르다. -->
+                <sequence>
+                  <refetch-data-source dataSourceId="privacyContent"/>
+                  <open-modal target="privacyModal"/>
+                </sequence>
+              </on>
+              $t:auth.privacy
+            </button>
+            <span> $t:auth.agree_required</span>
+          </div>
+        </div>
+        <span data-if="{{_local.errors?.agree_privacy}}" class="text-red-500 text-xs mt-1 ml-6">{{_local.errors?.agree_privacy?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <button type="submit" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local?.isRegistering}}">
+      <!-- 버튼 내 스피너 -->
+      <div data-if="{{_local?.isRegistering}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+      <span data-if="{{!_local?.isRegistering}}">$t:auth.register.submit</span>
+      <span data-if="{{_local?.isRegistering}}">$t:auth.register.processing</span>
+    </button>
+  </form>
+</partial>

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — 예제 플러그인. admin/plugin_settings.g7.html 의 settings 데이터소스 응답 shape 와 저장 변종을 담는다. 예제 확장이라 스펙 작성 본보기 역할도 한다.",
+  "pluginId": "gnuboard7-hello_plugin",
+  "version": "1.0.0",
+  "description": "예제 플러그인 레이아웃 편집기 샘플 데이터·화면 상태.",
+  "sampleData": {
+    "byDataSourceId": {
+      "settings": {
+        "data": {
+          "log_enabled": true,
+          "abilities": {
+            "can_update": true
+          }
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "입력칸은 initLocal 로 채워지는데 편집기는 그 흐름을 실행하지 않아 _local.form 을 직접 시드해야 토글 값이 보인다.",
+    "groups": [
+      {
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/gnuboard7-hello_plugin/settings"
+        },
+        "items": [
+          {
+            "id": "log_enabled",
+            "label": "$t:editor.state.with_data",
+            "default": true,
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "hasChanges": false,
+                "form": {
+                  "log_enabled": true
+                }
+              }
+            }
+          },
+          {
+            "id": "log_disabled",
+            "label": "$t:editor.state.hello_plugin_log_disabled",
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "hasChanges": false,
+                "form": {
+                  "log_enabled": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

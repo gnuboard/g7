@@ -27,6 +27,7 @@ _이 확장은 훅을 발행하지 않습니다._
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateKcpSettingsListener` | `addLiveModeRules` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanKcpRecordOnUserWithdraw` | `handle` | 50 |
 | `core.user.before_delete` | action (미선언) | `CleanKcpRecordOnUserDelete` | `handle` | 50 |
+| `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | `ProvideNecessaryStorageKeysListener` | `provide` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -48,6 +49,7 @@ _이 확장은 훅을 발행하지 않습니다._
 | `CleanKcpRecordOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserDelete.php` |
 | `CleanKcpRecordOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserWithdraw.php` |
 | `CompleteKcpRecordAfterRegister` | 1개 | 명시 등록 | ✅ | `src/Listeners/CompleteKcpRecordAfterRegister.php` |
+| `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
 | `RegisterKcpProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterKcpProviderListener.php` |
 | `ValidateKcpSettingsListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ValidateKcpSettingsListener.php` |
 <!-- @generated:listeners END -->
@@ -64,14 +66,14 @@ _이 확장은 훅을 발행하지 않습니다._
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/identity_provider_nhnkcp.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/mypage_identity_card.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/identity_provider_nhnkcp.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `identity_provider_ui:provider` |
+| `resources/extensions/mypage_identity_card.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-`mypage_identity_card.json`은 `sirsoft-verification_kginicis`의 같은 이름 조각과 동일한
+`mypage_identity_card.g7.html`은 `sirsoft-verification_kginicis`의 같은 이름 조각과 동일한
 역할(마이페이지 "본인확인 완료" 상태 카드)입니다 — 여러 IDV provider 가 동시에 설치돼도
-각자 자기 카드만 주입하므로 충돌하지 않습니다. `identity_provider_nhnkcp.json`은 코어
+각자 자기 카드만 주입하므로 충돌하지 않습니다. `identity_provider_nhnkcp.g7.html`은 코어
 IDV 팝업이 이 provider 고유의 안내 문구·로고를 보여줄 때 쓰는 조각입니다.
 <!-- @intent END -->
 

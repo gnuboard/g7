@@ -85,30 +85,93 @@ export function plantTwoFactorCode(challengeId: string, code = '135790'): string
 }
 
 /**
- * 실측이 만든 테스트 계정을 전부 제거한다.
+ * 인증 앱 플러그인의 `playwright:seed-totp` 를 실행하고 마지막 출력 줄을 돌려준다.
+ *
+ * 인증 앱 자격증명은 그 플러그인 소유라 코어 커맨드가 아니라 플러그인 커맨드가 심는다.
+ *
+ * @param args 커맨드 인자 (예: ['--enroll=<email>'])
+ * @returns stdout 의 마지막 비어있지 않은 줄
+ */
+function runSeedTotp(args: string[]): string {
+  const command = `php artisan playwright:seed-totp ${args.join(' ')}`.trim();
+  const stdout = execSync(command, {
+    cwd: coreRoot(),
+    encoding: 'utf-8',
+    env: { ...process.env, G7_PLAYWRIGHT_BYPASS: '1' },
+  });
+  const lines = stdout.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length === 0) {
+    throw new Error(`playwright:seed-totp 가 빈 응답을 반환했습니다: ${command}`);
+  }
+  return lines[lines.length - 1].trim();
+}
+
+/**
+ * 대상 계정에 «인증 앱이 이미 등록된 상태» 를 만들고 평문 시크릿을 돌려준다.
+ *
+ * 실측은 휴대폰을 들 수 없으므로 QR 스캔 단계를 서버에서 건너뛴다. 돌려받은 시크릿으로
+ * `totpCodeFor()` 를 불러 그 순간의 코드를 계산한다 — 인증 앱 대역이다.
+ *
+ * @param email 대상 계정 이메일
+ * @returns Base32 시크릿
+ */
+export function enrollTotpFor(email: string): string {
+  return runSeedTotp([`--enroll=${email}`]);
+}
+
+/**
+ * 시크릿의 «지금 이 순간» 코드를 계산한다.
+ *
+ * 코드는 30초마다 바뀌므로 제출 직전에 부른다 — 미리 받아 두면 경계에서 만료된다.
+ *
+ * @param secret Base32 시크릿
+ * @returns 6자리 코드
+ */
+export function totpCodeFor(secret: string): string {
+  return runSeedTotp([`--code=${secret}`]);
+}
+
+/**
+ * `enrollTotpFor()` 가 심는 고정 백업 코드.
+ *
+ * 평문을 알아야 «백업 코드로 로그인» 축을 자동화할 수 있다.
+ */
+export const TOTP_BACKUP_CODES = ['pwtst-aaaa1', 'pwtst-bbbb2'] as const;
+
+/**
+ * 실측이 만든 테스트 계정을 제거한다.
  *
  * 이 계정들은 알려진 비밀번호를 갖고, 관리자용은 관리자 역할까지 갖는다 — 나이 기준 정리를
  * 기다리면 그 사이가 그대로 열린 문이다. 실측이 끝나면 즉시 지운다.
  *
+ * **여러 spec 이 같은 fixture 를 쓰면 `prefix` 로 자기 계정만 지운다.** 전체 정리는 아직
+ * 돌고 있는 형제 spec 의 계정까지 지워 그쪽을 엉뚱한 실패로 떨어뜨린다.
+ *
+ * @param prefix 이 접미사로 시작하는 계정만 지운다 (미지정 시 전체)
  * @returns 커맨드의 마지막 출력 줄
  */
-export function purgeTwoFactorUsers(): string {
-  return runSeedTwoFactor(['--purge-users', '--gc-hours=0']);
+export function purgeTwoFactorUsers(prefix?: string): string {
+  const args = ['--purge-users', '--gc-hours=0'];
+  if (prefix) args.push(`--purge-prefix=${prefix}`);
+
+  return runSeedTwoFactor(args);
 }
 
 /**
  * 알려진 비밀번호를 가진 Active 테스트 계정을 준비한다.
  *
  * @param suffix 계정 구분 접미사 (예: 'user' / 'nonadmin')
- * @param options admin 역할 부여 여부와 비밀번호
+ * @param options admin 역할 부여 여부와 비밀번호, 추가 역할 identifier 목록
  * @returns 준비된 계정 이메일
  */
 export function ensureTwoFactorUser(
   suffix: string,
-  options: { admin?: boolean; password?: string } = {}
+  options: { admin?: boolean; password?: string; roles?: readonly string[] } = {}
 ): string {
   const args = [`--ensure-user=${suffix}`, `--password=${options.password ?? 'Passw0rd!2fa'}`];
   if (options.admin) args.push('--admin');
+  // 확장 전용 역할은 admin 에 딸려오지 않는다 — 그 권한으로만 보이는 화면을 측정할 때 쓴다.
+  for (const role of options.roles ?? []) args.push(`--role=${role}`);
   return runSeedTwoFactor(args);
 }
 
@@ -129,8 +192,10 @@ function mailSettingsPath(): string {
 /**
  * 메일 설정을 SMTP 싱크로 돌린다.
  *
- * 값 3개만 줄 단위로 치환한다 — 재직렬화하면 운영자 파일의 서식이 통째로 바뀐다.
- * `encryption` 을 비우는 이유는 싱크가 STARTTLS 를 제공하지 않기 때문이다.
+ * 값 4개만 줄 단위로 치환한다 — 재직렬화하면 운영자 파일의 서식이 통째로 바뀐다.
+ * `mailer` 를 smtp 로 바꾸는 이유는 사이트가 API 메일러(Mailgun·SES 등)를 쓰면 host·port 를 바꿔도
+ * 메일이 싱크가 아니라 실제 서비스로 나가 발송이 실패하고 로그인이 503 으로 막히기 때문이다
+ * (그런 설정은 `host` 가 null 이기도 하다). `encryption` 을 비우는 이유는 싱크가 STARTTLS 를 제공하지 않기 때문이다.
  *
  * @param port 싱크 포트
  * @returns 백업 파일 경로 (설정 파일이 없으면 null)
@@ -146,8 +211,9 @@ function redirectMailToSink(port: number): string | null {
 
   const original = readFileSync(path, 'utf-8');
   const swapped = original
-    .replace(/"host"(\s*):(\s*)"[^"]*"/, `"host"$1:$2"127.0.0.1"`)
-    .replace(/"port"(\s*):(\s*)\d+/, `"port"$1:$2${port}`)
+    .replace(/"mailer"(\s*):(\s*)("[^"]*"|null)/, '"mailer"$1:$2"smtp"')
+    .replace(/"host"(\s*):(\s*)("[^"]*"|null)/, `"host"$1:$2"127.0.0.1"`)
+    .replace(/"port"(\s*):(\s*)(\d+|null|"[^"]*")/, `"port"$1:$2${port}`)
     .replace(/"encryption"(\s*):(\s*)("[^"]*"|null)/, '"encryption"$1:$2""');
 
   writeFileSync(path, swapped, 'utf-8');
@@ -229,19 +295,27 @@ async function patchSettingsTab(
 /**
  * 2단계 인증 실측 환경을 준비한다.
  *
+ * `extraSecurity` 로 같은 보안 탭의 다른 값을 함께 켤 수 있다 — 저장 전 스냅샷은 탭
+ * **전체**를 뜨므로 무엇을 얹든 `restoreTwoFactorFixture` 가 통째로 되돌린다.
+ *
  * @param request Playwright API 요청 컨텍스트
  * @param token 관리자 Sanctum 토큰 (`core.settings.read` · `core.settings.update`)
+ * @param extraSecurity 보안 탭에 함께 얹을 값 (예: 계정 잠금 임계값)
  * @returns 되돌리기에 필요한 상태
  */
 export async function enableTwoFactorFixture(
   request: APIRequestContext,
-  token: string
+  token: string,
+  extraSecurity: Record<string, unknown> = {}
 ): Promise<TwoFactorFixtureState> {
   // 메일 경로를 먼저 돌린다 — 2단계 인증을 켠 뒤에 코드가 발행되면 실제 메일이 나간다.
   const sink = await startSmtpSink();
   const mailBackupPath = redirectMailToSink(sink.port);
 
-  const security = await patchSettingsTab(request, token, 'security', { two_factor_auth: true });
+  const security = await patchSettingsTab(request, token, 'security', {
+    two_factor_auth: true,
+    ...extraSecurity,
+  });
 
   return { security, mailBackupPath, sink };
 }

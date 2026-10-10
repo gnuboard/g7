@@ -1,0 +1,92 @@
+<!-- 메인 배너 목록 — 탭(전체·노출·중지)과 배너 행들.
+  **아직 시안이다** — 데이터소스도 API 호출도 없고, 탭 옆 숫자(7·4·3)와 두 배너의 제목·기간은
+  마크업에 박힌 글자다. 그래서 탭을 눌러도 목록이 걸러지지 않는다(탭 상태만 바뀐다).
+  다만 상호작용 뼈대는 정본이다 — 행을 누르면 오른쪽이 상세로 바뀌고(`viewMode`), 오른쪽 스위치는
+  배너별 상태 맵(`_local.bannerStatus.배너키`)을 뒤집는다. 배선할 때 이 형태를 반복 렌더로 바꾸고
+  하드코딩된 배너 키를 실제 id 로 갈면 된다.
+  드래그 손잡이는 모양만 있고 정렬 이벤트가 붙어 있지 않다. -->
+<partial description="Main Banner List Partial">
+  <div data-ref="banner_list_section" class="admin-card">
+    <div data-ref="list_header" class="flex-center gap-2 mb-4">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.main_banner.list.title</h3>
+      <span class="badge">7</span>
+    </div>
+    <div data-ref="list_tabs" class="flex-center gap-2 mb-4">
+      <button type="button" class="{{_local.activeTab === 'all' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}">
+        <on type="click">
+          <!-- 탭 선택은 활성 표시만 바꾼다 — 아래 목록이 하드코딩이라 아직 걸러지지 않는다(시안). -->
+          <set-state target="_local" activeTab="all"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.all</span>
+        <span class="ml-1">7</span>
+      </button>
+      <button type="button" class="{{_local.activeTab === 'active' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}">
+        <on type="click">
+          <!-- 노출 중 탭. 위 '전체' 와 같은 자리를 다투므로 세 탭 중 하나만 활성으로 보인다. -->
+          <set-state target="_local" activeTab="active"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.active</span>
+        <span class="ml-1">4</span>
+      </button>
+      <button type="button" class="{{_local.activeTab === 'inactive' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}">
+        <on type="click">
+          <!-- 중지 탭. 배선 후에는 이 값이 목록 조회 조건으로 넘어갈 자리다. -->
+          <set-state target="_local" activeTab="inactive"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.inactive</span>
+        <span class="ml-1">3</span>
+      </button>
+    </div>
+    <div data-ref="banner_list_items">
+      <div data-ref="banner_item_1" class="{{_local.selectedBannerId === 'banner_1' ? 'drag-item ring-2 ring-blue-500' : 'drag-item'}}">
+        <span class="drag-handle">
+          <icon name="grip-vertical" class="text-base"/>
+        </span>
+        <div class="w-16 h-10 rounded bg-gradient-to-r from-orange-400 to-red-400 flex-shrink-0"/>
+        <div class="flex-1 min-w-0 cursor-pointer">
+          <on type="click">
+            <!-- 행 선택 — 오른쪽을 이 배너의 상세로 바꾼다. 배너 키가 글자로 박혀 있어(`banner_1`) 배선 시 실제 id 로 바뀔 자리다. -->
+            <set-state target="_local" selectedBannerId="banner_1" viewMode="detail"/>
+          </on>
+          <p class="text-sm font-medium text-primary truncate">겨울 신상품 최대 50% 할인</p>
+          <p class="text-xs text-secondary">2025-01-01 ~ 2025-12-31</p>
+        </div>
+        <div class="toggle active">
+          <on type="click">
+            <!-- 노출 스위치 — 배너별 상태 맵의 한 칸을 뒤집는다. 확인 창(`modal_status_change`)을 거치지 않고 곧바로 바뀌며, 서버로도 나가지 않는다(시안). -->
+            <set-state target="_local" bannerStatus.banner_1="{{!_local.bannerStatus.banner_1}}"/>
+          </on>
+          <div class="toggle-track"/>
+          <div class="toggle-handle"/>
+        </div>
+      </div>
+      <div data-ref="banner_item_2" class="{{_local.selectedBannerId === 'banner_2' ? 'drag-item ring-2 ring-blue-500' : 'drag-item'}}">
+        <span class="drag-handle">
+          <icon name="grip-vertical" class="text-base"/>
+        </span>
+        <div class="flex-center w-16 h-10 rounded bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
+          <span class="text-secondary text-xl font-bold">SALE</span>
+        </div>
+        <div class="flex-1 min-w-0 cursor-pointer">
+          <on type="click">
+            <!-- 두 번째 배너 행 — 위와 같은 동작이고 키만 다르다. 반복 렌더로 바뀌면 이 중복은 사라진다. -->
+            <set-state target="_local" selectedBannerId="banner_2" viewMode="detail"/>
+          </on>
+          <div class="flex-center gap-2">
+            <p class="text-sm font-medium text-primary truncate">봄 맞이 새학기 준비</p>
+            <span class="badge badge-gray text-xs flex-shrink-0">$t:sirsoft-ecommerce.admin.main_banner.list.status_ended</span>
+          </div>
+          <p class="text-xs text-secondary">2025-03-01 ~ 2025-03-31</p>
+        </div>
+        <div class="toggle">
+          <on type="click">
+            <!-- 두 번째 배너의 노출 스위치. 이 행은 기간이 끝난 배너라 목록에 '종료' 배지가 함께 붙는데, 스위치는 그와 무관하게 눌린다. -->
+            <set-state target="_local" bannerStatus.banner_2="{{!_local.bannerStatus.banner_2}}"/>
+          </on>
+          <div class="toggle-track"/>
+          <div class="toggle-handle"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

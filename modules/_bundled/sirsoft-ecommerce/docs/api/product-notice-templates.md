@@ -340,7 +340,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 상품정보제공고시 템플릿을 생성합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-notice-templates.create` 권한이 필요하며, `ProductNoticeTemplateController@store`가 `ProductNoticeTemplateService::createTemplate()`에 검증된 데이터를 전달해 저장합니다. `name`(다국어 배열)과 `fields`(고시 항목 정의, 최소 1개)는 필수이고, `category`(품목 카테고리), `is_active`, `sort_order`는 선택입니다. 확장이 `sirsoft-ecommerce.product-notice-template.create_validation_rules` 필터로 파라미터를 추가할 수 있으며, 성공 시 HTTP 201을, 처리 실패 시 400 에러 응답을 반환합니다.
+**설명** 관리자가 새 상품정보제공고시 템플릿을 생성합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-notice-templates.create` 권한이 필요하며, `ProductNoticeTemplateController@store`가 `ProductNoticeTemplateService::createTemplate()`에 검증된 데이터를 전달해 저장합니다. `name`(다국어 배열)과 `fields`(고시 항목 정의, 최소 1개)는 필수이고, `category`(품목 카테고리), `is_active`, `sort_order`는 선택입니다. 확장이 `sirsoft-ecommerce.product-notice-template.create_validation_rules` 필터로 파라미터를 추가할 수 있으며, 성공 시 HTTP 201을, 처리 실패 시 400 에러 응답을 반환합니다. 다국어 `name`·`fields.*.name`·`fields.*.content` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「상품군명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Product Group Name field is required."). 항목 칸은 「항목명」·「항목 내용」으로 알립니다.
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/product-notice-templates/{id}
@@ -591,7 +591,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 상품정보제공고시 템플릿 1건을 수정합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-notice-templates.update` 권한이 필요하며, `ProductNoticeTemplateController@update`가 `ProductNoticeTemplateService::updateTemplate()`에 검증된 데이터를 전달해 갱신합니다. `name`(다국어 배열)과 `fields`(최소 1개)는 필수이고, `category`·`is_active`·`sort_order`도 함께 변경할 수 있습니다. 확장이 `sirsoft-ecommerce.product-notice-template.update_validation_rules` 필터로 파라미터를 추가할 수 있으며, 대상이 없거나 처리 실패 시 각각 404/400 에러 응답을 반환합니다.
+**설명** 관리자가 상품정보제공고시 템플릿 1건을 수정합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-notice-templates.update` 권한이 필요하며, `ProductNoticeTemplateController@update`가 `ProductNoticeTemplateService::updateTemplate()`에 검증된 데이터를 전달해 갱신합니다. `name`(다국어 배열)과 `fields`(최소 1개)는 필수이고, `category`·`is_active`·`sort_order`도 함께 변경할 수 있습니다. 확장이 `sirsoft-ecommerce.product-notice-template.update_validation_rules` 필터로 파라미터를 추가할 수 있으며, 대상이 없거나 처리 실패 시 각각 404/400 에러 응답을 반환합니다. 다국어 `name`·`fields.*.name`·`fields.*.content` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「상품군명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Product Group Name field is required."). 항목 칸은 「항목명」·「항목 내용」으로 알립니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/product-notice-templates/{id}/copy

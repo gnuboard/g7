@@ -4,6 +4,15 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-10-10
+
+### Added
+
+- 에디터 이미지 업로드 실패 기본 안내(`editor.upload_failed`, 「ファイルをアップロードできませんでした: {{name}}」)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 업로드 실패 알림만 한국어로 보입니다.
+- 메뉴 시드를 신설해 `sirsoft-ckeditor5-uploads`(에디터 업로드 이미지)의 일본어 번역을 추가했습니다 — 종전에는 플러그인 언어팩의 메뉴 시드가 적용 대상에서 제외돼 있어 이 항목만 번역 경로가 없었습니다.
+- 저장했던 공개 자산 디스크를 쓸 수 없어 에디터 이미지를 스트리밍으로 제공한다는 설정 안내(`settings.fields.public_asset_disk.unavailable`) 일본어 번역을 추가했습니다.
+- 플러그인 설정 읽기 전용 안내의 일본어 번역을 추가했습니다.
+
 ## [1.0.2] - 2026-09-06
 
 ### Added

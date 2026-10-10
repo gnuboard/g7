@@ -1,0 +1,50 @@
+feature: Playwright E2E 격리 계정·역할 회수
+
+description: |
+  `playwright:issue-token` 은 병렬 실행이 서로의 권한 집합을 밟지 않도록 호출마다
+  `playwright_test_{uniqid}` 역할과 신규 계정을 새로 만든다. 격리는 의도된 설계지만 회수
+  수단이 없어 발급분이 영구 누적됐다.
+
+  76차 g7.dev 실측: 활성 역할 2,264개 중 **2,242개가 이 잔여물**이었고, 전량을 페이지네이션
+  없이 반환하는 `/api/admin/roles/active` 가 1.7MB · 7.3~9.9초(3회 측정)를 썼다. 그 목록을
+  `auto_fetch` 로 당기는 관리자 화면(게시판 폼 등) 진입이 함께 그만큼 늦어졌다.
+  정상 환경의 시스템 역할은 22개이므로 이 지연은 잔여물 누적에서만 나온다.
+
+  회수 대상은 이 커맨드가 만든 것으로 한정한다:
+    - `playwright_test_` 로 시작하는 역할
+    - 그 역할이 붙어 있고 그것 말고는 `admin` 역할밖에 없는 계정 (+ 그 계정의 토큰)
+  사람이 쓰는 계정에 테스트 역할이 섞여 있으면 그 계정은 남긴다(역할 참조만 끊는다).
+
+  7.1.0 전수 실측 O-D2 · 결정 P8(정리 명령 확장): 발급 커맨드는 DB 에 없는 권한 식별자를 받으면
+  이름·설명이 식별자 그대로인 코어 소유 권한 행을 `firstOrCreate` 로 만든다. 게시판이 생기기 전(또는 지워진 뒤)
+  그 게시판 권한으로 토큰을 받은 실행이 이런 행 18개를 개발 DB 에 남겨 관리자 권한 트리에 식별자 그대로 보였다.
+  그 모양(이름 = 식별자 · 코어 소유 · 부모·자식 없음 · 코어 정의 아님)이면서 회수하는 테스트 역할 말고는 붙은
+  역할이 없는 권한 행도 함께 회수한다. 사람이 읽는 이름을 가진 권한·사람 역할이 쓰는 권한은 남긴다.
+
+axes:
+  mode: [delete, dry_run]
+
+cross_product: |
+  mode × 회수 대상 판정 — 대상을 고르는 기준은 둘이 같고, 실제 삭제 여부만 갈린다.
+  그 밖의 갈래(옵트인 부재 · 보존 시간 · 잔여 0건 · 사람 계정 혼재)는 mode 와 교차하지 않으므로
+  축으로 세우지 않고 effects 로만 닫는다 — 없는 교차를 선언하면 커버리지가 허수로 부푼다.
+
+effects:
+  - cleanup_refused_without_optin
+  - leftover_roles_removed
+  - leftover_users_removed
+  - human_and_normal_role_kept
+  - nothing_deleted_on_dry_run
+  - recent_leftovers_kept
+  - old_leftovers_removed
+  - no_op_when_clean
+  - leftover_permissions_removed
+  - legitimate_permissions_kept
+
+test_files:
+  - tests/Feature/Console/PlaywrightCleanupTest.php
+
+validation:
+  note: |
+    이 커맨드는 CLI + `G7_PLAYWRIGHT_BYPASS=1` 가드 뒤에 있고 일상 노출 대상이 아니므로
+    개발 대시보드 노출 점검 도구의 제외 목록(`EXCLUDED_COMMANDS`)에 등재돼 있다.

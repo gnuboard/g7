@@ -15,10 +15,23 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
 {
+    /** 기존 테스트 스키마를 사용하고 각 케이스의 변경만 롤백합니다.
+     * @return void 반환값 없음
+     */
+    public function refreshDatabase(): void
+    {
+        $this->beginDatabaseTransaction();
+    }
+
     private EcommerceSettingsService $service;
 
     private string $storagePath;
 
+    /**
+     * 각 테스트의 격리된 설정과 의존 객체를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +45,11 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->service = new EcommerceSettingsService;
     }
 
+    /**
+     * 테스트가 변경한 설정과 시간을 복구합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -43,6 +61,9 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
 
     /**
      * language_currency.json 을 직접 생성하여 저장된 통화 설정을 시뮬레이션합니다.
+     *
+     * @param  array  $settings  settings 입력값
+     * @return void 반환값 없음
      */
     private function saveLanguageCurrency(array $settings): void
     {
@@ -55,6 +76,9 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
 
     /**
      * 저장된 currencies 의 code 목록을 추출합니다.
+     *
+     * @param  array  $currencies  currencies 입력값
+     * @return array 처리 결과
      */
     private function currencyCodes(array $currencies): array
     {
@@ -65,6 +89,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
     // 누락 통화 보충 (핵심 — array_merge 통째교체 회귀)
     // ──────────────────────────────────────────────
 
+    /**
+     * 저장하지 않은 엔화 설정이 기본값에서 보충되는지 검증합니다.
+     *
+     * @effects missing_jpy_is_supplemented_from_defaults
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_jpy_is_supplemented_from_defaults(): void
     {
         // 관리자가 JPY 를 빼고 저장 (KRW/USD 만)
@@ -86,6 +117,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->assertContains('USD', $codes);
     }
 
+    /**
+     * 저장된 환율이 기본 환율보다 우선하는지 검증합니다.
+     *
+     * @effects saved_exchange_rate_is_preserved_over_defaults
+     *
+     * @return void 반환값 없음
+     */
     public function test_saved_exchange_rate_is_preserved_over_defaults(): void
     {
         // USD 환율을 defaults(0.85) 와 다른 값(1.23)으로 저장
@@ -104,6 +142,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->assertEquals(1.23, $usd['exchange_rate'], '저장본 환율이 defaults 로 덮어써졌습니다.');
     }
 
+    /**
+     * 운영자가 추가한 통화가 병합 후 보존되는지 검증합니다.
+     *
+     * @effects new_added_currency_is_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_new_added_currency_is_preserved(): void
     {
         // defaults 에 없는 신규 통화(GBP) 추가 저장
@@ -124,6 +169,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->assertContains('JPY', $codes);
     }
 
+    /**
+     * 기본통화 환율이 비어 있는 계약을 유지하는지 검증합니다.
+     *
+     * @effects default_currency_exchange_rate_stays_null
+     *
+     * @return void 반환값 없음
+     */
     public function test_default_currency_exchange_rate_stays_null(): void
     {
         $this->saveLanguageCurrency([
@@ -141,6 +193,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->assertTrue($krw['is_default']);
     }
 
+    /**
+     * 저장값이 없을 때 기본 통화 다섯 종류가 제공되는지 검증합니다.
+     *
+     * @effects all_five_defaults_present_when_nothing_saved
+     *
+     * @return void 반환값 없음
+     */
     public function test_all_five_defaults_present_when_nothing_saved(): void
     {
         // 저장본 없음 → defaults 5종 전부
@@ -157,6 +216,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
     // symbol/flag 보강 (A1 — D-CUR-4)
     // ──────────────────────────────────────────────
 
+    /**
+     * 통화 심볼과 국기 메타데이터가 보존되는지 검증합니다.
+     *
+     * @effects currencies_carry_symbol_and_flag_meta
+     *
+     * @return void 반환값 없음
+     */
     public function test_currencies_carry_symbol_and_flag_meta(): void
     {
         $this->service->clearCache();
@@ -177,6 +243,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
     // base_unit 보충 (MP08-3 방향 B)
     // ──────────────────────────────────────────────
 
+    /**
+     * 누락된 기준 단위를 기본 설정에서 보충하는지 검증합니다.
+     *
+     * @effects base_unit_is_backfilled_from_defaults_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_base_unit_is_backfilled_from_defaults_when_missing(): void
     {
         // 기존 저장본(base_unit 미저장) → defaults 값으로 보충
@@ -202,6 +275,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->assertSame(1, $usd['base_unit']);
     }
 
+    /**
+     * 저장된 기준 단위가 기본값보다 우선하는지 검증합니다.
+     *
+     * @effects saved_base_unit_is_preserved_over_defaults
+     *
+     * @return void 반환값 없음
+     */
     public function test_saved_base_unit_is_preserved_over_defaults(): void
     {
         // 관리자가 base_unit 을 직접 저장 → 보존 (defaults 로 덮어쓰지 않음)
@@ -219,6 +299,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->assertSame(1, $krw['base_unit'], '저장본 base_unit 이 defaults 로 덮어써졌습니다.');
     }
 
+    /**
+     * 알려지지 않은 통화의 기준 단위가 일로 보충되는지 검증합니다.
+     *
+     * @effects unknown_currency_base_unit_falls_back_to_one
+     *
+     * @return void 반환값 없음
+     */
     public function test_unknown_currency_base_unit_falls_back_to_one(): void
     {
         // defaults 에 없는 통화(GBP) → 폴백 1 (소액통화 아님)
@@ -237,6 +324,13 @@ class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
         $this->assertSame(1, $gbp['base_unit']);
     }
 
+    /**
+     * 심볼이 없는 통화가 통화 코드를 표시하는지 검증합니다.
+     *
+     * @effects unknown_currency_symbol_falls_back_to_code
+     *
+     * @return void 반환값 없음
+     */
     public function test_unknown_currency_symbol_falls_back_to_code(): void
     {
         // defaults 에 없는 통화(GBP) 저장 → symbol 폴백 = code

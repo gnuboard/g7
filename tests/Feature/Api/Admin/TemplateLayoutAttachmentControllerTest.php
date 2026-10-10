@@ -447,7 +447,9 @@ class TemplateLayoutAttachmentControllerTest extends TestCase
 
         $content = $layout->content;
         // 팩토리 기본 endpoint(`/api/{단어}`)는 WhitelistedEndpoint 에 걸린다 — 이 테스트의 축이 아니다.
-        $content['endpoint'] = '/api/public/home';
+        // `/api/public/…` 도 안 된다: 판정은 라우트 표에 **실제로 등록된** 네임스페이스만 허용하고
+        // `public` 은 등록 라우트가 0건이다. 실제 home 레이아웃이 쓰는 확장 엔드포인트 형태를 넣는다.
+        $content['endpoint'] = '/api/modules/sirsoft-board/boards/stats';
         $content['components'] = [[
             'id' => 'header',
             'type' => 'composite',

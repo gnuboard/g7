@@ -6,7 +6,7 @@
  */
 
 import type { ActionContext } from '../types';
-import { calculateCurrencyPricesHandler } from './calculateCurrencyPrices';
+import { calculateCurrencyPricesHandler, formatAmountInCurrency } from './calculateCurrencyPrices';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:UpdateOption')) ?? {
@@ -206,9 +206,11 @@ export function updateOptionFieldHandler(
                     const productSellingPrice = parseFloat(product.selling_price) || 0;
                     updatedOption.price_adjustment = newSellingPrice - productSellingPrice;
                 }
+                // 추가금은 기본 통화 금액이다 — 기본 통화·보는 언어의 표기(원화는 언어별 접두·접미)로 적는다.
+                // 고정 「원」이면 영어 화면에서 서버 표기(₩)와 섞이고, 기본 통화가 원화가 아닌 상점에선 단위가 틀린다(B4).
                 updatedOption.price_adjustment_formatted =
-                    (updatedOption.price_adjustment >= 0 ? '+' : '') +
-                    updatedOption.price_adjustment.toLocaleString() + '원';
+                    (updatedOption.price_adjustment >= 0 ? '+' : '-') +
+                    formatAmountInCurrency(Math.abs(updatedOption.price_adjustment));
             }
 
             // selling_price 변경 시 다중통화 가격 자동 재계산

@@ -154,7 +154,6 @@ describe('Modal 좌우 여백 — max-w-full 이 clamp 를 이기지 못하게',
    * Modal 이 스스로 clamp 하므로 `max-w-full` 은 불필요하며 해롭다.
    */
   const modalFiles = [
-    'partials/mypage/orders/_modal_cancel.json',
     'partials/mypage/orders/_modal_confirm_purchase.json',
     'partials/mypage/orders/_modal_write_review.json',
   ];
@@ -177,59 +176,30 @@ describe('Modal 좌우 여백 — max-w-full 이 clamp 를 이기지 못하게',
   });
 });
 
-describe('부분환불 계산 모달 — 좁은 열에서 단어 중간 줄바꿈 금지', () => {
-  const layout = loadLayout('partials/mypage/orders/_modal_cancel.json');
+describe('주문금액 비교표(클레임 신청서) — 좁은 열에서 단어 중간 줄바꿈 금지', () => {
+  const layout = loadLayout('partials/mypage/claims/_apply_comparison.json');
 
-  it('행 라벨(상품쿠폰 할인 등)이 모두 break-keep 이다', () => {
-    // 390px 에서 3열 grid 의 첫 열은 71px — keep-all 이 없으면 "상품쿠폰 할" / "인" 으로 잘린다
+  it('행 라벨(상품쿠폰 할인 등) 16개가 모두 break-keep 이다', () => {
+    // 390px 요약 카드의 3열 grid 첫 열은 좁다 — keep-all 이 없으면 "상품쿠폰 할" / "인" 으로 잘린다
     const labels = findAllNodes(
       layout,
-      (n) =>
-        n.name === 'Span' &&
-        typeof n.text === 'string' &&
-        n.text.startsWith('$t:mypage.order_detail.cancel_modal.')
-    ).filter((n) => (n.props?.className ?? '').includes('text-gray-600'));
-
-    expect(labels.length).toBeGreaterThan(0);
+      (n) => n.name === 'Span' && typeof n.text === 'string' && n.text.startsWith('$t:claim.apply.comparison.row_')
+    );
+    expect(labels).toHaveLength(16);
     for (const node of labels) {
       expect(node.props.className).toContain('break-keep');
     }
   });
 
   it('쿠폰 상세 행(쿠폰명 + 할인액)이 모두 break-keep 이다', () => {
-    // `{{pc.name}} -{{amount}}원` 형태의 P 노드 — 91px 3열에서 한글 단어가 중간에서 잘렸다
     const couponLines = findAllNodes(
       layout,
-      (n) =>
-        n.name === 'P' &&
-        typeof n.text === 'string' &&
-        n.text.includes('.name}}') &&
-        n.text.includes('discount_amount')
+      (n) => n.name === 'Span' && typeof n.text === 'string' && n.text.includes('coupon.name') && n.text.includes('discount_amount_formatted')
     );
     expect(couponLines.length).toBeGreaterThan(0);
-
     for (const node of couponLines) {
       expect(node.props?.className ?? '').toContain('break-keep');
     }
-  });
-
-  it('복원 쿠폰 행은 쿠폰명 break-keep + 금액 whitespace-nowrap 이다', () => {
-    const name = findNode(
-      layout,
-      (n) => n.name === 'Span' && typeof n.text === 'string' && n.text.includes('coupon.coupon_name')
-    );
-    expect(name).toBeTruthy();
-    expect(name.props?.className ?? '').toContain('break-keep');
-
-    const amount = findNode(
-      layout,
-      (n) =>
-        n.name === 'Span' &&
-        typeof n.text === 'string' &&
-        n.text.includes('coupon.discount_amount')
-    );
-    expect(amount).toBeTruthy();
-    expect(amount.props?.className ?? '').toContain('whitespace-nowrap');
   });
 });
 

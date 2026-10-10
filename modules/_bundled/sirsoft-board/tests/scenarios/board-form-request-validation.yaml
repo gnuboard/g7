@@ -1,0 +1,26 @@
+feature: 게시판 생성·수정·환경설정 FormRequest 검증 규칙 회귀 고정
+
+description: |
+  게시판 관리의 세 요청(StoreBoardRequest · UpdateBoardRequest · StoreBoardSettingsRequest)이
+  필수값·범위·교차 검증(min ≤ max)·조건부 검증(첨부 사용 여부에 따른 허용 확장자)·다국어 속성명을
+  규정대로 적용하는지 BoardRequestTest 가 고정한다. 권한 판정은 FormRequest 가 아니라 라우트
+  미들웨어가 하므로 authorize() 는 항상 true 여야 한다.
+
+  세부 조건 조합은 다른 매니페스트가 소유한다 — 조건부 검증 매트릭스는 board-conditional-validation,
+  길이 교차 검증은 board-length-range-validation, 신고 권한 역할 검증은 board-settings-report-permissions.
+  이 매니페스트는 그 밖의 테스트(요청 종류별 기본 규칙)를 요청 축 하나로 묶는다.
+
+axes:
+  request: [authorize, store_board, update_board, board_settings]
+
+effects:
+  - form_request_authorize_delegates_to_middleware
+  - store_board_request_rules_enforced
+  - update_board_request_rules_enforced
+  - store_board_attribute_names_match_update
+  # 게시판 이름 다국어 필수 문구가 필드 키(name) 대신 화면 이름을 싣는다(2026-10-07 실측 K4, O-KF3-1 후속)
+  - board_name_attribute_named_in_locale_message
+  - board_settings_request_rules_enforced
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardRequestTest.php

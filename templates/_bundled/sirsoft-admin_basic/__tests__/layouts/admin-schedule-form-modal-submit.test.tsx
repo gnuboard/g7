@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const formModal = require('../../layouts/partials/admin_schedule_list/_modal_form.json');
 
@@ -51,13 +52,16 @@ describe('스케줄 폼 모달 — 저장 버튼 폼 연결', () => {
 describe('스케줄 폼 모달 — 폼 값 바인딩', () => {
     function submitBody(): Record<string, string> {
         const forms = collectNodes(formModal, (n) => n.name === 'Form' && Array.isArray(n.actions));
-        const submit = forms[0].actions.find((a: any) => a.type === 'submit');
-        const api = submit.actions.find((a: any) => a.handler === 'apiCall');
+        const submit = actionsOf(forms[0]).find((a: any) => a.type === 'submit');
+        const api = callbacksOf(submit, 'actions').find((a: any) => a.handler === 'apiCall');
         return api.params.body;
     }
 
     it('커스텀 Select 는 value 로 제어된다 (defaultValue 는 무시되어 빈 표시 + 폼 미반영)', () => {
-        const selects = collectNodes(formModal, (n) => n.type === 'composite' && n.name === 'Select');
+        // type 은 레지스트리(components.json)가 정한다 — admin_basic 의 Select 는 basic 으로
+        // 분류되며 굽기가 그 분류를 산출한다. 노드 type 을 함께 단언하면 레지스트리 재분류마다
+        // 깨지므로 이름으로만 고른다 (D47).
+        const selects = collectNodes(formModal, (n) => n.name === 'Select');
         expect(selects.length).toBe(2);
 
         for (const select of selects) {

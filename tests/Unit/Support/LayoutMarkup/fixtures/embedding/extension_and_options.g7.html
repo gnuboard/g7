@@ -1,0 +1,28 @@
+<div class="form">
+  <extension-point name="html_editor" data-ref="content_editor" :multilingual="true">
+    <prop name="name">"content"</prop>
+    <default>
+      <html-editor data-type="composite" data-key="content"/>
+    </default>
+    <callback name="onAddressSelect">
+      <set-state target="local" zipcode="{{$event.zipcode}}"/>
+    </callback>
+  </extension-point>
+  <select data-key="search_type">
+    <options>
+      <option value="auto">$t:admin.search.auto</option>
+      <option value="user_id">$t:admin.search.user_id</option>
+      <option value="ip" disabled>$t:admin.search.ip</option>
+    </options>
+  </select>
+  <select multiple>
+    <option value="a">$t:admin.a</option>
+  </select>
+  <status-badge data-type="composite">
+    <switch-value prop="color" on="{{row.status}}">
+      <case when="active">green</case>
+      <case when="pending">amber</case>
+      <default>gray</default>
+    </switch-value>
+  </status-badge>
+</div>

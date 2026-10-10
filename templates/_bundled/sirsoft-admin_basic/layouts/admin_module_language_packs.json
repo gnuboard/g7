@@ -1,13 +1,16 @@
 {
+    "comment": "언어팩 목록의 **모듈 범위** 진입점. `admin_language_packs` 와 같은 뼈대이고 `scopeContext` 만 다르다 —\n  목록 본체는 상속원(`admin_language_pack_list`)이 그 값으로 범위를 좁힌다.",
     "version": "1.0.0",
     "layout_name": "admin_module_language_packs",
-    "permissions": ["core.language_packs.read"],
     "extends": "admin_language_pack_list",
     "meta": {
         "title": "$t:admin.language_packs.page_title",
         "description": "$t:admin.language_packs.page_description"
     },
-    "state": {
+    "initLocal": {
         "scopeContext": "module"
-    }
+    },
+    "permissions": [
+        "core.language_packs.read"
+    ]
 }

@@ -747,13 +747,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         Http::fake([self::KAPI => Http::response($this->kapiResponse())]);
         $template = $this->row();
 
-        $this->makeService()->requestInspection($template, '  변수 예시: #{name}=홍길동, #{order_number}=20260823-0001  ');
+        $this->makeService()->requestInspection($template, '  변수 예시: #{name}=홍길동, #{order_number}=20260823-1043226571  ');
 
         Http::assertSent(function ($request) {
             if (parse_url($request->url(), PHP_URL_PATH) !== '/v3/kakao/template/request') {
                 return false;
             }
-            $this->assertSame('변수 예시: #{name}=홍길동, #{order_number}=20260823-0001', $request->data()['comment'] ?? null, '앞뒤 공백만 제거하고 원문 그대로 싣는다.');
+            $this->assertSame('변수 예시: #{name}=홍길동, #{order_number}=20260823-1043226571', $request->data()['comment'] ?? null, '앞뒤 공백만 제거하고 원문 그대로 싣는다.');
 
             return true;
         });

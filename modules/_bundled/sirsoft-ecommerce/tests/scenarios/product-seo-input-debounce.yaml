@@ -4,7 +4,7 @@
 #   field × mode × locale cross product 를 PHPUnit(applySeoSync 로케일별 미러/160자 절단,
 #   Request 다국어 검증, Resource 다국어 응답, ProductController copy 다국어)과 레이아웃 구조
 #   회귀 테스트(MultilingualInput 자동바인딩 + $localized 카운터/미리보기 + name/description 통째 미러)가
-#   커버하며 green. SEO 렌더 meta 우선/name 폴백은 show.json vars/og + seoStructuredDataMeta expr 로 반영.
+#   커버하며 green. SEO 렌더 meta 우선/name 폴백은 shop/show.g7.html vars/og + seoStructuredDataMeta expr 로 반영.
 feature: 상품·카테고리 SEO 제목/설명 다국어화 + SEO 연동
 
 description: |
@@ -35,7 +35,7 @@ effects:
   - description_truncated_per_locale_160 # 설명 sync 시 로케일별 독립 strip_tags + 160자 절단
   - form_uses_multilingual_input         # 폼 SEO 입력이 MultilingualInput 자동바인딩
   - counter_preview_localized            # 글자수 카운터·미리보기가 $localized 로 현재 로케일 추출
-  - seo_meta_prefers_meta_then_name      # SEO 렌더 meta 우선/name 폴백 (show.json + seoStructuredDataMeta)
+  - seo_meta_prefers_meta_then_name      # SEO 렌더 meta 우선/name 폴백 (shop/show.g7.html + seoStructuredDataMeta)
   - bot_meta_localized_per_locale        # 봇 접근 시 title/description 이 locale 별로 분기 출력
 
 test_files:

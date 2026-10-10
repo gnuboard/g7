@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 
 import inquiriesLayout from '../../../layouts/mypage/inquiries.json';
 import listPartial from '../../../layouts/partials/mypage/inquiries/_list.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ========================================================================
 // inquiries.json (문의내역 목록 페이지)
@@ -72,10 +73,11 @@ describe('마이페이지 문의내역 레이아웃 검증 (inquiries.json)', ()
 
     it('데이터소스 onSuccess에서 inquiry_available 기반 404 처리를 해야 함', () => {
         const ds = (inquiriesLayout as any).data_sources[0];
-        const onSuccess = ds.onSuccess;
+        // `onSuccess` 는 콜백 배열이 정본이고 단일 원소는 객체로 접힌다 — 양쪽을 받는다.
+        const onSuccess = asArray(ds.onSuccess)[0];
         expect(onSuccess).toBeDefined();
         expect(onSuccess.handler).toBe('conditions');
-        const condition = onSuccess.conditions?.[0];
+        const condition = callbacksOf(onSuccess, 'conditions')[0];
         expect(condition).toBeDefined();
         expect(condition.if).toContain('inquiry_available');
         expect(condition.then?.handler).toBe('showErrorPage');

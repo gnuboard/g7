@@ -1,1096 +1,1113 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "쇼핑몰 설정 주문설정 탭 콘텐츠"
-  },
-  "id": "tab_content_order_settings",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'order_settings'}}",
-  "children": [
-    {
-      "id": "default_pg_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(_local.form?.available_pg_providers ?? []).length === 0}}",
-          "props": {
-            "className": "flex-center gap-2 text-label-subtle"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "circle-info",
-                "className": "text-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.not_installed"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(_local.form?.available_pg_providers ?? []).length > 0}}",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "value": "{{_local.form?.order_settings?.default_pg_provider ?? ''}}",
-                "className": "w-64",
-                "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",
-                "disabled": "{{_computed.isReadOnly}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "form.order_settings.default_pg_provider": "{{$event.target.value || null}}",
-                    "hasChanges": true
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "쇼핑몰 설정 — 주문 설정 탭. 입금계좌 목록은 별도 조각(카드/표)이 맡고, 이 탭은 결제·주문\n  관련 값을 담는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "e2e:allow 취소 가능 상태 선택지·기본값만 추가 — Vitest 레이아웃 테스트(adminEcommerceSettingsOrder 94건)와 PHPUnit ClaimSettingsStatusVocabularyTest 가 대체 커버. 쇼핑몰 설정 주문설정 탭 콘텐츠"
     },
-    {
-      "id": "cash_receipt_card",
-      "comment": "현금영수증 설정 (W-5 / #454). 발급 프로바이더는 결제 PG 와 독립 선택한다(KG 로 결제하면서 영수증만 토스로 발급하는 구성 허용 — D5). 배송비 과세 방식은 3택(D3). 신설 블록이므로 responsive.portable 로 작성한다(§6-0).",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "id": "tab_content_order_settings",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'order_settings'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.description"
-        },
-        {
-          "comment": "프로바이더 Select + 배송비 과세 Select — 기본 2열, portable 1열",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid grid-cols-2 gap-4"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "grid grid-cols-1 gap-4"
-              }
-            }
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "id": "default_pg_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium mb-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_label"
-                },
-                {
-                  "comment": "등록된 프로바이더가 0개면 안내만 노출한다",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length === 0}}",
-                  "props": {
-                    "className": "flex-center gap-2 text-label-subtle"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "circle-info",
-                        "className": "text-sm"
-                      }
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_not_installed"
-                    }
-                  ]
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.title"
                 },
                 {
-                  "id": "cash_receipt_provider_select",
-                  "type": "basic",
-                  "name": "Select",
-                  "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length > 0}}",
-                  "props": {
-                    "value": "{{_local.form?.order_settings?.cash_receipt_provider ?? ''}}",
-                    "className": "w-full",
-                    "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_none') }].concat((_local.form?.available_cash_receipt_providers ?? []).map(p => ({ value: p.id, label: $localized(p.name) ?? p.id })))}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.order_settings.cash_receipt_provider": "{{$event.target.value || ''}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-xs text-secondary mt-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_help"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium mb-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_label"
-                },
-                {
-                  "id": "shipping_fee_tax_policy_select",
-                  "comment": "배송비 과세 3정책 (D3) — 부가가치세법에 '배송비 50% 과세' 같은 일률 규정은 없다. 상점이 선택한다.",
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "value": "{{_local.form?.order_settings?.shipping_fee_tax_policy ?? 'proportional'}}",
-                    "className": "w-full",
-                    "options": "{{[{ value: 'proportional', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_proportional') }, { value: 'taxable', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_taxable') }, { value: 'follow_main_item', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_follow_main_item') }]}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.order_settings.shipping_fee_tax_policy": "{{$event.target.value}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-xs text-secondary mt-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_help"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "자진발급 토글 — 기본 OFF (D14). 의무발행 업종만 켠다.",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "flex items-center gap-2"
-              },
-              "children": [
-                {
-                  "id": "cash_receipt_self_issue_toggle",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "checkbox",
-                    "name": "order_settings.cash_receipt_self_issue",
-                    "checked": "{{_local.form?.order_settings?.cash_receipt_self_issue ?? false}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.order_settings.cash_receipt_self_issue": "{{$event.target.checked}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-sm font-medium"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_label"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-xs text-secondary mt-1 ml-6"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_help"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-xs text-secondary mt-1 ml-6"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_help"
-            },
-            {
-              "id": "cash_receipt_mandatory_industry_link",
-              "type": "basic",
-              "name": "A",
-              "props": {
-                "href": "https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7796&mi=2471",
-                "target": "_blank",
-                "rel": "noopener noreferrer",
-                "className": "inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 ml-6"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_link"
-                },
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "external-link",
-                    "size": "sm"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "payment_methods_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "w-full"
-          },
-          "children": [
-            {
-              "partial": "_payment_methods_list.json"
-            }
-          ],
-          "responsive": {
-            "portable": {
-              "children": [
-                {
-                  "partial": "_payment_methods_cards.json"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.['order_settings.payment_methods']}}",
-          "props": {
-            "className": "form-error-xs mt-2 block"
-          },
-          "text": "{{_local.errors?.['order_settings.payment_methods']?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "id": "bank_accounts_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between mb-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "card-title"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "card-description"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.description"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 flex-shrink-0"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "openModal",
-                      "target": "bank_management_modal"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "building-columns",
-                        "className": "text-sm"
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.manage_banks"
-                    }
-                  ]
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.description"
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.order_settings.bank_accounts": "{{[...(_local.form?.order_settings?.bank_accounts ?? []), { bank_code: '', account_number: '', account_holder: '', is_active: true, is_default: false }]}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "plus",
-                        "className": "text-sm"
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_local.form?.available_pg_providers ?? []).length === 0}}",
+                    "props": {
+                        "className": "flex-center gap-2 text-label-subtle"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.add_account"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "w-full"
-          },
-          "children": [
-            {
-              "partial": "_bank_accounts_table.json"
-            }
-          ],
-          "responsive": {
-            "portable": {
-              "children": [
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.not_installed"
+                        }
+                    ]
+                },
                 {
-                  "partial": "_bank_accounts_cards.json"
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_local.form?.available_pg_providers ?? []).length > 0}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "기본 PG. 선택지는 설치·활성화된 PG 플러그인이고, 하나도 없으면 이 선택칸 대신 미설치 안내만 뜬다. 비워 두면(`---`) null 로 담긴다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.order_settings.default_pg_provider": "{{$event.target.value || null}}",
+                                        "hasChanges": true
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_local.form?.order_settings?.default_pg_provider ?? ''}}",
+                                "className": "w-64",
+                                "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        }
+                    ]
                 }
-              ]
-            }
-          }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.['order_settings.bank_accounts']}}",
-          "props": {
-            "className": "form-error-xs mt-2 block"
-          },
-          "text": "{{_local.errors?.['order_settings.bank_accounts']?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "id": "auto_cancel_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
+            "comment": "현금영수증 설정 (W-5 / #454). 발급 프로바이더는 결제 PG 와 독립 선택한다(KG 로 결제하면서 영수증만 토스로 발급하는 구성 허용 — D5). 배송비 과세 방식은 3택(D3). 신설 블록이므로 responsive.portable 로 작성한다(§6-0).",
+            "id": "cash_receipt_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_description"
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
                     },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "form-hint"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_hint"
-                    }
-                  ]
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.title"
                 },
                 {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "order_settings.auto_cancel_expired",
-                    "value": "{{_local.form?.order_settings?.auto_cancel_expired}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.description"
+                },
+                {
+                    "comment": "프로바이더 Select + 배송비 과세 Select — 기본 2열, portable 1열",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "grid grid-cols-1 gap-4"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-2 gap-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium mb-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_label"
+                                },
+                                {
+                                    "comment": "등록된 프로바이더가 0개면 안내만 노출한다",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "flex-center gap-2 text-label-subtle"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_not_installed"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cash_receipt_provider_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length > 0}}",
+                                    "actions": [
+                                        {
+                                            "comment": "현금영수증 발급사 선택. 빈 값을 빈 문자열로 눌러 담는 것은 「선택 안 함」 과 미설정을 같은 값으로 모으기 위해서다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.order_settings.cash_receipt_provider": "{{$event.target.value || ''}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_local.form?.order_settings?.cash_receipt_provider ?? ''}}",
+                                        "className": "w-full",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_none') }].concat((_local.form?.available_cash_receipt_providers ?? []).map(p => ({ value: p.id, label: $localized(p.name) ?? p.id })))}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-secondary mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_help"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium mb-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_label"
+                                },
+                                {
+                                    "comment": "배송비 과세 3정책 (D3) — 부가가치세법에 '배송비 50% 과세' 같은 일률 규정은 없다. 상점이 선택한다.",
+                                    "id": "shipping_fee_tax_policy_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.order_settings.shipping_fee_tax_policy": "{{$event.target.value}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_local.form?.order_settings?.shipping_fee_tax_policy ?? 'proportional'}}",
+                                        "className": "w-full",
+                                        "options": "{{[{ value: 'proportional', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_proportional') }, { value: 'taxable', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_taxable') }, { value: 'follow_main_item', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_follow_main_item') }]}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-secondary mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_help"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "자진발급 토글 — 기본 OFF (D14). 의무발행 업종만 켠다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "id": "cash_receipt_self_issue_toggle",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "자진발급 사용 여부. 구매자가 현금영수증을 신청하지 않은 무통장 주문을 국세청 지정번호로 자동 발급할지 정한다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.order_settings.cash_receipt_self_issue": "{{$event.target.checked}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "name": "order_settings.cash_receipt_self_issue",
+                                        "checked": "{{_local.form?.order_settings?.cash_receipt_self_issue ?? false}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-medium"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_label"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-secondary mt-1 ml-6"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_help"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-secondary mt-1 ml-6"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_help"
+                        },
+                        {
+                            "id": "cash_receipt_mandatory_industry_link",
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7796&mi=2471",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "className": "inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 ml-6"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_link"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "external-link",
+                                        "size": "sm"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
+            ]
+        },
+        {
+            "id": "payment_methods_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.['order_settings.auto_cancel_expired']}}",
-              "props": {
-                "className": "form-error-xs"
-              },
-              "text": "{{_local.errors?.['order_settings.auto_cancel_expired']?.[0] ?? ''}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_local.form?.order_settings?.auto_cancel_expired}}",
-              "props": {
-                "className": "flex-center gap-2 flex-wrap"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_prefix"
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.title"
                 },
                 {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "order_settings.auto_cancel_days",
-                    "value": "{{_local.form?.order_settings?.auto_cancel_days ?? 3}}",
-                    "min": "{{_local?.form?._meta?.limits?.auto_cancel_days_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.auto_cancel_days_max ?? 30}}",
-                    "step": "1",
-                    "className": "{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.description"
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_suffix"
+                    "comment": "결제수단 행 사이 간격과 목록 높이 상한은 이 감싸개가 맡는다. 두 조각의 뿌리는 sortable 노드라 자기 요소를 그리지 않고 항목을 곧바로 여기에 펼치므로, 그 노드에 준 클래스는 화면에 닿지 않는다. 결제수단은 플러그인이 붙을 때마다 늘어나므로 높이를 묶고 안에서 스크롤한다 — 끌어 옮기기(dnd-kit)는 스크롤 가능한 조상을 자동 스크롤한다. 좁은 화면 카드는 한 장이 여러 줄이라 고정 px 대신 화면 높이 비율로 묶는다.",
+                    "id": "payment_methods_scroll",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "w-full stack-tight max-h-[70vh] overflow-y-auto pr-1"
+                            },
+                            "children": [
+                                {
+                                    "partial": "_payment_methods_cards.json"
+                                }
+                            ]
+                        }
+                    },
+                    "props": {
+                        "className": "w-full stack-tight max-h-[500px] overflow-y-auto pr-1"
+                    },
+                    "children": [
+                        {
+                            "partial": "_payment_methods_list.json"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['order_settings.auto_cancel_days']}}",
-                  "props": {
-                    "className": "form-error-xs w-full mt-1"
-                  },
-                  "text": "{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}"
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.['order_settings.payment_methods']}}",
+                    "props": {
+                        "className": "form-error-xs mt-2 block"
+                    },
+                    "text": "{{_local.errors?.['order_settings.payment_methods']?.[0] ?? ''}}"
                 }
-              ]
+            ]
+        },
+        {
+            "id": "bank_accounts_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "comment": "결제 미완료 주문 만료 기준(분) — 결제창까지 갔으나 결제가 성립하지 않은 주문을 정리하는 스케줄러가 읽는다. 자동취소 토글과 독립이므로 토글 하위에 두지 않는다.",
-              "id": "pending_order_expire_minutes_row",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 flex-wrap"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_prefix"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between mb-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "card-title"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "card-description"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.description"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 flex-shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "openModal",
+                                            "target": "bank_management_modal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "building-columns",
+                                                "className": "text-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.manage_banks"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "입금계좌 추가. 배열 끝에 빈 줄을 붙이고, 첫 줄이면 대표로 표시한다 — 대표가 없는 상태를 만들지 않기 위해서다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.order_settings.bank_accounts": "{{[...(_local.form?.order_settings?.bank_accounts ?? []), { bank_code: '', account_number: '', account_holder: '', is_active: true, is_default: false }]}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "plus",
+                                                "className": "text-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.add_account"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "order_settings.pending_order_expire_minutes",
-                    "value": "{{_local.form?.order_settings?.pending_order_expire_minutes ?? 1440}}",
-                    "min": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_max ?? 20160}}",
-                    "step": "1",
-                    "className": "{{_local.errors?.['order_settings.pending_order_expire_minutes'] ? 'input input-error w-24' : 'input w-24'}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "children": [
+                                {
+                                    "partial": "_bank_accounts_cards.json"
+                                }
+                            ]
+                        }
+                    },
+                    "props": {
+                        "className": "w-full"
+                    },
+                    "children": [
+                        {
+                            "partial": "_bank_accounts_table.json"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_suffix"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint w-full"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_hint"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['order_settings.pending_order_expire_minutes']}}",
-                  "props": {
-                    "className": "form-error-xs w-full mt-1"
-                  },
-                  "text": "{{_local.errors?.['order_settings.pending_order_expire_minutes']?.[0] ?? ''}}"
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.['order_settings.bank_accounts']}}",
+                    "props": {
+                        "className": "form-error-xs mt-2 block"
+                    },
+                    "text": "{{_local.errors?.['order_settings.bank_accounts']?.[0] ?? ''}}"
                 }
-              ]
-            }
-          ],
-          "props": {
-            "className": "row-stack"
-          }
+            ]
+        },
+        {
+            "id": "auto_cancel_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_description"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "order_settings.auto_cancel_expired",
+                                        "value": "{{_local.form?.order_settings?.auto_cancel_expired}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['order_settings.auto_cancel_expired']}}",
+                            "props": {
+                                "className": "form-error-xs"
+                            },
+                            "text": "{{_local.errors?.['order_settings.auto_cancel_expired']?.[0] ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.order_settings?.auto_cancel_expired}}",
+                            "props": {
+                                "className": "flex-center gap-2 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_prefix"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "order_settings.auto_cancel_days",
+                                        "value": "{{_local.form?.order_settings?.auto_cancel_days ?? 3}}",
+                                        "min": "{{_local?.form?._meta?.limits?.auto_cancel_days_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.auto_cancel_days_max ?? 30}}",
+                                        "step": "1",
+                                        "className": "{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_suffix"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['order_settings.auto_cancel_days']}}",
+                                    "props": {
+                                        "className": "form-error-xs w-full mt-1"
+                                    },
+                                    "text": "{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "결제 미완료 주문 만료 기준(분) — 결제창까지 갔으나 결제가 성립하지 않은 주문을 정리하는 스케줄러가 읽는다. 자동취소 토글과 독립이므로 토글 하위에 두지 않는다.",
+                            "id": "pending_order_expire_minutes_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_prefix"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "order_settings.pending_order_expire_minutes",
+                                        "value": "{{_local.form?.order_settings?.pending_order_expire_minutes ?? 1440}}",
+                                        "min": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_max ?? 20160}}",
+                                        "step": "1",
+                                        "className": "{{_local.errors?.['order_settings.pending_order_expire_minutes'] ? 'input input-error w-24' : 'input w-24'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_suffix"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint w-full"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['order_settings.pending_order_expire_minutes']}}",
+                                    "props": {
+                                        "className": "form-error-xs w-full mt-1"
+                                    },
+                                    "text": "{{_local.errors?.['order_settings.pending_order_expire_minutes']?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "cancellable_statuses_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "props": {
+                                        "name": "order_settings.cancellable_statuses",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder",
+                                        "value": "{{_local.form?.order_settings?.cancellable_statuses ?? ['pending_order', 'pending_payment', 'payment_complete']}}",
+                                        "isMulti": true,
+                                        "isClearable": false,
+                                        "isSearchable": true,
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "options": [
+                                            {
+                                                "value": "pending_order",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.pending_order"
+                                            },
+                                            {
+                                                "value": "pending_payment",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.pending_payment"
+                                            },
+                                            {
+                                                "value": "payment_complete",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
+                                            },
+                                            {
+                                                "value": "shipping_hold",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_hold"
+                                            },
+                                            {
+                                                "value": "preparing",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.preparing"
+                                            },
+                                            {
+                                                "value": "shipping_ready",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready"
+                                            },
+                                            {
+                                                "value": "shipping",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.shipping"
+                                            },
+                                            {
+                                                "value": "delivered",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.delivered"
+                                            },
+                                            {
+                                                "value": "confirmed",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.confirmed"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint mt-2"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['order_settings.cancellable_statuses']}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.['order_settings.cancellable_statuses']?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "confirmable_statuses_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "props": {
+                                        "name": "order_settings.confirmable_statuses",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.placeholder",
+                                        "value": "{{_local.form?.order_settings?.confirmable_statuses ?? ['shipping', 'delivered']}}",
+                                        "isMulti": true,
+                                        "isClearable": false,
+                                        "isSearchable": true,
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "options": [
+                                            {
+                                                "value": "payment_complete",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
+                                            },
+                                            {
+                                                "value": "shipping_hold",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_hold"
+                                            },
+                                            {
+                                                "value": "preparing",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.preparing"
+                                            },
+                                            {
+                                                "value": "shipping_ready",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready"
+                                            },
+                                            {
+                                                "value": "shipping",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.shipping"
+                                            },
+                                            {
+                                                "value": "delivered",
+                                                "label": "$t:sirsoft-ecommerce.enums.order_status.delivered"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint mt-2"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['order_settings.confirmable_statuses']}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.['order_settings.confirmable_statuses']?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "cart_expiry_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2 flex-wrap"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.prefix"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "number",
+                                "name": "order_settings.cart_expiry_days",
+                                "value": "{{_local.form?.order_settings?.cart_expiry_days ?? 30}}",
+                                "min": "{{_local?.form?._meta?.limits?.cart_expiry_days_min ?? 1}}",
+                                "max": "{{_local?.form?._meta?.limits?.cart_expiry_days_max ?? 365}}",
+                                "step": "1",
+                                "className": "{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.suffix"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['order_settings.cart_expiry_days']}}",
+                            "props": {
+                                "className": "form-error-xs w-full mt-1"
+                            },
+                            "text": "{{_local.errors?.['order_settings.cart_expiry_days']?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "stock_management_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_description"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "order_settings.stock_restore_on_cancel",
+                                "value": "{{_local.form?.order_settings?.stock_restore_on_cancel}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.['order_settings.stock_restore_on_cancel']}}",
+                    "props": {
+                        "className": "form-error-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}"
+                }
+            ]
         }
-      ]
-    },
-    {
-      "id": "cancellable_statuses_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.label"
-                },
-                {
-                  "type": "composite",
-                  "name": "TagInput",
-                  "props": {
-                    "name": "order_settings.cancellable_statuses",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder",
-                    "options": [
-                      {
-                        "value": "payment_complete",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
-                      },
-                      {
-                        "value": "shipping_hold",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_hold"
-                      },
-                      {
-                        "value": "preparing",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.preparing"
-                      },
-                      {
-                        "value": "shipping_ready",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready"
-                      },
-                      {
-                        "value": "shipping",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping"
-                      },
-                      {
-                        "value": "delivered",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.delivered"
-                      },
-                      {
-                        "value": "confirmed",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.confirmed"
-                      }
-                    ],
-                    "value": "{{_local.form?.order_settings?.cancellable_statuses ?? ['payment_complete']}}",
-                    "isMulti": true,
-                    "isClearable": false,
-                    "isSearchable": true,
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint mt-2"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.hint"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['order_settings.cancellable_statuses']}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.['order_settings.cancellable_statuses']?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ],
-          "props": {
-            "className": "row-stack"
-          }
-        }
-      ]
-    },
-    {
-      "id": "confirmable_statuses_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.label"
-                },
-                {
-                  "type": "composite",
-                  "name": "TagInput",
-                  "props": {
-                    "name": "order_settings.confirmable_statuses",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.placeholder",
-                    "options": [
-                      {
-                        "value": "payment_complete",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
-                      },
-                      {
-                        "value": "shipping_hold",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_hold"
-                      },
-                      {
-                        "value": "preparing",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.preparing"
-                      },
-                      {
-                        "value": "shipping_ready",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready"
-                      },
-                      {
-                        "value": "shipping",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.shipping"
-                      },
-                      {
-                        "value": "delivered",
-                        "label": "$t:sirsoft-ecommerce.enums.order_status.delivered"
-                      }
-                    ],
-                    "value": "{{_local.form?.order_settings?.confirmable_statuses ?? ['shipping', 'delivered']}}",
-                    "isMulti": true,
-                    "isClearable": false,
-                    "isSearchable": true,
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint mt-2"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.hint"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['order_settings.confirmable_statuses']}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.['order_settings.confirmable_statuses']?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ],
-          "props": {
-            "className": "row-stack"
-          }
-        }
-      ]
-    },
-    {
-      "id": "cart_expiry_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2 flex-wrap"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-body"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.prefix"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "number",
-                "name": "order_settings.cart_expiry_days",
-                "value": "{{_local.form?.order_settings?.cart_expiry_days ?? 30}}",
-                "min": "{{_local?.form?._meta?.limits?.cart_expiry_days_min ?? 1}}",
-                "max": "{{_local?.form?._meta?.limits?.cart_expiry_days_max ?? 365}}",
-                "step": "1",
-                "className": "{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}",
-                "disabled": "{{_computed.isReadOnly}}"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-body"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.suffix"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.['order_settings.cart_expiry_days']}}",
-              "props": {
-                "className": "form-error-xs w-full mt-1"
-              },
-              "text": "{{_local.errors?.['order_settings.cart_expiry_days']?.[0] ?? ''}}"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "stock_management_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_description"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_hint"
-                }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "order_settings.stock_restore_on_cancel",
-                "value": "{{_local.form?.order_settings?.stock_restore_on_cancel}}",
-                "disabled": "{{_computed.isReadOnly}}"
-              }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.['order_settings.stock_restore_on_cancel']}}",
-          "props": {
-            "className": "form-error-xs mt-1"
-          },
-          "text": "{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}"
-        }
-      ]
-    }
-  ],
-  "props": {}
+    ]
 }

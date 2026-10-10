@@ -1,0 +1,82 @@
+<!-- 내 정보 수정 — 보기 화면(`profile`)과 짝을 이루는 별도 화면이다. -->
+<layout name="mypage/profile-edit" version="1.0.0" extends="_user_base">
+  <!-- 본인 정보를 받아 `initLocal` 로 폼 초깃값까지 채운다. `refetchOnMount` 라 다른 화면을 다녀와도
+       화면에 남아 있던 낡은 값이 아니라 서버 값으로 다시 시작한다 -->
+  <data-source id="user" label_key="$t:editor.data_source.user" type="api" endpoint="/api/me" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" initLocal="profileEditForm" :blur_until_loaded="true" :refetchOnMount="true"/>
+  <permissions/>
+  <defines>
+    <define name="countryList">
+      <item code="KR" name="countries.KR"/>
+      <item code="US" name="countries.US"/>
+      <item code="JP" name="countries.JP"/>
+      <item code="CN" name="countries.CN"/>
+      <item code="GB" name="countries.GB"/>
+      <item code="DE" name="countries.DE"/>
+      <item code="FR" name="countries.FR"/>
+      <item code="CA" name="countries.CA"/>
+      <item code="AU" name="countries.AU"/>
+      <item code="IN" name="countries.IN"/>
+      <item code="BR" name="countries.BR"/>
+      <item code="RU" name="countries.RU"/>
+      <item code="IT" name="countries.IT"/>
+      <item code="ES" name="countries.ES"/>
+      <item code="MX" name="countries.MX"/>
+      <item code="NL" name="countries.NL"/>
+      <item code="SE" name="countries.SE"/>
+      <item code="CH" name="countries.CH"/>
+      <item code="SG" name="countries.SG"/>
+      <item code="HK" name="countries.HK"/>
+      <item code="TW" name="countries.TW"/>
+      <item code="TH" name="countries.TH"/>
+      <item code="VN" name="countries.VN"/>
+      <item code="PH" name="countries.PH"/>
+      <item code="MY" name="countries.MY"/>
+      <item code="ID" name="countries.ID"/>
+      <item code="NZ" name="countries.NZ"/>
+      <item code="AT" name="countries.AT"/>
+      <item code="BE" name="countries.BE"/>
+      <item code="DK" name="countries.DK"/>
+      <item code="FI" name="countries.FI"/>
+      <item code="NO" name="countries.NO"/>
+      <item code="PL" name="countries.PL"/>
+      <item code="PT" name="countries.PT"/>
+      <item code="IE" name="countries.IE"/>
+      <item code="GR" name="countries.GR"/>
+      <item code="CZ" name="countries.CZ"/>
+      <item code="HU" name="countries.HU"/>
+      <item code="TR" name="countries.TR"/>
+      <item code="IL" name="countries.IL"/>
+      <item code="AE" name="countries.AE"/>
+      <item code="SA" name="countries.SA"/>
+      <item code="ZA" name="countries.ZA"/>
+      <item code="EG" name="countries.EG"/>
+      <item code="AR" name="countries.AR"/>
+      <item code="CL" name="countries.CL"/>
+      <item code="CO" name="countries.CO"/>
+      <item code="PE" name="countries.PE"/>
+    </define>
+    <define name="languageList">
+      <item code="ko" name="languages.ko"/>
+      <item code="en" name="languages.en"/>
+    </define>
+  </defines>
+  <init>
+    <set-state target="local" :isPasswordVerified="false" verifyPassword="" :isVerifyingPassword="false" :verifyPasswordError="false"/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="pen-to-square" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.profile_edit_title</h1>
+        </div>
+        <!-- 비밀번호 검증 섹션 -->
+        <include src="partials/mypage/profile/_password_verify_section.g7.html"/>
+        <!-- 프로필 편집 폼 -->
+        <include src="partials/mypage/profile/_edit.g7.html"/>
+      </container>
+    </div>
+  </slot>
+</layout>

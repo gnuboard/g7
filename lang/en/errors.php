@@ -19,6 +19,13 @@ return [
         'message' => 'You do not have permission to access this page.',
     ],
 
+    // Blocked by Settings > Security > Access restriction (shared by the web 403 page and the API 403 JSON message)
+    'ip_restricted' => [
+        'title' => 'Access not allowed',
+        'message' => 'This area can only be accessed from allowed IP addresses. Please contact the site administrator if you need access.',
+        'client_ip' => 'Your IP · :ip',
+    ],
+
     '404' => [
         'title' => 'Page Not Found',
         'message' => 'The page you requested does not exist or has been moved.',

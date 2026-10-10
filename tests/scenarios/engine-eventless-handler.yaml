@@ -1,0 +1,16 @@
+feature: 엔진 — 이벤트 없이 불린 액션 핸들러 (engine-v1.77.1, #736 S2)
+
+description: |
+  컴포넌트가 콜백을 이벤트 없이 부를 때(관리자 모달 Escape 의 `onClose()`) `createHandler` 가 돌려준 핸들러가
+  `event.type`·`preventDefault()` 를 읽다 TypeError 로 거부돼 액션(closeModal)이 실행되지 않았다(2025-12-19 부터).
+  인자가 없으면 액션 type 의 대체 이벤트로 실행한다. 인자가 있는 호출은 종전과 같다.
+
+axes:
+  caller: [component_callback]
+  event: [none]
+
+effects:
+  - eventless_call_runs_action
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.eventlessHandler.test.ts

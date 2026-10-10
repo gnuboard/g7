@@ -1,0 +1,34 @@
+feature: ecommerce_exchange_rate_provider_lock
+description: 제공자 등록·선택·저장 경로·변경 대상·권한을 교차해 잠금과 나머지 필드 편집을 검증한다. 단건 메서드는 공개 라우트가 없으므로 FormRequest 계약을 직접 검증한다.
+axes:
+  registered: [none, one, two]
+  selected: [none, valid, unregistered]
+  save_path: [bulk, single_key]
+  submitted_rate: [unchanged, changed, new_currency, unsupported_code, base_row]
+  actor: [update_perm, read_only]
+exclusions:
+  - registered: none
+    selected: valid
+    reason: 등록된 제공자가 없는 경우 등록된 ID를 선택하는 상태는 성립하지 않는다. 비활성화된 저장 선택값 보존은 별도 회귀 테스트가 검증한다.
+  - save_path: single_key
+    actor: read_only
+    reason: 단건 메서드에는 HTTP 라우트가 없어 권한 판정은 노출된 bulk 라우트에서 검증한다. 단건 FormRequest는 update_perm 행에서 검증한다.
+effects:
+  - currency_lock_layout
+  - providers_are_not_selected_automatically_and_managed_rate_guard_is_numeric
+  - unregistered_new_provider_is_rejected_but_disabled_saved_selection_is_preserved
+  - single_key_cannot_bypass_managed_rate_guard_and_other_settings_remain_editable
+  - provider_contract_has_no_vendor_dependency_in_module_runtime_sources
+  - provider_contract_surface_is_documented_for_extension_authors
+  - historical_order_charge_immutable
+  - mileage_rules_preserved
+  - selected_provider_applies_full_list_without_losing_configuration
+  - foreign_source_cannot_write_and_deleted_default_stays_deleted
+  - provider_write_guard
+  - permission_enforced
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ExchangeRateProviderMatrixTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/fixtures/ProviderCases.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsExchangeRateProviderTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsServiceApplyExchangeRatesTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/currencyExchangeRateLock.test.tsx

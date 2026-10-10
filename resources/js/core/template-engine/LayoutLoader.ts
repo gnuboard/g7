@@ -99,6 +99,14 @@ export interface LayoutScript {
   src: string;
   /** 스크립트 요소 ID (중복 로드 방지용, 필수) */
   id: string;
+  /**
+   * 로드 실패 안내에 쓸 사람이 읽는 이름 (선택적, `$t:키` 허용)
+   *
+   * 없으면 일반 이름(「화면 기능 스크립트」)으로 안내한다 — id 는 안내에 쓰지 않는다.
+   *
+   * @since engine-v1.79.0
+   */
+  label?: string;
   /** 조건부 로드 표현식 (선택적, 예: "{{_global.pluginActive}}") */
   if?: string;
   /**

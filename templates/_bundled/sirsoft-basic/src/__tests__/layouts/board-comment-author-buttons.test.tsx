@@ -71,7 +71,7 @@ function setupTestRegistry(): ComponentRegistry {
 
 // ============================================================
 // 댓글 버튼 조건 테스트용 레이아웃 (컴포넌트 정의만)
-// _comment_item.json의 수정/삭제 버튼 if 조건 재현
+// _comment_item.g7.html의 수정/삭제 버튼 if 조건 재현
 // ============================================================
 
 const commentButtonLayout = {

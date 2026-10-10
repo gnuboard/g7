@@ -1,0 +1,111 @@
+feature: 관리자 주문상세 레이아웃 — 셸·주문정보·결제정보·활동로그·모달의 구조 계약
+
+description: |
+  관리자 주문 상세(`admin/ecommerce/orders/:orderNumber`)는 셸 레이아웃 하나와 탭 partial 셋,
+  모달 일곱 개로 이루어진다. 이 매니페스트는 **그 JSON 들이 서로 약속한 배선**을 잠근다 —
+  데이터소스 아이디, 바인딩 경로, 핸들러 이름, 모달 집합. 값이 아니라 배선이라 화면은
+  깨진 뒤에도 조용하다(빈 칸·미표시).
+
+  ① **금액은 서버가 만든다.** 셸 `computed` 는 표시 축(탭 배열·서브탭)만 담고 금액을 계산하지
+     않는다. 화면이 통화 기호·자릿수·합계를 조립하면 기본 통화가 다른 상점에서 값은 맞고
+     단위만 틀린 금액이 나가고, 서버 집계와 갈려도 오류가 남지 않는다. 합계행·개별 행·
+     다통화 표시 모두 `order.data` / `row.*` 의 백엔드 필드만 읽는다.
+
+  ② **환불 집계의 정본은 주문(Order) 레벨이다.** `OrderPaymentResource` 에 없는
+     `payment.refund_*` · `payment.refunded_amount` 를 바인딩하면 예외 없이 빈 칸이 된다
+     (결함 C-2) — 그 키는 **있어서는 안 되는 것**이라 부재까지 함께 잠근다.
+
+  ③ **폼 초기화는 데이터소스 `initLocal` 맵이 한다.** 핸들러(`initOrderDetailForm`) 경로가
+     제거됐으므로 맵이 사라지면 수취인 폼이 통째로 비어서 뜬다.
+
+  ④ **모달 집합은 개수가 아니라 이름으로 고정한다.** 개수만 세면 무엇이 늘고 줄었는지
+     진단되지 않는다.
+
+  ⑤ **비회원 조회 비밀번호 재설정**은 비회원 블록(`!order.data?.user_id`)에서만 열리며,
+     평문 입력은 `type=password` 로 마스킹하고 성공 시 토스트 + 모달 닫기로 끝난다.
+
+  ⑥ **활동 로그는 `order_logs` API 가 소스다.** 더미 배열이 남아 있으면 화면은 정상으로
+     보이면서 실제 로그를 한 건도 보여주지 않는다. 처리자 열은 회원(`user.uuid` 존재)일
+     때만 ActionMenu 를 달고, 시스템 사용자는 아바타+이름만 남는다.
+
+# axis 의미:
+#   surface — 같은 화면을 이루는 JSON 조각. 각 조각이 독립된 구조 계약이라 이것이 유일한 직교 축이다.
+#             바인딩 경로·핸들러 이름·다국어 네임스페이스는 조각과 직교하지 않아(조각마다 다른 키를
+#             본다) 축으로 세우지 않고 이름 붙은 effect 가 덮는다.
+axes:
+  surface: [shell, order_info, payment_info, activity_log, modals]
+
+effects:
+  - admin_claim_request_buttons_stay_disabled_without_permission  # 접수 권한이 없으면 버튼 셋이 꺼진 채 서고 권한 안내가 선다(Chrome 실측 P-6)
+  - admin_claim_request_context_error_distinguishes_forbidden_from_failure  # 문맥 조회 실패는 403=권한 없음, 그 밖=불러오지 못함 (2026-09-26 3차 검증 인터뷰)
+  - admin_return_request_carries_refund_priority_and_prefilled_bank  # 반품 직권 접수 창은 종전 취소 창 조건으로 환불 계좌·우선순위 칸을 세우고 주문 결제 정보로 계좌를 미리 채운다(validate-plan A1)
+  - admin_claim_textareas_use_camelcase_max_length  # 직권 접수·대리 철회·신청 수정 입력칸이 maxLength(camelCase)로 한도를 건다(validate branch M9)
+  - admin_request_modal_seeds_the_international_redelivery_address  # 직권 접수 창 재발송지의 해외 도시·주 칸(S2-D8)
+  - admin_request_preview_amounts_are_formatted_in_order_currency  # 직권 접수 창 금액 줄은 previewFormatted(주문 통화 표기)를 읽는다(Chrome 실측 V-A1-m)
+  - admin_claim_request_gate_hint_shows_when_any_button_is_disabled  # 셋 중 하나만 꺼져도 게이트 안내가 곁에 선다(Chrome 실측 P-1)
+  # ① 셸 — 데이터소스·computed·모달 집합
+  - shell_declares_order_logs_and_carriers_data_sources
+  - shell_order_data_source_init_local_seeds_recipient_form
+  - shell_computed_never_calculates_amounts
+  - shell_modal_partial_set_is_pinned_by_name
+  - shell_layout_metadata_matches_name_and_version
+  - shell_initial_local_state_seeds_selection_and_log_paging
+  - shell_renders_and_survives_order_api_error
+  - shell_list_button_navigates_to_order_index
+  - shell_selection_and_batch_state_round_trip
+  - shell_modals_open_by_id
+  # ② 주문정보 탭 — 일괄변경 바 · DataGrid 배선
+  - order_info_partial_is_a_basic_div_root
+  - order_info_bulk_bar_calls_build_bulk_confirm_handler
+  - order_info_bulk_bar_disabled_without_selection
+  - order_info_carrier_fields_appear_only_for_shipping_statuses
+  - order_info_grid_reads_order_options_and_reports_selection
+  - order_info_grid_cells_avoid_wrapping_except_product_column
+  - order_info_admin_memo_is_bound_to_the_shared_form
+  # ② 주문정보 탭 — 취소 이력 · 회원 동선 · 상품 링크
+  - order_info_cancel_section_appears_only_with_cancel_history
+  - order_info_cancel_rows_bind_reason_type_and_detail
+  - order_info_member_action_menu_links_to_user_detail
+  - order_info_guest_block_offers_its_own_action_menu
+  - order_info_email_modal_opener_exists
+  - order_info_product_image_and_name_link_to_product_edit_in_new_tab
+  # ② 주문정보 탭 — 금액 바인딩 (①)
+  - order_info_row_amounts_use_backend_formatted_fields
+  - order_info_footer_totals_read_backend_aggregates_not_computed
+  - order_info_footer_detail_shows_tax_points_and_deposit
+  - order_info_secondary_currency_rendered_by_iteration_with_preferred_filter
+  - order_info_translation_keys_stay_in_module_namespace
+  # ③ 결제정보 탭
+  - payment_info_partial_is_a_basic_div_root
+  - payment_info_cards_iterate_payments
+  - payment_info_order_amounts_read_order_data
+  - payment_info_payment_only_fields_keep_payment_path
+  - payment_info_mileage_reads_order_level_aggregate
+  - payment_info_refund_reads_order_level_aggregate
+  - payment_info_never_binds_unexposed_payment_refund_keys
+  # ⑥ 활동 로그 탭
+  - activity_log_partial_is_a_basic_div_root
+  - activity_log_sort_and_per_page_controls_exist
+  - activity_log_iterates_order_logs_api_without_dummy_data
+  - activity_log_rows_bind_activity_log_resource_fields
+  - activity_log_actor_column_shows_avatar_circle_and_name
+  - activity_log_actor_menu_replaces_the_type_badge
+  - activity_log_actor_menu_only_for_members_with_uuid
+  - activity_log_actor_menu_opens_user_detail_in_new_window
+  - activity_log_system_actor_has_no_action_menu
+  - activity_log_empty_and_pagination_are_present
+  # ④ 모달 배선
+  - batch_change_modal_wires_process_handler_and_close
+  - sms_and_email_modals_bind_their_recipient_fields
+  # ⑤ 비회원 조회 비밀번호 재설정
+  - guest_password_modal_is_declared_with_its_id
+  - guest_password_modal_posts_to_reset_endpoint_with_confirmation
+  - guest_password_modal_masks_the_plain_text_input
+  - guest_password_modal_confirms_and_closes_on_success
+  - guest_password_reset_button_lives_in_the_guest_block
+  # 상품 표 보조 통화 — 기준 통화(윗줄)를 빼야 한다. 표시 통화를 빼면 기준 엔화·표시 원화 상점에서 원화가 사라지고 엔화가 두 번 선다(실측 2026-10-03)
+  - order_info_secondary_currency_excludes_order_base_currency
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderDetailLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderInfoSecondaryCurrency.test.ts

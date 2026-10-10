@@ -6,7 +6,9 @@
  * 본 테스트는 reducer 의 SET_PREVIEW_DEVICE 가 상태로 진입한 뒤 hook 이
  * 그 값을 정확히 노출하고, 폭 매핑이 디바이스 프리셋 명세 와
  * 일치함을 가드한다.
- */
+  *
+ * @effects preview_custom_width_clamped_320_to_1920, preview_non_custom_ignores_custom_width
+*/
 
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';

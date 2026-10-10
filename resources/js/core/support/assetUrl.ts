@@ -181,16 +181,23 @@ export function templateAsset(identifier: string, path: string, version?: number
 /**
  * 템플릿 자산 **디렉토리** URL 을 생성합니다.
  *
- * AMD 로더나 웹 워커처럼 "디렉토리 접두에 파일명을 이어 붙이는" 소비자를 위한 것이다
- * (예: Monaco 의 `paths.vs`). 그런 소비자에게는 확장자 없는 모드의 `?file=` 쿼리 형태를
- * 줄 수 없다 — 뒤에 `/editor/editor.main.js` 를 이어 붙이면 쿼리 값 안에 경로가 들어간
- * 엉뚱한 URL 이 된다.
+ * AMD 로더처럼 "디렉토리 접두에 `/파일명` 을 이어 붙이는" 소비자를 위한 것이다
+ * (예: Monaco 의 `paths.vs`). 그런 소비자에게는 `templateAsset()` 의 인코딩된 쿼리 형태
+ * (`?file=vendor%2F…`)를 줄 수 없다 — 뒤에 `/editor/editor.main.js` 를 이어 붙이면 인코딩된
+ * 값 뒤에 날것의 경로가 붙은 엉뚱한 file 값이 된다.
+ *
+ * 2번(`?file=` 디렉토리)은 이어 붙이기만 성립한다. 상대 경로 해석(CSS 의 `url(../x)`, 워커 안
+ * `importScripts('./x')`, `new URL(rel, dir + '/')`)은 쿼리 기준으로 풀려 깨지고, 이어 붙인 뒤에
+ * `?v=1` 같은 쿼리를 덧붙여도 깨진다. 그런 소비자는 정적 게시본(1번)이 있을 때만 쓴다.
  *
  * 그래서 우선순위가 다르다:
  *  1. 정적 게시본이 있으면 그 경로 — 웹서버가 직접 서빙하는 **실제 디렉토리**라
  *     자산 URL 모드와 무관하게 하위 파일이 그대로 해석된다.
- *  2. 없으면 확장자 형태의 API 경로. 확장자를 가로채는 서버에서는 이 경로가 404 이므로
- *     **소비자가 폴백을 갖춰야 한다** (Monaco 는 textarea 폴백을 갖는다).
+ *  2. 확장자 없는 모드면 `?file=` 디렉토리 — 경로를 인코딩하지 않아 뒤에 이어 붙인
+ *     `/loader.js` 가 그대로 한 파일의 file 값이 되고, 경로부에는 확장자가 남지 않는다.
+ *     AMD 로더는 쿼리가 있는 URL 에 `.js` 를 붙이지 않으므로(`…/editor/editor.main`)
+ *     서버가 같은 이름의 `.js` 를 찾아 준다.
+ *  3. 그 밖에는 확장자 형태의 API 경로.
  *
  * @param identifier 템플릿 식별자
  * @param path `dist/` 이하 디렉토리 경로 (예: `vendor/monaco-editor/0.54.0/vs`)
@@ -205,6 +212,11 @@ export function templateAssetDir(identifier: string, path: string): string {
 
     if (staticUrl !== null) {
         return staticUrl;
+    }
+
+    // @since engine-v1.75.1 확장자 없는 모드의 file 쿼리 디렉토리
+    if (isExtensionless()) {
+        return `/api/templates/assets/${id}?${FILE_QUERY_PARAM}=${normalizedPath}`;
     }
 
     return `/api/templates/assets/${id}/${normalizedPath}`;

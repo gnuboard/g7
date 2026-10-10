@@ -74,6 +74,8 @@ const CASES = [
 ];
 
 describe('확장 제거 — 운영자 파일 사본 경로 안내', () => {
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it.each(CASES)('$name: 결과 화면에서는 제목이 완료 문구로 바뀐다', ({ modal, backups, ns }) => {
         // 브라우저 실측에서 드러났다 — 본문은 결과로 바뀌는데 제목만 "제거 확인" 으로
         // 남아 있었다. 제목은 화면에서 가장 먼저 읽히는 줄이라, 끝난 일을 아직
@@ -87,6 +89,8 @@ describe('확장 제거 — 운영자 파일 사본 경로 안내', () => {
         expect(title).toContain(`admin.${ns}.modals.uninstall_title`);
     });
 
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it.each(CASES)('$name: 응답의 보관 목록을 상태로 옮긴다', ({ modal, backups }) => {
         const seeds = collect(
             uninstallCall(modal).onSuccess,
@@ -97,6 +101,8 @@ describe('확장 제거 — 운영자 파일 사본 경로 안내', () => {
         expect(seeds[0].params[backups]).toContain('preserved_backups');
     });
 
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it.each(CASES)('$name: 보관분이 있으면 모달을 닫지 않는다', ({ modal }) => {
         const closes = collect(uninstallCall(modal).onSuccess, (n) => n.handler === 'closeModal');
 
@@ -108,6 +114,8 @@ describe('확장 제거 — 운영자 파일 사본 경로 안내', () => {
         });
     });
 
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it.each(CASES)('$name: 보관분이 있으면 선택 상태를 비우지 않는다', ({ modal, selected }) => {
         // 결과 화면이 확장 이름을 그대로 쓰므로, 여기서 비우면 화면이 빈 이름으로 뜬다
         const clears = collect(
@@ -121,6 +129,8 @@ describe('확장 제거 — 운영자 파일 사본 경로 안내', () => {
         });
     });
 
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it.each(CASES)('$name: 결과 화면이 확인 화면과 배타적으로 렌더된다', ({ modal, backups }) => {
         const [section] = collect(modal, (n) => n.id === 'preserved_backups_section');
 
@@ -144,6 +154,8 @@ describe('확장 제거 — 운영자 파일 사본 경로 안내', () => {
         });
     });
 
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it.each(CASES)('$name: 결과 화면의 닫기 버튼이 보관 상태를 정리한다', ({ modal, backups }) => {
         const cleanups = collect(
             modal,
@@ -153,16 +165,22 @@ describe('확장 제거 — 운영자 파일 사본 경로 안내', () => {
         expect(cleanups.length, '보관 상태를 비우는 액션이 없습니다').toBeGreaterThan(0);
     });
 
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it.each(CASES)('$name: 모달을 여는 시드가 지난 보관 목록을 지운다', ({ list, backups, selected }) => {
         // 지우지 않으면 다음 확장을 제거하려 할 때 지난 경로가 결과 화면으로 이미 떠 있고,
         // 확인 화면이 숨겨져 있어 제거를 진행할 수 없다
+        // 대상 행을 가리키는 표기는 카드가 어떻게 그려지느냐에 따라 달라진다 —
+        // 카드 셀에서 직접 그리면 `{{row}}`, 확장 목록 그리드가 콜백으로 되돌려 주면
+        // `{{$args[N]}}` 다. 잠그려는 것은 표기가 아니라 "대상 행을 담아 창을 연다" 이므로
+        // 둘 다 받는다.
         const seeds = collect(
             list,
             (n) =>
                 n.handler === 'setState' &&
                 n.params &&
                 typeof n.params[selected] === 'string' &&
-                n.params[selected].includes('{{row}}')
+                (n.params[selected].includes('{{row}}') || n.params[selected].includes('$args['))
         );
         const modalSeeds = seeds.filter((seed) => `${selected.replace('selected', '').toLowerCase()}` !== '');
 
@@ -211,6 +229,8 @@ describe('확장 제거 결과 화면 렌더링', () => {
         testUtils = null;
     });
 
+    // @scenario custom_source=convention_scan, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it('보관 경로가 화면에 그대로 나온다', async () => {
         setupRegistry();
 
@@ -232,6 +252,8 @@ describe('확장 제거 결과 화면 렌더링', () => {
         expect(screen.getByText(archive)).toBeInTheDocument();
     });
 
+    // @scenario custom_source=none, custom_asset=static_file
+    // @effects custom_backup_path_surfaced_in_admin_ui
     it('보관분이 없으면 결과 화면이 뜨지 않는다', async () => {
         setupRegistry();
 

@@ -12,7 +12,7 @@
  *  - 절대 좌표/임계값(`toBeGreaterThan(N)`)은 레이아웃이 바뀌면 거짓 통과한다.
  *    같은 행 안에서 **열끼리 서로 같은가**(집합 크기 1)를 단언한다.
  *
- * @scenario order_detail_numeric_alignment viewport=1280|390
+ * @scenario order_detail_numeric_alignment, viewport=1280|390
  * @effects numeric_columns_right_aligned_consistently
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
@@ -96,7 +96,7 @@ async function rightGaps(page: Page): Promise<number[]> {
 }
 
 test.describe('@sirsoft-ecommerce 주문 상세 상품 목록 정렬', () => {
-  // @scenario order_detail_numeric_alignment:desktop_table
+  // @scenario order_detail_numeric_alignment=desktop_table
   // @effects numeric_columns_right_aligned_consistently
   test('1280px 표 뷰: 숫자 열이 모두 같은 우측 여백으로 정렬된다', async ({ page, ordersReadToken }) => {
     await authenticatePage(page, ordersReadToken);
@@ -111,7 +111,7 @@ test.describe('@sirsoft-ecommerce 주문 상세 상품 목록 정렬', () => {
     expect(new Set(gaps).size, `열별 우측 여백: ${JSON.stringify(gaps)}`).toBe(1);
   });
 
-  // @scenario order_detail_numeric_alignment:mobile_card
+  // @scenario order_detail_numeric_alignment=mobile_card
   // @effects numeric_columns_right_aligned_consistently
   test('390px 카드 뷰: 숫자 열이 모두 같은 우측 여백으로 정렬된다', async ({ page, ordersReadToken }) => {
     await authenticatePage(page, ordersReadToken);

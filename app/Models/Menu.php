@@ -34,7 +34,7 @@ class Menu extends Model
      *
      * @var array<int, string>
      */
-    protected array $trackableFields = ['name', 'icon', 'order', 'url'];
+    protected array $trackableFields = ['name', 'icon', 'order', 'url', 'is_active', 'parent_id'];
 
     /**
      * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
@@ -119,6 +119,8 @@ class Menu extends Model
 
     /**
      * 메뉴를 생성한 사용자와의 관계를 정의합니다.
+     *
+     * @return BelongsTo 생성자(User) 관계
      */
     public function creator(): BelongsTo
     {
@@ -127,6 +129,8 @@ class Menu extends Model
 
     /**
      * 부모 메뉴와의 관계를 정의합니다.
+     *
+     * @return BelongsTo 부모 메뉴 관계
      */
     public function parent(): BelongsTo
     {
@@ -135,6 +139,8 @@ class Menu extends Model
 
     /**
      * 자식 메뉴들과의 관계를 정의합니다.
+     *
+     * @return HasMany order 오름차순으로 정렬된 자식 메뉴 관계
      */
     public function children(): HasMany
     {
@@ -143,6 +149,8 @@ class Menu extends Model
 
     /**
      * 활성화된 자식 메뉴들과의 관계를 정의합니다.
+     *
+     * @return HasMany is_active 가 true 인 자식 메뉴 관계
      */
     public function activeChildren(): HasMany
     {
@@ -151,6 +159,8 @@ class Menu extends Model
 
     /**
      * 접근 가능한 역할들 (권한 타입 포함)
+     *
+     * @return BelongsToMany role_menus 피벗(permission_type 포함) 기반 역할 관계
      */
     public function roles(): BelongsToMany
     {
@@ -161,6 +171,9 @@ class Menu extends Model
 
     /**
      * 최상위 메뉴들(부모가 없는 메뉴들)을 조회하는 스코프를 정의합니다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder parent_id 가 null 이고 order 로 정렬된 쿼리 빌더
      */
     public function scopeTopLevel(Builder $query): Builder
     {
@@ -169,6 +182,9 @@ class Menu extends Model
 
     /**
      * 활성화된 메뉴들만 조회하는 스코프를 정의합니다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 활성 메뉴로 필터링된 쿼리 빌더
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -178,8 +194,10 @@ class Menu extends Model
     /**
      * 확장별 메뉴를 조회하는 스코프
      *
+     * @param  Builder  $query  쿼리 빌더
      * @param  ExtensionOwnerType  $type  확장 타입
-     * @param  string|null  $identifier  확장 식별자
+     * @param  string|null  $identifier  확장 식별자 (null 이면 타입만으로 필터링)
+     * @return Builder 확장 타입·식별자로 필터링된 쿼리 빌더
      */
     public function scopeByExtension(Builder $query, ExtensionOwnerType $type, ?string $identifier = null): Builder
     {
@@ -202,7 +220,9 @@ class Menu extends Model
      * admin 역할은 role_menus 피벗에 모든 메뉴가 할당되어 있으므로
      * 별도 바이패스 없이 정상적인 쿼리로 동일 결과를 도출합니다.
      *
+     * @param  Builder  $query  쿼리 빌더
      * @param  User  $user  접근 권한을 확인할 사용자
+     * @return Builder 사용자가 접근 가능한 메뉴로 필터링된 쿼리 빌더
      */
     public function scopeAccessibleBy(Builder $query, User $user): Builder
     {
@@ -274,6 +294,8 @@ class Menu extends Model
 
     /**
      * 현재 로케일의 메뉴 이름 반환
+     *
+     * @return Attribute 현재 로케일 메뉴 이름을 반환하는 접근자
      */
     protected function localizedName(): Attribute
     {
@@ -290,6 +312,8 @@ class Menu extends Model
      * 메뉴 권한들과의 관계를 정의합니다.
      *
      * @deprecated role_menus 피벗 테이블 사용. roles() 메서드를 사용하세요.
+     *
+     * @return HasMany 메뉴 권한(MenuPermission) 관계
      */
     public function permissions(): HasMany
     {

@@ -1,0 +1,35 @@
+feature: 환율 플러그인 알림 템플릿 편집 창 — 코어 모달 계약 정합 (#599 validate P7)
+
+description: |
+  환율 플러그인의 알림 템플릿 편집 창은 코어 창과 같은 저장 API 를 쓰면서 코어 계약 변경을 따라가지 못했다 —
+  관련 사용자 relation 을 고를 수 없어 422, 역할이 단일 선택이라 서버가 내려 주는 배열 값과 어긋남,
+  채널 본문 편집기 선언(template_editor)을 무시하고 늘 위지윅을 띄움. 코어 창의 수신자·본문 블록을 이식한다.
+
+axes:
+  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, none_declared, role, none, rich, picked_role, picked_user, role_chip_remove, user_chip_remove, chips_above_open_dropdown]
+
+effects:
+  - recipient_rule_type_switch_clears_previous_value
+  - recipient_rule_related_user_seeds_first_declared_relation
+  - recipient_rule_exclude_trigger_user_only_carries_between_group_types
+  - recipient_relation_select_shows_placeholder
+  - recipient_relation_select_shows_relation_names
+  - recipient_relation_outside_declaration_warns
+  - recipient_multi_select_count_label_is_translated
+  - koreaexim_related_user_option_follows_declared_relations
+  - koreaexim_role_rule_is_multi_select
+  - koreaexim_core_editor_hidden_when_channel_owns_editor
+  - koreaexim_body_editor_follows_channel_declaration
+  # 7.1.0 전수 실측 영역 G 후속 — 방금 고른 역할·회원이 식별자·UUID 로 보이던 결함(게시판·코어 사본과 같은 결함)
+  - koreaexim_recipient_picked_role_keeps_search_result_name
+  - koreaexim_recipient_picked_user_keeps_search_result_name
+  # 7.1.0 칩 줄 통일 — 코어·이커머스와 같은 고른 역할·회원 칩, 열린 드롭다운에 가리지 않게 드롭다운 위에 둔다
+  - koreaexim_role_chip_removes_value_and_name_together
+  - koreaexim_user_chip_removes_value_and_name_together
+  - koreaexim_chips_stay_visible_while_dropdown_open
+
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/koreaeximNotificationTemplateCoreContract.test.ts
+
+notes: |
+  e2e_browser=not_applicable — 레이아웃 표현식 계약 이식. 브라우저 실측은 #599 통합 단계에서 한다.

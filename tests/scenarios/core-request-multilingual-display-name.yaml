@@ -1,0 +1,18 @@
+feature: 코어 요청 다국어 필수 칸의 표시 이름
+
+description: |
+  메뉴·역할·권한·알림 템플릿 저장에서 다국어 칸을 비우면 「한국어(ko) 값은 필수입니다.」처럼 칸 이름 없이 나왔다
+  (7.1.0 전수 실측 K4). 코어 규칙(LocaleRequiredTranslatable)은 요청에 표시 이름이 있는 칸에만 칸 이름을 싣는데,
+  이 요청들에 다국어 칸의 표시 이름 매핑(attributes)이 없었다. 결정(2026-10-08 「6종 모두 칸 이름 넣기」)으로
+  메뉴 생성·수정(이름), 역할 생성·수정(이름·설명), 권한 수정(이름·설명), 알림 템플릿 수정(제목·본문)에 표시 이름을 둔다.
+  게시판 유형·페이지 요청은 각 모듈 매니페스트가 맡는다.
+
+axes:
+  locale: [ko, en]
+
+effects:
+  - core_request_locale_required_message_names_field
+  - core_request_translatable_description_has_display_name
+
+test_files:
+  - tests/Feature/Requests/MultilingualFieldDisplayNameTest.php

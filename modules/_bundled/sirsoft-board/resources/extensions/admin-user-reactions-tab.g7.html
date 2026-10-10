@@ -1,0 +1,69 @@
+<!-- 회원 상세 화면에 반응 탭을 하나 더 얹는 조각. 스크랩 탭과 같은 짜임으로 주입이 **두 군데**로
+  갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에 항목을 덧붙이고(`append`), 그 탭이 펼칠
+  본문은 별도 앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은 `id`(`ext_board_reactions`)
+  하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
+
+  이 탭은 **요약만** 낸다 — 건수(글·댓글 구분)와 최근 반응 시각, 그리고 「이 회원 반응 목록 보기」
+  링크. 목록 자체는 반응 관리 화면이 검색·필터·일괄 삭제까지 갖추고 있으므로, 같은 표를 회원 상세
+  안에 한 벌 더 두지 않고 그 화면으로 회원 uuid 를 실어 보낸다.
+
+  `board_reactions` 는 UserReactionInfoListener 가 **관리자 응답에만** 넣으므로, 프로필(/api/me)에서는
+  이 조각 전체가 조건(`!!user?.data?.board_reactions`)에서 걸러진다. -->
+<extension target-layout="admin_user_detail" priority="320">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_board_reactions" label="$t:sirsoft-board.admin.users.reactions.tab_label" iconName="heart" if="{{!!user?.data?.board_reactions}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_board_reactions_content" data-if="{{!!user?.data?.board_reactions}}" id="ext_board_reactions" class="scroll-mt-32">
+      <div data-ref="section_board_reactions" class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="heart" class="text-xl text-gray-600 dark:text-gray-400"/>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.reactions.title</h3>
+          </div>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mb-4">
+          <div data-ref="field_reaction_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.reactions.count</span>
+            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.reactions.count_unit|count={{user?.data?.board_reactions?.count ?? 0}}</span>
+          </div>
+          <!-- 글과 댓글을 갈라 보여준다 — 총계만으로는 어느 쪽에 남은 반응인지 알 수 없어 정리 대상을 좁힐 수 없다 -->
+          <div data-ref="field_reaction_breakdown" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.reactions.breakdown</span>
+            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.reactions.breakdown_unit|post={{user?.data?.board_reactions?.post_count ?? 0}}|comment={{user?.data?.board_reactions?.comment_count ?? 0}}</span>
+          </div>
+          <div data-ref="field_latest_reacted_at" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.reactions.latest_reacted_at</span>
+            <span class="block text-lg font-semibold text-gray-900 dark:text-white">{{user?.data?.board_reactions?.latest_reacted_at ?? '-'}}</span>
+          </div>
+        </div>
+        <!-- 0건이면 링크를 숨긴다 — 눌러 봐야 빈 목록이고, 그 사실은 위 숫자가 이미 말한다 -->
+        <p data-if="{{(user?.data?.board_reactions?.count ?? 0) === 0}}" class="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">
+          <icon name="circle-info" class="text-base flex-shrink-0"/>
+          <span>$t:sirsoft-board.admin.users.reactions.none</span>
+        </p>
+        <!--
+          이동은 `navigate` 액션으로 한다. `href="{{식}}"` 은 렌더 시 prop 값이 undefined 가 되어
+          DOM 에 속성 자체가 실리지 않는다(2026-09-15 브라우저 실측) — 링크가 조용히 죽는다.
+          같은 화면의 표에서 쓰는 `navigate path="…{{식}}"` 은 정상 평가된다.
+        -->
+        <a data-ref="view_member_reactions" data-testid="user-reactions-link" data-if="{{(user?.data?.board_reactions?.count ?? 0) > 0}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <on type="click">
+            <navigate path="/admin/boards/reactions">
+              <query user_uuid="{{user?.data?.uuid ?? ''}}"/>
+            </navigate>
+          </on>
+          <icon name="list" class="text-base"/>
+          <span>$t:sirsoft-board.admin.users.reactions.view_list</span>
+        </a>
+      </div>
+    </div>
+  </inject>
+</extension>

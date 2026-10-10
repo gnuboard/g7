@@ -1,0 +1,19 @@
+feature: sirsoft-message_bizppurio 화면 abilities 게이트 — 화면 잠금을 서버 권한과 맞춘다 (7.1.0 abilities 게이트 plugins #12·N6)
+
+description: |
+  알림 템플릿 편집 창의 비즈뿌리오 섹션 입력·쓰기 버튼은 메시징 관리 권한(templates/map 응답 abilities)으로 잠그고,
+  하단 등록·검수 신청 버튼과 환경설정 알림 탭의 [설정하기]는 권한이 있는 관리자에게만 그린다(노드 권한).
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin-abilities-gate.test.ts
+
+axes:
+  case:
+    - template_section_without_manage
+    - settings_shortcut_without_plugin_update
+
+effects:
+  - template_section_locked
+  - template_section_edit_buttons_locked
+  - footer_buttons_require_manage
+  - settings_shortcut_requires_plugin_update

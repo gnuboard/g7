@@ -1,0 +1,194 @@
+<!-- 코어 알림 발송 이력 화면에 비즈뿌리오 발송 결과 컬럼을 얹는다(A-2). 코어 화면·코어 앱·코어 테이블은 전혀 건드리지 않는다 — 연결 표식은 우리 dispatch(bizppurio_dispatches.notification_log_id)에만 있고, 현재 페이지의 코어 로그 id 배열로 결과를 배치 조회(dispatchResults)해 row.id 로 매칭한다. 매칭 안 되는 행(메일·DB 등 비-비즈뿌리오)은 빈 셀. 컬럼은 코어 datagrid columns 배열 끝에 _append 로 1개만 추가(전체 컬럼 재정의 안 함). -->
+<extension target-layout="admin_notification_log_list" priority="330">
+  <inject target-id="notification_log_datagrid" position="inject_props">
+    <props>
+      <prop name="expandChildren">
+        <append>
+          <item>
+            <field name="comment" value="행 토글(펼침) 안에도 비즈뿌리오 결과를 넣는다. 비즈뿌리오 발송 행(결과 매칭됨)일 때만 노출 — 메일·사이트내알림 등 매칭 안 되는 행에선 아무것도 안 보인다."/>
+            <field name="type" value="basic"/>
+            <field name="name" value="Div"/>
+            <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]}}"/>
+            <field name="props">
+              <field name="className" value="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-2"/>
+            </field>
+            <field name="children">
+              <item>
+                <field name="type" value="basic"/>
+                <field name="name" value="Div"/>
+                <field name="props">
+                  <field name="className" value="flex items-center gap-2"/>
+                </field>
+                <field name="children">
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Icon"/>
+                    <field name="props">
+                      <field name="name" value="fas fa-comment-dots"/>
+                      <field name="size" value="sm"/>
+                      <field name="className" value="text-teal-600 dark:text-teal-400"/>
+                    </field>
+                  </item>
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Span"/>
+                    <field name="props">
+                      <field name="className" value="text-sm font-medium text-gray-800 dark:text-gray-100"/>
+                    </field>
+                    <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.detail_title"/>
+                  </item>
+                </field>
+              </item>
+              <item>
+                <field name="type" value="basic"/>
+                <field name="name" value="Div"/>
+                <field name="props">
+                  <field name="className" value="flex flex-wrap items-center gap-2"/>
+                </field>
+                <field name="children">
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Span"/>
+                    <field name="props">
+                      <field name="className" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50'}}"/>
+                    </field>
+                    <field name="text" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? $t('sirsoft-message_bizppurio.dispatch_result.inspection_label') : (dispatchResults?.data?.results ?? {})[row.id]?.result_label ?? (dispatchResults?.data?.results ?? {})[row.id]?.status_label ?? '-'}}"/>
+                  </item>
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Span"/>
+                    <field name="if" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_low_balance === true}}"/>
+                    <field name="props">
+                      <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-orange-50"/>
+                    </field>
+                    <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.low_balance"/>
+                  </item>
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Span"/>
+                    <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
+                    <field name="props">
+                      <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100"/>
+                    </field>
+                    <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.fallback|status={{(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
+                  </item>
+                </field>
+              </item>
+              <item>
+                <field name="comment" value="알림톡 실제 발송 내용 — 코어 '본문'(notification_logs.body)은 SMS 대체발송용 코어 템플릿 값이라 실제 카카오 발송 내용(승인 템플릿 전체)과 다르다. row.channel==='alimtalk'이고 실제 발송 내용이 있을 때만 별도 노출해 혼동을 방지한다."/>
+                <field name="type" value="basic"/>
+                <field name="name" value="Div"/>
+                <field name="if" value="{{row.channel === 'alimtalk' &amp;&amp; !!(dispatchResults?.data?.results ?? {})[row.id]?.content}}"/>
+                <field name="props">
+                  <field name="className" value="pt-2 border-t border-gray-200 dark:border-gray-700"/>
+                </field>
+                <field name="children">
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Span"/>
+                    <field name="props">
+                      <field name="className" value="form-label"/>
+                    </field>
+                    <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.sent_content_label"/>
+                  </item>
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="P"/>
+                    <field name="props">
+                      <field name="className" value="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line admin-card"/>
+                    </field>
+                    <field name="text" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.content}}"/>
+                  </item>
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="P"/>
+                    <field name="props">
+                      <field name="className" value="text-xs text-gray-400 dark:text-gray-500 mt-1"/>
+                    </field>
+                    <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.sent_content_hint"/>
+                  </item>
+                </field>
+              </item>
+            </field>
+          </item>
+        </append>
+      </prop>
+      <prop name="columns">
+        <append>
+          <item>
+            <field name="field" value="bizppurio_result"/>
+            <field name="header" value="$t:sirsoft-message_bizppurio.dispatch_result.column_header"/>
+            <field name="width" value="200px"/>
+            <field name="sortable" :value="false"/>
+            <field name="required" :value="false"/>
+            <field name="comment" value="컬럼(헤더 포함) 자체를 탭별로 노출 제어. 컬럼 정의는 datagrid props 로 페이지 컨텍스트에서 평가되므로(셀과 달리) query 접근 가능. 메일·사이트내알림(mail/database) 탭이면 hidden=true 로 컬럼 숨김. 전체·sms·lms·알림톡 탭에선 표시."/>
+            <field name="hidden" value="{{['mail','database'].includes(query.channel ?? '')}}"/>
+            <field name="cellChildren">
+              <item>
+                <field name="comment" value="비즈뿌리오 발송 행(row.channel 이 sms/lms/alimtalk)에서만 결과 표시. 메일·사이트내알림(mail/database) 행은 셀을 비운다. 셀 렌더 컨텍스트는 row/value 만 있고 query 는 없으므로(코어 DataGrid renderCellChildren 계약) 탭이 아니라 row.channel 로 판별한다."/>
+                <field name="type" value="basic"/>
+                <field name="name" value="Div"/>
+                <field name="if" value="{{['sms','lms','alimtalk'].includes(row.channel)}}"/>
+                <field name="children">
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Span"/>
+                    <field name="if" value="{{!(dispatchResults?.data?.results ?? {})[row.id]}}"/>
+                    <field name="props">
+                      <field name="className" value="text-gray-300 dark:text-gray-600"/>
+                    </field>
+                    <field name="text" value="-"/>
+                  </item>
+                  <item>
+                    <field name="type" value="basic"/>
+                    <field name="name" value="Div"/>
+                    <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]}}"/>
+                    <field name="props">
+                      <field name="className" value="flex flex-col gap-1 items-start"/>
+                    </field>
+                    <field name="children">
+                      <item>
+                        <field name="type" value="basic"/>
+                        <field name="name" value="Span"/>
+                        <field name="props">
+                          <field name="className" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50'}}"/>
+                        </field>
+                        <field name="text" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? $t('sirsoft-message_bizppurio.dispatch_result.inspection_label') : (dispatchResults?.data?.results ?? {})[row.id]?.result_label ?? (dispatchResults?.data?.results ?? {})[row.id]?.status_label ?? '-'}}"/>
+                      </item>
+                      <item>
+                        <field name="type" value="basic"/>
+                        <field name="name" value="Span"/>
+                        <field name="if" value="{{(dispatchResults?.data?.results ?? {})[row.id]?.is_low_balance === true}}"/>
+                        <field name="props">
+                          <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-orange-50"/>
+                        </field>
+                        <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.low_balance"/>
+                      </item>
+                      <item>
+                        <field name="type" value="basic"/>
+                        <field name="name" value="Span"/>
+                        <field name="if" value="{{!!(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
+                        <field name="props">
+                          <field name="className" value="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100"/>
+                        </field>
+                        <field name="text" value="$t:sirsoft-message_bizppurio.dispatch_result.fallback|status={{(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"/>
+                      </item>
+                    </field>
+                  </item>
+                </field>
+              </item>
+            </field>
+          </item>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <!-- 최근 발송 결과 맵(로그 id 키) — 코어 발송 이력 목록에 결과 컬럼을 그리기 위해 받는다. 실패하면 빈 맵으로 폴백해 컬럼만 비운다. -->
+  <data-source id="dispatchResults" label_key="$t:sirsoft-message_bizppurio.editor.data_source.dispatch_results" type="api" endpoint="/api/plugins/sirsoft-message_bizppurio/admin/dispatch-results/recent" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="results" :value="{}"/>
+      </field>
+    </fallback>
+  </data-source>
+</extension>

@@ -1,0 +1,515 @@
+<!-- 게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다
+  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=""` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다 -->
+<layout name="admin_board_posts_index" version="1.0.0" extends="_admin_base">
+  <meta title="{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title" description="{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"/>
+  <!-- 목록 본체 — 검색은 `filters[0][*]` 세 칸(대상 필드·값·연산자)으로 보낸다. 422 만 토스트로 흘리고 403·500 은 화면 자리에 오류 페이지를 세운다 — 앞은 조건이 틀린 것이고 뒤는 화면을 세울 수 없는 것이다 -->
+  <data-source id="posts" label_key="$t:sirsoft-board.editor.data_source.posts" type="api" endpoint="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || '15'}}" status="{{query.status}}" category="{{query.category}}" is_notice="{{query.is_notice}}" user_id="{{query.user_id}}" created_at_from="{{query.created_at_from}}" created_at_to="{{query.created_at_to}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="500">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="422">
+        <toast type="error" message="{{error.message}}"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="searchField" value="all"/>
+    <field name="searchQuery" value=""/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-board.boards.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>posts</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchField" value="{{query['filters[0][field]'] || 'all'}}"/>
+        <field name="searchQuery" value="{{query['filters[0][value]'] || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="board_posts_content" class="admin-page-content-fluid">
+      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+      <page-header data-type="composite" data-ref="page_header" title="{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title" description="{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
+        <div data-ref="header_actions" class="flex-center gap-2">
+          <a data-ref="view_user_page_link" href="/board/{{route.slug}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-board.admin.posts.actions.view_user_page" class="flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+            <icon name="external-link" size="sm"/>
+            <span>$t:sirsoft-board.admin.posts.actions.view_user_page</span>
+          </a>
+          <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="btn-icon">
+            <on type="click">
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
+              <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="refresh" class="text-xl"/>
+          </button>
+          <button data-ref="create_post_button" disabled="{{posts?.data?.abilities?.can_write !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 새 글 작성. 작성을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
+              <navigate path="/admin/board/{{route.slug}}/create" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="plus" class="text-base"/>
+            <span>$t:sirsoft-board.admin.posts.actions.create</span>
+          </button>
+        </div>
+      </page-header>
+      <div data-ref="search_filter_area" class="admin-card">
+        <div data-ref="search_row" class="flex-center flex-row gap-3">
+          <select data-ref="search_field_select" value="{{_local.searchField || 'all'}}" class="select-composite w-32">
+            <options>
+              <option value="all">$t:sirsoft-board.admin.posts.search_fields.all</option>
+              <option value="title_content">$t:sirsoft-board.admin.posts.search_fields.title_content</option>
+              <option value="title">$t:sirsoft-board.admin.posts.search_fields.title</option>
+              <option value="content">$t:sirsoft-board.admin.posts.search_fields.content</option>
+              <option value="author">$t:sirsoft-board.admin.posts.search_fields.author</option>
+            </options>
+            <on type="change">
+              <set-state searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-board.admin.posts.search_placeholder" value="{{_local.searchQuery || ''}}" class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm mr-4">
+            <on type="change">
+              <set-state searchQuery="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <!-- 검색 실행 — 검색 버튼과 동일하게 page 는 1페이지로 되돌린다. 되돌리지 않으면 5페이지를 보던 중 검색 시 결과의 5페이지로 가 빈 화면이 열린다 (#75). -->
+              <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+                <query page="" filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like"/>
+              </navigate>
+            </on>
+          </input>
+          <button data-ref="advanced_search_toggle" class="flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm">
+            <on type="click">
+              <!-- 고급 검색을 펼치고 접는다 — 화면 표시일 뿐이라 URL 에 남기지 않는다(새로고침하면 접힌 채로 시작한다) -->
+              <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.advanced_search</span>
+            <icon name="{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}" class="text-base text-white dark:text-gray-300"/>
+          </button>
+        </div>
+        <div data-ref="advanced_filters" data-if="{{_global.showAdvancedSearch}}" class="space-y-4 mt-4">
+          <div data-ref="category_filter_row" data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" class="flex-center flex-wrap gap-3">
+            <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.category_label</span>
+            <select data-ref="category_filter" value="{{query.category || 'all'}}" class="input min-w-[200px]" options="{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}">
+              <on type="change">
+                <!-- 분류는 고르는 즉시 적용된다. 「전체」는 빈 문자열로 보내 서버가 조건 없음으로 읽게 하고, 페이지는 1 로 되돌린다. 가려지는 것은 표 본문뿐이라 필터 줄은 그대로 손에 남는다 -->
+                <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+                  <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+          </div>
+          <div data-ref="date_filter_row" class="flex-center flex-wrap gap-3">
+            <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.date_from</span>
+            <input data-ref="date_from" type="date" aria-label="$t:sirsoft-board.admin.posts.filters.date_from" value="{{query.created_at_from || ''}}" class="input min-w-[200px]">
+              <on type="change">
+                <!-- 시작 날짜는 고른 즉시 적용하지 않고 전역에 담아 둔다 — 끝 날짜와 짝을 이루어야 뜻이 서므로, 한쪽만 정해진 상태로 목록이 다시 읽히지 않게 검색 버튼까지 미룬다 -->
+                <set-state target="global" dateFrom="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span class="text-label-subtle">~</span>
+            <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.date_to</span>
+            <input data-ref="date_to" type="date" aria-label="$t:sirsoft-board.admin.posts.filters.date_to" value="{{query.created_at_to || ''}}" class="input min-w-[200px]">
+              <on type="change">
+                <!-- 끝 날짜 — 시작 날짜와 같은 이유로 담아만 둔다. 두 값 다 「손대지 않음(undefined)」과 「비움('')」이 구분되고, 검색 버튼이 그 차이로 기존 URL 값을 이어받을지 지울지를 가른다 -->
+                <set-state target="global" dateTo="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+          <div data-ref="status_filter_row" class="flex-center flex-wrap gap-3">
+            <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.status_label</span>
+            <radio-group data-type="composite" data-ref="status_filter" name="status_filter" value="{{query.status || ''}}" :inline="true">
+              <prop name="options">
+                <item label="$t:sirsoft-board.admin.posts.filters.status_all" value=""/>
+                <item label="$t:sirsoft-board.admin.posts.filters.status_published" value="published"/>
+                <item label="$t:sirsoft-board.admin.posts.filters.status_blinded" value="blinded"/>
+                <item label="$t:sirsoft-board.admin.posts.filters.status_deleted" value="deleted"/>
+                <item label="$t:sirsoft-board.admin.posts.filters.status_secret" value="secret"/>
+              </prop>
+              <on type="change">
+                <!-- 상태 필터 변경 — 카테고리 필터와 동일하게 page 를 1페이지로 되돌린다. 되돌리지 않으면 뒤쪽 페이지에서 필터를 바꿀 때 빈 화면이 열린다 (#75). -->
+                <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+                  <query status="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </radio-group>
+          </div>
+        </div>
+        <div data-ref="search_buttons" class="flex justify-center gap-2 mt-4">
+          <responsive on="portable" class="grid grid-cols-2 gap-2 mt-4"/>
+          <button data-ref="reset_button" class="px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+            <responsive on="portable" class="w-full px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"/>
+            <on type="click">
+              <!-- 초기화 ①  손에 들고 있던 검색·필터 값을 먼저 비운다 — 아래 이동이 URL 만 털기 때문에, 이것을 빼면 화면의 입력칸에 지운 값이 남는다 -->
+              <set-state target="global" searchField="all" searchQuery="" categoryFilter="" dateFrom="" dateTo=""/>
+            </on>
+            <on type="click">
+              <!-- audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+              <navigate path="/admin/board/{{route.slug}}" :mergeQuery="false"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.reset</span>
+          </button>
+          <button data-ref="search_button" class="px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium">
+            <responsive on="portable" class="w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"/>
+            <on type="click">
+              <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75). -->
+              <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+                <query page="" filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" category="{{_global.categoryFilter !== undefined ? _global.categoryFilter : (query.category || '')}}" created_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.created_at_from || '')}}" created_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.created_at_to || '')}}"/>
+              </navigate>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.search</span>
+          </button>
+        </div>
+      </div>
+      <div class="flex-center justify-end gap-3 mb-4">
+        <select name="sort_by" class="w-40" value="{{(query.sort_by || 'created_at') + '_' + (query.sort_order || 'desc')}}">
+          <options>
+            <option value="created_at_desc">$t:sirsoft-board.admin.posts.sort.latest</option>
+            <option value="created_at_asc">$t:sirsoft-board.admin.posts.sort.oldest</option>
+            <option value="view_count_desc">$t:sirsoft-board.admin.posts.sort.view_count_high</option>
+            <option value="view_count_asc">$t:sirsoft-board.admin.posts.sort.view_count_low</option>
+          </options>
+          <on type="change">
+            <!-- 정렬 — 선택값 하나에 기준과 방향이 밑줄로 붙어 있어(`created_at_desc`) 마지막 토막을 방향으로 떼고 나머지를 기준으로 되붙인다. 기준 이름 자체에 밑줄이 있어도(`view_count`) 깨지지 않는 이유가 그 «마지막 하나만» 이다 -->
+            <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+              <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <select name="per_page" class="w-36" value="{{query.per_page || '15'}}">
+          <options>
+            <option value="15">$t:sirsoft-board.admin.posts.per_page.15</option>
+            <option value="30">$t:sirsoft-board.admin.posts.per_page.30</option>
+            <option value="50">$t:sirsoft-board.admin.posts.per_page.50</option>
+            <option value="100">$t:sirsoft-board.admin.posts.per_page.100</option>
+          </options>
+          <on type="change">
+            <!-- 한 쪽에 몇 건 — 개수를 바꾸면 페이지 번호의 뜻이 달라지므로 1 로 되돌린다(50건씩 3페이지에서 15건씩으로 줄이면 3페이지의 내용이 전혀 다른 자리가 된다) -->
+            <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+              <query per_page="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+      </div>
+      <div data-ref="bulk_actions_area" class="bulk-actions-bar">
+        <span data-ref="selected_count" class="text-body font-medium">$t:sirsoft-board.admin.posts.bulk.selected_count|count={{(_global.selectedIds_board_posts || []).length}}</span>
+        <div data-ref="bulk_buttons" class="flex gap-2 ml-auto">
+          <button data-ref="bulk_delete" data-testid="admin-post-bulk-delete" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
+            <on type="click">
+              <!-- 갈래를 정하고 직전 사유를 비운다(남겨 두면 다른 갈래의 문장이 그대로 이력에 실린다) -->
+              <set-state target="global" bulkPostAction="delete" bulkPostReason="" :bulkPostLoading="false"/>
+            </on>
+            <on type="click">
+              <open-modal target="bulk_post_action_modal"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.bulk.delete</span>
+          </button>
+          <button data-ref="bulk_blind" data-testid="admin-post-bulk-blind" class="px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
+            <on type="click">
+              <!-- 갈래를 블라인드로 정하고 직전 사유를 비운다 — 공용 모달이 갈래에 따라 문구·사유 입력을 바꾼다 -->
+              <set-state target="global" bulkPostAction="blind" bulkPostReason="" :bulkPostLoading="false"/>
+            </on>
+            <on type="click">
+              <open-modal target="bulk_post_action_modal"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.bulk.blind</span>
+          </button>
+          <button data-ref="bulk_restore" data-testid="admin-post-bulk-restore" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}">
+            <on type="click">
+              <!-- 갈래를 복원으로 정하고 직전 사유를 비운다 — 블라인드 사유가 남아 복원 이력에 실리지 않게 -->
+              <set-state target="global" bulkPostAction="restore" bulkPostReason="" :bulkPostLoading="false"/>
+            </on>
+            <on type="click">
+              <open-modal target="bulk_post_action_modal"/>
+            </on>
+            <span>$t:sirsoft-board.admin.posts.bulk.restore</span>
+          </button>
+        </div>
+      </div>
+      <data-grid data-type="composite" selectedCountText="" data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
+        <column field="number" header="$t:sirsoft-board.admin.posts.columns.number" :sortable="false" :required="true">
+          <cell>
+            <span data-if="{{row.row_type === 'notice'}}" class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">{{row.number ?? '-'}}</span>
+            <span data-if="{{row.row_type === 'reply'}}" class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">{{row.number ?? '-'}}</span>
+            <span data-if="{{row.row_type === 'normal'}}" class="font-medium text-gray-900 dark:text-white">{{row.number ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="title" header="$t:sirsoft-board.admin.posts.columns.title" :sortable="false" :required="true">
+          <cell>
+            <div class="flex items-start gap-2">
+              <prop name="style">
+                <field name="paddingLeft" value="{{(row?.depth ?? 0) > 0 ? (row?.depth * 1) + 'rem' : '0'}}"/>
+              </prop>
+              <icon data-if="{{row.is_reply}}" name="level-up-alt" class="text-sm rotate-90 mt-1 text-gray-400 dark:text-gray-500"/>
+              <div class="flex-1">
+                <div class="flex-center gap-2 flex-wrap">
+                  <!-- 카테고리 배지 -->
+                  <span data-if="{{row.category}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{row.category}}</span>
+                  <!-- 비밀글 아이콘 -->
+                  <icon data-if="{{row.is_secret}}" name="lock" class="text-sm text-gray-500 dark:text-gray-400"/>
+                  <!-- 블라인드 배지 -->
+                  <span data-if="{{row?.status === 'blinded'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
+                  <!-- 제목 -->
+                  <span class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                    <on type="click">
+                      <navigate path="/admin/board/{{row.slug}}/post/{{row.id}}" :mergeQuery="true">
+                        <query/>
+                      </navigate>
+                    </on>
+                    {{row.title}}
+                  </span>
+                  <!-- 첨부파일 아이콘 -->
+                  <icon data-if="{{row.has_attachment}}" name="paperclip" class="text-sm text-gray-400 dark:text-gray-500"/>
+                  <!-- 댓글 수 -->
+                  <span data-if="{{row?.comment_count &amp;&amp; row?.comment_count > 0}}" class="text-xs text-blue-600 dark:text-blue-400 font-medium">[{{row?.comment_count}}]</span>
+                  <!-- 신규 배지 -->
+                  <span data-if="{{row?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white">N</span>
+                  <!-- 삭제됨 배지 -->
+                  <span data-if="{{row?.status === 'deleted'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
+                </div>
+              </div>
+            </div>
+          </cell>
+        </column>
+        <column field="author" header="$t:sirsoft-board.admin.posts.columns.author" :sortable="false">
+          <cell>
+            <div class="row-stack">
+              <div class="flex-center gap-2">
+                <span data-if="{{!row.author.is_guest}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                  <on type="click">
+                    <navigate path="/admin/users/{{row.author.uuid}}"/>
+                  </on>
+                  {{row.author.name}}
+                </span>
+                <span data-if="{{row.author.is_guest}}" class="font-medium text-gray-900 dark:text-white">{{row.author.name}}</span>
+                <span data-if="{{row.author.is_guest}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">$t:sirsoft-board.admin.posts.guest</span>
+              </div>
+              <span data-if="{{!row.author.is_guest &amp;&amp; row.author.email}}" class="text-tertiary">({{row.author.email}})</span>
+            </div>
+          </cell>
+        </column>
+        <column field="view_count" header="$t:sirsoft-board.admin.posts.columns.view_count" :sortable="false" hidden="{{posts?.data?.board?.settings?.show_view_count === false}}">
+          <cell>
+            <!-- 게시판이 「조회수 표시」를 끄면 열을 감춘다(DataGrid 열은 prop 이라 if 가 아니라 hidden 으로 감춘다 — 반응 열과 같은 이유). 값은 목록 응답의 settings.show_view_count 다 -->
+            <span class="text-gray-900 dark:text-white">{{row.view_count || 0}}</span>
+          </cell>
+        </column>
+        <column field="reaction_total" header="$t:sirsoft-board.admin.posts.columns.reaction_total" :sortable="false" hidden="{{!posts?.data?.board?.settings?.use_reaction}}">
+          <cell>
+            <!-- 게시판이 반응을 끄면 열을 감춘다(DataGrid 열은 prop 이라 if 가 아니라 hidden 으로 감춘다). 백엔드도 reaction_total 키 자체를 뺀다 -->
+            <span class="text-gray-900 dark:text-white">{{row.reaction_total || 0}}</span>
+          </cell>
+        </column>
+        <column field="created_at" header="$t:sirsoft-board.admin.posts.columns.created_at" :sortable="false"/>
+        <on type="change" event="onSelectionChange">
+          <!-- 체크한 행들을 전역에 모은다 — 위 일괄 처리 버튼들이 이 목록을 보고 잠기거나 풀린다 -->
+          <set-state target="global" selectedIds_board_posts="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onPageChange">
+          <!-- 페이지 이동 — 표가 넘겨준 번호(`$args[0]`)를 URL 에 올려 두면 데이터소스가 그것을 읽어 다시 채운다. 걸어 둔 검색·필터는 `mergeQuery` 로 그대로 남는다 -->
+          <sequence>
+            <!-- 다음 쪽으로 넘어가면 화면에 없는 글이 선택된 채로 일괄 처리에 실린다 — 먼저 비운다 -->
+            <set-state target="global" :selectedIds_board_posts="[]"/>
+            <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
+        </on>
+      </data-grid>
+      <div data-ref="pagination_info" class="mt-4 text-label text-center">
+        <span>$t:sirsoft-board.admin.posts.pagination_info|total={{posts?.data?.pagination?.total ?? 0}}|from={{posts?.data?.pagination?.from ?? 0}}|to={{posts?.data?.pagination?.to ?? 0}}</span>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <!-- 글 삭제 확인 — 목록에서 고른 행을 `_global.modal_data` 로 받는다(모달은 별도 컨텍스트라 행 변수를 볼 수 없다) -->
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.posts.modals.delete_title" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.modals.delete_confirm</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
+          <on type="click">
+            <!-- 삭제 실행 — 지운 뒤 목록을 «같은 조건 그대로» 다시 읽는다(빈 `<query/>` 라 URL 은 그대로이고 이동만 다시 일어난다). 실패해도 토스트가 없는 자리다 — 오류 문구는 데이터소스의 공통 처리로 뜬다 -->
+            <sequence>
+              <set-state target="global" :deleteModalLoading="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{_global.modal_data?.id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :deleteModalLoading="false"/>
+                  <close-modal/>
+                  <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <toast type="success" message="$t:sirsoft-board.admin.posts.modals.delete_success"/>
+                </success>
+                <fail>
+                  <set-state target="global" :deleteModalLoading="false"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span>{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 일괄 처리 확인 — 제목·본문이 `_global.bulkPostAction` 으로 갈린다. 삭제는 사유가 없고(이력에 남길 문장이 없다), 블라인드·복구는 사유 칸을 둔다.
+         본인인증 정책이 켜져 있으면 확인 클릭이 428 을 받고 엔진 인터셉터가 인증 모달을 연다 — 여기서는 로딩 표시만 내린다 -->
+    <modal data-type="composite" data-ref="bulk_post_action_modal" title="{{_global.bulkPostAction === 'delete' ? '$t:sirsoft-board.admin.posts.bulk.modal.delete_title' : _global.bulkPostAction === 'blind' ? '$t:sirsoft-board.admin.posts.bulk.modal.blind_title' : '$t:sirsoft-board.admin.posts.bulk.modal.restore_title'}}" size="sm">
+      <meta editor_label="$t:sirsoft-board.admin.posts.bulk.modal.delete_title"/>
+      <!-- 확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가
+           ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인). -->
+      <div data-testid="admin-post-bulk-modal" class="py-2">
+        <p data-if="{{_global.bulkPostAction === 'delete'}}" class="text-body">$t:sirsoft-board.admin.posts.bulk.modal.delete_confirm|count={{(_global.selectedIds_board_posts || []).length}}</p>
+        <p data-if="{{_global.bulkPostAction === 'delete'}}" class="text-label-subtle mt-1">$t:sirsoft-board.admin.posts.bulk.modal.replies_notice</p>
+        <p data-if="{{_global.bulkPostAction === 'blind'}}" class="text-body">$t:sirsoft-board.admin.posts.bulk.modal.blind_confirm|count={{(_global.selectedIds_board_posts || []).length}}</p>
+        <p data-if="{{_global.bulkPostAction === 'restore'}}" class="text-body">$t:sirsoft-board.admin.posts.bulk.modal.restore_confirm|count={{(_global.selectedIds_board_posts || []).length}}</p>
+        <div data-if="{{_global.bulkPostAction !== 'delete'}}" class="mt-4">
+          <label class="form-label">$t:sirsoft-board.admin.posts.bulk.modal.reason_label</label>
+          <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" :rows="3" placeholder="$t:sirsoft-board.admin.posts.bulk.modal.reason_placeholder" value="{{_global.bulkPostReason || ''}}">
+            <on type="change">
+              <!-- 사유는 전역 bulkPostReason 에 모아 두었다가 확인 시 요청에 싣는다(삭제 갈래에는 입력칸 자체가 없다) -->
+              <set-state target="global" bulkPostReason="{{$event.target.value}}"/>
+            </on>
+          </textarea>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-testid="admin-post-bulk-confirm" :lockRepeatClick="true" class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}" disabled="{{_global.bulkPostLoading}}">
+          <on type="click">
+            <!-- 실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다.
+                 disabled(bulkPostLoading)는 다시 그려진 뒤에야 걸려 더블클릭의 두 번째 클릭이 요청을 한 번 더 보냈고,
+                 두 번째 응답이 방금 처리한 글을 「이미 블라인드된 글」로 건너뛰었다고 띄웠다 — 버튼이 첫 클릭 즉시 스스로 잠근다(lockRepeatClick) -->
+            <set-state target="global" :bulkPostLoading="true"/>
+          </on>
+          <on type="click">
+            <!-- 실행 ②  갈래마다 메서드와 경로가 다르다. 실패는 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다 -->
+            <switch on="{{_global.bulkPostAction}}">
+              <case when="delete">
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk" method="DELETE">
+                  <success>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason="" bulkPostSkipped="{{response?.data?.skipped ?? []}}"/>
+                    <refetch-data-source dataSourceId="posts"/>
+                    <toast type="success" message="{{result.message}}"/>
+                    <close-modal/>
+                    <!-- 건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다 -->
+                    <open-modal if="{{(response?.data?.skipped ?? []).length &gt; 0}}" target="bulk_post_skipped_modal"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
+                    <open-modal target="bulk_post_error_modal"/>
+                  </fail>
+                  <body ids="{{_global.selectedIds_board_posts}}" reason="{{_global.bulkPostReason}}"/>
+                </api-call>
+              </case>
+              <case when="blind">
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-blind" method="PATCH">
+                  <success>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason="" bulkPostSkipped="{{response?.data?.skipped ?? []}}"/>
+                    <refetch-data-source dataSourceId="posts"/>
+                    <toast type="success" message="{{result.message}}"/>
+                    <close-modal/>
+                    <!-- 건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다 -->
+                    <open-modal if="{{(response?.data?.skipped ?? []).length &gt; 0}}" target="bulk_post_skipped_modal"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
+                    <open-modal target="bulk_post_error_modal"/>
+                  </fail>
+                  <body ids="{{_global.selectedIds_board_posts}}" reason="{{_global.bulkPostReason}}"/>
+                </api-call>
+              </case>
+              <case when="restore">
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-restore" method="PATCH">
+                  <success>
+                    <set-state target="global" :bulkPostLoading="false" :selectedIds_board_posts="[]" bulkPostReason="" bulkPostSkipped="{{response?.data?.skipped ?? []}}"/>
+                    <refetch-data-source dataSourceId="posts"/>
+                    <toast type="success" message="{{result.message}}"/>
+                    <close-modal/>
+                    <!-- 건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다 -->
+                    <open-modal if="{{(response?.data?.skipped ?? []).length &gt; 0}}" target="bulk_post_skipped_modal"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :bulkPostLoading="false" errorMessage="{{error.message}}"/>
+                    <open-modal target="bulk_post_error_modal"/>
+                  </fail>
+                  <body ids="{{_global.selectedIds_board_posts}}" reason="{{_global.bulkPostReason}}"/>
+                </api-call>
+              </case>
+            </switch>
+          </on>
+          <span data-if="{{!_global.bulkPostLoading}}">$t:common.confirm</span>
+          <span data-if="{{_global.bulkPostLoading}}" class="flex-center gap-2">
+            <icon name="spinner" class="spinner-sm"/>
+            <span>$t:sirsoft-board.admin.posts.bulk.modal.processing</span>
+          </span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 일괄 처리에서 건너뛴 글 — 서버가 글마다 제목과 번역된 사유(reason_label)를 실어 보낸다.
+         이미 지워진 글·답글이 달린 글처럼 처리하지 못한 이유가 개수 뒤에 묻히지 않게 한 줄씩 편다 -->
+    <modal data-type="composite" data-ref="bulk_post_skipped_modal" title="$t:sirsoft-board.admin.posts.bulk.skipped.title" size="md">
+      <meta editor_label="$t:sirsoft-board.admin.posts.bulk.skipped.title"/>
+      <div data-testid="admin-post-bulk-skipped" class="py-2">
+        <p class="text-body">$t:sirsoft-board.admin.posts.bulk.skipped.description|count={{(_global.bulkPostSkipped ?? []).length}}</p>
+        <ul class="mt-3 divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg max-h-80 overflow-y-auto">
+          <li data-each="skippedPost in {{_global.bulkPostSkipped ?? []}}" data-testid="admin-post-bulk-skipped-row" class="px-3 py-2 flex items-start justify-between gap-3">
+            <span class="min-w-0 text-sm text-gray-900 dark:text-white truncate">#{{skippedPost.id}} {{raw:skippedPost.title ?? ''}}</span>
+            <span class="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400 text-right">{{skippedPost.reason_label ?? skippedPost.reason}}</span>
+          </li>
+        </ul>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
+    <modal data-type="composite" data-ref="bulk_post_error_modal" title="$t:common.error" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

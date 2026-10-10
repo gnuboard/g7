@@ -1,0 +1,65 @@
+<!-- 마이페이지 프로필에 마케팅 동의 현황을 읽기 전용으로 덧붙이는 조각 — 수정은 프로필 편집 쪽에서 한다 -->
+<extension target-layout="mypage/profile" priority="100">
+  <inject target-id="profile_view_bio_card" position="append">
+    <div data-ref="profile_view_marketing_consent_section" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+      <div class="flex-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="flex flex-col gap-1 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-marketing.marketing_consent_title</h3>
+        <span class="text-xs text-blue-600 dark:text-blue-400">$t:sirsoft-marketing.marketing_consent_edit_hint</span>
+      </div>
+      <div class="grid grid-cols-1 gap-4">
+        <div class="space-y-3">
+          <label data-if="{{user.data?.marketing_consent_enabled === true}}" class="flex items-start gap-3">
+            <checkbox checked="{{!!user.data?.marketing_consent}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+            <div class="flex-1 space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.marketing_consent</span>
+                <span data-if="{{user.data?.marketing_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.marketing_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+              </div>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.marketing_consent_desc</span>
+            </div>
+          </label>
+          <label data-if="{{user.data?.marketing_consent_enabled === true}}" data-each="channel in (user.data?.channels ?? []).filter(ch => ch.enabled !== false)" class="flex items-start gap-3 ml-8">
+            <checkbox checked="{{!!user.data?.[channel.key]}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+            <div class="flex-1 space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{channel.label}}</span>
+                <span data-if="{{user.data?.[channel.key + '_at']}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.[channel.key + '_at']}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+              </div>
+            </div>
+          </label>
+        </div>
+        <div class="space-y-3">
+          <label data-if="{{user.data?.third_party_consent_enabled === true}}" class="flex items-start gap-3">
+            <checkbox checked="{{!!user.data?.third_party_consent}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+            <div class="flex-1 space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.third_party_consent</span>
+                <span data-if="{{user.data?.third_party_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.third_party_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+              </div>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
+            </div>
+          </label>
+          <div data-if="{{user.data?.info_disclosure_enabled === true}}" class="space-y-1">
+            <label class="flex items-start gap-3">
+              <checkbox checked="{{!!user.data?.info_disclosure}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
+                  <span data-if="{{user.data?.info_disclosure_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user.data?.info_disclosure_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                </div>
+                <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
+              </div>
+            </label>
+            <span class="text-xs text-gray-400 dark:text-gray-500 block ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

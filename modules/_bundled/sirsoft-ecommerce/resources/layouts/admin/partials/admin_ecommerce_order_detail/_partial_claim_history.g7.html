@@ -1,0 +1,175 @@
+<!-- 주문 상세의 클레임 내역 구역 — 이 주문에 접수된 교환·반품·취소·환불 신청서를 유형 서브탭으로 갈라 신청서 단위로 보여 준다.
+  주문을 보던 운영자가 클레임 경과를 확인하는 자리이고, 신청번호를 누르면 그 건의 클레임 상세가 새 창으로 열린다. -->
+<partial description="Order Detail - Claim History Section (D20) — 유형 서브탭 + 신청서 단위 rowspan 병합 표 · 조회 전용 · 모바일 카드 (S9c). 신청번호는 새 창 상세 링크, 상품은 썸네일(없으면 자리표시)">
+  <div data-ref="section_claim_history" data-section-id="claim_history">
+    <!-- 조회 전용 섹션이다 (D20) — 상태 변경 select·송장 input·금액 수정·환불 실행을 두지 않는다. 그 조작은 전부 클레임 상세(S9a·S9b)가 소유하며, 여기에 사본을 두면 같은 값을 바꾸는 지점이 두 곳이 된다. 구조 테스트가 이 섹션의 입력 요소 0개를 붙든다. -->
+    <div data-ref="claim_history_card" class="admin-card mt-6">
+      <div data-ref="claim_history_header" class="flex items-center justify-between gap-3 flex-wrap mb-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.claim_history.title</h2>
+        <span data-ref="claim_history_readonly_badge" class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">$t:sirsoft-ecommerce.admin.order.detail.claim_history.readonly_badge</span>
+      </div>
+      <!-- 유형 서브탭. 서버가 전 유형을 한 응답에 싣고(D20 — counts + 평면 배열) 화면이 claim_type 으로 거르므로 전환에 재조회가 없다. 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다. 활성 판정은 셸 computed claimHistoryActiveType 이다 — 누른 값이 없으면 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)이 서므로, 여기서 _local 값에 'exchange' 를 직접 폴백하면 그 판정을 건너뛴다. -->
+      <div data-ref="claim_history_subtabs" class="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
+        <!-- 운영자가 고른 유형을 고정한다 — 고른 뒤로는 화면에 다시 들어올 때까지 '접수 건이 있는 첫 유형' 자동 선택이 끼어들지 않는다. -->
+        <button data-ref="claim_history_subtab_{{claimType.value}}" data-each="claimType in {{_computed.claimHistoryTypes ?? []}}" type="button">
+          <class-map base="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors" key="{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+            <variant when="active">border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500 font-medium</variant>
+            <variant when="idle">border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700</variant>
+          </class-map>
+          <on type="click">
+            <set-state target="local" claimHistoryType="{{claimType.value}}"/>
+          </on>
+          <span>{{claimType.label}}</span>
+          <span>
+            <class-map base="inline-flex items-center justify-center min-w-5 px-1.5 text-xs rounded-full" key="{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}" default="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+              <variant when="active">bg-white/25 text-white</variant>
+              <variant when="idle">bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300</variant>
+            </class-map>
+            {{claimType.count}}
+          </span>
+        </button>
+      </div>
+      <!-- 이 데이터소스의 게이트(claims.read)는 이 화면의 라우트 권한(orders.read)보다 좁다 — 주문만 볼 수 있는 운영자에게는 403 이 온다. suppress + fallback 이 화면을 지키고, 여기서 '못 불러왔다' 를 말한다. '접수된 건 없음' 으로 뭉뚱그리면 클레임이 실재하는데 없다고 읽힌다. -->
+      <div data-ref="claim_history_unavailable" data-if="{{orderClaims?.data?.unavailable === true}}" class="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+        <icon name="circle-exclamation" class="text-base"/>
+        <span>$t:sirsoft-ecommerce.admin.order.detail.claim_history.unavailable</span>
+      </div>
+      <div data-ref="claim_history_empty" data-if="{{orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length === 0}}" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.empty</div>
+      <!-- PC 는 표, 모바일(<768)은 신청서 단위 카드다 (D20) — 같은 응답의 다른 표현이며 데이터소스를 따로 두지 않는다. 표의 1열은 신청서 단위 병합이라 카드에서는 그 셀이 곧 카드 헤더가 된다. -->
+      <div data-ref="claim_history_body" data-if="{{orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length > 0}}" class="overflow-x-auto">
+        <responsive on="mobile" class="space-y-4">
+          <div data-ref="claim_history_card_{{claim.claim_number}}" data-each="claim in {{_computed.claimHistoryRows ?? []}}" class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <!-- 카드 헤더 = PC 병합셀과 같은 정보다. 한쪽만 고치면 같은 신청서가 화면 크기에 따라 다른 정보를 보이므로 두 자리를 함께 본다. -->
+            <div data-ref="claim_history_card_header_{{claim.claim_number}}" class="bg-gray-50 dark:bg-gray-700/40 px-4 py-3 space-y-1.5">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <!-- PC 병합셀의 번호 링크와 같은 규칙이다 — 새 창 · 서버가 준 detail_url. -->
+                <a data-ref="claim_history_card_number_link_{{claim.claim_number}}" data-if="{{!!claim.detail_url}}" class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all" href="{{claim.detail_url}}" target="_blank" rel="noopener noreferrer">
+                  <span>{{claim.claim_number ?? ''}}</span>
+                  <icon name="arrow-up-right-from-square" class="text-xs"/>
+                </a>
+                <span data-ref="claim_history_card_number_text_{{claim.claim_number}}" data-if="{{!claim.detail_url}}" class="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">{{claim.claim_number ?? ''}}</span>
+                <!-- 배지 둘을 한 묶음으로 둔다 — 머리줄이 justify-between 이라 자식이 셋이면 환불 대기 배지가 붙을 때 상태 배지가 가운데로 떴다.
+                     ml-auto 는 좁은 폭에서 묶음이 다음 줄로 내려가도 오른쪽에 붙게 한다. -->
+                <div class="flex-center gap-1.5 ml-auto">
+                  <badge data-type="composite" variant="{{claim.status_variant ?? 'default'}}">{{claim.status_label ?? ''}}</badge>
+                  <badge data-type="composite" data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
+                </div>
+              </div>
+              <!-- 환불 행의 원 신청서 번호(보완 5) — 반품·교환에서 생긴 환불이면 그 번호를 함께 적는다(서버가 같은 주문의 신청서에서 찾아 준다). -->
+              <div data-if="{{!!claim.source_claim_number}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
+              <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
+              <div data-if="{{!!claim.reject_reason}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>
+              <!-- 배송비·총 청구액은 신청서 단위 축이라 상품 행에 안분하지 않는다 (S6c 판정 ②) — 카드에서는 헤더가, 표에서는 병합셀이 그 자리다. -->
+              <div data-if="{{(claim.claim_shipping_fee ?? 0) > 0 || (claim.total_charge_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300 space-y-0.5 pt-1">
+                <div data-if="{{(claim.claim_shipping_fee ?? 0) > 0}}">$t:sirsoft-ecommerce.admin.order.detail.claim_history.shipping_fee: {{claim.claim_shipping_fee_formatted ?? ''}}</div>
+                <div data-if="{{(claim.total_charge_amount ?? 0) > 0}}" class="font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.claim_history.total_charge: {{claim.total_charge_amount_formatted ?? ''}}</div>
+              </div>
+            </div>
+            <div data-ref="claim_history_card_item_{{claim.claim_number}}_{{cardItemIndex}}" data-each="item, cardItemIndex in {{claim.items ?? []}}" class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 space-y-1">
+              <div class="flex items-start gap-3">
+                <!-- PC 표의 썸네일 자리와 같은 규칙 — 이미지가 없어도 자리는 남는다. -->
+                <div data-ref="claim_history_card_item_thumb_{{claim.claim_number}}_{{cardItemIndex}}" class="w-12 h-12 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center">
+                  <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
+                  <icon data-if="{{!item.thumbnail_url}}" name="image" class="text-base text-gray-400 dark:text-gray-500" data-thumb-placeholder="true"/>
+                </div>
+                <div class="min-w-0 flex-1 space-y-0.5">
+                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{item.product_name ?? ''}}</div>
+                  <div data-if="{{!!item.product_option_name}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}</div>
+                  <div data-if="{{!!item.new_option_label}}" class="text-xs text-blue-600 dark:text-blue-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.exchange_product: {{item.new_option_label ?? ''}} {{item.new_unit_price_formatted ?? ''}}</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 flex-wrap pt-1">
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{item.quantity ?? 0}}{{item.original_quantity ? '/' + item.original_quantity : ''}}</span>
+                <div class="flex items-center gap-2">
+                  <div class="text-right">
+                    <div>
+                      <class-map base="text-sm font-medium" key="{{item.amount_type ?? 'none'}}" default="text-gray-500 dark:text-gray-400">
+                        <variant when="charge">text-blue-600 dark:text-blue-400</variant>
+                        <variant when="refund">text-red-600 dark:text-red-400</variant>
+                        <variant when="none">text-gray-500 dark:text-gray-400</variant>
+                      </class-map>
+                      {{item.amount_formatted ?? ''}}
+                    </div>
+                    <!-- 방향은 amount_type 이 단독으로 나른다 (S6c 2차 A4) — amount 는 크기만 싣는다. 화면이 유형으로 분기해 부호를 다시 붙이면 저가 교환에서 이중 부호가 된다. -->
+                    <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
+                  </div>
+                  <badge data-type="composite" variant="{{item.status_variant ?? 'default'}}">{{item.status_label ?? ''}}</badge>
+                </div>
+              </div>
+            </div>
+          </div>
+        </responsive>
+        <table data-ref="claim_history_table" class="w-full text-sm border-t border-gray-200 dark:border-gray-700">
+          <thead>
+            <tr class="bg-gray-50 dark:bg-gray-700/40">
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap w-56">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.claim_number</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.product</th>
+              <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap w-20">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity</th>
+              <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap w-32">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.amount</th>
+              <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap w-28">$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.status</th>
+            </tr>
+          </thead>
+          <!-- 신청서 하나가 tbody 하나다 — 그래야 1열을 rowSpan 으로 병합하면서도 행 수가 상품 수와 같아진다. 바깥 반복은 신청서, 안쪽은 상품이며 1열은 첫 행에만 렌더한다 (§5-1 결정 11). -->
+          <tbody data-ref="claim_history_group_{{claim.claim_number}}" data-each="claim in {{_computed.claimHistoryRows ?? []}}" class="border-t border-gray-200 dark:border-gray-700">
+            <tr data-ref="claim_history_row_{{claim.claim_number}}_{{itemIndex}}" data-each="item, itemIndex in {{claim.items ?? []}}" class="border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+              <!-- 신청서 단위 병합 셀. 첫 행에만 렌더하고 rowSpan 은 그 신청서의 상품 수다 — 두 값이 어긋나면 표가 오류 없이 어긋난 채 그려진다. -->
+              <td data-ref="claim_history_number_cell_{{claim.claim_number}}" data-if="{{itemIndex === 0}}" class="px-3 py-3 align-top border-r border-gray-100 dark:border-gray-800 space-y-1.5" rowSpan="{{(claim.items ?? []).length}}">
+                <!-- 신청번호 자체가 상세 링크다 — 새 창(target=_blank)으로 여는 것은 주문상세의 작업 맥락을 잃지 않기 위해서다 (D20). 경로는 서버가 만든 detail_url 을 그대로 쓴다 — 화면이 다시 조립하면 규칙의 두 번째 출처가 된다. 네 유형 모두 상세가 있으므로(취소도 조회 전용 상세) 서버가 번호를 못 만든 행에서만 아래 글자 노드가 선다. -->
+                <a data-ref="claim_history_number_link_{{claim.claim_number}}" data-if="{{!!claim.detail_url}}" class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all" href="{{claim.detail_url}}" target="_blank" rel="noopener noreferrer">
+                  <span>{{claim.claim_number ?? ''}}</span>
+                  <icon name="arrow-up-right-from-square" class="text-xs"/>
+                </a>
+                <div data-ref="claim_history_number_text_{{claim.claim_number}}" data-if="{{!claim.detail_url}}" class="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">{{claim.claim_number ?? ''}}</div>
+                <badge data-type="composite" variant="{{claim.status_variant ?? 'default'}}">{{claim.status_label ?? ''}}</badge>
+                <!-- 환불 미접수(D9) — 완료됐는데 환불신청서가 연결되지 않은 신청서. 번호를 눌러 신청서 상단의 [환불신청서 접수] 로 간다. -->
+                <badge data-type="composite" data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
+                <!-- 환불 행의 원 신청서 번호(보완 5) -->
+                <div data-if="{{!!claim.source_claim_number}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
+                <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
+                <div data-if="{{!!claim.reject_reason}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>
+                <!-- 배송비·총 청구액은 신청서 단위 축이라 상품 행에 안분하지 않는다 (S6c 판정 ②). -->
+                <div data-if="{{(claim.claim_shipping_fee ?? 0) > 0 || (claim.total_charge_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300 space-y-0.5 pt-1">
+                  <div data-if="{{(claim.claim_shipping_fee ?? 0) > 0}}">$t:sirsoft-ecommerce.admin.order.detail.claim_history.shipping_fee: {{claim.claim_shipping_fee_formatted ?? ''}}</div>
+                  <div data-if="{{(claim.total_charge_amount ?? 0) > 0}}" class="font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.claim_history.total_charge: {{claim.total_charge_amount_formatted ?? ''}}</div>
+                </div>
+              </td>
+              <td class="px-3 py-3 align-top">
+                <div class="flex items-start gap-3">
+                  <!-- 이미지가 없는 상품도 같은 크기의 자리를 차지한다 — 자리표시 없이 Img 만 조건부로 두면 이미지 유무에 따라 줄의 시작점이 흔들린다(구매자 신청내역 카드와 같은 규칙). -->
+                  <div data-ref="claim_history_item_thumb_{{claim.claim_number}}_{{itemIndex}}" class="w-12 h-12 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center">
+                    <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
+                    <icon data-if="{{!item.thumbnail_url}}" name="image" class="text-base text-gray-400 dark:text-gray-500" data-thumb-placeholder="true"/>
+                  </div>
+                  <div class="min-w-0 space-y-0.5">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{item.product_name ?? ''}}</div>
+                    <div data-if="{{!!item.product_option_name}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.original_product: {{item.product_option_name ?? ''}} {{item.unit_price_formatted ?? ''}}</div>
+                    <div data-if="{{!!item.new_option_label}}" class="text-xs text-blue-600 dark:text-blue-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.exchange_product: {{item.new_option_label ?? ''}} {{item.new_unit_price_formatted ?? ''}}</div>
+    </div>
+      </div>
+              </td>
+              <td class="px-3 py-3 align-top text-center text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{{item.quantity ?? 0}}{{item.original_quantity ? '/' + item.original_quantity : ''}}</td>
+              <td data-ref="claim_history_amount_cell_{{claim.claim_number}}_{{itemIndex}}" class="px-3 py-3 align-top text-right whitespace-nowrap">
+                <!-- 금액 표기는 서버가 준 문자열이다 — 화면이 통화 기호·자릿수를 만들면 통화 설정이 바뀐 상점에서 단위만 틀린 금액이 나간다. -->
+                <div>
+                  <class-map base="text-sm font-medium" key="{{item.amount_type ?? 'none'}}" default="text-gray-500 dark:text-gray-400">
+                    <variant when="charge">text-blue-600 dark:text-blue-400</variant>
+                    <variant when="refund">text-red-600 dark:text-red-400</variant>
+                    <variant when="none">text-gray-500 dark:text-gray-400</variant>
+                  </class-map>
+                  {{item.amount_formatted ?? ''}}
+      </div>
+                <!-- 방향은 amount_type 이 단독으로 나른다 (S6c 2차 A4) — amount 는 크기만 싣는다. -->
+                <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
+              </td>
+              <td class="px-3 py-3 align-top text-center">
+                <badge data-type="composite" variant="{{item.status_variant ?? 'default'}}">{{item.status_label ?? ''}}</badge>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</partial>

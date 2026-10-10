@@ -1,7 +1,8 @@
 {
+    "comment": "다른 쿠폰과 함께 쓸 수 없는 쿠폰을 고를 때 뜨는 확인 창 — 진행하면 먼저 걸려 있던 쿠폰이 풀린다.\n     그 사실을 미리 알리지 않으면 할인이 줄어든 이유를 알 수 없기 때문에 둔 자리다.",
     "meta": {
-        "editor_label": "$t:user.modal_label.shop.exclusiveCouponConfirm",
         "is_partial": true,
+        "editor_label": "$t:user.modal_label.shop.exclusiveCouponConfirm",
         "description": "중복 불가 쿠폰 적용 확인 모달"
     },
     "id": "exclusiveCouponConfirm",
@@ -15,37 +16,37 @@
         {
             "type": "basic",
             "name": "P",
-            "props": { "className": "text-base text-gray-700 dark:text-gray-300" },
+            "props": {
+                "className": "text-base text-gray-700 dark:text-gray-300"
+            },
             "text": "$t:shop.checkout.exclusive_coupon_message"
         },
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "flex justify-end gap-3 mt-6" },
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    },
-                    "text": "$t:common.cancel",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "closeModal"
                         }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
+                    ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     },
-                    "text": "$t:common.confirm",
+                    "text": "$t:common.cancel"
+                },
+                {
+                    "comment": "단독 사용 쿠폰을 그대로 적용한다. 이 쿠폰은 다른 할인과 겹쳐 쓸 수 없어 이미 걸린 할인을 내리게 되므로 확인을 한 단계 둔다",
+                    "type": "basic",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -75,25 +76,29 @@
                                         "method": "PUT",
                                         "body": "{{_local.checkout}}"
                                     },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "updateDataSource",
-                                            "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                                    "onSuccess": {
+                                        "handler": "updateDataSource",
+                                        "params": {
+                                            "dataSourceId": "checkoutData",
+                                            "data": "{{response}}"
                                         }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
                                         }
-                                    ]
+                                    }
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                    },
+                    "text": "$t:common.confirm"
                 }
             ]
         }

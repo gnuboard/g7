@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Div } from '../basic/Div';
 
+// G7Core.t() 번역 함수 참조
+const t = (key: string, params?: Record<string, string | number>) =>
+  (window as any).G7Core?.t?.(key, params) ?? key;
+
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:PageTransition')) ?? {
     log: (...args: unknown[]) => console.log('[Comp:PageTransition]', ...args),
@@ -60,11 +64,11 @@ export const PageTransitionIndicator: React.FC<PageTransitionIndicatorProps> = (
       className={`fixed top-0 left-0 right-0 z-[999] ${className}`}
       style={style}
       role="progressbar"
-      aria-label="페이지 로딩 중"
+      aria-label={t('common.page_loading')}
     >
       <Div className="h-1 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 animate-pulse">
         <Div
-          className="h-full bg-blue-700 animate-[loading_1.5s_ease-in-out_infinite]"
+          className="h-full bg-blue-700 dark:bg-blue-400 animate-[loading_1.5s_ease-in-out_infinite]"
           style={{
             width: '30%',
             animation: 'loading 1.5s ease-in-out infinite',

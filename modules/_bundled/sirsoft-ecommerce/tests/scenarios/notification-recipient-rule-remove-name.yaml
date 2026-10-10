@@ -1,0 +1,22 @@
+feature: 이커머스 알림 템플릿 창 — 수신자 규칙 삭제 버튼 이름
+
+description: |
+  알림 템플릿 편집 창의 수신자 규칙 삭제(×) 버튼이 읽을 수 있는 이름을 갖는지
+  
+  이커머스 환경설정 › 알림 설정의 [편집] 창에서 수신자 규칙마다 붙은 × 버튼은 아이콘뿐이라, 화면 낭독기가 버튼 이름을
+  아이콘 이름 「xmark」 로 읽었다(이커머스 전수 실측 S5, 2026-10-07 — 같은 창이 코어·이커머스·게시판·
+  GDPR·수출입은행 다섯 곳에 같은 꼴로 있다). 어느 규칙을 지우는지 알 수 있게 「수신자 규칙 N 삭제」 를
+  aria-label 로 단다.
+
+  수정 이력: 이커머스 전수 실측 S5-D28 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02]
+  # c01: 수신자 규칙 삭제 버튼을 찾았다
+  # c02: 삭제 버튼마다 「수신자 규칙 N 삭제」 aria-label 이 있다(아이콘 이름 xmark 로 읽히지 않게)
+
+effects:
+  - recipient_rule_remove_button_named
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/notificationRecipientRuleRemoveName.test.ts

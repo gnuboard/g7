@@ -18,7 +18,7 @@
   "restore": "Restore",
   "back": "Back",
   "new": "New",
-  "pagination_info": "Showing {{from}}-{{to}} of {{total}} users",
+  "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
   "error_occurred": "An error has occurred",
   "optional": "Optional"
 }

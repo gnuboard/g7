@@ -1,0 +1,15 @@
+# e2e:allow 화면 변경 없음 — 차감 금액만 바뀐다. 원화(0자리)는 동작이 같아 실측 대상이 아니다.
+feature: 마일리지 클레임 결제는 결제 통화의 소수 자릿수로 차감한다 (S9) — #747 C6
+
+description: |
+  `(int) round(총액)` 으로 차감해, 소수 통화에서 청구 2.40 에 2 만 차감됐다. 결제 건은 PAID 인데 미수납 0.40 이 남아
+  신청서가 결제완료로 옮겨지지 않았고 남은 돈을 낼 곳도 없었다. 원화는 0자리라 같다.
+
+axes:
+  currency_decimals: [two]
+
+effects:
+  - mileage_claim_payment_rounds_to_currency_decimals
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/MileageClaimPaymentDecimalCurrencyTest.php

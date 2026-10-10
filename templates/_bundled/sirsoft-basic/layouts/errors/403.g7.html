@@ -1,0 +1,20 @@
+<!-- 403 권한 없음 — 로그인은 했지만 볼 자격이 없을 때다. 비공개 게시판 등이 본문 자리(content)에만 이 화면을 세우기도 하므로 헤더·푸터는 그대로 남는다. -->
+<layout name="errors/403" version="1.0.0" extends="_user_base">
+  <meta title="$t:error.403.title" description="$t:error.403.description"/>
+  <slot name="content">
+    <div class="min-h-[60vh] flex items-center justify-center">
+      <div class="text-center px-4">
+        <div class="text-8xl font-bold text-gray-200 dark:text-gray-700 mb-4">403</div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:error.403.title</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-8">$t:error.403.description</p>
+        <button class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer">
+          <on type="click">
+            <navigate path="/"/>
+          </on>
+          <icon name="home" class="text-xl"/>
+          <span>$t:error.403.back_to_home</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

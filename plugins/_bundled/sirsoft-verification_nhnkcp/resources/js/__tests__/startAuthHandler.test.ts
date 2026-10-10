@@ -16,6 +16,8 @@ import {
 } from '../index';
 
 const CALL_URL = 'https://testcert.kcp.co.kr/certGateway.do';
+/** 서버가 챌린지 payload 로 내려주는 사이트 origin */
+const SITE_ORIGIN = 'https://shop.example.test';
 const REG_CERT_KEY = 'CERTKEY000000001';
 
 interface SubmittedForm {
@@ -55,7 +57,8 @@ function setChallenge(payload: Record<string, unknown> | undefined): void {
     globalState.identityChallenge = {
         provider_id: 'nhnkcp',
         purpose: 'signup',
-        public_payload: payload,
+        // 서버는 언제나 siteOrigin 을 함께 내려준다 — 명시하지 않은 테스트는 사이트 origin 을 채운다.
+        public_payload: payload && !('siteOrigin' in payload) ? { ...payload, siteOrigin: SITE_ORIGIN } : payload,
     };
 }
 
@@ -260,13 +263,16 @@ describe('startAuth 핸들러', () => {
         vi.useFakeTimers();
         const popup = { closed: false, close: vi.fn() };
         vi.stubGlobal('open', vi.fn(() => popup));
-        const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ success: true }) }));
+        // 코어 API 클라이언트로 보낸다(Bearer·401 은 코어 몫) — raw fetch 는 쓰지 않는다
+        const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        const apiPost = vi.fn(async () => ({ success: true }));
+        (window as any).G7Core.api = { post: apiPost };
         globalState.identityChallenge = {
             provider_id: 'nhnkcp',
             purpose: 'signup',
             challenge_id: 'challenge-abandoned',
-            public_payload: { call_url: CALL_URL, reg_cert_key: REG_CERT_KEY },
+            public_payload: { call_url: CALL_URL, reg_cert_key: REG_CERT_KEY, siteOrigin: SITE_ORIGIN },
         };
 
         await startAuthHandler();
@@ -274,11 +280,11 @@ describe('startAuth 핸들러', () => {
         vi.advanceTimersByTime(500);
         await vi.runAllTicks?.();
 
-        const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
+        const calls = apiPost.mock.calls as unknown as Array<[string, unknown?]>;
         const cancelCall = calls.find(([url]) => String(url).includes('/cancel'));
         expect(cancelCall, '취소 엔드포인트 호출이 있어야 한다').toBeTruthy();
         expect(cancelCall![0]).toBe('/api/identity/challenges/challenge-abandoned/cancel');
-        expect(cancelCall![1].method).toBe('POST');
+        expect(fetchMock).not.toHaveBeenCalled();
 
         vi.useRealTimers();
     });

@@ -4,22 +4,27 @@ namespace App\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Support\Facades\Route;
 
 /**
  * API 엔드포인트 화이트리스트 검증 Rule
  *
- * 코어가 등록하는 API 라우트 네임스페이스만 허용하고 다른 모든 엔드포인트를 차단합니다.
+ * 코어가 **실제로 등록한** API 라우트 네임스페이스만 허용하고 다른 모든 엔드포인트를 차단합니다.
  * 외부 URL, 내부 API, 직접 경로 접근 등을 방지하여 보안을 강화합니다.
  *
+ * 판정 근거는 라우트 표다 — 종전에는 `(admin|auth|public)` 을 하드코딩해 라우트 표의 14개
+ * 네임스페이스 중 5개만 알고 있었고(`public` 은 등록 라우트가 0건인 유령 항목이었다), 그래서
+ * 정상 출하 중인 코어 엔드포인트를 쓰는 레이아웃을 **편집기 저장 API 가 거부**했다. 화이트리스트를
+ * 손으로 관리하는 한 라우트가 늘 때마다 같은 갭이 재발하므로 목록을 두지 않는다.
+ *
  * 허용 패턴:
- * - /api/admin/*
- * - /api/auth/*
- * - /api/public/*
+ * - /api/{ns}/... — `{ns}` 가 라우트 표에 등록된 코어 API 네임스페이스인 경우 (admin·auth·identity·
+ *   me·user·users·search·templates·locales·layouts·attachment·broadcasting 등, 등록분 전량)
  * - /api/modules/{vendor-module}/* (ModuleRouteServiceProvider 가 등록하는 모듈 API 프리픽스)
  * - /api/plugins/{vendor-plugin}/* (PluginRouteServiceProvider 가 등록하는 플러그인 API 프리픽스)
  *
  * 차단 패턴:
- * - /api/internal/*
+ * - /api/internal/* · /api/public/* 등 미등록 네임스페이스
  * - /api/modules/* (확장 식별자 vendor-name 형식이 아닌 세그먼트)
  * - /admin/* (직접 경로)
  * - http://* (외부 URL)
@@ -28,13 +33,23 @@ use Illuminate\Contracts\Validation\ValidationRule;
 class WhitelistedEndpoint implements ValidationRule
 {
     /**
-     * 허용된 API 엔드포인트 패턴
+     * 확장 API 프리픽스 — 확장 식별자(vendor-name — 하이픈 포함 필수) 세그먼트가 뒤따를 때만 허용한다.
      *
-     * modules/plugins 프리픽스는 확장 식별자(vendor-name — 하이픈 포함 필수) 세그먼트가
-     * 뒤따를 때만 허용한다. 하이픈을 강제해 /api/modules/assets/ 등 비확장 세그먼트는
-     * 화이트리스트에 포함되지 않는다.
+     * 이 둘은 라우트 표로 판정하지 않는다. 비활성 확장의 라우트는 표에 없지만 그 확장을 대상으로 한
+     * 레이아웃은 정상 마크업이고, 반대로 `modules` 가 등록돼 있다는 이유로 `/api/modules/assets/`
+     * (에셋 서빙 경로) 까지 열리면 안 되기 때문이다 — 식별자 **형태**가 정확한 게이트다.
      */
-    private const ALLOWED_PATTERN = '/^\/api\/((admin|auth|public)\/|(modules|plugins)\/[a-z0-9][a-z0-9_]*(-[a-z0-9_]+)+\/)/';
+    private const EXTENSION_PREFIX_PATTERN = '/^\/api\/(modules|plugins)\/[a-z0-9][a-z0-9_]*(-[a-z0-9_]+)+(\/|$)/';
+
+    /** 확장 프리픽스 — 라우트 표에서 코어 네임스페이스를 추릴 때 제외한다 (위 형태 게이트가 담당) */
+    private const EXTENSION_NAMESPACES = ['modules', 'plugins'];
+
+    /**
+     * 라우트 표에서 추린 코어 API 네임스페이스 캐시 (요청 수명 내 1회 산출).
+     *
+     * @var array<string, true>|null
+     */
+    private static ?array $coreNamespaces = null;
 
     /**
      * 검증 규칙 실행
@@ -137,9 +152,11 @@ class WhitelistedEndpoint implements ValidationRule
             return;
         }
 
-        // 화이트리스트 패턴 검증
-        if (! preg_match(self::ALLOWED_PATTERN, $value)) {
-            $fail(__('validation.endpoint.not_whitelisted', ['pattern' => '/api/(admin|auth|public)/, /api/(modules|plugins)/{vendor-id}/']));
+        // 화이트리스트 검증 — 등록 라우트 네임스페이스 또는 확장 프리픽스
+        if (! $this->isAllowedEndpoint($value)) {
+            $fail(__('validation.endpoint.not_whitelisted', [
+                'pattern' => '/api/{등록 네임스페이스}/, /api/(modules|plugins)/{vendor-id}/',
+            ]));
 
             return;
         }
@@ -150,5 +167,69 @@ class WhitelistedEndpoint implements ValidationRule
 
             return;
         }
+    }
+
+    /**
+     * 엔드포인트가 허용 네임스페이스에 속하는지 판정합니다.
+     *
+     * @param  string  $endpoint  엔드포인트 경로 (쿼리 스트링 포함 가능)
+     * @return bool 허용되면 true
+     */
+    private function isAllowedEndpoint(string $endpoint): bool
+    {
+        if (preg_match(self::EXTENSION_PREFIX_PATTERN, $endpoint) === 1) {
+            return true;
+        }
+
+        // 쿼리 스트링·프래그먼트를 떼고 두 번째 세그먼트(네임스페이스)만 본다.
+        $path = strtok($endpoint, '?#');
+
+        if (! is_string($path) || preg_match('/^\/api\/([a-z0-9_-]+)(\/|$)/', $path, $matches) !== 1) {
+            return false;
+        }
+
+        return isset($this->coreApiNamespaces()[$matches[1]]);
+    }
+
+    /**
+     * 라우트 표에 등록된 코어 API 네임스페이스 집합을 만듭니다.
+     *
+     * 확장 프리픽스(modules·plugins)는 제외한다 — 그쪽은 식별자 형태로 게이트한다.
+     *
+     * @return array<string, true> 네임스페이스 → true
+     */
+    private function coreApiNamespaces(): array
+    {
+        if (self::$coreNamespaces !== null) {
+            return self::$coreNamespaces;
+        }
+
+        $namespaces = [];
+
+        foreach (Route::getRoutes()->getRoutes() as $route) {
+            $uri = $route->uri();
+
+            if (! str_starts_with($uri, 'api/')) {
+                continue;
+            }
+
+            $segment = explode('/', $uri)[1] ?? '';
+
+            if ($segment === '' || str_contains($segment, '{') || in_array($segment, self::EXTENSION_NAMESPACES, true)) {
+                continue;
+            }
+
+            $namespaces[$segment] = true;
+        }
+
+        return self::$coreNamespaces = $namespaces;
+    }
+
+    /**
+     * 네임스페이스 캐시를 비웁니다 (라우트를 동적으로 등록하는 테스트용).
+     */
+    public static function flushNamespaceCache(): void
+    {
+        self::$coreNamespaces = null;
     }
 }

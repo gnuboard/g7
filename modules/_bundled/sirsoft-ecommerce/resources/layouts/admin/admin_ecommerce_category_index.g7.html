@@ -1,0 +1,95 @@
+<!-- 상품 분류 관리 (운영자) — 왼쪽 트리에서 고른 분류를 오른쪽 패널에서 보고 고치며, 등록도 같은
+  패널을 등록 모드로 바꿔서 처리한다. 하위 분류·소속 상품이 있으면 삭제가 막히므로 그 수까지 함께 받는다. -->
+<layout name="admin_ecommerce_category_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.category.title" description="$t:sirsoft-ecommerce.admin.category.description"/>
+  <!-- 트리 전체를 계층 형태로 한 번에 받아 목록·상세가 나눠 쓴다. 저장·삭제 뒤에는 새로고침 버튼이 이 소스만 다시 태운다(주소는 그대로 둔다). 폼(form) 초기값은 여기 init-local 로 두지 않는다 — 데이터 소스의 init-local 은 기본값이 아니라 「응답 경로 → 폼 경로」 매핑이라 빈 값("")이 응답 전체로 읽혀, 목록을 받을 때마다 입력 중인 이름 칸을 목록 응답으로 덮었다. 빈 폼은 「추가」 버튼이 심는다 -->
+  <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+    <params hierarchical="1"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="selectedCategoryId" :value="null"/>
+    <field name="selectedCategory" :value="null"/>
+    <field name="panelMode" value="view"/>
+    <field name="tempKey" :value="null"/>
+    <field name="deleteModal">
+      <field name="isOpen" :value="false"/>
+      <field name="categoryId" :value="null"/>
+      <field name="categoryName" value=""/>
+      <field name="hasChildren" :value="false"/>
+      <field name="productsCount" :value="0"/>
+    </field>
+    <field name="imagePreview">
+      <field name="isOpen" :value="false"/>
+      <field name="imageUrl" value=""/>
+      <field name="imageAlt" value=""/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.categories.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>categories</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="category_page_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.category.title</h1>
+          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.category.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
+            <on type="click">
+              <refetch-data-source dataSourceId="categories"/>
+            </on>
+            <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
+          </button>
+          <button data-ref="add_category_button" disabled="{{categories?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 오른쪽 패널을 등록 모드로 전환. `tempKey` 는 아직 id 가 없는 신규 분류의 이미지 업로드를 서버에서 묶어 두는 임시 식별자라 등록을 누를 때마다 새로 만든다 -->
+              <sequence>
+                <set-state target="global" :selectedCategoryId="null" :selectedCategory="null" panelMode="create" tempKey="{{$uuid()}}"/>
+                <set-state target="local" :form="null" :errors="null" :isSaving="false"/>
+                <set-state target="local">
+                  <field name="form">
+                    <field name="name">
+                      <field name="ko" value=""/>
+                      <field name="en" value=""/>
+                    </field>
+                    <field name="description">
+                      <field name="ko" value=""/>
+                      <field name="en" value=""/>
+                    </field>
+                    <field name="parent_id" :value="null"/>
+                    <field name="sort_order" :value="0"/>
+                    <field name="is_active" :value="true"/>
+                  </field>
+                </set-state>
+              </sequence>
+            </on>
+            <icon name="plus" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.category.tree.add</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
+        <include src="partials/admin_ecommerce_category_index/_panel_category_list.g7.html"/>
+        <include src="partials/admin_ecommerce_category_index/_panel_detail.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 분류 이미지 원본 확대 — 상세 패널의 썸네일을 눌렀을 때 뜬다 -->
+  <modal src="partials/admin_ecommerce_category_index/_modal_image_preview.g7.html"/>
+  <!-- 삭제 확인 — 하위 분류나 소속 상품이 있으면 삭제 불가 안내로 문구가 바뀐다 -->
+  <modal src="partials/admin_ecommerce_category_index/_modal_delete_confirm.g7.html"/>
+</layout>

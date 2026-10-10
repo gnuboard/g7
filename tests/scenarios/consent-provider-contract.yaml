@@ -1,0 +1,67 @@
+feature: 동의 제공자 계약 — 범용 동의 스냅샷과 제공자 선택 (#639, 공개 gnuboard/g7#129)
+
+description: |
+  방문자의 쿠키·추적 동의를 관리하는 확장(제공자)이 무엇이든, 코어와 다른 확장은 같은 계약으로
+  「이 방문자가 무엇에 동의했는가」를 묻는다. 코어 방문자 통계도 이 계약의 소비자다.
+
+  선택 규칙:
+    - 선택값(`privacy.consent_provider`)이 비었으면 자동 — 수집 중인 제공자 1개면 그것, 0개면 none, 2개 이상이면 ambiguous(unknown).
+    - 선택값이 있으면 — 등록돼 있고 수집 중이면 selected, 등록돼 있지만 수집을 꺼 두었으면 none, 등록돼 있지 않으면 missing(unknown).
+    - 판단할 수 없는 모든 경우(모호·누락·제공자 예외)는 unknown 이고, 소비자는 동의하지 않은 것으로 본다(fail-closed).
+
+  공개 표면:
+    - 백엔드: `ConsentProviderInterface` + 필터 `core.consent.registered_providers` + `ConsentManager`, 변경 알림 액션 `core.consent.changed`.
+    - API: `GET /api/consent` — 공개 5키(contract_version, status, categories, needs_renewal, policy_version)만, 식별자 미노출.
+    - 설정: 환경설정 개인정보 탭 선택값, 조회 응답 `_meta.consent_providers`·`_meta.consent_selection`.
+
+axes:
+  selection: [none, auto, selected, ambiguous, missing]
+  visitor: [guest, member]
+  status: [ready, unknown, none]
+
+exclusions:
+  - { selection: none, status: ready, reason: "제공자가 없으면 답할 주체가 없다" }
+  - { selection: none, status: unknown, reason: "none 은 none 으로 답한다" }
+  - { selection: auto, status: none, reason: "답할 제공자가 있다" }
+  - { selection: selected, status: none, reason: "답할 제공자가 있다" }
+  - { selection: selected, status: unknown, reason: "제공자 예외는 auto 행이 덮는다(같은 경로)" }
+  - { selection: ambiguous, status: ready, reason: "모호하면 답하지 않는다" }
+  - { selection: ambiguous, status: none, reason: "모호하면 unknown 이다" }
+  - { selection: missing, status: ready, reason: "사라진 제공자는 답하지 않는다" }
+  - { selection: missing, status: none, reason: "사라진 제공자는 unknown 이다" }
+  - { selection: none, visitor: member, reason: "제공자가 없으면 회원·게스트 구분 없이 none — 게스트 행이 덮는다" }
+  - { selection: selected, visitor: guest, reason: "선택 경로는 회원 행이 덮고, 게스트 식별은 auto 게스트 행이 덮는다" }
+  - { selection: ambiguous, visitor: member, reason: "모호 판정은 주체와 무관 — 게스트 행이 덮는다" }
+  - { selection: missing, visitor: guest, reason: "누락 판정은 주체와 무관 — 회원 행이 덮는다" }
+
+effects:
+  - no_provider_yields_none_snapshot
+  - single_provider_is_selected_automatically
+  - ambiguous_or_missing_selection_fails_closed
+  - selected_unavailable_provider_yields_none
+  - explicit_selection_wins_over_auto
+  - unavailable_provider_is_excluded_from_auto
+  - duplicate_provider_id_keeps_first
+  - provider_exception_fails_closed
+  - non_provider_values_are_ignored
+  - necessary_is_always_true
+  - report_change_emits_core_action
+  - guest_subject_key_comes_from_selected_provider
+  - public_api_answers_guest_by_provider_key
+  - public_api_answers_member_by_user
+  - public_api_exposes_exactly_five_keys
+  - public_api_is_throttled
+  - legacy_analytics_consent_route_is_removed
+  - empty_selection_is_stored_as_empty_string
+  - registered_provider_can_be_selected
+  - unknown_provider_selection_is_rejected
+  - missing_selection_resend_does_not_block_save
+  - settings_meta_lists_providers_and_selection
+
+test_files:
+  - tests/Unit/Extension/Consent/ConsentManagerTest.php
+  - tests/Feature/Api/Public/ConsentControllerTest.php
+  - tests/Feature/Settings/ConsentProviderSettingTest.php
+
+# E2E: gdpr tests/Playwright/specs/public/consent-runtime-login-boundary.spec.ts (게스트 거부 → 회원 로그인 → 로그아웃)
+#      가 브라우저 표면을 덮는다(WP4). 제공자 2개(ambiguous)는 번들 제공자가 하나라 라이브 미재현 — 단위 테스트로 커버.

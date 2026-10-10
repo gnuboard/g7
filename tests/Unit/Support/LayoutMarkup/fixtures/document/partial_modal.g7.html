@@ -1,0 +1,8 @@
+<partial description="사용자 삭제 확인 모달">
+  <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:admin.users.delete_confirm_title">
+    <data-source id="user_detail" endpoint="/api/admin/users/{{_global.modal_data.uuid}}"/>
+    <div class="modal-body">
+      <span text="{{user_detail?.data?.name}}"/>
+    </div>
+  </modal>
+</partial>

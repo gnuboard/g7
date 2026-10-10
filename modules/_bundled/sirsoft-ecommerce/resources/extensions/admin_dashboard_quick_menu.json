@@ -1,142 +1,143 @@
 {
-  "extension_point": "admin_dashboard_quick_menu",
-  "mode": "append",
-  "priority": 40,
-  "components": [
-    {
-      "id": "qm_ecommerce_products",
-      "type": "basic",
-      "name": "A",
-      "props": {
-        "href": "/admin/ecommerce/products",
-        "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
-      },
-      "children": [
+    "comment": "관리자 대시보드 상단 바로가기 줄에 이커머스 항목 5개를 덧대는 조각.\n  `target-layout` 이 아니라 **확장 지점**(`extension_point`)에 붙는다 — 관리자 템플릿이 그 자리를\n  열어 두었을 뿐 어떤 확장이 무엇을 넣는지 모르고, 여러 확장이 같은 자리를 나눠 쓴다.\n  그래서 `priority` 40 이 코어 항목 뒤·다른 모듈 앞이라는 위치 자체가 이 파일의 계약이다.\n  각 칸은 링크(`href`)일 뿐 액션이 없다 — 새 탭·확인창 같은 것이 필요해지면 그때 `<on>` 이 생긴다.",
+    "extension_point": "admin_dashboard_quick_menu",
+    "mode": "append",
+    "priority": 40,
+    "components": [
         {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "box",
-            "className": "text-lg md:text-xl"
-          }
+            "id": "qm_ecommerce_products",
+            "type": "basic",
+            "name": "A",
+            "props": {
+                "href": "/admin/ecommerce/products",
+                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "box",
+                        "className": "text-lg md:text-xl"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-center leading-tight"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.products"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-center leading-tight"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.products"
-        }
-      ]
-    },
-    {
-      "id": "qm_ecommerce_orders",
-      "type": "basic",
-      "name": "A",
-      "props": {
-        "href": "/admin/ecommerce/orders",
-        "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "shopping-cart",
-            "className": "text-lg md:text-xl"
-          }
+            "id": "qm_ecommerce_orders",
+            "type": "basic",
+            "name": "A",
+            "props": {
+                "href": "/admin/ecommerce/orders",
+                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "shopping-cart",
+                        "className": "text-lg md:text-xl"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-center leading-tight"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.orders"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-center leading-tight"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.orders"
-        }
-      ]
-    },
-    {
-      "id": "qm_ecommerce_reviews",
-      "type": "basic",
-      "name": "A",
-      "props": {
-        "href": "/admin/ecommerce/reviews",
-        "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "star",
-            "className": "text-lg md:text-xl"
-          }
+            "id": "qm_ecommerce_reviews",
+            "type": "basic",
+            "name": "A",
+            "props": {
+                "href": "/admin/ecommerce/reviews",
+                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "star",
+                        "className": "text-lg md:text-xl"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-center leading-tight"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.reviews"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-center leading-tight"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.reviews"
-        }
-      ]
-    },
-    {
-      "id": "qm_ecommerce_coupons",
-      "type": "basic",
-      "name": "A",
-      "props": {
-        "href": "/admin/ecommerce/promotion-coupons",
-        "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "ticket",
-            "className": "text-lg md:text-xl"
-          }
+            "id": "qm_ecommerce_coupons",
+            "type": "basic",
+            "name": "A",
+            "props": {
+                "href": "/admin/ecommerce/promotion-coupons",
+                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "ticket",
+                        "className": "text-lg md:text-xl"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-center leading-tight"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.coupons"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-center leading-tight"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.coupons"
+            "id": "qm_ecommerce_shipping",
+            "type": "basic",
+            "name": "A",
+            "props": {
+                "href": "/admin/ecommerce/shipping-policies",
+                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "truck",
+                        "className": "text-lg md:text-xl"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-center leading-tight"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.shipping"
+                }
+            ]
         }
-      ]
-    },
-    {
-      "id": "qm_ecommerce_shipping",
-      "type": "basic",
-      "name": "A",
-      "props": {
-        "href": "/admin/ecommerce/shipping-policies",
-        "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "truck",
-            "className": "text-lg md:text-xl"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-center leading-tight"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.shipping"
-        }
-      ]
-    }
-  ]
+    ]
 }

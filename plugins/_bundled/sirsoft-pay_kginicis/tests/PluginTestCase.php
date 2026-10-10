@@ -12,6 +12,8 @@ use App\Models\Plugin;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\CompiledRouteCollection;
+use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\TestingSeeder;
@@ -25,16 +27,31 @@ abstract class PluginTestCase extends TestCase
 
     private static bool $pluginAutoloadRegistered = false;
 
+    /**
+     * 데이터베이스 초기화 뒤 시더를 실행하도록 true 를 돌려줍니다.
+     *
+     * @return bool 시더 실행 여부(항상 true)
+     */
     protected function shouldSeed(): bool
     {
         return true;
     }
 
+    /**
+     * 데이터베이스 초기화 때 실행할 이커머스 테스트 시더 클래스를 돌려줍니다.
+     *
+     * @return string 시더 클래스 FQCN
+     */
     protected function seeder(): string
     {
         return TestingSeeder::class;
     }
 
+    /**
+     * 코어와 모든 번들 모듈·플러그인의 마이그레이션 경로를 포함한 migrate:fresh 옵션을 만듭니다.
+     *
+     * @return array<string, mixed> migrate:fresh 명령 옵션
+     */
     protected function migrateFreshUsing(): array
     {
         // 모든 번들 확장 migrations 포함 — 여러 확장 스위트를 한 프로세스에서 함께 돌릴 때
@@ -57,6 +74,11 @@ abstract class PluginTestCase extends TestCase
         ];
     }
 
+    /**
+     * 오토로드·서비스 프로바이더·번역·라우트를 등록하고 플러그인을 활성화한 뒤 앱 URL 과 모듈 등록을 맞춥니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         $this->registerPluginAutoload();
@@ -71,6 +93,7 @@ abstract class PluginTestCase extends TestCase
 
         $this->registerModuleRoutes();
         $this->registerPluginRoutes();
+        $this->rebuildRouteNameLookups();
 
         // 코어 self-gate 미들웨어 실행을 위해 이 플러그인을 활성 상태로 등록한다
         // (getMiddleware() 선언이 게이트 인덱스에 수집되려면 getActivePlugins() 에 포함돼야 함).
@@ -88,6 +111,11 @@ abstract class PluginTestCase extends TestCase
         $this->registerEcommerceModuleInManager();
     }
 
+    /**
+     * 기준·주문 통화가 모두 KRW 인 통화 스냅샷을 돌려줍니다.
+     *
+     * @return array<string, mixed> KRW 통화 스냅샷
+     */
     protected static function krwCurrencySnapshot(): array
     {
         return [
@@ -106,6 +134,11 @@ abstract class PluginTestCase extends TestCase
         ];
     }
 
+    /**
+     * 기준·주문 통화가 모두 JPY 인 통화 스냅샷을 돌려줍니다.
+     *
+     * @return array<string, mixed> JPY 통화 스냅샷
+     */
     protected static function jpyCurrencySnapshot(): array
     {
         return [
@@ -124,6 +157,11 @@ abstract class PluginTestCase extends TestCase
         ];
     }
 
+    /**
+     * 기준 통화는 USD, 주문 통화는 KRW 이고 KRW 환율이 0 이라 결제 금액을 환산할 수 없는 통화 스냅샷을 돌려줍니다.
+     *
+     * @return array<string, mixed> 환산 불가 KRW 통화 스냅샷
+     */
     protected static function unchargeableKrwCurrencySnapshot(): array
     {
         return [
@@ -149,6 +187,12 @@ abstract class PluginTestCase extends TestCase
         ];
     }
 
+    /**
+     * 통화 코드가 JPY 면 JPY 스냅샷을, 그 밖에는 KRW 스냅샷을 돌려줍니다.
+     *
+     * @param  string  $currency  통화 코드(대소문자 무관)
+     * @return array<string, mixed> 해당 통화 스냅샷
+     */
     protected static function currencySnapshotFor(string $currency): array
     {
         return strtoupper($currency) === 'JPY'
@@ -157,7 +201,11 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 테스트 환경에서 sirsoft-ecommerce 모듈을 ModuleManager 에 명시 등록.
+     * 테스트 환경에서 sirsoft-ecommerce 모듈 인스턴스를 ModuleManager 에 명시 등록합니다.
+     *
+     * 모듈 클래스를 찾지 못하거나 등록 중 예외가 나면 조용히 건너뜁니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerEcommerceModuleInManager(): void
     {
@@ -186,6 +234,11 @@ abstract class PluginTestCase extends TestCase
         }
     }
 
+    /**
+     * sirsoft-ecommerce 모듈 네임스페이스 오토로더를 등록하고 모듈 헬퍼 파일을 불러옵니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function registerModuleAutoload(): void
     {
         $moduleBasePath = base_path('modules/sirsoft-ecommerce/src/');
@@ -216,6 +269,11 @@ abstract class PluginTestCase extends TestCase
         }
     }
 
+    /**
+     * 이 플러그인 네임스페이스 오토로더를 프로세스당 한 번만 오토로드 스택 맨 앞에 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function registerPluginAutoload(): void
     {
         if (self::$pluginAutoloadRegistered) {
@@ -247,6 +305,11 @@ abstract class PluginTestCase extends TestCase
         self::$pluginAutoloadRegistered = true;
     }
 
+    /**
+     * sirsoft-ecommerce 모듈 API 라우트를 api.modules.sirsoft-ecommerce. 이름 접두사로 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function registerModuleRoutes(): void
     {
         $apiRoutesFile = base_path('modules/sirsoft-ecommerce/src/routes/api.php');
@@ -269,6 +332,7 @@ abstract class PluginTestCase extends TestCase
      *
      * @param  string  $identifier  플러그인 식별자
      * @param  class-string  $pluginClass  플러그인 클래스 FQCN
+     * @return void 반환값 없음
      */
     protected function activateSelfForMiddlewareGate(string $identifier, string $pluginClass): void
     {
@@ -293,6 +357,11 @@ abstract class PluginTestCase extends TestCase
         ExtensionMiddlewareRegistry::flush();
     }
 
+    /**
+     * 이 플러그인의 web·api 라우트를 프로덕션과 같은 이름 접두사로 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function registerPluginRoutes(): void
     {
         $webRoutesFile = base_path('plugins/_bundled/sirsoft-pay_kginicis/src/routes/web.php');
@@ -316,6 +385,39 @@ abstract class PluginTestCase extends TestCase
         }
     }
 
+    /**
+     * 런타임에 등록한 라우트의 이름·액션 조회표를 다시 만듭니다.
+     *
+     * fluent `->name()` 은 컬렉션에 추가된 **뒤** 이름을 붙이므로 추가 시점의 조회표에 오르지 않는다.
+     * 라우트 캐시가 있는 머신의 `CompiledRouteCollection` 은 `refreshNameLookups()` 가 이 몫을 채우지
+     * 못하므로 새 `RouteCollection` 에 옮겨 담는다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function rebuildRouteNameLookups(): void
+    {
+        $routes = Route::getRoutes();
+
+        if ($routes instanceof CompiledRouteCollection) {
+            $rebuilt = new RouteCollection;
+            foreach ($routes->getRoutes() as $route) {
+                $rebuilt->add($route);
+            }
+            Route::setRoutes($rebuilt);
+
+            return;
+        }
+
+        $routes->refreshNameLookups();
+        $routes->refreshActionLookups();
+    }
+
+    /**
+     * 관리자 접근 권한과 지정 권한을 가진 전용 역할을 붙인 사용자를 만듭니다.
+     *
+     * @param  array<int, string>  $permissions  추가로 부여할 권한 식별자 목록
+     * @return User 생성된 관리자 사용자
+     */
     protected function createAdminUser(array $permissions = []): User
     {
         $user = User::factory()->create();
@@ -352,6 +454,11 @@ abstract class PluginTestCase extends TestCase
         return $user;
     }
 
+    /**
+     * 사용자를 만들고 user 역할이 있으면 붙입니다.
+     *
+     * @return User 생성된 일반 사용자
+     */
     protected function createUser(): User
     {
         $userRole = Role::where('identifier', 'user')->first();

@@ -1,788 +1,803 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Identity Logs Filter Section"
-  },
-  "id": "filter_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card filter-grid"
-  },
-  "children": [
-    {
-      "id": "search_row",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mb-4"
-      },
-      "children": [
+    "comment": "본인인증 기록의 검색 조건 영역. 고른 값은 로컬 `filter` 에 쌓였다가 검색 버튼(또는 입력창\n  Enter)이 주소 질의로 옮겨 줄 때 서버에 나간다.\n\n  조건 항목이 **고정 목록과 받아 온 목록으로 갈린다** — 상태·출처 종류는 코드에 박힌 값이고,\n  용도와 수단은 설치된 인증 제공자가 무엇을 지원하느냐에 따라 달라져 데이터소스에서 온다.\n  그래서 수단 줄은 채널을 하나도 안 쓰는 구성에서는 통째로 감춰진다.\n  자주 안 쓰는 셋(출처 종류·출처 구분·출처 식별자)은 접힌 영역에 두었다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Identity Logs Filter Section"
+    },
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card filter-grid"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "searchType",
-                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500",
-                "value": "{{_local.filter.searchType || 'auto'}}",
-                "options": [
-                  {
-                    "value": "auto",
-                    "label": "$t:admin.identity.logs.search_type.auto"
-                  },
-                  {
-                    "value": "user_id",
-                    "label": "$t:admin.identity.logs.search_type.user_id"
-                  },
-                  {
-                    "value": "target_hash",
-                    "label": "$t:admin.identity.logs.search_type.target_hash"
-                  },
-                  {
-                    "value": "ip_address",
-                    "label": "$t:admin.identity.logs.search_type.ip_address"
-                  },
-                  {
-                    "value": "policy_key",
-                    "label": "$t:admin.identity.logs.search_type.policy_key"
-                  }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.searchType": "{{$event.target.value}}"
-                  }
-                }
-              ]
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "relative flex-1"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "fa-solid fa-search",
-                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "검색어를 어느 칸으로 볼지 정한다. 기본값 「자동」은 값 모양을 보고 서버가 고르게 맡기는 쪽이다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "searchType",
+                                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500",
+                                "value": "{{_local.filter.searchType || 'auto'}}",
+                                "options": [
+                                    {
+                                        "value": "auto",
+                                        "label": "$t:admin.identity.logs.search_type.auto"
+                                    },
+                                    {
+                                        "value": "user_id",
+                                        "label": "$t:admin.identity.logs.search_type.user_id"
+                                    },
+                                    {
+                                        "value": "target_hash",
+                                        "label": "$t:admin.identity.logs.search_type.target_hash"
+                                    },
+                                    {
+                                        "value": "ip_address",
+                                        "label": "$t:admin.identity.logs.search_type.ip_address"
+                                    },
+                                    {
+                                        "value": "policy_key",
+                                        "label": "$t:admin.identity.logs.search_type.policy_key"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "검색어는 담아 두기만 한다. 대상이 되는 값(대상 해시 등)은 원문이 아니라 저장된 형태 그대로 넣어야 맞는다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keydown",
+                                            "key": "Enter",
+                                            "actionRef": "searchIdentityLogs"
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:admin.identity.logs.search_placeholder",
+                                        "className": "input pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-grid"
+            },
+            "children": [
+                {
+                    "id": "status_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.status_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "상태 「전체」는 고른 것이 없는 상태 그 자체다 — 비우면 옆 칸들의 체크도 함께 풀린다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{[]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.statuses || _local.filter.statuses.length === 0}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.identity.logs.filter.status_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "{{['requested','sent','verified','failed','expired','cancelled','policy_violation_logged']}}",
+                                        "item_var": "st"
+                                    },
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "상태 목록은 여기 박아 둔 일곱 개이고 라벨만 상태 이름으로 언어팩에서 찾아 붙인다.\n                  앞의 여섯은 인증 한 건이 지나는 단계(요청·발송·성공·실패·만료·취소)이고,\n                  마지막 「정책 위반 기록」만 성격이 다르다 — 어기면 막는 대신 남기기만 하도록 둔\n                  정책이 걸렸을 때 **요청은 통과시키고** 남긴 줄이라, 인증을 시도한 기록이 아니다.\n                  (수단 칸이 늘 「policy」로 찍히는 것도 그 때문이다.)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== st), st] : (_local.filter.statuses || []).filter(s => s !== st)}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes(st)}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "{{$t('admin.identity.logs.status.' + st)}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "name": "search",
-                    "type": "text",
-                    "placeholder": "$t:admin.identity.logs.search_placeholder",
-                    "className": "input pl-10",
-                    "value": "{{_local.filter.search || ''}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.search": "{{$event.target.value}}"
-                      }
+                    "id": "purpose_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
                     },
-                    {
-                      "type": "keydown",
-                      "key": "Enter",
-                      "actionRef": "searchIdentityLogs"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "filter_grid",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "filter-grid"
-      },
-      "children": [
-        {
-          "id": "status_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.identity.logs.filter.status_label"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{!_local.filter.statuses || _local.filter.statuses.length === 0}}"
-                      },
-                      "actions": [
+                    "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.statuses": "{{[]}}"
-                          }
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.purpose_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "용도 「전체」도 같은 꼴 — 비우는 것이 곧 조건 없음이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.purposes": "{{[]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.purposes || _local.filter.purposes.length === 0}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.identity.logs.filter.purpose_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "{{identityPurposes?.data ?? []}}",
+                                        "item_var": "pp"
+                                    },
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "용도 목록은 코어와 확장이 등록한 것을 받아 온 것이라 설치 구성마다 다르다 — 여기에 안 보이는 용도는 아직 등록되지 않은 것이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.purposes": "{{$event.target.checked ? [...(_local.filter.purposes || []).filter(p => p !== pp.id), pp.id] : (_local.filter.purposes || []).filter(p => p !== pp.id)}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.purposes || []).includes(pp.id)}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "{{pp.label ?? pp.id}}"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "date_range_filter",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-row"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "filter-label w-32"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.identity.logs.filter.status_all"
-                    }
-                  ]
+                    "text": "$t:admin.identity.logs.filter.date_range_label"
                 },
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "iteration": {
-                    "source": "{{['requested','sent','verified','failed','expired','cancelled','policy_violation_logged']}}",
-                    "item_var": "st"
-                  },
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.statuses || []).includes(st)}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== st), st] : (_local.filter.statuses || []).filter(s => s !== st)}}"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center flex-wrap gap-2"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "{{$t('admin.identity.logs.status.' + st)}}"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "시작일. 활동 로그 쪽과 달리 날짜만 받으므로 하루 단위로만 좁혀지고, 기간 버튼도 없다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.dateFrom": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "date",
+                                "aria-label": "$t:common.range_start|label={{$t('admin.identity.logs.filter.date_range_label')}}",
+                                "name": "dateFrom",
+                                "className": "input w-40",
+                                "value": "{{_local.filter.dateFrom || ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-400 dark:text-gray-500"
+                            },
+                            "text": "~"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "종료일. 두 칸 다 비워 두면 기간 조건 없이 전체를 본다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.dateTo": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "date",
+                                "aria-label": "$t:common.range_end|label={{$t('admin.identity.logs.filter.date_range_label')}}",
+                                "name": "dateTo",
+                                "className": "input w-40",
+                                "value": "{{_local.filter.dateTo || ''}}"
+                            }
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "purpose_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.identity.logs.filter.purpose_label"
+            "id": "channel_filter",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(identityProviders?.data ?? []).some(p => Array.isArray(p.channels) && p.channels.length > 0)}}",
+            "props": {
+                "className": "filter-row"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-2"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{!_local.filter.purposes || _local.filter.purposes.length === 0}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.purposes": "{{[]}}"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "filter-label w-32"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.identity.logs.filter.purpose_all"
-                    }
-                  ]
+                    "text": "$t:admin.identity.logs.filter.channel_label"
                 },
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "iteration": {
-                    "source": "{{identityPurposes?.data ?? []}}",
-                    "item_var": "pp"
-                  },
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.purposes || []).includes(pp.id)}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.purposes": "{{$event.target.checked ? [...(_local.filter.purposes || []).filter(p => p !== pp.id), pp.id] : (_local.filter.purposes || []).filter(p => p !== pp.id)}}"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center flex-wrap gap-2"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "{{pp.label ?? pp.id}}"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "iteration": {
+                                "source": "{{Array.from(new Set((identityProviders?.data ?? []).flatMap(p => Array.isArray(p.channels) ? p.channels : [])))}}",
+                                "item_var": "ch"
+                            },
+                            "props": {
+                                "className": "inline-clickable"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "수단 목록은 설치된 제공자들이 내건 채널을 한데 모아 중복을 걷어낸 것이다 — 그래서 제공자가 늘면 칸도 늘고, 하나도 없으면 이 줄 자체가 안 보인다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.channels": "{{$event.target.checked ? [...(_local.filter.channels || []).filter(c => c !== ch), ch] : (_local.filter.channels || []).filter(c => c !== ch)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "className": "checkbox",
+                                        "checked": "{{(_local.filter.channels || []).includes(ch)}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label"
+                                    },
+                                    "text": "{{((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[ch] ?? ch}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "date_range_filter",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "filter-row"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "filter-label w-32"
-          },
-          "text": "$t:admin.identity.logs.filter.date_range_label"
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center flex-wrap gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "date",
-                "name": "dateFrom",
-                "className": "input w-40",
-                "value": "{{_local.filter.dateFrom || ''}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.dateFrom": "{{$event.target.value}}"
-                  }
-                }
-              ]
+            "id": "advanced_toggle_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end mt-2"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-gray-400"
-              },
-              "text": "~"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "date",
-                "name": "dateTo",
-                "className": "input w-40",
-                "value": "{{_local.filter.dateTo || ''}}"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.dateTo": "{{$event.target.value}}"
-                  }
+                    "id": "advanced_filters_toggle",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "접힘 상태도 조건 묶음 안에 함께 둔다 — 초기화가 조건을 비울 때 펼쳐 둔 영역까지 같이 접히게 하려는 것이다.",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "filter.advancedOpen": "{{!_local.filter.advancedOpen}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "{{_local.filter.advancedOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                "className": "text-xs"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.identity.logs.filter.advanced_search_toggle"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "channel_filter",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(identityProviders?.data ?? []).some(p => Array.isArray(p.channels) && p.channels.length > 0)}}",
-      "props": {
-        "className": "filter-row"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "filter-label w-32"
-          },
-          "text": "$t:admin.identity.logs.filter.channel_label"
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center flex-wrap gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "iteration": {
-                "source": "{{Array.from(new Set((identityProviders?.data ?? []).flatMap(p => Array.isArray(p.channels) ? p.channels : [])))}}",
-                "item_var": "ch"
-              },
-              "props": {
-                "className": "inline-clickable"
-              },
-              "children": [
+            "id": "advanced_filters",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.filter.advancedOpen === true}}",
+            "props": {
+                "className": "filter-grid mt-3 pt-3"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "checkbox",
-                    "className": "checkbox",
-                    "checked": "{{(_local.filter.channels || []).includes(ch)}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.channels": "{{$event.target.checked ? [...(_local.filter.channels || []).filter(c => c !== ch), ch] : (_local.filter.channels || []).filter(c => c !== ch)}}"
-                      }
-                    }
-                  ]
+                    "id": "origin_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.origin_type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "{{['route','hook','policy','middleware','api','custom','system']}}",
+                                        "item_var": "ot"
+                                    },
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "인증을 **무엇이 걸었는가** — 라우트·훅·정책·미들웨어처럼 요구가 나온 자리의 종류다. 어느 확장이 걸었는지는 아래 두 칸(구분·식별자)에서 좁힌다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.originTypes": "{{$event.target.checked ? [...(_local.filter.originTypes || []).filter(o => o !== ot), ot] : (_local.filter.originTypes || []).filter(o => o !== ot)}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.originTypes || []).includes(ot)}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "{{$t('admin.identity.logs.origin_type.' + ot)}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label"
-                  },
-                  "text": "{{((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[ch] ?? ch}}"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "advanced_toggle_row",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end mt-2"
-      },
-      "children": [
-        {
-          "id": "advanced_filters_toggle",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filter.advancedOpen": "{{!_local.filter.advancedOpen}}"
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "{{_local.filter.advancedOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
-                "className": "text-xs"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.identity.logs.filter.advanced_search_toggle"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "advanced_filters",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_local.filter.advancedOpen === true}}",
-      "props": {
-        "className": "filter-grid mt-3 pt-3"
-      },
-      "children": [
-        {
-          "id": "origin_type_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.identity.logs.filter.origin_type_label"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "iteration": {
-                    "source": "{{['route','hook','policy','middleware','api','custom','system']}}",
-                    "item_var": "ot"
-                  },
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.originTypes || []).includes(ot)}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.originTypes": "{{$event.target.checked ? [...(_local.filter.originTypes || []).filter(o => o !== ot), ot] : (_local.filter.originTypes || []).filter(o => o !== ot)}}"
-                          }
-                        }
-                      ]
+                    "id": "source_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "{{$t('admin.identity.logs.origin_type.' + ot)}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "source_type_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.identity.logs.filter.source_type_label"
-            },
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "sourceType",
-                "className": "input w-48",
-                "value": "{{_local.filter.sourceType || ''}}",
-                "options": [
-                  {
-                    "value": "",
-                    "label": "$t:admin.identity.logs.filter.source_type_any"
-                  },
-                  {
-                    "value": "core",
-                    "label": "$t:identity.policy.source_type.core"
-                  },
-                  {
-                    "value": "module",
-                    "label": "$t:identity.policy.source_type.module"
-                  },
-                  {
-                    "value": "plugin",
-                    "label": "$t:identity.policy.source_type.plugin"
-                  },
-                  {
-                    "value": "admin",
-                    "label": "$t:identity.policy.source_type.admin"
-                  }
-                ]
-              },
-              "actions": [
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.source_type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "그 정책을 누가 등록했는지로 나눈다 — 코어가 심은 것, 확장이 들고 온 것, 관리자가 화면에서 만든 것.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.sourceType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "sourceType",
+                                "className": "input w-48",
+                                "value": "{{_local.filter.sourceType || ''}}",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:admin.identity.logs.filter.source_type_any"
+                                    },
+                                    {
+                                        "value": "core",
+                                        "label": "$t:admin.identity.policies.source.core"
+                                    },
+                                    {
+                                        "value": "module",
+                                        "label": "$t:admin.identity.policies.source.module"
+                                    },
+                                    {
+                                        "value": "plugin",
+                                        "label": "$t:admin.identity.policies.source.plugin"
+                                    },
+                                    {
+                                        "value": "admin",
+                                        "label": "$t:admin.identity.policies.source.admin"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.sourceType": "{{$event.target.value}}"
-                  }
+                    "id": "source_identifier_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.source_identifier_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "위 구분을 좁힌 뒤 확장 식별자까지 직접 적는 칸이다. 고르는 목록이 아니라 자유 입력이라 철자가 정확해야 걸린다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.sourceIdentifier": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "sourceIdentifier",
+                                "placeholder": "$t:admin.identity.logs.filter.source_identifier_placeholder",
+                                "className": "input w-64",
+                                "value": "{{_local.filter.sourceIdentifier || ''}}"
+                            }
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "source_identifier_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.identity.logs.filter.source_identifier_label"
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
             },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "name": "sourceIdentifier",
-                "placeholder": "$t:admin.identity.logs.filter.source_identifier_placeholder",
-                "className": "input w-64",
-                "value": "{{_local.filter.sourceIdentifier || ''}}"
-              },
-              "actions": [
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.sourceIdentifier": "{{$event.target.value}}"
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchIdentityLogs"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "text": "$t:admin.identity.logs.filter.search_button"
+                },
+                {
+                    "comment": "검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter": {
+                                            "searchType": "auto",
+                                            "search": "",
+                                            "statuses": [],
+                                            "purposes": [],
+                                            "channels": [],
+                                            "originTypes": [],
+                                            "dateFrom": "",
+                                            "dateTo": "",
+                                            "sourceType": "",
+                                            "sourceIdentifier": "",
+                                            "advancedOpen": false
+                                        }
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/identity/logs",
+                                        "mergeQuery": false
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "text": "$t:admin.identity.logs.filter.reset_button"
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    },
-    {
-      "id": "filter_actions",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-center gap-3 mt-6"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": "flex gap-3 mt-6"
-          }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-primary px-6"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "btn btn-primary flex-1"
-              }
-            }
-          },
-          "text": "$t:admin.identity.logs.filter.search_button",
-          "actions": [
-            {
-              "type": "click",
-              "actionRef": "searchIdentityLogs"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-secondary px-6"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "btn btn-secondary flex-1"
-              }
-            }
-          },
-          "text": "$t:admin.identity.logs.filter.reset_button",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "params": {
-                "actions": [
-                  {
-                    "handler": "setState",
-                    "params": {
-                      "target": "local",
-                      "filter": {
-                        "searchType": "auto",
-                        "search": "",
-                        "statuses": [],
-                        "purposes": [],
-                        "channels": [],
-                        "originTypes": [],
-                        "dateFrom": "",
-                        "dateTo": "",
-                        "sourceType": "",
-                        "sourceIdentifier": "",
-                        "advancedOpen": false
-                      }
-                    }
-                  },
-                  {
-                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "/admin/identity/logs",
-                      "mergeQuery": false
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

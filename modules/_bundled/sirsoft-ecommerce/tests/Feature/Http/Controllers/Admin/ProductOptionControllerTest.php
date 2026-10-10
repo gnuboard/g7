@@ -26,7 +26,9 @@ class ProductOptionControllerTest extends ModuleTestCase
     protected ProductOption $option3;
 
     /**
-     * 테스트 환경 설정
+     * 테스트 환경 설정 — 관리자·상품·옵션 3개를 만든다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -79,6 +81,15 @@ class ProductOptionControllerTest extends ModuleTestCase
 
     // ==================== 가격 일괄 변경 테스트 ====================
 
+    /**
+     * 금액 단위 인상은 선택한 옵션의 조정액을 그만큼 올린다.
+     *
+     * @scenario endpoint=bulk_price, case=apply
+     *
+     * @effects price_won_increase_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_price_increase_by_won(): void
     {
@@ -108,6 +119,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(1500, $this->option2->price_adjustment); // 1000 + 500
     }
 
+    /**
+     * 금액 단위 인하는 선택한 옵션의 조정액을 그만큼 내린다.
+     *
+     * @scenario endpoint=bulk_price, case=apply
+     *
+     * @effects price_won_decrease_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_price_decrease_by_won(): void
     {
@@ -137,6 +157,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(1500, $this->option3->price_adjustment); // 2000 - 500
     }
 
+    /**
+     * 금액 고정은 선택한 옵션의 조정액을 그 값으로 바꾼다.
+     *
+     * @scenario endpoint=bulk_price, case=apply
+     *
+     * @effects price_fixed_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_price_fixed_by_won(): void
     {
@@ -165,6 +194,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(3000, $this->option3->price_adjustment);
     }
 
+    /**
+     * 비율 인상은 옵션 판매가(상품 판매가 + 조정액)의 비율만큼 올리고 결과를 조정액으로 저장한다.
+     *
+     * @scenario endpoint=bulk_price, case=apply
+     *
+     * @effects price_percent_based_on_option_selling_price
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_price_increase_by_percent(): void
     {
@@ -190,10 +228,20 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->option2->refresh();
         $this->option3->refresh();
 
-        $this->assertEquals(1100, $this->option2->price_adjustment); // 1000 * 1.1
-        $this->assertEquals(2200, $this->option3->price_adjustment); // 2000 * 1.1
+        // 옵션 판매가 = 상품 판매가(10,000) + 조정액 → 판매가의 10% 를 올린 뒤 조정액으로 저장
+        $this->assertEquals(2100, $this->option2->price_adjustment); // (10,000 + 1,000) × 1.1 − 10,000
+        $this->assertEquals(3200, $this->option3->price_adjustment); // (10,000 + 2,000) × 1.1 − 10,000
     }
 
+    /**
+     * 상품 ID 와 「상품-옵션」 ID 를 섞어 보내도 대상 옵션을 모두 찾아 바꾼다.
+     *
+     * @scenario endpoint=bulk_price, case=apply
+     *
+     * @effects mixed_ids_resolved_to_options
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_price_with_mixed_ids(): void
     {
@@ -243,6 +291,15 @@ class ProductOptionControllerTest extends ModuleTestCase
 
     // ==================== 재고 일괄 변경 테스트 ====================
 
+    /**
+     * 재고 증가는 선택한 옵션의 재고를 그만큼 늘린다.
+     *
+     * @scenario endpoint=bulk_stock, case=apply
+     *
+     * @effects stock_increase_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_stock_increase(): void
     {
@@ -271,6 +328,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(40, $this->option2->stock_quantity); // 30 + 10
     }
 
+    /**
+     * 재고 감소는 선택한 옵션의 재고를 그만큼 줄인다.
+     *
+     * @scenario endpoint=bulk_stock, case=apply
+     *
+     * @effects stock_decrease_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_stock_decrease(): void
     {
@@ -299,6 +365,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(5, $this->option3->stock_quantity); // 20 - 15
     }
 
+    /**
+     * 재고 감소가 현재 재고보다 커도 0 아래로 내려가지 않는다.
+     *
+     * @scenario endpoint=bulk_stock, case=apply
+     *
+     * @effects stock_never_negative
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_stock_decrease_does_not_go_below_zero(): void
     {
@@ -322,6 +397,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(0, $this->option3->stock_quantity); // max(0, 20 - 100)
     }
 
+    /**
+     * 재고 고정은 선택한 옵션의 재고를 그 값으로 바꾼다.
+     *
+     * @scenario endpoint=bulk_stock, case=apply
+     *
+     * @effects stock_set_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_stock_set(): void
     {
@@ -351,6 +435,15 @@ class ProductOptionControllerTest extends ModuleTestCase
 
     // ==================== 유효성 검증 테스트 ====================
 
+    /**
+     * 상품 ID·옵션 ID 가 모두 없으면 422 로 거절한다.
+     *
+     * @scenario endpoint=bulk_price, case=validation
+     *
+     * @effects invalid_request_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_price_requires_at_least_one_id_type(): void
     {
@@ -369,6 +462,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 「상품-옵션」 형식이 아닌 옵션 ID 는 422 로 거절한다.
+     *
+     * @scenario endpoint=bulk_price, case=validation
+     *
+     * @effects invalid_request_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_price_validates_option_id_format(): void
     {
@@ -389,6 +491,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['option_ids.0', 'option_ids.1']);
     }
 
+    /**
+     * 허용되지 않은 재고 변경 방식은 422 로 거절한다.
+     *
+     * @scenario endpoint=bulk_stock, case=validation
+     *
+     * @effects invalid_request_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_stock_validates_method(): void
     {
@@ -408,6 +519,15 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['method']);
     }
 
+    /**
+     * 로그인하지 않은 요청은 401 로 거절한다.
+     *
+     * @scenario endpoint=bulk_price, case=auth
+     *
+     * @effects unauthenticated_rejected_401
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_unauthenticated_user_cannot_access(): void
     {
@@ -428,7 +548,14 @@ class ProductOptionControllerTest extends ModuleTestCase
 
     // ==================== 통합 일괄 업데이트 테스트 (bulk-update) ====================
 
-    /**     * 옵션 통합 일괄 업데이트 - bulk_changes만 사용하는 경우
+    /**
+     * 통합 일괄 수정의 일괄 조건만 보내면 모든 대상 옵션에 적용한다.
+     *
+     * @scenario endpoint=bulk_update, case=apply
+     *
+     * @effects bulk_changes_applied
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_with_bulk_changes_only(): void
@@ -462,7 +589,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(5000, $this->option2->price_adjustment);
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - items만 사용하는 경우 (개별 인라인 수정)
+    /**
+     * 통합 일괄 수정의 개별 행만 보내면 행마다 따로 적용한다.
+     *
+     * @scenario endpoint=bulk_update, case=apply
+     *
+     * @effects items_applied_individually
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_with_items_only(): void
@@ -505,7 +639,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(false, $this->option2->is_active);
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - bulk_changes와 items 동시 사용 (bulk_changes 우선)
+    /**
+     * 일괄 조건과 개별 행이 같은 칸을 바꾸면 일괄 조건이 우선한다.
+     *
+     * @scenario endpoint=bulk_update, case=apply
+     *
+     * @effects bulk_changes_override_items
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_bulk_changes_overrides_items(): void
@@ -550,11 +691,18 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(['ko' => '이름은 적용됨', 'en' => 'Name Applied'], $this->option1->option_name);
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - option_name 의 비필수 로케일이 null 이어도 수정 성공 (회귀)
+    /**
+     * 옵션명의 일부 언어 값이 비어(null) 있어도 저장한다.
      *
      * 인라인으로 한국어 옵션명만 수정하면 프론트엔드가 저장된 다국어 객체
      * { ko: "...", en: null, ja: null } 를 그대로 전송한다. 비필수 로케일의 null 값이
      * per-locale 규칙(`option_name.*`)에서 거부되어 422 가 발생하던 회귀.
+     *
+     * @scenario endpoint=bulk_update, case=apply
+     *
+     * @effects option_name_null_locales_allowed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_option_name_allows_null_locales(): void
@@ -584,7 +732,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals('레드11', $this->option1->option_name['ko']);
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - add 메서드로 가격 증가
+    /**
+     * 통합 일괄 수정의 금액 가산은 조정액을 그만큼 올린다.
+     *
+     * @scenario endpoint=bulk_update, case=apply
+     *
+     * @effects price_won_increase_applied
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_price_adjustment_add_method(): void
@@ -617,7 +772,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(2500, $this->option3->price_adjustment); // 2000 + 500
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - subtract 메서드로 재고 감소
+    /**
+     * 통합 일괄 수정의 재고 감소는 재고를 그만큼 줄인다.
+     *
+     * @scenario endpoint=bulk_update, case=apply
+     *
+     * @effects stock_decrease_applied
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_stock_subtract_method(): void
@@ -650,7 +812,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(10, $this->option3->stock_quantity); // 20 - 10
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - 재고 감소 시 0 미만 방지
+    /**
+     * 통합 일괄 수정의 재고 감소도 0 아래로 내려가지 않는다.
+     *
+     * @scenario endpoint=bulk_update, case=apply
+     *
+     * @effects stock_never_negative
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_stock_subtract_does_not_go_below_zero(): void
@@ -679,7 +848,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(0, $this->option3->stock_quantity);
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - 유효성 검증 (ids 필수)
+    /**
+     * 대상 ID 없이 보내면 422 로 거절한다.
+     *
+     * @scenario endpoint=bulk_update, case=validation
+     *
+     * @effects invalid_request_rejected_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_requires_ids(): void
@@ -703,7 +879,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['ids']);
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - 유효성 검증 (잘못된 ID 형식)
+    /**
+     * ID 형식이 맞지 않으면 422 로 거절한다.
+     *
+     * @scenario endpoint=bulk_update, case=validation
+     *
+     * @effects invalid_request_rejected_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_validates_id_format(): void
@@ -727,7 +910,14 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
-    /**     * 옵션 통합 일괄 업데이트 - 인증 필요
+    /**
+     * 로그인하지 않은 통합 일괄 수정은 401 로 거절한다.
+     *
+     * @scenario endpoint=bulk_update, case=auth
+     *
+     * @effects unauthenticated_rejected_401
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_bulk_update_requires_authentication(): void

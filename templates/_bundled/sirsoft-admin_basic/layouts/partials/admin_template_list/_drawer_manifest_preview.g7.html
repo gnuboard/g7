@@ -1,0 +1,66 @@
+<!-- 압축 파일을 **설치하지 않고 검사만 해 보는** 서랍(수동 설치 창에서 연다).
+  모듈 쪽 같은 이름 조각과 짝을 이루며 검사 대상 매니페스트만 다르다.
+  결과는 정상 / 오류 목록 / 이미 설치됨 셋으로 갈려 보이고, 판정은 전부 서버가 한다. -->
+<partial description="템플릿 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 template.json 검증 결과 조회" editor_label="$t:admin.modal_label.admin_template_list.template_manifest_preview_drawer">
+  <modal data-type="composite" data-ref="template_manifest_preview_drawer" title="$t:admin.templates.modal.preview.title" size="large">
+    <p class="text-label mb-4">$t:admin.templates.modal.preview.description</p>
+    <file-input accept=".zip" buttonText="$t:common.browse" placeholder="$t:admin.templates.tabs.no_file_selected" class="w-full">
+      <on type="change">
+        <!-- 고른 파일을 전역에 담는다. 객체(요청 본문용)와 이름(표시용)을 따로 둔다. 파일을 바꾸면 직전 판정도 함께 비운다 — 남겨 두면 아직 검사하지 않은 새 파일 이름 아래 앞 파일의 결과가 그대로 보인다. -->
+        <set-state target="global" templatePreviewFile="{{$event.target.value}}" templatePreviewFileName="{{$event.target.value?.name}}" :templatePreviewResult="null"/>
+      </on>
+    </file-input>
+    <button data-if="{{_global.templatePreviewFile}}" type="button" disabled="{{_global.isTemplatePreviewLoading}}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+      <on event="onClick">
+        <!-- 검사 실행 — 직전 결과를 먼저 지운다(옛 판정이 이번 파일의 것으로 읽히지 않게).
+             설치는 하지 않는다. -->
+        <sequence>
+          <set-state target="global" :isTemplatePreviewLoading="true" :templatePreviewResult="null"/>
+          <api-call :auth_required="true" target="/api/admin/templates/manifest-preview" method="POST" contentType="multipart/form-data" body="{{ ({ file: _global.templatePreviewFile }) }}">
+            <success>
+              <set-state target="global" :isTemplatePreviewLoading="false" templatePreviewResult="{{response.data}}"/>
+            </success>
+            <fail>
+              <set-state target="global" :isTemplatePreviewLoading="false"/>
+              <toast type="error" message="{{error.message ?? '$t:admin.templates.modal.preview.failed'}}"/>
+            </fail>
+          </api-call>
+        </sequence>
+      </on>
+      <icon data-if="{{_global.isTemplatePreviewLoading}}" name="fas fa-spinner" class="animate-spin" size="sm"/>
+      <span>$t:admin.templates.modal.preview.run</span>
+    </button>
+    <div data-if="{{_global.templatePreviewResult}}" class="mt-4 space-y-3">
+      <div data-if="{{_global.templatePreviewResult?.manifest}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm">
+        <span class="font-semibold text-gray-700 dark:text-gray-300">{{_global.templatePreviewResult?.manifest?.identifier}} v{{_global.templatePreviewResult?.manifest?.version}}</span>
+        <span class="ml-2 text-gray-500 dark:text-gray-400">({{_global.templatePreviewResult?.manifest?.vendor}})</span>
+      </div>
+      <div data-ref="template_preview_icon" data-if="{{_global.templatePreviewResult?.icon}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm flex items-start gap-3">
+        <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+          <icon name="{{_global.templatePreviewResult?.manifest?.type === 'admin' ? 'cog' : 'palette'}}" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+        </div>
+        <div class="min-w-0">
+          <p data-if="{{_global.templatePreviewResult?.icon?.present && _global.templatePreviewResult?.icon?.valid}}" class="text-success-soft">$t:extensions.manifest_preview.icon_present|path={{_global.templatePreviewResult?.icon?.path ?? ''}}</p>
+          <p data-if="{{_global.templatePreviewResult?.icon?.present && !_global.templatePreviewResult?.icon?.valid}}" class="text-warning-soft">$t:extensions.manifest_preview.icon_invalid</p>
+          <p data-if="{{!_global.templatePreviewResult?.icon?.present}}" class="text-label-subtle">$t:extensions.manifest_preview.icon_missing</p>
+          <div data-each="w in _global.templatePreviewResult?.icon?.warnings" class="text-label-subtle text-xs mt-1">
+            <div>• {{w.message}}</div>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.templatePreviewResult?.validation?.is_valid === true}}" class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-success-soft">$t:admin.templates.modal.preview.valid</div>
+      <div data-if="{{_global.templatePreviewResult?.validation?.is_valid === false}}" data-each="err in _global.templatePreviewResult?.validation?.errors" class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-danger-soft">
+        <div>• {{err}}</div>
+      </div>
+      <div data-if="{{_global.templatePreviewResult?.validation?.already_installed === true}}" class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-warning-soft">$t:admin.templates.modal.preview.already_installed|version={{_global.templatePreviewResult?.validation?.existing_version}}</div>
+    </div>
+    <div class="flex justify-end gap-2 mt-6">
+      <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md">
+        <on event="onClick">
+          <close-modal target="template_manifest_preview_drawer"/>
+        </on>
+        $t:common.close
+      </button>
+    </div>
+  </modal>
+</partial>

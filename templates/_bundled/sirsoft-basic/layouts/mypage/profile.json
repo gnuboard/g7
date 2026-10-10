@@ -1,108 +1,111 @@
 {
-  "version": "1.0.0",
-  "layout_name": "mypage/profile",
-  "extends": "_user_base",
-  "permissions": [],
-  "transition_overlay": {
-    "enabled": true,
-    "style": "spinner",
-    "target": "mypage_tab_content",
-    "fallback_target": "main_content_area",
-    "spinner": {
-      "component": "PageLoading"
-    }
-  },
-  "computed": {
-    "currentTab": "profile"
-  },
-  "data_sources": [
-    {
-      "id": "user",
-      "label_key": "$t:editor.data_source.user",
-      "type": "api",
-      "endpoint": "/api/me",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "initLocal": "profileEditForm"
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
-        },
-        "children": [
-          {
-            "type": "layout",
-            "name": "Container",
-            "props": {
-              "className": "py-8"
-            },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "py-4"
-                }
-              }
-            },
-            "children": [
-              {
-                "comment": "페이지 제목",
+    "comment": "마이페이지 «내 정보» 탭 — 보기 전용이고 고치기는 `profile-edit` 로 넘어간다. 회원 탈퇴도 여기 있다.",
+    "version": "1.0.0",
+    "layout_name": "mypage/profile",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "user",
+            "label_key": "$t:editor.data_source.user",
+            "type": "api",
+            "endpoint": "/api/me",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initLocal": "profileEditForm",
+            "comment": "로그인한 본인 정보. `initLocal` 로 폼 상태의 초깃값도 함께 채워, 수정 화면으로 넘어가도 값이 이어진다"
+        }
+    ],
+    "computed": {
+        "currentTab": "profile"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-2 mb-6"
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user",
-                      "size": "xl",
-                      "className": "text-gray-900 dark:text-white"
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "프로필 보기",
+                                        "partial": "partials/mypage/profile/_view.json"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                    },
-                    "text": "$t:mypage.title"
-                  }
                 ]
-              },
-              {
-                "comment": "탭 네비게이션",
-                "partial": "partials/mypage/_tab_navigation.json"
-              },
-              {
-                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
-                "type": "basic",
-                "name": "Div",
-                "id": "mypage_tab_content",
-                "children": [
-                  {
-                    "comment": "프로필 보기",
-                    "partial": "partials/mypage/profile/_view.json"
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 별도 창에서 한 번 더 받는다",
+            "partial": "partials/mypage/profile/_modal_withdraw.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/mypage/profile/_modal_withdraw.json"
-    }
-  ]
 }

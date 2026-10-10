@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
@@ -33,6 +34,11 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
  */
 class CartController extends PublicBaseController
 {
+    /**
+     * 장바구니 서비스를 주입받습니다.
+     *
+     * @param  CartService  $cartService  장바구니 담기·수정·병합 서비스
+     */
     public function __construct(
         private CartService $cartService
     ) {}
@@ -157,7 +163,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
@@ -226,7 +232,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
@@ -279,7 +285,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음/타상품옵션 — 사유별 404/403/422 매핑
@@ -319,7 +325,7 @@ class CartController extends PublicBaseController
                 'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
                 422,
                 ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
-                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted(), 'count' => $e->getLimit()]
             );
         } catch (CartOperationException $e) {
             // 없는 항목(404)/타인 항목(403) 삭제 시도 — generic 500 이 아닌 사유별 4xx
@@ -360,7 +366,7 @@ class CartController extends PublicBaseController
                 'messages.cart.deleted_multiple',
                 ['deleted_count' => $deletedCount],
                 200,
-                ['deleted_count' => $deletedCount],
+                ['deleted_count' => $deletedCount, 'count' => $deletedCount],
             );
         } catch (Exception $e) {
             Log::error('cart.destroy_multiple failed', ['error' => $e->getMessage()]);
@@ -394,7 +400,7 @@ class CartController extends PublicBaseController
                 'messages.cart.deleted_all',
                 ['deleted_count' => $deletedCount],
                 200,
-                ['deleted_count' => $deletedCount],
+                ['deleted_count' => $deletedCount, 'count' => $deletedCount],
             );
         } catch (Exception $e) {
             Log::error('cart.destroy_all failed', ['error' => $e->getMessage()]);
@@ -428,7 +434,7 @@ class CartController extends PublicBaseController
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.merged', [
                 'merged_count' => $mergedCount,
                 'adjustments' => $this->cartService->getLastMergeAdjustments(),
-            ]);
+            ], 200, ['count' => $mergedCount]);
         } catch (Exception $e) {
             Log::error('cart.merge failed', ['error' => $e->getMessage()]);
 
@@ -503,17 +509,22 @@ class CartController extends PublicBaseController
     /**
      * 장바구니 단건 조작 예외를 사유별 4xx 응답으로 변환합니다.
      *
-     * 항목없음/권한없음/옵션없음/타상품옵션 조작 예외를 generic 500 이 아닌
+     * 항목없음/권한없음/옵션없음/타상품옵션/구매가능옵션없음 조작 예외를 generic 500 이 아닌
      * 사유별 404/403/422 로 매핑합니다. (MP07 §1-c — U9 전면 정비)
+     *
+     * 예외의 메시지 키는 이미 `sirsoft-ecommerce::` 네임스페이스를 포함하므로 모듈 도메인을
+     * 한 번 더 붙이는 moduleError 가 아니라 error 로 넘긴다. 도메인을 겹쳐 붙이면 번역을 찾지
+     * 못해 화면 안내에 키 원문이 그대로 나간다.
      *
      * @param  CartOperationException  $e  장바구니 조작 예외
      * @return JsonResponse 사유별 4xx 에러 응답
      */
     protected function cartOperationResponse(CartOperationException $e): JsonResponse
     {
-        return ResponseHelper::moduleError(
-            'sirsoft-ecommerce',
-            $e->getMessageKey(),
+        $messageKey = $e->getMessageKey();
+
+        return ResponseHelper::error(
+            $messageKey,
             $e->getStatusCode(),
             ['code' => $e->getReason()]
         );
@@ -541,6 +552,8 @@ class CartController extends PublicBaseController
             // 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 주문 전체 차단 플래그 (D1 — layer 1)
             'has_unshippable_items' => $this->hasUnshippableItems($result->items),
             'selected_shipping_country' => ResolveShippingCountry::getCountry(),
+            // [주문하기] 를 잠그는 키 — 주문 생성(`POST user/orders`)의 라우트 권한과 같다(비회원은 guest 역할로 판정).
+            'abilities' => ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')],
         ];
     }
 

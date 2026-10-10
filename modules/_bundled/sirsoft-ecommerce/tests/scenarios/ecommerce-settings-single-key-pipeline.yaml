@@ -28,6 +28,12 @@ axes:
     - normalize_category_data      # 카테고리 단위 정규화 (은행명 다국어)
 
 effects:
+  # 취소 별칭: 서로 다른 저장본, 관련 없는 단건 쓰기, 빈 배열, 양쪽 충돌을 각각 검증한다.
+  - cancel_policy_reads_canonical_order_setting
+  - unrelated_claim_write_does_not_restore_stale_policy
+  - cancel_alias_write_preserves_siblings_and_empty_array
+  - cancel_bulk_write_prefers_canonical_order_setting
+  - runtime_only_flag_not_persisted
   - read_time_enrichment_not_persisted        # 읽기 시점 보강값이 파일에 눌어붙지 않는다
   - other_category_file_untouched             # 단건 저장이 다른 카테고리 파일을 건드리지 않는다
   - removed_currency_tombstone_preserved      # 삭제 통화 tombstone 보존

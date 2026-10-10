@@ -7,7 +7,7 @@
 ```text
 1. 유형: 템플릿 (gnuboard7-hello_admin_template, type=admin) — 학습용 최소 Admin 템플릿. Basic 컴포넌트 8 + 베이스 1 + 대시보드 1 + **오류 6종**이 전부. `hidden: true`
 2. 확장 방식: 훅 없음 — 확장점은 화면 구조다. 제공 컴포넌트 목록이 곧 계약이며, 모듈 조각은 그 안의 컴포넌트만 쓸 수 있다
-3. 건드리면 안 되는 것: 오류 레이아웃 6종 축소, 401 에서 직접 리다이렉트, 컴포넌트 등록 재시도 제거, 샘플에 실제 관리 화면 추가
+3. 건드리면 안 되는 것: 오류 레이아웃 6종 축소, 401 에서 직접 리다이렉트, `src/index.ts` 의 export 이름을 `components.json` 과 어긋나게 바꾸기, 샘플에 실제 관리 화면 추가
 4. 작업 위치: `templates/_bundled/gnuboard7-hello_admin_template` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan template:update gnuboard7-hello_admin_template --force`
 ```
@@ -41,11 +41,12 @@ SEO 설정. `sirsoft-admin_basic` 이 컴포넌트 125개와 화면 145개를 �
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update gnuboard7-hello_admin_template --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update gnuboard7-hello_admin_template --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update gnuboard7-hello_admin_template --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update gnuboard7-hello_admin_template --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update gnuboard7-hello_admin_template --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update gnuboard7-hello_admin_template --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update gnuboard7-hello_admin_template --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -53,13 +54,21 @@ SEO 설정. `sirsoft-admin_basic` 이 컴포넌트 125개와 화면 145개를 �
 ## 3. 핵심 흐름
 
 <!-- @intent START -->
-서버 코드가 없으므로 흐름은 **부트스트랩 → 컴포넌트 등록 → 라우트 → 레이아웃** 입니다.
+서버 코드가 없으므로 흐름은 **번들 적재 → 컴포넌트 등록 → 라우트 → 레이아웃** 입니다.
 
-**부트스트랩**: `src/index.ts` 가 모듈 로드 시 `initTemplate()` 을 스스로 실행합니다. 그 안에서
-코어의 `ComponentRegistry` 를 찾아 Basic 8개를 등록하는데, **레지스트리가 아직 준비되지 않았을
-수 있으므로 100ms 간격으로 최대 50회 재시도**합니다(`window.load` 이후 시작). 이 재시도가 없으면
-로드 순서에 따라 컴포넌트가 등록되지 않고, 그러면 레이아웃이 참조하는 이름을 찾지 못해 화면이
-비게 됩니다.
+**컴포넌트 등록**: 템플릿은 컴포넌트를 **스스로 등록하지 않습니다.** 빌드 산출물
+`dist/js/components.iife.js` 가 컴포넌트를 전역 `window.Gnuboard7HelloAdminTemplate` 에 내보내
+두면, 코어는 엔진과 이 번들이 모두 적재된 뒤 초기화하면서 `ComponentRegistry` 가
+`components.json` 을 읽고, 선언된 `name` 마다 그 전역에서 같은 이름의 export 를 찾아 등록합니다.
+그래서 `src/index.ts` 가 하는 일은 Basic 8개와 `templateMetadata` 를 export 하는 것뿐이고,
+적재 순서를 기다리는 재시도 루프도 없습니다. 전역 이름은 템플릿 식별자를 PascalCase 로 바꾼
+것이라 `vite.config.ts` 의 `build.lib.name` 과 같아야 합니다.
+
+깨지는 지점은 **이름 대응**입니다. export 이름이 `components.json` 의 `name` 과 다르거나 export
+가 빠지면 코어는 `Component '…' not found in bundle` 경고(디버그 모드에서만 콘솔에 보임)만
+남기고 그 컴포넌트를 건너뜁니다.
+레이아웃이 그 이름을 참조하는 자리는 렌더되지 않으며, `Div` 처럼 뼈대를 이루는 컴포넌트라면
+화면 전체가 빕니다.
 
 **화면 렌더**: `routes.json` 이 `*/admin` 을 `admin_dashboard` 에 대응 → 그 레이아웃이
 `_admin_base` 를 상속해 공통 뼈대를 얻고 콘텐츠를 채웁니다.
@@ -108,11 +117,11 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update gnuboard7-hello_admin_template --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
 - [ ] `template.json` 의 `assets` 경로는 실제 산출물을 가리켜야 한다 — 없는 경로를 선언하면 검색엔진용(봇) 화면이 404 를 가리키는 `<link>` 를 싣고, 일반 화면에는 흔적이 남지 않는다
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 오류 레이아웃 6종(401·403·404·500·503·maintenance)이 모두 있는지 확인 — 하나라도 없으면 그 상황에서 백지가 된다
-- [ ] 컴포넌트를 추가·삭제했다면 소스 · `template.json` 레지스트리 · `components.json` 을 함께 갱신
+- [ ] 컴포넌트를 추가·삭제했다면 소스, `src/index.ts` 의 export, `template.json` 레지스트리, `components.json` 을 함께 갱신 — export 이름은 `components.json` 의 `name` 과 글자까지 같아야 코어가 찾는다
 - [ ] `manifest.hidden = true` 를 유지 (복제본에서만 제거)
 - [ ] TSX 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] `docs/extension/sample-extensions.md` 의 계층 표와 어긋나지 않는지 확인
@@ -126,11 +135,12 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 |---|---|---|
 | 오류 레이아웃 6종 중 일부를 빼기 | 401 · 403 · 404 · 500 · 503 · maintenance 전부 유지 | 코어가 그 상황에서 활성 템플릿의 레이아웃을 부른다 — 없으면 사용자에게 백지가 된다 |
 | `401` 레이아웃에서 로그인으로 직접 리다이렉트 | 코어 `TemplateApp.showRouteError` 가드에 위임 | 이중 리다이렉트가 되고, 돌아올 위치를 코어가 이미 관리한다 |
-| 컴포넌트 등록에 재시도 없이 한 번만 시도 | `initTemplate()` 의 재시도 루프 유지 | 로드 순서에 따라 레지스트리가 아직 없을 수 있다 — 등록에 실패하면 레이아웃이 이름을 못 찾아 화면이 빈다 |
+| `src/index.ts` 에서 `ComponentRegistry` 를 찾아 직접 등록 | 컴포넌트를 export 만 한다 | 등록은 코어가 `components.json` 을 읽어 한다. 자가등록은 매니페스트에 실릴 자리가 없는 모듈과 플러그인의 방식이다 |
+| export 이름을 `components.json` 의 `name` 과 다르게 바꾸거나 export 를 빼기 | export 와 `components.json` 을 함께 고친다 | 코어는 선언된 이름으로 번들 전역을 찾는다. 못 찾으면 경고만 남기고 건너뛰어, 그 이름을 참조하는 레이아웃 자리가 빈다 |
 | `extends` 없는 독립 레이아웃에서 `toast`·`openModal` 사용 | `_admin_base` 를 상속하거나 호스트 컴포넌트를 직접 마운트 | 호스트가 없으면 핸들러는 성공으로 기록되는데 화면에는 아무것도 나타나지 않는다 |
 | 이 샘플에 실제 관리 화면을 더해 "쓸모 있게" 만들기 | 짧게 유지하고, 필요한 화면은 별도 템플릿으로 | 샘플의 가치는 "최소 구성이 무엇인가" 를 보이는 것이다 |
 | `manifest.hidden` 을 제거 | 그대로 둔다 (복제본에서만 제거) | 학습용 템플릿이 운영 사이트의 템플릿 목록에 섞인다 |
-| 컴포넌트를 추가하면서 `template.json` 의 레지스트리를 갱신하지 않기 | 소스·레지스트리·`components.json` 을 함께 | 레이아웃이 참조하는 이름을 찾지 못해 그 컴포넌트만 조용히 렌더되지 않는다 |
+| 컴포넌트를 추가하면서 `components.json` 선언이나 `src/index.ts` export 를 빠뜨리기 | 소스, export, `template.json` 레지스트리, `components.json` 을 함께 | 코어는 `components.json` 에 선언된 이름만 번들에서 찾는다. 둘 중 하나라도 없으면 레이아웃이 그 이름을 찾지 못해 그 컴포넌트만 조용히 렌더되지 않는다 |
 | TSX 를 고치고 `dist/` 재빌드 없이 커밋 | `template:build --production` 후 `dist/` 동반 커밋 | 브라우저가 받는 것은 커밋된 `dist/` 다 — 소스 수정이 사문화된다 |
 <!-- @intent END -->
 

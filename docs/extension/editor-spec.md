@@ -23,6 +23,14 @@
 - 서빙 엔드포인트: `/api/{templates|modules|plugins}/{id}/editor-spec`
 - 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 fetch 해 네임스페이스 병합한다.
 
+## 확장 컴포넌트의 팔레트 등재
+
+확장이 제공하는 컴포넌트도 `componentPalette.entries` / `componentCapabilities` 에 등재해야 편집기 팔레트에 나타난다. 그 등재는 **그 확장 자신의 editor-spec** 에 둔다 — 편집기 스펙은 이미 확장 것을 병합하므로(모듈 → 플러그인 → 템플릿) 그 경로를 그대로 쓴다. 팔레트에 쓰는 이름은 레지스트리 등록 이름 `{확장식별자}.{이름}` 이고, 확장 스펙이 담을 수 있는 이름은 **자기 식별자가 앞에 붙은 것뿐**이다(템플릿 컴포넌트의 어휘는 아래 「소유」 절대로 템플릿 몫이다). 첫 사례: `modules/_bundled/gnuboard7-hello_module/editor-spec.json`.
+
+prop 컨트롤은 확장 `components.json` 의 `props` 선언에서 나오고, 그 선언은 빌드가 컴포넌트 소스의 `{이름}Props` 인터페이스에서 추출한다 — 인터페이스를 선언하지 않으면 컨트롤이 생기지 않는다.
+
+규약 전문: **[extension-components.md](extension-components.md)**
+
 ## 파일 구조 — manifest + 분할 블록
 
 editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄을 넘었다) 상위 블록 단위로 분할한다. manifest 에 메타와 소형 설정을 인라인으로 두고, 대형 블록은 `$include` 맵으로 `editor-spec/{block}.json` 을 참조한다.
@@ -73,15 +81,20 @@ editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄
 
 | 선언할 것 | 자리 |
 |---|---|
-| `componentPalette` · `controls` · `componentCapabilities` · `nesting` | **템플릿** 스펙 |
+| `controls` · `nesting` | **템플릿** 스펙 |
+| `componentPalette` · `componentCapabilities` (템플릿 컴포넌트) | **템플릿** 스펙 |
+| `componentPalette` · `componentCapabilities` (확장 자신의 컴포넌트, 이름이 `{확장식별자}.{이름}`) | 그 컴포넌트를 만든 **모듈·플러그인** 스펙 |
 | `sampleData` · `sampleGlobal` · `states` · `*Recipes` | 그 데이터를 소유한 **모듈·플러그인** 스펙 |
 | 여러 확장이 함께 쓰는 공용 ID(`settings` · `roles` · `me` 등) | **템플릿** 스펙 |
 
 공용 ID 를 확장마다 각자 선언하면 같은 ID 의 샘플이 여러 곳에 생기고, 그것들이 갈라져도
 오류가 나지 않는다 — 어느 것이 쓰이는지가 병합 순서에 좌우된다.
 
-모듈·플러그인이 `componentPalette` 를 선언하면 템플릿 선언과 같은 자리를 두고 다투게
-되므로 두지 않는다. 팔레트에 얹고 싶은 것이 있다면 그것은 활성 템플릿의 스펙으로 간다.
+모듈·플러그인이 템플릿 컴포넌트의 `componentPalette` 를 선언하면 템플릿 선언과 같은 자리를
+두고 다투게 되므로 두지 않는다. 템플릿 컴포넌트를 팔레트에 얹고 싶다면 그것은 활성 템플릿의
+스펙으로 간다. 확장이 **직접 만든** 컴포넌트는 다르다 — 이름이 `{확장식별자}.{이름}` 이라
+템플릿 선언과 겹칠 수 없고, 그 팔레트 항목과 편집 역량은 그 확장만 알므로 확장 자신의 스펙에
+둔다(위 「확장 컴포넌트의 팔레트 등재」).
 
 ### 무엇을 빠뜨렸는지는 증상으로 가른다
 
@@ -142,7 +155,7 @@ php artisan {module|plugin|template}:update {id} --force
 - `options-list` — `Select`/`RadioGroup` 등의 정적 `options` 배열(value/label 행)을 추가/삭제/이동 편집한다. 값이 `{{바인딩}}` 이면 "바인딩됨(코드 편집)" 디그레이드(덮어쓰기 차단). 데이터소스 바인딩(dataProps `options`)과 직교 공존(위 "선택지 직교 완화").
 - `array-items` / `array-group` / `array-cell-tree` / `number-list` — 정적 배열 prop 편집(탭/차트 데이터/카드 컬럼 등). `nodeEditor` 슬롯 또는 propControl 로 결선한다(아래 "데이터 정의 빌트인" 참조).
 - `number` — 숫자를 기대하는 prop(예 `maxVisibleBoards`)을 편집한다. 위젯이 `number` 타입을 직접 내보내므로 `"5"` 같은 문자열이 저장되지 않는다. 빈 입력은 prop 삭제, `0` 은 유효값이라 삭제되지 않으며, 숫자로 해석할 수 없는 입력은 방출하지 않아 저장본을 보존한다(조용한 변조 금지). `min`/`max`/`step` 은 선언만 하고 **클램프하지 않는다** — 사용자가 넣은 값은 그대로 보존한다. 값이 `{{바인딩}}` 문자열일 때의 보호는 위젯이 아니라 아래 「데이터 연결 값 보호」 공용 게이트가 맡는다 — 숫자 입력칸이 그 값을 빈칸으로 표시해 다음 blur 에 소실시키는 것을 그 게이트가 차단한다.
-- `i18n-text` vs `text` — **표시 텍스트**(사용자가 화면에서 읽는 라벨/메시지/플레이스홀더)는 `i18n-text` 를 쓴다. `i18n-text` 는 평문 입력 시 `createCustomKey` 로 다국어 키를 자동 생성해 `$t:custom.*` 로 치환하고(미리보기에 raw 키 미노출), 🌐 펼침으로 ko/en/ja 동시 편집을 제공하며, `{{바인딩}}` 값이면 읽기전용 디그레이드한다(공통 위젯 `I18nTextField`). **비-표시값**(URL/id/수치/색/통화코드/separator 등)만 `text` 를 쓴다. 표시 텍스트에 `text` 를 쓰면 raw `$t:` 노출·다국어 누락 회귀가 발생한다(정적 검사가 배열 라벨 필드의 `text` 사용을 차단).
+- `i18n-text` vs `text` — **표시 텍스트**(사용자가 화면에서 읽는 라벨/메시지/플레이스홀더)는 `i18n-text` 를 쓴다. `i18n-text` 는 평문 입력 시 `createCustomKey` 로 다국어 키를 자동 생성해 `$t:custom.*` 로 치환하고(미리보기에 raw 키 미노출), 🌐 펼침으로 ko/en/ja 동시 편집을 제공하며, `{{바인딩}}` 값이면 읽기전용 디그레이드한다(공통 위젯 `I18nTextField`). **비-표시값**(URL/id/수치/색/통화코드/separator 등)만 `text` 를 쓴다. 표시 텍스트에 `text` 를 쓰면 raw `$t:` 노출·다국어 누락 회귀가 발생한다(자동 검증이 배열 라벨 필드의 `text` 사용을 차단).
 
 **데이터 연결 값 보호 — 모든 위젯 공통**:
 prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, 그 값을 편집하는 컨트롤은 **원문 배지**로 디그레이드된다. 위젯은 그 문자열을 해석하지 못해 빈 컨트롤로 보이고, 그 상태에서 조작하면 표현식이 그대로 덮여 **환경설정과의 연결이 끊기기** 때문이다. 이 판정은 개별 위젯이 아니라 컨트롤 렌더러 한 곳에서 이뤄지므로 **새 위젯을 등록해도 자동 적용**된다 — 위젯 안에 같은 판정을 다시 넣지 않는다(넣으면 해제 경로까지 막혀 「직접 지정으로 바꾸기」가 무반응이 된다).
@@ -157,15 +170,15 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 축약을 전제로 위젯 표면도 달라진다 — 단일 값 슬롯 컨트롤에서는 표시모드(채움/맞춤/타일) 버튼이 **렌더되지 않는다**(`size`/`repeat`/`position` 을 저장할 자리가 없어 눌러도 저장되지 않는 죽은 컨트롤이다). 4속성을 모두 저장하려면 `styleProp` 의 `props` 배열에 `backgroundImage`·`backgroundSize`·`backgroundRepeat`·`backgroundPosition` 을 함께 선언한다.
 
-`image` 를 `classToken` 이나 `cssVar` 에 연결하거나 `apply` 를 생략하면 값이 문자열로 축약될 경로가 없어 `[object Object]` 가 저장된다 — 정적 검사가 그 선언을 차단한다.
+`image` 를 `classToken` 이나 `cssVar` 에 연결하거나 `apply` 를 생략하면 값이 문자열로 축약될 경로가 없어 `[object Object]` 가 저장된다 — 자동 검증이 그 선언을 차단한다.
 
 ### componentCapabilities — 컴포넌트별 편집 역량
 
-컴포넌트별로 `propControls`(속성 탭 컨트롤 화이트리스트 — `controls.json` 의 `apply.type==="propValue"` 컨트롤 참조, 비-스타일 prop 편집) / `dataProps`(데이터 연결 선언 — 아래) / `styleControls`(스타일 탭 컨트롤 화이트리스트) / `advanced`(고급 속성) / `events`(액션 편집 이벤트 — 미선언 시 동작 탭 숨김) / `flexEditor`(`container`/`item`/`auto` — 정렬 박스 편집 역할) / `visibilityCondition`(표시조건 탭 허용 여부) / `nodeEditor`·`canvasOverlay`(구조 에디터 일반 슬롯 `{kind,params}` — 종류별 고정 키 금지, kind 핸들러 레지스트리 디스패치)을 선언한다.
+컴포넌트별로 `propControls`(속성 탭 컨트롤 화이트리스트 — `controls.json` 의 `apply.type==="propValue"` 컨트롤 참조, 비-스타일 prop 편집) / `dataProps`(데이터 연결 선언 — 아래) / `styleControls`(스타일 탭 컨트롤 화이트리스트) / `advanced`(고급 속성) / `events`(액션 편집 이벤트 — 미선언 시 동작 탭 숨김) / `rawValueEvents`(engine-v1.78.7 — `events` 중 부품이 DOM 이벤트·`{ target }` 대신 값을 그대로 넘기는 칸. 동작 탭이 그 칸의 새 동작을 `type` 대신 `event` 표기로 적어 `onChange(값)` 호출로 실행된다. 그 콜백을 **사용자 조작 때만** 부르는 부품에만 단다 — 마운트·리렌더 때도 부르면 그때마다 동작이 실행된다. 이 칸의 동작은 값을 `$args[0]`(값이 첫 인자가 아니면 `rawValueArgIndex` 가 정한 위치)으로 읽는다 — `$event.target.value` 는 비어 있다. 동작 탭은 이 칸 위에 그 읽는 법을 안내한다(engine-v1.78.8)) / `rawValueArgIndex`(engine-v1.78.8 — 원시값 칸에서 바뀐 값의 `$args` 위치, 칸 이름 → 위치. 없으면 0. 예: FilterGroup `{ "onChange": 1 }` — `onChange(filterId, value)`) / `flexEditor`(`container`/`item`/`auto` — 정렬 박스 편집 역할) / `visibilityCondition`(표시조건 탭 허용 여부) / `nodeEditor`·`canvasOverlay`(구조 에디터 일반 슬롯 `{kind,params}` — 종류별 고정 키 금지, kind 핸들러 레지스트리 디스패치)을 선언한다.
 
-**데이터 연결(`dataProps`)**: "데이터를 바라보는 prop"(컬렉션의 `data`/`items`/`options` 배열, 입력 `value`·텍스트 등 단일값)을 데이터소스/상태에 바인딩하는 선언이다. 각 항목은 `{propKey, shape:'scalar'|'array', label?, itemFields?, required?, sources?}`. [속성] 탭 최상단 "데이터 연결" 영역이 각 항목을 검색형 바인딩 행으로 렌더하고, 선택 시 `{{<source>.<path>}}` 가 `node.props[propKey]` 에 기입된다(런타임 동일). 데이터 prop 은 **항상 바인딩 모드**(정적↔바인딩 토글 없음). **구조/수치 prop**(열 수·간격·페이지크기·크기)·**enum 선택**(variant/position)·**boolean config**(required/disabled)는 dataProps 비대상 — `propControls` 정적 편집이다. `dataProps` 와 `propControls` 는 직교한다(한 prop 은 한쪽만). `shape: 'array'` 면 `itemFields`(항목 객체 주요 필드)를 권장한다(검색 피커 항목 미리보기). `shape: 'object'` 는 컴포넌트가 객체 1건을 통째로 바라보는 prop(예 ProductCard.product, Avatar.author)용이다. 후보 풀은 편집기 샘플 데이터(data_sources `sampleData` shape + `sampleGlobal`) 가 SSoT 다(런타임 응답 추측 금지). 정적 검사가 스키마를 가드한다.
+**데이터 연결(`dataProps`)**: "데이터를 바라보는 prop"(컬렉션의 `data`/`items`/`options` 배열, 입력 `value`·텍스트 등 단일값)을 데이터소스/상태에 바인딩하는 선언이다. 각 항목은 `{propKey, shape:'scalar'|'array', label?, itemFields?, required?, sources?}`. [속성] 탭 최상단 "데이터 연결" 영역이 각 항목을 검색형 바인딩 행으로 렌더하고, 선택 시 `{{<source>.<path>}}` 가 `node.props[propKey]` 에 기입된다(런타임 동일). 데이터 prop 은 **항상 바인딩 모드**(정적↔바인딩 토글 없음). **구조/수치 prop**(열 수·간격·페이지크기·크기)·**enum 선택**(variant/position)·**boolean config**(required/disabled)는 dataProps 비대상 — `propControls` 정적 편집이다. `dataProps` 와 `propControls` 는 직교한다(한 prop 은 한쪽만). `shape: 'array'` 면 `itemFields`(항목 객체 주요 필드)를 권장한다(검색 피커 항목 미리보기). 항목에 고정 필드가 없는 배열 — 원시값 배열(로케일 코드 목록)이나 다른 prop(열 정의)이 키를 정하는 행 배열 — 은 필드를 지어내지 말고 `itemFieldsReason` 에 사유를 적는다(자동 검증이 권장을 면제한다). `shape: 'object'` 는 컴포넌트가 객체 1건을 통째로 바라보는 prop(예 ProductCard.product, Avatar.author)용이다. 후보 풀은 편집기 샘플 데이터(data_sources `sampleData` shape + `sampleGlobal`) 가 SSoT 다(런타임 응답 추측 금지). 자동 검증이 스키마를 가드한다.
 
-**선택지(options) 직교 완화**: 선택 컴포넌트(Select/RadioGroup/TagInput/SearchableDropdown 등)의 `options` 배열은 정적 목록 직접 편집(propControls `selectOptions` → `apply.propKey: "options"`)과 데이터소스 바인딩(dataProps `options` array)을 **둘 다** 노출한다 — 같은 `options` prop 에 정적·동적 두 입력을 모두 제공한다(부록6 "한 prop 은 한쪽만" 규칙의 명시적 완화). 정적 검사의 propControls 비교는 controlKey 문자열 기준이라 `selectOptions`(controlKey) ≠ `options`(dataProps propKey)로 자동 통과한다.
+**선택지(options) 직교 완화**: 선택 컴포넌트(Select/RadioGroup/TagInput/SearchableDropdown 등)의 `options` 배열은 정적 목록 직접 편집(propControls `selectOptions` → `apply.propKey: "options"`)과 데이터소스 바인딩(dataProps `options` array)을 **둘 다** 노출한다 — 같은 `options` prop 에 정적·동적 두 입력을 모두 제공한다(부록6 "한 prop 은 한쪽만" 규칙의 명시적 완화). 자동 검증의 propControls 비교는 controlKey 문자열 기준이라 `selectOptions`(controlKey) ≠ `options`(dataProps propKey)로 자동 통과한다.
 
 **반복(iteration) 데이터 연결**: `node.iteration.source`(반복 렌더링의 배열 소스)는 `props` 가 아니라 **노드 최상위 구조 키**라 컴포넌트 capability(`dataProps`)와 무관하다. iteration 은 Div/Span/Button/Li 등 거의 모든 컴포넌트에 붙을 수 있으므로, 편집기는 `dataProps` 선언 여부와 별개로 **iteration 을 가진 모든 노드**에 [속성] 탭 최상단 "반복 데이터 연결" 공용 영역(`IterationBindingSection`)을 노출한다(항상 array shape 바인딩). `item_var`/`index_var` 는 안쪽 자식 바인딩과 연동되어 읽기전용 힌트로만 표시한다(변경은 코드 편집).
 
@@ -184,7 +197,7 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 **역할 식별 (이름 가정 금지)**: 코어는 컴포넌트 **이름**(`name==="Table"`)으로 표/목록/배열을 식별하지 않는다. 어떤 컴포넌트든 capability 의 `nodeEditor.kind`/`canvasOverlay.kind`/`dataProps`/`flexEditor` **역할 선언**으로 편집 동작을 결정한다. 따라서 `div`-그리드로 만든 표도 `nodeEditor:{kind:"table",params:{...역할 매핑}}` 만 선언하면 표 에디터가 붙고, 커스텀 목록 컴포넌트도 `nodeEditor:{kind:"children"}` 으로 목록 에디터가 붙는다. `params` 의 역할 매핑(rowContainer/row/cell 등)은 컴포넌트 이름이 아니라 그 컴포넌트가 어떤 자식 구조를 쓰는지를 적는다.
 
-**데이터 정의 빌트인(옵션/배열/차트 수동 데이터)**: 정적으로 편집 가능한 "데이터 정의" 표면(Select.options, TabNavigation.tabs, BarChart.labels+datasets, DonutChart.data, CardGrid.cardColumns, DynamicFieldList.columns, SocialLoginButtons.providers 등)은 모두 `nodeEditor`(array/array-group/array-cell-tree) 또는 `propControls`(options-list) 로 편집 가능하게 선언한다. 전 draggable 컴포넌트는 데이터 표면을 가지면 편집 슬롯을 보유하거나(누락 0), 보유하지 않으면 비대상 allowlist(flat scalar / 표시 텍스트 / 레이아웃 / 런타임 scalar 바인딩전용)에 등록되어야 한다 — 정적 검사가 둘 다 아닌 draggable 을 차단한다.
+**데이터 정의 빌트인(옵션/배열/차트 수동 데이터)**: 정적으로 편집 가능한 "데이터 정의" 표면(Select.options, TabNavigation.tabs, BarChart.labels+datasets, DonutChart.data, CardGrid.cardColumns, DynamicFieldList.columns, SocialLoginButtons.providers 등)은 모두 `nodeEditor`(array/array-group/array-cell-tree) 또는 `propControls`(options-list) 로 편집 가능하게 선언한다. 전 draggable 컴포넌트는 데이터 표면을 가지면 편집 슬롯을 보유하거나(누락 0), 보유하지 않으면 비대상 allowlist(flat scalar / 표시 텍스트 / 레이아웃 / 런타임 scalar 바인딩전용)에 등록되어야 한다 — 자동 검증이 둘 다 아닌 draggable 을 차단한다.
 
 **코어 제공 속성(요소 ID) + opt-out**: 코어는 모든 draggable 컴포넌트의 [속성] 탭 최상단에 "요소 ID" 컨트롤을 일괄 제공한다(값 = 표준 `node.props.id`, 강제 DOM 주입 없음 — 컴포넌트 passthrough 책임). 기존 `elemId`(→id) 같은 템플릿 propControl 은 코어로 이전(중복 선언 금지 — 코어 우선). 인라인 루트가 없는 컴포넌트(서드파티 모달/Portal)는 capability 에 `"coreProps": false` 로 opt-out 한다. `"coreProps": ["id"]` 처럼 부분집합 선언도 가능(미선언 = 코어 기본 전체). 코어 id 컨트롤은 `{{바인딩}}` 값이면 "바인딩됨(코드 편집)" 디그레이드, HTML 안전 문자만 허용(한글·공백 자동 제거). 컴포넌트 측 id passthrough 규약은 `docs/frontend/components-types.md` "요소 id 패스스루" 참조.
 
@@ -193,6 +206,8 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 ### nesting — 중첩 규칙
 
 `draggable`(드래그/팔레트 배치 가능한 컴포넌트 이름) + `containers`(컨테이너별 `accepts` 자식 허용 목록). 병합 시 `draggable` 은 union, `containers` 는 key 병합. `accepts: []` 는 명시적 자식 거부, 엔트리 없는 컴포넌트는 어떤 자식도 받지 않는다(폴백 없음).
+
+확장이 팔레트에 등재한 자기 컴포넌트(`{확장식별자}.{이름}`)는 템플릿 nesting 에 이름이 없으므로, 로더가 병합 뒤 템플릿이 `Div` 를 받는 자리(끌어 놓기 목록에 `Div` 가 있으면 루트, `accepts` 에 `Div` 가 있는 컨테이너)를 함께 준다. 템플릿이 그 이름을 어느 컨테이너 `accepts` 에 직접 적었으면 컨테이너 자리는 그 선언만 따르고, 끌어 놓기 목록에는 `Div` 규칙대로 더한다([extension-components.md](extension-components.md) 「팔레트 등재」).
 
 ### sampleData — 캔버스 프리뷰 샘플 데이터
 
@@ -210,7 +225,7 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 `initialState` 의 네 갈래:
 
-- `local`/`global`: `_local`/`_global` baseline 위 부분 머지(사용자/검증 결과에 따른 화면 변종).
+- `local`/`global`: `_local`/`_global` baseline 위 부분 머지(사용자/검증 결과에 따른 화면 변종). 창(`modal`) 묶음에서 `local` 은 창을 연 화면의 로컬로도 쓰인다 — 창 편집 미리보기는 런타임 openModal 처럼 `{_local, _global, _computed}` 를 창의 `$parent` 로 넘기므로, 창이 `{{$parent._local.*}}` 로 읽는 값도 `local` 에 적는다. `$parent._computed.*` 는 그 `local` 위에서 호스트 레이아웃의 `computed` 정의로 계산된다.
 - `query`: URL 쿼리 컨텍스트 오버라이드 — baseline(빈 객체) 위 부분 머지. 편집기는 평소 query 가 비어 있어 `{{query.tab}}`/`{{query.error}}` 같은 진입 맥락 분기 변종을 이 패치 없이는 미리볼 수 없다(예 `settings` 화면의 `query.tab=general|seo` 서브탭).
 - `route`: path param 컨텍스트 오버라이드(`{{route.id}}` 유무 = 수정↔신규 작성 모드 변종). `null` 값을 주면 해당 토큰을 **제거**해 `sampleRouteParams` 자동 채움을 무력화한다(예 `users/:id/edit` 의 `route.id: null` → 신규 작성 모드). 통째 교체가 아니라 baseline 위 머지다.
 
@@ -262,11 +277,17 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 `stateLabels` 가 상태값(`_global`/`query` 등) 명칭을 editor-spec 카탈로그에서 다는 것과 달리, **data_source 의 친화 명칭은 그 소스를 선언한 레이아웃 JSON 의 `data_sources[]` 항목에 `label_key` 로 직접 단다**(`$t:` 다국어 키 — 예 `"label_key": "$t:editor.data_source.products"`). 데이터 연결(`dataProps`) 검색 피커가 data_source 후보를 표시할 때 현재 로케일의 친화 명칭으로 보여 주며, 미지정 시 소스 id 로 폴백한다. 명칭 키는 편집 대상 템플릿의 편집기 i18n(`lang/partial/{locale}/editor.json` 의 `data_source.<id>`)에 정의한다 — 언어팩으로 로케일이 동적 추가되면 자동 대응한다.
 
-`label_key` 는 레이아웃 편집기의 **데이터 소스 편집기**(툴바 `⚙데이터` → `DataSourcesPanel`)가 관리한다. 번들 템플릿의 모든 레이아웃은 모든 data_source 에 `label_key` 를 보유해야 하며(누락 0), 정적 검사가 신규 레이아웃의 누락·비-`$t:` 값을 차단한다.
+`label_key` 는 레이아웃 편집기의 **데이터 소스 편집기**(툴바 `⚙데이터` → `DataSourcesPanel`)가 관리한다. 번들 템플릿의 모든 레이아웃은 모든 data_source 에 `label_key` 를 보유해야 하며(누락 0), 자동 검증이 신규 레이아웃의 누락·비-`$t:` 값을 차단한다.
 
 ### darkMode — 다크 모드 표현 (소형, manifest 인라인 권장)
 
 템플릿이 다크 모드를 어떻게 표현하는지 선언한다. `strategy`: `ancestor-class`(조상 클래스, Tailwind `.dark`) / `media-query` / `none`(다크 미지원 — 편집기 다크 탭 비노출). `previewIsolation`(`rewriteSelector` → `replaceWith`, `flattenLayers`)은 편집기 프리뷰를 admin 호스트의 `html.dark` 조상과 독립적으로 격리하기 위한 셀렉터 치환 규칙이다. 코어 CSS 서빙 API 가 이 선언대로 편집기용 CSS 의 다크 셀렉터를 프리뷰 전용 마커로 치환해 서빙한다(사용자 페이지 CSS 는 원본 그대로 — 무영향).
+
+**화면 폭 조건은 선언하지 않는다.** 다크와 달리 화면 폭은 편집기가 자동으로 격리한다 — 편집기가 떠 있는 동안
+문서의 스타일시트에서 폭 `@media` 와 `vw` 를 프리뷰 영역 폭 기준으로 나눠 두고, 편집기를 벗어나면 원래대로
+돌린다. 설정 키는 없고 CSS 제작 방식(일반 CSS·Bootstrap·Tailwind·CSS-in-JS)과 무관하다. 특정 시트를 빼려면
+그 `<style>`·`<link>` 에 `data-g7le-no-media-isolation` 속성을 단다. 컴포넌트 코드의 폭 분기와 바뀌지 않는 경우는
+[responsive-layout.md 「레이아웃 편집기 미리보기에서의 화면 폭」](../frontend/responsive-layout.md#레이아웃-편집기-미리보기에서의-화면-폭) 을 본다.
 
 ## 편집기 확장점 — `G7Core.layoutEditor`
 

@@ -1,0 +1,28 @@
+feature: 사용자 공통 UI — 꾸밈 아이콘·머리말 단추 이름·게시판 머리말 줄바꿈 (admin_basic 대칭)
+
+description: |
+  7.1.0 영역 J: 이름 없는 아이콘이 글리프 영어 이름(「trash can」·「shopping cart」)으로 읽히던 것을 꾸밈으로 숨기고(D-J4),
+  테마 단추 「Toggle theme」·모바일 장바구니 단추 이름 없음(D-J5), 파일 고르개 영어 고정 문구(D-J8), 390px 게시판 목록
+  [글쓰기] 「글쓰/기」 꺾임(D-J12, 관측 O-I2-5)을 고친다.
+  선택 상자 검색칸 안내·이름·「결과 없음」 문구가 영어로 고정되던 것도 화면 언어를 따르게 한다(validate R4).
+
+axes:
+  control: [icon, header_controls, file_input, board_index_header, inquiry_toggle, select_search_box]
+
+effects:
+  - decorative_icon_hidden_from_a11y_tree
+  - labelled_icon_exposes_given_name
+  - header_controls_named_by_locale
+  - file_input_texts_follow_locale
+  - board_header_actions_never_wrap_per_char
+  - inquiry_toggle_accessible_name_translated
+  - select_search_box_name_translated
+  - select_search_no_results_translated
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/Icon.a11y.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/HeaderControls.a11y.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/FileInput.i18n.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-index-header-wrap.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-inquiries-toggle-name-i18n.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/Select.searchI18n.test.tsx

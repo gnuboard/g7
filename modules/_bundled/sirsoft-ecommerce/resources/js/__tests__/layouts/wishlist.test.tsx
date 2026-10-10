@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 import headerPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_header.json';
 import wishlistLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/mypage/wishlist.json';
 import wishlistListPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/mypage/wishlist/_list.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 트리에서 조건을 만족하는 첫 노드 찾기 (재귀)
@@ -39,7 +40,7 @@ function findHandlerInActions(actions: any[] | undefined, handler: string): any 
         if (action?.handler === handler) return action;
         const nestedSources = [
             action?.actions,
-            action?.params?.actions,
+            callbacksOf(action, 'actions'),
         ];
         for (const conditionItem of action?.conditions ?? []) {
             // conditions 핸들러: { if, then } 형태
@@ -85,19 +86,19 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
         const click = wishlistButton.actions?.find((a: any) => a.type === 'click');
         expect(click).toBeDefined();
         expect(click.handler).toBe('conditions');
-        expect(Array.isArray(click.conditions)).toBe(true);
-        expect(click.conditions.length).toBeGreaterThanOrEqual(2);
+        expect(asArray(click?.conditions).length > 0).toBe(true);
+        expect(asArray(click?.conditions).length).toBeGreaterThanOrEqual(2);
     });
 
     it('회원 분기 sequence 첫 setState 가 wishlistLoading=true 로 설정해야 함', () => {
-        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
+        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
         const setState = findHandlerInActions([click], 'setState');
         expect(setState).toBeDefined();
         expect(setState.params.wishlistLoading).toBe(true);
     });
 
     it('회원 분기에서 apiCall 로 wishlist/toggle API 가 호출되어야 함', () => {
-        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
+        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
         expect(apiCall).toBeDefined();
         expect(apiCall.target).toContain('/wishlist/toggle');
@@ -105,23 +106,23 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
     });
 
     it('apiCall onSuccess 에서 wishlistLoading 을 false 로 복원해야 함', () => {
-        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
+        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
-        const setStateOnSuccess = apiCall.onSuccess.find((a: any) => a.handler === 'setState');
+        const setStateOnSuccess = asArray(apiCall?.onSuccess).find((a: any) => a.handler === 'setState');
         expect(setStateOnSuccess).toBeDefined();
         expect(setStateOnSuccess.params.wishlistLoading).toBe(false);
     });
 
     it('apiCall onError 에서 wishlistLoading 을 false 로 복원해야 함', () => {
-        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
+        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
-        const setStateOnError = apiCall.onError.find((a: any) => a.handler === 'setState');
+        const setStateOnError = asArray(apiCall?.onError).find((a: any) => a.handler === 'setState');
         expect(setStateOnError).toBeDefined();
         expect(setStateOnError.params.wishlistLoading).toBe(false);
     });
 
     it('apiCall 에 auth_mode: required 가 설정되어 있어야 함', () => {
-        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
+        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
         // auth_required boolean → auth_mode: 'required' 표준 표기로 통일됨
         expect(apiCall.auth_mode).toBe('required');
@@ -181,8 +182,8 @@ describe('찜 목록 partial 구조 검증 (_list.json)', () => {
         const navButton = findFirstNode(
             wishlistListPartial,
             (n: any) => n?.name === 'Button'
-                && Array.isArray(n.actions)
-                && n.actions.some(
+                && asArray(n?.actions).length > 0
+                && asArray(n?.actions).some(
                     (a: any) => a.handler === 'navigate'
                         && typeof a.params?.path === 'string'
                         && a.params.path.includes('shopBase')

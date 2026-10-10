@@ -1,0 +1,16 @@
+feature: NHN KCP 결제 안내·오류 문구는 번역 키로 낸다
+
+description: |
+  KRW 외 통화 안내·애플페이 iOS 전용 안내·모바일 승인키 실패·KCP 오류 문구를 스크립트에 한국어(일부 한국어/영어 두 갈래)로
+  박아 다른 언어 화면에서도 한국어나 영어로 나오던 것을 플러그인 번역 키(ko·en, 일본어는 언어팩)로 옮긴다
+  (PO 결정 2026-09-28 「모두 번역 키로」). 번역 엔진이 없을 때만 한국어 문구로 대신하고 값({{currency}} 등)을 채운다.
+
+axes:
+  message: [krw_only, applepay_ios_only, fallback]
+
+effects:
+  - message_from_translation_key
+  - fallback_fills_params
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/paymentMessagesTranslated.test.ts

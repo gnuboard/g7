@@ -141,4 +141,20 @@ interface ProductReviewRepositoryInterface
      * @return Collection 최신 리뷰 컬렉션
      */
     public function getRecentAcrossProducts(int $limit): Collection;
+
+    /**
+     * 주문 옵션들에 연결된 리뷰를 삭제 여부와 무관하게 이미지와 함께 조회합니다 (개인정보 보유기간 삭제용).
+     *
+     * @param  array<int, int>  $orderOptionIds  주문 옵션 ID 목록
+     * @return Collection 리뷰 컬렉션 (images 관계 로드됨, 휴지통 포함)
+     */
+    public function getWithTrashedByOrderOptionIds(array $orderOptionIds): Collection;
+
+    /**
+     * 리뷰와 그 이미지 레코드를 영구 삭제합니다 (개인정보 보유기간 삭제용).
+     *
+     * @param  ProductReview  $review  리뷰 모델
+     * @return bool 삭제 성공 여부
+     */
+    public function forceDeleteWithImages(ProductReview $review): bool;
 }

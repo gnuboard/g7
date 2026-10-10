@@ -14,6 +14,8 @@ export default defineConfig({
       // 학습용 샘플 템플릿: __tests__ 디렉토리도 루트에서 회귀 커버리지 확보
       'templates/_bundled/gnuboard7-hello_admin_template/__tests__/**/*.{test,spec}.{ts,tsx}',
       'templates/_bundled/gnuboard7-hello_user_template/__tests__/**/*.{test,spec}.{ts,tsx}',
+      // 학습용 샘플 모듈: 자체 vitest 설정이 없어 컴포넌트 테스트를 루트에서 돌린다
+      'modules/_bundled/gnuboard7-hello_module/resources/js/**/*.{test,spec}.{ts,tsx}',
     ],
     exclude: [
       '**/node_modules/**',

@@ -1,27 +1,33 @@
 {
+    "comment": "카테고리별 상품 목록 — `shop/index` 와 달리 대상 카테고리가 URL 경로(`route.slug`)에 있고\n     검색·정렬·쪽수만 쿼리에 있다. 그래서 이동은 전부 `mergeQuery` 로, 경로는 그대로 두고 쿼리만 바꾼다.",
     "version": "1.0.0",
     "layout_name": "shop/category",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "title": "{{category?.data?.name_localized ?? $t:shop.categories}}",
         "description": "{{category?.data?.description_localized ?? ''}}",
         "seo": {
             "enabled": true,
-            "extensions": [
-                { "type": "module", "id": "sirsoft-ecommerce" }
-            ],
-            "data_sources": ["category", "products"],
             "page_type": "category",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_category",
+            "priority": 0.6,
+            "changefreq": "weekly",
+            "extensions": [
+                {
+                    "type": "module",
+                    "id": "sirsoft-ecommerce"
+                }
+            ],
+            "data_sources": [
+                "category",
+                "products"
+            ],
             "vars": {
                 "category_name": "{{category.data.name ?? ''}}",
                 "category_description": "{{category.data.description ?? ''}}",
                 "site_name": "$core_settings:general.site_name",
                 "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
             },
-            "priority": 0.6,
-            "changefreq": "weekly",
             "og": {
                 "type": "website",
                 "title": "{{_seo.category.title ?? category.data.name ?? ''}}",
@@ -44,7 +50,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "지금 보고 있는 카테고리 그 자체 — 제목·설명·배너 이미지와 함께 상위 경로(breadcrumb)와\n       하위 목록(children)을 같이 준다. 뒤로가기 버튼이 상위로 갈지 전체로 갈지도 이 값으로 갈린다"
         },
         {
             "id": "categories",
@@ -56,7 +63,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "전체 카테고리 트리. 이 화면 본문은 쓰지 않지만 상속원(`_user_base`)의 공통 내비가 참조한다"
         },
         {
             "id": "products",
@@ -64,6 +72,7 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products",
             "method": "GET",
+            "auto_fetch": true,
             "params": {
                 "page": "{{query.page ?? 1}}",
                 "per_page": 12,
@@ -71,7 +80,6 @@
                 "sort": "{{query.sort ?? 'latest'}}",
                 "search": "{{query.keyword ?? ''}}"
             },
-            "auto_fetch": true,
             "fallback": {
                 "data": [],
                 "meta": {
@@ -80,9 +88,11 @@
                     "per_page": 12,
                     "total": 0
                 }
-            }
+            },
+            "comment": "이 카테고리에 속한 상품. 조건이 URL 에 살아 있어 `navigate` 로 쿼리만 바꾸면 다시 받는다"
         }
     ],
+    "permissions": [],
     "slots": {
         "content": [
             {
@@ -111,22 +121,27 @@
                                         "comment": "뒤로가기: 상위 카테고리 있으면 상위로, 없으면 /shop으로",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "props": { "name": "arrow-left", "className": "text-xl" }
-                                            }
-                                        ],
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "aria-label": "$t:common.back",
+                                            "className": "p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrow-left",
+                                                    "className": "text-xl"
                                                 }
                                             }
                                         ]
@@ -248,28 +263,28 @@
                         "comment": "검색 바",
                         "type": "basic",
                         "name": "Div",
-                        "props": { "className": "flex gap-2 mb-4" },
+                        "props": {
+                            "className": "flex gap-2 mb-4"
+                        },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Input",
-                                "props": {
-                                    "type": "text",
-                                    "name": "keyword",
-                                    "placeholder": "$t:shop.search_placeholder",
-                                    "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
-                                    "value": "{{_local.keyword ?? query.keyword ?? ''}}"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "타이핑은 로컬에만 담는다 — 글자마다 목록을 다시 받지 않기 위해서다. 실제 검색은 아래 Enter/버튼",
                                         "type": "change",
                                         "handler": "setState",
-                                        "params": { "target": "local", "keyword": "{{$event.target.value}}" }
+                                        "params": {
+                                            "target": "local",
+                                            "keyword": "{{$event.target.value}}"
+                                        }
                                     },
                                     {
+                                        "comment": "Enter 로 검색 — 쪽수를 1 로 되돌린다. 3쪽에서 다른 말을 검색하면 빈 쪽이 뜨기 때문",
                                         "type": "keydown",
-                                        "handler": "navigate",
                                         "key": "Enter",
+                                        "handler": "navigate",
                                         "params": {
                                             "path": "{{route.path}}",
                                             "mergeQuery": true,
@@ -279,15 +294,21 @@
                                             }
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "type": "text",
+                                    "name": "keyword",
+                                    "placeholder": "$t:shop.search_placeholder",
+                                    "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                    "value": "{{_local.keyword ?? query.keyword ?? ''}}"
+                                }
                             },
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "props": { "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium" },
-                                "text": "$t:shop.search",
                                 "actions": [
                                     {
+                                        "comment": "검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -299,7 +320,11 @@
                                             }
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"
+                                },
+                                "text": "$t:shop.search"
                             }
                         ]
                     },
@@ -308,23 +333,35 @@
                         "type": "basic",
                         "name": "Div",
                         "if": "{{(category?.data?.children ?? []).length > 0}}",
-                        "props": { "className": "flex flex-wrap gap-2 mb-4" },
+                        "props": {
+                            "className": "flex flex-wrap gap-2 mb-4"
+                        },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "iteration": { "source": "{{category?.data?.children ?? []}}", "item_var": "sub" },
+                                "iteration": {
+                                    "source": "{{category?.data?.children ?? []}}",
+                                    "item_var": "sub"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{_global.shopBase}}/category/{{sub?.slug}}"
+                                                }
+                                            }
+                                        ],
                                         "props": {
                                             "className": "px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
                                         },
-                                        "text": "{{sub?.name_localized}}",
-                                        "actions": [
-                                            { "comment": "audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다", "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/category/{{sub?.slug}}" } }
-                                        ]
+                                        "text": "{{sub?.name_localized}}"
                                     }
                                 ]
                             }
@@ -347,21 +384,11 @@
                                 "text": "$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}"
                             },
                             {
-                                "type": "composite",
+                                "type": "basic",
                                 "name": "Select",
-                                "props": {
-                                    "name": "sort",
-                                    "value": "{{query.sort ?? 'latest'}}",
-                                    "className": "h-9 w-32",
-                                    "options": [
-                                        { "value": "latest", "label": "$t:shop.sort.latest" },
-                                        { "value": "sales", "label": "$t:shop.sort.sales" },
-                                        { "value": "price_asc", "label": "$t:shop.sort.price_asc" },
-                                        { "value": "price_desc", "label": "$t:shop.sort.price_desc" }
-                                    ]
-                                },
                                 "actions": [
                                     {
+                                        "comment": "정렬을 바꾸면 순서가 통째로 달라지므로 보던 쪽수를 유지하지 않고 1쪽으로 돌아간다",
                                         "type": "change",
                                         "handler": "navigate",
                                         "params": {
@@ -373,7 +400,30 @@
                                             }
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "name": "sort",
+                                    "value": "{{query.sort ?? 'latest'}}",
+                                    "className": "h-9 w-32",
+                                    "options": [
+                                        {
+                                            "value": "latest",
+                                            "label": "$t:shop.sort.latest"
+                                        },
+                                        {
+                                            "value": "sales",
+                                            "label": "$t:shop.sort.sales"
+                                        },
+                                        {
+                                            "value": "price_asc",
+                                            "label": "$t:shop.sort.price_asc"
+                                        },
+                                        {
+                                            "value": "price_desc",
+                                            "label": "$t:shop.sort.price_desc"
+                                        }
+                                    ]
+                                }
                             }
                         ]
                     },

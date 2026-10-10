@@ -12,11 +12,11 @@
  * 를 검증한다.
  *
  * 게이트 SSoT(소비 레이아웃):
- *  - /shop/products/:id reviews/qna 탭 : partials/shop/detail/_tab_reviews.json, _tab_qna.json
- *  - /mypage/board my-comments 서브탭   : partials/mypage/board/_list.json, _my_comments.json
- *  - /search posts/products/pages 탭    : partials/search/_search_results.json (+ section partials)
- *  - /shop/checkout 금액상세 토글       : partials/shop/_checkout_summary.json
- *  - /shop/cart 세금상세 토글           : partials/shop/_cart_summary.json
+ *  - /shop/products/:id reviews/qna 탭 : partials/shop/detail/_tab_reviews.g7.html, _tab_qna.g7.html
+ *  - /mypage/board my-comments 서브탭   : partials/mypage/board/_list.g7.html, _my_comments.g7.html
+ *  - /search posts/products/pages 탭    : partials/search/_search_results.g7.html (+ section partials)
+ *  - /shop/checkout 금액상세 토글       : partials/shop/_checkout_summary.g7.html
+ *  - /shop/cart 세금상세 토글           : partials/shop/_cart_summary.g7.html
  */
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
@@ -97,12 +97,12 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
   it('qna_tab 은 activeTab="qna" + _global.modules.inquiry.board_slug 를 패치한다 (탭 표시 + 게이트 경로)', () => {
     const init = item(g, 'qna_tab').initialState;
     expect(init?.local?.activeTab).toBe('qna');
-    // 탭 visibility(hiddenTabIds) 와 _tab_qna.json line 8 게이트가 board_slug 를 요구
+    // 탭 visibility(hiddenTabIds) 와 _tab_qna.g7.html line 8 게이트가 board_slug 를 요구
     expect(init?.global?.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug).toBeTruthy();
   });
 
   it('qna SSoT(basic 템플릿) 샘플이 stub 없이 유저 shape(items[] + meta) 분기를 채운다', () => {
-    // qna 데이터소스는 /shop/products/:id(basic 템플릿 shop/show.json) 만 소비 → SSoT 는 basic 템플릿
+    // qna 데이터소스는 /shop/products/:id(basic 템플릿 shop/show.g7.html) 만 소비 → SSoT 는 basic 템플릿
     // sampleData(메커니즘 #1 — 선언 레이아웃 __source). qna_tab 상태는 activeTab + board_slug 만 패치하면
     // 충분(데이터 override 불필요 — base qna 가 이미 풍부). ecommerce spec 의 동명 qna 는 비소비 중복.
     const qd = byId.qna?.data;

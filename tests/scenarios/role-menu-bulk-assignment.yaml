@@ -1,0 +1,72 @@
+feature: 역할↔메뉴 양방향 일괄 할당 (역할 폼 「접근 가능 메뉴」 + 메뉴 관리 「여러 개 선택」)
+
+description: |
+  관리자 메뉴의 접근 역할을 메뉴 한 건씩만 편집할 수 있던 구조를 양방향·다건으로 연다.
+
+  경로:
+    - 역할 폼 등록/수정: POST·PUT /api/admin/roles 의 menu_ids → MenuService::syncRoleMenus()
+    - 메뉴 관리 일괄: PATCH /api/admin/menus/bulk-roles (mode=add|remove) → MenuService::bulkUpdateRoles()
+    - 메뉴 단건 수정: PUT /api/admin/menus/{menu} — roles 키가 있으면 admin 역할을 항상 포함
+    - 업그레이드 7.1.0: admin 역할이 없는 메뉴에 admin(read) 부착
+
+  규칙:
+    - W1 부모·자식 정규화: 자식에 추가하면 부모에도 추가, 부모에서 제거하면 자식에서도 제거
+    - W2 admin 역할은 모든 메뉴에 항상 있다 — 빼는 요청은 422
+    - W3 액터가 관리할 수 없는 메뉴(비활성 확장 등)의 기존 할당은 건드리지 않는다
+    - W4 역할→메뉴 저장에는 core.menus.update 가 필요하다
+    - W6 메뉴마다 core.menu.after_sync_roles 를 발화해 user_overrides·활동 로그가 단건 경로와 같게 남는다
+    - W7 사이드바(GET /api/admin/menus/active)는 관리자 영역 접근만으로 받고 내 역할에 지정된 메뉴로만 좁힌다 — 메뉴 관리 목록·상세는 core.menus.read 유지
+    - W8 역할 0개 메뉴는 core.menus.update 를 전체 범위로 가진 관리자의 관리 목록에만 나온다(복구 경로)
+
+axes:
+  entry: [role_form_create, role_form_update, menu_bulk_add, menu_bulk_remove]
+  actor: [super_admin, scoped_admin, no_menu_permission]
+  menu_shape: [top_level, child_only, parent_with_children, inactive_extension]
+
+exclusions:
+  - { actor: no_menu_permission, menu_shape: [child_only, parent_with_children, inactive_extension], reason: "메뉴 수정 권한이 없으면 요청 전체가 모양과 무관하게 403 으로 막힌다 — top_level 한 모양으로 게이트를 잰다" }
+  - { actor: scoped_admin, menu_shape: [child_only, parent_with_children, inactive_extension], reason: "범위(scope) 판정은 메뉴 모양과 직교한다 — top_level 한 모양으로 범위 밖 거부를 잰다" }
+  - { entry: role_form_create, menu_shape: inactive_extension, reason: "새 역할은 기존 할당이 없어 보존할 보이지 않는 할당이 없다" }
+
+effects:
+  - admin_role_locked
+  - parent_auto_included
+  - children_auto_removed
+  - unmanageable_menu_rejected
+  - out_of_scope_whole_rejected
+  - invisible_assignment_preserved
+  - user_overrides_recorded_per_menu
+  - activity_log_per_menu
+  - sidebar_reflects_assignment
+  - update_menu_keeps_admin_role
+  - empty_role_menus_backfilled
+  - menu_ids_on_show_not_list
+  - omitted_field_keeps_assignment
+  - menu_tree_readonly_without_permission
+  - menu_list_selection_mode_disables_drag
+  - menu_list_shows_assigned_roles
+  - bulk_mode_resets_on_page_entry
+  - bulk_panel_replaces_detail
+  - bulk_apply_requires_menus_and_roles
+  - sidebar_without_menu_read_permission
+  - sidebar_limited_to_own_roles
+  - menu_management_still_requires_menus_read
+  - roleless_menu_visible_to_full_scope_manager
+  - roleless_menu_hidden_from_limited_manager
+  - menu_form_url_mode_follows_panel
+  - role_delete_confirm_shows_name
+  - english_result_message_follows_menu_count
+
+test_files:
+  - tests/Feature/Api/Admin/RoleMenuAssignmentTest.php
+  - tests/Feature/Api/Admin/MenuBulkRolesTest.php
+  - tests/Unit/Services/MenuServiceRoleSyncTest.php
+  - tests/Feature/Upgrades/Upgrade710AdminRoleBackfillTest.php
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MenuAccessTree.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/SortableMenuList.selection.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/SortableMenuList.roles.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-form-menus.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-list-bulk-roles.test.tsx
+  - tests/Playwright/specs/admin/role-menu-bulk-assignment.spec.ts
+  - tests/Feature/Api/Admin/MenuAccessVisibilityTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-menu-followups.test.ts

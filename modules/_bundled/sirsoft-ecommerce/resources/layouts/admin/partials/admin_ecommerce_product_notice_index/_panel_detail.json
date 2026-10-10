@@ -1,41 +1,42 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Notice Template Detail Panel - View/Form Container"
-  },
-  "id": "detail_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card col-span-2-lg"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
+    "comment": "공지 템플릿 화면 오른쪽 패널의 껍데기. 빈 안내만 스스로 그리고, 보기·편집 두 조각은 각자\n  `_global.panelMode` 를 보고 나타난다(브랜드·분류 화면과 같은 구조).",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Notice Template Detail Panel - View/Form Container"
+    },
+    "id": "detail_panel",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card col-span-2-lg"
+    },
+    "children": [
         {
-          "id": "empty_state_panel",
-          "type": "composite",
-          "name": "EmptyState",
-          "if": "{{!_global.selectedTemplateId && _global.panelMode !== 'create' && _global.panelMode !== 'edit'}}",
-          "props": {
-            "icon": "file-alt",
-            "title": "$t:sirsoft-ecommerce.admin.product_notice_template.empty.title",
-            "description": "$t:sirsoft-ecommerce.admin.product_notice_template.empty.description",
-            "className": "py-16"
-          }
-        },
-        {
-          "partial": "_panel_view.json"
-        },
-        {
-          "partial": "_panel_form.json"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "empty_state_panel",
+                    "type": "composite",
+                    "name": "EmptyState",
+                    "if": "{{!_global.selectedTemplateId && _global.panelMode !== 'create' && _global.panelMode !== 'edit'}}",
+                    "props": {
+                        "icon": "file-alt",
+                        "title": "$t:sirsoft-ecommerce.admin.product_notice_template.empty.title",
+                        "description": "$t:sirsoft-ecommerce.admin.product_notice_template.empty.description",
+                        "className": "py-16"
+                    }
+                },
+                {
+                    "partial": "_panel_view.json"
+                },
+                {
+                    "partial": "_panel_form.json"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

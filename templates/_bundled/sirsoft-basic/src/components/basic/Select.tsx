@@ -7,6 +7,24 @@ import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
 
+/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 validate R4, admin_basic D-J11 대칭) */
+const selectSearchPlaceholder = (): string => {
+  const translated = (window as any).G7Core?.t?.('common.search_placeholder');
+  return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
+};
+
+/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 validate R4) */
+const selectSearchLabel = (): string => {
+  const translated = (window as any).G7Core?.t?.('common.search');
+  return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
+};
+
+/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 validate R4) */
+const selectNoResults = (): string => {
+  const translated = (window as any).G7Core?.t?.('common.no_results');
+  return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
+};
+
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:Select')) ?? {
     log: (...args: unknown[]) => console.log('[Comp:Select]', ...args),
@@ -302,17 +320,17 @@ export const Select: React.FC<SelectProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                placeholder={searchPlaceholder ?? 'Search...'}
+                placeholder={searchPlaceholder ?? selectSearchPlaceholder()}
                 className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 role="searchbox"
-                aria-label={searchPlaceholder ?? 'Search'}
+                aria-label={searchPlaceholder ?? selectSearchLabel()}
               />
             </Div>
           )}
           <Div className="py-2 max-h-60 overflow-auto">
             {visibleOptions && visibleOptions.length === 0 && (
               <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                {searchTerm ? 'No results' : ''}
+                {searchTerm ? selectNoResults() : ''}
               </Div>
             )}
             {(visibleOptions ?? []).map((option) => {

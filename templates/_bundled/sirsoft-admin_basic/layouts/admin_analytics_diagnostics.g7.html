@@ -1,0 +1,493 @@
+<!-- 수집 진단 — 「숫자가 안 늘어나는 이유」를 한 화면에서 찾는다. 상태 카드 넉 장(수집·큐·집계·저장소)은
+  각각 한 줄 요약행이고, 아래에 오늘 제외 사유·집계 실행 이력·최근 실패 로그가 온다.
+  수동 집계·재집계 버튼은 update 권한이 있어야 활성이다(읽기 계정에는 잠긴 채 보인다).
+  재집계 진행률은 **방송이 기본, 폴링이 폴백**이다 — 소켓이 있으면 `analytics.archive.progress` 방송이
+  실행 이력 행 한 줄을 실어 오고, 없으면 진단 응답의 `running_run_id` 가 있는 동안 2초마다 다시 받는다.
+  진행 상태의 출처는 언제나 실행 이력 행 하나라 두 길이 같은 값을 본다.
+  인자가 있는 문구는 `$t:키|인자=` 뒤에 바인딩 식을 붙여 쓴다 — 식 안의 `$t()` 헬퍼는 키만 받아 인자를 버린다. -->
+<layout name="admin_analytics_diagnostics" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.diagnostics.title"/>
+  <!-- 진단 한 장. 응답에 실행 중 이력이 있고 소켓이 없으면 2초 폴링을 걸고, 끝나면 멈춘다. -->
+  <data-source id="analytics_diagnostics" label_key="$t:editor.data_source.analytics_diagnostics" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+          <field name="mode" value="full"/>
+          <field name="effective_mode" value="full"/>
+          <field name="last_tracked_at" :value="null"/>
+          <field name="tracked_today" :value="0"/>
+          <field name="excluded_today" :value="{}"/>
+          <field name="ip_mask_octets" :value="0"/>
+        </field>
+        <field name="queue">
+          <field name="pending_jobs" :value="0"/>
+          <field name="failed_jobs" :value="0"/>
+          <field name="countable" :value="false"/>
+          <field name="backlogged" :value="false"/>
+        </field>
+        <field name="archive">
+          <field name="last_hour_run" :value="null"/>
+          <field name="last_day_run" :value="null"/>
+          <field name="lag_hours" :value="null"/>
+          <field name="running_run_id" :value="null"/>
+        </field>
+        <field name="storage">
+          <field name="tables" :value="[]"/>
+          <field name="exact">
+            <field name="analytics_visits" :value="0"/>
+            <field name="analytics_actions" :value="0"/>
+          </field>
+          <field name="over_limit" :value="false"/>
+        </field>
+        <field name="geoip">
+          <field name="enabled" :value="false"/>
+          <field name="db_present" :value="false"/>
+        </field>
+        <field name="trusted_proxy">
+          <field name="trusted_configured" :value="false"/>
+          <field name="status" value="ok"/>
+        </field>
+        <field name="broadcasting">
+          <field name="configured" :value="false"/>
+        </field>
+        <field name="cloud_ranges">
+          <field name="enabled" :value="false"/>
+        </field>
+        <field name="failures_24h" :value="0"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <success>
+      <!-- 재집계는 늘 워커가 맡아 202 에 run_id 가 없다 — 응답 직후엔 실행 행이 아직 없을 수 있다.
+           행이 생길 때까지의 유예를 세어 두고(모달이 15 를 넣는다) 그 동안은 행이 없어도 폴링을 건다.
+           유예는 폴링 한 번마다 1 씩 줄어 워커가 영영 안 뜨면 30초 뒤 저절로 멎는다(#682 S3 라운드 6). -->
+      <set-state target="global" analyticsReaggWait="{{(_global.analyticsReaggWait ?? 0) &gt; 0 ? (_global.analyticsReaggWait - 1) : 0}}"/>
+      <start-interval if="{{response?.data?.data?.broadcasting?.configured !== true &amp;&amp; (!!response?.data?.data?.archive?.running_run_id || (_global.analyticsReaggWait ?? 0) &gt; 0)}}" id="analytics_archive_poll" :intervalMs="2000">
+        <actions>
+          <refetch-data-source dataSourceId="analytics_diagnostics"/>
+          <refetch-data-source dataSourceId="analytics_archive_runs"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{!response?.data?.data?.archive?.running_run_id &amp;&amp; (_global.analyticsReaggWait ?? 0) &lt;= 0}}" id="analytics_archive_poll"/>
+    </success>
+  </data-source>
+  <!-- 집계 실행 이력 — 진행률 바의 출처. -->
+  <data-source id="analytics_archive_runs" label_key="$t:editor.data_source.analytics_archive_runs" type="api" endpoint="/api/admin/analytics/archive-runs" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.runs_page || 1}}" :per_page="10"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가
+         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다. -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 최근 적재 실패 로그. -->
+  <data-source id="analytics_collect_failures" label_key="$t:editor.data_source.analytics_collect_failures" type="api" endpoint="/api/admin/analytics/collect-failures" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.failures_page || 1}}" :per_page="10" reason="{{query.reason}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가
+         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다. -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 재집계 진행률 방송. 받은 행을 전역에 두고 진행률 바가 이력 표의 같은 행보다 우선해 읽는다. 끝난 방송이면 이력·진단을 다시 받는다. -->
+  <data-source id="analytics_archive_progress_ws" label_key="$t:editor.data_source.analytics_archive_progress_ws" type="websocket" channel="core.admin.analytics" event="analytics.archive.progress" channel_type="private">
+    <on-receive>
+      <set-state target="global" analyticsArchiveProgress="{{$args[0]?.data ?? null}}"/>
+      <!-- 진행률 바는 이력 표의 행 위에만 그려진다 — 큐가 맡은 재집계는 방송이 먼저 오고 행은 아직
+           표에 없을 수 있다. 처음 보는 실행 번호면 그때 한 번 표를 다시 받는다(#682 S3 라운드 6).
+           청크마다 오는 나머지 running 방송은 이미 행이 있으므로 재요청하지 않는다. -->
+      <refetch-data-source if="{{$args[0]?.data?.status === 'running' &amp;&amp; !!$args[0]?.data?.id &amp;&amp; !(analytics_archive_runs?.data?.data ?? []).some(r =&gt; r.id === $args[0]?.data?.id)}}" dataSourceId="analytics_archive_runs"/>
+      <refetch-data-source if="{{['success', 'failed', 'skipped'].includes($args[0]?.data?.status ?? '')}}" dataSourceId="analytics_archive_runs"/>
+      <refetch-data-source if="{{['success', 'failed', 'skipped'].includes($args[0]?.data?.status ?? '')}}" dataSourceId="analytics_diagnostics"/>
+    </on-receive>
+  </data-source>
+  <init-local>
+    <field name="running" value=""/>
+  </init-local>
+  <computed name="canUpdate">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update')}}</computed>
+  <computed name="runningRunId">{{analytics_diagnostics?.data?.archive?.running_run_id ?? null}}</computed>
+  <permissions>
+    <permission>core.analytics.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_diagnostics</wait-for>
+    <wait-for>analytics_archive_runs</wait-for>
+    <wait-for>analytics_collect_failures</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="analytics_diagnostics_content" class="admin-page-content-responsive-fluid">
+      <on event="unmount">
+        <stop-interval id="analytics_archive_poll"/>
+      </on>
+      <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.diagnostics.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.diagnostics.description</p>
+        </div>
+        <div class="flex-center gap-2 flex-wrap">
+          <!-- 이 화면은 시각을 여섯 자리(기간 시작·끝·시작 시각·마지막 적재·마지막 시간 집계·마지막
+            일 집계) 찍는다. 공통 조각 `_partial_status_alerts` 는 순환 안내 때문에 여기 없으므로
+            같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).
+            보는 사람의 시간대가 사이트와 같으면 군더더기라 띄우지 않는다. -->
+          <badge data-type="composite" data-ref="site_timezone_badge" data-if="{{analytics_diagnostics?.data?.timezone_differs === true}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{analytics_diagnostics?.data?.timezone ?? ''}}"/>
+          <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
+            <on type="click">
+              <!-- 새로고침 — 이 화면이 받는 세 소스(진단·집계 이력·실패 로그)를 한꺼번에 다시 받는다. 하나만 받으면 상태 카드와
+                   이력 표가 서로 다른 시각의 값을 보인다. -->
+              <sequence>
+                <refetch-data-source dataSourceId="analytics_diagnostics"/>
+                <refetch-data-source dataSourceId="analytics_archive_runs"/>
+                <refetch-data-source dataSourceId="analytics_collect_failures"/>
+              </sequence>
+            </on>
+            <icon name="refresh" class="text-xl"/>
+          </button>
+        </div>
+      </div>
+      <!-- 확장이 잘못 선언해 버려진 목표·차원의 사유. 이 화면 말고는 볼 곳이 없다 — 비워 두면 운영자는 「전환이
+      왜 안 쌓이는지」를 나중에 `unknown_goal` 실패로만 간접적으로 안다. 경고가 없으면 그리지 않는다. -->
+      <div data-ref="alert_declaration_warnings" data-if="{{(analytics_diagnostics?.data?.declaration_warnings ?? []).length &gt; 0}}" class="alert-warning mb-4">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="text-warning-soft font-medium">$t:admin.analytics.diagnostics.declaration_warnings_title</p>
+            <p class="text-warning-soft text-sm">$t:admin.analytics.diagnostics.declaration_warnings_description</p>
+            <div data-each="warning, $idx in {{analytics_diagnostics?.data?.declaration_warnings ?? []}}" class="text-sm font-mono break-all text-warning-soft mt-1">{{warning}}</div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="status_cards" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <blur-until-loaded sources="analytics_diagnostics"/>
+        <div data-ref="card_collection" class="admin-card">
+          <div class="flex flex-wrap items-center gap-2">
+            <icon name="satellite-dish" class="text-gray-500 dark:text-gray-400"/>
+            <span class="text-heading">$t:admin.analytics.diagnostics.cards.collection</span>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.collection?.enabled ? 'green' : 'red'}}" text="{{analytics_diagnostics?.data?.collection?.enabled ? $t('admin.analytics.diagnostics.fields.enabled_on') : $t('admin.analytics.diagnostics.fields.enabled_off')}}" size="sm"/>
+            <badge data-type="composite" color="blue" text="{{$t('admin.analytics.settings.privacy.modes.' + (analytics_diagnostics?.data?.collection?.effective_mode ?? 'full') + '.title')}}" size="sm"/>
+            <badge data-type="composite" data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" color="yellow" text="{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.diagnostics.fields.anonymous_for_unconsented') : $t('admin.analytics.diagnostics.fields.anonymous_fallback')}}" size="sm"/>
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.tracked_today|count={{(analytics_diagnostics?.data?.collection?.tracked_today ?? 0) | number}}</span>
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_tracked|at={{analytics_diagnostics?.data?.collection?.last_tracked_at | datetime | default('-')}}</span>
+            <span data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" class="text-hint w-full">{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.alerts.consent_cookie_fallback') : $t('admin.analytics.alerts.consent_fallback')}}</span>
+          </div>
+        </div>
+        <div data-ref="card_queue" class="admin-card">
+          <div class="flex flex-wrap items-center gap-2">
+            <icon name="layer-group" class="text-gray-500 dark:text-gray-400"/>
+            <span class="text-heading">$t:admin.analytics.diagnostics.cards.queue</span>
+            <!-- 연결 이름(`database` 등)은 .env 설정값이라 알려진 것만 사람 말로 바꾸고, 사이트가 따로 정한 이름은 그대로 보인다. -->
+            <badge data-type="composite" color="gray" text="{{['sync', 'database', 'redis', 'sqs', 'beanstalkd'].includes(analytics_diagnostics?.data?.queue?.connection ?? '') ? $t('admin.analytics.diagnostics.queue_connections.' + analytics_diagnostics.data.queue.connection) : (analytics_diagnostics?.data?.queue?.connection ?? '-')}}" size="sm"/>
+            <badge data-type="composite" data-if="{{analytics_diagnostics?.data?.queue?.countable === false}}" color="gray" text="$t:admin.analytics.diagnostics.fields.queue_not_countable" size="sm"/>
+            <span data-if="{{analytics_diagnostics?.data?.queue?.countable !== false}}" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.pending_jobs|count={{(analytics_diagnostics?.data?.queue?.pending_jobs ?? 0) | number}}</span>
+            <span data-if="{{analytics_diagnostics?.data?.queue?.countable !== false}}" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.failed_jobs|count={{(analytics_diagnostics?.data?.queue?.failed_jobs ?? 0) | number}}</span>
+            <badge data-type="composite" data-if="{{analytics_diagnostics?.data?.queue?.backlogged === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.backlogged" size="sm"/>
+            <span data-if="{{analytics_diagnostics?.data?.queue?.worker_hint === true}}" class="text-hint w-full">$t:admin.analytics.diagnostics.fields.worker_hint</span>
+          </div>
+        </div>
+        <div data-ref="card_archive" class="admin-card">
+          <div class="flex flex-wrap items-center gap-2">
+            <icon name="database" class="text-gray-500 dark:text-gray-400"/>
+            <span class="text-heading">$t:admin.analytics.diagnostics.cards.archive</span>
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_hour_run|at={{analytics_diagnostics?.data?.archive?.last_hour_run | datetime | default('-')}}</span>
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_day_run|at={{analytics_diagnostics?.data?.archive?.last_day_run | datetime | default('-')}}</span>
+            <badge data-type="composite" data-if="{{(analytics_diagnostics?.data?.archive?.lag_hours ?? 0) > 2}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.lag_hours|hours={{analytics_diagnostics?.data?.archive?.lag_hours ?? 0}}" size="sm"/>
+            <!-- 스케줄러가 매시 집계를 최근에 돌렸는가 — 화면 열 때 집계가 숫자를 맞춰도 어제 확정·정리·메일 보고서는 스케줄러만 돌린다.
+                 판정 근거가 없으면(설치 직후) 배지를 띄우지 않는다. -->
+            <span data-ref="scheduler_last_run" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.scheduler_last_run|at={{analytics_diagnostics?.data?.archive?.scheduler?.last_run_at | datetime | default('-')}}</span>
+            <badge data-type="composite" data-ref="scheduler_missing_badge" data-if="{{analytics_diagnostics?.data?.archive?.scheduler?.alive === false}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.scheduler_missing" size="sm"/>
+            <badge data-type="composite" data-if="{{!!_computed.runningRunId}}" color="blue" text="$t:admin.analytics.diagnostics.fields.running|id={{analytics_diagnostics.data.archive.running_run_id}}" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.broadcasting?.configured ? 'green' : 'gray'}}" text="{{analytics_diagnostics?.data?.broadcasting?.configured ? $t('admin.analytics.diagnostics.progress_source.ws') : $t('admin.analytics.diagnostics.progress_source.polling')}}" size="sm"/>
+            <!-- 집계 실행은 이 카드 안에서 한다 — 「집계가 6시간 밀렸다」를 읽은 자리에서 바로 돌릴 수
+                 있어야 한다(계획서 §4.11 진단 와이어프레임의 `ml-auto` 버튼). 화면 위로 올라가지 않는다. -->
+            <div data-ref="card_archive_actions" class="ml-auto flex-center gap-2 flex-wrap">
+            <button data-ref="archive_hour_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_computed.canUpdate || _local.running !== '' || !!_computed.runningRunId}}">
+              <on type="click">
+                <!-- 직전 시간 + 오늘치를 그 자리에서 집계한다(202 + run_id). 끝나면 진단·이력을 다시 받는다. -->
+                <sequence>
+                  <set-state target="local" running="hour"/>
+                  <api-call :auth_required="true" target="/api/admin/analytics/archive-runs" method="POST">
+                    <body run_type="hour"/>
+                    <success>
+                      <set-state target="local" running=""/>
+                      <!-- 자물쇠를 다른 집계가 쥐고 있으면 이력에 「건너뜀」만 남는다 — 돌았다고 알리지 않는다. -->
+                      <toast if="{{response?.data?.status !== 'skipped'}}" type="success" message="$t:admin.analytics.diagnostics.started_toast"/>
+                      <toast if="{{response?.data?.status === 'skipped'}}" type="info" message="$t:admin.analytics.diagnostics.skipped_toast"/>
+                      <refetch-data-source dataSourceId="analytics_diagnostics"/>
+                      <refetch-data-source dataSourceId="analytics_archive_runs"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" running=""/>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.running === 'hour'}}" name="spinner" :spin="true" class="text-sm"/>
+              <icon data-if="{{_local.running !== 'hour'}}" name="clock" size="sm"/>
+              <span>$t:admin.analytics.diagnostics.buttons.archive_hour</span>
+            </button>
+            <button data-ref="finalize_yesterday_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_computed.canUpdate || _local.running !== '' || !!_computed.runningRunId}}">
+              <on type="click">
+                <!-- 어제 확정 — 사이트 날짜 기준 전날 하루를 확정본으로 집계한다(시간 집계와 같은 API, `run_type=day`). 누르는 동안
+                     두 집계 버튼이 함께 잠겨(`running`) 겹쳐 돌리지 못하고, 실행 중인 이력이 있어도 잠긴다. -->
+                <sequence>
+                  <set-state target="local" running="day"/>
+                  <api-call :auth_required="true" target="/api/admin/analytics/archive-runs" method="POST">
+                    <body run_type="day"/>
+                    <success>
+                      <set-state target="local" running=""/>
+                      <!-- 자물쇠를 다른 집계가 쥐고 있으면 이력에 「건너뜀」만 남는다 — 돌았다고 알리지 않는다. -->
+                      <toast if="{{response?.data?.status !== 'skipped'}}" type="success" message="$t:admin.analytics.diagnostics.started_toast"/>
+                      <toast if="{{response?.data?.status === 'skipped'}}" type="info" message="$t:admin.analytics.diagnostics.skipped_toast"/>
+                      <refetch-data-source dataSourceId="analytics_diagnostics"/>
+                      <refetch-data-source dataSourceId="analytics_archive_runs"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" running=""/>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.running === 'day'}}" name="spinner" :spin="true" class="text-sm"/>
+              <icon data-if="{{_local.running !== 'day'}}" name="calendar-check" size="sm"/>
+              <span>$t:admin.analytics.diagnostics.buttons.finalize_yesterday</span>
+            </button>
+            <button data-ref="reaggregate_button" type="button" class="btn btn-primary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_computed.canUpdate}}">
+              <on type="click">
+                <!-- 구간 재집계 창 열기 — 지난번 입력(시작·종료·확정일 포함 여부)을 비운 채로 연다. 위 두 버튼과 달리 실행 중에도
+                     잠그지 않고 권한만 본다 — 기간을 받아 워커에게 넘기는 일은 창이 맡는다. -->
+                <sequence>
+                  <set-state target="global">
+                    <field name="analyticsReagg">
+                      <field name="from" value=""/>
+                      <field name="to" value=""/>
+                      <field name="force" :value="false"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="analytics_reaggregate_modal"/>
+                </sequence>
+              </on>
+              <icon name="rotate" size="sm"/>
+              <span>$t:admin.analytics.diagnostics.buttons.reaggregate</span>
+            </button>
+            </div>
+          </div>
+        </div>
+        <div data-ref="card_storage" class="admin-card">
+          <div class="flex flex-wrap items-center gap-2">
+            <icon name="hard-drive" class="text-gray-500 dark:text-gray-400"/>
+            <span class="text-heading">$t:admin.analytics.diagnostics.cards.storage</span>
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.visits_rows|count={{(analytics_diagnostics?.data?.storage?.exact?.analytics_visits ?? 0) | number}}</span>
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.actions_rows|count={{(analytics_diagnostics?.data?.storage?.exact?.analytics_actions ?? 0) | number}}</span>
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.storage_mb|mb={{Math.round(((analytics_diagnostics?.data?.storage?.tables ?? []).reduce((s, t) => s + ((t.data_bytes ?? 0) + (t.index_bytes ?? 0)), 0)) / 1048576 * 10) / 10}}</span>
+            <badge data-type="composite" data-if="{{analytics_diagnostics?.data?.storage?.over_limit === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.over_limit" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.geoip?.enabled &amp;&amp; analytics_diagnostics?.data?.geoip?.db_present ? 'green' : 'gray'}}" text="{{'GeoIP ' + (analytics_diagnostics?.data?.geoip?.enabled &amp;&amp; analytics_diagnostics?.data?.geoip?.db_present ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? 'red' : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? 'green' : 'gray')}}" text="{{'TrustedProxy ' + (analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? $t('admin.analytics.diagnostics.fields.trusted_proxy_warning') : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off')))}}" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.cloud_ranges?.enabled ? 'green' : 'gray'}}" text="{{$t('admin.analytics.diagnostics.fields.cloud_ranges') + ' ' + (analytics_diagnostics?.data?.cloud_ranges?.enabled ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}" size="sm"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="exclusions_card" class="admin-card mb-4">
+        <div class="flex-between mb-3">
+          <h2 class="section-heading">$t:admin.analytics.diagnostics.exclusions_title</h2>
+          <span class="text-hint">$t:admin.analytics.diagnostics.exclusion_note</span>
+        </div>
+        <!-- 사유가 열두 가지라 배지로 늘어놓으면 줄바꿈에 묻혀 어느 사유가 큰지 읽기 어렵다 — 건수를
+             나란히 세우는 표로 둔다(계획서 §4.10·§4.11 이 「표」로 못박은 자리). -->
+        <div class="overflow-x-auto">
+          <data-grid data-type="composite" data-ref="exclusions_grid" data="{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1], label: (analytics_diagnostics?.data?.collection?.excluded_reason_labels ?? [])[e[0]] }))}}" :pagination="false" idField="reason" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.exclusions_empty">
+            <column field="reason" header="$t:admin.analytics.diagnostics.exclusion_columns.reason">
+              <cell>
+                <span class="text-body">{{row.label || $t('admin.analytics.diagnostics.exclusion_reasons.' + row.reason)}}</span>
+              </cell>
+            </column>
+            <column field="count" header="$t:admin.analytics.diagnostics.exclusion_columns.count" width="120px" align="right">
+              <cell>
+                <span class="text-label">{{(row.count ?? 0) | number}}</span>
+              </cell>
+            </column>
+          </data-grid>
+        </div>
+      </div>
+      <div data-ref="runs_card" class="admin-card mb-4">
+        <blur-until-loaded sources="analytics_archive_runs"/>
+        <h2 class="section-heading mb-3">$t:admin.analytics.diagnostics.runs_title</h2>
+        <div class="overflow-x-auto">
+          <data-grid data-type="composite" data-ref="archive_runs_grid" data="{{analytics_archive_runs?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <on type="action" event="onPageChange">
+              <!-- 집계 이력의 쪽 이동 — 이력 전용 키 `runs_page` 를 쓴다. 같은 화면의 실패 로그가 `failures_page` 를 따로 쓰므로
+                   한쪽 표를 넘겨도 다른 표의 쪽이 따라 움직이지 않는다. -->
+              <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
+                <query runs_page="{{$args[0]}}"/>
+              </navigate>
+            </on>
+            <column field="run_type" header="$t:admin.analytics.diagnostics.run_columns.type" width="120px">
+              <cell>
+                <span class="text-heading">{{$t('admin.analytics.diagnostics.run_types.' + (row.run_type ?? 'day'))}}</span>
+              </cell>
+            </column>
+            <column field="period_start" header="$t:admin.analytics.diagnostics.run_columns.period" width="220px">
+              <cell>
+                <!-- 집계 경계는 사이트 표준시의 자정~자정이고 저장만 UTC 다(`AnalyticsClock::dayRangeUtc`).
+                     원문을 그대로 자르면 KST 사이트에서 「15:00 ~ 15:00」으로 보여, 같은 표의 「시작」 열과
+                     기준이 갈린다 — 운영자가 9시간 어긋난 구간을 읽는다(#682 S3 라운드 6). -->
+                <span class="text-label">{{row.period_start | datetime | default('-')}} ~ {{row.period_end | datetime | default('-')}}</span>
+              </cell>
+            </column>
+            <column field="status" header="$t:admin.analytics.diagnostics.run_columns.status" width="200px">
+              <cell>
+                <!-- 건너뛴 행은 그 이유(다른 집계가 같은 기간을 돌리는 중·이미 확정·보존 기간 밖)를 배지 아래 그대로 보인다 —
+                     배지만 있으면 운영자는 왜 안 돌았는지 알 수 없다(7.1.0 실측 O-E5). 서버가 보는 사람의 언어로 바꿔 싣는다.
+                     실패 행의 error 는 예외 원문이라 조회 권한 화면에 그리지 않는다. -->
+                <div class="flex flex-col items-start gap-1">
+                  <badge data-type="composite" color="{{row.status === 'success' ? 'green' : (row.status === 'failed' ? 'red' : (row.status === 'running' ? 'blue' : 'gray'))}}" text="{{$t('admin.analytics.diagnostics.run_status.' + (row.status ?? 'running'))}}" size="sm"/>
+                  <span data-if="{{row.status === 'skipped' &amp;&amp; !!row.error}}" class="text-hint whitespace-normal">{{row.error}}</span>
+                </div>
+              </cell>
+            </column>
+            <column field="progress_percent" header="$t:admin.analytics.diagnostics.run_columns.progress" width="160px">
+              <cell>
+                <div class="flex-center gap-2">
+                  <div class="flex-1 h-2 rounded bg-gray-100 dark:bg-gray-700">
+                    <div data-ref="run_progress_bar" class="h-2 rounded {{row.status === 'failed' ? 'bg-red-500 dark:bg-red-400' : 'bg-blue-500 dark:bg-blue-400'}}">
+                      <prop name="style">
+                        <field name="width" value="{{((_global.analyticsArchiveProgress?.id === row.id ? _global.analyticsArchiveProgress?.progress_percent : row.progress_percent) ?? 0) + '%'}}"/>
+                      </prop>
+                    </div>
+                  </div>
+                  <span class="text-hint w-10 text-right">{{((_global.analyticsArchiveProgress?.id === row.id ? _global.analyticsArchiveProgress?.progress_percent : row.progress_percent) ?? 0)}}%</span>
+                </div>
+              </cell>
+            </column>
+            <column field="processed_visits" header="$t:admin.analytics.diagnostics.run_columns.processed" width="120px" align="right">
+              <cell>
+                <span class="text-label">{{((_global.analyticsArchiveProgress?.id === row.id ? _global.analyticsArchiveProgress?.processed_visits : row.processed_visits) ?? 0) | number}}</span>
+              </cell>
+            </column>
+            <column field="trigger" header="$t:admin.analytics.diagnostics.run_columns.trigger" width="90px">
+              <cell>
+                <span class="text-label">{{row.trigger ? $t('admin.analytics.diagnostics.run_triggers.' + row.trigger) : '-'}}</span>
+              </cell>
+            </column>
+            <column field="started_at" header="$t:admin.analytics.diagnostics.run_columns.started" width="160px">
+              <cell>
+                <span class="text-label">{{row.started_at | datetime | default('-')}}</span>
+              </cell>
+            </column>
+          </data-grid>
+        </div>
+      </div>
+      <div data-ref="failures_card" class="admin-card">
+        <blur-until-loaded sources="analytics_collect_failures"/>
+        <div class="flex-between flex-wrap gap-3 mb-3">
+          <h2 class="section-heading">$t:admin.analytics.diagnostics.failures_title</h2>
+          <div class="flex-center gap-2">
+            <span class="text-label-subtle">$t:admin.analytics.diagnostics.failures_24h|count={{(analytics_diagnostics?.data?.failures_24h ?? 0) | number}}</span>
+            <select data-ref="failure_reason" name="analytics_failure_reason" class="w-40" value="{{query.reason || ''}}">
+              <options>
+                <option value="">$t:admin.analytics.diagnostics.failure_reasons.all</option>
+                <option value="validation">$t:admin.analytics.diagnostics.failure_reasons.validation</option>
+                <option value="max_actions">$t:admin.analytics.diagnostics.failure_reasons.max_actions</option>
+                <option value="db_error">$t:admin.analytics.diagnostics.failure_reasons.db_error</option>
+                <option value="listener_exception">$t:admin.analytics.diagnostics.failure_reasons.listener_exception</option>
+                <option value="unknown_goal">$t:admin.analytics.diagnostics.failure_reasons.unknown_goal</option>
+                <option value="unknown_dimension">$t:admin.analytics.diagnostics.failure_reasons.unknown_dimension</option>
+              </options>
+              <on type="change">
+                <!-- 실패 사유 필터 — 질의 `reason` 에 싣고(전체면 키를 지운다) 실패 로그만 1쪽으로 돌린다. 집계 이력의 쪽은 건드리지 않는다. -->
+                <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
+                  <query reason="{{$event.target.value || undefined}}" :failures_page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <!-- 실패 로그 조건 초기화 — 사유 필터를 걷고 첫 쪽으로. 이미 전체면 잠근다. -->
+            <button data-ref="failure_filter_reset" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{!query.reason}}">
+              <on type="click">
+                <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
+                  <query reason="{{undefined}}" :failures_page="1"/>
+                </navigate>
+              </on>
+              <icon name="rotate-left" size="sm"/>
+              <span>$t:common.reset</span>
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <data-grid data-type="composite" data-ref="collect_failures_grid" data="{{analytics_collect_failures?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.failures_empty">
+            <on type="action" event="onPageChange">
+              <!-- 실패 로그의 쪽 이동 — `failures_page` 만 바꾼다. 걸어 둔 사유 필터(`reason`)는 병합으로 그대로 남는다. -->
+              <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
+                <query failures_page="{{$args[0]}}"/>
+              </navigate>
+            </on>
+            <column field="occurred_at" header="$t:admin.analytics.diagnostics.failure_columns.time" width="160px">
+              <cell>
+                <span class="text-label">{{row.occurred_at | datetime | default('-')}}</span>
+              </cell>
+            </column>
+            <column field="reason" header="$t:admin.analytics.diagnostics.failure_columns.reason" width="140px">
+              <cell>
+                <badge data-type="composite" color="red" text="{{$t('admin.analytics.diagnostics.failure_reasons.' + (row.reason ?? 'db_error'))}}" size="sm"/>
+              </cell>
+            </column>
+            <column field="message" header="$t:admin.analytics.diagnostics.failure_columns.message">
+              <cell>
+                <span class="text-body break-all">{{row.message ?? '-'}}</span>
+              </cell>
+            </column>
+            <column field="url" header="$t:admin.analytics.diagnostics.failure_columns.url" width="220px">
+              <cell>
+                <span class="text-label break-all">{{row.url ?? '-'}}</span>
+              </cell>
+            </column>
+            <column field="ip" header="{{(analytics_diagnostics?.data?.collection?.ip_mask_octets ?? 0) > 0 ? $t('admin.analytics.diagnostics.failure_columns.ip_masked') : $t('admin.analytics.diagnostics.failure_columns.ip')}}" width="150px">
+              <cell>
+                <!-- 열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은
+                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8). -->
+                <div class="flex-center flex-wrap gap-1">
+                  <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
+                  <badge data-type="composite" data-if="{{row.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>
+                </div>
+              </cell>
+            </column>
+          </data-grid>
+        </div>
+      </div>
+      <!-- 확장이 자기 수집 상태를 붙이는 자리 — 값은 진단 응답의 `extensions.{식별자}`(서버 필터 `core.analytics.diagnostics_sections`)로 온다. -->
+      <extension-point name="analytics_diagnostics_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
+    </div>
+  </slot>
+  <!-- 구간 재집계 창. -->
+  <modal src="partials/admin_analytics/_modal_reaggregate.g7.html"/>
+</layout>

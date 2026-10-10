@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Identity;
 
-use App\Enums\IdentityVerificationStatus;
+use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Models\IdentityPolicy;
-use App\Models\IdentityVerificationLog;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
 use Database\Seeders\IdentityPolicySeeder;
@@ -13,6 +13,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\Identity\PolicyLifecycleTestHelpers;
 use Tests\Support\Identity\TestIdentityProvider;
 use Tests\TestCase;
@@ -37,6 +38,11 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
 
     private IdentityPolicyService $service;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,6 +58,12 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
      *
      * /api/auth/register 가 정책 enabled 시 IDV 를 강제하고, challenge → verify 후에는
      * 정책 미들웨어를 통과해 회원가입이 정상 진행되어야 한다.
+     *
+     * @scenario policy_stage=enforce, verification_progress=verified
+     *
+     * @effects signup_before_submit_full_http_lifecycle
+     *
+     * @return void 반환값 없음
      */
     public function test_signup_before_submit_full_http_lifecycle(): void
     {
@@ -111,6 +123,12 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
      * 3) enforce passes (grace 윈도우 내)
      * 4) Carbon::setTestNow 로 grace 경과 시뮬레이션
      * 5) enforce throws 재발생
+     *
+     * @scenario policy_stage=enforce, verification_progress=expired
+     *
+     * @effects password_change_service_lifecycle_with_grace_window
+     *
+     * @return void 반환값 없음
      */
     public function test_password_change_service_lifecycle_with_grace_window(): void
     {
@@ -126,7 +144,7 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         }
 
         // 2단계 — 결정적 challenge 발급 + verify (Service 레이어로 직접 호출)
-        $logRepository = $this->app->make(\App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface::class);
+        $logRepository = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
         $provider = new TestIdentityProvider($logRepository);
         $challenge = $provider->requestChallenge($user, ['purpose' => 'sensitive_action']);
         $result = $provider->verify($challenge->id, ['code' => TestIdentityProvider::FIXED_CODE]);
@@ -159,8 +177,20 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
      *   4. grace > 0 정책 → Carbon::setTestNow grace+1 분 시뮬레이션
      *   5. grace > 0 정책 → enforce throws again
      *
-     * @dataProvider policyLifecycleProvider
+     * @scenario policy_stage=enforce, verification_progress=verified
+     *
+     * @effects policy_full_service_lifecycle
+     *
+     * @param  string  $policyKey  정책 키
+     * @param  string  $purpose  인증 목적
+     * @param  string  $userType  적용 대상(self, admin 등)
+     * @param  int  $graceMinutes  유예 시간(분)
+     * @param  array|null  $contextHint  정책 조건에 맞출 문맥
+     * @param  string|null  $sourceType  정책 출처 종류
+     * @param  array|null  $declaredOverride  선언 덮어쓰기 값
+     * @return void 반환값 없음
      */
+    #[DataProvider('policyLifecycleProvider')]
     public function test_policy_full_service_lifecycle(
         string $policyKey,
         string $purpose,
@@ -171,7 +201,7 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         ?array $declaredOverride = null,
     ): void {
         if ($sourceType !== 'core') {
-            $this->markTestSkipped("module/plugin 정책은 해당 모듈 테스트에서 검증");
+            $this->markTestSkipped('module/plugin 정책은 해당 모듈 테스트에서 검증');
         }
 
         $user = $userType === 'admin' ? $this->makeAdminUser() : User::factory()->create();
@@ -192,7 +222,7 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         }
 
         // 2. challenge 발급 + verify
-        $logRepository = $this->app->make(\App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface::class);
+        $logRepository = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
         $provider = new TestIdentityProvider($logRepository);
         $challenge = $provider->requestChallenge($user, ['purpose' => $purpose]);
         $result = $provider->verify($challenge->id, ['code' => TestIdentityProvider::FIXED_CODE]);
@@ -216,6 +246,11 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         }
     }
 
+    /**
+     * 코어 9개 정책의 키, 목적, 적용 대상, 유예 시간, 조건을 돌려줍니다.
+     *
+     * @return array<string, array<int, mixed>> 정책 시나리오
+     */
     public static function policyLifecycleProvider(): array
     {
         // 코어 9개 정책 — module/plugin 정책은 각자 모듈 테스트에서 동일 매트릭스 커버.
@@ -250,10 +285,15 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         ];
     }
 
+    /**
+     * 슈퍼 관리자를 만들어 관리자 역할을 붙입니다.
+     *
+     * @return User 관리자
+     */
     private function makeAdminUser(): User
     {
         $admin = User::factory()->create(['is_super' => true]);
-        $adminRole = \App\Models\Role::where('identifier', 'admin')->first();
+        $adminRole = Role::where('identifier', 'admin')->first();
         if ($adminRole) {
             $admin->roles()->attach($adminRole->id, [
                 'assigned_at' => now(),
@@ -266,6 +306,12 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
 
     /**
      * password_reset — HTTP route 레이어 라이프사이클 (게스트, both 적용).
+     *
+     * @scenario policy_stage=enforce, verification_progress=none
+     *
+     * @effects password_reset_route_returns_428_when_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_password_reset_route_returns_428_when_enabled(): void
     {
@@ -274,7 +320,7 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         // user 가 존재해야 AuthService::resetPassword 가 token 검증을 거쳐 hook 까지 도달.
         // 직전 회귀: 명시 미들웨어 등록 제거 후 자동 매핑은 hook scope 정책을 처리하지 않으므로,
         // controller → AuthService 까지 진입해야 hook listener 가 enforce 한다.
-        \App\Models\User::factory()->create(['email' => $email]);
+        User::factory()->create(['email' => $email]);
         // 비밀번호 재설정 토큰 1건 시드
         \DB::table('password_reset_tokens')->insert([
             'email' => $email,
@@ -297,6 +343,12 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         $this->assertSame('password_reset', $payload['purpose']);
     }
 
+    /**
+     * 지정한 정책을 켜고 시험용 본인인증 제공자를 지정합니다.
+     *
+     * @param  string  $key  정책 키
+     * @return IdentityPolicy 켠 정책
+     */
     private function enableSignupPolicy(string $key): IdentityPolicy
     {
         $policy = IdentityPolicy::where('key', $key)->first();
@@ -308,11 +360,22 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         return $policy->fresh();
     }
 
+    /**
+     * 서비스 정책을 가입 정책과 같은 방식으로 켭니다.
+     *
+     * @param  string  $key  정책 키
+     * @return IdentityPolicy 켠 정책
+     */
     private function enableServicePolicy(string $key): IdentityPolicy
     {
         return $this->enableSignupPolicy($key);
     }
 
+    /**
+     * 게스트 요청에 쓸 빈 토큰을 돌려줍니다(라우트가 비로그인 요청도 허용한다).
+     *
+     * @return string 빈 토큰
+     */
     private function guestToken(): string
     {
         // 라우트 미들웨어가 'optional.sanctum' 으로 게스트도 허용 — 빈 문자열로 헤더만 형성
@@ -321,6 +384,10 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
 
     /**
      * 게스트 흐름 (Mode B) 에서 challenge 발급 후 결정적 코드로 검증.
+     *
+     * @param  string  $email  이메일
+     * @param  string  $purpose  인증 목적
+     * @return array<string, mixed> 검증 결과
      */
     private function issueAndVerifyChallengeAsGuest(string $email, string $purpose): array
     {

@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-definition-template-pruning.test.tsx
- * @description 알림/본인인증 정의 목록 — 템플릿 프루닝 후 화면 계약 회귀 테스트
+ * @description 알림 정의 목록 — 템플릿 프루닝 후 화면 계약 회귀 테스트
  *
  * 회귀 배경 (#518 / 공개 #76):
  * 두 정의 목록이 행마다 채널×로케일 템플릿 본문을 전량 싣고 있었다. 계획서는 목록에서
@@ -8,7 +8,7 @@
  * 본문을 실제로 렌더하고 있었다 — 통째로 빼면 기능이 사라진다. 그래서 방식을 바꿨다.
  *
  *  - 알림 정의: 행은 그대로 두고 **각 행의 템플릿을 한 채널로 좁혀** 싣는다(`template_channel`).
- *  - 본인인증 정의: 화면이 `templates[0]` 만 읽으므로 **대표 1건**만 싣는다.
+ *  - (본인인증 정의 목록은 7.1.0 에서 알림 정의로 통합되어 위 규칙을 그대로 따른다 — #699)
  *
  * 이 방식은 응답을 줄이는 대신 **새로운 방식의 회귀 가능성**을 만든다.
  *
@@ -16,12 +16,10 @@
  *     예외도 콘솔 경고도 없다. 두 표현식이 각각 옳아도 **서로 다르면** 깨진다.
  *  2. 채널을 가리지 않는 판정(예전의 `templates.some(t => !t.is_default)`)이 남아 있으면 →
  *     한 채널만 실린 배열을 전수라고 오판해, 다른 채널만 수정한 정의를 놓친다.
- *  3. 본인인증 쪽이 `templates[1]` 이상을 읽으면 → 대표 1건만 오는 목록에서 영영 비어 있다.
  *
- * 셋 다 응답만 보는 백엔드 테스트로는 잡히지 않는다 — 화면이 무엇을 찾는지가 조건이기 때문이다.
+ * 둘 다 응답만 보는 백엔드 테스트로는 잡히지 않는다 — 화면이 무엇을 찾는지가 조건이기 때문이다.
  *
- * 마킹은 아래 describe 블록마다 따로 붙인다 — 한 docblock 에서는 @scenario/@effects 가
- * 각각 첫 줄만 읽히므로, 여기에 두 리소스를 나열하면 뒤엣것이 조용히 누락된다.
+ * 마킹은 테스트마다 붙인다 — 한 docblock 에서는 시나리오·효과 태그가 각각 첫 줄만 읽힌다.
  */
 
 import fs from 'fs';
@@ -32,10 +30,6 @@ const SETTINGS_LAYOUT = path.resolve(__dirname, '../../layouts/admin_settings.js
 const NOTIFICATION_TAB = path.resolve(
     __dirname,
     '../../layouts/partials/admin_settings/_tab_notification_definitions.json',
-);
-const IDENTITY_TAB = path.resolve(
-    __dirname,
-    '../../layouts/partials/admin_settings/_tab_identity_messages.json',
 );
 
 /**
@@ -134,11 +128,11 @@ function extractConsumerChannel(bindings: string[]): string | null {
     return null;
 }
 
-/**
- * @scenario resource=notification_definition,endpoint=list,observation=consumer_screen
- * @effects definition_list_channel_scope_matches_consumer, definition_list_cross_channel_judgment_uses_aggregate
- */
 describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => {
+    /**
+     * @scenario resource=notification_definition,endpoint=list,observation=consumer_screen
+     * @effects definition_list_channel_scope_matches_consumer
+     */
     it('데이터소스가 요청하는 채널과 화면이 찾는 채널이 같다', () => {
         const layout = readLayout(SETTINGS_LAYOUT);
 
@@ -169,6 +163,10 @@ describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => 
         expect(unwrap(String(requested))).toBe(consumerChannel);
     });
 
+    /**
+     * @scenario resource=notification_definition,endpoint=list,observation=consumer_screen
+     * @effects definition_list_channel_scope_matches_consumer
+     */
     it('채널 표현식이 URL 단일 출처다 (_local 을 섞지 않는다)', () => {
         // 회귀 배경 (#518 3차 실측 결함 #1):
         // 종전 표현식은 `_local.activeNotificationChannel ?? query.channel ?? 'mail'` 이었다.
@@ -199,6 +197,10 @@ describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => 
         ).toEqual([]);
     });
 
+    /**
+     * @scenario resource=notification_definition,endpoint=list,observation=consumer_screen
+     * @effects definition_list_channel_scope_matches_consumer
+     */
     it('템플릿을 고르는 모든 표현식이 채널로 좁혀져 있다', () => {
         const bindings = collectBindings(readLayout(NOTIFICATION_TAB));
 
@@ -222,6 +224,10 @@ describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => 
         ).toEqual([]);
     });
 
+    /**
+     * @scenario resource=notification_definition,endpoint=list,observation=consumer_screen
+     * @effects definition_list_cross_channel_judgment_uses_aggregate
+     */
     it('채널을 가리지 않는 판정은 서버 집계를 쓴다', () => {
         const bindings = collectBindings(readLayout(NOTIFICATION_TAB));
 
@@ -236,36 +242,5 @@ describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => 
         );
 
         expect(legacy, '전 채널 판정을 배열 순회로 되돌리면 안 된다').toEqual([]);
-    });
-});
-
-/**
- * @scenario resource=identity_message_definition,endpoint=list,observation=consumer_screen
- * @effects identity_definition_list_uses_representative_template
- */
-describe('본인인증 메시지 정의 목록 — 대표 템플릿 (#518 / 공개 #76)', () => {
-    it('화면이 대표 1건만 읽는다 (목록이 그 이상을 싣지 않는다)', () => {
-        const bindings = collectBindings(readLayout(IDENTITY_TAB));
-        const templateReads = bindings.filter((binding) => /\bdef\.templates\b/.test(binding));
-
-        expect(
-            templateReads.length,
-            '본인인증 정의 화면이 템플릿을 읽고 있어야 한다',
-        ).toBeGreaterThan(0);
-
-        // `templates[0]` 이외의 인덱스나 순회를 쓰면, 대표 1건만 오는 목록에서 영영 비어 있다.
-        const beyondFirst = templateReads.filter((binding) =>
-            /def\.templates\s*\??\.?\[\s*(?!0\s*\])/.test(binding),
-        );
-
-        expect(beyondFirst, '대표 1건을 넘어서는 참조가 있으면 목록에서 값이 비어 있다').toEqual(
-            [],
-        );
-
-        const iterated = templateReads.filter((binding) =>
-            /def\.templates[\s\S]*\.(map|forEach|filter|some|every|find)\s*\(/.test(binding),
-        );
-
-        expect(iterated, '목록에서 전량 순회는 성립하지 않는다 (대표 1건만 실린다)').toEqual([]);
     });
 });

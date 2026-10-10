@@ -1,0 +1,40 @@
+<!-- 회원 편집 화면(코어 `admin_user_form`)에 이커머스가 덧붙이는 결제 통화 칸. 코어는 통화를 모르므로
+  이 조각이 없으면 회원에게 통화 개념 자체가 없다.
+  이 칸은 **자기 저장 버튼을 갖지 않는다** — `name` 바인딩으로 회원정보 폼에 실려 화면 하단 [저장]
+  한 번에 코어 회원 저장 요청과 함께 넘어가고, 이커머스가 코어 훅
+  (`UserPreferenceCoreSaveListener`)으로 같은 요청 안에서 검증·저장한다. 잘못된 값·권한 없음은 그 요청의
+  검증 오류로 돌아와 칸 아래에 뜬다. 그래서 여기에는 액션이 하나도 없고, 대신 신규 등록 화면에서는 통째로
+  숨는다(`route?.id` 조건 — 회원이 아직 없으면 붙일 대상도 없다). 
+  주입이 **두 군데**로 갈린다 — 탭 목록에 항목 하나(`user_form_tabs`, inject_props)와 그 탭이 펼칠
+  본문(`extension_form_content`, append_child). 본문만 넣으면 카드는 뜨는데 **책갈피 탭이 없어**
+  찾아갈 수가 없다. 둘을 잇는 것은 `id` 하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
+  폭은 `md:w-64` 를 쓴다 — `sm:w-64` 는 관리자 템플릿 safelist 에 없어 CSS 가 생성되지 않고,
+  그러면 `w-full` 만 남아 Select 래퍼가 내용 폭으로 접힌다(실측 113px). -->
+<extension target-layout="admin_user_form" priority="330">
+  <inject target-id="user_form_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_user_currency" label="$t:sirsoft-ecommerce.admin.user_currency.title" iconName="coins" if="{{!!route?.id}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_form_content" position="append_child">
+    <!-- 회원 결제 통화 설정 (A3 — 편집 모드 + 이커머스 설치 시에만) -->
+    <div data-ref="ext_user_currency_content" id="ext_user_currency" data-if="{{route?.id &amp;&amp; user?.data?.ecommerce_preferred_currency !== undefined}}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <icon name="coins" size="md" class="text-gray-600 dark:text-gray-400"/>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_currency.title</h3>
+        </div>
+        <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+      </div>
+      <!-- 통화 Select — name 바인딩으로 회원정보 폼(dataKey=form)에 자동 포함. 별도 저장버튼 없음(D9): 화면 하단 회원정보 [저장] 요청 본문에 실려 함께 저장된다. -->
+      <select name="ecommerce_preferred_currency" aria-label="$t:sirsoft-ecommerce.admin.user_currency.title" disabled="{{user?.data?.ecommerce_currency_can_manage !== true}}" value="{{_local.form?.ecommerce_preferred_currency ?? user?.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full md:w-64"/>
+      <!-- 회원정보 저장 요청의 검증 오류(미등록 통화·변경 권한 없음)를 이 칸 아래에 띄운다 -->
+      <p data-if="{{_local.errors?.ecommerce_preferred_currency}}" class="text-red-500 text-xs mt-1">{{_local.errors?.ecommerce_preferred_currency?.[0] ?? ''}}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.user_currency.description</p>
+    </div>
+  </inject>
+</extension>

@@ -43,9 +43,8 @@ return [
     'settings_limits' => [...],        // 관리자 환경설정 입력 한계값
     'pagination' => [...],             // 목록 한계값 기본값 → pagination.md
     'search' => [...],                 // DBMS 별 부분일치 연산자 → search-system.md
-    'notification_definitions' => [...], // 알림 정의 → notification-system.md
+    'notification_definitions' => [...], // 알림 정의 (본인인증 알림 identity.* 포함) → notification-system.md, identity-messages.md
     'identity_policies' => [...],      // 본인인증 정책 → identity-policies.md
-    'identity_messages' => [...],      // 본인인증 메시지 → identity-messages.md
     'identity_purposes' => [...],      // 본인인증 목적 → identity-policies.md
 ];
 ```
@@ -53,7 +52,9 @@ return [
 키를 새로 추가할 때는 그 키를 설명하는 규정 문서를 함께 지정하고 이 목록에 한 줄을 더합니다.
 목록이 실제 구조와 어긋나면 "여기 없으니 없는 값" 으로 읽혀 중복 키가 생깁니다.
 
-> **변경 이력 (7.0.0-beta.2)**: `mail_templates` 키는 알림 시스템 통합(#146)으로 제거되었습니다. 코어 메일 템플릿은 `notification_definitions` + `notification_templates` 로 이전되었으며, `database/seeders/NotificationDefinitionSeeder` 가 시드 데이터를 직접 보유합니다.
+> **변경 이력 (7.0.0-beta.2)**: `mail_templates` 키는 알림 시스템 통합(#146)으로 제거되었습니다. 코어 메일 템플릿은 `notification_definitions` + `notification_templates` 로 이전되었으며, `database/seeders/NotificationDefinitionSeeder` 가 `notification_definitions` 키를 읽어 시드합니다.
+>
+> **변경 이력 (7.1.0)**: `identity_messages` 키는 본인인증 메시지의 알림 시스템 통합(#699)으로 제거되었습니다. 본인인증 메일 문구는 `notification_definitions` 의 `identity.default` / `identity.purpose.{purpose}` 항목(`category => 'identity'`)으로 선언합니다.
 
 ---
 
@@ -89,7 +90,7 @@ permissions
         'name' => ['ko' => '사용자 관리', 'en' => 'User Management'],
         'description' => [...],
         'category' => 'users',     // 카테고리 슬러그
-        'order' => 1,
+        'order' => 100,            // 정수(소수는 반올림돼 동순위). 코어 카테고리는 100 단위로 두어 사이에 끼울 자리를 남김
         'type' => 'admin',         // 카테고리 타입 (선택, 미지정 시 하위 권한에서 추론)
         'permissions' => [
             [

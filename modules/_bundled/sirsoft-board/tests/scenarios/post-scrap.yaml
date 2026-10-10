@@ -1,0 +1,113 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
+#   축은 이 기능이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이 갈리는 분기가
+#   아니다(예: 표 셀 여백을 재는 테스트에 검색 대상·게시판 설정 값을 곱해도 재는 것이 같다).
+#   실제 커버리지 계약은 effects 목록이며, 선언한 항목은 모두 테스트가 재고 green 이다.
+
+feature: 게시글 스크랩(북마크) 기능
+
+description: |
+  게시글을 개인 보관함에 저장하는 스크랩 기능. 게시글 상세에서 토글로 등록/해제하고,
+  마이페이지 "스크랩" 탭에서 최근 스크랩순으로 모아 본다. 원글이 삭제돼도 스크랩 레코드는
+  보존되어 "삭제된 게시글" 로 표시되며, 마이페이지에서 개별 삭제로 정리할 수 있다.
+
+  이슈 #524. 찜(ProductWishlist) 토글 패턴과 신고(Report) 스코프 검증 패턴을 따른다.
+
+  엔드포인트:
+    - POST   /api/modules/sirsoft-board/boards/{slug}/posts/{id}/scrap/toggle  (상세 버튼, 있으면 해제·없으면 등록)
+    - GET    /api/modules/sirsoft-board/me/scraps                              (마이페이지 목록, 최근 스크랩순)
+    - DELETE /api/modules/sirsoft-board/me/scraps/{id}                         (마이페이지 개별 삭제)
+
+  검증 계층:
+    - 백엔드(PostScrapApiTest, 17건 green): 토글 양방향·카운트 정합·스코프·use_scrap·비로그인·활동로그·목록·삭제·삭제글 정보 노출·탈퇴회원 익명화·제목 검색(매칭/미매칭/삭제글 제외)
+    - 레이아웃 렌더링(board-scrap.test.tsx, 53건 green): 상세 버튼·마이페이지 탭/카드/모달·탭 위치·안내 배너·표/카드 반응형·해제 버튼·페이지네이션·검색 UI·빈 상태 카드 스타일·이전글/다음글 이동 시 스크랩 상태 초기화 회귀
+    - E2E(board-scrap.spec.ts): 등록→마이페이지 확인→해제 사용자 흐름 (placeholder, 시드+data-testid 보강 후 활성화)
+
+  이슈 #524 후속(2026-08-06): 마이페이지 목록 UI를 카드형에서 표 형태(PC)+카드형(모바일) 반응형으로
+  전면 재구성하고, 삭제된 원글의 스크랩도 게시판명·작성자명을 노출하도록 정책 변경(제목·댓글수는 계속
+  미노출). 탈퇴 회원의 글은 다른 게시판 API(PostResource·CommentResource·BoardRepository)와 동일하게
+  author_name 을 익명화 — 삭제글도 예외 없이 적용. 해제 버튼을 아이콘에서 텍스트 버튼("해제")으로,
+  페이지네이션을 상시 표시로 변경. 게시글 제목 검색(마이페이지 게시판 활동 탭과 동일 패턴)을 추가 —
+  삭제된 원글은 응답에서 title 이 노출되지 않으므로 검색 대상에서도 제외된다(whereHas 기본 동작이
+  이 의미를 정확히 구현).
+
+axes:
+  action: [toggle_add, toggle_remove, mypage_list, mypage_delete, mypage_search, mypage_bulk_delete]
+  actor: [owner, guest, other_user]
+  board_setting: [use_scrap_on, use_scrap_off, inactive, board_deleted]
+  post_state: [alive, soft_deleted]
+  post_scope: [same_board, other_board]
+  search_field: [title_content, title, content]
+
+effects:
+  - mypage_filtered_empty_says_no_results
+  - scrap_record_created_on_add
+  - scrap_record_deleted_on_toggle_remove
+  - scrap_count_incremented_on_add
+  - scrap_count_decremented_on_remove
+  - scrap_count_never_negative
+  - cross_board_post_rejected_404
+  - scrap_disabled_board_rejected_403
+  - guest_toggle_rejected_401
+  - mypage_list_sorted_recent_first
+  - mypage_list_includes_deleted_post
+  - mypage_delete_requires_ownership
+  - activity_log_scrap_add_written
+  - activity_log_scrap_remove_written
+  - detail_button_reflects_is_scraped
+  - detail_shows_scrap_count
+  - mypage_list_deleted_post_exposes_board_and_author
+  - mypage_list_withdrawn_author_anonymized
+  - mypage_list_notice_banner_shown
+  - mypage_list_search_filters_by_title
+  - mypage_list_search_excludes_deleted_post_title
+  # 2026-09-14 (#524 WP-A) — 검색 대상 구분
+  - mypage_list_search_field_title_content_matches_title_or_content
+  - mypage_list_search_field_title_ignores_content
+  - mypage_list_search_field_content_ignores_title
+  # 7.1.0 실측 O-K3-3 — 모르는 값은 422 대신 기본 검색 대상(제목+내용)
+  - mypage_list_unknown_search_field_falls_back_to_title_content
+  - mypage_list_search_excludes_disabled_board
+  - mypage_list_datasource_passes_search_field
+  - mypage_list_init_defaults_search_and_selection
+  - mypage_list_search_field_offers_three_targets
+  - mypage_list_enter_runs_same_search_sequence
+  # 2026-09-14 (#524 WP-A) — 선택 삭제
+  - mypage_bulk_delete_removes_only_owned_rows
+  - mypage_bulk_delete_decrements_scrap_count_per_post
+  - mypage_bulk_delete_writes_unscrap_log_per_row
+  - mypage_bulk_delete_validates_ids
+  - mypage_list_search_clears_selection
+  - mypage_list_select_all_uses_every_and_map
+  - mypage_list_row_checkbox_toggles_membership
+  - mypage_list_bulk_button_opens_modal_when_selected
+  - mypage_bulk_modal_sends_ids_and_clears_selection
+  - mypage_single_delete_removes_id_from_selection
+  - mypage_single_delete_works_for_disabled_row
+  # 2026-09-14 (#524 WP-A) — 세 상태(정상·스크랩 중지·삭제글)의 행 구분
+  - mypage_list_flags_scrap_disabled_board
+  - mypage_list_flags_inactive_board
+  - mypage_list_keeps_scraps_of_deleted_board
+  - mypage_list_marks_scrap_disabled_row
+  - mypage_list_marks_deleted_board_row
+  - mypage_list_testids_cover_pc_and_mobile
+  # 기존 화면 계약(이번에 마킹을 채우며 명시)
+  - mypage_delete_opens_confirm_modal
+  - mypage_list_pagination_always_visible
+  - mypage_list_empty_state_uses_card_box
+  - mypage_list_table_and_card_are_exclusive
+  - mypage_tab_follows_board_activity
+  - detail_scrap_state_not_inherited_by_sibling
+  # K2 실측(2026-10-06) — 게시판 삭제 스크랩 표시·좁은 화면 검색 줄·창 버튼 커서·일괄 버튼 문구
+  - mypage_list_board_deleted_row_shows_board_deleted_flag
+  - mypage_list_search_input_shrinks_on_narrow_screen
+  - mypage_scrap_modal_buttons_show_pointer
+  - mypage_scrap_bulk_button_says_remove
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostScrapApiTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-scrap.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-scrap.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

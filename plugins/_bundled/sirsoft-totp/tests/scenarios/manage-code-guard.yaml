@@ -1,0 +1,16 @@
+feature: 인증 앱 해제·백업 코드 재발급의 코드 길이 잠금
+
+description: |
+  관리자 보안 화면에서 인증 앱을 해제하거나 백업 코드를 다시 받을 때는 현재 앱 코드(또는 백업 코드)를
+  넣어야 한다. 서버는 6자 이상만 받으므로(min:6) 두 버튼도 6자(앞뒤 공백 제외) 미만이면 잠긴다.
+
+axes:
+  code_length: [short, enough]
+
+exclusions: []
+
+effects:
+  - manage_buttons_require_six_characters
+
+test_files:
+  - plugins/_bundled/sirsoft-totp/resources/js/__tests__/layouts/manageCodeLengthGuard.test.tsx

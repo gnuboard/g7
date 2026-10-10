@@ -1,0 +1,1621 @@
+{
+    "comment": "전 회원의 상품문의를 조회하고 정리한다. 조회 조건은 전부 URL 쿼리에 실려 재진입·뒤로가기에서 그대로 재현되고,\n  진입 시 `<init>` 이 그 쿼리를 필터 입력값으로 되돌려 담는다. 회원 상세에서 「목록 보기」로 들어오면\n  `user_uuid` 가 붙고 그때만 상단 배너가 선다 — 전체를 보고 있다고 오해하지 않도록.",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_inquiry_index",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.inquiries.title",
+        "description": "$t:sirsoft-ecommerce.admin.inquiries.description"
+    },
+    "data_sources": [
+        {
+            "id": "inquiries",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.inquiries",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/inquiries",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "sort": "{{query.sort || 'created_at_desc'}}",
+                "search_field": "{{query.search_field || 'member'}}",
+                "search_keyword": "{{query.search_keyword || ''}}",
+                "user_uuid": "{{query.user_uuid}}",
+                "start_date": "{{query.start_date || ''}}",
+                "end_date": "{{query.end_date || ''}}",
+                "is_answered": "{{query.is_answered}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0
+                    }
+                }
+            },
+            "comment": "상품문의 목록 — 페이지·정렬·검색·기간·회원 한정을 전부 쿼리에서 읽어 넘긴다. progressive 라 첫 그림은 폴백(빈 목록)으로 먼저 그리고, 권한이 없으면 403 을 콘텐츠 영역 오류 화면으로 보인다"
+        }
+    ],
+    "initLocal": {
+        "filter": {
+            "searchField": "member",
+            "searchKeyword": "",
+            "startDate": "",
+            "endDate": "",
+            "isAnswered": ""
+        }
+    },
+    "permissions": [
+        "sirsoft-ecommerce.inquiries.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "inquiries"
+        ]
+    },
+    "named_actions": {
+        "searchadmin_ecommerce_inquiry_index": {
+            "comment": "검색 실행 — 열거한 조건만 URL 로 옮기고 페이지당 개수·정렬은 유지한다. page 는 새 검색이므로 1쪽으로 되돌린다.\n       회원 필터(user_uuid)는 건드리지 않는다 — \"이 회원 안에서 검색\" 이 자연스럽고 해제는 전용 버튼이 한다",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/inquiries",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "inquiries_datagrid__body",
+                "query": {
+                    "page": "",
+                    "search_field": "{{_local.filter.searchField ?? 'member'}}",
+                    "search_keyword": "{{_local.filter.searchKeyword ?? ''}}",
+                    "start_date": "{{_local.filter.startDate ?? ''}}",
+                    "end_date": "{{_local.filter.endDate ?? ''}}",
+                    "is_answered": "{{_local.filter.isAnswered ?? ''}}"
+                }
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filter": {
+                    "searchField": "{{query.search_field || 'member'}}",
+                    "searchKeyword": "{{query.search_keyword || ''}}",
+                    "startDate": "{{query.start_date || ''}}",
+                    "endDate": "{{query.end_date || ''}}",
+                    "isAnswered": "{{query.is_answered || ''}}"
+                }
+            }
+        },
+        {
+            "comment": "선택은 화면 상태다 — 재진입 시 이전 선택이 남아 있으면 보이지 않는 행이 일괄 삭제에 실린다",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedItems_inquiries": []
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "inquiries_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "page-header"
+                        },
+                        "children": [
+                            {
+                                "id": "page_header_left",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.inquiries.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "page-description"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.inquiries.description"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "회원 필터 배너 — 회원 상세에서 건너온 상태를 화면이 말해 주지 않으면 전체 목록으로 읽힌다",
+                        "id": "member_filter_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!!query.user_uuid}}",
+                        "props": {
+                            "className": "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "circle-info",
+                                    "className": "text-base text-blue-600 dark:text-blue-400"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-blue-700 dark:text-blue-300 flex-1"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.member_filter_notice"
+                            },
+                            {
+                                "id": "member_filter_clear",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "회원 한정만 떼고 검색어·기간은 남긴다 — 배너가 말하는 것이 그것뿐이다",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/inquiries",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "inquiries_datagrid__body",
+                                            "query": {
+                                                "user_uuid": "",
+                                                "page": ""
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.member_filter_clear"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "filter_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "filter_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap items-end gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "search_field_group",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-col gap-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.search_label"
+                                            },
+                                            {
+                                                "id": "search_field_select",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "검색 대상만 손에 담아 둔다 — 조회는 검색 버튼(또는 엔터)이 URL 로 옮길 때 일어난다",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter": {
+                                                                "searchField": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "className": "w-32 text-sm",
+                                                    "value": "{{_local.filter.searchField ?? 'member'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "member",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.search_fields.member"
+                                                        },
+                                                        {
+                                                            "value": "member_id",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.search_fields.member_id"
+                                                        },
+                                                        {
+                                                            "value": "email",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.search_fields.email"
+                                                        },
+                                                        {
+                                                            "value": "product",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.search_fields.product"
+                                                        },
+                                                        {
+                                                            "value": "content",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.search_fields.content"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_keyword_group",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-col gap-1 flex-1 min-w-[200px]"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.keyword_label"
+                                            },
+                                            {
+                                                "id": "search_keyword_input",
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "검색어를 손에 담아 둔다 — 엔터가 검색 액션을 부른다",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter": {
+                                                                "searchKeyword": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "keypress",
+                                                        "key": "Enter",
+                                                        "actionRef": "searchadmin_ecommerce_inquiry_index"
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "text",
+                                                    "className": "text-sm",
+                                                    "placeholder": "$t:sirsoft-ecommerce.admin.inquiries.filters.keyword_placeholder",
+                                                    "value": "{{_local.filter.searchKeyword ?? ''}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "date_range_group",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-col gap-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.date_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "start_date_input",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "기간 시작 — 담아만 둔다",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter": {
+                                                                        "startDate": "{{$event.target.value}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.inquiries.filters.date_label')}}",
+                                                            "type": "date",
+                                                            "className": "text-sm",
+                                                            "value": "{{_local.filter.startDate ?? ''}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                        },
+                                                        "text": "~"
+                                                    },
+                                                    {
+                                                        "id": "end_date_input",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "기간 끝 — 담아만 둔다",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter": {
+                                                                        "endDate": "{{$event.target.value}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.inquiries.filters.date_label')}}",
+                                                            "type": "date",
+                                                            "className": "text-sm",
+                                                            "value": "{{_local.filter.endDate ?? ''}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "is_answered_filter",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-col gap-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.is_answered_label"
+                                            },
+                                            {
+                                                "id": "is_answered_select",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "답변 여부 — 담아만 둔다",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter": {
+                                                                "isAnswered": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "className": "w-32 text-sm",
+                                                    "value": "{{_local.filter.isAnswered ?? ''}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.filters.is_answered_all"
+                                                        },
+                                                        {
+                                                            "value": "1",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.filters.is_answered_yes"
+                                                        },
+                                                        {
+                                                            "value": "0",
+                                                            "label": "$t:sirsoft-ecommerce.admin.inquiries.filters.is_answered_no"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "filter_buttons",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "reset_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "초기화 ①  손에 담아 둔 조건과 선택을 먼저 비운다 (URL 만 털면 화면 입력값이 남는다)",
+                                                        "type": "click",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter": {
+                                                                "searchField": "member",
+                                                                "searchKeyword": "",
+                                                                "startDate": "",
+                                                                "endDate": "",
+                                                                "isAnswered": ""
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "초기화 ②  선택도 비운다 — 조건이 바뀌면 다른 행 집합이다",
+                                                        "type": "click",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedItems_inquiries": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/inquiries",
+                                                            "mergeQuery": false
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.reset"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "search_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "actionRef": "searchadmin_ecommerce_inquiry_index"
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "px-4 py-2 text-sm bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 font-medium"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ecommerce.admin.inquiries.filters.search"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_action_bar",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.inquiries.bulk.selected_count|count={{(_global.selectedItems_inquiries ?? []).length}}"
+                            },
+                            {
+                                "id": "bulk_delete_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "modal_inquiries_bulk_delete"
+                                    }
+                                ],
+                                "props": {
+                                    "data-testid": "admin-inquiries-bulk-delete",
+                                    "type": "button",
+                                    "disabled": "{{inquiries?.data?.abilities?.can_manage !== true || (_global.selectedItems_inquiries ?? []).length === 0}}",
+                                    "className": "px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.admin.inquiries.bulk.delete"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "table_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex flex-wrap items-center justify-between gap-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-primary font-bold"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.inquiries.table.total_count|count={{inquiries?.data?.pagination?.total ?? 0}}"
+                            },
+                            {
+                                "id": "table_header_controls",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "sort_select",
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "정렬이 바뀌면 같은 체크가 다른 행을 가리키므로 선택을 먼저 비운다",
+                                                "type": "change",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedItems_inquiries": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/inquiries",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "transition_overlay_target": "inquiries_datagrid__body",
+                                                            "query": {
+                                                                "sort": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "className": "w-40 text-sm",
+                                            "value": "{{query.sort || 'created_at_desc'}}",
+                                            "options": [
+                                                {
+                                                    "value": "created_at_desc",
+                                                    "label": "$t:sirsoft-ecommerce.admin.inquiries.sort.created_at_desc"
+                                                },
+                                                {
+                                                    "value": "created_at_asc",
+                                                    "label": "$t:sirsoft-ecommerce.admin.inquiries.sort.created_at_asc"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "id": "per_page_select",
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "페이지당 개수 — 행 집합이 바뀌므로 선택을 먼저 비우고 1쪽으로",
+                                                "type": "change",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedItems_inquiries": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/inquiries",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "transition_overlay_target": "inquiries_datagrid__body",
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "className": "w-32 text-sm",
+                                            "value": "{{query.per_page || '20'}}",
+                                            "options": [
+                                                {
+                                                    "value": "10",
+                                                    "label": "10"
+                                                },
+                                                {
+                                                    "value": "20",
+                                                    "label": "20"
+                                                },
+                                                {
+                                                    "value": "50",
+                                                    "label": "50"
+                                                },
+                                                {
+                                                    "value": "100",
+                                                    "label": "100"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "inquiries_datagrid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "actions": [
+                            {
+                                "comment": "선택 행 ID 를 전역에 둔다 — 일괄 삭제 버튼과 확인 모달이 같은 값을 읽는다",
+                                "type": "change",
+                                "event": "onSelectionChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedItems_inquiries": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "comment": "쪽 이동 — 선택을 비우고 page 만 바꾼다",
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "comment": "다음 쪽으로 넘어가면 화면에 없는 행이 선택된 채로 일괄 삭제에 실린다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedItems_inquiries": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/inquiries",
+                                            "replace": true,
+                                            "mergeQuery": true,
+                                            "transition_overlay_target": "inquiries_datagrid__body",
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "행 메뉴 — 삭제는 대상을 전역에 두고 확인 모달로, 회원 보기는 회원 상세로",
+                                "event": "onRowAction",
+                                "handler": "switch",
+                                "cases": {
+                                    "delete": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteTarget_inquiries": "{{$args[1]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "modal_inquiries_delete"
+                                            }
+                                        ]
+                                    },
+                                    "reply": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "comment": "직전 답변 초안이 다음 문의로 새면 엉뚱한 회원에게 나간다 — 열 때마다 비운다",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "replyTarget_inquiries": "{{$args[1]}}",
+                                                    "replyContent_inquiries": "",
+                                                    "replying_inquiries": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "modal_inquiries_reply"
+                                            }
+                                        ]
+                                    },
+                                    "go_to_member": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/{{$args[1]?.member?.uuid}}"
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "data": "{{inquiries?.data?.data}}",
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 20,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{inquiries?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{inquiries?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{inquiries?.data?.pagination?.has_more_pages ?? false}}",
+                            "selectable": "{{inquiries?.data?.abilities?.can_manage === true}}",
+                            "selectionScope": "page",
+                            "selectedIds": "{{_global.selectedItems_inquiries || []}}",
+                            "idField": "id",
+                            "responsiveBreakpoint": 768,
+                            "showFirstLast": true,
+                            "emptyMessage": "$t:sirsoft-ecommerce.admin.inquiries.table.empty",
+                            "actionsColumnHeader": "$t:common.actions",
+                            "selectedCountText": "",
+                            "rowActions": [
+                                {
+                                    "id": "reply",
+                                    "label": "$t:sirsoft-ecommerce.admin.inquiries.actions.reply",
+                                    "iconName": "comment",
+                                    "disabledField": "abilities.can_reply"
+                                },
+                                {
+                                    "id": "delete",
+                                    "label": "$t:sirsoft-ecommerce.admin.inquiries.actions.delete",
+                                    "iconName": "trash",
+                                    "disabledField": "abilities.can_delete"
+                                },
+                                {
+                                    "id": "go_to_member",
+                                    "label": "$t:sirsoft-ecommerce.admin.inquiries.actions.view_member",
+                                    "iconName": "user"
+                                }
+                            ],
+                            "columns": [
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-ecommerce.admin.inquiries.columns.created_at",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{row.created_at}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "member",
+                                    "header": "$t:sirsoft-ecommerce.admin.inquiries.columns.member",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!row.member?.uuid}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "회원 이름을 누르면 그 회원 상세로 간다 — 지우기 전에 \"누구인가\" 를 확인하는 자리다",
+                                                                    "type": "click",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/users/{{row.member?.uuid}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "className": "font-medium text-gray-900 dark:text-white cursor-pointer hover:underline"
+                                                            },
+                                                            "text": "{{row.member?.name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!row.member}}",
+                                                            "props": {
+                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.inquiries.badges.guest"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{row.member?.is_withdrawn}}",
+                                                            "props": {
+                                                                "color": "gray",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.inquiries.badges.withdrawn"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.member?.email}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{row.member?.email}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "product",
+                                    "header": "$t:sirsoft-ecommerce.admin.inquiries.columns.product",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{row.product?.name ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1 flex-wrap"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{row.product?.display_status === 'hidden'}}",
+                                                            "props": {
+                                                                "color": "gray",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "{{row.product?.display_status_label}}"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{row.product?.sales_status && row.product?.sales_status !== 'on_sale'}}",
+                                                            "props": {
+                                                                "color": "yellow",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "{{row.product?.sales_status_label}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "content_excerpt",
+                                    "header": "$t:sirsoft-ecommerce.admin.inquiries.columns.content",
+                                    "cellClassName": "max-w-xs",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!row.content_excerpt}}",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{row.content_excerpt}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!row.content_excerpt}}",
+                                            "props": {
+                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.inquiries.content_unavailable"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "is_answered",
+                                    "header": "$t:sirsoft-ecommerce.admin.inquiries.columns.status",
+                                    "cellChildren": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{row.is_answered}}",
+                                            "props": {
+                                                "color": "green",
+                                                "size": "sm"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.inquiries.status.answered"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{!row.is_answered}}",
+                                            "props": {
+                                                "color": "yellow",
+                                                "size": "sm"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.inquiries.status.pending"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "단건 삭제 확인 — 지우는 것은 회원이 담아 둔 기록이다. 그 사실을 본문이 분명히 말한다",
+            "id": "modal_inquiries_delete",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-ecommerce.admin.inquiries.modal.delete.title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.inquiries.modal.delete.message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "deleting_inquiries": true
+                                    }
+                                },
+                                {
+                                    "comment": "상품문의 단건 삭제 — 성공하면 목록을 다시 받고 실패 사유는 오류 모달에 싣는다",
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/inquiries/{{_global.deleteTarget_inquiries?.id}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "comment": "지운 행이 선택에 남아 있으면 다음 일괄 삭제가 없는 ID 를 싣는다",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "deleting_inquiries": false,
+                                                "selectedItems_inquiries": "{{(_global.selectedItems_inquiries || []).filter(v => v !== _global.deleteTarget_inquiries?.id)}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "inquiries"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{result.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "deleting_inquiries": false,
+                                                "errorMessage": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "modal_inquiries_error"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.deleting_inquiries}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.confirm"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-ecommerce.admin.inquiries.modal.delete.title"
+            }
+        },
+        {
+            "comment": "답변 작성 — 답변 API(`POST admin/inquiries/{id}/reply`)는 이미 있었고 이 화면에만 진입점이 없었다.\n      문의 게시판이 지정돼 있지 않으면 서버가 422 로 「게시판 미설정」을 돌려주며, 그 문구가 오류 모달에 그대로 뜬다.",
+            "id": "modal_inquiries_reply",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "data-testid": "admin-inquiries-reply-modal",
+                "title": "$t:sirsoft-ecommerce.admin.inquiries.modal.reply.title",
+                "size": "md"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "누구의 어떤 문의에 답하는지 — 목록에서 행을 고른 뒤 모달만 보고도 확인되어야 한다",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "{{_global.replyTarget_inquiries?.member?.name ?? '-'}} · {{_global.replyTarget_inquiries?.product?.name ?? '-'}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.replyTarget_inquiries?.content_excerpt ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.replyTarget_inquiries?.is_answered}}",
+                            "props": {
+                                "className": "mb-2 text-xs text-amber-600 dark:text-amber-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.inquiries.modal.reply.already_answered"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.inquiries.modal.reply.content_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "comment": "답변 본문은 전역 replyContent 에 모아 두었다가 등록 시 싣는다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "replyContent_inquiries": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
+                                "rows": 6,
+                                "maxlength": 5000,
+                                "placeholder": "$t:sirsoft-ecommerce.admin.inquiries.modal.reply.content_placeholder",
+                                "value": "{{_global.replyContent_inquiries || ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "등록 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 답변이 두 번 달린다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "replying_inquiries": true
+                                    }
+                                },
+                                {
+                                    "comment": "답변 등록 — 성공하면 본문을 비우고 목록을 다시 받는다(상태 배지가 「답변완료」로 바뀐다)",
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/inquiries/{{_global.replyTarget_inquiries?.id}}/reply",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "content": "{{_global.replyContent_inquiries}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "comment": "답변이 달리면 그 행의 상태 배지가 「답변완료」로 바뀐다 — 목록을 다시 받아야 보인다",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "replying_inquiries": false,
+                                                "replyContent_inquiries": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "inquiries"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{result.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "replying_inquiries": false,
+                                                "errorMessage": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "modal_inquiries_error"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "data-testid": "admin-inquiries-reply-submit",
+                                "className": "px-4 py-2 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.replying_inquiries || !(_global.replyContent_inquiries || '').trim() || inquiries?.data?.abilities?.can_reply !== true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.inquiries.modal.reply.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-ecommerce.admin.inquiries.modal.reply.title"
+            }
+        },
+        {
+            "comment": "선택 삭제 확인 — 건수를 본문에 싣는다",
+            "id": "modal_inquiries_bulk_delete",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "data-testid": "admin-inquiries-bulk-delete-modal",
+                "title": "$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.message|count={{(_global.selectedItems_inquiries ?? []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "여러 건을 한 요청으로 보낸다 — 응답이 늦는 사이 두 번 눌리면 같은 ID 가 겹쳐 들어간다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkDeleting_inquiries": true
+                                    }
+                                },
+                                {
+                                    "comment": "선택 상품문의 일괄 삭제 — 선택 ID 배열을 본문에 싣고 성공하면 선택을 비운 뒤 목록을 다시 받는다",
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/inquiries/bulk",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE",
+                                        "body": {
+                                            "ids": "{{_global.selectedItems_inquiries}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bulkDeleting_inquiries": false,
+                                                "selectedItems_inquiries": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "inquiries"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{result.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bulkDeleting_inquiries": false,
+                                                "errorMessage": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "modal_inquiries_error"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "admin-inquiries-bulk-delete-confirm",
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.bulkDeleting_inquiries}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.bulkDeleting_inquiries}}",
+                                    "text": "$t:common.confirm"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.bulkDeleting_inquiries}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.deleting"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.title"
+            }
+        },
+        {
+            "comment": "삭제 실패 — 서버 문구를 그대로 싣는다. 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
+            "id": "modal_inquiries_error",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:common.error",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.errorMessage || $t:common.error_occurred}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

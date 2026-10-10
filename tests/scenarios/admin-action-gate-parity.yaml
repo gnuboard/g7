@@ -1,0 +1,105 @@
+feature: 관리자 화면 버튼 활성 조건과 서버 수락 조건의 일치 (#703)
+
+description: |
+  관리자 화면이 누를 수 있게 둔 조작을 서버가 403/422 로 거절하던 결함군을 고친다.
+  원칙은 "조작을 보이고 켜는 조건 = 서버가 받는 조건" 이다 — 가능하면 화면이 서버가
+  실어 준 판정(abilities·호환 여부)을 읽게 하고, 서버 판정은 한 함수로 모아 양쪽이 같이 쓴다.
+
+  축 값(defect)별 결함:
+    - role_delete_protected: 코어·확장 역할의 「삭제」 가 켜져 있었다(서버 403) → RoleResource can_delete 가 isDeletable 반영
+    - role_modify_protected: 비-슈퍼 운영자에게 보호 역할 수정·토글이 켜져 있었다(서버 403) → Role::isModifiableBy 단일 판정
+    - user_edit_super_admin: 비-슈퍼 운영자가 슈퍼 관리자 수정 폼을 열 수 있었다(저장 403) → UserResource can_update 가 UserGradeGuard 반영
+    - user_create_without_role_assign: 역할 부여 권한 없이 회원 등록 시 역할 필수 422 → 생략 시 기본 역할
+    - bulk_status_empty_selection: 선택 0건 일괄 처리(모바일 드롭다운·확인 창) → 422
+    - bulk_status_self_included: 본인이 섞인 일괄 처리 → 422(ExcludeCurrentUser) → 본인 행 선택 불가
+    - bulk_status_partial_result: 제외된 대상(슈퍼 관리자·범위 밖)을 200 성공으로만 안내
+    - env_locked_drivers_save / env_locked_mail_save / env_locked_test_mail: `.env` 잠금 비밀값이 빈 칸으로 와서 필수 422
+    - identity_notification_definition_add: 본인인증 정책별 문구 추가 — 정책 0건·이미 문구가 있는 정책으로 저장 → 422
+    - notification_read_batch_over_limit: 닫기 읽음 처리 100건 초과 → 422
+    - user_search_empty_keyword: 빈 검색어로 회원 검색 → 422
+    - extension_reactivate_language_packs: 확장 재활성화 뒤 언어팩 되살리기 창이 열리지 않던 배선 누락
+    - extension_core_incompatible_actions: 코어 비호환 확장의 설치·켜기가 켜져 있었다(서버 422)
+    - extension_in_progress_actions: 진행 중(installing/uninstalling/updating) 확장의 스위치·삭제·업데이트가 켜져 있었다(서버 422)
+    - template_activate_in_progress / template_uninstall_in_progress: 모듈·플러그인과 달리 템플릿 활성화·삭제에는
+      진행 중 작업 가드가 없어, 업데이트가 도는 템플릿을 서버가 켜거나 지웠다 → TemplateManager 에 같은 가드
+    - template_deactivate_last_active / template_uninstall_last_active: 화면은 활성 템플릿의 스위치·삭제를 잠그는데
+      API 는 받아들여 유형(관리자·사용자)의 활성 템플릿이 하나도 없는 상태를 만들었다 → TemplateService 가 422 로 거절
+    - extension_toggle_conflict_cancel: 모듈·플러그인 스위치의 의존 충돌(409) 창을 취소하면 확장은 그대로인데 스위치만
+      꺼진 채 남았다(409 는 fail 을 거치지 않아 목록 재조회가 없었다) → 409 처리에서도 목록을 다시 받는다
+    - extension_hidden_toggle_super_only: 모듈·플러그인·템플릿 목록의 「숨김 포함」 토글이 없는 이름(currentUser)을 읽고
+      관리자 로그인 응답도 is_super 를 주지 않아 최고관리자에게도 나타나지 않았다 → 응답에 본인 is_super 를 싣고
+      조건을 current_user 로 바로잡는다. 체크의 재조회도 따로 둔 두 change 처리라 바꾸기 전 값을 보냈다 → 한 sequence
+
+axes:
+  defect:
+    - role_delete_protected
+    - role_modify_protected
+    - user_edit_super_admin
+    - user_create_without_role_assign
+    - bulk_status_empty_selection
+    - bulk_status_self_included
+    - bulk_status_partial_result
+    - env_locked_drivers_save
+    - env_locked_mail_save
+    - env_locked_test_mail
+    - identity_notification_definition_add
+    - notification_read_batch_over_limit
+    - user_search_empty_keyword
+    - extension_reactivate_language_packs
+    - extension_core_incompatible_actions
+    - extension_in_progress_actions
+    - template_activate_in_progress
+    - template_uninstall_in_progress
+    - template_deactivate_last_active
+    - template_uninstall_last_active
+    - extension_toggle_conflict_cancel
+    - extension_hidden_toggle_super_only
+
+effects:
+  - role_row_delete_ability_matches_server_delete_guard
+  - role_row_update_and_toggle_abilities_match_protected_role_guard
+  - super_admin_keeps_protected_role_update_ability
+  - role_row_actions_follow_server_abilities_with_hint
+  - user_update_ability_matches_rank_ceiling
+  - user_list_update_ability_matches_rank_ceiling
+  - toggle_resynced_after_conflict
+  - hidden_toggle_visible_only_to_super_admin
+  - hidden_toggle_refetch_uses_new_value
+  - create_without_roles_assigns_default_role
+  - create_form_marks_roles_optional_with_default_hint
+  - bulk_actions_disabled_without_selection
+  - self_row_checkbox_disabled
+  - select_all_skips_non_selectable_rows
+  - bulk_status_reports_excluded_targets_as_failed
+  - bulk_status_toast_reflects_partial_result
+  - env_locked_secret_not_required_on_save
+  - unlocked_secret_still_required
+  - env_locked_secret_not_required_on_test_mail
+  - test_mail_uses_env_effective_value_for_locked_keys
+  - defined_policies_excluded_from_options
+  - save_disabled_without_selectable_policy
+  - read_batch_ids_chunked_within_server_limit
+  - empty_keyword_search_not_sent
+  - reactivate_language_pack_modal_is_reachable
+  - extension_bundle_reload_reads_wrapped_activate_response
+  - extension_row_exposes_core_compatibility
+  - incompatible_extension_install_and_activate_locked
+  - in_progress_extension_actions_locked
+  - template_activate_refused_while_operation_in_progress
+  - template_uninstall_refused_while_operation_in_progress
+  - last_active_template_deactivation_refused
+  - deactivation_allowed_when_another_template_of_type_stays_active
+  - last_active_template_uninstall_refused
+
+test_files:
+  - tests/Feature/Admin/AdminActionGateParityTest.php
+  - tests/Feature/Admin/TemplateOperationGuardTest.php
+  - tests/Feature/Settings/EnvLockedSecretValidationTest.php
+  - tests/Unit/Http/Resources/ExtensionCoreCompatibilityFieldTest.php
+  - tests/Feature/Extension/ExtensionListCoreRequirementTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-action-gate-parity.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-reactivate-language-packs.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-list-action-gates.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.nonSelectableIds.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NotificationCenter.readBatchChunk.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NotificationCenter.readBatchChunk.test.tsx

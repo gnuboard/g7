@@ -1,74 +1,95 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "모바일용 상품 가격 표시"
-  },
-  "type": "basic",
-  "name": "Div",
-  "children": [
-    {
-      "comment": "할인 전 금액 (취소선, 할인 있을 때)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.discount_rate > 0}}",
-      "props": { "className": "mb-1" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": { "className": "text-sm text-gray-500 dark:text-gray-400 line-through" },
-          "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}"
-        }
-      ]
+    "comment": "좁은 화면 전용 가격 줄 — 넓은 화면에서는 구매 카드 안에 가격이 있지만, 좁은 화면에서는 그 카드가\n     아래로 밀려 첫 화면에 값이 안 보이므로 상단에 따로 둔다.",
+    "meta": {
+        "is_partial": true,
+        "description": "모바일용 상품 가격 표시"
     },
-    {
-      "comment": "할인율 + 판매가 (할인 있을 때)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.discount_rate > 0}}",
-      "props": { "className": "flex items-center gap-2" },
-      "children": [
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "type": "basic",
-          "name": "Span",
-          "props": { "className": "text-lg font-bold text-red-500" },
-          "text": "{{product.data?.discount_rate}}%"
+            "comment": "할인 전 금액 (취소선, 할인 있을 때)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.discount_rate > 0}}",
+            "props": {
+                "className": "mb-1"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
+                    },
+                    "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
-          "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
-        }
-      ]
-    },
-    {
-      "comment": "판매가 (할인 없을 때)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}",
-      "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
-      "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
-    },
-    {
-      "comment": "배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가, 모바일 가격 영역)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{product.data?.is_shippable_to_selected_country === false}}",
-      "props": { "className": "flex items-center gap-1.5 mt-1.5" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": { "name": "triangle-exclamation", "size": "sm", "className": "text-red-500 dark:text-red-400 shrink-0" }
+            "comment": "할인율 + 판매가 (할인 있을 때)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.discount_rate > 0}}",
+            "props": {
+                "className": "flex items-center gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-lg font-bold text-red-500"
+                    },
+                    "text": "{{product.data?.discount_rate}}%"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-xl font-bold text-gray-900 dark:text-white"
+                    },
+                    "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "props": { "className": "text-sm font-medium text-red-600 dark:text-red-400" },
-          "text": "$t:shop.shippability.not_shippable"
+            "comment": "판매가 (할인 없을 때)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}",
+            "props": {
+                "className": "text-xl font-bold text-gray-900 dark:text-white"
+            },
+            "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
+        },
+        {
+            "comment": "배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가, 모바일 가격 영역)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{product.data?.is_shippable_to_selected_country === false}}",
+            "props": {
+                "className": "flex items-center gap-1.5 mt-1.5"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "triangle-exclamation",
+                        "size": "sm",
+                        "className": "text-red-500 dark:text-red-400 shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm font-medium text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:shop.shippability.not_shippable"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

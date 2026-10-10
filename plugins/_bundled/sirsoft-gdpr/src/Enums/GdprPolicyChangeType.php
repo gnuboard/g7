@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\Gdpr\Enums;
 /**
  * GDPR 정책 버전 변경 종류
  *
- * - material: 카테고리 추가/삭제/key 변경, 카테고리 description 변경, privacy_policy_slug 변경
+ * - material: 카테고리 추가/삭제/key 변경, 카테고리 description 변경, 개인정보처리방침 주소(privacy_policy_url) 변경
  *             → 모든 회원 재동의 트리거 (GDPR Art.6 — 새 처리에 옛 동의 사용 금지)
  * - non_material: 도메인 추가/삭제, label 변경, hint 텍스트 정정 등
  *                 → 재동의 트리거 안 함 (같은 목적 내 부수 정비)

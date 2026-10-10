@@ -1,0 +1,140 @@
+<partial description="Claim Detail - Reason / Attachments / Admin Memo (2 columns) — S9a">
+  <!-- 신청사유(+첨부) 와 관리자 메모를 2단으로 둔다 (§6-4). 섹션이 아니라 `#section_claim_info` 안의 블록이므로 `data-section-id` 를 갖지 않는다 — scrollSpy 가 탭 없는 섹션 id 를 잡으면 활성 탭이 어긋난다. -->
+  <div data-ref="claim_reason_row" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+    <div data-ref="claim_reason_card" class="admin-card">
+      <div class="flex-between gap-3 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.reason.title</h2>
+        <!-- 신청 내용 수정(S15) — 고객이 사유를 잘못 골라 귀책·배송비가 틀렸을 때 운영자가 고친다. 단계는 고객 수정과 같고(서버 `on_behalf.can_edit`), 판매자 귀책 사유도 고를 수 있다. -->
+        <button data-ref="cr_000_edit_request" data-if="{{claim?.data?.on_behalf?.can_edit === true &amp;&amp; claim?.data?.abilities?.can_update_status === true}}" type="button" class="btn btn-outline btn-sm">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.openClaimRequestEdit" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" reasonCode="{{claim?.data?.claim?.reason_code ?? ''}}" reasonDetail="{{claim?.data?.claim?.reason_detail ?? ''}}" reasonOptions="{{claim?.data?.reason_options ?? []}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.claim.detail.request_edit.button
+        </button>
+      </div>
+      <div class="flex justify-between text-sm py-1.5">
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.reason.reason_label</span>
+        <span data-ref="cr_001_reason_label" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.reason_label ?? '-'}}</span>
+      </div>
+      <div class="flex justify-between text-sm py-1.5">
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.reason.fault_type_label</span>
+        <span data-ref="cr_002_fault_type" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.fault_type_label ?? '-'}}</span>
+      </div>
+      <div data-ref="cr_003_reject_reason_row" data-if="{{!!claim?.data?.claim?.reject_reason}}" class="flex justify-between text-sm py-1.5">
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.reason.reject_reason_label</span>
+        <span class="text-red-600 dark:text-red-400 text-right">{{claim?.data?.claim?.reject_reason ?? ''}}</span>
+      </div>
+      <div data-ref="cr_004_reason_detail" class="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap min-h-16">{{claim?.data?.claim?.reason_detail || '$t:sirsoft-ecommerce.admin.claim.detail.reason.no_detail'}}</div>
+      <!-- 첨부가 0건이어도 블록을 세운다(F6) — 운영자 대리 업로드 진입점이 이 안에 있고, 첨부가 없을 때야말로 그 진입점이 필요하다. 예전에는 `images.length > 0` 조건이라 첨부 없는 신청서에서는 올릴 자리조차 없었다. -->
+      <div data-ref="cr_005_images_block" data-if="{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}" class="mt-4">
+        <div class="text-label-subtle mb-2">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_label</div>
+        <!-- 상한 안내는 서버 봉투(attachment_settings)를 읽는다. 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈리고, 사용자에게는 이유 없는 422 만 남는다. -->
+        <div data-ref="cr_005b_images_hint" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|count={{claim?.data?.attachment_settings?.max_images ?? 0}}|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&amp;size={{(claim?.data?.attachment_settings?.image_max_size_mb ?? '-') + 'MB'}}&amp;types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}</div>
+        <!-- 용량 상한은 서버가 MB 로 내려 준 값(`image_max_size_mb`)을 그대로 쓴다 — 화면이 KB 를 나누면 반올림 규칙이 화면마다 갈린다. 값이 없으면 prop 을 비워 컴포넌트 기본값에 맡긴다: 0 으로 떨어뜨리면 업로더가 모든 파일을 거절한다. 구매자 신청 화면과 같은 공용 업로더를 쓴다 — 드롭존·다중 선택·미리보기·진행률·상한 안내·개별 삭제가 한 벌로 온다. `reorder` 는 빈 문자열로 명시해야 한다: 기본값은 코어 첨부 순서 API 라, 드래그 한 번이 **남의 첨부 순서**를 바꾸고 이 화면에는 오류가 뜨지 않는다. `maxConcurrentUploads` 를 1 로 낮추는 것은 서버가 개수 상한을 잠금 없이 판정하기 때문이다(병렬이면 상한을 넘겨 저장된다). -->
+        <file-uploader data-type="composite" data-ref="cr_006_images_uploader" collection="claim" :autoUpload="true" :maxConcurrentUploads="1" maxFiles="{{claim?.data?.attachment_settings?.max_images ?? 5}}" maxSize="{{claim?.data?.attachment_settings?.image_max_size_mb}}" accept="{{claim?.data?.attachment_settings?.accept ?? ''}}" initialFiles="{{claim?.data?.claim?.images ?? []}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_title" confirmRemoveMessage="$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_message" disabled="{{claim?.data?.abilities?.can_update_status !== true}}">
+          <prop name="apiEndpoints">
+            <field name="upload" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images'}}"/>
+            <field name="delete" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images/:id'}}"/>
+            <field name="reorder" value=""/>
+          </prop>
+          <on event="onUploadComplete">
+            <!-- 올린 것과 지운 것은 다른 사건이라 안내 문구가 다르다 — 한 핸들러가 둘을 받으므로 어느 쪽인지 알려 준다. -->
+            <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="upload"/>
+          </on>
+          <on event="onRemove">
+            <!-- 지우는 일은 업로더가 확인창을 거쳐 이미 끝냈고 자기 격자만 고쳤다 — 출처 스트립과 활동 로그는 상세를 다시 읽어야 따라오므로 여기서 다시 읽고 삭제 안내를 띄운다. -->
+            <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="remove"/>
+          </on>
+          <on event="onUploadError">
+            <!-- 오류 문구는 컴포넌트가 개수·용량·확장자별로 이미 사람이 읽는 문장을 만든다 — 핸들러를 거치면 그 문장을 다시 만들어야 한다. -->
+            <toast type="error" message="{{$args[0]}}"/>
+          </on>
+        </file-uploader>
+        <!-- 출처 구분 스트립. 뱃지를 썸네일 안에 넣으려면 공유 템플릿(FileList·SortableThumbnailItem)을 고쳐야 하는데, 모듈이 '이 템플릿 ≥ X 버전' 의존을 선언할 수단이 없어 구버전에서 오류 없이 뱃지만 사라진다. 그래서 모듈이 소유한 스트립으로 낸다. `unknown` 은 뱃지를 그리지 않는다 — 조용한 거짓 대신 공백이 낫다. 삭제 버튼은 두지 않는다(액션은 업로더가 단독 소유). -->
+        <div data-ref="cr_007_images_origin_list" data-if="{{(claim?.data?.claim?.images ?? []).length > 0}}" class="mt-3 space-y-1">
+          <div class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_origin_title</div>
+          <div data-ref="cr_007_image_origin_{{originIdx}}" data-each="originImage, originIdx in {{claim?.data?.claim?.images ?? []}}" class="flex items-center flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300">
+            <badge data-type="composite" data-if="{{!!originImage.uploader_type_label}}" color="{{originImage.uploader_type === 'admin' ? 'purple' : 'blue'}}" size="sm" text="{{originImage.uploader_type_label ?? ''}}"/>
+            <span class="font-medium">{{originImage.original_name ?? ''}}</span>
+            <span data-if="{{!!originImage.uploader_name}}" class="text-gray-500 dark:text-gray-400">{{originImage.uploader_name ?? ''}}</span>
+            <span data-if="{{!!originImage.created_at}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}</span>
+          </div>
+        </div>
+        <!-- 첨부 일괄 정리 (F6). 개별 삭제는 업로더가 하고, 이 버튼은 반려·종결 건을 한 번에 비울 때 쓴다. -->
+        <div data-ref="cr_007_image_admin_actions" class="flex items-center flex-wrap gap-2 mt-3">
+          <!-- 올린 사람과 무관하게 이 신청서의 첨부를 파일째 전부 지운다 — 고객이 올린 증빙까지 사라지고 되돌릴 수 없으므로 곧바로 지우지 않고 확인 창을 연다. 창은 부모 `_local`·데이터소스 문맥을 해석하지 못하므로 대상 식별 축과 장수를 `_global.claimImagesClearContext` 로 넘긴다. -->
+          <button data-ref="cr_007_image_clear" data-if="{{(claim?.data?.claim?.images ?? []).length > 0}}" type="button" class="btn btn-secondary btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || _local.isClearingClaimImages === true}}">
+            <on type="click">
+              <sequence>
+                <set-state target="global" claimImagesClearContext="{{({ pathSegment: claim?.data?.claim_path_segment ?? '', claimType: claim?.data?.claim?.claim_type ?? '', claimId: claim?.data?.claim?.id ?? null, count: (claim?.data?.claim?.images ?? []).length })}}" :isProcessing="false"/>
+                <open-modal target="modal_claim_images_clear"/>
+              </sequence>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- 취소 신청서 전용 카드. 취소는 전이·송장·청구·환불 실행 축이 없어 조회 전용이다 — 취소 구분·환불 상태·환불 금액·취소 일시를 여기서 보이고, 값은 서버가 취소 행과 취소 발 환불 행에서 만든다(화면이 금액을 조립하지 않는다). -->
+    <div data-ref="claim_cancel_info_card" data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'cancel'}}" class="admin-card">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.title</h2>
+      <div class="flex justify-between text-sm py-1.5">
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.cancel_type</span>
+        <span data-ref="cc_001_cancel_type" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.cancel_type_label ?? '-'}}</span>
+      </div>
+      <div class="flex justify-between text-sm py-1.5">
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.refund_status</span>
+        <span data-ref="cc_002_refund_status" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.refund_status_label ?? '-'}}</span>
+      </div>
+      <div class="flex justify-between text-sm py-1.5">
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.refund_amount</span>
+        <span data-ref="cc_003_refund_amount" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.refund_amount_formatted ?? '-'}}</span>
+      </div>
+      <!-- 접수 시점 주문금액 비교(전/후) — #599 후속 P8. 취소는 취소 발 환불 행의 스냅샷을 읽는다.
+partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다(_partial_claim_items → _partial_claim_reason 과 같은 규약). `partials/…` 로 적으면 서버 병합기가 layouts 루트로 되돌려 찾다 실패해 운영에서 빈 배열로 사라진다. -->
+      <include src="_partial_claim_comparison.g7.html"/>
+      <div class="flex justify-between text-sm py-1.5">
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.cancelled_at</span>
+        <span data-ref="cc_004_cancelled_at" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.cancelled_at_formatted ?? '-'}}</span>
+      </div>
+      <!-- 재활성 줄(Q29) — 이 취소로 빠진 상품을 나중에 다시 판매 상태로 되살린 경우에만. 취소·환불 기록은 지우지 않으므로 카드 값은 그대로 두고, 되살린 일시와 수량만 덧붙인다. -->
+      <div data-ref="cc_005_reactivated_row" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted}}" class="text-sm py-1.5">
+        <div class="flex justify-between">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_at</span>
+          <span data-ref="cc_005_reactivated_at" class="text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_value|at={{claim?.data?.claim?.reactivated_at_formatted ?? '-'}}|quantity={{claim?.data?.claim?.reactivated_quantity ?? 0}}|total={{claim?.data?.claim?.total_cancel_quantity ?? 0}}</span>
+        </div>
+        <p data-ref="cc_006_reactivated_hint" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.admin.claim.detail.cancel_info.reactivated_hint</p>
+      </div>
+    </div>
+    <div data-ref="claim_memo_card" class="admin-card">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.claim.detail.memo.title</h2>
+      <!-- 환불신청서에는 관리자 메모 컬럼이 없다 — 응답은 언제나 null 이고 저장 경로도 그 값을 거절한다. 입력을 그려 두면 운영자가 적은 내용이 오류 없이 버려진다. -->
+      <p data-ref="cm_001_memo_unavailable" data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'refund'}}" class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.memo.not_supported</p>
+      <!-- 취소 신청서도 관리자 메모 컬럼이 없다 — 환불신청서와 같은 이유로 입력을 그리지 않는다. -->
+      <p data-ref="cm_001b_memo_unavailable_cancel" data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'cancel'}}" class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.memo.not_supported_cancel</p>
+      <div data-ref="cm_002_memo_editor" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}">
+        <!-- 적는 동안은 화면에만 있고 아래 [메모 저장] 을 눌러야 서버에 간다. 저장하지 않고 떠나면 적던 내용은 버려지고, 다시 열면 서버에 마지막으로 저장된 메모가 채워진다. -->
+        <textarea data-ref="cm_003_memo_textarea" name="adminMemo" :rows="6" :maxLength="2000" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.memo.placeholder" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.adminMemo ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
+          <on type="change">
+            <set-state target="_local" adminMemo="{{$event.target.value}}"/>
+          </on>
+        </textarea>
+        <div class="flex justify-end mt-3">
+          <button data-ref="cm_004_memo_save" type="button" class="btn btn-primary" disabled="{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingMemo === true}}">
+            <on type="click">
+              <!-- 메모는 금액 수정 엔드포인트(D18)가 함께 받는 축이라 게이트도 `claims.update-amounts` 다 — 버튼 활성 조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만 403 이 된다. -->
+              <action handler="sirsoft-ecommerce.saveClaimAdminMemo" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" adminMemo="{{_local.adminMemo ?? ''}}">
+                <fail>
+                  <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다. -->
+                  <suppress/>
+                </fail>
+              </action>
+            </on>
+            <icon data-if="{{_local.isSavingMemo}}" name="spinner" class="spinner-sm mr-1"/>
+            <span>$t:sirsoft-ecommerce.admin.claim.detail.memo.save</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

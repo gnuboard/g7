@@ -1,0 +1,13 @@
+feature: 상품정보제공고시 템플릿 저장 모달
+
+description: |
+  고시 템플릿 저장 모달(saveAsNoticeTemplate·confirmSaveNoticeTemplate)의 열기·검증·백엔드 계약 POST·닫기·목록 새로고침. 7.1.0 출시 점검 D3-2: 목록 새로고침이 코어에 없는 datasources.refresh 를 불러 저장한 템플릿이 목록에 뜨지 않았다 → 코어 공개 API dataSource.refetch.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07]
+
+effects:
+  - notice_template_modal_save_flow
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/noticeTemplateModalHandlers.test.ts

@@ -1,0 +1,45 @@
+<!-- 주문자에게 문자를 보내는 창. 받는 번호는 고칠 수 없고(주문에 적힌 번호를 읽기 전용으로 보여준다)
+  본문만 입력한다.
+  본문은 `data-key` 로 지역 상태 한 칸에 자동으로 모이고, 글자 수 표시도 그 값을 그대로 센다.
+  아래 '플러그인' 표시가 뜻하는 대로 실제 발송은 코어나 이커머스가 하지 않는다 — 문자 발송
+  플러그인이 설치돼 있어야 나간다.
+  **발송 버튼에 아직 액션이 없다.** 잠금·글자·스피너가 모두 `_global.isSending` 을 보지만 그 값을
+  쓰는 곳이 이 모듈 어디에도 없어 늘 거짓이고, 눌러도 아무 일이 일어나지 않는다. 짝인 메일 발송
+  창은 같은 이름의 깃발을 `$parent._local` 에 두고 실제로 오가며 쓴다 — 배선할 때 어느 쪽 규약을
+  따를지부터 정해야 한다. -->
+<partial description="Order Detail - Send SMS Modal">
+  <modal data-type="composite" data-ref="modal_send_sms" title="$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.title" size="md">
+    <div>
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.description</p>
+      <div>
+        <span class="form-label-block">$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.phone</span>
+        <input type="text" class="input-readonly" value="{{_local.smsPhone}}" :readOnly="true"/>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1">
+          <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message</span>
+          <span class="text-hint">{{(_local.smsMessage || '').length}}자</span>
+        </div>
+        <textarea class="input w-full min-h-[100px]" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message_placeholder" value="{{_local.smsMessage}}">
+          <prop name="dataKey">"smsMessage"</prop>
+        </textarea>
+      </div>
+      <div class="flex-center text-hint gap-1">
+        <icon name="puzzle-piece" class="text-xs"/>
+        <span>$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.plugin_label</span>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
+        <icon data-if="{{_global.isSending}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSending ? '$t:common.sending' : '$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.send'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

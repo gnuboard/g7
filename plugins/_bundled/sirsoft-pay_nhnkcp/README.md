@@ -5,9 +5,9 @@ NHN KCP Standard Pay 결제를 sirsoft-ecommerce 에 연결하는 결제 플러�
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.4-0066FF?style=flat-square" alt="version 1.0.4">
+  <img src="https://img.shields.io/badge/version-1.1.0-0066FF?style=flat-square" alt="version 1.1.0">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.10-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.10">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
   <img src="https://img.shields.io/badge/requires-sirsoft--ecommerce-BF8700?style=flat-square" alt="requires sirsoft-ecommerce">
 </p>
@@ -40,7 +40,7 @@ SOAP 승인키 발급 + 모바일 결제창을 씁니다.
 | 영역 | 설명 |
 |---|---|
 | 결제수단 | 신용카드, 계좌이체, 가상계좌, 휴대폰결제 |
-| 간편결제 | PAYCO, 네이버페이, 네이버페이 포인트, 카카오페이, Apple Pay 버튼 주입 |
+| 간편결제 | PAYCO, 네이버페이, 네이버페이 포인트, 카카오페이, Apple Pay 결제수단 등록 (Apple Pay 는 iOS 기기에서만 노출) |
 | PC 결제 | `payplus_web.jsp` 표준결제창 + 서버 KCP CLI 승인 |
 | 모바일 결제 | SmartPhone Pay SOAP 승인키 발급 + 모바일 결제창 |
 | 가상계좌 | 발급, 입금통보, 테스트 모드 모의입금 |
@@ -83,9 +83,9 @@ PC 결제 승인은 `NhnKcpApiService`가 OS 를 판별해 `pp_cli`/`pp_cli_x64`
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.0.10` |
+| 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-ecommerce` `>=1.1.0` |
+| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
 | 외부 스크립트 호스트 | `testpay.kcp.co.kr`, `pay.kcp.co.kr` |
 <!-- @generated:requirements END -->
 
@@ -152,7 +152,7 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 | `redirect_fail_url` | 결제 실패 리다이렉트 URL | `{shopBase}/checkout` |
 | `use_escrow` | 에스크로 결제 활성화 | `false` |
 | `escrow_test_site_cd` | 테스트 에스크로 사이트 코드 | - |
-| `vbank_expire_days` | 가상계좌 입금 만료(일) | `3` |
+| `vbank_expire_days` | 가상계좌 입금 만료(일) — 사용 안 함 | `3` |
 | `easy_pay_allow_with_other_pg` | - | `false` |
 | `easy_pay_payco` | - | `false` |
 | `easy_pay_naverpay` | - | `false` |
@@ -197,13 +197,19 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 ## 사용 방법
 
 <!-- @intent START -->
-**결제 취소/부분취소**: 관리자가 주문 취소를 요청(`cancel_pg=true`)하면 코어가
+**결제 취소/부분취소**: 관리자가 주문 취소를 요청하면 코어가 **환불신청서**를 만들고, 그 환불이 집행되는 시점에
 `sirsoft-ecommerce.payment.refund` 필터 훅을 발화하고, 이 플러그인의 `PaymentRefundListener`
 가 KCP 취소 API를 호출합니다(전액취소는 `isPartial=false`, 부분취소는 `isPartial=true` +
 원래 결제금액). 배송비가 포함된 주문은 전체취소 시 배송비도 함께 환불 레코드에 반영되고,
 쿠폰이 적용된 주문은 실결제금액(쿠폰 차감 후)이 PG `cancelAmt`로 전달됩니다. 부분취소로
 쿠폰 최소 주문금액 조건을 더 이상 충족하지 못하면 코어가 취소 자체를 거부(422)해 PG 호출이
 아예 발생하지 않습니다. KCP API 호출이 실패하면 주문 상태 변경이 롤백됩니다.
+
+**환불이 이 플러그인까지 오는 시점**: 코어는 환불신청서가 **승인**된 뒤에야 위 훅을 발화합니다.
+이커머스 환경설정 「클레임」 탭의 *환불 자동 승인 결제수단* 목록에 든 수단(기본값 신용카드·
+마일리지·무료)은 승인과 동시에 환불이 집행되어 이 플러그인이 곧바로 호출되지만, 목록 밖
+수단으로 결제된 건은 운영자가 승인·송금을 마칠 때까지 환불신청 상태에 머물러 훅 자체가
+발화하지 않습니다. 카드 결제는 기본값에 들어 있어 별도 설정 없이 즉시 환불됩니다.
 
 **에스크로 처리**: 에스크로를 활성화하면 결제 요청에 `escw_used=Y`, `pay_mod=O`를
 전달합니다. 에스크로 결제 완료 후 관리자 주문 상세에서 운송장번호와 택배사를 입력해 KCP
@@ -230,7 +236,7 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.1.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
@@ -242,6 +248,13 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 `RegisterEasyPayMethodsListener`가 간편결제 결제수단 레지스트리에 각각 등록합니다 — PG
 결제사 선택과 간편결제 노출은 서로 독립적이라, 다른 PG가 기본값이어도 KCP 간편결제 버튼을
 체크아웃 화면에 노출하는 조합이 가능합니다(`easy_pay_allow_with_other_pg`).
+
+쇼핑몰 모듈의 클레임 추가결제(결제번호 `CP` 채번)는 `sirsoft-ecommerce.claim_payment.approve` /
+`sirsoft-ecommerce.claim_payment.refund` 필터로 승인·환급되며, 이 플러그인이 두 필터를 구현합니다.
+결제번호가 `CP` 로 시작하는 콜백은 주문이 아니라 클레임 결제 건으로 처리되고, 완료 후 신청서
+상세 화면으로 돌아갑니다. 인자·반환 키·멱등 규칙 등 계약의 단일 출처는 쇼핑몰 모듈
+`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절입니다 — 이 문서에는
+계약을 복제해 적지 않습니다.
 <!-- @intent END -->
 
 ## 문서

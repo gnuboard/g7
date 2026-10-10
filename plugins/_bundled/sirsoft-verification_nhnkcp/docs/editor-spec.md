@@ -64,7 +64,7 @@ _이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 �
 |---|---|---|---|
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 1 | `nhnkcpRecord` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 3 | `*/mypage/profile` · `*/admin/plugins/sirsoft-verification_nhnkcp/settings` · `_user_base` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 3 | `/mypage/profile` · `*/admin/plugins/sirsoft-verification_nhnkcp/settings` · `_user_base` |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->

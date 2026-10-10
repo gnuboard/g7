@@ -24,9 +24,16 @@ use PHPUnit\Framework\TestCase;
 class WorkerLockGuardTest extends TestCase
 {
     private string $tempBase = '';
+
     private string $stateFile = '';
+
     private string $skipReason = '';
 
+    /**
+     * 임시 BASE_PATH·STATE_PATH 를 확인하고 빈 state 로 시작한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,28 +47,45 @@ class WorkerLockGuardTest extends TestCase
         if (defined('BASE_PATH')) {
             $resolved = realpath((string) BASE_PATH) ?: (string) BASE_PATH;
             if (strpos($resolved, $tempPrefix) !== 0) {
-                $this->skipReason = 'BASE_PATH (' . $resolved . ') 가 시스템 temp 하위가 아님 — '
-                    . '다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 installer-state.json 파괴 방지를 위해 skip. '
-                    . '격리 실행: php vendor/bin/phpunit --filter=WorkerLockGuardTest';
+                $this->skipReason = 'BASE_PATH ('.$resolved.') 가 시스템 temp 하위가 아님 — '
+                    .'다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 installer-state.json 파괴 방지를 위해 skip. '
+                    .'격리 실행: php vendor/bin/phpunit --filter=WorkerLockGuardTest';
                 $this->markTestSkipped($this->skipReason);
             }
             $this->tempBase = (string) BASE_PATH;
         } else {
-            $this->tempBase = sys_get_temp_dir() . '/g7-worker-lock-test-' . bin2hex(random_bytes(4));
+            $this->tempBase = sys_get_temp_dir().'/g7-worker-lock-test-'.bin2hex(random_bytes(4));
             define('BASE_PATH', $this->tempBase);
         }
 
-        if (! is_dir($this->tempBase . '/storage')) {
-            @mkdir($this->tempBase . '/storage', 0755, true);
+        if (! is_dir($this->tempBase.'/storage')) {
+            @mkdir($this->tempBase.'/storage', 0755, true);
         }
 
-        $this->stateFile = BASE_PATH . '/storage/installer-state.json';
-        @file_put_contents($this->stateFile, json_encode(['installation_status' => 'pending']));
+        require_once dirname(__DIR__, 3).'/public/install/includes/config.php';
+        require_once dirname(__DIR__, 3).'/public/install/includes/installer-state.php';
 
-        require_once dirname(__DIR__, 3) . '/public/install/includes/config.php';
-        require_once dirname(__DIR__, 3) . '/public/install/includes/installer-state.php';
+        // 헬퍼는 STATE_PATH 상수로 읽고 쓴다. 다른 테스트(InstallerSecurityHardeningTest 등)가 먼저
+        // STATE_PATH 를 자기 임시 경로로 정의하면 BASE_PATH/storage 와 달라지므로, 경로를 다시 계산하지
+        // 않고 상수를 그대로 쓴다. 그 상수도 시스템 temp 하위가 아니면 실 파일 보호를 위해 skip 한다.
+        $resolvedStateDir = realpath(dirname((string) STATE_PATH)) ?: dirname((string) STATE_PATH);
+        if (strpos($resolvedStateDir, $tempPrefix) !== 0) {
+            $this->skipReason = 'STATE_PATH ('.STATE_PATH.') 가 시스템 temp 하위가 아님 — 실제 installer-state.json 파괴 방지를 위해 skip.';
+            $this->markTestSkipped($this->skipReason);
+        }
+        if (! is_dir(dirname((string) STATE_PATH))) {
+            @mkdir(dirname((string) STATE_PATH), 0755, true);
+        }
+
+        $this->stateFile = STATE_PATH;
+        @file_put_contents($this->stateFile, json_encode(['installation_status' => 'pending']));
     }
 
+    /**
+     * 이번 테스트가 만든 state 파일만 지운다 (skip 이면 아무것도 하지 않는다).
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // skip 상태(= BASE_PATH 가 실 루트)면 파괴적 정리를 절대 수행하지 않는다.
@@ -71,6 +95,13 @@ class WorkerLockGuardTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 활성 워커가 없으면 락을 얻는다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_acquire_succeeds_when_no_active_worker(): void
     {
         $result = acquireWorkerLock(15);
@@ -80,6 +111,13 @@ class WorkerLockGuardTest extends TestCase
         $this->assertSame('available', $result['reason']);
     }
 
+    /**
+     * 락 획득 시 worker_id·heartbeat 가 state 에 기록된다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_acquire_persists_worker_id_and_heartbeat_in_state(): void
     {
         $result = acquireWorkerLock(15);
@@ -90,6 +128,13 @@ class WorkerLockGuardTest extends TestCase
         $this->assertGreaterThanOrEqual(time() - 1, $state['last_heartbeat']);
     }
 
+    /**
+     * heartbeat 가 살아 있는 워커가 있으면 두 번째 워커는 거부된다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_acquire_fails_when_active_worker_within_stale_window(): void
     {
         $first = acquireWorkerLock(15);
@@ -107,6 +152,13 @@ class WorkerLockGuardTest extends TestCase
         $this->assertSame($first['worker_id'], $state['active_worker_id']);
     }
 
+    /**
+     * heartbeat 가 끊긴 워커의 락은 인계된다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_acquire_takes_over_when_heartbeat_stale(): void
     {
         $first = acquireWorkerLock(15);
@@ -126,6 +178,13 @@ class WorkerLockGuardTest extends TestCase
         $this->assertSame($second['worker_id'], $newState['active_worker_id']);
     }
 
+    /**
+     * 락 소유 워커는 heartbeat 를 갱신한다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_refresh_heartbeat_returns_true_for_owner(): void
     {
         $first = acquireWorkerLock(15);
@@ -140,6 +199,13 @@ class WorkerLockGuardTest extends TestCase
         $this->assertGreaterThanOrEqual(time() - 1, $state['last_heartbeat']);
     }
 
+    /**
+     * 락을 빼앗긴 워커는 heartbeat 를 갱신하지 못한다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_refresh_heartbeat_returns_false_for_non_owner(): void
     {
         $first = acquireWorkerLock(15);
@@ -153,6 +219,13 @@ class WorkerLockGuardTest extends TestCase
         $this->assertFalse($ok);
     }
 
+    /**
+     * 해제 시 worker_id·heartbeat 가 지워진다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_release_clears_worker_id_and_heartbeat(): void
     {
         $first = acquireWorkerLock(15);
@@ -164,13 +237,20 @@ class WorkerLockGuardTest extends TestCase
         $this->assertArrayNotHasKey('last_heartbeat', $state);
     }
 
+    /**
+     * 다른 워커의 락은 해제하지 않는다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_release_no_op_when_worker_id_does_not_match(): void
     {
         $first = acquireWorkerLock(15);
 
         // 다른 worker 가 takeover
         $state = json_decode(file_get_contents($this->stateFile), true);
-        $newWorkerId = 'taker-' . bin2hex(random_bytes(4));
+        $newWorkerId = 'taker-'.bin2hex(random_bytes(4));
         $state['active_worker_id'] = $newWorkerId;
         file_put_contents($this->stateFile, json_encode($state));
 
@@ -181,6 +261,13 @@ class WorkerLockGuardTest extends TestCase
         $this->assertSame($newWorkerId, $stateAfter['active_worker_id']);
     }
 
+    /**
+     * 해제 뒤에는 다시 락을 얻는다.
+     *
+     * @effects worker_lock_prevents_concurrent_workers
+     *
+     * @return void 반환값 없음
+     */
     public function test_acquire_after_release_succeeds(): void
     {
         $first = acquireWorkerLock(15);
@@ -192,5 +279,4 @@ class WorkerLockGuardTest extends TestCase
         $this->assertSame('available', $second['reason']);
         $this->assertNotSame($first['worker_id'], $second['worker_id']);
     }
-
 }

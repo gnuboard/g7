@@ -2,10 +2,13 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
+use Modules\Sirsoft\Ecommerce\Support\OrderProgressSteps;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
@@ -43,15 +46,32 @@ class GuestOrderResource extends BaseApiResource
         $currencySnapshot = $this->resource->currency_snapshot ?? null;
         $this->withCurrencySnapshot($currencySnapshot);
 
+        // 클레임 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 1건당 집계 1회.
+        // 산정은 ClaimPaymentService 의 게터를 경유한다 — 같은 값을 리소스가 저장소에서 따로 집계하면
+        // 뒤에 이 합계의 정의가 바뀔 때(예: 환급 반영 범위) 두 곳이 갈린다. 단건 상세 전용이라
+        // 목록에서 행마다 해석되지 않는다(목록은 OrderListResource).
+        $claimPaid = app(ClaimPaymentService::class)->paidTotalForOrder($this->resource);
+
         // 결제 통화(order_currency) — 현금영수증 금액 표기 기준(구매자가 실제 낸 통화).
         $paymentCurrency = $this->currency
             ?: (data_get($this->currency_snapshot, 'order_currency') ?: $orderCurrency);
 
         return [
             'order_number' => $this->order_number,
+            // 주문 금액 표기 기준 통화 — 회원 응답(`OrderResource`)과 **같은 키로 같은 값**이다.
+            // 비회원 화면은 회원과 같은 partial·핸들러를 쓰고, 그 핸들러가 보조 통화 목록에서
+            // 기준 통화를 걸러 낼 때 이 키를 읽는다(`claimApplyHandlers.ts::orderCurrencyCode`).
+            // 이 키가 없으면 필터 기준이 null 이 되어 비회원 신청서에서만 같은 금액이 기준 통화
+            // 줄과 보조 통화 줄에 **두 번** 나온다 — 둘 다 정상 서식이라 흔적이 남지 않는다.
+            // 통화 코드는 민감 정보가 아니며 이미 모든 `*_formatted` 가 그 통화로 표기된다.
+            'base_currency' => $orderCurrency,
             'order_status' => $this->order_status,
             'order_status_label' => $this->order_status ? $this->order_status->label() : null,
             'order_status_variant' => $this->order_status ? $this->order_status->variant() : null,
+            // 아이콘 의미 토큰(status-*) — 글리프 이름이 아니다. 템플릿 Icon 이 해석한다.
+            'order_status_icon' => $this->order_status ? $this->order_status->icon() : null,
+            // 진행단계 배열 — 회원 상세와 같은 partial 이 같은 배열로 그린다(OrderProgressSteps 단일 출처).
+            'progress_steps' => OrderProgressSteps::for($this->resource),
             // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(별도 order_status 아님). 보조 뱃지 표시용.
             'is_partially_cancelled' => $this->whenLoaded('options', fn () => $this->resource->isPartiallyCancelled(), false),
 
@@ -73,6 +93,12 @@ class GuestOrderResource extends BaseApiResource
             'total_refunded_points_amount' => $this->roundToOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
             'total_refunded_points_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
 
+            // 클레임 추가결제 합계 (교환·반품 청구액의 실수납 합계 — 부분 환급 차감, 0원이면 화면 미표시)
+            // 주문 총 배송비와 분리해 표기한다(§2 해석 확정). ClaimPaymentService::paidTotalForOrder 가 SSoT.
+            'claim_additional_paid_total' => $this->roundToOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'claim_additional_paid_total_formatted' => $this->formatOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'mc_claim_additional_paid_total' => $this->formatStoredMultiCurrency($claimPaid['mc'] ?: null),
+
             // 마일리지/예치금 — 회원 OrderResource 와 동일 노출. 비회원 주문상세도 회원과 같은 결제정보 partial 을
             // 재사용하므로 사용/적립 마일리지를 동등하게 표시할 수 있도록 보강 (마일리지는 base_currency 단일 정산).
             'total_points_used_amount' => $this->roundToOrderCurrency($this->total_points_used_amount, $orderCurrency),
@@ -80,7 +106,7 @@ class GuestOrderResource extends BaseApiResource
             'total_deposit_used_amount' => $this->roundToOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
             'total_deposit_used_amount_formatted' => $this->formatOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatOrderCurrency($this->total_earned_points_amount, $orderCurrency),
+            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
 
             // 다중 통화 금액 (주문 시점 스냅샷) — 회원 OrderResource 와 동일 노출.
             // 통화 선택 UI 가 추후 노출되어도 비회원 화면이 회원과 동등하게 다중 통화를 표시할 수 있도록 보강.
@@ -119,10 +145,19 @@ class GuestOrderResource extends BaseApiResource
             'delivery_memo' => $this->shippingAddress?->delivery_memo,
             'delivery_memo_label' => $this->shippingAddress?->delivery_memo_label,
 
-            // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파
-            'options' => $this->whenLoaded('options', fn () => OrderOptionResource::collection($this->options)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
-            )),
+            // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파. 클레임 점유 수량은 옵션마다 구하면
+            // 옵션 수 × 3 쿼리라 여기서 한 번에 구해 주입한다.
+            // 비회원 주문 품목 표시 — 리뷰 작성 가능(can_write_review)을 끈다 (비회원 상세에는 리뷰 창이 없다)
+            'options' => $this->whenLoaded('options', function () use ($orderCurrency, $currencySnapshot) {
+                $locked = OrderOptionResource::lockedQuantitiesFor($this->options);
+
+                return OrderOptionResource::collection($this->options)->each(
+                    fn ($r) => $r->withOrderCurrency($orderCurrency)
+                        ->withCurrencySnapshot($currencySnapshot)
+                        ->withClaimLockedQuantity($locked[(int) $r->resource->id] ?? null)
+                        ->forGuestOrder()
+                );
+            }),
 
             // 배송지/결제/배송 정보
             'shipping_address' => new OrderAddressResource($this->whenLoaded('shippingAddress')),
@@ -169,10 +204,11 @@ class GuestOrderResource extends BaseApiResource
     }
 
     /**
-     * 비회원에게 허용되는 액션을 주문 상태 기준으로 계산합니다.
+     * 비회원에게 허용되는 액션을 계산합니다.
      *
-     * 토큰 인증으로 본인 확인이 이미 끝났으므로 회원 권한 체크는 적용하지 않고,
-     * 주문 상태/환경설정으로만 가능 여부를 판정합니다.
+     * 본인 확인은 조회 토큰으로 끝났지만, 취소는 회원과 같은 「주문 취소」 권한(guest 역할)을 함께
+     * 본다 — 취소 창이 여는 사유 목록 API 와 비회원 취소 API 가 이 권한으로 판정되므로, 여기서 빼면
+     * 운영자가 비회원 취소 권한을 거뒀을 때 버튼만 남고 창이 사유를 불러오지 못한다.
      *
      * @return array<string, bool>
      */
@@ -185,7 +221,8 @@ class GuestOrderResource extends BaseApiResource
         );
 
         return [
-            'can_cancel' => $this->resource->isCancellable($cancellableStatuses),
+            'can_cancel' => $this->resource->isCancellable($cancellableStatuses)
+                && PermissionHelper::check('sirsoft-ecommerce.user-orders.cancel'),
         ];
     }
 }

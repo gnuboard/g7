@@ -150,6 +150,8 @@ _에러 응답 없음 — 공개 조회 엔드포인트입니다. 요청 파라�
 
 **설명** 현재 방문자의 쿠키 동의 상태를 반환해 배너 재노출 여부를 판단하게 합니다. `optional.sanctum` 라우트로 회원이면 user_id 기준, 미인증이면 session_id 기준으로 조회합니다. `has_consented`는 현재 정책 버전으로 동의를 완료했는지, `needs_renewal`은 과거 동의는 있으나 현재 정책 버전으로는 미동의인 상태(정책 갱신 후 재확인 필요)를 나타내며 동의 이력이 전혀 없는 신규 게스트는 `false`입니다. `is_member`는 배너가 회원 전용 분기(기존 동의 유지 버튼 등)를 노출할지 결정하는 데 사용합니다.
 
+이 엔드포인트는 **배너 화면용**입니다. 자동 차단 엔진과 다른 확장은 이것을 직접 부르지 않고 코어 동의 계약 `GET /api/consent`(코어 `docs/backend/api/privacy.md`)의 스냅샷을 씁니다 — 이 플러그인이 그 계약의 제공자로 같은 판단을 답합니다(#639). 게스트를 찾는 규칙(서명 검증한 `gdpr_session` UUID, 없으면 라라벨 세션 ID)은 저장·조회·응답 쿠키 정리·코어 계약 응답이 모두 `IssuesGuestSessionCookie::resolveGuestSessionId()` 하나를 씁니다.
+
 
 ### POST /api/plugins/sirsoft-gdpr/consent/grant
 <!-- @generated:start:api.plugins.sirsoft-gdpr.consent.grant -->

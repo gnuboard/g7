@@ -1,0 +1,15 @@
+feature: Hello 모듈 마크업 형식 예시 화면 — 기본 태그의 글자 표시
+
+description: |
+  마크업 형식 예시(admin_markup_demo)가 글자를 text 속성으로 적어 컴파일 결과가 props.text 가 됐고, 기본 컴포넌트(H2, Span)는
+  props.text 를 그리지 않아 미리보기 제목이 빈 칸으로 나왔다(7.1.0 전수 실측 G3). 기본 태그의 글자는 본문 텍스트로 적어
+  노드 text 로 컴파일되게 한다. 축 node 는 글자를 가진 기본 노드(정적 제목, 바인딩 Span)다.
+
+axes:
+  node: [heading, binding_span]
+
+effects:
+  - basic_text_rendered
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/tests/Unit/Layouts/MarkupDemoTextTest.php

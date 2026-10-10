@@ -1,410 +1,494 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_ecommerce_order_detail",
-  "permissions": [
-    "sirsoft-ecommerce.orders.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:sirsoft-ecommerce.admin.order.detail.title",
-    "description": "$t:sirsoft-ecommerce.admin.order.detail.description"
-  },
-  "computed": [],
-  "state": {
-    "selectedProducts": [],
-    "selectAll": false,
-    "batchOrderStatus": "",
-    "batchCarrierId": "",
-    "batchTrackingNumber": "",
-    "activeOrderTab": "order_info",
-    "expandedCashReceiptHistory": []
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "active_carriers",
-      "order_logs",
-      "refundReasons"
-    ]
-  },
-  "data_sources": [
-    {
-      "id": "order",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.order",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "blocking",
-      "errorHandling": {
-        "403": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
+    "comment": "주문 상세 (운영자) — 주문정보·결제정보·활동로그 세 구획을 한 페이지에 이어 붙이고 탭은 스크롤\n  위치를 따라간다. 배송지 수정·상태 일괄변경·취소/환불·안내 발송이 모두 여기서 일어나므로,\n  화면 상태(_local)는 `<init>` 한 곳에서 전 필드를 미리 깔아 두고 시작한다.\n  운영자가 누른 유형 서브탭. 비어 있으면 computed claimHistoryActiveType 이 접수 건이 있는 첫 유형을 고른다 — 여기에 'exchange' 를 박으면 그 판정이 영영 돌지 않는다.\n  탭 배열과 섹션 존재는 같은 조건으로 함께 분기한다 (D17-①). '클레임 내역' 은 접수 건이 없어도 섹션이 남으므로(빈 유형 안내가 그 자리다) 탭도 상시 존재하고, 뱃지 숫자만 응답을 따라간다.\n  유형 서브탭 4종 (D20). 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 claims 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다.\n  지금 보는 유형 서브탭. 운영자가 누른 값(_local.claimHistoryType)이 있으면 그것, 없으면 접수 건이 있는 첫 유형 — 순서는 교환 → 반품 → 취소 → 환불이고 넷 다 비었으면 교환이다. 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였다. 판정은 뱃지와 같은 counts 를 읽는다 — claims 배열을 세면 상한이 걸린 응답에서 뱃지와 갈린다. computed 는 다른 computed 를 읽지 못하므로 아래 claimHistoryRows 가 같은 식을 되풀이한다 — 순서를 바꾸면 두 곳을 함께 바꾼다.\n  서브탭 필터는 화면이 claim_type 으로 거른다 (S6c 판정 ⑤ — 서버는 전 유형 평면 배열 하나를 신청 역순으로 내려준다). 별도 데이터소스를 만들지 않으므로 서브탭 전환에 재조회가 없다. 기준 유형은 claimHistoryActiveType 과 같은 식이다(computed 간 참조 불가).",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_order_detail",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.order.detail.title",
+        "description": "$t:sirsoft-ecommerce.admin.order.detail.description"
+    },
+    "data_sources": [
+        {
+            "id": "order",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.order",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "initLocal": {
+                "order_number": "{{data.order_number ?? ''}}",
+                "form.recipient_name": "{{data.recipient_name ?? ''}}",
+                "form.recipient_phone": "{{data.recipient_phone ?? ''}}",
+                "form.recipient_tel": "{{data.recipient_tel ?? ''}}",
+                "form.recipient_zipcode": "{{data.recipient_zipcode ?? ''}}",
+                "form.recipient_address": "{{data.recipient_address ?? ''}}",
+                "form.recipient_detail_address": "{{data.recipient_detail_address ?? ''}}",
+                "form.recipient_country_code": "{{data.shipping_address?.recipient_country_code ?? 'KR'}}",
+                "form.address_line_1": "{{data.shipping_address?.address_line_1 ?? ''}}",
+                "form.address_line_2": "{{data.shipping_address?.address_line_2 ?? ''}}",
+                "form.intl_city": "{{data.shipping_address?.intl_city ?? ''}}",
+                "form.intl_state": "{{data.shipping_address?.intl_state ?? ''}}",
+                "form.intl_postal_code": "{{data.shipping_address?.intl_postal_code ?? ''}}",
+                "form.delivery_memo": "{{data.delivery_memo ?? ''}}",
+                "form.admin_memo": "{{data.admin_memo ?? ''}}",
+                "refundBankCode": "{{data.payment?.refund_bank_code ?? ''}}",
+                "refundBankAccount": "{{data.payment?.refund_bank_account ?? ''}}",
+                "refundBankHolder": "{{data.payment?.refund_bank_holder ?? ''}}"
+            },
+            "comment": "주문 본체. `blocking` 인 것은 아래 구획이 전부 이 응답 위에 서기 때문이고, 응답이 오면 배송지 입력값을 폼에 심는다(국내/해외 주소가 서로 다른 필드에 담겨 양쪽을 같이 받는다).\n       환불 계좌 세 필드는 주문 시 입력값을 취소 모달에 프리필해 두는 자리다(운영자가 고칠 수 있다) — cancelOrderHandlers 가 이 _local 키를 읽어 refund_bank 로 보낸다."
         },
-        "404": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
+        {
+            "id": "paymentSettings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.paymentSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "comment": "환불 계좌 은행 목록 (order_settings.banks) — 취소 모달의 은행 Select 가 사용한다. 무통장 입금 계좌와 동일한 목록이다."
+        },
+        {
+            "id": "active_carriers",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.active_carriers",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "comment": "택배사 목록은 설정 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 억제하지 않으면 상세에 들어갈 때마다 「해당 권한이 없습니다」 알림이 뜬다(목록 화면 S3-D6 과 같은 처리). 비면 운송장 입력의 택배사 선택지만 빈다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "운송장 입력 시 고를 택배사 목록 — 사용 중인 것만 받는다"
+        },
+        {
+            "id": "order_logs",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.order_logs",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "per_page": "{{_local.logsPerPage ?? 10}}",
+                "page": "{{_local.logsPage ?? 1}}",
+                "sort_order": "{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"
+            },
+            "comment": "활동로그 구획 전용. 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다(클라이언트 정렬이 아니다)"
+        },
+        {
+            "id": "orderClaims",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.orderClaims",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "counts": {},
+                    "claims": [],
+                    "unavailable": true
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "클레임 열람 권한이 없는 주문 담당자에게는 정상적인 응답이다 — 상위(레이아웃) errorHandling 으로 전파되면 주문 화면 전체가 오류 페이지가 된다.",
+                    "handler": "suppress"
+                },
+                "default": {
+                    "comment": "500·네트워크 실패도 같다 — 클레임 내역 한 섹션의 실패가 주문 화면 전체를 막지 않게 끊고, fallback 의 unavailable 로 섹션이 '못 불러왔다' 를 말한다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다."
+        },
+        {
+            "id": "claimRequestContext",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claimRequestContext",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims/request-context",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "gates": {},
+                    "reasons": {},
+                    "charge_methods": [],
+                    "unavailable": true
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "실패의 종류를 남긴다 — 403(접수 권한 없음)과 그 밖(500·네트워크)을 선택 바 안내가 가른다. 전부 「권한 없음」 으로 알리면 권한이 있는 운영자가 엉뚱하게 권한을 요청하러 간다. 이 핸들러가 실패를 받아 끊으므로 주문 화면 전체 오류로 번지지 않는다.",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "claimRequestContextError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "claimRequestContextError": "failed"
+                    }
+                }
+            },
+            "comment": "관리자 직권 접수 문맥 (§3-11) — 선택 바 [교환 접수]·[반품 접수]·[취소·환불 접수] 가 켜지는 물리 게이트(D5) 상태 목록과 접수 창의 사유·청구 방식 선택지. 게이트(claims.create)가 화면 라우트(orders.read)보다 좁아 권한이 없는 운영자에게는 403 이다 — suppress 로 끊고 fallback 의 빈 게이트로 세 버튼이 꺼진 채 선다. 게이트 computed(`claimRequestGate*`)는 고른 상품이 **모두** 그 유형의 상태 목록에 있어야 참이다 — 화면이 목록을 적으면 서버 판정과 갈린다."
+        },
+        {
+            "id": "refundReasons",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.refundReasons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claim-reasons/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "type": "refund"
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "사유 목록은 설정 조회·클레임 조회 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 비면 취소/환불 창의 사유 선택지만 빈다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다"
         }
-      },
-      "initLocal": {
-        "order_number": "{{data.order_number ?? ''}}",
-        "form.recipient_name": "{{data.recipient_name ?? ''}}",
-        "form.recipient_phone": "{{data.recipient_phone ?? ''}}",
-        "form.recipient_tel": "{{data.recipient_tel ?? ''}}",
-        "form.recipient_zipcode": "{{data.recipient_zipcode ?? ''}}",
-        "form.recipient_address": "{{data.recipient_address ?? ''}}",
-        "form.recipient_detail_address": "{{data.recipient_detail_address ?? ''}}",
-        "form.recipient_country_code": "{{data.shipping_address?.recipient_country_code ?? 'KR'}}",
-        "form.address_line_1": "{{data.shipping_address?.address_line_1 ?? ''}}",
-        "form.address_line_2": "{{data.shipping_address?.address_line_2 ?? ''}}",
-        "form.intl_city": "{{data.shipping_address?.intl_city ?? ''}}",
-        "form.intl_state": "{{data.shipping_address?.intl_state ?? ''}}",
-        "form.intl_postal_code": "{{data.shipping_address?.intl_postal_code ?? ''}}",
-        "form.delivery_memo": "{{data.delivery_memo ?? ''}}",
-        "form.admin_memo": "{{data.admin_memo ?? ''}}",
-        "_comment_refund_bank": "주문 시 입력된 환불 계좌를 취소 모달에 프리필한다 (관리자가 수정 가능). cancelOrderHandlers 가 이 _local 키를 읽어 refund_bank 로 전송한다.",
-        "refundBankCode": "{{data.payment?.refund_bank_code ?? ''}}",
-        "refundBankAccount": "{{data.payment?.refund_bank_account ?? ''}}",
-        "refundBankHolder": "{{data.payment?.refund_bank_holder ?? ''}}"
-      }
-    },
-    {
-      "id": "paymentSettings",
-      "comment": "환불 계좌 은행 목록 (order_settings.banks) — 취소 모달의 은행 Select 가 사용한다. 무통장 입금 계좌와 동일한 목록이다.",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.paymentSettings",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true
-    },
-    {
-      "id": "active_carriers",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.active_carriers",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true
-    },
-    {
-      "id": "order_logs",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.order_logs",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "per_page": "{{_local.logsPerPage ?? 10}}",
-        "page": "{{_local.logsPage ?? 1}}",
-        "sort_order": "{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"
-      }
-    },
-    {
-      "id": "refundReasons",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.refundReasons",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/claim-reasons/active",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "type": "refund"
-      }
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "activeOrderTab": "order_info",
+    ],
+    "initLocal": {
         "selectedProducts": [],
         "selectAll": false,
         "batchOrderStatus": "",
         "batchCarrierId": "",
         "batchTrackingNumber": "",
-        "logsPage": 1,
-        "logsPerPage": 10,
-        "logsSort": "date_desc",
-        "changeQuantities": [],
-        "smsPhone": "",
-        "smsMessage": "",
-        "emailAddress": "",
-        "emailMessage": "",
-        "isSending": false,
-        "emailErrors": null,
-        "order_number": "",
-        "form": {
-          "recipient_name": "",
-          "recipient_phone": "",
-          "recipient_tel": "",
-          "recipient_zipcode": "",
-          "recipient_address": "",
-          "recipient_detail_address": "",
-          "recipient_country_code": "KR",
-          "address_line_1": "",
-          "address_line_2": "",
-          "intl_city": "",
-          "intl_state": "",
-          "intl_postal_code": "",
-          "delivery_memo": "",
-          "admin_memo": ""
-        },
-        "isSaving": false,
-        "errors": null,
-        "cancelItems": [],
-        "cancelReason": "",
-        "cancelReasonDetail": "",
-        "cancelPg": true,
-        "refundEstimate": null,
-        "refundLoading": false,
-        "isCancelling": false,
-        "cancelError": null
-      }
-    }
-  ],
-  "modals": [
-    {
-      "partial": "partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json"
+        "activeOrderTab": "order_info",
+        "claimHistoryType": "",
+        "expandedCashReceiptHistory": []
     },
-    {
-      "partial": "partials/admin_ecommerce_order_detail/_modal_send_sms.json"
+    "computed": {
+        "claimHistoryTotal": "{{Number(orderClaims?.data?.counts?.exchange ?? 0) + Number(orderClaims?.data?.counts?.return ?? 0) + Number(orderClaims?.data?.counts?.cancel ?? 0) + Number(orderClaims?.data?.counts?.refund ?? 0)}}",
+        "orderDetailTabs": "{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((_computed.claimHistoryTotal ?? 0) > 0 ? ' (' + _computed.claimHistoryTotal + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}",
+        "claimHistoryTypes": "{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}",
+        "claimHistoryActiveType": "{{_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')}}",
+        "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}",
+        "claimRequestGateExchange": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.exchange ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}",
+        "claimRequestGateReturn": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.return ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}",
+        "claimRequestGateRefund": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.refund ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}"
     },
-    {
-      "partial": "partials/admin_ecommerce_order_detail/_modal_send_email.json"
+    "permissions": [
+        "sirsoft-ecommerce.orders.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "active_carriers",
+            "order_logs",
+            "refundReasons"
+        ]
     },
-    {
-      "partial": "partials/admin_ecommerce_order_detail/_modal_cancel_order.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json"
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "id": "order_detail_wrapper",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content"
-        },
-        "children": [
-          {
-            "id": "page_header_section",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "mb-6"
-            },
-            "children": [
-              {
-                "id": "page_header",
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "activeOrderTab": "order_info",
+                "claimHistoryType": "",
+                "selectedProducts": [],
+                "selectAll": false,
+                "batchOrderStatus": "",
+                "batchCarrierId": "",
+                "batchTrackingNumber": "",
+                "logsPage": 1,
+                "logsPerPage": 10,
+                "logsSort": "date_desc",
+                "changeQuantities": [],
+                "smsPhone": "",
+                "smsMessage": "",
+                "emailAddress": "",
+                "emailMessage": "",
+                "isSending": false,
+                "emailErrors": null,
+                "order_number": "",
+                "isSaving": false,
+                "errors": null,
+                "cancelItems": [],
+                "cancelReason": "",
+                "cancelReasonDetail": "",
+                "refundEstimate": null,
+                "refundLoading": false,
+                "isCancelling": false,
+                "cancelError": null,
+                "form": {
+                    "recipient_name": "",
+                    "recipient_phone": "",
+                    "recipient_tel": "",
+                    "recipient_zipcode": "",
+                    "recipient_address": "",
+                    "recipient_detail_address": "",
+                    "recipient_country_code": "KR",
+                    "address_line_1": "",
+                    "address_line_2": "",
+                    "intl_city": "",
+                    "intl_state": "",
+                    "intl_postal_code": "",
+                    "delivery_memo": "",
+                    "admin_memo": ""
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "order_detail_wrapper",
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "page-header-padded"
+                    "className": "admin-page-content"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "H1",
-                        "props": {
-                          "className": "page-title"
-                        },
-                        "text": "$t:sirsoft-ecommerce.admin.order.detail.title"
-                      },
-                      {
+                    {
+                        "id": "page_header_section",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                          "className": "page-description flex-center gap-2 flex-wrap"
+                            "className": "mb-6"
                         },
                         "children": [
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-secondary"
+                            {
+                                "id": "page_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "page-header-padded"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H1",
+                                                "props": {
+                                                    "className": "page-title"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.order.detail.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "page-description flex-center gap-2 flex-wrap"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_number:"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{order.data.order_number}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_date:"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{order.data.ordered_at_formatted}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.status:"
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "props": {
+                                                            "variant": "{{order.data.order_status_variant}}"
+                                                        },
+                                                        "text": "{{order.data.order_status_label}}"
+                                                    },
+                                                    {
+                                                        "comment": "부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그)",
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "if": "{{order.data.is_partially_cancelled}}",
+                                                        "props": {
+                                                            "variant": "warning"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "page-actions"
+                                        },
+                                        "children": [
+                                            {
+                                                "comment": "주문 목록으로. 보던 검색·상태 필터·페이지를 그대로 이고 간다 — 주문 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다",
+                                                "id": "list_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/orders",
+                                                            "mergeQuery": true,
+                                                            "query": {}
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-outline"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.common.list"
+                                            }
+                                        ]
+                                    }
+                                ]
                             },
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_number:"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "font-medium text-gray-900 dark:text-gray-100"
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_order_progress.json"
                             },
-                            "text": "{{order.data.order_number}}"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-gray-300 dark:text-gray-600"
-                            },
-                            "text": "|"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-secondary"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_date:"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "font-medium text-gray-900 dark:text-gray-100"
-                            },
-                            "text": "{{order.data.ordered_at_formatted}}"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-gray-300 dark:text-gray-600"
-                            },
-                            "text": "|"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-secondary"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.status:"
-                          },
-                          {
-                            "type": "composite",
-                            "name": "Badge",
-                            "props": {
-                              "variant": "{{order.data.order_status_variant}}"
-                            },
-                            "text": "{{order.data.order_status_label}}"
-                          },
-                          {
-                            "comment": "부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그)",
-                            "type": "composite",
-                            "name": "Badge",
-                            "if": "{{order.data.is_partially_cancelled}}",
-                            "props": {
-                              "variant": "warning"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "page-actions"
-                    },
-                    "children": [
-                      {
-                        "id": "list_button",
-                        "type": "basic",
-                        "name": "Button",
-                        "props": {
-                          "type": "button",
-                          "className": "btn btn-outline"
-                        },
-                        "text": "$t:sirsoft-ecommerce.common.list",
-                        "actions": [
-                          {
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                              "path": "/admin/ecommerce/orders",
-                              "mergeQuery": true,
-                              "query": {}
+                            {
+                                "comment": "탭 클릭·스크롤 추적은 컴포넌트가 제 상태로 맡는다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 내부 활성 탭 갱신이 꺼져(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다.",
+                                "id": "tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "props": {
+                                    "activeTabId": "{{_local.activeOrderTab ?? 'order_info'}}",
+                                    "enableScrollSpy": true,
+                                    "scrollSpyOffset": 120,
+                                    "sectionIdPrefix": "section_",
+                                    "tabs": "{{_computed.orderDetailTabs ?? []}}"
+                                }
                             }
-                          }
                         ]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "id": "tab_navigation",
-                "type": "composite",
-                "name": "TabNavigationScroll",
-                "props": {
-                  "activeTabId": "{{_local.activeOrderTab ?? 'order_info'}}",
-                  "enableScrollSpy": true,
-                  "scrollSpyOffset": 120,
-                  "sectionIdPrefix": "section_",
-                  "tabs": [
-                    {
-                      "id": "order_info",
-                      "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.order_info"
                     },
                     {
-                      "id": "payment_info",
-                      "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.payment_info"
-                    },
-                    {
-                      "id": "activity_log",
-                      "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.activity_log"
+                        "id": "tab_content_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_order_info.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_payment_info.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_claim_history.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_activity_log.json"
+                            }
+                        ]
                     }
-                  ]
-                },
-                "actions": [
-                  {
-                    "type": "change",
-                    "handler": "setState",
-                    "params": {
-                      "target": "local",
-                      "activeOrderTab": "{{$event.value}}"
-                    }
-                  }
                 ]
-              }
-            ]
-          },
-          {
-            "id": "tab_content_area",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-              {
-                "partial": "partials/admin_ecommerce_order_detail/_partial_order_info.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_order_detail/_partial_payment_info.json"
-              },
-              {
-                "partial": "partials/admin_ecommerce_order_detail/_partial_activity_log.json"
-              }
-            ],
-            "props": {
-              "className": "tab-content"
             }
-          }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "선택한 주문상품들의 주문상태·운송장을 한꺼번에 바꾸기 전 확인",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json"
+        },
+        {
+            "comment": "주문자에게 SMS 안내 발송",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_send_sms.json"
+        },
+        {
+            "comment": "주문자에게 메일 안내 발송",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_send_email.json"
+        },
+        {
+            "comment": "취소/환불 — 취소할 옵션과 수량을 고르면 환불 예상액을 서버에서 다시 계산해 보여 준다",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_cancel_order.json"
+        },
+        {
+            "comment": "관리자 직권 접수 창 (교환·반품 — §3-11). 취소·환불 접수는 위 취소 모달을 그대로 쓴다(같은 서비스로 위임).",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json"
+        },
+        {
+            "comment": "현금영수증 발급 — 무통장·가상계좌 결제 건에 대해 운영자가 대신 발급한다",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.json"
+        },
+        {
+            "comment": "비회원 주문 조회 비밀번호 재설정 — 주문자가 비밀번호를 잊었을 때 운영자가 열어 준다",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json"
+        },
+        {
+            "comment": "무통장 입금 확인 처리 — 입금 대기 주문을 결제 완료로 넘긴다",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json"
+        }
     ]
-  }
 }

@@ -1,0 +1,20 @@
+feature: DB 설정 파일의 PDO 지원 중단 대응과 읽기 연결 대체
+
+description: |
+  config/database.php 가 PHP 버전에 따라 지원 중단된 PDO 상수를 가려 쓰고, 읽기 연결 환경값이 비면 쓰기 연결로 대체하는지 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 concern 은 지키는 설정 항목(PDO SSL 상수, 읽기 연결 대체), check_mode 는 설정을 실제로 읽어 확인하는지 파일 본문을 정적으로 확인하는지다.
+
+axes:
+  concern: [pdo_ssl_constant, read_connection_fallback]
+  check_mode: [runtime_load, static_source]
+
+effects:
+  - mysql_options_does_not_trigger_pdo_deprecation
+  - config_file_does_not_reference_unguarded_deprecated_pdo_constant
+  - read_connection_falls_back_to_write_when_read_env_empty
+  - config_uses_elvis_fallback_for_read_connection
+
+test_files:
+  - tests/Unit/Config/DatabaseConfigDeprecationTest.php

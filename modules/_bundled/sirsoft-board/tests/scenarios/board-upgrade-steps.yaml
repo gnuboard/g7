@@ -1,0 +1,37 @@
+feature: 게시판 업그레이드 단계 (평문 비밀번호 재해시, 목록 조회수 색인, 1.0.0-beta.2)
+
+description: |
+  평문으로 남은 게시글 비밀번호를 해시로 바꾸는 단계, 목록 조회수 색인을 만드는 단계, 1.0.0-beta.2 단계가 기존 데이터를 망가뜨리지 않고 여러 번 돌려도 같은 결과를 내는지 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 upgrade_step 은 업그레이드 단계, existing_data 는 단계가 만나는 기존 데이터 상태다.
+  needs_change 는 바꿀 대상이 있는 상태(평문 비밀번호, 색인 없음, 어긋난 개수), already_applied 는 이미 바뀐 상태(해시 비밀번호, 같은 단계를 한 번 더 돌린 경우),
+  nothing_to_change 는 바꿀 대상이 아예 없는 상태(비밀번호 없는 행, 빈 게시판, 파티션 없는 표준 환경)다.
+
+axes:
+  upgrade_step: [rehash_plaintext_password, view_count_list_index, beta_2_count_sync]
+  existing_data: [needs_change, already_applied, nothing_to_change]
+
+exclusions:
+  - { upgrade_step: view_count_list_index, existing_data: nothing_to_change,
+      reason: "색인 단계는 대상 색인의 유무만 보므로 바꿀 것이 없는 상태가 곧 색인이 이미 있는 상태(already_applied)와 같다." }
+
+effects:
+  - plaintext_password_rehashed_to_bcrypt
+  - already_hashed_rows_untouched
+  - rows_without_password_untouched
+  - rehash_is_idempotent
+  - sync_count_columns_is_idempotent
+  - empty_board_counts_remain_zero_after_upgrade
+  - soft_deleted_posts_excluded_from_posts_count
+  - soft_deleted_comments_excluded_from_comments_count
+  - run_completes_without_exception_when_no_partitions
+  - boards_comments_count_does_not_accumulate_on_double_run
+  - view_count_list_index_created_on_existing_site
+  - view_count_list_index_upgrade_is_idempotent
+  - legacy_popular_posts_index_preserved
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PlaintextPostPasswordRehashTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PostListViewCountIndexUpgradeTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Upgrades/Upgrade_1_0_0_beta_2_Test.php

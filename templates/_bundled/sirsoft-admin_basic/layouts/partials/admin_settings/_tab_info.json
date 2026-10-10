@@ -1,1295 +1,1297 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "환경설정 정보 탭 콘텐츠"
-  },
-  "id": "tab_content_info",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeSettingsTab || query.tab) === 'info'}}",
-  "children": [
-    {
-      "id": "opcache_warning",
-      "if": "{{systemInfo?.data?.opcache?.enabled === false}}",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "alert-warning"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "triangle-exclamation",
-                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-warning-soft"
-              },
-              "text": "$t:admin.settings.info.opcache_disabled_warning"
-            }
-          ]
-        }
-      ]
+    "comment": "정보 탭 — **저장할 것이 없는 유일한 탭**이다(그래서 화면 하단 공용 저장 버튼도 이 탭에서는 숨는다).\n  서버·프레임워크 정보를 보여 주고, 코어 새 버전 확인과 변경 이력 보기 두 동작이 있다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 정보 탭 콘텐츠"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "grid-2col-responsive"
-      },
-      "children": [
+    "id": "tab_content_info",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab) === 'info'}}",
+    "children": [
         {
-          "id": "card_system_info",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "card-title"
-              },
-              "text": "$t:admin.settings.info.system_info"
+            "id": "opcache_warning",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{systemInfo?.data?.opcache?.enabled === false}}",
+            "props": {
+                "className": "alert-warning"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "card-description"
-              },
-              "text": "$t:admin.settings.info.system_info_desc"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.os"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.os_info ?? '-'}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.web_server"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.web_server ?? '-'}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.php_version"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.php_version ?? '-'}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.mysql_version"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.mysql_version ?? '-'}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.g7_version"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-2"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-heading"
-                          },
-                          "text": "{{systemInfo?.data?.g7_version ?? '-'}}"
-                        },
-                        {
-                          "type": "composite",
-                          "name": "StatusBadge",
-                          "if": "{{_local.coreUpdateInfo?.update_available}}",
-                          "props": {
-                            "status": "success",
-                            "label": "{{_local.coreUpdateInfo?.latest_version ?? ''}}"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Button",
-                          "props": {
-                            "type": "button",
-                            "className": "px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50",
-                            "disabled": "{{_local.checkingCoreUpdate}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "sequence",
-                              "actions": [
-                                {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "local",
-                                    "checkingCoreUpdate": true
-                                  }
-                                },
-                                {
-                                  "handler": "apiCall",
-                                  "auth_required": true,
-                                  "target": "/api/admin/core-update/check",
-                                  "params": {
-                                    "method": "POST"
-                                  },
-                                  "onSuccess": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "checkingCoreUpdate": false,
-                                        "coreUpdateInfo": "{{result.data}}"
-                                      }
-                                    },
-                                    {
-                                      "handler": "openModal",
-                                      "target": "core_update_result_modal"
-                                    }
-                                  ],
-                                  "onError": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "checkingCoreUpdate": false,
-                                        "coreUpdateError": "{{error.errors?.reason ?? ''}}"
-                                      }
-                                    },
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "error",
-                                        "message": "{{error.errors?.reason ?? $t('admin.settings.info.update_check_failed')}}"
-                                      }
-                                    }
-                                  ]
-                                }
-                              ]
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
                             }
-                          ],
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "if": "{{_local.checkingCoreUpdate}}",
-                              "props": {
-                                "name": "spinner",
-                                "className": "text-xs animate-spin"
-                              }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{!_local.checkingCoreUpdate}}",
-                              "text": "$t:admin.settings.info.check_update"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Button",
-                          "props": {
-                            "type": "button",
-                            "className": "px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50",
-                            "disabled": "{{_local.loadingChangelog}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "sequence",
-                              "actions": [
-                                {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "local",
-                                    "loadingChangelog": true
-                                  }
-                                },
-                                {
-                                  "handler": "apiCall",
-                                  "auth_required": true,
-                                  "target": "/api/admin/core-update/changelog",
-                                  "params": {
-                                    "method": "GET"
-                                  },
-                                  "onSuccess": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "loadingChangelog": false,
-                                        "coreChangelog": "{{result.data.changelog ?? []}}"
-                                      }
-                                    },
-                                    {
-                                      "handler": "openModal",
-                                      "target": "core_changelog_modal"
-                                    }
-                                  ],
-                                  "onError": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "loadingChangelog": false
-                                      }
-                                    },
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "error",
-                                        "message": "{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"
-                                      }
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "if": "{{_local.loadingChangelog}}",
-                              "props": {
-                                "name": "spinner",
-                                "className": "text-xs animate-spin"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{!_local.loadingChangelog}}",
-                              "text": "$t:admin.settings.info.view_changelog"
-                            }
-                          ]
+                            "text": "$t:admin.settings.info.opcache_disabled_warning"
                         }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.laravel_version"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.laravel_version ?? '-'}}"
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "card_system_specs",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "card-title"
-              },
-              "text": "$t:admin.settings.info.system_specs"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid-2col-responsive"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "card-description"
-              },
-              "text": "$t:admin.settings.info.system_specs_desc"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.cpu"
+                    "id": "card_system_info",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.cpu_info ?? '-'}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.memory"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.disk"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.php_memory"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.php_memory_limit ?? '-'}}"
-                    }
-                  ]
-                },
-                {
-                  "id": "opcache_row",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.opcache"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.opcache?.enabled === true ? $t('admin.settings.info.opcache_enabled') : (systemInfo?.data?.opcache?.enabled === false ? $t('admin.settings.info.opcache_disabled') : $t('admin.settings.info.opcache_unknown'))}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.max_execution_time"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.max_execution_time ?? '-'}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.settings.info.upload_size"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-heading"
-                      },
-                      "text": "{{systemInfo?.data?.upload_max_filesize ?? '-'}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "card_install_paths",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.info.install_paths"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.info.install_paths_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "grid-2col-responsive"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-between py-2"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-label"
-                          },
-                          "text": "$t:admin.settings.info.install_path"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-primary text-sm font-mono break-all"
-                          },
-                          "text": "{{systemInfo?.data?.install_path ?? '-'}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-between py-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-label"
-                          },
-                          "text": "$t:admin.settings.info.config_file"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-primary text-sm font-mono break-all"
-                          },
-                          "text": "{{systemInfo?.data?.config_path ?? '-'}}"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "grid-2col-responsive"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-between py-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-label"
-                          },
-                          "text": "$t:admin.settings.info.log_path"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-primary text-sm font-mono break-all"
-                          },
-                          "text": "{{systemInfo?.data?.log_path ?? '-'}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-between py-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-label"
-                          },
-                          "text": "$t:admin.settings.info.upload_path"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-primary text-sm font-mono break-all"
-                          },
-                          "text": "{{systemInfo?.data?.upload_path ?? '-'}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "card_database_config",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.info.database_config"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.info.database_config_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium"
-                  },
-                  "text": "$t:admin.settings.info.config_type"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "{{systemInfo?.data?.database_config?.has_read_write_split ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
-                  },
-                  "text": "{{systemInfo?.data?.database_config?.has_read_write_split ? $t('admin.settings.info.read_write_split') : $t('admin.settings.info.write_only')}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "grid grid-cols-1 lg:grid-cols-2 gap-6"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-body font-medium mb-3"
-                      },
-                      "text": "$t:admin.settings.info.write_db"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "row-stack"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-between py-1.5"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label"
-                              },
-                              "text": "$t:admin.settings.info.db_host"
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "card-title"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-primary text-sm font-mono"
-                              },
-                              "text": "{{systemInfo?.data?.database_config?.write?.host ?? '-'}}"
-                            }
-                          ]
+                            "text": "$t:admin.settings.info.system_info"
                         },
                         {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-between py-1.5"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label"
-                              },
-                              "text": "$t:admin.settings.info.db_port"
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "card-description"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-primary text-sm font-mono"
-                              },
-                              "text": "{{systemInfo?.data?.database_config?.write?.port ?? '-'}}"
-                            }
-                          ]
+                            "text": "$t:admin.settings.info.system_info_desc"
                         },
                         {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-between py-1.5"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label"
-                              },
-                              "text": "$t:admin.settings.info.db_name"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-primary text-sm font-mono"
-                              },
-                              "text": "{{systemInfo?.data?.database_config?.write?.database ?? '-'}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-between py-1.5"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-label"
-                              },
-                              "text": "$t:admin.settings.info.db_user"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-primary text-sm font-mono"
-                              },
-                              "text": "{{systemInfo?.data?.database_config?.write?.username ?? '-'}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{systemInfo?.data?.database_config?.has_read_write_split}}",
-                  "props": {
-                    "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-body font-medium mb-3"
-                      },
-                      "text": "$t:admin.settings.info.read_db"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {},
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "iteration": {
-                            "source": "systemInfo?.data?.database_config?.read ?? []",
-                            "item_var": "replica",
-                            "index_var": "replicaIndex"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "if": "{{(systemInfo?.data?.database_config?.read?.length ?? 0) > 1}}",
-                              "props": {
-                                "className": "text-tertiary font-medium mb-2"
-                              },
-                              "text": "Replica #{{replicaIndex + 1}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
                                 "className": "row-stack"
-                              },
-                              "children": [
+                            },
+                            "children": [
                                 {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "flex-between py-1.5"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-label"
-                                      },
-                                      "text": "$t:admin.settings.info.db_host"
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
                                     },
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-primary text-sm font-mono"
-                                      },
-                                      "text": "{{replica?.host ?? '-'}}"
-                                    }
-                                  ]
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.os"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.os_info ?? '-'}}"
+                                        }
+                                    ]
                                 },
                                 {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "flex-between py-1.5"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-label"
-                                      },
-                                      "text": "$t:admin.settings.info.db_port"
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
                                     },
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-primary text-sm font-mono"
-                                      },
-                                      "text": "{{replica?.port ?? '-'}}"
-                                    }
-                                  ]
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.web_server"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.web_server ?? '-'}}"
+                                        }
+                                    ]
                                 },
                                 {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "flex-between py-1.5"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-label"
-                                      },
-                                      "text": "$t:admin.settings.info.db_name"
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
                                     },
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-primary text-sm font-mono"
-                                      },
-                                      "text": "{{replica?.database ?? '-'}}"
-                                    }
-                                  ]
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.php_version"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.php_version ?? '-'}}"
+                                        }
+                                    ]
                                 },
                                 {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "flex-between py-1.5"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-label"
-                                      },
-                                      "text": "$t:admin.settings.info.db_user"
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
                                     },
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-primary text-sm font-mono"
-                                      },
-                                      "text": "{{replica?.username ?? '-'}}"
-                                    }
-                                  ]
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.mysql_version"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.mysql_version ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.g7_version"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-heading"
+                                                    },
+                                                    "text": "{{systemInfo?.data?.g7_version ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "StatusBadge",
+                                                    "if": "{{_local.coreUpdateInfo?.update_available}}",
+                                                    "props": {
+                                                        "status": "success",
+                                                        "label": "{{_local.coreUpdateInfo?.latest_version ?? ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "코어 새 버전 확인 — 결과(있음/없음 모두)를 창으로 띄운다.\n                       받은 값을 **부모 화면 상태**에 담아 두는 것이 중요하다. 결과 창과 이력 창이\n                       그 값을 `$parent` 로 읽으므로, 여기서 담지 않으면 창이 빈 채로 뜬다.",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "checkingCoreUpdate": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/admin/core-update/check",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "POST"
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "checkingCoreUpdate": false,
+                                                                                "coreUpdateInfo": "{{result.data}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "core_update_result_modal"
+                                                                        }
+                                                                    ],
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "checkingCoreUpdate": false,
+                                                                                "coreUpdateError": "{{error.errors?.reason ?? ''}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.errors?.reason ?? $t('admin.settings.info.update_check_failed')}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50",
+                                                        "disabled": "{{_local.checkingCoreUpdate}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{_local.checkingCoreUpdate}}",
+                                                            "props": {
+                                                                "name": "spinner",
+                                                                "className": "text-xs animate-spin"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!_local.checkingCoreUpdate}}",
+                                                            "text": "$t:admin.settings.info.check_update"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "변경 이력 보기 — 버전 확인과 달리 **범위를 지정하지 않아** 전체 이력을 받는다\n                       (결과 창 안의 이력 버튼은 현재↔최신 구간만 받는다).",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "loadingChangelog": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/admin/core-update/changelog",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "GET"
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "loadingChangelog": false,
+                                                                                "coreChangelog": "{{result.data.changelog ?? []}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "core_changelog_modal"
+                                                                        }
+                                                                    ],
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "loadingChangelog": false
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50",
+                                                        "disabled": "{{_local.loadingChangelog}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{_local.loadingChangelog}}",
+                                                            "props": {
+                                                                "name": "spinner",
+                                                                "className": "text-xs animate-spin"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!_local.loadingChangelog}}",
+                                                            "text": "$t:admin.settings.info.view_changelog"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.laravel_version"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.laravel_version ?? '-'}}"
+                                        }
+                                    ]
                                 }
-                              ]
-                            }
-                          ]
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{!systemInfo?.data?.database_config?.has_read_write_split}}",
-                  "props": {
-                    "className": "flex-center bg-gray-50 dark:bg-gray-900 rounded-lg p-4 justify-center"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.info.no_read_db"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "card_php_extensions",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.info.php_extensions"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.info.php_extensions_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-body font-medium mb-3"
-                  },
-                  "text": "$t:admin.settings.info.required_modules"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "module-badge-grid"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "iteration": {
-                        "source": "Object.entries(systemInfo?.data?.php_extensions?.required ?? {})",
-                        "item_var": "ext"
-                      },
-                      "props": {
-                        "className": "flex-center gap-1.5"
-                      },
-                      "children": [
+                    "id": "card_system_specs",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "{{ext[1] ? 'check' : 'x'}}",
-                            "className": "{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
-                          }
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "card-title"
+                            },
+                            "text": "$t:admin.settings.info.system_specs"
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-body"
-                          },
-                          "text": "{{ext[0]}}"
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "card-description"
+                            },
+                            "text": "$t:admin.settings.info.system_specs_desc"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.cpu"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.cpu_info ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.memory"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.disk"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.php_memory"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.php_memory_limit ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "opcache_row",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.opcache"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.opcache?.enabled === true ? $t('admin.settings.info.opcache_enabled') : (systemInfo?.data?.opcache?.enabled === false ? $t('admin.settings.info.opcache_disabled') : $t('admin.settings.info.opcache_unknown'))}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.max_execution_time"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.max_execution_time ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.upload_size"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.upload_max_filesize ?? '-'}}"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
+            ]
+        },
+        {
+            "id": "card_install_paths",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-body font-medium mb-3"
-                  },
-                  "text": "$t:admin.settings.info.optional_modules"
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.info.install_paths"
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "module-badge-grid"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "iteration": {
-                        "source": "Object.entries(systemInfo?.data?.php_extensions?.optional ?? {})",
-                        "item_var": "ext"
-                      },
-                      "props": {
-                        "className": "flex-center gap-1.5"
-                      },
-                      "children": [
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.info.install_paths_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "{{ext[1] ? 'check' : 'x'}}",
-                            "className": "{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid-2col-responsive"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between py-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:admin.settings.info.install_path"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary text-sm font-mono break-all"
+                                                    },
+                                                    "text": "{{systemInfo?.data?.install_path ?? '-'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between py-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:admin.settings.info.config_file"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary text-sm font-mono break-all"
+                                                    },
+                                                    "text": "{{systemInfo?.data?.config_path ?? '-'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid-2col-responsive"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between py-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:admin.settings.info.log_path"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary text-sm font-mono break-all"
+                                                    },
+                                                    "text": "{{systemInfo?.data?.log_path ?? '-'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between py-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:admin.settings.info.upload_path"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary text-sm font-mono break-all"
+                                                    },
+                                                    "text": "{{systemInfo?.data?.upload_path ?? '-'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_database_config",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.info.database_config"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.info.database_config_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "$t:admin.settings.info.config_type"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{systemInfo?.data?.database_config?.has_read_write_split ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                    },
+                                    "text": "{{systemInfo?.data?.database_config?.has_read_write_split ? $t('admin.settings.info.read_write_split') : $t('admin.settings.info.write_only')}}"
+                                }
+                            ]
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-body"
-                          },
-                          "text": "{{ext[0]}}"
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-body font-medium mb-3"
+                                            },
+                                            "text": "$t:admin.settings.info.write_db"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-between py-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "$t:admin.settings.info.db_host"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-primary text-sm font-mono"
+                                                            },
+                                                            "text": "{{systemInfo?.data?.database_config?.write?.host ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-between py-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "$t:admin.settings.info.db_port"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-primary text-sm font-mono"
+                                                            },
+                                                            "text": "{{systemInfo?.data?.database_config?.write?.port ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-between py-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "$t:admin.settings.info.db_name"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-primary text-sm font-mono"
+                                                            },
+                                                            "text": "{{systemInfo?.data?.database_config?.write?.database ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-between py-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label"
+                                                            },
+                                                            "text": "$t:admin.settings.info.db_user"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-primary text-sm font-mono"
+                                                            },
+                                                            "text": "{{systemInfo?.data?.database_config?.write?.username ?? '-'}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{systemInfo?.data?.database_config?.has_read_write_split}}",
+                                    "props": {
+                                        "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-body font-medium mb-3"
+                                            },
+                                            "text": "$t:admin.settings.info.read_db"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "systemInfo?.data?.database_config?.read ?? []",
+                                                        "item_var": "replica",
+                                                        "index_var": "replicaIndex"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{(systemInfo?.data?.database_config?.read?.length ?? 0) > 1}}",
+                                                            "props": {
+                                                                "className": "text-tertiary font-medium mb-2"
+                                                            },
+                                                            "text": "Replica #{{replicaIndex + 1}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "row-stack"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-between py-1.5"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-label"
+                                                                            },
+                                                                            "text": "$t:admin.settings.info.db_host"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-primary text-sm font-mono"
+                                                                            },
+                                                                            "text": "{{replica?.host ?? '-'}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-between py-1.5"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-label"
+                                                                            },
+                                                                            "text": "$t:admin.settings.info.db_port"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-primary text-sm font-mono"
+                                                                            },
+                                                                            "text": "{{replica?.port ?? '-'}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-between py-1.5"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-label"
+                                                                            },
+                                                                            "text": "$t:admin.settings.info.db_name"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-primary text-sm font-mono"
+                                                                            },
+                                                                            "text": "{{replica?.database ?? '-'}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-between py-1.5"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-label"
+                                                                            },
+                                                                            "text": "$t:admin.settings.info.db_user"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-primary text-sm font-mono"
+                                                                            },
+                                                                            "text": "{{replica?.username ?? '-'}}"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!systemInfo?.data?.database_config?.has_read_write_split}}",
+                                    "props": {
+                                        "className": "flex-center bg-gray-50 dark:bg-gray-900 rounded-lg p-4 justify-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.info.no_read_db"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "id": "card_php_extensions",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.info.php_extensions"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.info.php_extensions_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body font-medium mb-3"
+                                    },
+                                    "text": "$t:admin.settings.info.required_modules"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "module-badge-grid"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "Object.entries(systemInfo?.data?.php_extensions?.required ?? {})",
+                                                "item_var": "ext"
+                                            },
+                                            "props": {
+                                                "className": "flex-center gap-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{ext[1] ? 'check' : 'x'}}",
+                                                        "className": "{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body"
+                                                    },
+                                                    "text": "{{ext[0]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body font-medium mb-3"
+                                    },
+                                    "text": "$t:admin.settings.info.optional_modules"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "module-badge-grid"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "Object.entries(systemInfo?.data?.php_extensions?.optional ?? {})",
+                                                "item_var": "ext"
+                                            },
+                                            "props": {
+                                                "className": "flex-center gap-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{ext[1] ? 'check' : 'x'}}",
+                                                        "className": "{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body"
+                                                    },
+                                                    "text": "{{ext[0]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

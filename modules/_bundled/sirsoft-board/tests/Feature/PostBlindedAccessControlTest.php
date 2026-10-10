@@ -325,7 +325,7 @@ class PostBlindedAccessControlTest extends BoardTestCase
     /**
      * 블라인드 댓글 원문은 비로그인에게 차단되고, 작성자/관리자에게 노출된다.
      *
-     * @scenario viewer=guest viewer=other_member viewer=author viewer=manager
+     * @scenario viewer=guest, viewer=other_member, viewer=author, viewer=manager
      *
      * @effects blinded_comment_content_matrix
      */

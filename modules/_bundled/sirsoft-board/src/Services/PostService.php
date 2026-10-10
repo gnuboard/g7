@@ -7,6 +7,7 @@ use App\Enums\TotalRelation;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Search\SearchPagePolicy;
+use App\Seo\SeoRenderRequest;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\Paginator;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
@@ -75,6 +78,7 @@ class PostService
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
      * @param  CommentRepositoryInterface  $commentRepository  댓글 Repository
      * @param  CommentService  $commentService  댓글 서비스
+     * @param  CacheInterface  $cache  모듈 캐시 (목록 총 건수·통계 캐시)
      */
     public function __construct(
         private PostRepositoryInterface $postRepository,
@@ -435,6 +439,52 @@ class PostService
         // 훅: before_delete
         HookManager::doAction('sirsoft-board.post.before_delete', $post, $slug);
 
+        return $this->executeDelete($slug, $id, $options, $triggerType);
+    }
+
+    /**
+     * 개인정보 보유기간 처리로 게시글을 삭제합니다 (이슈 #636 — 시스템 삭제).
+     *
+     * 관리자·작성자의 삭제와 같은 실행 본체({@see executeDelete()})를 지나므로 답글·댓글·첨부
+     * 연쇄 삭제와 after_delete 리스너(건수 동기화·연동 확장 정리·활동 로그)가 똑같이 돈다.
+     * 다른 점은 둘이다.
+     *
+     * - **항목별 before_delete 를 발화하지 않는다.** 그 훅에는 본인인증(IDV) 정책이 걸릴 수
+     *   있는데, 무인 배치에는 인증할 사람이 없어 운영자가 정책을 켜는 순간 법정 파기가 전부
+     *   428 로 멈춘다. 일괄 처리 경로(bulkAction)가 항목별 훅을 건너뛰는 것과 같은 판단이다.
+     * - **답글 삭제 정책과 무관하게 연쇄 삭제**하고 알림을 보내지 않는다 — 보유기간이 지난
+     *   글의 삭제를 작성자·관리자에게 알릴 이유가 없다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @return Post 삭제된 게시글
+     */
+    public function deleteForRetention(string $slug, int $id): Post
+    {
+        return $this->executeDelete(
+            $slug,
+            $id,
+            ['skip_notification' => true, 'cascade_replies' => true, 'privacy_retention' => true],
+            TriggerType::System->value,
+        );
+    }
+
+    /**
+     * 게시글 삭제의 실행 본체입니다 (훅 검사·정책 판정 없음).
+     *
+     * 단건 경로(deletePost)와 일괄 경로(bulkAction)가 같은 트랜잭션 짜임을 쓰되,
+     * **항목별 before_delete 는 여기서 발화하지 않는다** — 일괄 처리에서 항목마다
+     * before 훅을 타면 IDV(본인인증) 정책이 루프 중간에 428 을 던져 앞부분만 지워진
+     * 상태로 끝난다. 일괄 경로는 루프 앞에서 일괄 훅을 한 번만 발화한다(신고 일괄 처리 선례).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  array  $options  삭제 옵션 (after_delete 훅으로 전달)
+     * @param  string|null  $triggerType  트리거 유형
+     * @return Post 삭제된 게시글 모델
+     */
+    private function executeDelete(string $slug, int $id, array $options = [], ?string $triggerType = null): Post
+    {
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('delete', null);
 
@@ -484,6 +534,7 @@ class PostService
      * @return Post 블라인드 처리된 게시글 모델
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
+     * @throws DeletedContentBlindException 삭제된 게시글인 경우 (먼저 복구해야 한다)
      */
     public function blindPost(string $slug, int $id, string $reason, ?string $triggerType = null): Post
     {
@@ -491,6 +542,12 @@ class PostService
         $this->validateBoardExists($slug);
 
         $post = $this->postRepository->findOrFail($slug, $id);
+
+        // 삭제된 글은 블라인드하지 않는다 — 상태 변경이 deleted_at 을 지워 삭제가 풀린다.
+        // 되돌리는 길은 명시적인 복구 하나다(관리자 단건, 신고 게시 중단·자동 블라인드 공통).
+        if ($post->status === PostStatus::Deleted || $post->trashed()) {
+            throw DeletedContentBlindException::post();
+        }
 
         // 멱등성: 이미 블라인드 상태이면 중복 처리 방지
         if ($post->status === PostStatus::Blinded) {
@@ -500,6 +557,22 @@ class PostService
         // 훅: before_blind
         HookManager::doAction('sirsoft-board.post.before_blind', $post, $reason, $slug);
 
+        return $this->executeBlind($slug, $id, $reason, $triggerType);
+    }
+
+    /**
+     * 게시글 블라인드의 실행 본체입니다 (훅 검사·멱등 판정 없음).
+     *
+     * executeDelete 와 같은 이유로 항목별 before_blind 를 여기서 발화하지 않는다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  string  $reason  블라인드 사유
+     * @param  string|null  $triggerType  트리거 유형
+     * @return Post 블라인드 처리된 게시글 모델
+     */
+    private function executeBlind(string $slug, int $id, string $reason, ?string $triggerType = null): Post
+    {
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('blind', $reason);
 
@@ -542,6 +615,22 @@ class PostService
         // 훅: before_restore
         HookManager::doAction('sirsoft-board.post.before_restore', $post, $reason, $slug);
 
+        return $this->executeRestore($slug, $id, $reason, $triggerType);
+    }
+
+    /**
+     * 게시글 복원의 실행 본체입니다 (훅 검사·멱등 판정 없음).
+     *
+     * executeDelete 와 같은 이유로 항목별 before_restore 를 여기서 발화하지 않는다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  string|null  $reason  복원 사유
+     * @param  string|null  $triggerType  트리거 유형
+     * @return Post 복원된 게시글
+     */
+    private function executeRestore(string $slug, int $id, ?string $reason = null, ?string $triggerType = null): Post
+    {
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('restore', $reason);
 
@@ -577,6 +666,150 @@ class PostService
     }
 
     /**
+     * 선택한 게시글들을 한 번에 삭제·블라인드·복구합니다 (관리자 일괄 처리).
+     *
+     * **훅을 루프 앞에서 한 번만 발화한다.** 항목별 `before_delete`/`before_blind` 를 타면
+     * IDV(본인인증) 정책이 걸린 경우 그 훅에서 428 이 던져지는데, 루프 중간에 터지면
+     * 앞 항목만 처리된 채로 요청이 끝난다. 신고 일괄 처리(`ReportService::bulkUpdateStatus`)가
+     * 같은 이유로 이미 이 모양을 쓰고 있다.
+     *
+     * 처리할 수 없는 항목은 **건너뛰고 사유를 응답에 싣는다** — 하나가 막혔다고 전체를
+     * 되돌리면 운영자는 무엇이 걸렸는지 모른 채 같은 요청을 반복하게 된다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $action  처리 종류 (delete|blind|restore)
+     * @param  array<int, int>  $ids  대상 게시글 ID 목록
+     * @param  string|null  $reason  사유 (블라인드·복구 이력에 남는다)
+     * @return array{affected_count: int, affected_ids: array<int, int>, skipped: array<int, array{id: int, reason: string, reason_label: string, title: string|null}>} 처리 결과
+     *
+     * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
+     */
+    public function bulkAction(string $slug, string $action, array $ids, ?string $reason = null): array
+    {
+        $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+
+        if (! $board) {
+            throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
+        }
+
+        // 일괄 훅 1회 — IDV 정책은 이 훅을 대상으로 선언돼 있어, 인증이 필요하면
+        // 아무 항목도 건드리기 전에 428 로 끝난다(부수효과 0).
+        HookManager::doAction('sirsoft-board.post.before_bulk_action', $slug, $action, $ids, $reason);
+
+        $affectedIds = [];
+        $skipped = [];
+
+        foreach ($ids as $rawId) {
+            $id = (int) $rawId;
+            $post = null;
+
+            try {
+                $post = $this->postRepository->findOrFail($slug, $id);
+            } catch (ModelNotFoundException) {
+                // 다른 게시판의 글이거나 없는 번호다 — 처리 중 오류가 아니라 대상이 없다는 사유로 알린다.
+                $skipped[] = $this->bulkSkippedEntry($id, 'not_found', null);
+
+                continue;
+            }
+
+            try {
+                $skipReason = $this->resolveBulkSkipReason($post, $slug, $id, $action, $board);
+
+                if ($skipReason !== null) {
+                    $skipped[] = $this->bulkSkippedEntry($id, $skipReason, $post);
+
+                    continue;
+                }
+
+                match ($action) {
+                    'delete' => $this->executeDelete($slug, $id, ['bulk' => true], 'admin'),
+                    'blind' => $this->executeBlind($slug, $id, (string) ($reason ?? ''), 'admin'),
+                    'restore' => $this->executeRestore($slug, $id, $reason, 'admin'),
+                };
+
+                $affectedIds[] = $id;
+            } catch (\Exception $e) {
+                // 한 건의 실패가 나머지를 막지 않는다 — 사유만 남기고 계속한다.
+                $skipped[] = $this->bulkSkippedEntry($id, 'error', $post);
+            }
+        }
+
+        HookManager::doAction('sirsoft-board.post.after_bulk_action', $slug, $action, $affectedIds, $skipped);
+
+        return [
+            'affected_count' => count($affectedIds),
+            'affected_ids' => $affectedIds,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
+     * 일괄 처리에서 건너뛴 한 항목을 응답 모양으로 만듭니다.
+     *
+     * 사유 코드만 실으면 화면은 「건너뜀 N개」 개수밖에 알릴 수 없다 — 어느 글이 왜 빠졌는지
+     * 운영자가 바로 읽을 수 있게 글 제목과 번역된 사유를 함께 싣는다. 확장이 `after_bulk_action`
+     * 훅으로 받는 항목도 같은 모양이며, 기존 키(`id`·`reason`)는 그대로다.
+     *
+     * @param  int  $id  게시글 ID
+     * @param  string  $reason  건너뛴 사유 코드
+     * @param  Post|null  $post  조회된 게시글 (조회 전에 실패했으면 null)
+     * @return array{id: int, reason: string, reason_label: string, title: string|null} 건너뛴 항목
+     */
+    private function bulkSkippedEntry(int $id, string $reason, ?Post $post): array
+    {
+        return [
+            'id' => $id,
+            'reason' => $reason,
+            'reason_label' => __("sirsoft-board::messages.posts_bulk.skip_reasons.{$reason}"),
+            'title' => $post?->title,
+        ];
+    }
+
+    /**
+     * 일괄 처리에서 이 항목을 건너뛸 사유를 판정합니다 (없으면 null).
+     *
+     * @param  Post  $post  대상 게시글
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  string  $action  처리 종류
+     * @param  mixed  $board  게시판 모델 (답글 삭제 정책 판정용)
+     * @return string|null 건너뛸 사유 (처리 가능하면 null)
+     */
+    private function resolveBulkSkipReason(Post $post, string $slug, int $id, string $action, $board): ?string
+    {
+        if ($action === 'delete') {
+            if ($post->status === PostStatus::Deleted || $post->trashed()) {
+                return 'already_deleted';
+            }
+
+            // 답글 삭제 정책이 block 이면 살아있는 답글이 있는 글은 건너뛴다 —
+            // 단건 삭제와 같은 판정이라 일괄에서만 규칙이 느슨해지지 않는다.
+            $policy = $board->reply_delete_policy ?? ReplyDeletePolicy::Cascade;
+
+            if ($policy === ReplyDeletePolicy::Block && $this->postRepository->hasAliveReplies($slug, $id)) {
+                return 'has_replies';
+            }
+
+            return null;
+        }
+
+        if ($action === 'blind') {
+            // 삭제된 글을 블라인드하면 삭제가 풀린다 — 단건 블라인드가 거절하는 것과 같은 판정이다.
+            if ($post->status === PostStatus::Deleted || $post->trashed()) {
+                return 'already_deleted';
+            }
+
+            return $post->status === PostStatus::Blinded ? 'already_blinded' : null;
+        }
+
+        if ($action === 'restore') {
+            return $post->status === PostStatus::Published && ! $post->trashed() ? 'already_published' : null;
+        }
+
+        return 'unknown_action';
+    }
+
+    /**
      * 조회수를 증가시킵니다.
      *
      * @param  string  $slug  게시판 슬러그
@@ -592,8 +825,10 @@ class PostService
     /**
      * 캐시 기반으로 조회수를 한 번만 증가시킵니다.
      *
-     * 로그인 사용자는 user_id, 비로그인은 IP 기반으로 식별하며,
+     * 로그인 사용자는 user_id, 비로그인은 IP 기반으로 식별하며(API 는 세션이 없는 무상태 요청),
      * 환경설정의 view_count_cache_ttl(기본 86400초) 내 동일 게시글 재조회 시 조회수가 증가하지 않습니다.
+     * SEO 렌더러가 서버 자신에게 보내는 내부 호출(글 작성·수정 직후 캐시 재생성, 검색 봇 방문)은
+     * 열람이 아니므로 세지 않는다 — 세면 글을 쓰자마자 조회수 1 이 되고 서버 IP 키가 먼저 잡힌다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
@@ -602,6 +837,10 @@ class PostService
      */
     public function incrementViewCountOnce(string $slug, int $id, ?int $boardId = null): bool
     {
+        if (SeoRenderRequest::matches(request())) {
+            return false;
+        }
+
         $identifier = Auth::id() ?? request()->ip();
         $key = "post_view_{$slug}_{$id}_{$identifier}";
 
@@ -799,6 +1038,7 @@ class PostService
      * 게시판 존재성을 검증합니다.
      *
      * @param  string  $slug  게시판 슬러그
+     * @return void 반환값 없음
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
@@ -829,6 +1069,7 @@ class PostService
      * @param  string|null  $tempKey  임시 업로드 키
      * @param  array<UploadedFile>  $files  업로드할 파일 배열
      * @param  string  $context  로그 컨텍스트 (생성/수정)
+     * @return void 반환값 없음
      */
     private function linkAttachments(
         string $slug,
@@ -839,6 +1080,9 @@ class PostService
         string $context = ''
     ): void {
         // 방안 A: 업로드 완료된 첨부파일 ID로 연결 (신규 방식)
+        // 남이 올린 임시 첨부는 번호로도 잇지 않는다 (임시 키 경로와 같은 소유 기준)
+        $attachmentIds = $this->attachmentService->filterLinkableAttachmentIds($attachmentIds);
+
         if (! empty($attachmentIds)) {
             // 개수 상한 최종 방어선 (기존 연결분과 합산) — Request 는 files[] 만 세므로 여기서 다시 판정한다
             $this->attachmentService->assertAttachmentCountWithin($slug, $postId, count($attachmentIds));
@@ -921,7 +1165,9 @@ class PostService
             $searchField = $filtersParam[0]['field'] ?? 'all';
         } else {
             $searchValue = $requestParams['search'] ?? null;
-            $searchField = 'all';
+            // 사용자 목록도 검색 대상을 고를 수 있다 (제목+내용 / 제목 / 내용 / 작성자).
+            // 값 검증은 PostIndexRequest 가 닫힌 집합으로 막으므로 여기서는 폴백만 둔다.
+            $searchField = $requestParams['search_field'] ?? 'all';
         }
 
         // 공통 필터 구성
@@ -941,6 +1187,10 @@ class PostService
             $filters['user_id'] = $requestParams['user_id'] ?? null;
             $filters['created_at_from'] = $requestParams['created_at_from'] ?? null;
             $filters['created_at_to'] = $requestParams['created_at_to'] ?? null;
+            // 작성자 검색이 회원 이메일까지 찾는 것은 이메일을 보여 주는 관리자 목록에서만
+            $filters['search_author_email'] = true;
+            // 관리자 목록 검색은 답글(제목·내용·작성자)도 찾는다 — 걸린 답글이 달린 원글을 결과로 센다(7.1.0 실측 O-K3-13)
+            $filters['search_replies'] = true;
         }
         // 사용자 컨텍스트에는 추가 필터가 없다. 예전에는 여기서 `exclude_blinded` 를 세웠지만
         // 저장소가 그 키를 읽지 않아 한 번도 적용되지 않았고, 뒤늦게 배선하면 블라인드 글이
@@ -1122,9 +1372,20 @@ class PostService
         $boardSlug = $filters['board_slug'] ?? '';
         $search = $filters['search'] ?? '';
 
-        // 필터/검색 없는 기본 조회 시에만 COUNT 캐시 적용
+        // 「내가 댓글 단 글」의 행은 **남이 쓴 글**이다. 댓글을 단 뒤 그 게시판의 읽기 권한을
+        // 잃었으면(회원전용으로 바뀜 등) 게시판 목록은 403 인데 이 목록이 제목·본문 미리보기를
+        // 계속 내주던 우회로였다 — 읽을 수 없는 게시판의 행은 뺀다. 작성글(authored)은 본인 글이라
+        // 권한 변화로 내 활동 기록이 사라지지 않게 그대로 둔다.
+        $unreadableBoardIds = $activityType === 'commented'
+            ? $this->boardService->getUnreadableActiveBoardIds()
+            : [];
+        $filters['exclude_board_ids'] = $unreadableBoardIds;
+
+        // 필터/검색 없는 기본 조회 시에만 COUNT 캐시 적용.
+        // 제외 게시판 집합이 바뀌면 건수도 바뀌므로 그 집합을 키에 싣는다.
         if (empty($boardSlug) && empty($search)) {
-            $cacheKey = "user_activities_total_{$userId}_{$activityType}";
+            $cacheKey = "user_activities_total_{$userId}_{$activityType}"
+                .($unreadableBoardIds === [] ? '' : '_x'.md5(implode(',', $unreadableBoardIds)));
             $cachedTotal = $this->cache->get($cacheKey);
 
             if ($cachedTotal !== null) {
@@ -1162,7 +1423,15 @@ class PostService
 
         return $this->cache->remember(
             "user_activity_stats_{$userId}",
-            fn () => $this->postRepository->getUserActivityStats($userId),
+            function () use ($userId) {
+                $stats = $this->postRepository->getUserActivityStats($userId);
+
+                // 「작성한 댓글」은 내가 쓴 댓글 수다 — 내 글들에 달린 댓글 합(받은 댓글)이 아니라
+                // 「내가 쓴 댓글」 목록과 같은 조건으로 센다. 두 숫자가 어긋나면 탭 숫자와 목록 건수가 다르게 보인다.
+                $stats['total_comments'] = $this->commentRepository->countUserComments($userId);
+
+                return $stats;
+            },
             $ttl,
             tags: ['board-stats']
         );
@@ -1178,6 +1447,10 @@ class PostService
      * 필요한 범위를 넘어 기능이 깎인다.
      * 판정은 저장소가 `viewer_id` 로 수행한다(fail-closed — 값이 없으면 타인 관점).
      *
+     * 단, 열람자가 **읽을 수 없는 게시판**의 글은 행째 뺀다(보안). 이 목록은 비로그인에게도
+     * 열려 있어, 게시판 목록에서는 401 인 회원전용 게시판의 일반글이 제목·본문 미리보기째 나가던
+     * 우회로였다. 본인 프로필은 본인 글이라 제외하지 않는다.
+     *
      * @param  int  $userId  사용자 ID
      * @param  array  $filters  필터 옵션 (board_slug, sort 등)
      * @param  int  $perPage  페이지당 항목 수
@@ -1185,9 +1458,14 @@ class PostService
      */
     public function getUserPublicPosts(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        $viewerId = Auth::id();
+
         return $this->postRepository->getUserActivities($userId, array_merge($filters, [
             'activity_type' => 'authored',  // 작성글만
-            'viewer_id' => Auth::id(),      // 비로그인은 null → 타인 관점
+            'viewer_id' => $viewerId,       // 비로그인은 null → 타인 관점
+            'exclude_board_ids' => $viewerId !== null && $viewerId === $userId
+                ? []
+                : $this->boardService->getUnreadableActiveBoardIds(),
         ]), $perPage);
     }
 
@@ -1201,11 +1479,18 @@ class PostService
      */
     public function getUserPublicStats(int $userId): array
     {
-        $cacheKey = "user_public_stats_{$userId}";
+        // 작성글 목록(getUserPublicPosts)과 같은 기준 — 본인이 아니면 읽을 수 없는 게시판을 뺀다.
+        // 보는 사람마다 뺄 게시판이 달라지므로 그 목록을 캐시 키에 넣는다(키를 바꿔 옛 공용 값은 쓰지 않는다).
+        $viewerId = Auth::id();
+        $excludeBoardIds = $viewerId !== null && $viewerId === $userId
+            ? []
+            : $this->boardService->getUnreadableActiveBoardIds();
+        sort($excludeBoardIds);
+        $cacheKey = "user_public_stats_v2_{$userId}_".md5(implode(',', $excludeBoardIds));
 
         return $this->cache->remember(
             $cacheKey,
-            fn () => $this->postRepository->getUserPublicStats($userId),
+            fn () => $this->postRepository->getUserPublicStats($userId, $excludeBoardIds),
             g7_core_settings('cache.default_ttl', 86400),
             tags: ['board-stats']
         );
@@ -1337,6 +1622,7 @@ class PostService
      * 게시글 생성/삭제 시 홈페이지 통계 및 최근 게시글 캐시를 무효화합니다.
      *
      * @param  string  $slug  게시판 슬러그
+     * @return void 반환값 없음
      */
     private function invalidatePostCaches(string $slug): void
     {
@@ -1355,6 +1641,7 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  string|int  $identifier  사용자 ID 또는 IP
      * @param  int  $seconds  쿨다운 시간 (초)
+     * @return void 반환값 없음
      */
     public function recordPostCooldown(string $slug, string|int $identifier, int $seconds): void
     {

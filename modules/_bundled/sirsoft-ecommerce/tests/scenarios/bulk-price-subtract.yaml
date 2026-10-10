@@ -1,0 +1,24 @@
+feature: 판매가 일괄 변경 「인하 + 금액」 (#703)
+
+description: |
+  상품 목록 판매가 일괄 변경 창의 「인하 + 금액」이 보내는 method=subtract 를 두 일괄 수정 요청이
+  거부(422)하고 서비스에도 인하 분기가 없었다. subtract 를 받고 적용하며, 인하·비율 변경 결과가
+  옵션 판매가(상품 판매가 + 조정액)를 0 아래로 내리지 않도록 조정액 하한을 -상품 판매가로 둔다.
+
+axes:
+  endpoint: [products_bulk_update, options_bulk_update]
+  method: [subtract, percent]
+  result: [within_floor, clamped_to_zero]
+
+exclusions:
+  - { endpoint: options_bulk_update, method: subtract, result: clamped_to_zero, reason: "하한 적용 지점이 공통 — products 쪽 clamped 로 충분" }
+  - { endpoint: options_bulk_update, method: percent, result: within_floor, reason: "비율 계산 지점(applyPriceAdjustment)이 두 엔드포인트 공통 — products 쪽 within_floor 로 충분" }
+  - { endpoint: products_bulk_update, method: percent, result: clamped_to_zero, reason: "하한 적용 지점이 공통 — options 쪽 clamped 로 충분" }
+
+effects:
+  - subtract_accepted_and_applied
+  - option_selling_price_never_negative
+  - percent_based_on_option_selling_price
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Product/BulkPriceSubtractTest.php

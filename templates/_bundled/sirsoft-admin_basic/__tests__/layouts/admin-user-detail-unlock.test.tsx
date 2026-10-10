@@ -15,6 +15,7 @@ import { TranslationEngine } from '@core/template-engine/TranslationEngine';
 import userDetailLayout from '../../layouts/admin_user_detail.json';
 import adminKo from '../../lang/partial/ko/admin.json';
 import adminEn from '../../lang/partial/en/admin.json';
+import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 레이아웃 트리에서 id 로 노드를 찾습니다. */
 function findById(node: unknown, id: string): any {
@@ -46,7 +47,7 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
 
   it('잠금 해제 버튼이 관리자 해제 엔드포인트를 POST 로 호출해야 한다', () => {
     const button = findById(userDetailLayout, 'header_unlock_button');
-    const action = button.actions[0];
+    const action = actionsOf(button)[0];
 
     expect(action.handler).toBe('apiCall');
     // target 은 액션 top-level 이어야 한다 (params 내부면 URL 이 undefined 로 깨진다)
@@ -57,7 +58,7 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
 
   it('해제 성공 시 상세 데이터를 다시 불러오고 성공 안내를 노출해야 한다', () => {
     const button = findById(userDetailLayout, 'header_unlock_button');
-    const onSuccess = button.actions[0].onSuccess;
+    const onSuccess = callbacksOf(actionsOf(button)[0], 'onSuccess');
 
     const refetch = onSuccess.find((a: any) => a.handler === 'refetchDataSource');
     expect(refetch).toBeDefined();

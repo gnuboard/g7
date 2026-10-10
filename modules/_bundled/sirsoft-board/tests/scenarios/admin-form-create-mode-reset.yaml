@@ -1,0 +1,30 @@
+feature: 같은 레이아웃 수정 → 등록 전환 시 등록 폼의 직전 레코드 잔존 제거 (게시판·게시글 폼)
+
+description: |
+  엔진은 layout_name 이 바뀔 때만 _local 을 비운다. 게시판 수정 → 게시판 등록, 게시글 수정 → 게시글
+  등록은 같은 레이아웃이라 _local.form 이 남는다. 두 폼은 생성 모드에서도 데이터소스(form-data)가
+  폼을 채우는데, 문자열 initLocal 은 엔진이 응답을 기존 _local.form 과 깊은 병합해 두므로
+  (TemplateApp processInitOptions) 직전 글의 id, 직전 게시판의 다국어 이름(name.en)이 등록 화면에
+  살아남았다 (브라우저 실측 2026-09-14, #599).
+
+  대응은 둘 다 필요하다: (1) 데이터소스 initLocal 을 replace 맵으로 바꿔 페이로드가 기존 form 과
+  병합되지 않게 하고, (2) init_actions 생성 조건에서 form 을 null 로 먼저 비운다.
+
+axes:
+  form: [board, board_post]
+
+effects:
+  - datasource_initlocal_replace_avoids_merge_with_previous_form  # 폼 데이터소스 initLocal 이 replace 맵
+  - create_mode_clears_previous_form                              # 생성 조건의 form: null 액션
+  - dirty_flag_reset_on_create                                    # hasChanges(·errors) 를 함께 초기화
+  - form_meta_untouched                                           # 게시글 폼의 form_meta 는 변경 대상 아님
+  - temp_key_action_kept                                          # 게시글 폼의 tempKey 생성 액션 유지
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-form-create-mode-reset.test.ts
+
+validation:
+  note: |
+    레이아웃 JSON 구조 테스트가 데이터소스 initLocal 형식과 생성 모드 액션을 고정한다.
+    브라우저 실측(수정 → 등록·답글 SPA 도착 폼 = 직접 진입 폼)은 코어 시나리오
+    tests/scenarios/same-layout-create-form-reset.yaml 의 Playwright spec 이 담당한다.

@@ -23,7 +23,7 @@
 
 | 문서 | 내용 |
 |------|------|
-| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 플러그인/모듈 설정, 확장 자산, 위지윅 편집기 |
+| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약 |
 | [g7core-api-advanced.md](g7core-api-advanced.md) | 다국어, 액션 실행, 컴포넌트 이벤트, 이벤트 생성 헬퍼, 렌더링 헬퍼, 인증/API, WebSocket, 반응형, React Hooks, 타입 정의 |
 
 ---
@@ -39,7 +39,8 @@
 7. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
 8. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
 9. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
-10. [위지윅 편집기 (G7Core.wysiwyg)](#위지윅-편집기-g7corewysiwyg)
+10. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
+11. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
 
 ---
 
@@ -68,7 +69,8 @@
 | WebSocket | `G7Core.websocket` | 실시간 통신 | [고급 API](g7core-api-advanced.md) |
 | 확장 자산 URL | `G7Core.asset` | 템플릿/모듈/플러그인 자산 URL 생성, 재시도 로더 | 현재 문서 |
 | 자산 실패 안내 | `G7Core.assets` | 자산 로드 실패 표면화 및 재시도 | 현재 문서 |
-| 위지윅 | `G7Core.wysiwyg` | 레이아웃 편집기 | 현재 문서 |
+| 방문자 동의 | `G7Core.consent` | 동의 스냅샷 조회/재조회/구독 | 현재 문서 |
+| 상태 계약 | `G7Core.stateContracts` | 공개 전역 상태의 소유자와 모양 조회 | 현재 문서 |
 | React Hooks | `G7Core.useControllableState` | 상태 패턴 훅 | [고급 API](g7core-api-advanced.md) |
 
 ### 사용 컨텍스트
@@ -257,9 +259,21 @@ export function categorySelectHandler(action: any, context: any): void {
 
 **레이아웃에서 scopeId 정의**:
 
+```html
+<div>
+  <isolated-state scope-id="category-selector">
+    <field name="selectedCategories" :value="[]"/>
+    <field name="currentStep" :value="1"/>
+  </isolated-state>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedCategories": [],
     "currentStep": 1
@@ -288,14 +302,27 @@ G7Core.state.update(prev => ({
   count: (prev.count || 0) + 1
 }));
 
-// 상태 변경 구독
+// 상태 변경 구독 — 반환값은 구독 해제 함수
 const unsubscribe = G7Core.state.subscribe((state) => {
   console.log('상태 변경:', state);
 });
+unsubscribe();
 
 // 데이터 소스 조회 (deprecated - G7Core.dataSource.get() 사용 권장)
 const users = G7Core.state.getDataSource('users');
 console.log(users?.data);
+```
+
+컴포넌트에서 구독할 때는 effect 정리 함수로 해제합니다. 해제하지 않으면 화면을 떠난 뒤에도 리스너가 남아 화면을 오갈수록 쌓입니다.
+
+```tsx
+useEffect(() => {
+  const unsubscribe = G7Core.state.subscribe((state) => {
+    setCartCount(state.cart?.count ?? 0);
+  });
+
+  return unsubscribe;
+}, []);
 ```
 
 ---
@@ -499,10 +526,16 @@ G7Core.dispatch({
 | 메서드 | 설명 | 파라미터 |
 |--------|------|----------|
 | `open(modalId)` | 모달 열기 | modalId: string |
-| `close(modalId?)` | 모달 닫기 | modalId?: string (생략 시 최상위) |
-| `closeAll()` | 모든 모달 닫기 | - |
+| `close(modalId?)` | 맨 위 모달 닫기 | modalId?: string — 전달되지만 `closeModal` 핸들러가 읽지 않는다(아래 「알려진 제약」) |
+| `closeAll()` | **동작하지 않음** — 쓰지 않는다 | - |
 | `isOpen(modalId)` | 모달 열림 확인 | modalId: string |
 | `getStack()` | 모달 스택 반환 | - |
+
+#### 알려진 제약 (engine-v1.75.2 기준)
+
+- `closeAll()` 은 엔진에 없는 `closeAllModals` 액션을 보낸다. 창은 하나도 닫히지 않고, 반환값은 `{ success: false }`, 콘솔에는 `Unknown action handler: closeAllModals` 오류가 남는다. 여러 창을 닫으려면 열린 창 수만큼 `closeModal` 을 `sequence` 로 보낸다 — engine-v1.75.2 부터 같은 sequence 안의 `closeModal` 은 매번 최신 스택을 읽는다.
+- `close(modalId)` 의 `modalId` 는 무시된다. 인자와 상관없이 스택 맨 위 창이 닫힌다.
+- 액션 실행 밖(타이머, 외부 SDK 콜백처럼 `__g7ActionContext` 가 없는 곳)에서 `close()` 를 부르면 문맥에 전역 사본이 없어 빈 스택에서 계산한다. 그 결과 **열린 창 전체가 닫힌다**. 같은 자리에서 `open(id)` 를 부르면 스택이 `[id]` 로 바뀌어 아래 창이 사라진다. 종전부터의 동작이며 engine-v1.75.2 도 이 경로는 바꾸지 않았다(`ActionDispatcher.modalStack.test.ts` 가 고정). 부모 창 위에 띄워야 하면 `G7Core.dispatch(action, { componentContext })` 로 문맥을 넘긴다.
 
 ### 사용 예시
 
@@ -510,14 +543,8 @@ G7Core.dispatch({
 // 모달 열기
 G7Core.modal.open('confirm_modal');
 
-// 특정 모달 닫기
-G7Core.modal.close('confirm_modal');
-
-// 최상위 모달 닫기 (스택에서 pop)
+// 최상위 모달 닫기 (스택에서 pop) — 인자로 ID 를 줘도 맨 위 창이 닫힌다
 G7Core.modal.close();
-
-// 모든 모달 닫기
-G7Core.modal.closeAll();
 
 // 모달 열림 상태 확인
 if (G7Core.modal.isOpen('confirm_modal')) {
@@ -857,8 +884,17 @@ location 이 확장자를 먼저 가로채는 서버에서 그 자산만 조용�
 ### templateDir — 디렉토리 접두가 필요한 소비자
 
 AMD 로더나 워커처럼 **디렉토리 접두 뒤에 파일명을 이어 붙이는** 소비자는 `template()` 대신
-`templateDir()` 을 씁니다. 쿼리 형태(`?file=`)는 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
-확장자 없는 모드에서 404 일 수 있으므로 **소비자가 폴백을 갖춰야 합니다.**
+`templateDir()` 을 씁니다. `template()` 의 쿼리 형태는 파일 경로를 인코딩해 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
+
+`templateDir()` 은 정적 게시본이 있으면 그 디렉토리, 확장자 없는 모드면 경로를 인코딩하지 않은
+`?file=` 디렉토리(`/api/templates/assets/{id}?file=vendor/.../vs`), 그 밖에는 경로 형태를 돌려줍니다.
+`?file=` 디렉토리 뒤에 `/loader.js` 를 이어 붙이면 그대로 한 파일의 file 값이 됩니다. AMD 로더는 쿼리가 있는
+URL 의 모듈 id 에 `.js` 를 붙이지 않으므로(`…/editor/editor.main`) 템플릿 자산 서빙이 같은 이름의 `.js` 파일을
+찾아 줍니다. 그래도 자산을 끝내 받지 못하는 환경이 있으므로 **소비자는 폴백을 갖춰야 합니다.**
+
+`?file=` 디렉토리는 **이어 붙이기만** 성립합니다. 상대 경로 해석(CSS 의 `url(../x)`, 워커 안 `importScripts('./x')`,
+`new URL(rel, dir + '/')`)은 쿼리 기준으로 풀려 깨지고, 이어 붙인 뒤 `?v=1` 같은 쿼리를 덧붙여도 깨집니다. 상대
+경로로 다른 파일을 찾는 자산은 정적 게시본이 있을 때만 `templateDir()` 로 넘기세요.
 
 ```javascript
 loader.config({
@@ -907,65 +943,147 @@ DOM 에 직접 주입됩니다. Toast 와 달리 **사용자가 닫을 때까지
 갖습니다. `retry` 가 resolve 되면 그 실패는 자동으로 해제되고, reject 되면 배너를 유지한 채
 재시도 실패를 알립니다.
 
+#### 레이아웃 스크립트 실패 id — `layout-script:{id}`
+
+레이아웃 `scripts`(`<script src="…" id="…">`)를 코어가 끝내 불러오지 못하면 코어가 직접 실패를 등록합니다.
+그 `id` 는 **`layout-script:{스크립트 id}`** 입니다(예: `layout-script:daum_postcode_script`). 항목명은 스크립트의
+`label`(없으면 「화면 기능 스크립트」)이며 스크립트 `id` 원문은 안내에 쓰지 않습니다.
+
+같은 SDK 의 실패를 확장도 자기 `notifyFailure` 로 알리면(직접 입력 안내, 임시 입력창 전환 안내 등) 배너에 두 건이 쌓여
+「2개 항목을 불러오지 못했습니다. …」 묶음 문구가 되고 확장의 `message` 가 보이지 않습니다. 확장 안내의 재시도가 같은
+SDK 를 다시 불러온다면, 확장 안내를 띄운 뒤 `getFailures()` 로 이 id 를 찾아 `clearFailure('layout-script:{id}')` 로
+코어 쪽 건을 걷습니다. 코어 건은 확장 안내보다 늦게 올 수 있으므로 확장 안내가 떠 있는 동안 짧게 다시 살핍니다
+(선례: `sirsoft-daum_postcode` 의 `postcodeSdk.ts`).
+
 ---
 
-## 위지윅 편집기 (G7Core.wysiwyg)
+## 방문자 동의 (G7Core.consent)
 
-> **engine-v1.11.0+** 추가
+> **engine-v1.78.0+** 추가
 
-레이아웃 위지윅 편집기 관련 API입니다.
+방문자 동의 상태를 읽고 변경을 구독하는 API입니다. 어느 확장이 동의를 관리하는지 몰라도 같은 방법으로 읽습니다. 서버 쪽 동의 제공자 계약은 [동의 제공자](../extension/consent-provider.md)를 참고합니다.
+
+값은 코어 동의 런타임이 들고 있습니다. 런타임은 **사용자 템플릿에서만** 동작합니다. 관리자 화면에서는 `getSnapshot()` 과 `refresh()` 가 `null` 을 반환합니다.
 
 ### API 목록
 
+`G7Core.consent` 는 동결된 객체입니다.
+
 | 메서드 | 설명 | 반환값 |
 |--------|------|--------|
-| `isEditMode()` | 편집 모드 여부 반환 | `boolean` |
-| `setEditMode(layoutName, templateId)` | 편집 모드 활성화 | `void` |
-| `clearEditMode()` | 편집 모드 비활성화 | `void` |
-| `getCurrentLayoutName()` | 현재 편집 중인 레이아웃명 | `string \| null` |
-| `getCurrentTemplateId()` | 현재 편집 중인 템플릿 ID | `string \| null` |
-| `isEditModeFromUrl()` | URL에서 편집 모드 여부 확인 | `boolean` |
-| `getEditModeUrl(route, templateId)` | 편집 모드 URL 생성 | `string` |
-| `enterEditMode(route, templateId)` | 편집 모드로 페이지 이동 | `void` |
-| `exitEditMode()` | 편집 모드 종료 (일반 페이지로) | `void` |
-| `getVersion()` | 위지윅 모듈 버전 | `string` |
-| `getPhase()` | 현재 구현 Phase | `number` |
+| `getSnapshot()` | 현재 스냅샷의 사본 (`_global.consent` 와 같은 모양). 런타임이 없으면 `null` | `ConsentSnapshot \| null` |
+| `refresh()` | `GET /api/consent` 로 다시 조회해 최신 스냅샷 반환. 런타임이 없으면 `null` | `Promise<ConsentSnapshot \| null>` |
+| `subscribe(listener)` | 컴포넌트 이벤트 `consent:changed` 를 구독 | 구독 해제 함수 |
+
+### 스냅샷 모양
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `contractVersion` | `number` | 계약 버전 (현재 `1`) |
+| `status` | `'unknown' \| 'ready' \| 'none'` | 아래 표 참고 |
+| `categories` | `Record<string, boolean>` | 카테고리별 동의 여부. `necessary`, `functional`, `analytics`, `marketing` 을 항상 포함하고 `necessary` 는 언제나 `true` |
+| `needsRenewal` | `boolean` | 동의 정책이 바뀌어 다시 동의를 받아야 하는지 |
+| `policyVersion` | `string \| null` | 현재 동의 정책 버전 |
+
+| `status` | 의미 | 소비자 판정 |
+|----------|------|-------------|
+| `ready` | 동의 제공자가 답했다 | `categories` 와 `needsRenewal` 로 판정 |
+| `unknown` | 부팅 직후, 재조회 중, 조회 실패, 응답 형식 오류 | **동의하지 않은 것으로 본다** (fail-closed) |
+| `none` | 사이트에 동의 관리 제공자가 없다 | 동의 절차가 없는 사이트로 본다 |
+
+`ready` 가 아니면 `categories` 는 `necessary` 만 `true` 이고 `needsRenewal` 은 `false`, `policyVersion` 은 `null` 입니다.
+
+### 동작
+
+- **재조회 공유**: 조회가 진행 중일 때 `refresh()` 를 다시 부르면 같은 요청을 나눠 씁니다 (저장 버튼 연타 등).
+- **로그인과 로그아웃**: 인증 경계를 넘으면 스냅샷을 `unknown` 으로 비우고 `consent:changed` 를 발행한 뒤 다시 조회합니다. 경계 이전에 출발한 응답은 버립니다. 게스트로 보낸 조회가 로그인 뒤에 도착해 회원의 스냅샷을 덮어쓰지 않게 하기 위해서입니다. 상태가 `none` 이면 비우지 않고 다시 조회만 합니다.
+- **변경 시에만 통지**: 값이 같으면 `_global.consent` 도 `consent:changed` 도 건드리지 않습니다.
+- `refresh()` 는 `_global.consent` 갱신과 `consent:changed` 리스너가 모두 끝난 뒤 resolve 합니다.
 
 ### 사용 예시
 
 ```typescript
-// 편집 모드 확인
-if (G7Core.wysiwyg.isEditMode()) {
-  console.log('현재 편집 모드입니다');
-  console.log('레이아웃:', G7Core.wysiwyg.getCurrentLayoutName());
-  console.log('템플릿:', G7Core.wysiwyg.getCurrentTemplateId());
-}
+// 현재 값 읽기 — 관리자 화면이면 null
+const snapshot = G7Core.consent.getSnapshot();
+const marketingAllowed =
+  snapshot?.status === 'ready' && !snapshot.needsRenewal && snapshot.categories.marketing === true;
 
-// URL에서 편집 모드 여부 확인 (쿼리 파라미터 기반)
-if (G7Core.wysiwyg.isEditModeFromUrl()) {
-  // ?mode=edit 파라미터가 있는 경우
-}
+// 변경 구독 — 반환값은 해제 함수
+const unsubscribe = G7Core.consent.subscribe((next) => {
+  console.log('동의 변경:', next.status, next.categories);
+});
 
-// 편집 모드 URL 생성
-const editUrl = G7Core.wysiwyg.getEditModeUrl('/shop', 'sirsoft-basic');
-// 결과: 'https://example.com/shop?mode=edit&template=sirsoft-basic'
-
-// 편집 모드로 진입
-G7Core.wysiwyg.enterEditMode('/shop', 'sirsoft-basic');
-
-// 편집 모드 종료
-G7Core.wysiwyg.exitEditMode();
+// 동의를 저장한 뒤 다시 조회
+await G7Core.consent.refresh();
 ```
 
-### 편집 모드 상태 관리
+React 컴포넌트에서는 최초 값을 `getSnapshot()` 으로 읽고, 이후 변경만 구독합니다.
+
+```tsx
+useEffect(() => {
+  setConsent(G7Core.consent.getSnapshot());
+
+  return G7Core.consent.subscribe((next) => setConsent(next));
+}, []);
+```
+
+### 레이아웃에서 쓰기
+
+- 읽기: `{{_global.consent.categories.analytics}}`, `{{_global.consent.status}}`
+- 재조회: 내장 핸들러 `refreshConsent`. 동의를 저장한 화면이 성공 뒤에 부릅니다. 갱신과 `consent:changed` 리스너가 끝난 뒤 다음 동작으로 넘어가므로, 같은 시퀀스의 토스트는 동기화 이후에 뜹니다. 리스너가 3초(`CONSENT_LISTENER_WAIT_MS`) 안에 끝나지 않으면 더 기다리지 않고 넘어갑니다 — 멈춘 구독자 하나가 다음 조회와 판정 대기를 함께 묶지 않게. 런타임이 없는 화면에서는 아무 일도 하지 않습니다.
+
+```html
+<action handler="refreshConsent"/>
+```
+
+`_global.consent` 는 코어 동의 런타임만 씁니다. 확장이나 레이아웃이 직접 쓰지 않습니다.
+
+---
+
+## 전역 상태 계약 (G7Core.stateContracts)
+
+> **engine-v1.78.0+** 추가
+
+다른 확장이 읽는 전역 상태(`_global.{이름}`)의 소유자, 설명, 모양, 쓰기 허용 주체를 조회하는 읽기 전용 API입니다. 서버가 페이지에 실어 보낸 `G7Config.stateContracts` 를 읽습니다.
+
+계약은 두 가지에서 모입니다.
+
+- **코어 예약 계약**: `consent`, `identityChallenge`, `currentUser`, `settings`, `plugins`, `modules`, `appConfig`
+- **활성 확장의 선언**: 모듈, 플러그인, 템플릿 manifest 의 `state_contracts`
+
+### API 목록
+
+`G7Core.stateContracts` 와 반환하는 계약은 모두 동결되어 있습니다.
+
+| 메서드 | 설명 | 반환값 |
+|--------|------|--------|
+| `get(name)` | 계약 하나. 없으면 `null` | `StateContract \| null` |
+| `list()` | 계약 전부 (이름 → 계약) | `Record<string, StateContract>` |
+| `ownerOf(name)` | 소유자 키. 없으면 `null` | `string \| null` |
+
+### 계약 모양
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `owner` | `string` | 소유자 키: `core`, `module:{id}`, `plugin:{id}`, `template:{id}` |
+| `description` | `Record<string, string>` | 로케일별 설명 |
+| `schema` | `object` | 값의 모양 (JSON Schema 형식) |
+| `writers` | `string[]` | 소유자 외에 쓸 수 있는 주체. `@template` 은 활성 템플릿 |
+
+### 사용 예시
 
 ```typescript
-// 프로그래밍 방식으로 편집 모드 설정
-G7Core.wysiwyg.setEditMode('home', 'sirsoft-basic');
+G7Core.stateContracts.ownerOf('consent');
+// 'core'
 
-// 편집 모드 해제
-G7Core.wysiwyg.clearEditMode();
+const contract = G7Core.stateContracts.get('currentUser');
+// { owner: 'core', description: {...}, schema: { type: ['object', 'null'] }, writers: ['@template'] }
+
+Object.keys(G7Core.stateContracts.list());
+// ['consent', 'identityChallenge', 'currentUser', ...]
 ```
+
+확장이 계약을 선언하는 방법은 manifest 의 `state_contracts` 항목입니다. 화면 안에서만 쓰는 임시 값은 선언하지 않습니다.
 
 ---
 

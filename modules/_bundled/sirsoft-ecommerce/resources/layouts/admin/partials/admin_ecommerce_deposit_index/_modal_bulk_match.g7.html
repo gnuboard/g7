@@ -1,0 +1,131 @@
+<!-- 무통장 입금 내역을 주문에 한꺼번에 이어 붙이는 창.
+  **아직 시안이다** — 이 파일에는 데이터소스도 API 호출도 없고, 표에 보이는 이름·은행·금액·주문번호는
+  전부 마크업에 박힌 글자다. 저장 버튼도 창을 닫기만 한다(입금 관리 화면 전체가 같은 상태이고,
+  모듈에 대응 라우트가 아직 없다).
+  그래도 화면 구조는 정본이다 — 좁은 화면에서는 표가 카드 목록으로 바뀌고, 입금액과 주문금액이
+  어긋나면 그 행에 경고가 붙는다는 규칙을 여기서 정해 두었다. 배선할 때 이 형태를 채우면 된다. -->
+<partial description="입금 일괄 매칭 모달">
+  <modal data-type="composite" data-ref="modal_bulk_match" title="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.title" size="xl">
+    <footer>
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel
+      </button>
+      <button type="button" class="btn btn-primary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save
+      </button>
+    </footer>
+    <div data-ref="bulk_match_instructions" class="text-secondary text-sm mb-4 space-y-1">
+      <div>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.instruction_1</div>
+      <div>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.instruction_2</div>
+    </div>
+    <div data-ref="bulk_match_table_wrapper" class="overflow-x-auto">
+      <responsive on="portable" class="">
+        <div data-ref="mobile_card_list" class="stack-tight">
+          <div data-ref="mobile_card_1" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex-between mb-2">
+              <span class="text-primary font-medium">박민수</span>
+              <span class="text-blue-600 dark:text-blue-400 font-semibold">\49,000</span>
+            </div>
+            <div class="text-secondary text-sm mb-3">카카오뱅크 · 11:25</div>
+            <div class="relative mb-2">
+              <input type="text" value="ORD20251118-0003" class="input pr-8"/>
+              <button aria-label="$t:common.close" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+                <icon name="x" class="text-base"/>
+              </button>
+            </div>
+            <div class="flex-between text-sm mb-2">
+              <span>
+                <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer</span>
+                <span class="text-primary ml-1">박민수</span>
+              </span>
+              <span>
+                <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount</span>
+                <span class="text-red-500 dark:text-red-400 ml-1">\250,000</span>
+              </span>
+            </div>
+            <div class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg p-2 text-sm flex items-center gap-1">
+              <icon name="triangle-exclamation" class="text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.amount_mismatch_full</span>
+            </div>
+          </div>
+          <div data-ref="mobile_card_2" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex-between mb-2">
+              <span class="text-primary font-medium">최지은</span>
+              <span class="text-blue-600 dark:text-blue-400 font-semibold">\120,000</span>
+            </div>
+            <div class="text-secondary text-sm mb-3">신한은행 · 10:15</div>
+            <input type="text" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder" class="input"/>
+          </div>
+        </div>
+      </responsive>
+      <table data-ref="bulk_match_table" class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800">
+          <tr>
+            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.depositor_name</th>
+            <th class="text-table-header px-4 py-3 text-right">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.amount</th>
+            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.bank_account</th>
+            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.deposit_time</th>
+            <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number</th>
+          </tr>
+        </thead>
+        <tbody class="divider-list bg-white dark:bg-gray-900">
+          <tr>
+            <td class="px-4 py-4 text-primary font-medium">박민수</td>
+            <td class="px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold">\49,000</td>
+            <td class="px-4 py-4">
+              <div class="text-primary">카카오뱅크</div>
+              <div class="text-secondary text-xs">789-012-3456</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-primary">2024. 01. 27.</div>
+              <div class="text-secondary text-xs">11:25</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="relative mb-2">
+                <input type="text" value="ORD20251118-0003" class="input pr-8"/>
+                <button aria-label="$t:common.close" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+                  <icon name="x" class="text-base"/>
+                </button>
+              </div>
+              <div class="flex-between text-sm">
+                <span class="text-secondary">
+                  <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer</span>
+                  <span class="text-primary ml-1">박민수</span>
+                </span>
+                <span>
+                  <span class="text-label">$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount</span>
+                  <span class="text-required">\250,000</span>
+                  <span class="text-red-500 dark:text-red-400 ml-2 inline-flex items-center gap-1">
+                    <icon name="triangle-exclamation" class="text-sm"/>
+                    <span>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.amount_mismatch</span>
+                  </span>
+                </span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="px-4 py-4 text-primary font-medium">강해린</td>
+            <td class="px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold">\250,000</td>
+            <td class="px-4 py-4">
+              <div class="text-primary">토스뱅크</div>
+              <div class="text-secondary text-xs">100-200-3000</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-primary">2024. 01. 26.</div>
+              <div class="text-secondary text-xs">09:30</div>
+            </td>
+            <td class="px-4 py-4">
+              <input type="text" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder" class="input"/>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </modal>
+</partial>

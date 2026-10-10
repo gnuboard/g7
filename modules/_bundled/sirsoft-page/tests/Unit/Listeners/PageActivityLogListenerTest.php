@@ -30,6 +30,11 @@ class PageActivityLogListenerTest extends ModuleTestCase
 
     private $logChannel;
 
+    /**
+     * 활동 로그 채널을 모의 객체로 바꾸고 리스너를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,6 +54,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
     // getSubscribedHooks 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 구독 훅이 7개(페이지 5 + 첨부 2)다.
+     *
+     * @scenario case=hook_subscription
+     *
+     * @effects hooks_subscribed_with_priority_20
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function getSubscribedHooks는_7개_훅을_반환한다(): void
     {
@@ -57,6 +71,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(7, $hooks);
     }
 
+    /**
+     * 훅마다 올바른 핸들러 메서드에 연결되고, 없어진 before_update 훅은 구독하지 않는다.
+     *
+     * @scenario case=hook_subscription
+     *
+     * @effects hooks_subscribed_with_priority_20
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function getSubscribedHooks는_올바른_메서드_매핑을_포함한다(): void
     {
@@ -77,6 +100,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
         $this->assertArrayNotHasKey('sirsoft-page.page.before_update', $hooks);
     }
 
+    /**
+     * 로그 훅은 모두 우선순위 20으로 등록된다.
+     *
+     * @scenario case=hook_subscription
+     *
+     * @effects hooks_subscribed_with_priority_20
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 모든_로깅_훅은_priority_20이다(): void
     {
@@ -95,6 +127,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
     // Page 핸들러 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 페이지 생성 뒤 page.create 로그가 제목·슬러그와 함께 남는다.
+     *
+     * @scenario case=page_lifecycle_log
+     *
+     * @effects page_action_logged_with_description
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handlePageAfterCreate는_page_create_로그를_기록한다(): void
     {
@@ -113,6 +154,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
         $this->listener->handlePageAfterCreate($page, ['title' => '소개 페이지']);
     }
 
+    /**
+     * 페이지 수정 뒤 page.update 로그가 변경 내역과 함께 남는다.
+     *
+     * @scenario case=page_lifecycle_log
+     *
+     * @effects page_action_logged_with_description
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handlePageAfterUpdate는_변경사항과_함께_page_update_로그를_기록한다(): void
     {
@@ -134,6 +184,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
         $this->listener->handlePageAfterUpdate($updatedPage, ['title' => '수정된 페이지'], $snapshot);
     }
 
+    /**
+     * 페이지 삭제 뒤 page.delete 로그가 남는다.
+     *
+     * @scenario case=page_lifecycle_log
+     *
+     * @effects page_action_logged_with_description
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handlePageAfterDelete는_page_delete_로그를_기록한다(): void
     {
@@ -155,7 +214,7 @@ class PageActivityLogListenerTest extends ModuleTestCase
     /**
      * 페이지 공개/비공개 전환 데이터 프로바이더
      *
-     * @return array<string, array{bool, string, string}>
+     * @return array<string, array{bool, string, string}> 경우별 [공개 여부, 로그 동작, 설명 번역 키]
      */
     public static function publishDataProvider(): array
     {
@@ -173,6 +232,18 @@ class PageActivityLogListenerTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 공개·비공개 전환에 따라 page.publish 또는 page.unpublish 로그가 남는다.
+     *
+     * @scenario case=page_lifecycle_log
+     *
+     * @effects page_action_logged_with_description
+     *
+     * @param  bool  $published  공개로 바꾸면 true
+     * @param  string  $expectedAction  기대하는 로그 동작 이름
+     * @param  string  $expectedDescriptionKey  기대하는 설명 번역 키
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('publishDataProvider')]
     public function handlePageAfterPublish는_공개_비공개에_따라_올바른_로그를_기록한다(
@@ -194,6 +265,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
         $this->listener->handlePageAfterPublish($page, $published);
     }
 
+    /**
+     * 버전 복원 뒤 page.restore 로그가 버전 ID·번호와 함께 남는다.
+     *
+     * @scenario case=page_lifecycle_log
+     *
+     * @effects page_action_logged_with_description
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handlePageAfterRestore는_page_restore_로그를_기록한다(): void
     {
@@ -218,6 +298,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
     // PageAttachment 핸들러 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 첨부 업로드 뒤 page_attachment.upload 로그가 원본 파일명·크기와 함께 남는다.
+     *
+     * @scenario case=attachment_log
+     *
+     * @effects attachment_log_carries_original_filename
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handleAttachmentAfterUpload은_page_attachment_upload_로그를_기록한다(): void
     {
@@ -230,13 +319,22 @@ class PageActivityLogListenerTest extends ModuleTestCase
                 return $context['log_type'] === ActivityLogType::Admin
                     && $context['description_key'] === 'sirsoft-page::activity_log.description.page_attachment_upload'
                     && $context['description_params']['title'] === '소개 페이지'
-                    && $context['properties']['original_name'] === 'image.png'
+                    && $context['properties']['original_filename'] === 'image.png'
                     && $context['properties']['size'] === 2048;
             }));
 
         $this->listener->handleAttachmentAfterUpload($attachment);
     }
 
+    /**
+     * 첨부 삭제 뒤 page_attachment.delete 로그가 원본 파일명과 함께 남는다.
+     *
+     * @scenario case=attachment_log
+     *
+     * @effects attachment_log_carries_original_filename
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handleAttachmentAfterDelete는_page_attachment_delete_로그를_기록한다(): void
     {
@@ -249,9 +347,43 @@ class PageActivityLogListenerTest extends ModuleTestCase
                 return $context['log_type'] === ActivityLogType::Admin
                     && $context['description_key'] === 'sirsoft-page::activity_log.description.page_attachment_delete'
                     && $context['description_params']['title'] === '소개 페이지'
-                    && $context['properties']['original_name'] === 'image.png';
+                    && $context['properties']['original_filename'] === 'image.png';
             }));
 
+        $this->listener->handleAttachmentAfterDelete($attachment);
+    }
+
+    /**
+     * 실제 첨부 모델의 원본 파일명 컬럼(original_filename)이 로그에 실린다.
+     *
+     * 모의 객체는 없는 속성도 만들어 내므로, 컬럼 이름을 잘못 읽어도(original_name) 초록이었다 —
+     * 관리자 활동 로그의 페이지 첨부 업로드·삭제 행은 파일명이 늘 비어 있었다. 실제 모델로 잠근다.
+     *
+     * @scenario case=attachment_log_reads_real_column
+     *
+     * @effects attachment_log_carries_original_filename
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 첨부_업로드_삭제_로그는_실제_모델의_original_filename_을_싣는다(): void
+    {
+        $attachment = new PageAttachment(['original_filename' => '회사소개서.pdf', 'size' => 4096]);
+        $attachment->setRelation('page', null);
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->with('page_attachment.upload', Mockery::on(function (array $context) {
+                return $context['properties']['original_filename'] === '회사소개서.pdf'
+                    && $context['properties']['size'] === 4096;
+            }));
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->with('page_attachment.delete', Mockery::on(function (array $context) {
+                return $context['properties']['original_filename'] === '회사소개서.pdf';
+            }));
+
+        $this->listener->handleAttachmentAfterUpload($attachment);
         $this->listener->handleAttachmentAfterDelete($attachment);
     }
 
@@ -259,6 +391,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
     // 예외 처리 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 로그 기록이 실패해도 예외가 퍼지지 않고 오류 로그만 남는다.
+     *
+     * @scenario case=log_failure_isolated
+     *
+     * @effects logging_failure_does_not_propagate
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function logActivity_예외_발생_시_Log_error로_기록한다(): void
     {
@@ -283,6 +424,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
     // handle() 기본 핸들러 검증
     // ═══════════════════════════════════════════
 
+    /**
+     * 기본 핸들러 handle() 은 아무 일도 하지 않는다.
+     *
+     * @scenario case=hook_subscription
+     *
+     * @effects hooks_subscribed_with_priority_20
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_기본_핸들러는_아무_작업도_수행하지_않는다(): void
     {
@@ -295,6 +445,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
     // 엣지 케이스: 스냅샷 없이 update 호출
     // ═══════════════════════════════════════════
 
+    /**
+     * 수정 전 스냅샷 없이 불려도 변경 내역 null 로 로그가 남는다.
+     *
+     * @scenario case=null_attribute_fallback
+     *
+     * @effects null_attributes_logged_as_empty
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handlePageAfterUpdate_스냅샷_없이_호출해도_정상_동작한다(): void
     {
@@ -315,6 +474,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
     // 엣지 케이스: null 속성 처리
     // ═══════════════════════════════════════════
 
+    /**
+     * 제목·슬러그가 없으면 빈 문자열로 기록한다.
+     *
+     * @scenario case=null_attribute_fallback
+     *
+     * @effects null_attributes_logged_as_empty
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handlePageAfterCreate_title이_null이면_빈문자열로_기록한다(): void
     {
@@ -330,6 +498,15 @@ class PageActivityLogListenerTest extends ModuleTestCase
         $this->listener->handlePageAfterCreate($page, []);
     }
 
+    /**
+     * 버전 번호가 없으면 null 로 기록한다.
+     *
+     * @scenario case=null_attribute_fallback
+     *
+     * @effects null_attributes_logged_as_empty
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handlePageAfterRestore_version이_null이면_version_number는_null로_기록한다(): void
     {
@@ -345,8 +522,17 @@ class PageActivityLogListenerTest extends ModuleTestCase
         $this->listener->handlePageAfterRestore($page, $version);
     }
 
+    /**
+     * 원본 파일명·크기가 없으면 빈 문자열·0 으로 기록한다.
+     *
+     * @scenario case=null_attribute_fallback
+     *
+     * @effects null_attributes_logged_as_empty
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
-    public function handleAttachmentAfterUpload_original_name이_null이면_빈문자열로_기록한다(): void
+    public function handleAttachmentAfterUpload_original_filename이_null이면_빈문자열로_기록한다(): void
     {
         $attachment = $this->createMockPageAttachment(null, null, null, null);
 
@@ -354,7 +540,7 @@ class PageActivityLogListenerTest extends ModuleTestCase
             ->once()
             ->with('page_attachment.upload', Mockery::on(function (array $context) {
                 return $context['description_params']['title'] === ''
-                    && $context['properties']['original_name'] === ''
+                    && $context['properties']['original_filename'] === ''
                     && $context['properties']['size'] === 0;
             }));
 
@@ -370,10 +556,10 @@ class PageActivityLogListenerTest extends ModuleTestCase
      *
      * makePartial()로 Eloquent __get → getAttribute 체인이 정상 동작하도록 합니다.
      *
-     * @param int $id 페이지 ID
-     * @param string|null $title 페이지 제목
-     * @param string|null $slug 페이지 슬러그
-     * @return Page&\Mockery\MockInterface
+     * @param  int  $id  페이지 ID
+     * @param  string|null  $title  페이지 제목
+     * @param  string|null  $slug  페이지 슬러그
+     * @return Page&\Mockery\MockInterface 페이지 모의 객체
      */
     private function createMockPage(int $id, ?string $title, ?string $slug): Page
     {
@@ -393,9 +579,9 @@ class PageActivityLogListenerTest extends ModuleTestCase
     /**
      * PageVersion 모의 객체를 생성합니다.
      *
-     * @param int $id 버전 ID
-     * @param int|null $versionNumber 버전 번호
-     * @return PageVersion&\Mockery\MockInterface
+     * @param  int  $id  버전 ID
+     * @param  int|null  $versionNumber  버전 번호
+     * @return PageVersion&\Mockery\MockInterface 버전 모의 객체
      */
     private function createMockPageVersion(int $id, ?int $versionNumber): PageVersion
     {
@@ -409,14 +595,16 @@ class PageActivityLogListenerTest extends ModuleTestCase
     /**
      * PageAttachment 모의 객체를 생성합니다.
      *
-     * @param string|null $originalName 원본 파일명
-     * @param int|null $size 파일 크기
-     * @return PageAttachment&\Mockery\MockInterface
+     * @param  string|null  $originalName  원본 파일명(original_filename)
+     * @param  int|null  $size  파일 크기
+     * @param  int|null  $pageId  페이지 ID
+     * @param  Page|null  $page  연결된 페이지
+     * @return PageAttachment&\Mockery\MockInterface 첨부 모의 객체
      */
     private function createMockPageAttachment(?string $originalName, ?int $size, ?int $pageId = null, $page = null): PageAttachment
     {
         $attachment = Mockery::mock(PageAttachment::class)->makePartial();
-        $attachment->shouldReceive('getAttribute')->with('original_name')->andReturn($originalName);
+        $attachment->shouldReceive('getAttribute')->with('original_filename')->andReturn($originalName);
         $attachment->shouldReceive('getAttribute')->with('size')->andReturn($size);
         $attachment->shouldReceive('getAttribute')->with('page_id')->andReturn($pageId);
         $attachment->shouldReceive('getAttribute')->with('page')->andReturn($page);

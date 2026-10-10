@@ -57,6 +57,14 @@
         "title": "$t:user.identity.challenge.title"
       }
     },
+    {
+      "path": "/identity/verify",
+      "layout": "auth/identity_verify",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.identity.verify_link.title"
+      }
+    },
 
     {
       "_comment": "=== 게시판 ===",
@@ -178,6 +186,33 @@
       }
     },
     {
+      "_comment": "비회원 클레임(교환/반품/취소·환불) 신청서 작성 — :type 은 exchange|return|refund 이며 그 밖의 값은 레이아웃 init_actions 가드가 404 로 세운다. 회원과 달리 주문번호가 주소에 있다: 비회원 클레임 API 가 전부 주문 스코프이기 때문이다. 인증은 X-Guest-Order-Token 이 담당하므로 auth_required 는 false 다.",
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/orders/:order_number/claims/apply/:type",
+      "layout": "shop/guest_claim_apply",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:shop.guest_claim_apply.page_title"
+      }
+    },
+    {
+      "_comment": "비회원 신청 내역 수정 — 작성 셸(shop/guest_claim_apply)을 edit 모드로 재사용한다(§5-1-6). 상세(:claim_number)보다 먼저 선언해 세그먼트 수가 같은 경로가 서로를 가리지 않게 한다. 주소에 주문번호가 없으므로 주문 스코프는 조회 토큰의 짝인 _global.guestOrderNumber 가 준다.",
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/claims/:claim_number/edit",
+      "layout": "shop/guest_claim_apply",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:shop.guest_claim_apply.edit_page_title"
+      }
+    },
+    {
+      "_comment": "비회원 신청 내역 상세 — 클레임 번호로 서버가 유형을 해석한다(ClaimNumberResolver). 유형별 접두사(EX/RT/RF/CN)는 운영자가 채번 설정에서 바꿀 수 있으므로 화면이 접두사로 유형을 판정하지 않는다. 주소 모양은 서버측 SSoT(ClaimUrl::GUEST_DETAIL)와 같아야 한다.",
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/claims/:claim_number",
+      "layout": "shop/guest_claim_show",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:shop.guest_claim_show.page_title"
+      }
+    },
+    {
       "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/reorder/:id",
       "layout": "shop/reorder",
       "auth_required": true,
@@ -236,6 +271,42 @@
       }
     },
     {
+      "_comment": "클레임(교환/반품/취소·환불) 신청서 작성 — :type 은 exchange|return|refund 이며 그 밖의 값은 레이아웃 init_actions 가드가 404 로 세운다.",
+      "path": "/mypage/orders/:order_number/claims/apply/:type",
+      "layout": "mypage/claims/apply",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claim_apply_title"
+      }
+    },
+    {
+      "_comment": "신청 내역 목록 — 유형 서브탭은 ?type=exchange|return|refund|cancel 로 왕복한다(라우트 파라미터가 아니다). 마이페이지 탭 '취소·반품·교환' 의 목적지.",
+      "path": "/mypage/claims",
+      "layout": "mypage/claims",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claims_title"
+      }
+    },
+    {
+      "_comment": "신청 내역 수정 — 작성 셸(mypage/claims/apply)을 edit 모드로 재사용한다(§5-1-6). 상세(:claim_number)보다 먼저 선언해 세그먼트 수가 같은 경로가 서로를 가리지 않게 한다. 유형은 라우트가 아니라 신청서 응답이 알려 주므로 :type 파라미터가 없다.",
+      "path": "/mypage/claims/:claim_number/edit",
+      "layout": "mypage/claims/apply",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claim_edit_title"
+      }
+    },
+    {
+      "_comment": "신청 내역 상세 — 클레임 번호로 서버가 유형을 해석한다(ClaimNumberResolver). 유형별 접두사(EX/RT/RF/CN)는 운영자가 채번 설정에서 바꿀 수 있으므로 화면이 접두사로 유형을 판정하지 않는다.",
+      "path": "/mypage/claims/:claim_number",
+      "layout": "mypage/claims/show",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claim_detail_title"
+      }
+    },
+    {
       "path": "/mypage/mileage",
       "layout": "mypage/mileage",
       "auth_required": true,
@@ -273,6 +344,14 @@
       "auth_required": true,
       "meta": {
         "title": "$t:user.mypage.board_title"
+      }
+    },
+    {
+      "path": "/mypage/scrap",
+      "layout": "mypage/scrap",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.scrap_title"
       }
     },
     {

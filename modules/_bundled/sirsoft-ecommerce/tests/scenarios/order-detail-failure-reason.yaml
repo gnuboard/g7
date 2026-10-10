@@ -1,0 +1,18 @@
+feature: 주문 상세 처리기 실패 안내 — 서버 사유만 띄우기 (2026-10-07 실측)
+
+description: |
+  [입금확인]·상세 일괄변경·관리자 메모 저장이 실패하면 axios 원문(「Request failed with status code 500」·「Network Error」)이나
+  운영 환경 500 본문(「Server Error」)을 그대로 띄웠다. 5xx·전송 실패는 번역된 폴백 문구로, 4xx 서버 사유는 그대로 띄운다.
+
+axes:
+  failure:
+    - server_5xx
+    - validation_4xx
+
+effects:
+  - order_detail_failure_hides_non_reason_text # 5xx 본문·본문 없는 5xx·전송 실패는 번역된 폴백 문구를 띄운다
+  - order_detail_failure_shows_server_reason # 4xx 서버 사유(입금확인은 진단 문구 우선)와 성공 플래그 없는 응답의 문장은 그대로 띄운다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/orderDetailFailureReason.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-detail-forbidden-sources-and-failure-reason.spec.ts

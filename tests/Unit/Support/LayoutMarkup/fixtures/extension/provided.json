@@ -1,0 +1,12 @@
+{
+  "id": "memo_card",
+  "type": "composite",
+  "name": "gnuboard7-hello_module.MemoCard",
+  "if": "{{memo?.visible}}",
+  "props": {
+    "className": "admin-card",
+    "highlighted": true,
+    "columns": 2,
+    "title": "{{memo.title}}"
+  }
+}

@@ -1,0 +1,58 @@
+<partial description="Claim Item Quantity Confirm Modal (§4-6) - detail screen only">
+  <!-- 상품 단위 전이의 수량 확인 모달 (§4-6). 수량 입력을 일괄 바에 두면 행이 여럿일 때 수량이 하나뿐이라 '3 중 2, 5 중 1' 을 표현할 수 없고, 행 인라인에 두면 선택과 무관하게 살아 있어 '체크하지 않은 행의 수량을 바꿔 둔' 상태가 생긴다. 주문상세 선례도 확인 모달이다. 주문상세 모달을 복제하지 않는 이유: 그 파일은 주문 상태 어휘 하드코딩·`_local.changeQuantities` 키·`confirmItems` 계약에 묶여 있다. 여기서 재사용하는 것은 마크업 계약(type:number, min:1, max=현재수량, `/ 수량` 보조 표기)과 클램핑 패턴뿐이다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로 여는 핸들러가 `_global.claimItemQuantityContext` 로 값을 넘긴다. -->
+  <modal data-type="composite" data-ref="modal_claim_item_quantity_confirm" title="$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_confirm_title" size="md">
+    <div class="space-y-4">
+      <p data-ref="ciq_001_description" data-if="{{_global.claimItemQuantityContext?.trackingOnly !== true}}" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_confirm_description|status={{_global.claimItemQuantityContext?.statusLabel ?? ''}}</p>
+      <!-- 「송장만 저장」 모드 — 상태는 옮기지 않고 고른 행(지정 수량)에 송장만 적는다(R7). -->
+      <p data-ref="ciq_007_tracking_only_description" data-if="{{_global.claimItemQuantityContext?.trackingOnly === true}}" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only_description|direction={{_global.claimItemQuantityContext?.directionLabel ?? ''}}</p>
+      <div data-ref="ciq_002_rows" class="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+        <!-- 행 반복은 `iteration` 선언이다 — `forEach` 는 엔진이 읽지 않는 키라 행이 한 번만 그려지고 반복 변수가 미해석으로 남는다(수량 입력이 비활성·빈 값으로 선다). -->
+        <div data-each="qtyRow, qtyIdx in {{_global.claimItemQuantityContext?.rows ?? []}}" class="flex-between gap-3 p-3 flex-wrap">
+          <span class="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{{qtyRow.label}}</span>
+          <div class="flex-center gap-2 whitespace-nowrap">
+            <!-- 나눌 수 없는 행(끝난 행·수량 1)은 입력을 잠근다 — 발송된 교환 행도 후속 주문옵션이 함께 쪼개지므로 나눌 수 있다(R10) — 서버만 막으면 운영자는 입력해 놓고 [확인] 에서야 422 를 본다. 판정은 서버가 `is_splittable` 로 실어 준다. -->
+            <input type="number" min="1" max="{{qtyRow.quantity}}" class="w-20 px-2 py-1 text-sm text-right rounded" disabled="{{qtyRow.splittable !== true}}" value="{{_global.claimItemQuantityContext?.quantities?.[qtyRow.id] ?? qtyRow.quantity}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.updateClaimItemQuantity" itemId="{{qtyRow.id}}" value="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span class="text-sm text-secondary">{{'/ ' + qtyRow.quantity}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 회수중·발송중이면 실릴 송장을 한 번 더 보여 준다 — 고객 알림과 배송 조회에 그대로 나가는 값이다. -->
+      <div data-ref="ciq_006_tracking" data-if="{{!!_global.claimItemQuantityContext?.trackingNumber}}" class="flex-center flex-wrap gap-3 text-sm p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{_global.claimItemQuantityContext?.carrierLabel ?? ''}}</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100 break-all">{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}</span>
+      </div>
+      <!-- 수량을 줄이면 그 행이 나뉜다(R4) — 「셔츠 3개 중 1개에만 송장을 넣으면 행이 1개와 2개로 나뉩니다」. 표가 한 줄 늘어난 것을 운영자가 스스로 해석하게 두지 않는다. -->
+      <p data-ref="ciq_008_split_hint" data-if="{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable === true)}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_split_hint</p>
+      <!-- 잠긴 행이 하나라도 있으면 이유를 적는다 — 비활성 입력만 두면 운영자는 화면이 고장 난 줄 안다. -->
+      <p data-ref="ciq_003_not_splittable_hint" data-if="{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable !== true &amp;&amp; r.quantity > 1)}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_not_splittable</p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button data-ref="ciq_004_cancel" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <!-- 실행은 일괄 바와 **같은 핸들러**다 — 두 발신처가 각자 요청을 만들면 본문 계약이 갈리고, 한쪽만 고쳐졌을 때 그 경로로만 422 가 난다(형제 결함 R10 이 그것이다). -->
+        <button data-ref="ciq_005_confirm" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true}}">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.executeClaimItemBulkStatus" pathSegment="{{_global.claimItemQuantityContext?.pathSegment ?? ''}}" claimType="{{_global.claimItemQuantityContext?.claimType ?? ''}}" claimId="{{_global.claimItemQuantityContext?.claimId ?? null}}" claimNumber="{{_global.claimItemQuantityContext?.claimNumber ?? ''}}" requesterName="{{_global.claimItemQuantityContext?.requesterName ?? ''}}" itemIds="{{_global.claimItemQuantityContext?.itemIds ?? []}}" itemQuantities="{{_global.claimItemQuantityContext?.quantities ?? {} }}" status="{{_global.claimItemQuantityContext?.status ?? ''}}" trackingOnly="{{_global.claimItemQuantityContext?.trackingOnly === true}}" direction="{{_global.claimItemQuantityContext?.direction ?? ''}}" rejectReason="{{_global.claimItemQuantityContext?.rejectReason ?? ''}}" carrierId="{{_global.claimItemQuantityContext?.carrierId ?? ''}}" trackingNumber="{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}" rows="{{_global.claimItemQuantityContext?.detailRows ?? []}}" completeDefaults="{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}">
+              <fail>
+                <!-- 사유 토스트는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다. -->
+                <suppress/>
+              </fail>
+            </action>
+          </on>
+          <icon data-if="{{_local.isUpdatingClaimItems}}" name="spinner" class="spinner-sm mr-1"/>
+          <span data-if="{{_global.claimItemQuantityContext?.trackingOnly !== true}}">$t:sirsoft-ecommerce.admin.claim.bulk.apply</span>
+          <span data-if="{{_global.claimItemQuantityContext?.trackingOnly === true}}">$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

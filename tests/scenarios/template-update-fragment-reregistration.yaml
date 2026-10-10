@@ -1,0 +1,22 @@
+feature: template_update_fragment_reregistration
+
+description: |
+  활성 템플릿 업데이트는 자기 레이아웃을 갱신한 뒤 활성 모듈·플러그인의 레이아웃 확장 조각 전체를 다시 등록한다
+  (7.1.0 출시 점검 PU-1). 번들 일괄 업데이트(모듈 → 플러그인 → 템플릿)에서 플러그인이 조각을 등록할 때는 템플릿이
+  아직 옛 판이라 새 확장점에 붙는 조각이 건너뛰어진다. 템플릿 갱신 뒤 재등록이 그 자리를 메운다. 꺼 둔 템플릿은
+  켤 때(activateTemplate) 등록하므로 업데이트 경로는 활성 분기에서만 부른다. 재등록 실패는 기록만 하고 업데이트를
+  되돌리지 않는다.
+
+coverage_strategy: full
+
+axes:
+  lifecycle_trigger: [template_update]
+  template_status: [active, inactive]
+
+effects:
+  - template_update_reregisters_active_extension_fragments
+  - template_update_fragment_reregistration_failure_is_logged_not_rolled_back
+
+test_files:
+  - tests/Unit/Extension/TemplateUpdateReregistersExtensionFragmentsTest.php
+  - tests/Feature/LayoutMarkup/FragmentRegistrationPolicyTest.php

@@ -119,6 +119,12 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
         return null;
     }
 
+    /**
+     * echo 서비스 하나에서 서버 egress IP 를 조회한다.
+     *
+     * @param  string  $url  IP 를 본문으로 돌려주는 echo 서비스 주소
+     * @return string|null 유효한 IP 또는 null (실패·응답이 IP 아님)
+     */
     private function fetchEgressIpFrom(string $url): ?string
     {
         $ch = curl_init($url);
@@ -203,9 +209,19 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
         ];
     }
 
+    /**
+     * 콜백 주소 진단값을 만든다.
+     *
+     * 이 요청의 Host 로 만든 콜백 주소를 사이트 주소(`app.url`)와 나란히 보여 주어, 관리자가
+     * 접속한 주소와 사이트 주소가 어긋나는지(스킴·공개 여부·호스트 일치) 확인하게 한다.
+     * PG 에 보내는 실제 콜백 주소는 사이트 주소 기준이며 이 값을 쓰지 않는다.
+     *
+     * @return array{app_url: string, callback_url: string, app_url_https: bool, callback_url_https: bool, app_url_public: bool, callback_url_public: bool, host_matches_app_url: bool}
+     */
     private function buildCallbackDiagnostics(): array
     {
         $appUrl = rtrim((string) config('app.url'), '/');
+        // audit:allow request-host-absolute-url reason: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단 — 이동·전송에 쓰지 않는다
         $callbackUrl = url('/plugins/sirsoft-pay_kginicis/payment/cbt/callback');
         $appHost = parse_url($appUrl, PHP_URL_HOST);
         $callbackHost = parse_url($callbackUrl, PHP_URL_HOST);
@@ -221,6 +237,12 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
         ];
     }
 
+    /**
+     * 외부에서 접근 가능한 호스트 이름인지 판정한다.
+     *
+     * @param  string  $host  호스트 이름 또는 IP
+     * @return bool localhost·사설/예약 IP·`.local` 이면 false
+     */
     private function isPublicHostname(string $host): bool
     {
         $host = strtolower(trim($host));

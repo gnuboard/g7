@@ -279,7 +279,7 @@ test.describe('@layout-editor image 위젯 값 형태 (공개 #135)', () => {
     expect(logo).toContain('layout-attachments/5/file');
 
     // 3단 — 사용자 화면에서 실제로 그려지는가.
-    await page.goto(SANDBOX_ROUTE['sirsoft-basic']);
+    await page.goto(SANDBOX_ROUTE.user);
     await page.waitForLoadState('domcontentloaded');
 
     const measured = await page.evaluate(async () => {

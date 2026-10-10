@@ -1,0 +1,21 @@
+feature: 게시판의 하루 경계 — 대시보드 집계는 사이트 표준시, 일일 신고 한도는 신고자 계정 시간대 (K2 실측 2026-10-06, O-CF3)
+
+description: |
+  저장값과 앱 시간대(`app.timezone`)는 UTC 다. 일일 신고 한도와 게시판 대시보드 일 집계(board_stats)가
+  「오늘」을 앱 시간대로 잘라, 한국 사이트에서는 오전 9시에 하루가 바뀌었다 — 서울 새벽에 한 신고는
+  전날 건으로 빠지고, 새벽 글은 전날 집계에 들어갔다. 대시보드 집계의 하루는 사이트 표준시(`general.timezone` →
+  `app.default_user_timezone`)로, 일일 신고 한도의 하루는 신고자 계정 시간대(없으면 사이트 기본 시간대)로 자른다
+  (PO 결정 710-full-inspection 「하루 경계」). 이 시험의 신고자는 계정 시간대가 없어 사이트 표준시로 잰다.
+
+axes:
+  boundary: [report_daily_limit, board_stats]
+  clock: [evening_same_utc_day, after_site_midnight]
+
+effects:
+  - daily_report_count_uses_site_day
+  - daily_report_count_resets_at_site_midnight
+  - board_stats_counts_posts_on_site_day
+  - dashboard_today_follows_site_day
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardSiteDayBoundaryTest.php

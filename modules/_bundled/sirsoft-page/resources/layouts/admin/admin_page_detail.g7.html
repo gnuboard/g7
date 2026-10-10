@@ -1,0 +1,404 @@
+<!-- 관리자 페이지 상세 화면 — 본문 미리보기·첨부·버전 이력을 한 장에 모으고, 게시 전환·삭제·버전 복원을 여기서 한다 -->
+<layout name="admin_page_detail" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-page.admin.page.detail.page_title" description="$t:sirsoft-page.admin.page.detail.page_description"/>
+  <!-- 이 화면의 주 데이터. 없는 페이지(404)나 권한 없음(403)은 토스트가 아니라 콘텐츠 영역 자체를 오류 화면으로 바꾼다 — 빈 상세를 보여 주지 않기 위해서다 -->
+  <data-source id="page" label_key="$t:sirsoft-page.editor.data_source.page" type="api" endpoint="/api/modules/sirsoft-page/admin/pages/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 버전 이력. 본문과 별도 호출이라 이력 조회가 실패해도 상세 화면 자체는 뜬다 -->
+  <data-source id="versions" label_key="$t:sirsoft-page.editor.data_source.versions" type="api" endpoint="/api/modules/sirsoft-page/admin/pages/{{route?.id}}/versions" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <permissions>
+    <permission>sirsoft-page.pages.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>page</wait-for>
+    <wait-for>versions</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="page_detail_content" :data-blur-until-loaded="true" class="admin-page-content-responsive-fluid">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-page.admin.page.detail.page_title" description="$t:sirsoft-page.admin.page.detail.page_description" backLink="/admin/pages" backLinkText="$t:sirsoft-page.admin.page.detail.back_to_list">
+        <button data-ref="header_back_button" class="btn btn-secondary">
+          <on type="click">
+            <!-- 목록으로 돌아간다. 보던 검색어·필터·페이지를 그대로 이고 가므로(mergeQuery) 상세를 열었다 닫아도 목록이 처음으로 되감기지 않는다 -->
+            <navigate path="/admin/pages" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="arrow-left" class="text-sm"/>
+          <span class="hidden sm:inline">$t:sirsoft-page.admin.page.detail.back_to_list</span>
+        </button>
+        <button data-ref="header_edit_button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
+          <on type="click">
+            <!-- 수정 화면으로. 같은 목록 클러스터 안의 이동이라 목록 상태를 그대로 넘긴다 — 수정을 마치고 돌아올 때 보던 자리로 복귀시키기 위해서다 -->
+            <navigate path="/admin/pages/{{route?.id}}/edit" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="pencil" class="text-sm"/>
+          <span class="hidden sm:inline">$t:sirsoft-page.admin.page.detail.edit</span>
+        </button>
+        <button data-ref="header_delete_button" disabled="{{page?.data?.abilities?.can_delete !== true}}" class="btn btn-danger">
+          <on type="click">
+            <open-modal target="deletePageModal"/>
+          </on>
+          <icon name="trash" class="text-sm"/>
+          <span class="hidden sm:inline">$t:sirsoft-page.admin.page.detail.delete</span>
+        </button>
+      </page-header>
+      <alert data-type="composite" data-ref="page_api_error" data-if="{{_dataSourceErrors?.page}}" type="error" message="{{_dataSourceErrors?.page?.message ?? '$t:common.error_occurred'}}" class="mb-6"/>
+      <div data-ref="unified_lang_tabs" data-if="{{page?.data}}" class="flex-center flex-wrap gap-3 mb-4 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <div class="flex-center text-tertiary gap-1.5">
+          <icon name="globe" class="text-sm"/>
+          <span>$t:sirsoft-page.admin.page.detail.display_language</span>
+        </div>
+        <div class="flex gap-1 bg-white dark:bg-gray-800 rounded-md p-0.5 border border-gray-200 dark:border-gray-600">
+          <button data-each="loc in $locales" type="button" class="{{(_local.lang ?? $locale) === loc ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}">
+            <on type="click">
+              <!-- 표시 언어 전환 — 화면 안에서만 쓰는 선택이라 URL 이나 서버에 남기지 않는다 -->
+              <set-state target="local" lang="{{loc}}"/>
+            </on>
+            <span>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</span>
+          </button>
+        </div>
+        <span class="text-hint ml-auto italic">
+          <responsive on="portable" class="text-hint w-full italic"/>
+          $t:sirsoft-page.admin.page.detail.display_language_hint
+        </span>
+      </div>
+      <div data-ref="page_info_section" data-if="{{page?.data}}" class="admin-card">
+        <div data-ref="info_header" class="flex flex-col gap-3 pb-4">
+          <div class="flex-center flex-wrap gap-3">
+            <div data-ref="publish_segment_buttons" class="flex gap-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-0.5">
+              <button data-ref="publish_btn_active" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
+                <on type="click">
+                  <!-- 게시로 전환 — 응답을 믿고 화면을 고치지 않고 page 를 다시 받아 서버 상태를 정본으로 삼는다 -->
+                  <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish" method="PATCH">
+                    <success>
+                      <toast type="success" message="$t:sirsoft-page.admin.page.detail.publish_changed"/>
+                      <refetch-data-source dataSourceId="page"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message ?? '$t:sirsoft-page.admin.page.errors.publish_change_failed'}}"/>
+                    </fail>
+                    <body :published="true"/>
+                  </api-call>
+                </on>
+                <span>$t:sirsoft-page.admin.page.published_status.published</span>
+              </button>
+              <button data-ref="publish_btn_inactive" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{!page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-gray-300 text-gray-800 dark:bg-gray-500 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
+                <on type="click">
+                  <!-- 게시 해제 — 같은 엔드포인트에 published=false 로 보낸다 -->
+                  <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish" method="PATCH">
+                    <success>
+                      <toast type="success" message="$t:sirsoft-page.admin.page.detail.publish_changed"/>
+                      <refetch-data-source dataSourceId="page"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message ?? '$t:sirsoft-page.admin.page.errors.publish_change_failed'}}"/>
+                    </fail>
+                    <body :published="false"/>
+                  </api-call>
+                </on>
+                <span>$t:sirsoft-page.admin.page.published_status.unpublished</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-baseline gap-2">
+            <h2 class="text-primary text-xl font-bold">{{page?.data?.title?.[ _local.lang ?? $locale ?? 'ko'] ?? '-'}}</h2>
+            <span class="text-sm text-gray-400 dark:text-gray-500 font-mono">{{page?.data?.slug ?? ''}}</span>
+            <badge data-type="composite" text="v{{page?.data?.current_version ?? 1}}" color="blue" size="md"/>
+            <a data-if="{{page?.data?.published}}" href="/page/{{page?.data?.slug ?? ''}}" target="_blank" class="inline-flex items-center gap-1 text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+              <icon name="arrow-up-right-from-square" class="text-[10px]"/>
+              <span>$t:sirsoft-page.admin.page.detail.view_page</span>
+            </a>
+          </div>
+        </div>
+        <div data-ref="info_grid" class="grid-2col-responsive pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex items-baseline gap-3">
+            <span class="text-table-header shrink-0 w-20">$t:sirsoft-page.admin.page.detail.info.creator</span>
+            <p class="text-primary text-sm">{{page?.data?.creator?.name ?? '-'}}</p>
+          </div>
+          <div class="flex items-baseline gap-3">
+            <span class="text-table-header shrink-0 w-20">$t:sirsoft-page.admin.page.detail.info.published_at</span>
+            <p class="text-primary text-sm">{{page?.data?.published_at ?? '-'}}</p>
+          </div>
+          <div class="flex items-baseline gap-3">
+            <span class="text-table-header shrink-0 w-20">$t:sirsoft-page.admin.page.detail.info.created_at</span>
+            <p class="text-primary text-sm">{{page?.data?.created_at ?? '-'}}</p>
+          </div>
+          <div class="flex items-baseline gap-3">
+            <span class="text-table-header shrink-0 w-20">$t:sirsoft-page.admin.page.detail.info.updated_at</span>
+            <p class="text-primary text-sm">{{page?.data?.updated_at ?? '-'}}</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="content_section" data-if="{{page?.data}}" class="admin-card">
+        <div data-ref="content_header" class="flex-between cursor-pointer select-none">
+          <on type="click">
+            <!-- 본문 미리보기 접기·펴기 — 기본은 펴짐이라 값이 없을 때를 false 로 읽는다 -->
+            <set-state target="local" contentCollapsed="{{!(_local.contentCollapsed ?? false)}}"/>
+          </on>
+          <span class="card-title">$t:sirsoft-page.admin.page.detail.tabs.preview</span>
+          <icon name="{{(_local.contentCollapsed ?? false) ? 'chevron-down' : 'chevron-up'}}" class="text-hint"/>
+        </div>
+        <div data-ref="content_body" data-if="{{!(_local.contentCollapsed ?? false)}}" class="p-6">
+          <extension-point name="html_content" data-ref="content_preview" content="{{page?.data?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-900 dark:text-gray-100">
+            <default>
+              <html-content data-type="composite" content="{{page?.data?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-900 dark:text-gray-100"/>
+            </default>
+          </extension-point>
+        </div>
+      </div>
+      <div data-ref="attachments_section" data-if="{{(page?.data?.attachments ?? []).length > 0}}" class="admin-card">
+        <div data-ref="attachments_header" class="flex-between cursor-pointer">
+          <on type="click">
+            <!-- 첨부 목록 접기·펴기 — 이쪽은 기본이 펴짐이라 값이 없을 때를 true 로 읽는다 -->
+            <set-state target="local" showAttachments="{{!(_local.showAttachments ?? true)}}"/>
+          </on>
+          <span class="card-title">$t:sirsoft-page.admin.page.detail.attachments|count={{(page?.data?.attachments ?? []).length}}</span>
+          <icon name="{{(_local.showAttachments ?? true) ? 'chevron-up' : 'chevron-down'}}" class="text-gray-400 dark:text-gray-500"/>
+        </div>
+        <div data-ref="attachments_list_{{att_idx}}" data-if="{{_local.showAttachments ?? true}}" data-each="attachment_item, att_idx in page?.data?.attachments ?? []">
+          <div data-ref="attachment_card_{{att_idx}}" class="flex-center group gap-3 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+            <on type="click">
+              <!-- 첨부 내려받기 — 원본 파일명을 넘겨 업로드 당시 이름으로 저장한다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다 -->
+              <action handler="sirsoft-page.downloadAttachment" url="{{attachment_item?.download_url}}" filename="{{attachment_item?.original_filename}}">
+                <fail>
+                  <toast type="error" message="$t:sirsoft-page.admin.page.errors.download_failed"/>
+                </fail>
+              </action>
+            </on>
+            <!-- 이미지 썸네일 (이미지 파일인 경우) -->
+            <div data-if="{{attachment_item?.is_image}}" class="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-white dark:bg-gray-700">
+              <img src="{{attachment_item?.preview_url}}" alt="{{attachment_item?.original_filename}}" class="w-full h-full object-cover"/>
+            </div>
+            <!-- 파일 아이콘 (일반 파일인 경우) -->
+            <div data-if="{{!attachment_item?.is_image}}" class="flex-center flex-shrink-0 w-12 h-12 rounded-md bg-white dark:bg-gray-700 justify-center">
+              <icon name="file" class="text-lg text-gray-400 dark:text-gray-500"/>
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="block text-body truncate">{{attachment_item?.original_filename ?? ''}}</span>
+              <span class="text-hint block">{{attachment_item?.size_formatted ?? ''}}</span>
+            </div>
+            <icon name="download" class="text-gray-400 dark:text-gray-500 group-hover:text-blue-500 page-attachment-icon transition-colors"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="seo_section" data-if="{{page?.data &amp;&amp; (page?.data?.seo_meta?.title || page?.data?.seo_meta?.description || page?.data?.seo_meta?.keywords)}}" class="admin-card">
+        <div data-ref="seo_header" class="pb-4">
+          <span class="card-title">$t:sirsoft-page.admin.page.form.seo.title</span>
+        </div>
+        <div data-ref="seo_body" class="p-6 space-y-4">
+          <div data-if="{{page?.data?.seo_meta?.title}}">
+            <span class="text-table-header">$t:sirsoft-page.admin.page.form.seo.seo_title</span>
+            <p class="text-primary mt-1 text-sm">{{page?.data?.seo_meta?.title ?? '-'}}</p>
+          </div>
+          <div data-if="{{page?.data?.seo_meta?.description}}">
+            <span class="text-table-header">$t:sirsoft-page.admin.page.form.seo.seo_description</span>
+            <p class="text-primary mt-1 text-sm">{{page?.data?.seo_meta?.description ?? '-'}}</p>
+          </div>
+          <div data-if="{{page?.data?.seo_meta?.keywords}}">
+            <span class="text-table-header">$t:sirsoft-page.admin.page.form.seo.seo_keywords</span>
+            <p class="text-primary mt-1 text-sm">{{page?.data?.seo_meta?.keywords ?? '-'}}</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="versions_section" data-if="{{page?.data}}" class="admin-card">
+        <div data-ref="versions_header" class="pb-4">
+          <span class="card-title">$t:sirsoft-page.admin.page.detail.tabs.versions</span>
+        </div>
+        <div class="mb-4 px-4 py-2.5 flex-center gap-2 rounded-md text-info-soft bg-blue-50 dark:bg-blue-900/20">
+          <icon name="circle-info" class="text-blue-500 dark:text-blue-400"/>
+          <span>$t:sirsoft-page.admin.page.detail.versions.restore_guide</span>
+        </div>
+        <data-grid data-type="composite" data-ref="versions_datagrid" data="{{versions?.data ?? []}}" idField="id" emptyMessage="$t:common.no_data" :responsiveBreakpoint="768" :pagination="true" :pageSize="10" class="pb-4">
+          <column field="version" header="$t:sirsoft-page.admin.page.detail.versions.version" width="120px">
+            <cell>
+              <span class="text-primary text-sm font-semibold">v{{row.version}}</span>
+              <badge data-type="composite" data-if="{{row.version === page?.data?.current_version}}" text="$t:sirsoft-page.admin.page.detail.versions.current" color="green" class="ml-1"/>
+            </cell>
+          </column>
+          <column field="creator" header="$t:sirsoft-page.admin.page.detail.versions.creator" width="120px">
+            <cell>
+              <span class="text-body">{{row.creator?.name ?? '-'}}</span>
+            </cell>
+          </column>
+          <column field="created_at" header="$t:sirsoft-page.admin.page.detail.versions.created_at" width="180px">
+            <cell>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{row.created_at ?? '-'}}</span>
+            </cell>
+          </column>
+          <column field="changes_summary" header="$t:sirsoft-page.admin.page.detail.versions.changes">
+            <cell>
+              <span data-if="{{row.version === 1}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-page.admin.page.detail.versions.initial</span>
+              <badge data-type="composite" data-if="{{row.version !== 1 &amp;&amp; row.changes_summary?.restored_from}}" text="$t:defer:sirsoft-page.admin.page.detail.versions.restored_from|version={{row.changes_summary.restored_from}}" color="blue" class="mb-1"/>
+              <span data-if="{{row.version !== 1 &amp;&amp; row.changes_summary?.changed_fields?.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400" data-testid="page-version-changed-fields">{{row.changes_summary?.changed_fields?.map(f => $t('sirsoft-page.admin.page.detail.versions.field_labels.' + f)).join(', ') ?? '-'}}</span>
+              <span data-if="{{row.version !== 1 &amp;&amp; (!row.changes_summary || !row.changes_summary?.changed_fields?.length) &amp;&amp; !row.changes_summary?.restored_from}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+            </cell>
+          </column>
+          <column field="actions" header="$t:sirsoft-page.admin.page.detail.versions.actions" width="80px">
+            <cell>
+              <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 page-soft-button transition-colors">
+                <on type="click">
+                  <!-- 버전 미리보기 — 그리드 행 전체를 전역에 담아 두고 창을 연다(창은 별도 컨텍스트라 행 변수를 볼 수 없다) -->
+                  <sequence>
+                    <set-state target="global" previewVersion="{{row}}"/>
+                    <open-modal target="versionPreviewModal"/>
+                  </sequence>
+                </on>
+                <span>$t:sirsoft-page.admin.page.detail.versions.view</span>
+              </button>
+            </cell>
+          </column>
+        </data-grid>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <!-- 이 페이지를 지우기 전 확인받는 창 -->
+    <modal data-type="composite" data-ref="deletePageModal" title="$t:sirsoft-page.admin.page.modals.delete_title" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="btn btn-danger" disabled="{{_global.isDeletingPage || page?.data?.abilities?.can_delete !== true}}">
+          <on type="click">
+            <!-- 삭제 확정 — 처리 중 플래그로 버튼을 잠그고, 지운 뒤에는 상세에 머물 수 없으므로 목록으로 보낸다 -->
+            <sequence>
+              <set-state target="global" :isDeletingPage="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}" method="DELETE">
+                <success>
+                  <close-modal/>
+                  <set-state target="global" :isDeletingPage="false"/>
+                  <toast type="success" message="$t:sirsoft-page.admin.page.modals.delete_success"/>
+                  <navigate path="/admin/pages" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeletingPage="false"/>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isDeletingPage}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 버전으로 되돌리기 전 확인받는 창 — 되돌림도 새 버전으로 쌓인다는 것을 함께 알린다 -->
+    <modal data-type="composite" data-ref="restoreVersionModal" title="$t:sirsoft-page.admin.page.modals.restore_title" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.restore_confirm</p>
+        <p class="text-label-subtle mt-2">$t:sirsoft-page.admin.page.modals.restore_notice</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="btn btn-secondary" disabled="{{_global.isRestoringVersion}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="btn btn-primary" disabled="{{_global.isRestoringVersion || page?.data?.abilities?.can_update !== true}}">
+          <on type="click">
+            <!-- 버전 복원 확정 — 대상은 미리보기에서 전역에 심어 둔 restoreVersionId 다 -->
+            <sequence>
+              <set-state target="global" :isRestoringVersion="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/versions/{{_global.restoreVersionId}}/restore" method="POST">
+                <success>
+                  <set-state target="global" :isRestoringVersion="false" :modalStack="[]" :activeModal="null"/>
+                  <toast type="success" message="$t:sirsoft-page.admin.page.modals.restore_success"/>
+                  <refetch-data-source dataSourceId="page"/>
+                  <refetch-data-source dataSourceId="versions"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isRestoringVersion="false"/>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-page.admin.page.errors.restore_failed'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isRestoringVersion}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isRestoringVersion ? '$t:sirsoft-page.admin.page.modals.restoring' : '$t:sirsoft-page.admin.page.detail.versions.restore'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 버전의 제목·본문을 읽기 전용으로 보여 주는 창 — 여기서 바로 복원으로 넘어갈 수 있다 -->
+    <modal data-type="composite" data-ref="versionPreviewModal" title="$t:sirsoft-page.admin.page.detail.versions.preview_modal_title|version={{_global.previewVersion?.version ?? ''}}" width="800px">
+      <meta editor_label="$t:sirsoft-page.admin.page.detail.versions.preview_modal_editor_label"/>
+      <div class="py-2 space-y-4">
+        <div>
+          <span class="text-table-header">$t:sirsoft-page.admin.page.form.fields.title</span>
+          <p class="text-primary mt-1 text-sm font-medium">{{_global.previewVersion?.title?.[ _local.lang ?? $locale ?? 'ko'] ?? '-'}}</p>
+        </div>
+        <div>
+          <span class="text-table-header">$t:sirsoft-page.admin.page.form.fields.content</span>
+          <div class="mt-1 max-h-80 overflow-y-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+            <extension-point name="html_content" data-ref="preview_version_html" content="{{_global.previewVersion?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}" isHtml="{{(_global.previewVersion?.content_mode ?? 'html') === 'html'}}" class="text-gray-900 dark:text-gray-100 text-sm">
+              <default>
+                <html-content data-type="composite" content="{{_global.previewVersion?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}" isHtml="{{(_global.previewVersion?.content_mode ?? 'html') === 'html'}}" class="text-gray-900 dark:text-gray-100 text-sm"/>
+              </default>
+            </extension-point>
+          </div>
+        </div>
+        <div data-if="{{_global.previewVersion?.seo_meta?.title || _global.previewVersion?.seo_meta?.description || _global.previewVersion?.seo_meta?.keywords}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
+          <span class="text-table-header">$t:sirsoft-page.admin.page.form.seo.title</span>
+          <div data-if="{{_global.previewVersion?.seo_meta?.title}}" class="mt-2">
+            <span class="text-hint">$t:sirsoft-page.admin.page.form.seo.seo_title</span>
+            <p class="mt-0.5 text-body">{{_global.previewVersion?.seo_meta?.title ?? '-'}}</p>
+          </div>
+          <div data-if="{{_global.previewVersion?.seo_meta?.description}}">
+            <span class="text-hint">$t:sirsoft-page.admin.page.form.seo.seo_description</span>
+            <p class="mt-0.5 text-body">{{_global.previewVersion?.seo_meta?.description ?? '-'}}</p>
+          </div>
+          <div data-if="{{_global.previewVersion?.seo_meta?.keywords}}">
+            <span class="text-hint">$t:sirsoft-page.admin.page.form.seo.seo_keywords</span>
+            <p class="mt-0.5 text-body">{{_global.previewVersion?.seo_meta?.keywords ?? '-'}}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+        <button data-if="{{_global.previewVersion?.version !== page?.data?.current_version}}" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
+          <on type="click">
+            <!-- 미리보기에서 곧장 복원 — 복원 대상을 전역에 옮겨 담고 확인 창으로 넘긴다(현재 버전이면 버튼 자체가 뜨지 않는다) -->
+            <sequence>
+              <set-state target="global" restoreVersionId="{{_global.previewVersion?.id}}"/>
+              <open-modal target="restoreVersionModal"/>
+            </sequence>
+          </on>
+          <icon name="rotate-left" class="text-xs"/>
+          <span>$t:sirsoft-page.admin.page.detail.versions.restore</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

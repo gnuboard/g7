@@ -7,10 +7,18 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Listeners;
 use Plugins\Sirsoft\PayNhnkcp\Listeners\AdjustEcommercePaymentMethodsLayoutListener;
 use Plugins\Sirsoft\PayNhnkcp\Listeners\RegisterEasyPayMethodsListener;
 use Plugins\Sirsoft\PayNhnkcp\Plugin;
-use Tests\TestCase;
+use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
-class RegisterEasyPayMethodsListenerTest extends TestCase
+/**
+ * NHN KCP 간편결제 수단 등록 리스너가 결제수단 카탈로그에 넣는 데이터(위치·기본값·표시명·브랜드 마크)를 검증합니다.
+ */
+class RegisterEasyPayMethodsListenerTest extends PluginTestCase
 {
+    /**
+     * 플러그인 테스트 부팅 뒤 번들 원본의 언어팩을 플러그인 번역 네임스페이스로 다시 지정합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -21,6 +29,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         );
     }
 
+    /**
+     * 간편결제 5종이 휴대폰 결제와 다른 PG 의 간편결제 뒤, 포인트·무통장 앞에 들어가는지 확인합니다.
+     *
+     * @scenario contract=catalog_position
+     *
+     * @effects easy_pay_methods_follow_phone_and_other_pg_easy_pay
+     *
+     * @return void 반환값 없음
+     */
     public function test_injects_easy_pay_methods_after_phone_and_existing_easy_pay_methods(): void
     {
         $listener = new RegisterEasyPayMethodsListener;
@@ -49,6 +66,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         ], array_column($methods, 'id'));
     }
 
+    /**
+     * 플러그인이 간편결제 등록 리스너와 관리자 결제수단 화면 보정 리스너를 훅 목록에 올리는지 확인합니다.
+     *
+     * @scenario contract=hook_wiring
+     *
+     * @effects easy_pay_hook_listeners_registered
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_registers_easy_pay_hook_listeners(): void
     {
         $listeners = (new Plugin)->getHookListeners();
@@ -57,6 +83,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         $this->assertContains(AdjustEcommercePaymentMethodsLayoutListener::class, $listeners);
     }
 
+    /**
+     * 간편결제 수단이 PG 를 NHN KCP 로 고정 선언하고 설치 직후 비활성·결제 완료 차감 시점을 기본값으로 갖는지 확인합니다.
+     *
+     * @scenario contract=method_defaults
+     *
+     * @effects easy_pay_methods_locked_to_own_pg, easy_pay_methods_installed_inactive_with_payment_complete_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_easy_pay_methods_are_locked_to_own_pg_provider(): void
     {
         // 간편결제는 NHN KCP 결제창을 통해서만 처리되므로 PG 를 자기 자신으로 고정 선언한다.
@@ -93,6 +128,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         }
     }
 
+    /**
+     * 간편결제 수단의 이름·설명이 관리자 결제수단 화면이 쓰는 언어팩 문구와 일치하는지 확인합니다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects easy_pay_labels_match_language_pack
+     *
+     * @return void 반환값 없음
+     */
     public function test_easy_pay_method_labels_match_admin_payment_method_names(): void
     {
         $listener = new RegisterEasyPayMethodsListener;
@@ -116,9 +160,13 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
     }
 
     /**
+     * 네이버페이·카카오페이가 색 배지 형태의 브랜드 마크(text·class)를 등록 데이터로 싣는지 확인합니다.
+     *
      * @scenario mark_form=badge, requires_ios=false, device=ios
      *
      * @effects brand_mark_flows_to_cached, badge_renders_text_and_color
+     *
+     * @return void 반환값 없음
      */
     public function test_easy_pay_methods_carry_badge_brand_mark(): void
     {
@@ -139,9 +187,13 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
     }
 
     /**
+     * 애플페이만 iOS 전용 노출 플래그(requires_ios)를 갖고 다른 간편결제에는 그 키가 없는지 확인합니다.
+     *
      * @scenario mark_form=badge, requires_ios=true, device=ipados_desktop_ua
      *
      * @effects requires_ios_flag_carried
+     *
+     * @return void 반환값 없음
      */
     public function test_only_apple_pay_requires_ios(): void
     {
@@ -168,6 +220,8 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
      * @scenario mark_form=badge, requires_ios=true, device=ios
      *
      * @effects injectors_removed, shared_helpers_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_checkout_easy_pay_injector_removed_but_shared_helpers_preserved(): void
     {
@@ -180,7 +234,7 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         $indexTs = file_get_contents($jsDir.'/index.ts');
         $this->assertStringNotContainsString('installCheckoutEasyPayInjector', $indexTs);
 
-        // 결제 시점 방어 헬퍼(applePayDevice)는 잔존 — requestPayment/orderResponseInterceptor 가 사용.
+        // 결제 시점 방어 헬퍼(applePayDevice)는 잔존 — requestPayment/setPaymentMethod 가 사용.
         $this->assertFileExists($jsDir.'/support/applePayDevice.ts');
     }
 }

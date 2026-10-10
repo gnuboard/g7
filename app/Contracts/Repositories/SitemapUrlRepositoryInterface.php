@@ -22,6 +22,7 @@ interface SitemapUrlRepositoryInterface
      * @param  string  $type  리소스 유형
      * @param  string  $id  리소스 PK (문자열)
      * @param  array<int, array{loc: string, contributor: string, lastmod?: mixed, changefreq?: ?string, priority?: ?float}>  $entries  URL 항목
+     * @return void
      */
     public function upsertForResource(string $type, string $id, array $entries): void;
 
@@ -30,8 +31,33 @@ interface SitemapUrlRepositoryInterface
      *
      * @param  string  $type  리소스 유형
      * @param  string  $id  리소스 PK (문자열)
+     * @return void
      */
     public function removeForResource(string $type, string $id): void;
+
+    /**
+     * 같은 유형의 여러 리소스 사이트맵 URL 행을 한 번에 제거합니다(부모 삭제·비공개 전환 시 자식 일괄 정리).
+     *
+     * 게시판 삭제처럼 자식 리소스가 한꺼번에 사라지는 경로에서 리소스마다 삭제 쿼리를 내지 않도록
+     * 청크 단위로 whereIn 삭제합니다. 빈 목록이면 아무것도 하지 않습니다.
+     *
+     * @param  string  $type  리소스 유형
+     * @param  array<int, string|int>  $ids  리소스 PK 목록
+     * @return int 삭제된 행 수
+     */
+    public function removeManyForResource(string $type, array $ids): int;
+
+    /**
+     * 같은 유형의 여러 리소스 사이트맵 URL 행을 한 번에 교체합니다(부모 재공개 시 자식 일괄 재색인).
+     *
+     * 주어진 리소스들의 기존 행을 지우고 새 항목을 넣는다. 항목이 빈 리소스는 행이 지워지기만 한다.
+     * 청크마다 삭제 1회·삽입 1회를 한 트랜잭션으로 처리합니다.
+     *
+     * @param  string  $type  리소스 유형
+     * @param  array<string, array<int, array{loc: string, contributor: string, lastmod?: mixed, changefreq?: ?string, priority?: ?float}>>  $entriesById  리소스 PK(문자열) => URL 항목 목록
+     * @return int 삽입된 행 수
+     */
+    public function replaceManyForResources(string $type, array $entriesById): int;
 
     /**
      * 공개(is_visible) URL 을 id 순으로 스트리밍합니다(유계 메모리).

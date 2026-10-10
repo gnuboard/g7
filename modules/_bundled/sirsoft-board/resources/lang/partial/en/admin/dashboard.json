@@ -5,7 +5,9 @@
   },
   "today_badges": {
     "new_posts": "{{count}} new posts",
-    "new_comments": "{{count}} new comments"
+    "new_posts_one": "{{count}} new post",
+    "new_comments": "{{count}} new comments",
+    "new_comments_one": "{{count}} new comment"
   },
   "community": {
     "title": "Community",

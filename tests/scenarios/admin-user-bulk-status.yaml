@@ -1,0 +1,29 @@
+feature: 회원 목록 일괄 상태 변경 (활성·비활성·차단)
+
+description: |
+  회원 목록에서 고른 회원들의 상태를 한꺼번에 바꾼다.
+  경로: PATCH /api/admin/users/bulk-status {ids, status} → UserService::bulkUpdateStatus()
+
+  규칙:
+    - core.users.update 권한이 없으면 403, 인증이 없으면 401, 형식이 틀리면 422
+    - 응답 문구의 :count 는 실제 처리 건수로 채운다
+    - before/after 훅이 실행되고, after 훅에는 실제로 바뀐 회원만 실린다 — 등급(최고관리자)·범위로 제외된
+      회원이 실리면 활동 로그 리스너가 바뀌지 않은 회원에게 「상태 변경」 기록을 남긴다(7.1.0 영역 C 실측 C-D3)
+
+axes:
+  status: [active, inactive]
+  target: [normal, super_admin]
+
+exclusions:
+  - { status: active, target: super_admin, reason: "최고관리자 제외 판정은 상태 값과 무관 — 비활성화 한 갈래로 잰다" }
+
+effects:
+  - bulk_status_changes_targets
+  - bulk_status_message_counts
+  - bulk_status_requires_permission
+  - bulk_status_validates_request
+  - bulk_status_hooks_fire
+  - after_hook_carries_changed_users_only
+
+test_files:
+  - tests/Feature/Api/Admin/UserBulkStatusTest.php

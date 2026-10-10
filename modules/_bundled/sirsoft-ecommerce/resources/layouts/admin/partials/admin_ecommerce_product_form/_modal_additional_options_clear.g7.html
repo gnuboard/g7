@@ -1,0 +1,26 @@
+<!-- 상품 폼 — 추가옵션 비우기 확인. 넣어 둔 추가옵션 줄이 모두 사라지므로 되묻는다 -->
+<partial>
+  <modal data-type="composite" data-ref="additional_options_clear_modal" title="$t:sirsoft-ecommerce.common.confirm" size="sm">
+    <div class="text-center">
+      <icon name="triangle-exclamation" size="3x" class="text-amber-500 dark:text-amber-400 mx-auto mb-4"/>
+      <p class="text-secondary">$t:sirsoft-ecommerce.admin.product.options.additional_clear_confirm</p>
+    </div>
+    <div class="flex justify-end gap-3 mt-6">
+      <button type="button" variant="secondary" class="btn btn-outline" data-testid="additional-clear-cancel">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button type="button" variant="danger" class="btn btn-danger" data-testid="additional-clear-confirm">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.clearAdditionalOptions"/>
+        </on>
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.confirm
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,43 @@
+# 시나리오 매니페스트 — 클레임 관리 실패 토스트는 한 번만 뜬다 (T2-D12 · #599 3차 실측 L-5)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_claim_failure_toast_once
+
+description: >-
+  클레임 관리 핸들러 다수는 실패하면 서버 사유를 토스트로 띄운 뒤 예외를 다시 던진다(호출 쪽
+  sequence 를 멈추려는 것이다). 그 예외는 액션 디스패처로 올라가는데, 호출 자리에 `onError`
+  (`<fail>`)가 없으면 디스패처가 레이아웃·템플릿의 기본 오류 정책을 태우고 그 정책이 같은 사유를
+  한 번 더 토스트로 띄운다.
+
+  2026-09-22 실측: 관리자 교환 상세에서 재고가 0 인 교환을 [교환승인] 하자 422 와 함께
+  「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 전수 검사로 같은 구조가 두 곳 더
+  있었다(환불신청서 수동 접수 · 첨부 전체 삭제) — 세 곳 모두 형제 자리와 같은
+  `<fail><suppress/></fail>` 규율을 따르게 했다.
+
+  테스트는 모집단을 저장소에서 파생한다(핸들러 소스에서 「catch 안 toast 후 throw」 를 모으고,
+  레이아웃 JSON 전체에서 그 호출 자리를 모은다). 새 핸들러·새 호출 자리에도 규칙이 그대로 걸린다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimFailToastOnce.test.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - admin_claim_detail   # 관리자 클레임 상세·목록의 모든 호출 자리 (모집단 파생)
+
+exclusions:
+  - { surface: admin_claim_detail, reason: "제외 없음 — 모집단을 저장소에서 파생하는 단일 축이다" }
+
+effects:
+  - claim_failure_toast_is_shown_once   # 사유를 스스로 띄우는 핸들러의 호출 자리는 onError 를 가진다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 재고 0 교환 승인으로 재실측
+  note: |
+    브라우저 축은 Playwright MCP 재실측이 덮는다(재고 0 교환을 승인해 토스트 개수를 센다).
+    spec 을 새로 두지 않는 이유는 실패를 만들 상태(승인 대기 교환 + 새 옵션 재고 0)를 spec 이
+    만들 수 없어서다 — 클레임 시드가 stub 이라 성공 경로만 재게 되고, 그러면 게이트를 지워도
+    통과하는 가짜 초록이 된다. 대신 이 레이아웃 테스트가 전 호출 자리를 규칙으로 잠근다
+    (`<fail>` 을 빼면 red 임을 실측 확인).

@@ -16,9 +16,17 @@ use Modules\Sirsoft\Ecommerce\Services\UserCurrencyService;
  *
  * 관리자가 특정 회원의 결제 통화를 변경합니다. permission:admin,sirsoft-ecommerce.user-currency.manage
  * 로 가드되며, 변경 시 활동 로그 훅을 발화합니다.
+ *
+ * @deprecated 1.3.0 — 번들 관리자 회원 수정 화면은 코어 회원 저장(PUT /api/admin/users/{user})으로 함께 보낸다
+ *             (UserPreferenceCoreSaveListener). 이전 관리자 템플릿과의 호환을 위해 이번 버전까지 남기고 다음 버전에서 제거한다.
  */
 class AdminUserCurrencyController extends AdminBaseController
 {
+    /**
+     * 의존 서비스를 주입받습니다.
+     *
+     * @param  UserCurrencyService  $userCurrencyService  회원 결제 통화 서비스
+     */
     public function __construct(
         private UserCurrencyService $userCurrencyService
     ) {}

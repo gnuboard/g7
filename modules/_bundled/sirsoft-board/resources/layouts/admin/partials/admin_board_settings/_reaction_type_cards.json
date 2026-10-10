@@ -1,0 +1,826 @@
+{
+    "comment": "게시판 설정 — 반응 유형 목록, 좁은 화면용 카드. 넓은 화면용 표(`_reaction_type_editor`)와\n  같은 배열(`form.basic_defaults.reaction_types`)을 편집한다.\n\n  유형은 회원이 글·댓글에 누르는 버튼이고, 순서가 곧 화면에 늘어놓는 차례다. 코드는 이미\n  쌓인 반응 행과 게시판 설정이 함께 가리키므로 만든 뒤에는 바꿀 수 없다.",
+    "meta": {
+        "is_partial": true,
+        "description": "반응 유형 관리 - Mobile 카드 뷰"
+    },
+    "id": "reaction_type_cards_container",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => ({...r, _idx: i}))",
+                "item_var": "row",
+                "index_var": "rIdx"
+            },
+            "props": {
+                "data-testid": "reaction-type-row-m-{{row.code}}",
+                "className": "excel-card mb-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-header"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{!!row.icon_url}}",
+                                    "props": {
+                                        "data-testid": "reaction-type-icon-m-{{row.code}}",
+                                        "src": "{{row.icon_url}}",
+                                        "alt": "",
+                                        "className": "w-5 h-5 object-contain shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!row.icon_url}}",
+                                    "props": {
+                                        "name": "{{row.icon_name ?? 'fa-thumbs-up'}}",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "excel-card-title font-mono"
+                                            },
+                                            "text": "{{row.code}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "comment": "순서 이동. 좁은 화면에서는 끌기 손잡이가 스크롤과 다투므로 형제 화면과 달리\n            버튼으로 둔다 — 순서를 바꿀 수단 자체가 없으면 휴대폰에서 차례를 고칠 길이 없다.",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "위로 한 칸. 두 자리를 맞바꾸고 순서 값을 자리 번호로 다시 매긴다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.basic_defaults.reaction_types": "{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i, a) => i === row._idx - 1 ? {...a[row._idx], display_order: i} : (i === row._idx ? {...a[row._idx - 1], display_order: i} : {...r, display_order: i}))}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "reaction-type-up-m-{{row.code}}",
+                                        "type": "button",
+                                        "className": "p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed",
+                                        "title": "$t:sirsoft-board.admin.settings.reaction_types.actions.move_up",
+                                        "disabled": "{{_computed.isReadOnly || row._idx === 0}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "fa-solid fa-chevron-up",
+                                                "className": "text-xs"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "아래로 한 칸.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.basic_defaults.reaction_types": "{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i, a) => i === row._idx ? {...a[row._idx + 1], display_order: i} : (i === row._idx + 1 ? {...a[row._idx], display_order: i} : {...r, display_order: i}))}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "reaction-type-down-m-{{row.code}}",
+                                        "type": "button",
+                                        "className": "p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed",
+                                        "title": "$t:sirsoft-board.admin.settings.reaction_types.actions.move_down",
+                                        "disabled": "{{_computed.isReadOnly || row._idx === (_local.form?.basic_defaults?.reaction_types ?? []).length - 1}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "fa-solid fa-chevron-down",
+                                                "className": "text-xs"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "data-testid": "reaction-type-active-m-{{row.code}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "끄면 회원 화면의 반응 버튼에서 빠진다. 이미 쌓인 반응 행은 그대로다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.basic_defaults.reaction_types": "{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, is_active: !(r.is_active)} : r)}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{row.is_active ?? false}}",
+                                                "size": "sm",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-body"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-value flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "MultilingualInput",
+                                            "actions": [
+                                                {
+                                                    "comment": "유형 이름(언어별). 회원 화면의 반응 버튼 문구가 된다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.basic_defaults.reaction_types": "{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, name: $event.target.value} : r)}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{row.name ?? {}}}",
+                                                "layout": "compact",
+                                                "placeholder": "$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder",
+                                                "error": "{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.icon"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "data-testid": "reaction-type-uploader-m-{{row.code}}",
+                                        "className": "excel-card-value flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "FileUploader",
+                                            "actions": [
+                                                {
+                                                    "comment": "업로드가 끝나면 첨부 셋을 행에 심는다. 유형에 실제로 붙는 건 저장할 때다.",
+                                                    "type": "change",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.basic_defaults.reaction_types": "{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, icon_attachment_id: $args[0]?.[0]?.id ?? null, icon_url: $args[0]?.[0]?.download_url ?? null, icon_attachment: $args[0]?.[0] ?? null} : r)}}",
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "아이콘을 떼면 글꼴 아이콘 폴백으로 돌아간다. 업로더가 확인 창(confirmBeforeRemove)을 거친 뒤에만 오고,\n                  그때 서버의 첨부와 파일은 이미 지워졌다 — 저장 전이라도 되돌릴 수 없어 확인 창이 그 사실을 알린다.",
+                                                    "type": "change",
+                                                    "event": "onRemove",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.basic_defaults.reaction_types": "{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, icon_attachment_id: null, icon_url: null, icon_attachment: null} : r)}}",
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다",
+                                                    "type": "change",
+                                                    "event": "onUploadError",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "$t:sirsoft-board.admin.settings.reaction_types.messages.icon_upload_failed"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "첨부 삭제 실패 — 아이콘 값은 이미 비워졌으므로 알림만 낸다",
+                                                    "type": "change",
+                                                    "event": "onDeleteError",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "$t:sirsoft-board.admin.settings.reaction_types.messages.icon_delete_failed"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "collection": "reaction_type_icon",
+                                                "maxFiles": 1,
+                                                "maxSize": 1,
+                                                "accept": ".png,.jpg,.jpeg,.gif,.webp",
+                                                "initialFiles": "{{row.icon_attachment ? [row.icon_attachment] : []}}",
+                                                "autoUpload": true,
+                                                "size": "xs",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "confirmBeforeRemove": true,
+                                                "confirmRemoveTitle": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_title",
+                                                "confirmRemoveMessage": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_message",
+                                                "apiEndpoints": {
+                                                    "upload": "/api/modules/sirsoft-board/admin/reaction-types/icons",
+                                                    "delete": "/api/modules/sirsoft-board/admin/reaction-types/icons/:id"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.reaction_count"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-value"
+                                    },
+                                    "text": "{{row.reaction_count ?? 0}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-footer"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div"
+                        },
+                        {
+                            "comment": "반응이 쌓인 유형은 지울 수 없다. disabled 버튼은 hover 이벤트가 죽어 툴팁이 뜨지\n          않으므로 래퍼 span 에 건다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "data-testid": "reaction-type-delete-wrap-m-{{row.code}}",
+                                "className": "inline-block",
+                                "title": "{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "행을 빼고 남은 자리 번호를 다시 매긴다. 게시판이 고른 코드 목록에서도 같이\n                빼야 없어진 코드를 가리키는 설정이 남지 않는다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.basic_defaults.reaction_types": "{{(_local.form?.basic_defaults?.reaction_types ?? []).filter((_, i) => i !== row._idx).map((r, i) => ({...r, display_order: i}))}}",
+                                                "form.basic_defaults.active_reaction_types": "{{(_local.form?.basic_defaults?.active_reaction_types ?? []).filter(c => c !== row.code)}}",
+                                                "hasChanges": true
+                                            },
+                                            "confirm": "$t:sirsoft-board.admin.settings.reaction_types.confirm_delete"
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:common.delete",
+                                        "data-testid": "reaction-type-delete-m-{{row.code}}",
+                                        "type": "button",
+                                        "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "fa-solid fa-trash",
+                                                "className": "text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "추가 중인 임시 카드. 점선 테두리와 연한 색으로 «아직 저장되지 않은 것» 임을 알린다\n      (형제 화면 통화 설정 카드와 같은 방식). 고르는 것은 넓은 화면 임시 행과 똑같다.",
+            "id": "new_reaction_type_card",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.isAddingReactionType}}",
+            "props": {
+                "data-testid": "reaction-type-draft-card",
+                "className": "excel-card border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-header"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-plus-circle",
+                                        "size": "lg",
+                                        "className": "text-blue-500 dark:text-blue-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-title"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.add_button"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "data-testid": "reaction-type-active-m-new"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "새 유형은 「사용」으로 시작한다. 여기서 바로 꺼 둘 수도 있다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "reactionTypeForm.is_active": "{{!(_local.reactionTypeForm?.is_active ?? true)}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{_local.reactionTypeForm?.is_active ?? true}}",
+                                                "size": "sm",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-body"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.code"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-value"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "코드는 소문자·앞뒤 공백 없는 형태로 맞춰 둔다. 저장한 뒤엔 바꿀 수 없다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "reactionTypeForm.code": "{{($event.target.value ?? '').trim().toLowerCase()}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "data-testid": "reaction-type-form-code-m",
+                                                "type": "text",
+                                                "value": "{{_local.reactionTypeForm?.code ?? ''}}",
+                                                "className": "{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.reactionTypeFormErrors?.code === 'required'}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_required"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.reactionTypeFormErrors?.code === 'duplicate'}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_duplicate"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.reactionTypeFormErrors?.code === 'format'}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_format"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-value"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "MultilingualInput",
+                                            "actions": [
+                                                {
+                                                    "comment": "이름 입력 — 로케일 맵을 통째로 폼에 둔다. 기본 언어(ko) 필수 검증은 확인 버튼에서 한다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "reactionTypeForm.name": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{_local.reactionTypeForm?.name ?? {}}}",
+                                                "layout": "compact",
+                                                "placeholder": "$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder",
+                                                "error": "{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.icon"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-value"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "유형이 아직 없어도 올릴 수 있다 — 업로드 API 의 `reaction_type_id` 가 선택이다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "reaction-type-uploader-m-new",
+                                                "className": "min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "FileUploader",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "새 유형의 아이콘 — 유형이 아직 없어 첨부 ID·URL·첨부 객체를 폼에 두었다가 확인 시 행에 싣는다",
+                                                            "type": "change",
+                                                            "event": "onUploadComplete",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "reactionTypeForm.icon_attachment_id": "{{$args[0]?.[0]?.id ?? null}}",
+                                                                "reactionTypeForm.icon_url": "{{$args[0]?.[0]?.download_url ?? null}}",
+                                                                "reactionTypeForm.icon_attachment": "{{$args[0]?.[0] ?? null}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "아이콘 제거 — 세 값을 비워 글꼴 아이콘 폴백으로 돌아간다",
+                                                            "type": "change",
+                                                            "event": "onRemove",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "reactionTypeForm.icon_attachment_id": null,
+                                                                "reactionTypeForm.icon_url": null,
+                                                                "reactionTypeForm.icon_attachment": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "업로드 실패 — 형식·크기 검증에 걸린 경우다. 고정 문구로 알리고 값은 그대로 둔다",
+                                                            "type": "change",
+                                                            "event": "onUploadError",
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:sirsoft-board.admin.settings.reaction_types.messages.icon_upload_failed"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "collection": "reaction_type_icon",
+                                                        "maxFiles": 1,
+                                                        "maxSize": 1,
+                                                        "accept": ".png,.jpg,.jpeg,.gif,.webp",
+                                                        "initialFiles": "{{_local.reactionTypeForm?.icon_attachment ? [_local.reactionTypeForm.icon_attachment] : []}}",
+                                                        "autoUpload": true,
+                                                        "size": "xs",
+                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "confirmBeforeRemove": true,
+                                                        "confirmRemoveTitle": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_title",
+                                                        "confirmRemoveMessage": "$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_message",
+                                                        "apiEndpoints": {
+                                                            "upload": "/api/modules/sirsoft-board/admin/reaction-types/icons",
+                                                            "delete": "/api/modules/sirsoft-board/admin/reaction-types/icons/:id"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-footer"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "추가 취소 — 추가 모드·입력 폼·오류를 함께 비운다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isAddingReactionType": false,
+                                        "reactionTypeForm": null,
+                                        "reactionTypeFormErrors": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "reaction-type-form-cancel-m",
+                                "type": "button",
+                                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "넓은 화면 임시 행과 같은 규칙으로 같은 배열에 붙인다.",
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{(_local.reactionTypeForm?.code ?? '').trim() && (_local.reactionTypeForm?.code ?? '').trim().length >= 2 && (_local.reactionTypeForm?.code ?? '').trim().length <= 50 && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) && (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch)) && (_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() && !(_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim())}}",
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.basic_defaults.reaction_types": "{{[...(_local.form?.basic_defaults?.reaction_types ?? []), {code: (_local.reactionTypeForm?.code ?? '').trim(), name: _local.reactionTypeForm?.name ?? {}, icon_name: null, icon_attachment_id: _local.reactionTypeForm?.icon_attachment_id ?? null, icon_url: _local.reactionTypeForm?.icon_url ?? null, icon_attachment: _local.reactionTypeForm?.icon_attachment ?? null, is_active: _local.reactionTypeForm?.is_active ?? true, reaction_count: 0, display_order: (_local.form?.basic_defaults?.reaction_types ?? []).length}]}}",
+                                                    "isAddingReactionType": false,
+                                                    "reactionTypeForm": null,
+                                                    "reactionTypeFormErrors": null,
+                                                    "hasChanges": true
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "reactionTypeFormErrors": {
+                                                        "code": "{{!(_local.reactionTypeForm?.code ?? '').trim() ? 'required' : (!((_local.reactionTypeForm?.code ?? '').trim().length >= 2 && (_local.reactionTypeForm?.code ?? '').trim().length <= 50 && 'abcdefghijklmnopqrstuvwxyz'.includes((_local.reactionTypeForm?.code ?? '').trim().charAt(0)) && (_local.reactionTypeForm?.code ?? '').trim().split('').every(ch => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(ch))) ? 'format' : ((_local.form?.basic_defaults?.reaction_types ?? []).some(t => t.code === (_local.reactionTypeForm?.code ?? '').trim()) ? 'duplicate' : null))}}",
+                                                        "name": "{{!(_local.reactionTypeForm?.name?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko'] ?? '').trim() ? true : null}}"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "reaction-type-form-confirm-m",
+                                "type": "button",
+                                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.settings.reaction_types.form.confirm"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

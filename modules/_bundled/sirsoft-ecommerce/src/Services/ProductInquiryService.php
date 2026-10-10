@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,8 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
+use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
@@ -149,10 +152,11 @@ class ProductInquiryService
                 'user_id' => $userId,
                 'author_name' => $this->maskAuthorName($name),
                 // 비밀글이면 title 도 fail-closed 로 재마스킹한다(KVE-2026-1914 A2b).
-                // 훅이 신원 판정만 하고 title 치환을 누락하는 회귀에 대비 — 플레이스홀더 텍스트
-                // 자체는 게시판 lang 키(post.secret_post_title)가 SSoT 로, 훅의 마스킹 값과 동일하다.
+                // 훅이 신원 판정만 하고 title 치환을 누락하는 회귀에 대비 — 플레이스홀더는 이커머스
+                // 자기 문구(inquiries.secret_post_title)다. 게시판의 번역 키를 빌려 쓰지 않는다
+                // (훅 연동은 각자 자기 것만 — 게시판이 없거나 대체돼도 문구가 비지 않는다).
                 'title' => $secretMasked
-                    ? __('sirsoft-board::messages.post.secret_post_title')
+                    ? __('sirsoft-ecommerce::messages.inquiries.secret_post_title')
                     : ($post['title'] ?? null),
                 'category' => $post['category'] ?? null,
                 'content' => $secretMasked ? null : ($post['content'] ?? null),
@@ -269,7 +273,7 @@ class ProductInquiryService
         // 클라이언트 IP 를 요청 경계(Service)에서 캡처해 게시판 훅 payload 로 전달한다.
         // 게시판 Listener 가 request() 를 직접 참조하지 않도록 소유 서비스가 주입한다.
         if (empty($data['ip_address'])) {
-            $data['ip_address'] = request()->ip() ?? '0.0.0.0';
+            $data['ip_address'] = request()->ip();
         }
 
         $inquiry = DB::transaction(function () use ($productId, $product, $boardSlug, $data) {
@@ -627,6 +631,8 @@ class ProductInquiryService
                         $inquiry->inquirable_id
                     );
                 } catch (\Exception $e) {
+                    // 교착은 삼키지 않는다 — 바깥 트랜잭션이 이미 되돌려진 뒤 이후 쓰기가 autocommit 으로 남는다(C9).
+                    ConcurrencyErrors::rethrowIfConcurrencyError($e);
                     Log::warning('상품 삭제 시 문의 Post 정리 실패 — 계속 진행', [
                         'product_id' => $productId,
                         'inquiry_id' => $inquiry->id,
@@ -687,7 +693,7 @@ class ProductInquiryService
 
         $locale = app()->getLocale();
 
-        return $snapshot[$locale] ?? $snapshot[config('app.fallback_locale', 'ko')] ?? array_values($snapshot)[0] ?? '';
+        return LocalizedText::pick($snapshot, $locale);
     }
 
     /**
@@ -725,7 +731,7 @@ class ProductInquiryService
 
         // 클라이언트 IP 를 요청 경계(Service)에서 캡처해 게시판 훅 payload 로 전달한다.
         if (empty($data['ip_address'])) {
-            $data['ip_address'] = request()->ip() ?? '0.0.0.0';
+            $data['ip_address'] = request()->ip();
         }
 
         $updated = DB::transaction(function () use ($inquiry, $boardSlug, $data) {
@@ -766,5 +772,146 @@ class ProductInquiryService
         HookManager::doAction('sirsoft-ecommerce.product_inquiry.after_reply', $updated);
 
         return $updated;
+    }
+
+    /**
+     * 관리자용 전 회원 상품문의 목록을 조회합니다.
+     *
+     * @param  array<string, mixed>  $filters  필터 (검색 대상·검색어·회원·기간·정렬)
+     * @param  int  $perPage  페이지당 개수
+     * @return LengthAwarePaginator 페이지네이션된 목록
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->repository->paginateForAdmin($filters, $perPage);
+    }
+
+    /**
+     * 관리자가 상품문의 한 건을 삭제합니다 (소유자 무관).
+     *
+     * 피벗만 지우면 게시판의 질문 글이 살아남아 회원에게 계속 노출된다 —
+     * 반드시 `deleteInquiry()` 를 거쳐 게시판 훅(글 삭제)까지 태운다.
+     *
+     * @param  int  $id  행 ID
+     * @return bool 삭제 성공 여부 (대상이 없으면 false)
+     */
+    public function deleteByAdmin(int $id): bool
+    {
+        return $this->deleteAsAdmin($id, $this->getInquiryBoardSlug());
+    }
+
+    /**
+     * 관리자가 상품문의를 일괄 삭제합니다 (소유자 무관).
+     *
+     * 훅을 루프 **앞뒤로 한 번씩만** 발화한다 — 항목마다 발화하면 활동 로그가 폭주하고,
+     * IDV 같은 before 훅 소비자가 루프 중간에 끼어들어 앞부분만 지워진 상태가 된다.
+     *
+     * 항목 삭제는 단건 경로(`deleteInquiry()`)를 그대로 재사용한다. 저장소의
+     * `bulkDelete()` 로 피벗만 지우면 게시판 질문 글이 남아 관리 목록에서만 사라지고
+     * 회원에게는 계속 보인다 — 단건 삭제와 일괄 삭제의 결과가 달라지는 자리다.
+     *
+     * 한 건이 실패해도 나머지는 계속 지운다. 실패분은 건수에서 빠진다.
+     *
+     * @param  array<int, int>  $ids  행 ID 목록
+     * @return int 실제로 삭제된 건수
+     */
+    public function bulkDeleteByAdmin(array $ids): int
+    {
+        HookManager::doAction('sirsoft-ecommerce.product_inquiry.before_bulk_delete', $ids);
+
+        // 게시판 조회는 루프 밖에서 한 번 — 설정은 루프 도중 바뀌지 않는다.
+        $boardSlug = $this->getInquiryBoardSlug();
+        $count = 0;
+
+        foreach ($ids as $id) {
+            if ($this->deleteAsAdmin((int) $id, $boardSlug)) {
+                $count++;
+            }
+        }
+
+        HookManager::doAction('sirsoft-ecommerce.product_inquiry.after_bulk_delete', $ids, $count);
+
+        return $count;
+    }
+
+    /**
+     * 관리자 삭제 한 건 — 질문 글과 피벗을 함께 지웁니다.
+     *
+     * 게시판이 지정돼 있으면 게시판 훅으로 질문 글을 먼저 지운다. 피벗만 지우면
+     * 관리 목록에서만 사라지고 회원에게는 질문 글이 계속 보인다.
+     *
+     * 게시판 **미지정**이면 지울 글 자체가 없으므로 글 정리를 생략하고 피벗만 지운다 —
+     * 상품 삭제 경로(`deleteInquiriesForProduct()`)와 같은 판단이다. 미지정 상태에서
+     * 막아 버리면 과거에 쌓인 고아 문의를 운영자가 정리할 방법이 없어진다.
+     *
+     * 한 건의 실패가 나머지를 막지 않는다.
+     *
+     * @param  int  $id  행 ID
+     * @param  string|null  $boardSlug  문의 게시판 slug (미지정이면 null)
+     * @return bool 삭제 성공 여부
+     */
+    private function deleteAsAdmin(int $id, ?string $boardSlug): bool
+    {
+        $inquiry = $this->repository->findById($id);
+
+        if (! $inquiry) {
+            return false;
+        }
+
+        if ($boardSlug) {
+            try {
+                HookManager::applyFilters(
+                    'sirsoft-ecommerce.inquiry.delete',
+                    null,
+                    $boardSlug,
+                    $inquiry->inquirable_id
+                );
+            } catch (\Exception $e) {
+                // 교착은 삼키지 않는다 — 바깥 트랜잭션이 이미 되돌려진 뒤 이후 쓰기가 autocommit 으로 남는다(C9).
+                ConcurrencyErrors::rethrowIfConcurrencyError($e);
+                Log::warning('관리자 문의 삭제 — 질문 글 정리 실패, 피벗도 남긴다', [
+                    'inquiry_id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return false;
+            }
+        } else {
+            Log::info('문의 게시판 미설정 — 관리자 삭제 시 질문 글 정리 생략', [
+                'inquiry_id' => $id,
+            ]);
+        }
+
+        $this->repository->deleteById($id);
+
+        // 성공 판정은 «몇 행을 지웠는가» 가 아니라 «사라졌는가» 다.
+        // 게시판 훅이 질문 글을 지우면서 피벗까지 캐스케이드로 함께 지우는 경로가 있어
+        // 위 deleteById 가 0행을 돌려줄 수 있다 — 그것을 실패로 읽으면 실제로는 지워졌는데
+        // 응답이 «0건 삭제» 로 나간다(2026-09-15 브라우저 실측에서 드러난 자리).
+        return $this->repository->findById($id) === null;
+    }
+
+    /**
+     * 회원의 상품문의 건수를 조회합니다 (회원 상세 요약용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 건수
+     */
+    public function countByUserForAdmin(int $userId): int
+    {
+        return $this->repository->countByUser($userId);
+    }
+
+    /**
+     * 회원의 **미답변** 상품문의 건수를 조회합니다 (회원 상세 요약용).
+     *
+     * 전체 건수만으로는 «지금 답해야 할 것이 있는가» 를 알 수 없어 따로 센다.
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 미답변 건수
+     */
+    public function countPendingByUserForAdmin(int $userId): int
+    {
+        return $this->repository->countPendingByUser($userId);
     }
 }

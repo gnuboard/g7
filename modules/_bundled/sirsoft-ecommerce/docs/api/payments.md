@@ -135,3 +135,62 @@ _단건 응답: `data` 객체의 필드._ `data` 는 Resource 가 아니라 `sir
 **설명** PG 제공자(`provider`, 예: `tosspayments`)의 프론트엔드 결제 SDK 초기화에 필요한 클라이언트 설정을 반환하는 공개 엔드포인트입니다. 인증이 필요 없으며, 결제 페이지가 결제창을 띄우기 직전에 호출합니다. 실제 설정값은 `PaymentConfigController@clientConfig`가 `sirsoft-ecommerce.payment.get_client_config` 필터 훅을 실행해 각 PG 플러그인이 등록한 `client_key`·`sdk_url` 등을 수집한 결과이며, 코어는 어떤 PG도 하드코딩하지 않습니다. 해당 provider에 등록된 설정이 없으면(플러그인 미설치·미활성) 404를 반환합니다.
 
 
+
+---
+
+<a id="vbank-pg-contract"></a>
+
+## 결제 플러그인 연동 계약 — 가상계좌 마감·취소 뒤 입금
+
+가상계좌 주문이 입금 전에 취소되면 모듈은 PG 에 열린 계좌를 닫아 달라고 요청하고, 그래도 취소된 주문에 입금이 들어오면
+그 사실을 기록해 운영자에게 알립니다(자동 환불은 하지 않습니다). 두 지점의 계약은 이 절이 단일 출처입니다.
+클레임 추가결제 훅은 [claim-payments.md](claim-payments.md#claim-payment-filter-contract) 를 봅니다.
+
+### `sirsoft-ecommerce.payment.close_vbank` (필터)
+
+입금 전 취소된 가상계좌 주문에 대해 `order.after_cancel` 처리 중 한 번 호출됩니다. 대상은 결제수단이 가상계좌이고 입금 전
+(`paid_at` 없음)이며 `pg_provider` 가 있고 아직 닫힌 기록(`payment_meta.vbank_closed_at`)이 없는 결제행뿐입니다.
+리스너는 `'type' => 'filter'` 로 등록하고, 자기 `pg_provider` 가 아니면 받은 `$result` 를 그대로 돌려줍니다.
+
+| 인자 | 타입 | 설명 |
+| --- | --- | --- |
+| `$result` | array | 기본값 `{handled: false, success: false, error_message: null}` |
+| `$order` | `Order` | 취소된 주문 |
+| `$payment` | `OrderPayment` | 그 주문의 결제행. PG 거래 식별값은 플러그인마다 자리가 달라(예: 입금 전 `payment_meta.vbank_tid`) 플러그인이 찾습니다 |
+| `$issuedAmount` | int | 발급 금액 = 취소 전 입금 예정액, **결제 통화의 최소 화폐단위 정수**. 취소 뒤 주문의 입금 예정액은 이미 0 이라, 전액 취소 API 가 금액을 요구하는 PG 는 이 값을 씁니다. 환산할 수 없으면 `0` |
+
+| 반환 키 | 타입 | 설명 |
+| --- | --- | --- |
+| `handled` | bool | 자기 PG 건으로 처리했는지. 아무 리스너도 `true` 로 돌려주지 않으면 「닫지 못함」(`plugin_inactive`)으로 기록합니다 |
+| `success` | bool | PG 가 계좌를 닫았는지. `true` 면 `payment_meta.vbank_closed_at` 를 적고 실패 기록을 지웁니다 |
+| `error_message` | string\|null | 실패 사유. `payment_meta.vbank_close_error` 에 적히고 경고 로그(「PG 관리자 화면에서 직접 닫아야 합니다」)가 남습니다 |
+
+실패하면 `payment_meta.vbank_close_failed=true`·`vbank_close_attempted_at` 이 남습니다. PG 에 보내는 취소 사유 문구는 번들 결제
+플러그인들이 이 모듈의 번역 키 `sirsoft-ecommerce::messages.vbank_close_reason` 을 함께 씁니다 — 키 이름을 바꾸면 그 플러그인들의
+취소 사유가 키 이름 그대로 나갑니다.
+
+1.3.0 이전에 취소된 미입금 가상계좌에는 이 필터가 소급 호출되지 않습니다. 그런 계좌는 PG 관리자 화면에서 직접 닫습니다.
+
+### 취소된 주문에 들어온 입금 기록 — `DepositAfterCancelRecorder::record()`
+
+결제 플러그인의 입금통보(웹훅·노티) 처리가 대상 주문이 이미 취소된 것을 확인하면, 주문을 되살리지 말고 이 서비스를 부릅니다.
+
+```php
+app(\Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder::class)
+    ->record($order, (float) $depositedAmount, 'my-pg', $transactionId);
+```
+
+| 인자 | 타입 | 설명 |
+| --- | --- | --- |
+| `$order` | `Order` | 취소된 주문 |
+| `$amount` | float | 입금액(결제 통화, 주화폐 단위 — 최소 단위 정수가 아닙니다) |
+| `$provider` | string | 통보한 PG 제공자 ID(`pg_provider` 와 같은 값) |
+| `$transactionId` | string\|null | 입금 거래 식별값. 같은 값·같은 금액의 재전송은 한 번만 기록됩니다(PG 가 통보를 여러 번 재전송해도 알림은 한 번) |
+
+반환값은 새로 기록했으면 `true`, 재전송이라 건너뛰었거나 결제행이 없으면 `false` 입니다. 기록은 결제행
+`payment_meta.deposit_after_cancel`(`amount`·`currency`·`deposited_at`·`provider`·`transaction_id`)에 남고, 새 기록이면
+`sirsoft-ecommerce.order.deposit_after_cancel` 액션 훅(인자: 주문, `{amount, provider}`)이 발행됩니다 — 직원 알림
+`deposit_after_cancel_admin` 과 관리자 주문 상세 배너가 이 기록을 읽습니다.
+
+플러그인은 「취소된 주문인가」를 스스로 판정한 뒤 부릅니다(판정 기준은 아직 PG 마다 따로 있습니다). 이 진입점을 공용 서비스로
+정리하는 일은 다음 버전 과제이며, 그때까지 위 시그니처를 유지합니다.

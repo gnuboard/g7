@@ -1,0 +1,32 @@
+{
+    "identifier": "sirsoft-totp",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "인증 앱 2단계 인증 (TOTP)",
+        "en": "Authenticator App Two-Factor (TOTP)"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "인증 앱이 만드는 6자리 코드(RFC 6238 TOTP)로 로그인 2단계 인증을 받는 플러그인. G7 코어 IDV 인프라에 Provider 로 등록된다.",
+        "en": "Time-based one-time password (RFC 6238) provider for login two-factor authentication, registered into the G7 core IDV infrastructure."
+    },
+    "g7_version": ">=7.1.0",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-totp",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-totp/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

@@ -1,0 +1,47 @@
+<!-- 본인인증 정책별 문구 삭제 확인 창(알림 설정 > 분류 「본인인증」). **운영자가 추가한 문구만 지울 수 있다** —
+  코어·확장이 선언한 정의는 목록에서 삭제 버튼이 나오지 않고(서버가 abilities.can_delete 로 판정), 그쪽은
+  「기본값 복원」 창이 짝이다. 7.0.x 의 본인인증 탭 메시지 삭제 창을 알림 정의 API 로 옮긴 것이다. -->
+<partial description="본인인증 정책별 문구(알림 정의) 삭제 확인 모달 — 운영자 추가 정의만" editor_label="$t:admin.modal_label.admin_settings.modal_notification_identity_definition_delete">
+  <modal data-type="composite" data-ref="modal_notification_identity_definition_delete" title="$t:admin.settings.notification_definitions.identity_delete.title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.notification_definitions.identity_delete.confirm_message</p>
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <span class="form-sub-label">$t:admin.settings.notification_definitions.identity_delete.target_label</span>
+      <span class="text-primary font-medium">{{_global.identity_notification_delete_modal?.name ?? ''}}</span>
+    </div>
+    <div class="alert-danger">
+      <p class="text-error-soft">$t:admin.settings.notification_definitions.identity_delete.warning_message</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.identity_notification_delete_modal?.isDeleting ?? false}}">
+        <on type="click">
+          <close-modal target="modal_notification_identity_definition_delete"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button data-ref="identity_notification_delete_confirm_button" type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.identity_notification_delete_modal?.isDeleting ?? false}}">
+        <on type="click">
+          <!-- 삭제 실행. 성공하면 대상을 비우고 알림 정의 목록과 「추가」 창의 선택지(이미 정의가 있는 정책)를
+               다시 받는다 — 지운 정책을 바로 다시 고를 수 있어야 한다. 실패하면 진행 표시를 끄고 서버 문구를 띄운다. -->
+          <sequence :debounce="400">
+            <set-state target="global" :identity_notification_delete_modal.isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/admin/notification-definitions/{{_global.identity_notification_delete_modal?.id}}" method="DELETE">
+              <success>
+                <set-state target="global" :identity_notification_delete_modal="null"/>
+                <refetch-data-source dataSourceId="notificationDefinitions"/>
+                <refetch-data-source dataSourceId="identityPolicyDefinitions"/>
+                <toast type="success" message="$t:admin.settings.notification_definitions.identity_delete.delete_success"/>
+                <close-modal target="modal_notification_identity_definition_delete"/>
+              </success>
+              <fail>
+                <set-state target="global" :identity_notification_delete_modal.isDeleting="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.settings.notification_definitions.identity_delete.delete_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.identity_notification_delete_modal?.isDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.identity_notification_delete_modal?.isDeleting ? '$t:admin.settings.notification_definitions.identity_delete.btn_confirming' : '$t:admin.settings.notification_definitions.identity_delete.btn_confirm'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

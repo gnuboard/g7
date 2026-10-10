@@ -1,0 +1,18 @@
+feature: 관리자 주문 목록 — 아이콘만 있는 버튼의 읽을 수 있는 이름 (S3-D24)
+
+description: |
+  주문 목록 머리의 [뒤로]·[새로고침], 검색 조건 관리 창의 [편집]·[삭제], 필터의 주문자 선택 해제 [×] 가
+  아이콘만 그리고 aria-label 이 없어 화면 낭독기가 아이콘 이름이나 「버튼」 으로만 읽었다(S5-D30 같은 결함군 인계,
+  출시본에도 같은 버튼). 공용 문구 `$t:common.back·refresh·edit·delete·remove` 를 이름으로 단다.
+
+axes:
+  surface:
+    - list_header           # 목록 머리 [뒤로]·[새로고침]
+    - preset_manage_modal   # 검색 조건 관리 창 [편집]·[삭제]
+    - filter_section        # 필터 주문자 선택 해제 [×]
+
+effects:
+  - order_list_icon_buttons_named # 아이콘만 있는 버튼마다 하는 일을 aria-label 로 단다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderListIconButtonNames.test.ts

@@ -13,7 +13,7 @@
   "views": "조회",
   "views_count": "조회 {{count}}",
   "write": "글쓰기",
-  "search_placeholder": "제목, 내용, 작성자로 검색...",
+  "search_placeholder": "검색어를 입력하세요",
   "board_not_found": "게시판을 찾을 수 없습니다",
   "board_not_found_description": "게시판이 존재하지 않거나 비활성화되었습니다.",
   "no_posts": "등록된 게시글이 없습니다",
@@ -66,6 +66,11 @@
     "reply": "답변",
     "report": "신고",
     "reported": "신고됨",
+    "scrap": "스크랩",
+    "scrapped": "스크랩됨",
+    "scrap_login_required": "로그인이 필요한 기능입니다.",
+    "scrap_added": "게시글을 스크랩했습니다.",
+    "scrap_removed": "스크랩을 해제했습니다.",
     "report_post": "게시글 신고",
     "report_comment": "댓글 신고",
     "report_reason": "신고 사유",
@@ -96,6 +101,7 @@
     "blinded_comment": "블라인드 처리된 댓글입니다.",
     "deleted_comment_content": "삭제된 댓글입니다",
     "blinded_comment_content": "블라인드 처리된 댓글입니다",
+    "secret_comment": "비밀 댓글입니다.",
     "view_original": "원문 보기",
     "hide_original": "원문 숨기기"
   },
@@ -137,11 +143,10 @@
     "incorrect": "비밀번호가 일치하지 않습니다."
   },
   "reaction": {
-    "like": "좋아요",
-    "laugh": "웃겨요",
-    "agree": "동의해요",
-    "thanks": "감사해요",
-    "wow": "놀라워요"
+    "login_required": "로그인이 필요한 기능입니다",
+    "failed": "반응 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    "self_post_denied": "본인 글에는 반응할 수 없습니다.",
+    "self_comment_denied": "본인 댓글에는 반응할 수 없습니다."
   },
   "attachments": {
     "title": "첨부파일",
@@ -231,5 +236,11 @@
       "confirm_remove_attachment_title": "첨부파일 삭제",
       "confirm_remove_attachment_message": "파일이 즉시 삭제됩니다. 게시글 저장과 관계없이 되돌릴 수 없습니다."
     }
+  },
+  "search_fields": {
+    "title_content": "제목+내용",
+    "title": "제목",
+    "content": "내용",
+    "author": "작성자"
   }
 }

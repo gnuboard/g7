@@ -26,6 +26,11 @@
 **의도적으로 하지 않는 것**: 알림 정의·수신자 해석·자체 관리 메뉴. UI 는 다른 화면에 끼워 넣는
 조각 7개와 플러그인 설정 화면 하나뿐입니다 — 문자·알림톡 설정이 알림 설정 화면 **안에** 있어야
 운영자가 한자리에서 알림을 완성할 수 있기 때문입니다.
+
+**수신 번호는 수신자군으로 가릅니다.** 회원(운영자 포함)은 자기 계정의 번호만 쓰고, 비회원은
+그 알림이 실은 번호(`_recipient_phone`)만 씁니다. 한쪽이 비었을 때 다른 쪽으로 넘어가지
+않습니다 — 넘어가게 두면 휴대폰을 등록하지 않은 운영자가 수신자일 때 **그 알림이 나르는 고객
+번호로 문자가 나갑니다.** 번호를 찾지 못하면 발송하지 않고 건너뜀으로 기록합니다.
 <!-- @intent END -->
 
 ## 계층 지도
@@ -63,7 +68,7 @@
 빠지면 그 이음매만 조용히 끊기고 나머지는 정상 동작하므로, 리스너를 지우거나 이름을 바꿀 때는
 그 이음매가 무엇이었는지 먼저 확인합니다.
 
-`ValidateBizppurioSettingsListener` 만 성격이 다릅니다 — `core.plugin_settings.update_rules`
+`ValidateBizppurioSettingsListener` 만 성격이 다릅니다 — `core.plugin_settings.update_validation_rules`
 필터로 **운영 모드로 전환할 때만** 필수값(아이디·비밀번호·API 키·발신번호) 검증을 추가합니다.
 검수 모드에서는 그 값들이 비어 있어도 저장되어야 하기 때문입니다.
 <!-- @intent END -->
@@ -84,14 +89,16 @@
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-message_bizppurio --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-message_bizppurio --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-message_bizppurio --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-message_bizppurio --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-message_bizppurio --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-message_bizppurio --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

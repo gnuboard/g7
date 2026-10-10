@@ -1,0 +1,67 @@
+feature: 배송정책 폼 클레임 확장 — 회수지 · 국가별 클레임 배송비 (#599 S10)
+
+description: |
+  배송정책 편집 화면에 **클레임 회수지**(교환/반품 각 1건)와 **국가별 클레임 배송비**
+  (반품 편도 / 교환 왕복, 고정액 또는 원 정책 재계산)를 세운다. 서버 축은 S6c 가 놓았고
+  이 세션은 그것을 화면에 잇는다. 이 화면에서만 생기는 조용한 실패는 셋이다.
+
+  ① **저장 경로가 둘이다.** 국가별 클레임 배송비 3축은 본 폼 `PUT /{id}` 가 받지만, 회수지는
+     본 폼이 받지 않아 `claim-settings` 로 따로 나간다. 이어지는 요청을 배선하지 않으면
+     정책 저장은 200 이고 성공 토스트도 뜨는데 회수지만 사라진다.
+
+  ② **회수지 저장이 실패했는데 목록으로 나가면** 그 실패가 화면에서 사라진다. 정책은 이미
+     저장돼 있으므로 운영자는 전부 저장된 줄 안다 — 실패 경로는 화면에 남는다.
+
+  ③ **신규 국가에 클레임 축을 싣지 않으면** 본 폼 저장의 승계 판정이 "값 없음" 으로 읽어
+     컬럼 기본값이 적용된다. 화면은 기본값을 보여 줬는데 저장된 값이 그것과 갈릴 수 있으므로,
+     신규 국가 기본값에 컬럼 기본값과 같은 값을 **명시로** 싣는다.
+
+  회수지는 신청 시점에 신청서로 복사되므로(스냅샷) 이후 여기서 바꿔도 이미 접수된 건의
+  회수지는 흔들리지 않는다 — 화면이 그 사실을 밝히지 않으면 운영자는 소급 적용을 기대한다.
+
+# axis 의미:
+#   claim_scope — 저장 경로가 갈리는 두 축. pickup_address 는 별도 엔드포인트,
+#                 country_fee 는 본 폼 PUT 이 받는다. 경로가 다르면 실패 처리도 다르다.
+axes:
+  claim_scope: [pickup_address, country_fee]
+
+effects:
+  # 배치
+  - shipping_policy_claim_address_block_is_placed_after_basic_info
+  - shipping_policy_claim_fee_block_is_placed_in_country_tab
+  # 회수지 (①·②)
+  - shipping_policy_claim_address_loads_only_in_edit_mode
+  - shipping_policy_claim_address_load_failure_does_not_break_screen
+  - shipping_policy_claim_address_has_all_fields_per_type
+  - shipping_policy_claim_address_saves_only_when_touched
+  - shipping_policy_claim_address_empty_sends_null_to_delete
+  - shipping_policy_claim_address_failure_keeps_the_screen
+  - shipping_policy_claim_address_navigates_once_on_success
+  # 국가별 배송비 (③)
+  - shipping_policy_claim_fee_axes_bound_to_active_country
+  - shipping_policy_claim_fixed_inputs_only_in_fixed_mode
+  - shipping_policy_claim_original_policy_mode_explains_itself
+  - shipping_policy_claim_fee_updates_go_through_country_field_handler
+  # 브라우저 실측 (Playwright spec 헤더가 선언하는 2건)
+  - shipping_policy_claim_address_persists
+  - shipping_policy_claim_fee_mode_toggles_fixed_inputs
+  # 구조 계약 (Vitest, 레이아웃 JSON 직접 검사 — 브라우저 실측 아님)
+  - shipping_policy_claim_address_delete_requires_all_fields_empty
+  - shipping_policy_save_retry_updates_the_same_policy
+  - shipping_policy_claim_fee_mode_radios_form_one_group
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminShippingPolicyClaim.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyFormLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-shipping-policy-claim-settings.spec.ts
+
+notes: |
+  **배열 인덱스 필드는 전용 핸들러를 거친다.** `setState` params 키에는 표현식을 쓸 수 없으므로
+  국가별 필드 갱신은 `sirsoft-ecommerce.updateCountryField` 가 담당한다. 레이아웃이 직접
+  `form.country_settings[i].x` 를 쓰려 하면 키가 리터럴로 해석되어 조용히 다른 자리에 저장된다.
+
+  **회수지 저장은 "손댔을 때만" 나간다.** 손대지 않은 화면에서도 매번 요청을 보내면 그 요청이
+  부분 수정 계약(키가 없으면 불변)을 타긴 하지만, 왕복이 늘고 실패 지점이 하나 더 생긴다.
+
+  **회수지 축의 서버 계약**(부분 수정 · 상위 스코프 exists · 승계 판정)은 S6c 가 놓았고
+  `ShippingPolicyClaimSettingsTest` 가 고정한다. 이 매니페스트는 화면 축만 다룬다.

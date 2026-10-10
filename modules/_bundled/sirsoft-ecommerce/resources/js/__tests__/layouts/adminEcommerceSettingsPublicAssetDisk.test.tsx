@@ -22,6 +22,7 @@ import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTe
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 
 import tabBasicInfo from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_basic_info.json';
+import mainLayout from '../../../layouts/admin/admin_ecommerce_settings.json';
 
 // ─── 테스트용 컴포넌트 ───
 
@@ -77,6 +78,7 @@ const translations = {
                         disk: '공개 자산 디스크',
                         follow_core: '코어 설정 따름',
                         help: '미설정 시 코어 전역 설정을 따릅니다.',
+                        unavailable: '저장했던 디스크({disk})를 지금은 쓸 수 없어 이미지를 스트리밍으로 제공하고 있습니다.',
                     },
                 },
             },
@@ -135,9 +137,10 @@ const CATALOG = [
 /**
  * 카드 렌더링용 테스트 유틸을 생성한다.
  *
+ * @param basicInfo 폼의 basic_info 초기값
  * @returns createLayoutTest 유틸
  */
-function makeUtils() {
+function makeUtils(basicInfo: Record<string, unknown> = { public_asset_disk: '' }) {
     return createLayoutTest(
         {
             version: '1.0.0',
@@ -156,7 +159,7 @@ function makeUtils() {
                 _local: {
                     form: {
                         available_public_asset_disks: CATALOG,
-                        basic_info: { public_asset_disk: '' },
+                        basic_info: basicInfo,
                     },
                     errors: null,
                 },
@@ -166,6 +169,13 @@ function makeUtils() {
 }
 
 describe('이커머스 공개 자산 디스크 오버라이드 필드 — 계약', () => {
+    /**
+     * Select 가 저장 키와 카탈로그를 바인딩하고 코어 따름 선택지를 앞에 둔다.
+     *
+     * @scenario disk_setting=public, override=module_override
+     *
+     * @effects settings_catalog_includes_plugin_registered_disks
+     */
     it('Select 가 저장 키와 카탈로그를 바인딩하고 코어 따름 기본 옵션을 갖는다', () => {
         const select = findNode(
             publicAssetCard,
@@ -177,6 +187,13 @@ describe('이커머스 공개 자산 디스크 오버라이드 필드 — 계약
         expect(select.props.options).toContain('follow_core');
     });
 
+    /**
+     * 기본값·저장 규칙이 같은 키를 선언해 카탈로그 밖 값을 저장 단계에서 거를 수 있다.
+     *
+     * @scenario disk_setting=fake_cdn, override=module_override
+     *
+     * @effects invalid_disk_rejected_with_422
+     */
     it('defaults.json 과 저장 규칙이 같은 키를 선언한다', () => {
         const root = moduleRoot();
         const defaults = JSON.parse(
@@ -191,11 +208,41 @@ describe('이커머스 공개 자산 디스크 오버라이드 필드 — 계약
         expect(requestSource).toContain("'basic_info.public_asset_disk'");
     });
 
+    /**
+     * 모듈이 공개 자산 디스크를 고를 때 같은 설정 키를 읽는다.
+     *
+     * @scenario disk_setting=public, override=module_override
+     *
+     * @effects settings_catalog_includes_plugin_registered_disks
+     */
     it('module.php 오버라이드가 같은 설정 키를 조회한다', () => {
         const moduleSource = fs.readFileSync(path.join(moduleRoot(), 'module.php'), 'utf-8');
 
         expect(moduleSource).toContain("'basic_info.public_asset_disk'");
         expect(moduleSource).toContain('PUBLIC_ASSET_CATEGORIES');
+    });
+});
+
+describe('이커머스 공개 자산 디스크 — 저장 후 안내', () => {
+    /**
+     * 설정 재조회는 폼에 없는 키를 지우지 않는다 — 저장 성공 처리가 안내 키를 저장 응답값으로 덮지 않으면
+     * 새 디스크를 골라 저장해 저장값이 바뀐 뒤에도 「쓸 수 없는 디스크」 안내가 남았다(#703 브라우저 실측).
+     * 탭별 저장이라 다른 탭을 저장할 때는 응답이 옛 이름을 그대로 실어 안내가 유지돼야 하므로 null 고정이 아니라 응답값이다.
+     *
+     * @scenario disk_setting=fake_cdn, override=module_override
+     * @effects stale_disk_normalized_with_notice
+     */
+    it('저장 성공 시 쓸 수 없는 디스크 안내 키를 저장 응답값으로 덮는다', () => {
+        const saveButton = findNode((mainLayout as any).slots.content[0], (n) => n.id === 'save_button');
+        const sequence = (saveButton?.actions ?? []).find((a: any) => a.handler === 'sequence');
+        const apiCall = (sequence?.actions ?? []).find((a: any) => a.handler === 'apiCall');
+        const localReset = (apiCall?.onSuccess ?? []).find(
+            (a: any) => a.handler === 'setState' && a.params?.target === 'local',
+        );
+
+        expect(localReset?.params?.['form.basic_info.public_asset_disk_unavailable']).toBe(
+            '{{response.data?.basic_info?.public_asset_disk_unavailable ?? null}}',
+        );
     });
 });
 
@@ -220,6 +267,13 @@ describe('이커머스 공개 자산 디스크 오버라이드 필드 — 렌더
         delete (window as any).__templateApp;
     });
 
+    /**
+     * 카드 제목·도움말이 번역되어 렌더된다.
+     *
+     * @scenario disk_setting=none, override=follow_core
+     *
+     * @effects settings_catalog_includes_plugin_registered_disks
+     */
     it('카드 제목/도움말이 다국어 해석되어 렌더된다', async () => {
         testUtils = makeUtils();
         const { container } = await testUtils.render();
@@ -231,6 +285,13 @@ describe('이커머스 공개 자산 디스크 오버라이드 필드 — 렌더
         expect(() => testUtils!.assertNoValidationErrors()).not.toThrow();
     });
 
+    /**
+     * 선택지가 코어 따름 + 카탈로그 디스크(플러그인 등록 포함)로 계산된다.
+     *
+     * @scenario disk_setting=fake_cdn, override=follow_core
+     *
+     * @effects settings_catalog_includes_plugin_registered_disks
+     */
     it('Select 옵션이 코어 따름 선두 + 카탈로그 $localized 매핑으로 계산된다', async () => {
         testUtils = makeUtils();
         const { container } = await testUtils.render();
@@ -245,5 +306,36 @@ describe('이커머스 공개 자산 디스크 오버라이드 필드 — 렌더
             '사용 안 함 (스트리밍)',
             '가짜 CDN',
         ]);
+    });
+
+    /**
+     * 저장했던 디스크를 쓸 수 없게 되면 서버가 값을 스트리밍(`none`)으로 바꿔 내려주고 옛 이름을 알린다 —
+     * 화면은 그 이름을 안내로 보여 줘야 값이 왜 바뀌었는지 안다.
+     *
+     * @scenario disk_setting=fake_cdn, override=module_override
+     *
+     * @effects stale_disk_normalized_with_notice
+     */
+    it('쓸 수 없게 된 디스크면 옛 디스크 이름과 스트리밍 안내가 나온다', async () => {
+        testUtils = makeUtils({ public_asset_disk: 'none', public_asset_disk_unavailable: 'gone_cdn' });
+        const { container } = await testUtils.render();
+
+        expect(container.textContent ?? '').toContain(
+            '저장했던 디스크(gone_cdn)를 지금은 쓸 수 없어 이미지를 스트리밍으로 제공하고 있습니다.',
+        );
+    });
+
+    /**
+     * 카탈로그에 있는 디스크나 「코어 설정 따름」이면 안내가 나오지 않는다.
+     *
+     * @scenario disk_setting=public, override=follow_core
+     *
+     * @effects stale_disk_normalized_with_notice
+     */
+    it('사용할 수 있는 디스크면 안내가 나오지 않는다', async () => {
+        testUtils = makeUtils({ public_asset_disk: 'fake_cdn' });
+        const { container } = await testUtils.render();
+
+        expect(container.textContent ?? '').not.toContain('지금은 쓸 수 없어');
     });
 });

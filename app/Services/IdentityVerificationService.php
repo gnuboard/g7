@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\IdentityVerificationStatus;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * 본인인증 유스케이스 서비스.
@@ -177,7 +180,7 @@ class IdentityVerificationService
      * 반환 필드는 코드 본체·내부 metadata·시도 횟수를 제외한 공개 안전 필드만:
      * - id / status / provider_id / purpose / render_hint / expires_at / max_attempts / public_payload
      *
-     * max_attempts 는 정책 상수라 노출해도 무방하며, 프론트 풀페이지 (`auth/identity_challenge.json`) 가
+     * max_attempts 는 정책 상수라 노출해도 무방하며, 프론트 풀페이지 (`auth/identity_challenge.g7.html`) 가
      * 시도 한도 표시에 사용한다. 누적 시도 횟수(attempts)는 싣지 않는다 — 사유는 반환 지점 주석 참조.
      *
      * @param  string  $challengeId  Challenge UUID
@@ -280,5 +283,74 @@ class IdentityVerificationService
         $context['origin_identifier'] = $context['origin_identifier'] ?? "/api/identity/callback/{$providerId}";
 
         return $this->verify($challengeId, $input, $context);
+    }
+
+    /**
+     * 링크 방식 challenge 에 시작 화면만 아는 일회용 비밀값을 발급합니다.
+     *
+     * 링크 방식은 확인을 메일 링크(다른 기기일 수 있음)가 하므로, 인증을 시작한 화면은 확인 결과의 토큰을
+     * 받을 길이 없다. 시작 응답에만 이 비밀값을 주고(저장은 해시만), 확인이 끝나면 `claim()` 으로 토큰을
+     * 받아 가게 한다. 인증번호 방식은 시작 화면이 직접 확인하므로 발급하지 않는다.
+     *
+     * @param  string  $challengeId  Challenge UUID
+     * @return string|null 비밀값 (링크 방식이 아니거나 challenge 가 없으면 null)
+     */
+    public function issueClaimSecret(string $challengeId): ?string
+    {
+        $log = $this->logRepository->findById($challengeId);
+        if (! $log || $log->render_hint !== 'link') {
+            return null;
+        }
+
+        $secret = Str::random(48);
+        $metadata = is_array($log->metadata) ? $log->metadata : [];
+        $metadata['claim_secret_hash'] = hash('sha256', $secret);
+
+        $this->logRepository->updateById($log->id, ['metadata' => $metadata]);
+
+        return $secret;
+    }
+
+    /**
+     * 시작 화면이 링크 방식 challenge 의 확인 결과 토큰을 받아 갑니다 (한 번만).
+     *
+     * 반환 status: `verified`(토큰 포함) · `pending`(아직 링크를 열지 않음) · `denied`(비밀값 불일치·발급 안 됨)
+     * · `claimed`(이미 받아 감) · 그 밖의 종료 상태(`expired`·`failed`·`cancelled` 등).
+     *
+     * @param  string  $challengeId  Challenge UUID
+     * @param  string  $secret  시작 응답으로 받은 비밀값
+     * @return array{status: string, verification_token?: string} 결과
+     */
+    public function claim(string $challengeId, string $secret): array
+    {
+        $log = $this->logRepository->findById($challengeId);
+        $hash = is_array($log?->metadata) ? ($log->metadata['claim_secret_hash'] ?? null) : null;
+
+        if (! $log || ! is_string($hash) || ! hash_equals($hash, hash('sha256', $secret))) {
+            return ['status' => 'denied'];
+        }
+
+        $status = $log->status->value;
+        if (in_array($status, [
+            IdentityVerificationStatus::Requested->value,
+            IdentityVerificationStatus::Sent->value,
+            IdentityVerificationStatus::Processing->value,
+        ], true)) {
+            return ['status' => $log->expires_at && $log->expires_at->isPast() ? IdentityVerificationStatus::Expired->value : 'pending'];
+        }
+
+        if ($status !== IdentityVerificationStatus::Verified->value) {
+            return ['status' => $status];
+        }
+
+        if (! empty($log->metadata['claimed_at']) || $log->consumed_at !== null || ! is_string($log->verification_token)) {
+            return ['status' => 'claimed'];
+        }
+
+        $metadata = $log->metadata;
+        $metadata['claimed_at'] = Carbon::now()->toIso8601String();
+        $this->logRepository->updateById($log->id, ['metadata' => $metadata]);
+
+        return ['status' => IdentityVerificationStatus::Verified->value, 'verification_token' => $log->verification_token];
     }
 }

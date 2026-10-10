@@ -4,10 +4,10 @@ namespace Plugins\Sirsoft\PayKginicis\Support\ApiDoc;
 
 use App\Contracts\ApiDoc\ApiDocSampleSeeder;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 
 /**
@@ -178,10 +178,12 @@ class ApiDocSampleService implements ApiDocSampleSeeder
      * escrow-delivery formData 의 배송지 prefill 을 실측하기 위한 배송지를 멱등 생성합니다.
      *
      * @param  Order  $order  대표 주문
+     * @return void 반환값 없음
      */
     private function seedShippingAddress(Order $order): void
     {
-        $exists = DB::table('ecommerce_order_addresses')
+        // 주문·결제 샘플과 같이 이커머스 모델·팩토리 계약으로 만든다 — 표 이름·칸을 직접 적지 않는다.
+        $exists = OrderAddress::query()
             ->where('order_id', $order->id)
             ->where('address_type', 'shipping')
             ->exists();
@@ -190,9 +192,7 @@ class ApiDocSampleService implements ApiDocSampleSeeder
             return;
         }
 
-        DB::table('ecommerce_order_addresses')->insert([
-            'order_id' => $order->id,
-            'address_type' => 'shipping',
+        OrderAddress::factory()->forOrder($order)->shipping()->create([
             'orderer_name' => 'API 문서 샘플 주문자',
             'orderer_phone' => '010-0000-0001',
             'orderer_email' => 'apidoc-sample-user@example.com',
@@ -201,8 +201,11 @@ class ApiDocSampleService implements ApiDocSampleSeeder
             'zipcode' => '06134',
             'address' => '서울특별시 강남구 테헤란로 001',
             'address_detail' => 'API 문서 샘플 빌딩 1층',
-            'created_at' => now(),
-            'updated_at' => now(),
+            // 팩토리가 무작위로 채우는 칸은 비워 둔다 — 문서 샘플은 실행마다 같아야 한다.
+            'orderer_locale' => null,
+            'delivery_memo' => null,
+            'delivery_memo_label' => null,
+            'recipient_country_code' => null,
         ]);
     }
 

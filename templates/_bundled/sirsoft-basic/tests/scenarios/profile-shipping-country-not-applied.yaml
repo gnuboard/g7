@@ -1,0 +1,27 @@
+feature: 내 정보 배송국가 — 저장한 국가가 배송 불가로 내려간 뒤 미적용 안내
+
+description: |
+  회원이 내 정보 수정에서 저장한 배송국가를 운영자가 배송 가능 목록에서 내리면, 헤더·주문서·서버는 기본 국가로 계산한다.
+  내 정보·내 정보 수정의 배송국가 칸은 그 사실과 지금 적용 중인 국가를 함께 보인다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D15):
+    - 내 정보 화면은 내려간 국가(미국)를 그대로 보이고, 수정 화면 콤보는 빈칸이 되어 무엇이 적용되는지 알 수 없었다.
+      두 화면에 「저장된 배송국가 {저장 국가}: 지금 배송할 수 없는 국가라 적용되지 않습니다. 지금 적용 중인 배송국가: {국가}」 를 더한다.
+      수정 화면에서 배송 가능한 국가를 고르면 안내가 사라진다.
+    - (S4-D20) 첫 수정이 문장을 국가명 칸 + 번역 조각 3개로 이어 붙여, 영어 화면에서 「United Statesis not available …」 처럼
+      국가명과 문장이 붙어 나왔다. 문장 전체를 한 키(`saved_not_applied`)에 두고 국가명은 파라미터로 넘긴다. 저장 국가명은
+      헤더 국가 목록과 같은 폴백 키로 풀고, 목록에서 아예 빠진 국가는 코드로 보인다.
+
+axes:
+  case: [view_inactive, view_inactive_en, view_removed, view_active, edit_inactive, edit_inactive_then_picked]
+
+effects:
+  - not_applied_notice_with_applied_country      # 저장 국가 이름 + 미적용 문장 + 지금 적용 중인 국가 이름
+  - notice_hidden_when_saved_country_is_shippable # 저장(또는 새로 고른) 국가가 배송 가능하면 안내 없음
+  - notice_sentence_spaced_in_every_locale       # 문장 전체가 한 번역 키 — 영어에서도 국가명과 문장이 띄어진다(S4-D20, 조각 이어 붙이기 결함)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/profile-shipping-country-not-applied.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — 배타 창에서 해외 배송 켬·미국 내림·일본 활성, m1(저장 국가 US) /mypage/profile·/mypage/profile/edit 안내 문장, 수정 화면에서 일본 고르면 사라짐

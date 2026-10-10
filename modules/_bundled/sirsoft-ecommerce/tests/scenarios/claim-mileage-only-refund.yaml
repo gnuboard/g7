@@ -1,0 +1,36 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   결제수단 × 분기 × 접수 경로의 조합은 UserClaimRefundBranchTest 의 데이터 공급자(수단 축)와
+#   경로별 대표 메서드가 나눠 잰다. effects 축은 면제하지 않는다.
+feature: 마일리지로 전액 결제한(현금 0원) 주문의 취소·환불·반품 (#747 C2 · 결함 4)
+
+description: |
+  고객은 마일리지 결제수단을 고를 수 없어, 전액 마일리지 주문도 고른 수단(카드·무통장·가상계좌·무료)을
+  그대로 단 채 결제완료로 끝난다. 예전에는 그 수단만 보고 환불계좌를 요구하거나(무통장·입금완료 가상계좌·무료)
+  운영자 승인에서 멈췄다(P16 게이트). 돌려줄 현금이 없으므로 이제 —
+
+    - 주문 장부(헤더 누적 + 결제가 끝난 결제행 수납액)로 「돌려줄 현금」을 판정한다(`hasCashToReturn`).
+    - 현금이 없는 회원 주문의 클레임 환불은 「마일리지로 환불」(points)로 기록한다(`refundMethodForClaim`).
+    - 계좌를 묻지 않고, 계좌 송금이 없으므로 결제수단 자동승인 게이트를 거치지 않는다.
+    - 현금과 마일리지를 함께 쓴 주문은 종전과 같다.
+
+axes:
+  payment_method: [dbank, vbank, free, card]
+  branch: [auto, request, admin_auto_advance, return]
+  cash: [zero, mixed]
+
+effects:
+  - refund_account_required_false_for_mileage_only_order
+  - mileage_only_refund_is_recorded_as_points
+  - mileage_only_refund_bypasses_payment_method_gate
+  - mixed_cash_order_keeps_bank_requirement
+  - mileage_only_order_in_request_branch_needs_no_account_and_waits_for_review
+  - has_cash_to_return_reads_header_and_payment_ledgers
+  - refund_method_for_claim_is_points_only_when_no_cash_remains
+  - cancel_modal_auto_advance_hint_follows_cash_to_return
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimRefundBranchTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminCancelMileageOnlyOrderTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderRefundRequestServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionServiceTest.php

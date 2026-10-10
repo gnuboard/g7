@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 
 import { Div } from '../../basic/Div';
+import { Button } from '../../basic/Button';
 import { Span } from '../../basic/Span';
 import { I } from '../../basic/I';
 
@@ -40,7 +41,7 @@ export interface FileListProps {
   /** 최대 파일 수 */
   maxFiles: number;
   /** 최대 파일 크기 (MB) */
-  maxSize: number;
+  maxSize?: number;
   /** 허용 확장자 */
   accept?: string;
   /** 파일 삭제 핸들러 */
@@ -127,24 +128,27 @@ export const FileList: React.FC<FileListProps> = ({
               );
             })}
 
-            {/* 추가 버튼 (더 추가할 수 있을 때만) */}
+            {/* 추가 버튼 (더 추가할 수 있을 때만) — 단추로 그려 Tab 으로 닿고 Enter·Space 로 파일 선택을 연다 */}
             {canAddMore && (
-              <Div
-                className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              <Button
+                type="button"
+                data-uploader-action="add"
+                className="w-full aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
                 onClick={onAddClick}
               >
-                <I className="fa-solid fa-plus text-2xl text-gray-400 dark:text-gray-500 mb-1" />
+                <I className="fa-solid fa-plus text-2xl text-gray-400 dark:text-gray-500 mb-1" aria-hidden="true" />
                 <Span className="text-xs text-gray-500 dark:text-gray-400">{t('common.add')}</Span>
-              </Div>
+              </Button>
             )}
           </Div>
         </SortableContext>
       </DndContext>
 
       {/* 하단 정보 */}
-      <Div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+      <Div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
         <Span>{t('attachment.attached_count', { count: totalCount, max: maxFiles })}</Span>
-        <Span>{t('attachment.max_size', { size: maxSize })}{accept && ` (${accept})`}</Span>
+        {/* 허용 형식 목록은 쉼표로만 이어져 끊을 자리가 없다 — 좁은 화면에서 넘치지 않게 어디서든 끊는다 */}
+        <Span className="min-w-0 wrap-anywhere">{maxSize != null ? t('attachment.max_size', { size: maxSize }) : ''}{accept && ` (${accept})`}</Span>
       </Div>
     </Div>
   );

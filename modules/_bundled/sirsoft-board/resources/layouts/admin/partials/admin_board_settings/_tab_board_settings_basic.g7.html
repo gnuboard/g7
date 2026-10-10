@@ -1,0 +1,205 @@
+<partial description="게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)" _e2e_allow="e2e:allow 반응 유형 체크박스 시각 스타일(배경 박스·들여쓰기·아이콘·정렬)만 변경, 클릭 동작(setState/hasChanges)은 기존과 동일. 렌더 분기·바인딩은 admin-board-reaction-settings.test.tsx(Vitest 레이아웃 테스트)로 커버, MCP 실브라우저로 시각 회귀 확인.">
+  <!-- 「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다 -->
+  <div data-ref="basic" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <!-- ========== 섹션 1: 기본 설정 ========== -->
+    <section-layout data-type="layout" data-ref="section_basic" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.basic</h3>
+      <div class="card-description">$t:sirsoft-board.admin.settings.sections.basic_description</div>
+      <!-- ========== 페이지 안내 배너 ========== -->
+      <div data-ref="page_info_banner" class="alert-info">
+        <icon name="circle-info" class="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" size="sm"/>
+        <p class="text-info-soft">$t:sirsoft-board.admin.settings.page_info</p>
+      </div>
+      <div class="row-stack">
+        <div data-ref="field_type" class="">
+          <div class="flex-center gap-4">
+            <div class="flex-1">
+              <div class="flex-center gap-2">
+                <label class="flex-center gap-2 text-heading cursor-pointer">
+                  <input type="checkbox" class="checkbox flex-shrink-0" checked="{{(_local.bulkApplyFields ?? []).includes('type')}}" disabled="{{!_computed.canBulkApply}}">
+                    <on type="change">
+                      <!-- 「게시판 유형」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                      <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('type') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'type') : [...(_local.bulkApplyFields ?? []), 'type']}}"/>
+                    </on>
+                  </input>
+                  <span>$t:sirsoft-board.admin.settings.fields.type</span>
+                </label>
+                <button data-ref="settings_btn_manage_board_types" type="button" variant="ghost" size="sm" class="inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" title="{{_computed.canManageBoardTypes ? '' : '$t:sirsoft-board.admin.settings.board_types_no_permission'}}" disabled="{{!_computed.canManageBoardTypes}}">
+                  <on type="click">
+                    <!-- 유형 관리 창 열기 — 폼을 빈 「추가」 상태로 맞춘 «뒤» 목록을 새로 받아 오고, 받아 온 다음에야 창을 연다(빈 표가 잠깐 비치지 않게) -->
+                    <sequence>
+                      <set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="">
+                        <field name="btFormName">
+                          <field name="ko" value=""/>
+                          <field name="en" value=""/>
+                        </field>
+                      </set-state>
+                      <api-call target="/api/modules/sirsoft-board/admin/board-types" :auth_required="true" method="GET">
+                        <success>
+                          <set-state target="global" boardTypesList="{{response.data}}"/>
+                          <open-modal target="board_type_manage_modal"/>
+                        </success>
+                      </api-call>
+                    </sequence>
+                  </on>
+                  <icon name="gear" size="sm"/>
+                  <span>$t:sirsoft-board.admin.board_types.manage</span>
+                </button>
+              </div>
+              <p class="text-field-hint pl-6">$t:sirsoft-board.admin.settings.fields.descriptions.type</p>
+            </div>
+            <select name="basic_defaults.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_secret_mode" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「비밀글 방식」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('secret_mode') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_mode') : [...(_local.bulkApplyFields ?? []), 'secret_mode']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.secret_mode</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.secret_mode</p>
+              </div>
+            </label>
+            <select name="basic_defaults.secret_mode" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="disabled">$t:sirsoft-board.admin.settings.options.secret_mode.disabled</option>
+                <option value="enabled">$t:sirsoft-board.admin.settings.options.secret_mode.enabled</option>
+                <option value="always">$t:sirsoft-board.admin.settings.options.secret_mode.always</option>
+              </options>
+            </select>
+          </div>
+        </div>
+        <div data-ref="field_show_view_count" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「조회수 표시」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('show_view_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'show_view_count') : [...(_local.bulkApplyFields ?? []), 'show_view_count']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.show_view_count</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.show_view_count</p>
+              </div>
+            </label>
+            <toggle data-type="composite" name="basic_defaults.show_view_count" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_use_report" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_report')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「신고 기능 사용」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_report') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_report') : [...(_local.bulkApplyFields ?? []), 'use_report']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_report</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_report</p>
+              </div>
+            </label>
+            <toggle data-type="composite" name="basic_defaults.use_report" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_use_scrap" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_scrap')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 「스크랩 사용」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_scrap') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_scrap') : [...(_local.bulkApplyFields ?? []), 'use_scrap']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_scrap</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_scrap</p>
+              </div>
+            </label>
+            <toggle data-type="composite" name="basic_defaults.use_scrap" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_use_reaction" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reaction')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 일괄 적용 대상 표시 — 이 필드를 전 게시판에 덮어쓸지 bulkApplyFields 배열에 넣고 뺀다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reaction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reaction') : [...(_local.bulkApplyFields ?? []), 'use_reaction']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_reaction</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_reaction</p>
+              </div>
+            </label>
+            <toggle data-type="composite" name="basic_defaults.use_reaction" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+          <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. 순회 대상은 아래 편집기가
+            편집 중인 폼 배열(`form.basic_defaults.reaction_types`)이다. 편집기에서 방금 추가한
+            유형을 저장 전에도 여기서 고를 수 있어야 하고, 지운 유형이 선택지에 남으면 안 되기
+            때문이다(그래서 별도 데이터소스를 쓰지 않는다). 비활성 유형은 고를 수 없다 —
+            회원 화면에 어차피 나오지 않는다. 좌측 일괄적용 체크박스(bulkApplyFields)와 형태가
+            같아 혼동되기 쉬우므로, 배경 박스 + 좌측 들여쓰기로 '설정값 입력 영역'임을 시각적으로
+            분리한다 (검수 피드백). -->
+          <div data-if="{{_local.form?.basic_defaults?.use_reaction === true}}" class="row-content-indent ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <p class="text-field-hint mb-2">$t:sirsoft-board.admin.settings.fields.active_reaction_types</p>
+            <p data-testid="reaction-type-none-hint" data-if="{{(_local.form?.basic_defaults?.reaction_types ?? []).length === 0}}" class="text-field-hint">$t:sirsoft-board.admin.settings.reaction_types.none_hint</p>
+            <div class="flex flex-col gap-2">
+              <div data-each="reactionType, reactionIdx in {{_local.form?.basic_defaults?.reaction_types ?? []}}">
+                <label class="flex-center gap-2 cursor-pointer">
+                  <input data-testid="reaction-type-check-{{reactionType.code}}" type="checkbox" class="checkbox-aligned" disabled="{{_computed.isReadOnly || reactionType.is_active === false}}" checked="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code)}}">
+                    <on type="change">
+                      <!-- 활성 유형 토글 — 코드 배열에 넣고 빼며 새 배열로 갈아 끼운다. 비활성 유형은 잠겨 있어 여기 오지 않는다 -->
+                      <set-state target="local" form.basic_defaults.active_reaction_types="{{(_local.form?.basic_defaults?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.basic_defaults?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.basic_defaults?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
+                    </on>
+                  </input>
+                  <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
+                  <icon data-if="{{!reactionType.icon_url}}" name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
+                  <span>{{reactionType.name?.[$locale ?? 'ko'] ?? reactionType.name?.ko ?? reactionType.code}}</span>
+                  <badge data-type="composite" data-if="{{reactionType.is_active === false}}" color="gray" size="sm">$t:sirsoft-board.admin.settings.reaction_types.badges.inactive</badge>
+                </label>
+              </div>
+            </div>
+          </div>
+          <!-- 반응 유형 인라인 편집기 — 유형 자체를 여기서 만들고 지운다. 위 체크박스와 같은
+            폼 배열을 보므로 추가·삭제가 곧바로 선택지에 반영된다. -->
+          <div data-if="{{_local.form?.basic_defaults?.use_reaction === true}}" class="row-content-indent ml-6 mt-2">
+            <include src="_reaction_type_editor.g7.html"/>
+          </div>
+        </div>
+        <!-- 댓글 반응 — 반응 사용의 하위 토글이다. 글 반응을 끄면 댓글 반응만 남을 수 없으므로
+          상위가 꺼져 있으면 이 줄도 잠근다(백엔드도 같은 판정을 한다). -->
+        <div data-ref="field_use_comment_reaction" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction')}}" disabled="{{!_computed.canBulkApply}}">
+                <on type="change">
+                  <!-- 일괄 적용 대상 표시 — 이 필드를 전 게시판에 덮어쓸지 bulkApplyFields 배열에 넣고 뺀다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_comment_reaction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment_reaction') : [...(_local.bulkApplyFields ?? []), 'use_comment_reaction']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_comment_reaction</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_comment_reaction</p>
+              </div>
+            </label>
+            <div data-testid="settings-use-comment-reaction" class="flex-shrink-0">
+              <toggle data-type="composite" name="basic_defaults.use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.basic_defaults?.use_reaction !== true}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section-layout>
+  </div>
+</partial>

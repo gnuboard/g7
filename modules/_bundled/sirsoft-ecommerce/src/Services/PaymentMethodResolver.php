@@ -2,8 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 
 /**
  * 결제수단 능력(capability) 해석기
@@ -32,6 +34,15 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 class PaymentMethodResolver
 {
     /**
+     * 고객이 직접 고를 수 없는 builtin 결제수단. (P8·P10)
+     *
+     * 코어에 결제 실행 경로가 없는 수단이다 — 자세한 근거는 `isCustomerSelectable()` 에 있다.
+     *
+     * @var array<int, string>
+     */
+    private const INTERNAL_ONLY_METHOD_IDS = ['point', 'deposit', 'free'];
+
+    /**
      * 요청 내 결제수단 카탈로그 캐시 (id => config). null = 아직 미조회
      *
      * @var array<string, array<string, mixed>>|null
@@ -44,6 +55,51 @@ class PaymentMethodResolver
     public function __construct(
         private EcommerceSettingsService $settingsService
     ) {}
+
+    /**
+     * 이 결제가 일부 상품·수량만 취소하는 부분취소를 지원하는지 판정합니다. (P6 · Q17)
+     *
+     * 입금 전 가상계좌는 PG 가 발급한 입금액이 고정이다 — 일부만 취소하면 고객이 원래 금액을 입금해도 금액
+     * 대조에서 실패해 결제를 확인할 수 없다. 그래서 기본값을 false 로 두고, 수단·PG 의 제약은 필터가 더한다
+     * (PG 가 입금액 변경을 지원하면 플러그인이 true 로 되돌릴 수 있다). 화면 경고·서버 차단이 이 판정 하나를 쓴다.
+     *
+     * @param  OrderPayment  $payment  결제행
+     * @return bool 부분취소 가능하면 true
+     */
+    public function supportsPartialCancel(OrderPayment $payment): bool
+    {
+        return (bool) HookManager::applyFilters(
+            'sirsoft-ecommerce.payment.supports_partial_cancel',
+            ! $this->isVbankAwaitingDeposit($payment),
+            $payment,
+        );
+    }
+
+    /**
+     * 부분취소를 막는 사유를 반환합니다. (지원하면 null)
+     *
+     * @param  OrderPayment  $payment  결제행
+     * @return string|null `vbank_awaiting_deposit`(입금 전 가상계좌) · `payment_method`(수단·PG 제약) · null
+     */
+    public function partialCancelBlockReason(OrderPayment $payment): ?string
+    {
+        if ($this->supportsPartialCancel($payment)) {
+            return null;
+        }
+
+        return $this->isVbankAwaitingDeposit($payment) ? 'vbank_awaiting_deposit' : 'payment_method';
+    }
+
+    /**
+     * 입금 전 가상계좌 결제인지 판정합니다.
+     *
+     * @param  OrderPayment  $payment  결제행
+     * @return bool 가상계좌이고 입금 대기면 true
+     */
+    private function isVbankAwaitingDeposit(OrderPayment $payment): bool
+    {
+        return $payment->isVirtualAccount() && $payment->payment_status?->isAwaitingDeposit() === true;
+    }
 
     /**
      * PG 결제창이 필요한 결제수단인지 판정합니다.
@@ -194,6 +250,171 @@ class PaymentMethodResolver
     }
 
     /**
+     * 고객이 주문서에서 **직접 고를 수 있는** 결제수단인지 판정합니다. (P8·P10)
+     *
+     * `point`·`deposit`·`free` 는 코어에 **결제 실행 경로 자체가 없다** — 마일리지·예치금을
+     * 차감하는 내부 결제 엔진이 없어, 실결제액이 0보다 큰 주문에 이 수단을 고르면 주문은
+     * `PENDING_ORDER` 에 영구 정박한다. 결제도 취소도 되지 않는 주문이 남는 것이다.
+     * 예치금은 한 걸음 더 나쁘다 — 코어가 `total_deposit_used_amount` 를 항상 0 으로
+     * 고정하므로 환불 분해·복원 어느 축에도 예치금이 없다.
+     *
+     * 그래서 세 수단은 고객 선택 목록에서 뺀다. `free` 만은 예외가 있다 — **0원 주문에서
+     * 시스템이 자동으로 고르는 경로**는 살아 있고 정상 동작한다(그 경로는 결제할 것이 없다).
+     * 그 판정은 이 메서드가 아니라 주문 생성 검증이 한다.
+     *
+     * 확장 결제수단(예치금 플러그인)이 자기 카탈로그에 `customer_selectable=true` 를
+     * 선언하면 그 수단은 다시 열린다 — 플러그인이 결제 실행 경로를 함께 들고 오기 때문이다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @return bool 고객 선택 가능 여부
+     */
+    public function isCustomerSelectable(string $methodId): bool
+    {
+        return self::customerSelectableByDeclaration(
+            $methodId,
+            $this->catalogValue($methodId, 'customer_selectable'),
+        );
+    }
+
+    /**
+     * 선언값과 수단 ID 만으로 고객 선택 가능 여부를 판정합니다. (설정을 읽지 않는 순수 규칙)
+     *
+     * 설정 병합(`EcommerceSettingsService::mergePaymentMethodSettings`)이 이 값을 payload 에
+     * 실어야 화면이 토글을 잠글 수 있는데, 그 자리에서 인스턴스 메서드를 부르면 **무한 재귀**가
+     * 된다 — 카탈로그는 `order_settings.payment_methods` 를 읽고, 그 설정을 만드는 것이 바로
+     * 그 병합이다. 그래서 규칙만 떼어 낸다. 판정은 한 곳(여기)이고 호출자가 둘일 뿐이다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @param  bool|null  $declared  카탈로그·정의의 `customer_selectable` 선언 (미선언이면 null)
+     * @return bool 고객이 고를 수 있으면 true
+     */
+    public static function customerSelectableByDeclaration(string $methodId, ?bool $declared): bool
+    {
+        if ($declared !== null) {
+            return $declared;
+        }
+
+        return ! in_array($methodId, self::INTERNAL_ONLY_METHOD_IDS, true);
+    }
+
+    /**
+     * 이 결제수단의 현금성(현금영수증 발급 대상) 비율 선언을 돌려줍니다. (P16)
+     *
+     * 카탈로그가 `cash_equivalent` 를 선언하면 그 값을 쓰고, 없으면 builtin enum 규칙으로
+     * 떨어진다. 확장 간편결제는 enum case 가 없어 규칙이 **구조적으로 0** 이었다 — 현금으로
+     * 결제되는 간편결제 수단이 있어도 현금영수증 동기화가 언제나 no-op 였고, 그 사실은
+     * 어떤 오류로도 드러나지 않았다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @return bool|null 선언값 (미선언이면 null — 호출부가 enum 규칙으로 떨어진다)
+     */
+    public function declaresCashEquivalent(string $methodId): ?bool
+    {
+        $declared = $this->catalogValue($methodId, 'cash_equivalent');
+
+        return $declared === null ? null : (bool) $declared;
+    }
+
+    /**
+     * 이 결제수단이 **사람의 개입 없이** 환불을 집행할 수 있다고 선언했는지 돌려줍니다. (P16·P17)
+     *
+     * 카탈로그 `auto_approve_refund` 선언만 본다. builtin 파생값은 설정 병합
+     * (`EcommerceSettingsService::mergePaymentMethodSettings`)이 이미 카탈로그에 실어 두므로
+     * 여기서 enum 으로 다시 떨어질 필요가 없고, 미선언 확장 수단의 기본값은 false 다 —
+     * 자동으로 잘못 완료하면 이중 환불이고, 멈추면 운영자가 한 번 더 누르면 된다.
+     *
+     * 이 값은 "이 수단을 자동 승인 목록에 **넣을 수 있는가**" 이지 "지금 넣혀 있는가" 가 아니다.
+     * 실제 게이트는 운영자가 고른 목록(`claim.auto_approve_refund_payment_methods`)이 판정한다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @return bool 선언 여부 (미선언이면 false)
+     */
+    public function declaresAutoApproveRefund(string $methodId): bool
+    {
+        return (bool) $this->catalogValue($methodId, 'auto_approve_refund');
+    }
+
+    /**
+     * 환불 자동 승인이 허용된 결제수단 ID 목록을 돌려줍니다. (P16·P17)
+     *
+     * 운영자가 클레임 정책 탭에서 고른 목록(`claim.auto_approve_refund_payment_methods`)이
+     * 기본이고, 여기에 **아직 운영자가 결정한 적 없는** 플러그인 선언 수단을 더한다.
+     *
+     * 이 합류 규칙이 필요한 이유: PG 플러그인을 새로 설치하면 즉시 환불이 되는 간편결제 수단이
+     * 생기는데, 저장된 목록에는 그 수단이 없으므로 아무것도 하지 않으면 새 수단의 환불이 전부
+     * 운영자 승인 대기로 쌓인다. 반대로 무조건 합류시키면 운영자가 일부러 뺀 수단이 다음 저장
+     * 때마다 되살아난다 — 그래서 저장 시점에 화면이 제시한 수단 전부를 `_decided` 에 남기고,
+     * 그 목록에 있는 수단은 운영자의 결정(뺀 것도 결정이다)을 우선한다.
+     *
+     * @return array<int, string> 자동 승인 허용 결제수단 ID 목록
+     */
+    public function autoApproveRefundMethodIds(): array
+    {
+        $allowed = $this->settingsService->getSetting('claim.auto_approve_refund_payment_methods');
+        $allowed = is_array($allowed)
+            ? array_values(array_filter($allowed, static fn ($id) => is_string($id) && $id !== ''))
+            : [];
+
+        $decided = $this->settingsService->getSetting('claim.auto_approve_refund_payment_methods_decided');
+        $decided = is_array($decided) ? $decided : [];
+
+        foreach ($this->catalog() as $id => $entry) {
+            if (in_array($id, $allowed, true) || in_array($id, $decided, true)) {
+                continue;
+            }
+
+            if (! empty($entry['auto_approve_refund'])) {
+                $allowed[] = $id;
+            }
+        }
+
+        return array_values(array_unique($allowed));
+    }
+
+    /**
+     * 지금 카탈로그에서 `auto_approve_refund` 를 선언한 결제수단 ID 를 돌려줍니다. (P17)
+     *
+     * 클레임 정책 탭을 저장할 때 이 목록을 **운영자 결정 이력**
+     * (`claim.auto_approve_refund_payment_methods_decided`)에 남긴다. 저장 화면이 보여 준 수단은
+     * 운영자가 넣은 것도 뺀 것도 모두 결정이므로, 그 뒤로는 저장값이 선언을 이긴다 — 이 이력이
+     * 없으면 운영자가 일부러 뺀 수단이 다음 조회마다 자동 합류로 되살아난다.
+     *
+     * 공급이 끊긴 항목(`_orphaned`)은 뺀다 — 화면 선택지에도 없던 수단이다.
+     *
+     * @return array<int, string> 선언 수단 ID 목록
+     */
+    public function declaredAutoApproveRefundIds(): array
+    {
+        $ids = [];
+
+        foreach ($this->catalog() as $id => $entry) {
+            if (! empty($entry['auto_approve_refund']) && empty($entry['_orphaned'])) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * 이 결제수단의 환불이 자동 승인 대상인지 판정합니다. (P16)
+     *
+     * 목록에 없는 수단(무통장·가상계좌 등)은 결제완료 상품이라도 환불신청서가 `requested` 에서
+     * 정지하고 운영자의 승인 → [환불하기] 를 기다린다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @return bool 자동 승인 대상이면 true
+     */
+    public function autoApprovesRefund(string $methodId): bool
+    {
+        if ($methodId === '') {
+            return false;
+        }
+
+        return in_array($methodId, $this->autoApproveRefundMethodIds(), true);
+    }
+
+    /**
      * 카탈로그에서 특정 결제수단의 특정 키 값을 조회합니다.
      *
      * @param  string  $methodId  결제수단 ID
@@ -231,6 +452,8 @@ class PaymentMethodResolver
 
     /**
      * 카탈로그 캐시를 비웁니다 (설정 저장 직후 재조회 강제).
+     *
+     * @return void
      */
     public function flushCache(): void
     {

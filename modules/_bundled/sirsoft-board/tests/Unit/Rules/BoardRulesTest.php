@@ -4,7 +4,9 @@ namespace Modules\Sirsoft\Board\Tests\Unit\Rules;
 
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 use Modules\Sirsoft\Board\Rules\CategoryInUseRule;
 use Modules\Sirsoft\Board\Rules\CommentValidationRule;
@@ -12,6 +14,7 @@ use Modules\Sirsoft\Board\Rules\CooldownRule;
 use Modules\Sirsoft\Board\Rules\PermissionRolesRequiredRule;
 use Modules\Sirsoft\Board\Rules\SlugUniqueRule;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 게시판 Custom Validation Rule 단위 테스트
@@ -23,18 +26,28 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - CooldownRule: 쿨다운 0은 통과 / 캐시 키 있으면 fail / 없으면 통과
  * - CategoryInUseRule: 제거 카테고리 사용 중이면 fail / 사용 안 하면 통과 / 제거 없으면 통과
  * - CommentValidationRule: blinded 게시글 fail / deleted 게시글 fail / 정상 통과
- *
- * @group board
- * @group unit
- * @group rules
  */
+#[Group('board')]
+#[Group('unit')]
+#[Group('rules')]
 class BoardRulesTest extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'board-rules-test';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -52,7 +65,14 @@ class BoardRulesTest extends BoardTestCase
     // 헬퍼
     // ==========================================
 
-    private function runRule(\Illuminate\Contracts\Validation\ValidationRule $rule, mixed $value): array
+    /**
+     * 검증 규칙을 실행해 실패 문구를 모읍니다.
+     *
+     * @param  ValidationRule  $rule  검사할 규칙
+     * @param  mixed  $value  검사할 값
+     * @return array<int, string> 실패 문구 목록
+     */
+    private function runRule(ValidationRule $rule, mixed $value): array
     {
         $failures = [];
         $rule->validate('field', $value, function (string $msg) use (&$failures) {
@@ -68,6 +88,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 금지 키워드가 없으면 항상 통과합니다.
+     *
+     * @scenario guarded_input=post_content, input_case=skipped_input
+     *
+     * @effects blocked_keywords_passes_when_no_keywords
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keywords_passes_when_no_keywords(): void
     {
@@ -77,6 +103,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * null 키워드 목록이면 통과합니다.
+     *
+     * @scenario guarded_input=post_content, input_case=skipped_input
+     *
+     * @effects blocked_keywords_passes_when_keywords_null
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keywords_passes_when_keywords_null(): void
     {
@@ -86,6 +118,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 금지 키워드가 포함되면 fail합니다.
+     *
+     * @scenario guarded_input=post_content, input_case=violating
+     *
+     * @effects blocked_keywords_fails_when_keyword_found
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keywords_fails_when_keyword_found(): void
     {
@@ -96,6 +134,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 대소문자를 무시하여 검사합니다.
+     *
+     * @scenario guarded_input=post_content, input_case=violating
+     *
+     * @effects blocked_keywords_is_case_insensitive
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keywords_is_case_insensitive(): void
     {
@@ -106,6 +150,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 금지 키워드가 없는 내용은 통과합니다.
+     *
+     * @scenario guarded_input=post_content, input_case=conforming
+     *
+     * @effects blocked_keywords_passes_when_no_match
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keywords_passes_when_no_match(): void
     {
@@ -115,6 +165,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 값이 문자열이 아니면 통과합니다.
+     *
+     * @scenario guarded_input=post_content, input_case=skipped_input
+     *
+     * @effects blocked_keywords_passes_when_value_not_string
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keywords_passes_when_value_not_string(): void
     {
@@ -128,10 +184,16 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * permissions 배열에서 roles가 비어있으면 fail합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=violating
+     *
+     * @effects permission_roles_required_fails_when_roles_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_permission_roles_required_fails_when_roles_empty(): void
     {
-        $rule = new PermissionRolesRequiredRule();
+        $rule = new PermissionRolesRequiredRule;
         $value = [
             'posts_read' => ['roles' => []],
             'posts_write' => ['roles' => ['user']],
@@ -142,10 +204,16 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 모든 permission에 role이 있으면 통과합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=conforming
+     *
+     * @effects permission_roles_required_passes_when_all_have_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_permission_roles_required_passes_when_all_have_roles(): void
     {
-        $rule = new PermissionRolesRequiredRule();
+        $rule = new PermissionRolesRequiredRule;
         $value = [
             'posts_read' => ['roles' => ['guest', 'user']],
             'posts_write' => ['roles' => ['user']],
@@ -155,10 +223,16 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 값이 배열이 아니면 통과합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=skipped_input
+     *
+     * @effects permission_roles_required_passes_when_not_array
+     *
+     * @return void 반환값 없음
      */
     public function test_permission_roles_required_passes_when_not_array(): void
     {
-        $rule = new PermissionRolesRequiredRule();
+        $rule = new PermissionRolesRequiredRule;
         $this->assertEmpty($this->runRule($rule, 'not-an-array'));
     }
 
@@ -166,10 +240,16 @@ class BoardRulesTest extends BoardTestCase
      * roles 누락 메시지는 권한 키 대신 다국어 라벨을 노출합니다.
      *
      * 회귀: posts.read-secret(사용자) 라벨 누락으로 키가 그대로 노출되던 문제 (이슈 #413-20)
+     *
+     * @scenario guarded_input=board_settings, input_case=violating
+     *
+     * @effects permission_roles_required_uses_localized_label_for_read_secret
+     *
+     * @return void 반환값 없음
      */
     public function test_permission_roles_required_uses_localized_label_for_read_secret(): void
     {
-        $rule = new PermissionRolesRequiredRule();
+        $rule = new PermissionRolesRequiredRule;
         $value = [
             'posts.read-secret' => ['roles' => []],
         ];
@@ -193,20 +273,32 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 예약된 slug 'boards'는 fail합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=violating
+     *
+     * @effects slug_unique_fails_for_reserved_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_slug_unique_fails_for_reserved_slug(): void
     {
-        $rule = new SlugUniqueRule();
+        $rule = new SlugUniqueRule;
         $failures = $this->runRule($rule, 'boards');
         $this->assertNotEmpty($failures);
     }
 
     /**
      * 이미 존재하는 slug는 fail합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=violating
+     *
+     * @effects slug_unique_fails_for_existing_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_slug_unique_fails_for_existing_slug(): void
     {
-        $rule = new SlugUniqueRule();
+        $rule = new SlugUniqueRule;
         // $this->board->slug는 이미 DB에 존재
         $failures = $this->runRule($rule, $this->board->slug);
         $this->assertNotEmpty($failures);
@@ -214,10 +306,16 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 새로운 slug는 통과합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=conforming
+     *
+     * @effects slug_unique_passes_for_new_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_slug_unique_passes_for_new_slug(): void
     {
-        $rule = new SlugUniqueRule();
+        $rule = new SlugUniqueRule;
         $this->assertEmpty($this->runRule($rule, 'completely-new-unique-slug-xyz'));
     }
 
@@ -227,6 +325,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * cooldownSeconds가 0이면 항상 통과합니다.
+     *
+     * @scenario guarded_input=write_flow, input_case=skipped_input
+     *
+     * @effects cooldown_rule_passes_when_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_cooldown_rule_passes_when_disabled(): void
     {
@@ -236,6 +340,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 쿨다운 캐시가 없으면 통과합니다.
+     *
+     * @scenario guarded_input=write_flow, input_case=conforming
+     *
+     * @effects cooldown_rule_passes_when_no_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_cooldown_rule_passes_when_no_cache(): void
     {
@@ -252,6 +362,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 제거 카테고리가 없으면 통과합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=conforming
+     *
+     * @effects category_in_use_passes_when_no_removal
+     *
+     * @return void 반환값 없음
      */
     public function test_category_in_use_passes_when_no_removal(): void
     {
@@ -265,6 +381,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 제거 카테고리가 있어도 파티션 테이블이 없으면 통과합니다.
+     *
+     * @scenario guarded_input=board_settings, input_case=skipped_input
+     *
+     * @effects category_in_use_passes_when_table_not_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_category_in_use_passes_when_table_not_exists(): void
     {
@@ -283,6 +405,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * blinded 게시글에 댓글 작성 → fail
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects comment_validation_fails_for_blinded_post
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_validation_fails_for_blinded_post(): void
     {
@@ -294,12 +422,18 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 소프트 삭제된 게시글에 댓글 작성 → fail
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects comment_validation_fails_for_deleted_post
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_validation_fails_for_deleted_post(): void
     {
         $postId = $this->createTestPost();
         // soft delete
-        \Illuminate\Support\Facades\DB::table('board_posts')
+        DB::table('board_posts')
             ->where('id', $postId)
             ->update(['deleted_at' => now()]);
 
@@ -310,6 +444,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 존재하지 않는 게시글 ID → fail
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects comment_validation_fails_for_nonexistent_post
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_validation_fails_for_nonexistent_post(): void
     {
@@ -320,6 +460,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 정상 게시글에 댓글 작성 → 통과
+     *
+     * @scenario guarded_input=write_flow, input_case=conforming
+     *
+     * @effects comment_validation_passes_for_published_post
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_validation_passes_for_published_post(): void
     {
@@ -330,6 +476,12 @@ class BoardRulesTest extends BoardTestCase
 
     /**
      * 값이 비어있으면 통과합니다 (nullable).
+     *
+     * @scenario guarded_input=write_flow, input_case=skipped_input
+     *
+     * @effects comment_validation_passes_for_empty_value
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_validation_passes_for_empty_value(): void
     {

@@ -1,354 +1,397 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "쿠폰 다운로드 모달 - 다운로드 가능 쿠폰 목록 (2열 카드 그리드, 스크롤)",
-    "editor_label": "$t:user.modal_label.shop.coupon_download_modal"
-  },
-  "type": "composite",
-  "name": "Modal",
-  "id": "coupon_download_modal",
-  "props": {
-    "title": "$t:shop.coupon_download.modal_title",
-    "size": "lg"
-  },
-  "children": [
-    {
-      "comment": "초기 로딩 상태 (데이터 없을 때만)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(_local.downloadableCouponsLoading ?? $parent._local.downloadableCouponsLoading) && !(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data}}",
-      "props": { "className": "flex flex-col items-center justify-center py-12" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-3" }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-          "text": "$t:shop.coupon_download.loading"
-        }
-      ]
+    "comment": "받아 갈 수 있는 쿠폰을 모아 보여 주는 창. 상품 상세와 주문서가 같은 창을 열고, 목록은 각 화면이\n     제 데이터소스로 채워 넣는다 — 창 자신은 무엇을 받을 수 있는지 알지 못한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쿠폰 다운로드 모달 - 다운로드 가능 쿠폰 목록 (2열 카드 그리드, 스크롤)",
+        "editor_label": "$t:user.modal_label.shop.coupon_download_modal"
     },
-    {
-      "comment": "빈 상태 (쿠폰 없음)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!(_local.downloadableCouponsLoading ?? $parent._local.downloadableCouponsLoading) && (!(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data || (_local.downloadableCoupons ?? $parent._local.downloadableCoupons).data.length === 0)}}",
-      "props": { "className": "flex flex-col items-center justify-center py-12 text-center" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": { "name": "ticket", "className": "text-3xl text-gray-300 dark:text-gray-600 mb-3" }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" },
-          "text": "$t:shop.coupon_download.empty"
-        }
-      ]
+    "id": "coupon_download_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:shop.coupon_download.modal_title",
+        "size": "lg"
     },
-    {
-      "comment": "쿠폰 카드 그리드",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data?.length > 0}}",
-      "props": { "className": "flex flex-col" },
-      "children": [
+    "children": [
         {
-          "comment": "2열 그리드 (모바일 1열) - 무한스크롤 영역",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "relative grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto" },
-          "actions": [
-            {
-              "comment": "무한스크롤: 하단 근접 시 다음 페이지 로드 (로딩 중/마지막 페이지 제외). debounce 로 연속 스크롤 이벤트 중복 호출 방지",
-              "type": "scroll",
-              "handler": "conditions",
-              "debounce": 200,
-              "conditions": [
+            "comment": "초기 로딩 상태 (데이터 없을 때만)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.downloadableCouponsLoading ?? $parent._local.downloadableCouponsLoading) && !(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data}}",
+            "props": {
+                "className": "flex flex-col items-center justify-center py-12"
+            },
+            "children": [
                 {
-                  "if": "{{($event.target.scrollTop + $event.target.clientHeight >= $event.target.scrollHeight - 80) && !(_local.downloadingMore ?? $parent._local.downloadingMore) && ((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.current_page < (_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.last_page)}}",
-                  "then": {
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "downloadingMore": true
-                        }
-                      },
-                      {
-                        "handler": "apiCall",
-                        "target": "/api/modules/sirsoft-ecommerce/user/coupons/downloadable?per_page=8&page={{((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.current_page ?? 1) + 1}}",
-                        "auth_mode": "required",
-                        "params": { "method": "GET" },
-                        "onSuccess": [
-                          {
-                            "comment": "기존 목록에 다음 페이지 결과 누적 + 페이지 메타 갱신",
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "downloadableCoupons": "{{Object.assign({}, response.data, { data: [...((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data ?? []), ...response.data.data] })}}",
-                              "downloadingMore": false
-                            }
-                          }
-                        ],
-                        "onError": [
-                          {
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "downloadingMore": false
-                            }
-                          },
-                          {
-                            "handler": "toast",
-                            "params": {
-                              "type": "error",
-                              "message": "{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "comment": "쿠폰 카드",
-              "type": "basic",
-              "name": "Div",
-              "iteration": {
-                "source": "{{(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data ?? []}}",
-                "item_var": "coupon",
-                "index_var": "couponIdx"
-              },
-              "props": {
-                "className": "relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-sm transition-shadow"
-              },
-              "children": [
-                {
-                  "comment": "할인 금액/비율",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "mb-2" },
-                  "children": [
-                    {
-                      "comment": "정율 할인",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{coupon.discount_type === 'rate'}}",
-                      "props": { "className": "text-xl font-bold text-blue-600 dark:text-blue-400" },
-                      "text": "{{coupon.discount_value}}%"
-                    },
-                    {
-                      "comment": "정액 할인 — 선택 통화 환산 (A1-④, formatted 가 기호 포함)",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{coupon.discount_type === 'fixed' && coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
-                      "props": { "className": "text-xl font-bold text-blue-600 dark:text-blue-400" },
-                      "text": "{{coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}"
-                    },
-                    {
-                      "comment": "정액 할인 — 폴백(환산 부재 시 기본통화 숫자 + 단위)",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{coupon.discount_type === 'fixed' && !coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
-                      "props": { "className": "text-xl font-bold text-blue-600 dark:text-blue-400" },
-                      "text": "{{Number(coupon.discount_value).toLocaleString()}}$t:shop.coupon_download.currency_unit"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-3"
                     }
-                  ]
                 },
                 {
-                  "comment": "쿠폰명",
-                  "type": "basic",
-                  "name": "P",
-                  "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-1 line-clamp-1" },
-                  "text": "{{coupon.localized_name ?? coupon.name}}"
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:shop.coupon_download.loading"
+                }
+            ]
+        },
+        {
+            "comment": "빈 상태 (쿠폰 없음)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!(_local.downloadableCouponsLoading ?? $parent._local.downloadableCouponsLoading) && (!(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data || (_local.downloadableCoupons ?? $parent._local.downloadableCoupons).data.length === 0)}}",
+            "props": {
+                "className": "flex flex-col items-center justify-center py-12 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "ticket",
+                        "className": "text-3xl text-gray-300 dark:text-gray-600 mb-3"
+                    }
                 },
                 {
-                  "comment": "최소 주문 금액 — 선택 통화 환산 (A1-④, formatted 가 기호 포함)",
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{coupon.min_order_amount > 0 && coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
-                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-1" },
-                  "text": "$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}"
-                },
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                    },
+                    "text": "$t:shop.coupon_download.empty"
+                }
+            ]
+        },
+        {
+            "comment": "쿠폰 카드 그리드",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data?.length > 0}}",
+            "props": {
+                "className": "flex flex-col"
+            },
+            "children": [
                 {
-                  "comment": "최소 주문 금액 — 폴백(환산 부재 시)",
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{coupon.min_order_amount > 0 && !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
-                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-1" },
-                  "text": "$t:shop.coupon_download.min_order_amount {{Number(coupon.min_order_amount).toLocaleString()}}$t:shop.coupon_download.currency_unit"
-                },
-                {
-                  "comment": "유효기간",
-                  "type": "basic",
-                  "name": "P",
-                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mb-3" },
-                  "text": "{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : '$t:shop.coupon_download.no_expiry'}}"
-                },
-                {
-                  "comment": "다운로드 버튼 - 이미 받은 쿠폰",
-                  "type": "basic",
-                  "name": "Button",
-                  "if": "{{coupon.is_downloaded}}",
-                  "props": {
-                    "type": "button",
-                    "disabled": true,
-                    "className": "w-full py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-md cursor-not-allowed"
-                  },
-                  "text": "$t:shop.coupon_download.already_downloaded"
-                },
-                {
-                  "comment": "다운로드 버튼 - 다운로드 진행 중",
-                  "type": "basic",
-                  "name": "Button",
-                  "if": "{{!coupon.is_downloaded && _local.downloadingCouponId === coupon.id}}",
-                  "props": {
-                    "type": "button",
-                    "disabled": true,
-                    "className": "w-full py-2 text-sm font-medium text-blue-400 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-md cursor-not-allowed"
-                  },
-                  "text": "$t:shop.coupon_download.downloading"
-                },
-                {
-                  "comment": "다운로드 버튼 - 다운로드 가능",
-                  "type": "basic",
-                  "name": "Button",
-                  "if": "{{!coupon.is_downloaded && _local.downloadingCouponId !== coupon.id}}",
-                  "props": {
-                    "type": "button",
-                    "className": "w-full py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-md transition-colors"
-                  },
-                  "text": "$t:shop.coupon_download.download_btn",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "actions": [
+                    "comment": "2열 그리드 (모바일 1열) - 무한스크롤 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "actions": [
                         {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "downloadingCouponId": "{{coupon.id}}"
-                          }
+                            "comment": "무한스크롤: 하단 근접 시 다음 페이지 로드 (로딩 중/마지막 페이지 제외). debounce 로 연속 스크롤 이벤트 중복 호출 방지",
+                            "type": "scroll",
+                            "handler": "conditions",
+                            "conditions": [
+                                {
+                                    "if": "{{($event.target.scrollTop + $event.target.clientHeight >= $event.target.scrollHeight - 80) && !(_local.downloadingMore ?? $parent._local.downloadingMore) && ((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.current_page < (_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.last_page)}}",
+                                    "then": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "downloadingMore": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/modules/sirsoft-ecommerce/user/coupons/downloadable?per_page=8&page={{((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.current_page ?? 1) + 1}}",
+                                                "auth_mode": "required",
+                                                "params": {
+                                                    "method": "GET"
+                                                },
+                                                "onSuccess": {
+                                                    "comment": "기존 목록에 다음 페이지 결과 누적 + 페이지 메타 갱신",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "downloadableCoupons": "{{Object.assign({}, response.data, { data: [...((_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data ?? []), ...response.data.data] })}}",
+                                                        "downloadingMore": false
+                                                    }
+                                                },
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "downloadingMore": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "debounce": 200
+                        }
+                    ],
+                    "props": {
+                        "className": "relative grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto"
+                    },
+                    "children": [
+                        {
+                            "comment": "쿠폰 카드",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{(_local.downloadableCoupons ?? $parent._local.downloadableCoupons)?.data ?? []}}",
+                                "item_var": "coupon",
+                                "index_var": "couponIdx"
+                            },
+                            "props": {
+                                "className": "relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-sm transition-shadow"
+                            },
+                            "children": [
+                                {
+                                    "comment": "할인 금액/비율",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "정율 할인",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{coupon.discount_type === 'rate'}}",
+                                            "props": {
+                                                "className": "text-xl font-bold text-blue-600 dark:text-blue-400"
+                                            },
+                                            "text": "{{coupon.discount_value}}%"
+                                        },
+                                        {
+                                            "comment": "정액 할인 — 선택 통화 환산 (A1-④, formatted 가 기호 포함)",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{coupon.discount_type === 'fixed' && coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
+                                            "props": {
+                                                "className": "text-xl font-bold text-blue-600 dark:text-blue-400"
+                                            },
+                                            "text": "{{coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}"
+                                        },
+                                        {
+                                            "comment": "정액 할인 — 폴백(환산 부재 시 기본통화 숫자 + 단위)",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{coupon.discount_type === 'fixed' && !coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
+                                            "props": {
+                                                "className": "text-xl font-bold text-blue-600 dark:text-blue-400"
+                                            },
+                                            "text": "{{Number(coupon.discount_value).toLocaleString()}}$t:shop.coupon_download.currency_unit"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "쿠폰명",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white mb-1 line-clamp-1"
+                                    },
+                                    "text": "{{coupon.localized_name ?? coupon.name}}"
+                                },
+                                {
+                                    "comment": "최소 주문 금액 — 선택 통화 환산 (A1-④, formatted 가 기호 포함)",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{coupon.min_order_amount > 0 && coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}"
+                                },
+                                {
+                                    "comment": "최소 주문 금액 — 폴백(환산 부재 시)",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{coupon.min_order_amount > 0 && !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "$t:shop.coupon_download.min_order_amount {{Number(coupon.min_order_amount).toLocaleString()}}$t:shop.coupon_download.currency_unit"
+                                },
+                                {
+                                    "comment": "유효기간",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 mb-3"
+                                    },
+                                    "text": "{{coupon.valid_to ? '$t:shop.coupon_download.valid_until ' + coupon.valid_to.split('T')[0] : '$t:shop.coupon_download.no_expiry'}}"
+                                },
+                                {
+                                    "comment": "다운로드 버튼 - 이미 받은 쿠폰",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{coupon.is_downloaded}}",
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": true,
+                                        "className": "w-full py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-md cursor-not-allowed"
+                                    },
+                                    "text": "$t:shop.coupon_download.already_downloaded"
+                                },
+                                {
+                                    "comment": "다운로드 버튼 - 다운로드 진행 중",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{!coupon.is_downloaded && _local.downloadingCouponId === coupon.id}}",
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": true,
+                                        "className": "w-full py-2 text-sm font-medium text-blue-400 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-md cursor-not-allowed"
+                                    },
+                                    "text": "$t:shop.coupon_download.downloading"
+                                },
+                                {
+                                    "comment": "다운로드 버튼 - 다운로드 가능",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{!coupon.is_downloaded && _local.downloadingCouponId !== coupon.id}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "downloadingCouponId": "{{coupon.id}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-ecommerce/user/coupons/{{coupon.id}}/download",
+                                                    "auth_mode": "required",
+                                                    "params": {
+                                                        "method": "POST"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "downloadingCouponId": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "모달 _local의 쿠폰 목록에서 해당 쿠폰의 is_downloaded를 true로 변경",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "downloadableCoupons": "{{Object.assign({}, (_local.downloadableCoupons ?? $parent._local.downloadableCoupons), { data: (_local.downloadableCoupons ?? $parent._local.downloadableCoupons).data.map(c => c.id === coupon.id ? Object.assign({}, c, { is_downloaded: true }) : c) })}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "상품 상세 쿠폰 목록 갱신 - 다운로드 상태 반영",
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "productDownloadableCoupons"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "$t:shop.coupon_download.download_success"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "체크아웃 데이터 갱신 - 새로 다운로드한 쿠폰이 셀렉트박스에 반영되도록",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/modules/sirsoft-ecommerce/checkout",
+                                                            "auth_mode": "required",
+                                                            "params": {
+                                                                "method": "PUT",
+                                                                "body": "{{_local.checkout ?? $parent._local.checkout}}"
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "updateDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "checkoutData",
+                                                                    "data": "{{response}}"
+                                                                }
+                                                            },
+                                                            "onError": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "downloadingCouponId": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message ?? '$t:shop.coupon_download.download_failed'}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-md transition-colors"
+                                    },
+                                    "text": "$t:shop.coupon_download.download_btn"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "다음 페이지 로딩 인디케이터 (무한스크롤)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.downloadingMore ?? $parent._local.downloadingMore}}",
+                    "props": {
+                        "className": "flex flex-col items-center justify-center py-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400 mb-2"
+                            }
                         },
                         {
-                          "handler": "apiCall",
-                          "target": "/api/modules/sirsoft-ecommerce/user/coupons/{{coupon.id}}/download",
-                          "auth_mode": "required",
-                          "params": { "method": "POST" },
-                          "onSuccess": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "downloadingCouponId": null
-                              }
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
-                            {
-                              "comment": "모달 _local의 쿠폰 목록에서 해당 쿠폰의 is_downloaded를 true로 변경",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "downloadableCoupons": "{{Object.assign({}, (_local.downloadableCoupons ?? $parent._local.downloadableCoupons), { data: (_local.downloadableCoupons ?? $parent._local.downloadableCoupons).data.map(c => c.id === coupon.id ? Object.assign({}, c, { is_downloaded: true }) : c) })}}"
-                              }
-                            },
-                            {
-                              "comment": "상품 상세 쿠폰 목록 갱신 - 다운로드 상태 반영",
-                              "handler": "refetchDataSource",
-                              "params": { "dataSourceId": "productDownloadableCoupons" }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "$t:shop.coupon_download.download_success"
-                              }
-                            },
-                            {
-                              "comment": "체크아웃 데이터 갱신 - 새로 다운로드한 쿠폰이 셀렉트박스에 반영되도록",
-                              "handler": "apiCall",
-                              "target": "/api/modules/sirsoft-ecommerce/checkout",
-                              "auth_mode": "required",
-                              "params": {
-                                "method": "PUT",
-                                "body": "{{_local.checkout ?? $parent._local.checkout}}"
-                              },
-                              "onSuccess": [
-                                {
-                                  "handler": "updateDataSource",
-                                  "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
-                                }
-                              ],
-                                "onError": [
-                                    {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
-                                        }
-                                    }
-                                ]
-                            }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "downloadingCouponId": null
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message ?? '$t:shop.coupon_download.download_failed'}}"
-                              }
-                            }
-                          ]
+                            "text": "$t:shop.coupon_download.loading"
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "다음 페이지 로딩 인디케이터 (무한스크롤)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.downloadingMore ?? $parent._local.downloadingMore}}",
-          "props": { "className": "flex flex-col items-center justify-center py-4" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400 mb-2" }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-              "text": "$t:shop.coupon_download.loading"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

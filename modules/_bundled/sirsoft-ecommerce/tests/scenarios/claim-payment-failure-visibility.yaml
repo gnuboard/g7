@@ -1,0 +1,17 @@
+# e2e:allow 관리자 클레임 상세의 두 안내(망취소 실패·전이 실패)는 07 문서 실측 범위 밖의 장애 재현이라 레이아웃 구조와 서버 테스트로 잠근다.
+feature: 클레임 결제 뒤처리 실패를 결제 건·상세에 드러낸다 (B4 · B5) — #747 C9
+
+description: |
+  - B4 금액 불일치 승인의 망취소가 실패하면(예외·미지원·거절) 결제 건 pg_error_code=VOID_FAILED 를 남기고 관리자 상세의
+    결제 건 줄에 「결제사 콘솔에서 직접 취소」 를 띄운다.
+  - B5 결제 확정 뒤 신청서 전이가 거절되면 경고 로그로 올리고, ClaimResource.paid_but_transition_failed 로 상세에 알린다.
+
+axes:
+  item: [b4_void_failed, b5_transition_failed]
+
+effects:
+  - void_failure_is_recorded_on_the_payment
+  - paid_claim_stuck_in_payment_pending_is_flagged
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ClaimPaymentFailureVisibilityTest.php

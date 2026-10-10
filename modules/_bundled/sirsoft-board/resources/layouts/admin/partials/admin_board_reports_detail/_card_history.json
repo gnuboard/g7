@@ -1,130 +1,132 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Histories Card for Admin Report Detail View"
-  },
-  "id": "card_history",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "id": "history_title",
-      "type": "basic",
-      "name": "H2",
-      "props": {
-        "className": "card-title"
-      },
-      "text": "$t:sirsoft-board.admin.reports.detail.histories_title"
+    "comment": "신고 처리 이력 표 — 서버가 준 배열을 그대로 보여줄 뿐이라 정렬·페이지·선택이 전부 꺼져 있다. 행동 종류마다 배지 색과 문구가 따로 있고, 아는 종류가 아니면 서버 라벨(없으면 종류 값)로 떨어져 새 종류가 생겨도 빈칸이 되지 않는다",
+    "meta": {
+        "is_partial": true,
+        "description": "Histories Card for Admin Report Detail View",
+        "_e2e_allow": "e2e:allow 이력 표는 서버 배열을 그대로 그리는 읽기 전용 화면이라 정렬·페이지·선택이 전부 꺼져 있다. 이번 변경은 기존 종류 삼항에 report_cancelled 분기(배지색 + 라벨 키) 하나를 더한 것뿐이며, 모르는 종류가 서버 라벨로 떨어지던 폴백은 그대로다. 라벨 해석은 ko/en 양쪽 __() 실측으로 확인했고, 취소 이력이 실제로 쌓이는 경로는 MyReportsApiTest 가 커버한다."
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "id": "history_data_grid",
-          "type": "composite",
-          "name": "DataGrid",
-          "if": "{{report_detail?.data?.histories && report_detail?.data?.histories.length > 0}}",
-          "props": {
-            "className": "histories-compact-grid",
-            "columns": [
-              {
-                "field": "created_at",
-                "header": "$t:sirsoft-board.admin.reports.detail.table.date",
-                "sortable": false,
-                "required": true,
-                "cellChildren": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "text-tertiary"
-                    },
-                    "text": "{{row.created_at}}"
-                  }
-                ]
-              },
-              {
-                "field": "processor_name",
-                "header": "$t:sirsoft-board.admin.reports.detail.table.processor",
-                "sortable": false,
-                "required": true,
-                "cellChildren": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "text-xs text-gray-900 dark:text-white"
-                    },
-                    "text": "{{row.processor_name}}{{row.processor_email ? ' (' + row.processor_email + ')' : ''}}"
-                  }
-                ]
-              },
-              {
-                "field": "type",
-                "header": "$t:sirsoft-board.admin.reports.detail.table.action",
-                "sortable": false,
-                "required": true,
-                "cellChildren": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{row.type === 'reported' ? 'bg-blue-100 text-blue-800 dark:bg-blue-600 dark:text-white' : row.type === 're_reported' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-600 dark:text-white' : row.type === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-600 dark:text-white' : row.type === 'suspended' ? 'bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-white' : row.type === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-500 dark:text-white' : row.type === 'restored' ? 'bg-green-100 text-green-800 dark:bg-green-600 dark:text-white' : row.type === 'review' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-600 dark:text-white' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-100'}}"
-                    },
-                    "text": "{{row.type === 'reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.reported' : row.type === 're_reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.re_reported' : row.type === 'rejected' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.rejected' : row.type === 'suspended' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.suspended' : row.type === 'deleted' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.deleted' : row.type === 'restored' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.restored' : row.type === 'review' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.review' : row.action_label ?? row.type}}"
-                  }
-                ]
-              },
-              {
-                "field": "reason",
-                "header": "$t:sirsoft-board.admin.reports.detail.table.reason",
-                "sortable": false,
-                "required": true,
-                "cellChildren": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line break-words max-w-md"
-                    },
-                    "text": "{{row.reason}}"
-                  }
-                ]
-              }
-            ],
-            "data": "{{report_detail?.data?.histories ?? []}}",
-            "sortable": false,
-            "pagination": false,
-            "selectable": false,
-            "showColumnSelector": false,
-            "responsiveBreakpoint": 768,
-            "emptyMessage": "$t:sirsoft-board.admin.reports.detail.no_histories"
-          }
-        }
-      ]
+    "id": "card_history",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
     },
-    {
-      "id": "history_empty",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!report_detail?.data?.histories || report_detail?.data?.histories.length === 0}}",
-      "props": {
-        "className": "text-center py-8"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-board.admin.reports.detail.no_histories"
+            "id": "history_title",
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-board.admin.reports.detail.histories_title"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "id": "history_data_grid",
+                    "type": "composite",
+                    "name": "DataGrid",
+                    "if": "{{report_detail?.data?.histories && report_detail?.data?.histories.length > 0}}",
+                    "props": {
+                        "className": "histories-compact-grid",
+                        "data": "{{report_detail?.data?.histories ?? []}}",
+                        "sortable": false,
+                        "pagination": false,
+                        "selectable": false,
+                        "showColumnSelector": false,
+                        "responsiveBreakpoint": 768,
+                        "emptyMessage": "$t:sirsoft-board.admin.reports.detail.no_histories",
+                        "columns": [
+                            {
+                                "field": "created_at",
+                                "header": "$t:sirsoft-board.admin.reports.detail.table.date",
+                                "sortable": false,
+                                "required": true,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-tertiary"
+                                        },
+                                        "text": "{{row.created_at}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "processor_name",
+                                "header": "$t:sirsoft-board.admin.reports.detail.table.processor",
+                                "sortable": false,
+                                "required": true,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-xs text-gray-900 dark:text-white"
+                                        },
+                                        "text": "{{row.processor_name}}{{row.processor_email ? ' (' + row.processor_email + ')' : ''}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "type",
+                                "header": "$t:sirsoft-board.admin.reports.detail.table.action",
+                                "sortable": false,
+                                "required": true,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{row.type === 'reported' ? 'bg-blue-100 text-blue-800 dark:bg-blue-600 dark:text-white' : row.type === 're_reported' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-600 dark:text-white' : row.type === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-600 dark:text-white' : row.type === 'suspended' ? 'bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-white' : row.type === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-500 dark:text-white' : row.type === 'restored' ? 'bg-green-100 text-green-800 dark:bg-green-600 dark:text-white' : row.type === 'review' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-600 dark:text-white' : row.type === 'report_cancelled' ? 'bg-slate-100 text-slate-800 dark:bg-slate-600 dark:text-white' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-100'}}"
+                                        },
+                                        "text": "{{row.type === 'reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.reported' : row.type === 're_reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.re_reported' : row.type === 'rejected' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.rejected' : row.type === 'suspended' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.suspended' : row.type === 'deleted' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.deleted' : row.type === 'restored' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.restored' : row.type === 'review' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.review' : row.type === 'report_cancelled' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.report_cancelled' : row.action_label ?? row.type}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "reason",
+                                "header": "$t:sirsoft-board.admin.reports.detail.table.reason",
+                                "sortable": false,
+                                "required": true,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line break-words max-w-md"
+                                        },
+                                        "text": "{{row.reason}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "id": "history_empty",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!report_detail?.data?.histories || report_detail?.data?.histories.length === 0}}",
+            "props": {
+                "className": "text-center py-8"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-board.admin.reports.detail.no_histories"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

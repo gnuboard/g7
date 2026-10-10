@@ -12,7 +12,6 @@
  * 의 계층 분리 주석 참조). 본 spec 은 z-index 계약과 클릭 라우팅(elementFromPoint topmost)·
  * ⓘ 메뉴 오픈·드래그 시작 보존을 검증한다.
  *
- * @scenario context_plus_button selected_node_state=basic_selected
  * 효과 요약(마커 아님 — 평문): overlay_affordance_above_drag_handle_zindex, overlay_affordance_click_not_intercepted_by_drag_handle, drag_handle_depth_clamped_below_affordance_band, drag_initiation_preserved_on_element_body_after_affordance_zindex_fix.
  */
 import type { Page } from '@playwright/test';

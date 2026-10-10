@@ -1,258 +1,256 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Form - Label Registration/Edit Modal",
-    "editor_label": "$t:sirsoft-ecommerce.admin.product.labels.modal_title_create"
-  },
-  "id": "modal_label_form",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}",
-    "description": "$t:sirsoft-ecommerce.admin.product.labels.modal_description",
-    "size": "md"
-  },
-  "children": [
-    {
-      "id": "label_form_content",
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "comment": "상품 폼 — 라벨 등록·수정 창. 라벨 관리 화면으로 나가지 않고 상품을 편집하던 자리에서 바로 만든다.\n  등록/수정 구분은 편집 대상 id(`_global.editingLabelId`)의 유무이고, 입력값은 전역에 둔다\n  (창은 별도 컨텍스트라 폼의 _local 을 못 쓴다).",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Form - Label Registration/Edit Modal",
+        "editor_label": "$t:sirsoft-ecommerce.admin.product.labels.modal_title_create"
+    },
+    "id": "modal_label_form",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}",
+        "size": "md"
+    },
+    "children": [
         {
-          "id": "label_preview_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "id": "label_form_content",
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.labels.preview"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center justify-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "px-3 py-1.5 rounded-full text-sm font-medium",
-                        "style": "background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}"
-                      },
-                      "text": "{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}"
-                    }
-                  ]
-                }
-              ],
-              "props": {
-              }
-            }
-          ]
-        },
-        {
-          "id": "label_name_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.labels.name"
-                },
-                {
-                  "type": "composite",
-                  "name": "MultilingualInput",
-                  "props": {
-                    "name": "label_name",
-                    "value": "{{_global.labelFormData?.name ?? { ko: '', en: '' }}}",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.name",
-                    "layout": "tabs"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "labelFormData.name": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                }
-              ],
-              "props": {
-              }
-            }
-          ]
-        },
-        {
-          "id": "label_color_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.labels.color"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "color",
-                        "value": "{{_global.labelFormData?.color ?? '#6B7280'}}",
-                        "className": "w-12 h-10 p-1 rounded cursor-pointer"
-                      },
-                      "actions": [
+                    "id": "label_preview_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "labelFormData.color": "{{$event.target.value}}"
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.preview"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center justify-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "px-3 py-1.5 rounded-full text-sm font-medium",
+                                                "style": "background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}"
+                                            },
+                                            "text": "{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
+                    ]
+                },
+                {
+                    "id": "label_name_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.name"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "actions": [
+                                        {
+                                            "comment": "라벨 이름(다국어 한 덩어리) — 한국어가 비면 저장 버튼이 잠긴다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "labelFormData.name": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "label_name",
+                                        "value": "{{_global.labelFormData?.name ?? { ko: '', en: '' }}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.name",
+                                        "layout": "tabs"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "label_color_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.color"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "색 고르개 — 옆 글자 입력칸과 같은 값을 나눠 쓴다(어느 쪽으로 넣어도 미리보기가 따라간다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "labelFormData.color": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "color",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.labels.color",
+                                                "value": "{{_global.labelFormData?.color ?? '#6B7280'}}",
+                                                "className": "w-12 h-10 p-1 rounded cursor-pointer"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "색 코드 직접 입력 — 비우면 null 로 떨어뜨려 「색 없음」이 되게 한다(빈 문자열은 색으로 해석돼 미리보기가 깨진다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "labelFormData.color": "{{$event.target.value || null}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "label_color_text",
+                                                "value": "{{_global.labelFormData?.color ?? ''}}",
+                                                "placeholder": "#FF0000",
+                                                "className": "flex-1"
+                                            }
+                                        },
+                                        {
+                                            "comment": "색 지우기 — 색이 없으면 기본 회색으로 그려진다",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{_global.labelFormData?.color}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "labelFormData.color": null
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-ghost btn-sm text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.product.labels.color_reset"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "modal_footer",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
                     },
-                    {
-                      "type": "composite",
-                      "name": "Input",
-                      "props": {
-                        "name": "label_color_text",
-                        "value": "{{_global.labelFormData?.color ?? ''}}",
-                        "placeholder": "#FF0000",
-                        "className": "flex-1"
-                      },
-                      "actions": [
+                    "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "labelFormData.color": "{{$event.target.value || null}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "if": "{{_global.labelFormData?.color}}",
-                      "props": {
-                        "type": "button",
-                        "className": "btn btn-ghost btn-sm text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.product.labels.color_reset",
-                      "actions": [
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline",
+                                "disabled": "{{_global.isSavingLabel}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.cancel"
+                        },
                         {
-                          "type": "click",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "labelFormData.color": null
-                          }
+                            "id": "label_form_save",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.saveLabelSettings"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary",
+                                "disabled": "{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isSavingLabel}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm mr-2"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}"
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ],
-              "props": {
-              }
-            }
-          ]
-        },
-        {
-          "id": "modal_footer",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-outline",
-                "disabled": "{{_global.isSavingLabel}}"
-              },
-              "text": "$t:sirsoft-ecommerce.common.cancel",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "closeModal"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-primary",
-                "disabled": "{{_global.isSavingLabel || !_global.labelFormData?.name?.ko}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sirsoft-ecommerce.saveLabelSettings"
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "if": "{{_global.isSavingLabel}}",
-                  "props": {
-                    "name": "spinner",
-                    "className": "spinner-sm mr-2"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}"
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ],
-      "props": {
-      }
-    }
-  ]
+    ]
 }

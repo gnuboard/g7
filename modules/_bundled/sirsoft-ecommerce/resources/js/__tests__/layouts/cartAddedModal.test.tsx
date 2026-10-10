@@ -1,3 +1,4 @@
+// e2e:allow 옵션 상태 초기값의 **모양**을 `[]` 에서 `{}` 로 바로잡은 단언 갱신이다. 읽기는 `?.[키]`, 쓰기는 `Object.assign({}, …)` 라 브라우저에서 관측되는 동작은 종전과 같고, 새로 생긴 화면 표면이 없다.
 /**
  * 장바구니 담기 완료 모달 레이아웃 구조 검증 테스트
  *
@@ -17,6 +18,7 @@ import { describe, it, expect } from 'vitest';
 import modalCartAdded from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_cart_added.json';
 import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
 import purchaseCard from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.json';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('장바구니 담기 완료 모달 구조 검증', () => {
     it('모달이 올바른 id와 Modal 컴포넌트를 사용해야 함', () => {
@@ -58,21 +60,25 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
 
         expect(continueBtn.text).toContain('continue_shopping');
 
-        const clickAction = continueBtn.actions[0];
+        const clickAction = asArray(continueBtn?.actions)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
         expect(clickAction.actions).toHaveLength(2);
 
         // setState로 옵션 초기화 (additionalOptions 포함)
-        const setStateAction = clickAction.actions[0];
+        const setStateAction = asArray(clickAction?.actions)[0];
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.selectedOptionItems).toEqual([]);
+        // 이 둘은 **옵션 그룹 이름을 키로 갖는 map** 이다(`currentSelection[그룹명]`).
+        // 한때 소스가 `[]` 로 선언돼 있었고 이 단언이 그 값을 고정하고 있었는데, 그것은 작성
+        // 이관 때 `{}` 가 `[]` 로 구워진 결과였다(공용 디코더를 쓰지 않은 사본 탓). 프론트는
+        // `{}`(속성 접근 대상)와 `[]`(순서 목록)를 구분하므로 정본은 `{}` 다.
         expect(setStateAction.params.currentSelection).toEqual({});
         expect(setStateAction.params.noOptionQuantity).toBe(1);
         expect(setStateAction.params.additionalOptions).toEqual({});
 
         // closeModal
-        const closeAction = clickAction.actions[1];
+        const closeAction = asArray(clickAction?.actions)[1];
         expect(closeAction.handler).toBe('closeModal');
     });
 
@@ -87,21 +93,21 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         const footer = modalCartAdded.children[1];
         const goToCartBtn = footer.children[1];
 
-        const clickAction = goToCartBtn.actions[0];
+        const clickAction = asArray(goToCartBtn?.actions)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
         expect(clickAction.actions).toHaveLength(3);
 
         // setState로 로딩 상태 설정
-        expect(clickAction.actions[0].handler).toBe('setState');
-        expect(clickAction.actions[0].params.target).toBe('global');
-        expect(clickAction.actions[0].params.isNavigatingToCart).toBe(true);
+        expect(asArray(clickAction?.actions)[0].handler).toBe('setState');
+        expect(asArray(clickAction?.actions)[0].params.target).toBe('global');
+        expect(asArray(clickAction?.actions)[0].params.isNavigatingToCart).toBe(true);
         // closeModal
-        expect(clickAction.actions[1].handler).toBe('closeModal');
+        expect(asArray(clickAction?.actions)[1].handler).toBe('closeModal');
         // navigate
-        expect(clickAction.actions[2].handler).toBe('navigate');
+        expect(asArray(clickAction?.actions)[2].handler).toBe('navigate');
         // shopBase prefix 가 도입되어 path 가 동적으로 조립됨
-        expect(clickAction.actions[2].params.path).toBe('{{_global.shopBase}}/cart');
+        expect(asArray(clickAction?.actions)[2].params.path).toBe('{{_global.shopBase}}/cart');
     });
 
     it('장바구니 이동 버튼이 로딩 중 비활성화되어야 함', () => {
@@ -175,6 +181,8 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
     it('장바구니 버튼 onSuccess에서 옵션 상태를 초기화해야 함', () => {
         const json = JSON.stringify(purchaseCard);
 
+        // 초기화 값의 모양이 갱신 쪽(`Object.assign({}, …)`)과 같아야 한다 — 둘 다 map 이다.
+        // 종전에는 초기화만 `[]` 였는데, 그것은 소스 이관 때 `{}` 가 `[]` 로 구워진 결과였다.
         expect(json).toContain('"selectedOptionItems":[]');
         expect(json).toContain('"currentSelection":{}');
         expect(json).toContain('"noOptionQuantity":1');

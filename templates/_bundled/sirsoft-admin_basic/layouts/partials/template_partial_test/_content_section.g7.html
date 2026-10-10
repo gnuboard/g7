@@ -1,0 +1,20 @@
+<!-- 조각 끼워넣기가 **여러 겹으로 되는지** 보여 주려고 둔 예제다(실제 관리 기능이 아니다).
+  이 조각 자체가 다른 조각을 한 번 더 끼우고, 그 뒤에도 내용을 이어 붙여 「조각은 통째로
+  갈아 끼우는 것이 아니라 그 자리에 펼쳐진다」를 눈으로 보이게 한다.
+  고칠 때는 그 성질이 유지되는지만 지키면 된다 — 화면 내용 자체에는 뜻이 없다. -->
+<partial description="템플릿 Partial 테스트 - Level 1 컨텐츠 섹션 (Level 2 partial 포함)">
+  <div class="space-y-4 p-6">
+    <div class="p-4 bg-purple-50 dark:bg-purple-900 rounded-lg">
+      <div class="flex-center gap-2 mb-2">
+        <span class="text-2xl">📦</span>
+        <h2 class="text-xl font-bold text-purple-900 dark:text-purple-100">Level 1 Partial: 컨텐츠 섹션</h2>
+      </div>
+      <p class="text-sm text-purple-600 dark:text-purple-300">이 파일은 아래에 Level 2 partial 파일들을 포함합니다</p>
+    </div>
+    <include src="_info_card.g7.html"/>
+    <div class="p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg border-2 border-yellow-300 dark:border-yellow-600 mt-4">
+      <h3 class="text-md font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Partial 이후 추가 컨텐츠</h3>
+      <p class="text-sm text-yellow-600 dark:text-yellow-300">Partial 파일 뒤에도 원하는 만큼 컨텐츠를 추가할 수 있습니다.</p>
+    </div>
+  </div>
+</partial>

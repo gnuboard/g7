@@ -14,8 +14,8 @@ export interface FileDropZoneProps {
     accept?: string;
     /** 최대 파일 수 */
     maxFiles: number;
-    /** 최대 파일 크기 (MB) */
-    maxSize: number;
+    /** 최대 파일 크기 (MB) — 호출부가 선언하지 않으면 용량 문구를 쓰지 않는다(SA-D5) */
+    maxSize?: number;
     /** 자식 요소 */
     children?: React.ReactNode;
 }

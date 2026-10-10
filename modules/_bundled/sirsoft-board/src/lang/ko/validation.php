@@ -24,7 +24,7 @@ return [
         'required' => '게시판 슬러그는 필수입니다.',
         'format' => '게시판 슬러그는 영문 소문자로 시작하고 영문 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.',
         'unique' => '이미 사용 중인 게시판 슬러그입니다.',
-        'reserved' => ':value는 예약된 슬러그입니다. 다른 이름을 사용해주세요.',
+        'reserved' => '「:value」 슬러그는 예약되어 있어 쓸 수 없습니다. 다른 이름을 사용해주세요.',
         'max' => '게시판 슬러그는 :max자를 초과할 수 없습니다.',
     ],
 
@@ -179,11 +179,10 @@ return [
     'cooldown_required' => ':time 후에 다시 작성할 수 있습니다.',
     'cooldown_required_report' => '신고는 :time 간격으로 가능합니다. 잠시 후 다시 시도해주세요.',
     'cooldown_duration' => [
+        // 단위마다 따로 읽어 공백으로 잇는다(예: 「1시간 30분」). en 은 단위마다 단수·복수를 고른다.
         'seconds' => ':seconds초',
         'minutes' => ':minutes분',
-        'minutes_seconds' => ':minutes분 :seconds초',
         'hours' => ':hours시간',
-        'hours_minutes' => ':hours시간 :minutes분',
     ],
 
     // 게시판 검증 (하위 호환성 유지)
@@ -227,6 +226,22 @@ return [
 
     // 게시글 검증
     'post' => [
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => '게시글 ID는 필수입니다.',
+                'array' => '게시글 ID는 배열 형식이어야 합니다.',
+                'min' => '최소 1개 이상의 게시글을 선택해야 합니다.',
+                'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+                'integer' => '게시글 ID는 정수여야 합니다.',
+                'distinct' => '게시글 ID가 중복되었습니다.',
+            ],
+            'reason' => [
+                'max' => '사유는 :max자를 초과할 수 없습니다.',
+            ],
+        ],
         'title' => [
             'required' => '제목은 필수입니다.',
             'string' => '제목은 문자열이어야 합니다.',
@@ -284,7 +299,7 @@ return [
         'is_notice' => [
             'guest_not_allowed' => '비회원은 공지사항을 작성할 수 없습니다.',
         ],
-        'blocked_keyword' => '금지어 ":keyword"가 포함되어 있습니다.',
+        'blocked_keyword' => '금지어(":keyword")가 포함되어 있습니다.',
         'files' => [
             'array' => '첨부파일은 배열 형식이어야 합니다.',
             'max' => '최대 :max개의 파일만 업로드할 수 있습니다.',
@@ -296,6 +311,33 @@ return [
 
     // 필드 속성명 (attributes)
     'attributes' => [
+        'bulk_members' => [
+            'apply_all' => '대상 게시판 범위',
+            'board_ids' => '대상 게시판',
+            'user_uuids' => '회원',
+            'member_type' => '구분',
+            'mode' => '작업',
+        ],
+        'report_my' => [
+            'search_field' => '검색 대상',
+            'target_type' => '대상 구분',
+            'status' => '처리 상태',
+        ],
+        'reaction_type' => [
+            'id' => '반응 유형',
+            'icon' => '아이콘 이미지',
+        ],
+        'reaction' => [
+            'ids' => '반응 ID',
+            'search_field' => '검색 대상',
+            'target_type' => '대상 구분',
+            'reaction_type_id' => '반응 유형',
+        ],
+        'use_comment_reaction' => '댓글 반응 사용',
+        'scrap' => [
+            'ids' => '스크랩 ID',
+            'search_field' => '검색 대상',
+        ],
         'settings' => [
             // basic_defaults
             'basic_defaults.type' => '게시판 유형',
@@ -312,6 +354,16 @@ return [
             'basic_defaults.comment_order' => '댓글 정렬',
             'basic_defaults.show_view_count' => '조회수 표시',
             'basic_defaults.use_report' => '신고 기능 사용',
+            'basic_defaults.use_reaction' => '반응 기능 사용',
+            'basic_defaults.use_comment_reaction' => '댓글 반응 사용',
+            'basic_defaults.reaction_types' => '반응 유형',
+            'basic_defaults.reaction_types.*.code' => '반응 유형 코드',
+            'basic_defaults.reaction_types.*.name' => '반응 유형 이름',
+            'basic_defaults.reaction_types.*.name.ko' => '반응 유형 이름(한국어)',
+            'basic_defaults.reaction_types.*.icon_attachment_id' => '반응 유형 아이콘',
+            'basic_defaults.reaction_types.*.display_order' => '반응 유형 표시 순서',
+            'basic_defaults.reaction_types.*.is_active' => '반응 유형 사용 여부',
+            'basic_defaults.active_reaction_types' => '사용할 반응 유형',
             'basic_defaults.min_title_length' => '최소 제목 길이',
             'basic_defaults.max_title_length' => '최대 제목 길이',
             'basic_defaults.min_content_length' => '최소 내용 길이',
@@ -341,6 +393,39 @@ return [
             'spam_security.comment_cooldown_seconds' => '댓글 작성 쿨다운(초)',
             'spam_security.report_cooldown_seconds' => '신고 쿨다운(초)',
             'spam_security.view_count_cache_ttl' => '조회수 캐시 유효시간(초)',
+            // 묶음·나머지 칸 — 대체 문구에 필드 키가 보이지 않게 화면 이름을 쓴다
+            '_tab' => '설정 탭',
+            'basic_defaults' => '게시판 설정',
+            'basic_defaults.use_scrap' => '스크랩 사용',
+            'basic_defaults.blocked_keywords' => '금지어',
+            'basic_defaults.reaction_types.*.id' => '반응 유형',
+            'report_policy' => '신고 정책',
+            'report_policy.notify_admin_on_report' => '신고 접수 관리자 알림',
+            'report_policy.notify_admin_on_report_scope' => '알림 발송 범위',
+            'report_policy.notify_admin_on_report_channels' => '관리자 알림 채널',
+            'report_policy.notify_author_on_report_action' => '신고 처리 알림',
+            'report_policy.notify_author_on_report_action_channels' => '작성자 알림 채널',
+            'report_permissions' => '신고 관리 권한',
+            'spam_security' => '보안 설정',
+            'notifications' => '알림 설정',
+            'notifications.channels' => '알림 채널',
+            'notifications.channels.*.id' => '알림 채널',
+            'notifications.channels.*.is_active' => '알림 채널 사용 여부',
+            'notifications.channels.*.sort_order' => '알림 채널 순서',
+            'display' => '표시 설정',
+            'display.date_display_format' => '날짜 표시 방식',
+            'seo' => 'SEO 설정',
+            'seo.meta_boards_title' => '게시판 목록 페이지 메타 제목',
+            'seo.meta_boards_description' => '게시판 목록 페이지 메타 설명',
+            'seo.meta_board_title' => '게시판 글 목록 페이지 메타 제목',
+            'seo.meta_board_description' => '게시판 글 목록 페이지 메타 설명',
+            'seo.meta_post_title' => '게시글 상세 페이지 메타 제목',
+            'seo.meta_post_description' => '게시글 상세 페이지 메타 설명',
+            'seo.seo_boards' => '게시판 목록 페이지 SEO 제공',
+            'seo.seo_board' => '게시판 글 목록 페이지 SEO 제공',
+            'seo.seo_post_detail' => '게시글 상세 페이지 SEO 제공',
+            'attachment_settings.purge_enabled' => '삭제 첨부 영구 정리',
+            'attachment_settings.purge_retention_days' => '삭제 첨부 보존기간',
         ],
         'post' => [
             'title' => '제목',
@@ -381,8 +466,14 @@ return [
             'reason' => '복원 사유',
         ],
         'board' => [
+            'name' => '게시판 이름',
+            'description' => '게시판 설명',
             'add_to_menu' => '관리자 메뉴에 표시',
             'blocked_keywords' => '금지어',
+        ],
+        // 게시판 유형 — 다국어 이름 칸(코어 다국어 필수 문구가 칸 이름으로 쓴다)
+        'board_type' => [
+            'name' => '게시판 유형 이름',
         ],
         // 게시판 설정 일괄 적용
         'bulk_apply' => [
@@ -472,10 +563,10 @@ return [
             'required' => '비밀번호를 입력해주세요.',
             'min' => '비밀번호는 최소 :min자 이상이어야 합니다.',
         ],
-        'ip_address' => [
-            'required' => 'IP 주소는 필수입니다.',
+        'blocked_keyword' => '금지어(":keyword")가 포함되어 있습니다.',
+        'status' => [
+            'in' => '유효하지 않은 댓글 상태입니다.',
         ],
-        'blocked_keyword' => '금지어 ":keyword"가 포함되어 있습니다.',
     ],
 
     // 첨부파일 검증
@@ -563,6 +654,7 @@ return [
             'read' => '게시글 조회',
             'write' => '게시글 작성',
             'read-secret' => '비밀글 조회',
+            'write-notice' => '공지 등록',
         ],
         'comments' => [
             'read' => '댓글 조회',
@@ -591,6 +683,28 @@ return [
     ],
 
     // 신고 검증 메시지
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => '반응 유형은 필수입니다.',
+            'integer' => '반응 유형은 정수여야 합니다.',
+            'exists' => '존재하지 않는 반응 유형입니다.',
+        ],
+        'ids' => [
+            'required' => '반응 ID는 필수입니다.',
+            'array' => '반응 ID는 배열 형식이어야 합니다.',
+            'min' => '최소 1개 이상의 반응을 선택해야 합니다.',
+            'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+            'integer' => '반응 ID는 정수여야 합니다.',
+            'distinct' => '반응 ID가 중복되었습니다.',
+            'exists' => '존재하지 않는 반응입니다.',
+        ],
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'target_type' => [
+            'in' => '유효하지 않은 대상 구분입니다.',
+        ],
+    ],
     'report' => [
         'invalid_status_transition' => '현재 신고 상태에서는 해당 상태로 변경할 수 없습니다.',
         'status' => [
@@ -618,5 +732,136 @@ return [
         ],
         'daily_limit_exceeded' => '오늘 신고 가능 횟수(:limit회)를 초과하였습니다.',
         'rejection_limit_exceeded' => '최근 :days일간 신고 반려가 :count회 누적되어 신고가 제한되었습니다.',
+    ],
+
+    // 스크랩 검증 메시지
+    'scrap' => [
+        'ids' => [
+            'required' => '스크랩 ID는 필수입니다.',
+            'array' => '스크랩 ID는 배열 형식이어야 합니다.',
+            'min' => '최소 1개 이상의 스크랩을 선택해야 합니다.',
+            'max' => '한 번에 :max개까지 선택할 수 있습니다.',
+            'integer' => '스크랩 ID는 정수여야 합니다.',
+            'distinct' => '스크랩 ID가 중복되었습니다.',
+            'exists' => '존재하지 않는 스크랩입니다.',
+        ],
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+    ],
+
+    // 반응 유형 검증 메시지
+    'reaction_type' => [
+        'code' => [
+            'regex' => '코드는 영문 소문자로 시작하고 영문 소문자·숫자·밑줄만 쓸 수 있습니다 (2~50자).',
+            'distinct' => '반응 유형 코드가 중복되었습니다.',
+            'unique' => '이미 사용 중인 코드입니다.',
+        ],
+        'name' => [
+            'ko' => [
+                'required' => '기본 언어(한국어) 이름을 입력하세요.',
+            ],
+        ],
+        'icon_attachment_id' => [
+            'exists' => '유효하지 않은 아이콘 이미지입니다.',
+        ],
+        'icon' => [
+            'required' => '아이콘 이미지를 선택하세요.',
+            'image' => '아이콘은 이미지 파일이어야 합니다.',
+            'mimes' => '아이콘은 JPG·PNG·GIF·WEBP 형식만 올릴 수 있습니다.',
+            'max' => '아이콘 이미지는 1MB 이하여야 합니다.',
+        ],
+    ],
+
+    // 내 신고(마이페이지) 검증 메시지
+    'report_my' => [
+        'search_field' => [
+            'in' => '유효하지 않은 검색 대상입니다.',
+        ],
+        'target_type' => [
+            'in' => '유효하지 않은 대상 구분입니다.',
+        ],
+        'status' => [
+            'in' => '유효하지 않은 처리 상태입니다.',
+        ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'enabled' => '개인정보 보유기간 자동 파기',
+        'ip_retention_days' => '작성 IP 보유기간',
+        'guest_retention_days' => '비회원 작성자 정보 보유기간',
+        'guest_mode' => '비회원 글 처리 방식',
+    ],
+
+    // 게시판 요청 공용 대체 문구 (Concerns\ProvidesFallbackRuleMessages) — 요청이 칸별 문구를 정하지 않은
+    // 규칙에 쓴다. 조사를 괄호로 남기지 않고 받침과 무관하게 읽히도록 「값」「항목」을 붙인다
+    'fallback' => [
+        'in' => '선택한 :attribute 값이 올바르지 않습니다.',
+        'not_in' => '선택한 :attribute 값은 쓸 수 없습니다.',
+        'enum' => '선택한 :attribute 값이 올바르지 않습니다.',
+        'exists' => '선택한 :attribute 값이 존재하지 않습니다.',
+        'unique' => ':attribute 값이 이미 사용 중입니다.',
+        'required_if' => ':other 값이 :value일 때 :attribute 항목은 필수입니다.',
+        'required_with' => ':values 항목이 있으면 :attribute 항목도 필수입니다.',
+        'required_without' => ':values 항목이 없으면 :attribute 항목은 필수입니다.',
+        'same' => ':attribute 값이 :other 값과 같아야 합니다.',
+        'different' => ':attribute 값은 :other 값과 달라야 합니다.',
+    ],
+
+    // 게시판 요청 공용 칸 이름 (Concerns\ProvidesFallbackRuleMessages) — 요청이 attributes() 로 이름을 주지
+    // 않은 칸에 쓴다. 배열 항목(키.*)은 부모 칸 이름을 물려받는다.
+    'fallback_attributes' => [
+        'ids' => '선택 항목',
+        'reason' => '사유',
+        'limit' => '표시 개수',
+        'period' => '기간',
+        'type' => '게시판 유형',
+        'name' => '이름',
+        'slug' => '슬러그',
+        'is_active' => '사용 여부',
+        'search' => '검색어',
+        'search_field' => '검색 대상',
+        'sort' => '정렬',
+        'sort_by' => '정렬 기준',
+        'sort_order' => '정렬 방향',
+        'filters' => '검색 조건',
+        'filters.*.field' => '검색 대상',
+        'filters.*.value' => '검색어',
+        'filters.*.operator' => '검색 방식',
+        'board_id' => '게시판',
+        'board_slug' => '게시판',
+        'user_uuid' => '회원',
+        'post_id' => '게시글',
+        'parent_id' => '원글',
+        'reaction_type_id' => '반응 유형',
+        'target_type' => '대상 구분',
+        'target_status' => '변경할 상태',
+        'reacted_at_from' => '반응일 시작',
+        'reacted_at_to' => '반응일 끝',
+        'scrapped_at_from' => '스크랩일 시작',
+        'scrapped_at_to' => '스크랩일 끝',
+        'reported_at_from' => '신고일 시작',
+        'reported_at_to' => '신고일 끝',
+        'verification_token' => '본인 확인 토큰',
+        'force_delete' => '완전 삭제',
+        'collection' => '첨부 묶음',
+        'temp_key' => '임시 업로드 키',
+        'order' => '첨부 순서',
+        'order.*.id' => '첨부파일',
+        'order.*.order' => '첨부 순서 번호',
+        'categories' => '분류',
+        'board_manager_ids' => '게시판 관리자',
+        'board_step_ids' => '게시판 스텝',
+        'permissions' => '권한',
+        'permissions.*.roles' => '권한 역할',
+        'reply_delete_policy' => '답글 삭제 방식',
+        'attachment_ids' => '첨부파일',
+        'password' => '비밀번호',
+    ],
+
+    // 본인인증 정책 탭 검증 메시지
+    'identity_policy' => [
+        'target_not_owned' => '게시판 본인인증 정책은 게시판 지점만 대상으로 할 수 있습니다. 훅·사용자 지정 범위는 「sirsoft-board.」, 경로 범위는 「api.modules.sirsoft-board.」로 시작해야 합니다.',
+        'nothing_to_update' => '변경할 항목이 없습니다.',
     ],
 ];

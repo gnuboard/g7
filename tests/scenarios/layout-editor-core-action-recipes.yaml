@@ -1,0 +1,55 @@
+feature: 레이아웃 편집기 코어 액션 레시피 카탈로그 무결성
+
+description: |
+  편집기 [화면 동작] 탭이 쓰는 코어 핸들러 친화 레시피 카탈로그(CORE_ACTION_RECIPES)와
+  그 시드 3블록(actionRecipes, initActionRecipes, errorRecipes)의 무결성 회귀 가드.
+
+  핵심 동작:
+    - 카탈로그가 기대 핸들러 집합(C1~C22 핸들러, refreshConsent, 제어흐름 conditions,
+      sequence, parallel, switch, suppress)과 정확히 일치한다. 결제 진입(requestPgPayment)은
+      커머스 도메인이라 코어 카탈로그에 없다(ecommerce 모듈 editor-spec 소유).
+    - 각 레시피는 label 과 build.handler 를 갖고, build.handler 가 카탈로그 키와 같으며,
+      actionRecipeEngine 으로 전부 정규화되고 빌드된다.
+    - param 위젯 계약: navigate 의 transition_overlay_target 은 replace 종속 대상 선택기,
+      switch cases 는 advanced 잠금, 중첩 액션 컨테이너는 action-list, conditions 는
+      branch-list 이고 액션 최상위 conditions 키로 빌드된다.
+    - apiCall identity_target 은 data-chip 일반 입력칸이고, 입력하면 액션 최상위
+      identity_target 으로 빌드되며 미입력이면 키가 떨궈진다. identity_target 을 선언하지
+      않은 apiCall 도 친화 폼으로 역매칭된다.
+    - 레시피 라벨과 param 라벨은 모두 $t: 다국어 키다.
+    - 시드는 actionRecipes 와 initActionRecipes 가 같은 카탈로그를 가리키고, errorRecipes 는
+      부분집합에 에러 탭 전용 showErrorPage 를 더한다.
+
+# axis 의미:
+#   catalog_aspect 는 카탈로그를 어느 면에서 검사하는지를 가른다. 각 면은 서로 곱해지지
+#   않는 독립 검사다(카탈로그 하나를 여러 각도에서 잠근다).
+axes:
+  catalog_aspect: [handler_set, build_contract, param_widget, apiCall_identity_target, i18n_label, seed_blocks]
+
+effects:
+  - core_action_catalog_matches_expected_handler_set
+  - core_action_recipe_build_handler_matches_catalog_key
+  - core_action_recipes_all_normalize_and_build
+  - navigate_transition_overlay_target_param_gated_by_replace
+  - navigate_refetch_data_sources_survives_editor_roundtrip
+  - navigate_refetch_data_sources_survives_editor_save_e2e
+  - switch_cases_param_locked_advanced
+  - nested_action_containers_use_action_list_not_advanced
+  - conditions_recipe_builds_top_level_conditions_key
+  - apiCall_identity_target_params_are_editable_data_chip
+  - apiCall_identity_target_built_at_action_top_level
+  - apiCall_identity_target_dropped_when_empty
+  - apiCall_without_identity_target_matches_friendly_preset
+  - core_action_recipe_labels_are_i18n_keys
+  - core_action_seed_shares_catalog_and_error_recipes_add_show_error_page
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/coreActionRecipes.test.ts
+  - tests/Playwright/specs/layout-editor/navigate-refetch-roundtrip.spec.ts
+
+notes: |
+  navigate_refetch_data_sources_survives_editor_save_e2e 는 실제 편집기 UI 왕복이다 — 관리자 환경설정
+  본인인증 탭 「검색」 navigate 를 동작 편집 폼으로 열어 스크롤 위치만 바꿔 저장하면, 저장 요청 본문
+  (서버로 보내지 않고 가로챔)의 그 탭 navigate 7개가 모두 refetch_data_sources 를 갖는다.
+  카탈로그는 정적 데이터라 Pure Logic 단위 테스트로 잠근다. 레시피 빌드와 역매칭의
+  일반 메커니즘(placeholder 핸들러 recipe 포함)은 actionRecipeEngine 단위 테스트가 맡는다.

@@ -20,6 +20,10 @@ description: |
     - 발송 로깅: 게스트는 recipient_user_id=null + recipient_identifier=email (정수 FK 미오염)
     - 수신자 언어: 주문 시 저장된 orderer_locale → guest_recipient.locale → 메일 렌더 언어
     - 이커머스: 비회원 주문 6종 알림이 buildOrderContext 단일 지점에서 guest_recipient 제공
+    - 채널 후보: 채널 제공 확장은 core.notification.channels 하나에 답하고(도메인 비인지), 도메인
+      {hookPrefix}.notification.channels 가 그 뒤에 자기 설정으로 좁힌다(resolveChannelCandidates)
+    - 수신 전화번호: 도메인이 extract_data 의 data 에 코어 표준 키(GenericNotification::RECIPIENT_PHONE_KEY)로
+      싣는다 — 이커머스 비회원 주문 6종은 주문자 연락처를 이 키로 제공
 
 axes:
   recipient_type:
@@ -63,9 +67,18 @@ effects:
   - ecommerce_guest_order_context_exposes_guest_recipient
   - ecommerce_guest_recipient_locale_null_when_not_stored
   - ecommerce_order_stores_current_locale_on_address
+  # 채널 후보 코어 계약 (Unit — BaseNotificationTest)
+  - base_notification_defaults_to_mail_channel
+  - domain_channel_hook_receives_type_and_notifiable
+  - core_channel_candidates_hook_answers_every_domain
+  - domain_channel_hook_runs_after_core_hook
+  # 수신 전화번호 표준 키 (Unit — EcommerceNotificationDataListenerTest)
+  - ecommerce_guest_order_data_carries_standard_recipient_phone
+  - ecommerce_member_order_data_has_no_recipient_phone
 
 test_files:
   - tests/Unit/Notifications/GuestNotifiableTest.php
+  - tests/Unit/Notifications/BaseNotificationTest.php
   - tests/Unit/Services/NotificationRecipientResolverTest.php
   - tests/Unit/Notifications/GenericNotificationGuestGateTest.php
   - tests/Unit/Listeners/NotificationDispatchIntegrationTest.php

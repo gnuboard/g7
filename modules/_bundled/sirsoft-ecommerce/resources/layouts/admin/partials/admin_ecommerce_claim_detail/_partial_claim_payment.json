@@ -1,0 +1,2431 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Claim Detail - Payment Info Section (order payment card set, isomorphic to order detail) + claim settlement block + refund execution section — S9b"
+    },
+    "comment": "섹션 둘을 함께 싣는다 — 결제 정보(전 유형)와 환불 실행(환불 유형만)은 같은 금액 축을 보는 한 화면이고, 셸의 탭 배열이 두 id 를 같은 조건으로 세운다 (D17-①).",
+    "id": "claim_payment_wrapper",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "id": "section_payment_info",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "data-section-id": "payment_info"
+            },
+            "children": [
+                {
+                    "comment": "원 주문의 결제 정보. 주문상세 `_partial_payment_info.json` 의 행 마크업을 정본으로 복제한다 (D17-③) — 주문상세가 나중에 바뀌면 이 파일도 함께 바꾼다. 값은 상세 봉투(`claim.data.order`)가 나른다: 주문상세 엔드포인트는 `orders.read` 게이트라 이 화면(`claims.read`)이 직접 부르면 클레임 권한만 가진 운영자에게만 403 이 되어 이 탭이 통째로 빈다. 현금영수증 발급·입금확인은 주문이 소유한 처리라 여기 두지 않는다(조회 전용).",
+                    "id": "claim_payment_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.title"
+                        },
+                        {
+                            "comment": "결제행이 없는 주문(전액 할인 등)도 있다 — 안내가 없으면 카드가 통째로 사라져 운영자가 \"아직 안 불러왔다\" 와 \"결제 건이 없다\" 를 구분할 수 없다.",
+                            "id": "cp_000_no_payment",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(claim?.data?.order?.payments ?? []).length === 0}}",
+                            "props": {
+                                "className": "text-sm text-secondary"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.payment.no_payment"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-4"
+                            },
+                            "children": [
+                                {
+                                    "id": "cp_card_{{payIdx}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{claim?.data?.order?.payments ?? []}}",
+                                        "item_var": "payment",
+                                        "index_var": "payIdx"
+                                    },
+                                    "props": {
+                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between mb-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "props": {
+                                                                "variant": "outline"
+                                                            },
+                                                            "text": "{{payment.payment_type_label}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "{{payment.payment_number}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "variant": "{{payment.payment_status_variant}}"
+                                                    },
+                                                    "text": "{{payment.payment_status_label}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Hr",
+                                            "props": {
+                                                "className": "border-gray-100 dark:border-gray-800 mb-4"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "grid-2col-responsive"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-tertiary block"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-sm font-semibold text-gray-900 dark:text-gray-100 block"
+                                                                    },
+                                                                    "text": "{{payment.payment_method_label}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{payment.account_info}}",
+                                                                    "props": {
+                                                                        "className": "text-tertiary block"
+                                                                    },
+                                                                    "text": "{{payment.account_info}}"
+                                                                },
+                                                                {
+                                                                    "comment": "결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 함께 표기한다.",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{payment.is_cross_currency}}",
+                                                                    "props": {
+                                                                        "className": "text-tertiary block"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_currency|currency={{payment.payment_currency}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-tertiary block"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_request_date"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-900 dark:text-gray-100 block"
+                                                                    },
+                                                                    "text": "{{payment.requested_at_formatted}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "grid-2col-responsive"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{payment.paid_at_formatted}}",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-tertiary block"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_date"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-900 dark:text-gray-100 block"
+                                                                    },
+                                                                    "text": "{{payment.paid_at_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{payment.due_date_formatted}}",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-tertiary block"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.due_date"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-sm text-red-600 dark:text-red-400 font-medium block"
+                                                                    },
+                                                                    "text": "{{payment.due_date_formatted}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Hr",
+                                            "props": {
+                                                "className": "border-gray-100 dark:border-gray-800 mb-4"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "id": "cp_001_order_amount_{{payIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.order_amount"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "{{claim?.data?.order?.subtotal_amount_formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.shipping_fee"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "{{claim?.data?.order?.total_shipping_amount_formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim?.data?.order?.total_discount_amount > 0}}",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex justify-between text-sm"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-red-600 dark:text-red-400 font-medium"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.total_discount"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-red-600 dark:text-red-400"
+                                                                    },
+                                                                    "text": "-{{claim?.data?.order?.total_discount_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{claim?.data?.order?.total_product_coupon_discount_amount > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-xs pl-4"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.coupon"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "-{{claim?.data?.order?.total_product_coupon_discount_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{claim?.data?.order?.total_code_discount_amount > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-xs pl-4"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.discount_code"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "-{{claim?.data?.order?.total_code_discount_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{payment.event_discount_amount > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-xs pl-4"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.event"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "-{{payment.event_discount_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{payment.referral_discount_amount > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-xs pl-4"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.referral"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "-{{payment.referral_discount_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim?.data?.order?.total_points_used_amount > 0}}",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-purple-600 dark:text-purple-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.mileage_used"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-purple-600 dark:text-purple-400"
+                                                            },
+                                                            "text": "-{{claim?.data?.order?.total_points_used_amount_formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim?.data?.order?.total_deposit_used_amount > 0}}",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-green-600 dark:text-green-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.deposit_used"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-green-600 dark:text-green-400"
+                                                            },
+                                                            "text": "-{{claim?.data?.order?.total_deposit_used_amount_formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.final_amount"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "text-right"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "cp_002_final_amount_{{payIdx}}",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-900 dark:text-gray-100 block"
+                                                                    },
+                                                                    "text": "{{claim?.data?.order?.total_paid_amount_formatted}}"
+                                                                },
+                                                                {
+                                                                    "comment": "결제 통화 실청구액 — base≠결제 통화일 때 병기(유저가 실제 결제한 통화·금액).",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{payment.is_cross_currency}}",
+                                                                    "props": {
+                                                                        "className": "text-hint block font-normal"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.charged_in_payment_currency|currency={{payment.payment_currency}}|amount={{payment.paid_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "취소·환불 누적은 주문(Order) 레벨 집계가 SSoT 다. 환불 두 행은 클레임 발 환불에서만 0 을 넘는다 — 취소 발 환불은 취소금액 행이 담당한다(§4-3-1).",
+                                                    "id": "cp_003_cancel_refund_block_{{payIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(claim?.data?.order?.total_cancelled_amount ?? 0) > 0 || (claim?.data?.order?.total_refunded_amount ?? 0) > 0 || (claim?.data?.order?.total_refunded_points_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "space-y-2 border-t border-red-200 dark:border-red-800"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(claim?.data?.order?.total_cancelled_amount ?? 0) > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-sm"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-red-600 dark:text-red-400 font-medium"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.cancelled_amount"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-red-600 dark:text-red-400 font-medium"
+                                                                    },
+                                                                    "text": "-{{claim?.data?.order?.total_cancelled_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "id": "cp_004_refunded_amount_{{payIdx}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(claim?.data?.order?.total_refunded_amount ?? 0) > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-sm"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-orange-600 dark:text-orange-400"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-orange-600 dark:text-orange-400"
+                                                                    },
+                                                                    "text": "-{{claim?.data?.order?.total_refunded_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "id": "cp_005_refunded_points_{{payIdx}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(claim?.data?.order?.total_refunded_points_amount ?? 0) > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-sm"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-purple-600 dark:text-purple-400"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_points_amount"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-purple-600 dark:text-purple-400"
+                                                                    },
+                                                                    "text": "-{{claim?.data?.order?.total_refunded_points_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "현금 환불 중 「마일리지로 환불」로 지급한 몫(Q3) — 환불금액 행의 그중 내역이라 부호를 붙이지 않는다. 결제행은 결제완료로 남으므로 이 줄이 없으면 그 돈의 행방이 보이지 않는다.",
+                                                            "id": "cp_006_refunded_mileage_credit_{{payIdx}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(claim?.data?.order?.total_refunded_mileage_credit_amount ?? 0) > 0}}",
+                                                            "props": {
+                                                                "className": "flex justify-between text-sm pl-3"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_mileage_credit_amount"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-gray-700 dark:text-gray-300"
+                                                                    },
+                                                                    "text": "{{claim?.data?.order?.total_refunded_mileage_credit_amount_formatted}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Hr",
+                                                    "props": {
+                                                        "className": "border-gray-100 dark:border-gray-800"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{claim?.data?.order?.total_tax_amount_formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{claim?.data?.order?.total_vat_amount_formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "적립 예정 포인트 — 표기는 서버가 준 `total_earned_points_amount_formatted`(「1,000P」)를 쓴다. 화면이 숫자에 'P' 를 붙이면 단위·자릿수 규칙이 화면마다 갈린다. 필드가 없는 옛 응답만 종전 표기로 떨어진다.",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{claim?.data?.order?.total_earned_points_amount > 0 && claim?.data?.order?.order_status !== 'cancelled' && !claim?.data?.order?.is_partially_cancelled}}",
+                                                    "props": {
+                                                        "className": "flex justify-between text-sm"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.expected_points"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{claim?.data?.order?.total_earned_points_amount_formatted != null}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "{{claim?.data?.order?.total_earned_points_amount_formatted}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{claim?.data?.order?.total_earned_points_amount_formatted == null}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "{{claim?.data?.order?.total_earned_points_amount | number}}P"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "'이 클레임의 정산' — 원 주문의 결제 정보와 섞지 않는다. 위 카드는 주문이 얼마를 받았는가이고, 이 카드는 이 신청서가 얼마를 청구·환불하는가다. 한 카드에 합치면 두 숫자가 같은 합계에 속한 것처럼 읽힌다.\n취소 유형에는 이 카드가 그릴 내용이 하나도 없다(F10) — 안쪽 블록이 전부 취소를 배제하는데 카드에는 `if` 가 없어, 제목만 남은 빈 카드가 화면에 섰다. 취소신청서의 금액 근거는 취소 정보 카드(_partial_claim_reason)가 이미 싣는다.",
+                    "id": "claim_settlement_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
+                    "props": {
+                        "className": "admin-card mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.title"
+                        },
+                        {
+                            "comment": "접수 시점 주문금액 비교(전/후) — #599 후속 P8. 청구·환불 예정 아래가 아니라 카드 첫머리에 둔다: 이 카드의 숫자가 어느 주문금액에서 나왔는지의 근거다.\npartial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다 — `partials/…` 로 적으면 서버 병합기가 layouts 루트(admin/ 없이)로 되돌려 찾다 실패하고, 운영(APP_DEBUG=false)에서는 빈 배열로 조용히 사라진다(2026-09-11 관리자 화면 실측). 참조 노드는 병합 시 partial 본문으로 통째로 바뀌므로 조건은 감싸는 Div 에 둔다.\n취소 신청서는 취소 정보 카드(_partial_claim_reason)가 같은 표를 이미 싣는다 — 정산 카드에도 두면 같은 화면에 두 번 선다(2026-09-11 실측).",
+                            "id": "cst_comparison_mount",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
+                            "children": [
+                                {
+                                    "partial": "_partial_claim_comparison.json"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cst_charge_block",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange'}}",
+                                    "props": {
+                                        "className": "flex justify-between items-center text-sm gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_exchange"
+                                        },
+                                        {
+                                            "comment": "교환 왕복 배송비 — 상세 응답의 현재 값이 채워져 있고, 고친 값은 아래 [금액 저장] 을 눌러야 서버에 가며 그때 총 청구액이 함께 다시 계산된다.",
+                                            "id": "cst_001_shipping_fee_input",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "claimShippingFee": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "claimShippingFee",
+                                                "type": "number",
+                                                "min": 0,
+                                                "step": "any",
+                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "value": "{{_local.claimShippingFee ?? ''}}",
+                                                "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'return'}}",
+                                    "props": {
+                                        "className": "flex justify-between items-center text-sm gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_return"
+                                        },
+                                        {
+                                            "comment": "반품 회수 배송비 — 교환 칸과 같은 값을 공유하고 유형에 따라 한쪽만 선다. 비운 채 저장하면 이 금액은 보내지 않아 기존 값이 남으므로, 청구를 없애려면 0 을 적는다.",
+                                            "id": "cst_002_shipping_fee_input_return",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "claimShippingFee": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "claimShippingFee",
+                                                "type": "number",
+                                                "min": 0,
+                                                "step": "any",
+                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "value": "{{_local.claimShippingFee ?? ''}}",
+                                                "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange'}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.additional_product_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.additional_product_amount_formatted ?? \"\"}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' && (claim?.data?.claim?.refund_product_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-purple-600 dark:text-purple-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_product_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-purple-600 dark:text-purple-400"
+                                            },
+                                            "text": "{{claim?.data?.claim?.refund_product_amount_formatted ?? \"\"}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "배송비가 왜 이 금액인지의 근거 — 서버는 정책을 해석하지 못하면 예외 대신 0원 + 사유로 처리하고 로그만 남긴다. 그 사유가 화면에 없으면 배송정책을 지운 상점에서 청구액이 조용히 0원이 되고 운영자는 '청구 없음' 으로 읽는다. 외부 요금 API 폴백(api_fallback)과 스냅샷 없는 과거 주문(live_policy — 요금표를 바꾸면 이 금액이 움직인다)도 같은 자리에서 알린다.",
+                                    "id": "cst_002b_fee_basis_note",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && ((claim?.data?.claim?.shipping_fee_snapshot?.reason ?? '') === 'no_shipping_policy' || (claim?.data?.claim?.shipping_fee_snapshot?.groups ?? []).some(g => g.api_fallback === true || g.policy_source === 'live_policy'))}}",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{(claim?.data?.claim?.shipping_fee_snapshot?.reason ?? '') === 'no_shipping_policy' ? $t('sirsoft-ecommerce.admin.claim.detail.settlement.fee_basis_no_policy') : ((claim?.data?.claim?.shipping_fee_snapshot?.groups ?? []).some(g => g.api_fallback === true) ? $t('sirsoft-ecommerce.admin.claim.detail.settlement.fee_basis_api_fallback') : $t('sirsoft-ecommerce.admin.claim.detail.settlement.fee_basis_live_policy'))}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between items-center text-sm gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method"
+                                        },
+                                        {
+                                            "comment": "허용 어휘는 운영자 설정(`claim.allowed_charge_methods`)이 정하고 그 조회는 `settings.read` 게이트다 — 상세 봉투가 통로다. 화면이 세 값을 다시 적으면 상점이 막아 둔 방식이 선택 가능해지고 저장이 422 가 된다.",
+                                            "id": "cst_003_charge_method",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "chargeMethod": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "chargeMethod",
+                                                "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "value": "{{_local.chargeMethod ?? ''}}",
+                                                "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}",
+                                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.settlement.charge_method_placeholder'), disabled: true }].concat(claim?.data?.charge_methods ?? [])}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cst_004_total_charge",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.total_charge_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.total_charge_amount_formatted ?? \"\"}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cst_005_outstanding",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.outstanding_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-red-600 dark:text-red-400 font-medium"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.outstanding_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-red-600 dark:text-red-400 font-medium"
+                                            },
+                                            "text": "{{claim?.data?.claim?.outstanding_amount_formatted ?? \"\"}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-end pt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "cst_006_save_amounts",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "금액 수정 게이트는 `claims.update-amounts` 다 (D18) — 버튼 활성 조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만 403 이 된다. 청구가 0 이던 신청서의 배송비를 올릴 때는 청구 방식을 함께 보내야 하며, 빠지면 서버가 `claim_charge_method_required` 로 거절한다.",
+                                                    "type": "click",
+                                                    "handler": "sirsoft-ecommerce.saveClaimAmounts",
+                                                    "params": {
+                                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                        "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                                                        "claimShippingFee": "{{_local.claimShippingFee ?? ''}}",
+                                                        "chargeMethod": "{{_local.chargeMethod ?? ''}}"
+                                                    },
+                                                    "onError": {
+                                                        "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.",
+                                                        "handler": "suppress"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-primary",
+                                                "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingAmounts === true}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{_local.isSavingAmounts}}",
+                                                    "props": {
+                                                        "name": "spinner",
+                                                        "className": "spinner-sm mr-1"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.save"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cst_refund_block",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'refund'}}",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_method"
+                                        },
+                                        {
+                                            "comment": "실제로 돈이 간 수단별 금액 줄(S7) — 신청서 수단만 보이면 마일리지로만 돌려준 카드 주문 환불도 「PG사 환불」 이다.",
+                                            "id": "cst_refund_breakdown",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-right whitespace-pre-line text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.refund_breakdown_formatted || claim?.data?.claim?.refund_method_label || '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cst_011_refund_amount",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.refund_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.refund_points_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-purple-600 dark:text-purple-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_points_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-purple-600 dark:text-purple-400"
+                                            },
+                                            "text": "{{claim?.data?.claim?.refund_points_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.refund_shipping_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_shipping_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.refund_shipping_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "교환 차액 환급(S2) — 교환으로 받은 상품을 환불하면 그 교환 때 낸 상위 옵션 차액을 클레임 결제 건에서 낸 수단 그대로 돌려준다. 원 주문 환불액과 돈이 나가는 곳이 달라 따로 보인다.",
+                                    "id": "cst_011b_exchange_difference_refund",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.exchange_difference_refund_total ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.exchange_difference_refund"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.exchange_difference_refunds_formatted ?? claim?.data?.claim?.exchange_difference_refund_total_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cst_012_refund_total",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_total"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.refund_total_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.claim?.refunded_at_formatted ?? '') !== ''}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refunded_at"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.claim?.refunded_at_formatted ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cst_payments_block",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && (claim?.data?.claim?.payments ?? []).length > 0}}",
+                            "props": {
+                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.payments_title"
+                                },
+                                {
+                                    "comment": "결제는 확정됐는데 신청서가 결제대기에 멈춤(B5) — 확정 뒤 전이가 거절됐다. 운영자가 상태를 직접 옮겨야 한다.",
+                                    "id": "cst_006c_paid_transition_failed",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{claim?.data?.claim?.paid_but_transition_failed === true}}",
+                                    "props": {
+                                        "className": "p-2 rounded bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-700 dark:text-amber-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.paid_transition_failed"
+                                },
+                                {
+                                    "id": "cst_007_payment_{{cpIdx}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{claim?.data?.claim?.payments ?? []}}",
+                                        "item_var": "claimPayment",
+                                        "index_var": "cpIdx"
+                                    },
+                                    "props": {
+                                        "className": "flex justify-between items-center text-sm gap-2 flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{claimPayment.payment_number}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-secondary"
+                                                    },
+                                                    "text": "{{claimPayment.payment_method_label ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "variant": "{{claimPayment.payment_status_variant ?? 'default'}}"
+                                                    },
+                                                    "text": "{{claimPayment.payment_status_label ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{claimPayment.total_amount_formatted ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "부분 환급 — 차액 상품을 반려해 일부가 되돌아가도 결제 건은 `paid` 로 남는다. 결제 금액만 두면 운영자는 환급이 없었던 것으로 읽는다(구매자 화면 `claim.detail.payment_refunded` 와 같은 정보).",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(claimPayment.refunded_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "text-xs text-orange-600 dark:text-orange-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.payment_refunded|amount={{claimPayment.refunded_amount_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "망취소 실패(B4) — 금액 불일치로 거절한 승인을 결제사에서 되돌리지 못했다. 고객 돈이 결제사에 묶여 있으므로 콘솔에서 직접 취소하게 한다.",
+                                            "id": "cst_007b_void_failed_{{cpIdx}}",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{claimPayment.pg_error_code === 'VOID_FAILED'}}",
+                                            "props": {
+                                                "className": "w-full text-xs text-red-600 dark:text-red-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.void_failed"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "후속 환불신청서(보완 5) — 이 교환·반품에서 생긴 환불신청서 전부(반려·철회 후 재접수 이력 포함). 출처 축(`refund_source_type`)으로 서버가 모은다 — 상품 행 `refund_id` 는 재접수 때 덮어써져 과거 신청서를 잃는다. 금액·수단 표기는 서버 문자열 그대로다. 반려·철회 건은 흐리게 보인다.",
+                            "id": "cst_linked_refunds_block",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
+                            "props": {
+                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.linked.title"
+                                },
+                                {
+                                    "id": "cst_015_linked_refunds_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.linked_claims?.refunds ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.linked.empty"
+                                },
+                                {
+                                    "id": "cst_013_linked_refund_{{lrIdx}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{claim?.data?.linked_claims?.refunds ?? []}}",
+                                        "item_var": "linkedRefund",
+                                        "index_var": "lrIdx"
+                                    },
+                                    "classMap": {
+                                        "key": "{{linkedRefund.is_live === false ? 'released' : 'live'}}",
+                                        "variants": {
+                                            "released": "text-gray-500 dark:text-gray-400",
+                                            "live": "text-gray-900 dark:text-gray-100"
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "flex justify-between items-center text-sm gap-2 flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "cst_014_linked_refund_link_{{lrIdx}}",
+                                                    "type": "basic",
+                                                    "name": "A",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "후속 환불신청서를 새 창으로 연다",
+                                                            "type": "click",
+                                                            "handler": "openWindow",
+                                                            "params": {
+                                                                "path": "{{linkedRefund.detail_url}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "href": "#",
+                                                        "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                    },
+                                                    "text": "{{linkedRefund.claim_number}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "variant": "{{linkedRefund.status_variant ?? 'default'}}"
+                                                    },
+                                                    "text": "{{linkedRefund.status_label ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-secondary"
+                                                    },
+                                                    "text": "{{linkedRefund.refund_method_label ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{linkedRefund.refund_total_formatted ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{linkedRefund.refunded_at_formatted || linkedRefund.requested_at_formatted || ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "완료 시 환불 예정 — 헤더에 컬럼이 없는 값이라 완료 미리보기 경로가 SSoT 다(`claim.data.settlement`). 완료 처리 모달이 보여주는 숫자와 같은 곳에서 나오므로 상세와 모달이 서로 다른 금액을 말하지 않는다.",
+                            "id": "cst_preview_block",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!claim?.data?.settlement}}",
+                            "props": {
+                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "comment": "제목은 완료 전후로 갈린다(D9) — 완료 전은 「완료 시 환불 예정」, 완료 후 환불 미접수면 「접수할 환불액」. 같은 숫자라도 운영자가 할 일이 다르다(기다림 / 접수).",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{claim?.data?.claim?.is_final !== true || !claim?.data?.pending_refund}}",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.preview_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{claim?.data?.claim?.is_final === true && !!claim?.data?.pending_refund}}",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.pending_title"
+                                },
+                                {
+                                    "comment": "환불신청서 수동 접수 (F5). 라우트·컨트롤러·서비스는 처음부터 완비돼 있었고 상세는 접수 **불가 사유**까지 보여 주는데, 정작 접수 버튼만 없었다 — 완료 모달에서 '환불신청서 생성'을 끈 건은 그 뒤로 환불을 접수할 경로가 화면 어디에도 없었다. 접수 가능한 상태(불가 사유 없음)에서만 선다.",
+                                    "id": "cst_007_file_refund_request",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && (claim?.data?.settlement?.blocked_reason ?? '') === ''}}",
+                                    "props": {
+                                        "className": "flex justify-end"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "금액을 싣지 않고 접수만 요청한다 — 무엇을 얼마나 환불할지는 서버가 이 신청서를 보고 정하고, 화면은 성공 뒤 상세와 활동 로그를 다시 읽는다.",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sirsoft-ecommerce.storeClaimRefundRequest",
+                                                    "params": {
+                                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                        "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                                                        "claimId": "{{claim?.data?.claim?.id ?? null}}"
+                                                    },
+                                                    "onError": {
+                                                        "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다.",
+                                                        "handler": "suppress"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-secondary",
+                                                "disabled": "{{claim?.data?.abilities?.can_update_status !== true || _local.isFilingRefundRequest === true}}"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.file_refund_request"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "접수 불가 사유는 두 가지가 있고 뜻이 다르다 — 이미 접수됐거나(그 상품은 다른 신청서가 맡았다), 애초에 환불 대상이 없다. 사유를 감추면 0원 예고가 정상으로 보인다.",
+                                    "id": "cst_008_blocked_notice",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.settlement?.blocked_reason ?? '') !== ''}}",
+                                    "props": {
+                                        "className": "text-sm text-amber-600 dark:text-amber-400"
+                                    },
+                                    "text": "{{claim?.data?.settlement?.blocked_reason === 'claim_refund_request_exists' ? $t('sirsoft-ecommerce.admin.claim.detail.settlement.blocked_already_filed') : $t('sirsoft-ecommerce.admin.claim.detail.settlement.blocked_not_applicable')}}"
+                                },
+                                {
+                                    "comment": "환불 예정액의 가산 두 축 — 합계와 차감만 그리면 산식이 닫히지 않아 운영자가 그 금액의 근거를 화면에서 읽을 수 없다. 서버가 재계산으로 만든 값을 그대로 읽는다(화면이 역산하면 같은 금액의 두 번째 출처가 된다). 교환은 옵션 차액이 별도 행이라 서버가 null 을 주고 이 두 줄은 렌더되지 않는다.",
+                                    "id": "cst_008a_refund_target_amount",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{claim?.data?.settlement?.refund_product_amount_formatted != null}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_product_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.settlement?.refund_product_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cst_008b_refund_shipping_amount",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{claim?.data?.settlement?.refund_shipping_amount_formatted != null}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_shipping_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.settlement?.refund_shipping_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cst_009_expected_refund",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-orange-600 dark:text-orange-400 font-medium"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.expected_refund"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-orange-600 dark:text-orange-400 font-medium"
+                                            },
+                                            "text": "{{claim?.data?.settlement?.refund_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.settlement?.refund_points_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-purple-600 dark:text-purple-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.expected_refund_points"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-purple-600 dark:text-purple-400"
+                                            },
+                                            "text": "{{claim?.data?.settlement?.refund_points_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "cst_010_deducted_fee",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(claim?.data?.settlement?.deducted_shipping_fee ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.deducted_shipping_fee"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{claim?.data?.settlement?.deducted_shipping_fee_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{claim?.data?.settlement?.earn_recovery === true}}",
+                                    "props": {
+                                        "className": "flex justify-between text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.earn_recovery"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.earn_recovery_yes"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "환불 실행은 환불신청서에만 있는 축이다 — 교환·반품의 환불은 완료 처리가 접수한 환불신청서가 맡는다 (D26). 이 섹션의 조건은 셸 탭 배열의 조건과 문자 그대로 같아야 한다 (D17-①).",
+            "id": "section_refund_execute",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'refund'}}",
+            "props": {
+                "data-section-id": "refund_execute",
+                "className": "mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                    },
+                    "children": [
+                        {
+                            "comment": "취소 가능 금액은 성격이 다른 두 상한의 최솟값이다 (D19) — 최종 금액만 보이면 운영자는 왜 그 금액인지 알 수 없고, 한도를 정한 축(`binding`)이 무엇인지에 따라 조치가 갈린다(환불 대상 금액이면 대상 상품이 그만큼이고, 결제수단 잔여면 더 되돌릴 수 없다). 진행 중 클레임 예정액은 한도를 깎지 않는 참고 축이라 `binding` 으로 나오지 않는다. 산정도 표기도 서버가 하며, 실행 직전 서버가 같은 식으로 다시 계산한다.",
+                            "id": "cre_cancellable_card",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "admin-card"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-base font-bold text-gray-900 dark:text-gray-100 mb-4"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cancellable_title"
+                                },
+                                {
+                                    "comment": "산정 불가와 \"0원\" 은 다른 사실이다 — 뭉뚱그리면 운영자가 되돌릴 것이 없다고 읽는다.",
+                                    "id": "cre_000_cancellable_unavailable",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!claim?.data?.cancellable}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.unavailable"
+                                },
+                                {
+                                    "id": "cre_cancellable_body",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!claim?.data?.cancellable}}",
+                                    "props": {
+                                        "className": "space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "cre_001_domain_refundable",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex justify-between text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-secondary"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.domain_refundable"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{claim?.data?.cancellable?.domain_refundable_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "cre_002_payment_capacity",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex justify-between text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-secondary"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.payment_capacity"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{claim?.data?.cancellable?.payment_capacity_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "수단별 잔여 한도 — PG 가 실제로 받아 주는 한도는 결제 통화 기준이라 그 통화의 원값을 함께 보인다 (D18).",
+                                            "id": "cre_003_method_{{mIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{claim?.data?.cancellable?.methods ?? []}}",
+                                                "item_var": "capacity",
+                                                "index_var": "mIdx"
+                                            },
+                                            "props": {
+                                                "className": "flex justify-between text-xs pl-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{capacity.method_label ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{capacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (capacity.remaining_base_formatted ?? '') : ((capacity.remaining_base_formatted ?? '') + ' (' + (capacity.remaining_local_formatted ?? '') + ')')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "cre_004_reserved",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex justify-between text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-amber-600 dark:text-amber-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.reserved"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-amber-600 dark:text-amber-400"
+                                                    },
+                                                    "text": "{{claim?.data?.cancellable?.reserved_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "예정액 근거 — 어느 신청서가 얼마를 환불할 예정인지 알린다. 이 값은 한도를 깎지 않는다(참고 축) — 깎으면 승인도 되지 않은 남의 신청서가 이 건의 정당한 환불을 0 원으로 막는다.",
+                                            "id": "cre_005_reserved_claim_{{rIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{claim?.data?.cancellable?.reserved_claims ?? []}}",
+                                                "item_var": "reservedClaim",
+                                                "index_var": "rIdx"
+                                            },
+                                            "props": {
+                                                "className": "flex justify-between text-xs pl-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{(reservedClaim.type_label ?? '') + ' ' + (reservedClaim.number ?? '')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{reservedClaim.amount_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.amount"
+                                                },
+                                                {
+                                                    "id": "cre_006_cancellable_amount",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{claim?.data?.cancellable?.amount_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "cre_007_binding_label",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 pt-1"
+                                            },
+                                            "text": "{{claim?.data?.cancellable?.binding_label ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cre_execute_card",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "admin-card"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-base font-bold text-gray-900 dark:text-gray-100 mb-4"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.edit_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex justify-between items-center gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-secondary"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount"
+                                                        },
+                                                        {
+                                                            "comment": "현금 환불액 — 저장하지 않아도 [환불하기] 는 지금 칸에 적힌 값을 확인창으로 넘겨 그대로 실행한다. 비워 두면 [금액 저장] 은 이 값을 건너뛰지만 실행은 0원으로 싣는다.",
+                                                            "id": "cre_008_pg_amount",
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "refundAmount": "{{$event.target.value}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "comment": "아래 합계 줄의 표기를 상점 통화 꼴로 다시 적는다(S3-D27) — 화면 표현식은 통화 포맷터를 부를 수 없다.",
+                                                                            "handler": "sirsoft-ecommerce.formatRefundInputTotal",
+                                                                            "params": {
+                                                                                "refundAmount": "{{$event.target.value}}",
+                                                                                "refundPointsAmount": "{{_local.refundPointsAmount ?? ''}}",
+                                                                                "currencyCode": "{{claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "name": "refundAmount",
+                                                                "type": "number",
+                                                                "min": 0,
+                                                                "step": "any",
+                                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "value": "{{_local.refundAmount ?? ''}}",
+                                                                "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.limit_hint|amount={{claim?.data?.cancellable?.amount_formatted ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "이 칸에 넣을 수 있는 한도는 전체 취소 가능 금액만이 아니라 그 수단이 실제로 받아 주는 잔여이기도 하다 — 두 값이 다르면 운영자는 왜 거절되는지 입력 옆에서 알 수 없다. 값은 좌측 산정 카드와 **같은 서버 필드**를 읽는다(화면이 다시 더하면 같은 금액의 두 번째 출처가 된다).",
+                                                    "id": "cre_015_pg_method_limit_{{pgIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === 'payment')}}",
+                                                        "item_var": "pgCapacity",
+                                                        "index_var": "pgIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{pgCapacity.method_label ?? ''}}|amount={{pgCapacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (pgCapacity.remaining_base_formatted ?? '') : ((pgCapacity.remaining_base_formatted ?? '') + ' (' + (pgCapacity.remaining_local_formatted ?? '') + ')')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex justify-between items-center gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-secondary"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount"
+                                                        },
+                                                        {
+                                                            "comment": "마일리지 환불액 — 회원 주문에서만 쓰는 칸이다(비회원에게는 되돌릴 적립 계정이 없다). 적은 값은 현금 칸과 더해져 아래 합계와 상한 초과 안내에 바로 쓰인다.",
+                                                            "id": "cre_009_points_amount",
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "refundPointsAmount": "{{$event.target.value}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "sirsoft-ecommerce.formatRefundInputTotal",
+                                                                            "params": {
+                                                                                "refundAmount": "{{_local.refundAmount ?? ''}}",
+                                                                                "refundPointsAmount": "{{$event.target.value}}",
+                                                                                "currencyCode": "{{claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "name": "refundPointsAmount",
+                                                                "type": "number",
+                                                                "min": 0,
+                                                                "step": "any",
+                                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "value": "{{_local.refundPointsAmount ?? ''}}",
+                                                                "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_hint"
+                                                },
+                                                {
+                                                    "comment": "마일리지 잔여도 같은 자리에 병기한다. 마일리지는 결제행이 없는 주문 컬럼 원장이라 수단별 잔여 목록에 항목이 없을 수 있고, 그때는 이 줄이 아예 렌더되지 않는다 — 0원과 '항목 없음' 을 뭉뚱그리지 않는다.",
+                                                    "id": "cre_016_points_method_limit_{{ptIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === 'mileage')}}",
+                                                        "item_var": "ptCapacity",
+                                                        "index_var": "ptIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{ptCapacity.method_label ?? ''}}|amount={{ptCapacity.remaining_base_formatted ?? ''}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-sm text-secondary mb-2"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method"
+                                                },
+                                                {
+                                                    "comment": "어휘는 서버가 준 목록만 쓴다 (`RefundMethodEnum`) — 화면이 셋을 다시 적으면 수단이 늘어도 화면만 낡은 채로 남는다. 자동바인딩을 끄고 로컬 상태를 명시적으로 읽는 것은 형제 모달(완료 처리)과 같은 규율이다.",
+                                                    "id": "cre_010_refund_method",
+                                                    "type": "composite",
+                                                    "name": "RadioGroup",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "refundMethod": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "refundMethod",
+                                                        "autoBinding": false,
+                                                        "inline": true,
+                                                        "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}",
+                                                        "value": "{{_local.refundMethod ?? ''}}",
+                                                        "options": "{{claim?.data?.refund_methods ?? []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "「마일리지로 환불」은 현금 환불액도 회원 마일리지로 지급한다(D1) — 카드·계좌로 돈이 나가지 않는다는 사실을 수단을 고르는 자리에서 알린다. 금액 표기는 서버 값이 없어 넣지 않는다(통화 기호 재현 금지).",
+                                                    "id": "cre_017_points_cash_credit_notice",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(_local.refundMethod ?? '') === 'points'}}",
+                                                    "props": {
+                                                        "className": "mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_cash_credit_notice"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "입력 두 칸의 합 — 같은 화면의 다른 금액·실행 창(S3-D1)과 같은 상점 통화 표기(`22,500원`)로 그린다(S3-D27). 숫자에 통화 코드를 이어 붙이면 자릿수 구분 없는 `22500 KRW` 가 되어 금액마다 꼴이 달랐다. 첫 표기는 상세 응답의 `refund_total_formatted`(서버 통화 포맷)가 채우고, 두 칸이 바뀌면 핸들러가 상점 통화 설정으로 다시 적는다 — 화면이 기호를 직접 붙이지 않으므로 기본 통화가 원이 아닌 상점에서도 단위가 어긋나지 않는다. 표기를 아직 받지 못한 순간에만 반올림한 합(`refundInputTotal` — 부동소수 오차를 소수 8자리에서 걷어 낸 값)과 통화 코드를 보인다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.total"
+                                                },
+                                                {
+                                                    "id": "cre_011_total",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{_local.refundInputTotalFormatted || ((_computed.refundInputTotal ?? 0) + ' ' + (claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''))}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "상한 초과는 서버가 실행 직전에도 다시 막지만(422), 누르기 전에 알리지 않으면 운영자는 왕복을 돈 뒤에야 안다. 이 안내는 예고일 뿐 가드가 아니다 — 가드는 서버가 한다.",
+                                            "id": "cre_012_exceeds_notice",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{(_computed.refundInputTotal ?? 0) > (claim?.data?.cancellable?.amount ?? 0)}}",
+                                            "props": {
+                                                "className": "text-xs text-red-600 dark:text-red-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.exceeds"
+                                        },
+                                        {
+                                            "comment": "PG 플러그인이 사라져 계좌 환불로 떨어진 건 — 버튼 줄 안에 두면 두 버튼 사이에 박스가 끼어 좁은 화면에서 깨지므로 버튼 줄 위에 둔다. 운영자가 손으로 송금해야 한다(P14). 폴백 자체는 운영을 살리지만(리스너 없이 PG 경로로 들어가면 그 주문은 영영 취소할 수 없다), 화면에 '계좌 환불' 만 보이면 카드 결제 건에 왜 계좌 송금을 하라는지 알 수 없다.",
+                                            "id": "cre_013b_manual_transfer_notice",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{claim?.data?.claim?.refund_fell_back_to_manual === true}}",
+                                            "props": {
+                                                "data-testid": "refund-manual-transfer-notice",
+                                                "className": "rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.manual_transfer_notice"
+                                        },
+                                        {
+                                            "comment": "PG 승인 직후 장부 반영이 실패해 표식만 남은 건(§14-C) — 운영자가 [환불하기]를 다시 누르면 PG 를 부르지 않고 장부만 확정한다는 사실을 알린다. 모르고 PG 콘솔에서 다시 취소하면 이중 환불이다.",
+                                            "id": "cre_013c_pg_settled_pending_ledger_notice",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{claim?.data?.claim?.pg_settled_pending_ledger === true}}",
+                                            "props": {
+                                                "className": "rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.pg_settled_pending_ledger_notice"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex justify-end gap-2 pt-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "cre_013_save_amounts",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "저장과 실행은 다른 처리다 — 승인 직후 금액만 고쳐 두고 실행은 나중에 하는 운영이 성립한다. 게이트도 다르다(`claims.update-amounts` vs `claims.execute-refund`).",
+                                                            "type": "click",
+                                                            "handler": "sirsoft-ecommerce.saveClaimAmounts",
+                                                            "params": {
+                                                                "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                                "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                                "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                                                                "refundAmount": "{{_local.refundAmount ?? ''}}",
+                                                                "refundPointsAmount": "{{_local.refundPointsAmount ?? ''}}",
+                                                                "refundMethod": "{{_local.refundMethod ?? ''}}"
+                                                            },
+                                                            "onError": {
+                                                                "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.",
+                                                                "handler": "suppress"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "btn btn-outline",
+                                                        "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingAmounts === true}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{_local.isSavingAmounts}}",
+                                                            "props": {
+                                                                "name": "spinner",
+                                                                "className": "spinner-sm mr-1"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.save"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "[환불하기]는 권한과 **상태**를 함께 본다(F2). 권한만 보면 `requested`(422)·`completed`(409) 에서도 눌리는데, 상세에는 승인 컨트롤이 따로 있어 운영자는 그 자리에서 승인한 뒤 다시 누를 수 있다 — 비활성 이유가 화면에 드러나야 막다른 길이 되지 않는다.",
+                                                    "id": "cre_014_execute_button",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "환불은 되돌릴 수 없는 처리라 곧바로 실행하지 않고 확인 모달을 연다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 이 핸들러가 지금 입력된 값을 `_global` 문맥으로 넘긴다 — 모달 표시와 실행 본문이 그 하나를 함께 읽어야 예고한 값과 실행하는 값이 같다.",
+                                                            "type": "click",
+                                                            "handler": "sirsoft-ecommerce.openClaimRefundExecute",
+                                                            "params": {
+                                                                "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                                "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                                "claimNumber": "{{claim?.data?.claim?.claim_number ?? ''}}",
+                                                                "currencyCode": "{{claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''}}",
+                                                                "refundAmount": "{{_local.refundAmount ?? ''}}",
+                                                                "refundPointsAmount": "{{_local.refundPointsAmount ?? ''}}",
+                                                                "refundMethod": "{{_local.refundMethod ?? ''}}",
+                                                                "refundMethodLabel": "{{claim?.data?.claim?.refund_method_label ?? ''}}",
+                                                                "refundMethods": "{{claim?.data?.refund_methods ?? []}}",
+                                                                "refundBankName": "{{claim?.data?.claim?.refund_bank_name ?? ''}}",
+                                                                "refundBankAccount": "{{claim?.data?.claim?.refund_bank_account ?? ''}}",
+                                                                "refundBankHolder": "{{claim?.data?.claim?.refund_bank_holder ?? ''}}",
+                                                                "refundAccountRequired": "{{claim?.data?.claim?.refund_account_required === true}}",
+                                                                "refundAccountByMethod": "{{claim?.data?.claim?.refund_account_by_method ?? null}}",
+                                                                "exchangeDifferenceTotal": "{{claim?.data?.claim?.exchange_difference_refund_total ?? 0}}",
+                                                                "exchangeDifferenceFormatted": "{{claim?.data?.claim?.exchange_difference_refunds_formatted ?? claim?.data?.claim?.exchange_difference_refund_total_formatted ?? ''}}",
+                                                                "pointsNotDeducted": "{{claim?.data?.claim?.points_not_deducted === true}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "btn btn-primary",
+                                                        "disabled": "{{claim?.data?.abilities?.can_execute_refund !== true || _local.isExecutingRefund === true || (claim?.data?.claim?.status ?? '') !== 'approved'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.execute"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

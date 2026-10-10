@@ -10,13 +10,16 @@ use Illuminate\Http\Request;
  *
  * 평가 체인:
  *   1. seo.bot_detection_enabled = false → false
- *   2. _escaped_fragment_ 쿼리 → true (구형 크롤러 호환)
- *   3. UA 빈 문자열 → false
- *   4. core.seo.resolve_is_bot 훅 결과(non-null) → 즉시 결정 (확장 슬롯)
- *   5. seo.bot_detection_library_enabled = true → jaybizzle/crawler-detect
+ *   2. UA 빈 문자열 → false
+ *   3. core.seo.resolve_is_bot 훅 결과(non-null) → 즉시 결정 (확장 슬롯)
+ *   4. seo.bot_detection_library_enabled = true → jaybizzle/crawler-detect
  *      + G7 보강 패턴(미커버 3종) + 운영자 커스텀 패턴
- *   6. 라이브러리 비활성 → 운영자 커스텀 패턴 stripos 매칭만 (레거시 모드)
- *   7. fallthrough → false
+ *   5. 라이브러리 비활성 → 운영자 커스텀 패턴 stripos 매칭만 (레거시 모드)
+ *   6. fallthrough → false
+ *
+ * `?_escaped_fragment_` 쿼리는 봇 신호로 쓰지 않는다. 구글이 2015년에 폐기한 AJAX 크롤링
+ * 스킴이라 현대 크롤러는 보내지 않는데, 쿼리 글자 하나로 UA 와 무관하게 누구나 비싼 봇 렌더
+ * 경로를 태울 수 있는 통로였다.
  */
 class BotDetector
 {
@@ -30,10 +33,6 @@ class BotDetector
     {
         if (! g7_core_settings('seo.bot_detection_enabled', true)) {
             return false;
-        }
-
-        if ($request->has('_escaped_fragment_')) {
-            return true;
         }
 
         $userAgent = $request->userAgent() ?? '';

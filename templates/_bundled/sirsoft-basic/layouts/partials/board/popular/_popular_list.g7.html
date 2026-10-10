@@ -1,0 +1,15 @@
+<!-- 인기글 목록 몸통 — 결과가 없으면 안내를, 있으면 항목 조각을 반복해 찍는다. 여기서 post·index 를 만들어 항목 조각에 넘긴다. -->
+<partial description="인기 게시글 목록">
+  <div>
+    <!-- === 데이터가 없을 경우 안내 메시지 === -->
+    <div data-if="{{(popularPosts.data ?? []).length === 0}}" class="flex flex-col items-center justify-center py-16 text-center">
+      <icon name="inbox" size="4x" class="text-gray-300 dark:text-gray-600 mb-4"/>
+      <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">$t:board.popular.no_posts</p>
+      <p class="text-sm text-gray-500 dark:text-gray-500">$t:board.popular.no_posts_description</p>
+    </div>
+    <!-- === 인기 게시글 목록 === -->
+    <div data-if="{{(popularPosts.data ?? []).length > 0}}" data-each="post, index in {{popularPosts.data ?? []}}">
+      <include src="partials/board/popular/_popular_item.g7.html"/>
+    </div>
+  </div>
+</partial>

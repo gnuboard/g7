@@ -1,24 +1,30 @@
 {
+    "comment": "글 상세 — 본문·댓글·첨부·이전다음글을 한 화면에 담는다. 목록과 마찬가지로 생김새는 게시판 유형에 따라 갈리므로 유형 렌더러 조각이 고른다. 삭제·신고·비밀번호 확인 창 셋을 여기서 세워 조각들이 이름으로 연다.",
     "version": "1.0.0",
     "layout_name": "board/show",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "seo": {
             "enabled": true,
-            "extensions": [
-                { "type": "module", "id": "sirsoft-board" }
-            ],
-            "data_sources": ["post", "navigation"],
             "page_type": "post",
             "toggle_setting": "$module_settings:sirsoft-board:seo.seo_post_detail",
+            "priority": 0.5,
+            "changefreq": "monthly",
+            "extensions": [
+                {
+                    "type": "module",
+                    "id": "sirsoft-board"
+                }
+            ],
+            "data_sources": [
+                "post",
+                "navigation"
+            ],
             "vars": {
                 "site_name": "$core_settings:general.site_name",
                 "board_name": "{{post.data.board.name ?? ''}}",
                 "post_title": "{{post.data.title ?? ''}}"
             },
-            "priority": 0.5,
-            "changefreq": "monthly",
             "og": {
                 "type": "article",
                 "title": "{{_seo.post.title ?? post.data.title ?? ''}}",
@@ -33,18 +39,26 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}",
             "method": "GET",
-            "params": {
-                "del_cmt": "{{query.del_cmt ?? ''}}"
-            },
             "auto_fetch": true,
             "auth_mode": "optional",
             "refetchOnMount": true,
+            "params": {
+                "del_cmt": "{{query.del_cmt ?? ''}}"
+            },
             "errorHandling": {
                 "401": {
                     "handler": "sequence",
                     "actions": [
-                        { "handler": "toast", "params": { "type": "info", "message": "$t:board.login_required" } },
-                        { "handler": "redirectToLoginWithReturn" }
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:board.login_required"
+                            }
+                        },
+                        {
+                            "handler": "redirectToLoginWithReturn"
+                        }
                     ]
                 },
                 "403": {
@@ -59,7 +73,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "글 본문과 댓글 — 한 응답에 함께 실려 온다(댓글용 별도 데이터소스가 없는 이유). 삭제된 댓글까지 볼지는 URL 질의(del_cmt)가 정한다. 없는 글·못 보는 글은 404/403 으로 본문 자리에 오류 화면을 세운다."
         },
         {
             "id": "navigation",
@@ -67,17 +82,19 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/navigation",
             "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "refetchOnMount": true,
             "params": {
                 "del": "{{query.del ?? ''}}"
             },
-            "auto_fetch": true,
-            "auth_mode": "optional",
-            "refetchOnMount": true
+            "comment": "이전글·다음글 — 본문과 따로 받는다. 목록에서 삭제글을 보고 있었다면(del) 그 조건이 이어져야 앞뒤 순서가 목록과 어긋나지 않는다."
         }
     ],
     "computed": {
         "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
     },
+    "permissions": [],
     "slots": {
         "content": [
             {
@@ -96,12 +113,15 @@
     },
     "modals": [
         {
+            "comment": "삭제 확인 창 — 글과 댓글이 같은 창을 쓰고, 무엇을 지우는지는 창을 열 때 넘긴 대상이 정한다.",
             "partial": "partials/board/show/modals/_modal_delete.json"
         },
         {
+            "comment": "신고 창 — 글과 댓글 모두 여기서 사유를 고른다.",
             "partial": "partials/board/show/modals/_modal_report.json"
         },
         {
+            "comment": "비회원 글 비밀번호 확인 창 — 비회원이 자기 글을 지우거나 고칠 때 뜬다. 글쓰기 화면에도 같은 이름의 조각이 따로 있고 그쪽은 수정 진입용이다.",
             "partial": "partials/board/show/modals/_password_verify_modal.json"
         }
     ]

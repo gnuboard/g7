@@ -14,7 +14,8 @@ use Illuminate\Database\Seeder;
  * - PageSeeder - 기본 페이지 6개 (이용약관, 개인정보처리방침, 취소/반품/교환, 그누보드7 소개, FAQ, 문의하기)
  *
  * 샘플 시더 (--sample 옵션 시):
- * - ActivityLogSampleSeeder - 페이지 활동 로그 샘플
+ * - PageSampleSeeder - 시연 페이지 3개 (미발행 초안, 버전 이력·복원, 이미지 첨부)
+ * - ActivityLogSampleSeeder - 페이지 활동 로그 샘플 (이번 실행에서 새로 만든 페이지에만, 활동 로그는 지우지 않음)
  *
  * 실행 방법:
  * php artisan module:seed sirsoft-page            # 설치 시더만
@@ -41,6 +42,9 @@ class DatabaseSeeder extends Seeder
         if ($this->shouldIncludeSample()) {
             $this->command->newLine();
             $this->command->info('--- 페이지 샘플 시더 실행 ---');
+
+            // 시연 페이지 (미발행·버전 이력·첨부)
+            $this->call(PageSampleSeeder::class);
 
             // 활동 로그 샘플 (페이지 데이터 생성 후 실행)
             $this->call(ActivityLogSampleSeeder::class);

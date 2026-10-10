@@ -21,9 +21,13 @@ use Tests\TestCase;
 class TemplateUpdateConfigCacheInvalidationTest extends TestCase
 {
     /**
+     * 템플릿 업데이트 성공 정리 단계가 공개 config 캐시 삭제(clearTemplateCache)를 부른다.
+     *
      * @scenario cache_state=warm_current,lifecycle_trigger=template_update,template_type=user
      *
      * @effects template_update_invalidates_public_config_cache
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_template_cleanup_calls_clear_template_cache(): void
@@ -53,6 +57,8 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
      * @scenario cache_state=warm_current,lifecycle_trigger=template_update,template_type=admin
      *
      * @effects template_update_always_bumps_cache_version
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_template_tail_bumps_cache_version_unconditionally(): void
@@ -86,6 +92,8 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
      * @scenario cache_state=warm_current,lifecycle_trigger=template_update,template_type=user
      *
      * @effects template_update_failure_bumps_after_restore
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function update_template_failure_path_bumps_after_restore(): void
@@ -102,7 +110,8 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
 
         $restoreAt = strpos($catchBody, "'status' => \$previousStatus");
         $bumpAt = strpos($catchBody, '$this->incrementExtensionCacheVersion();');
-        $throwAt = strpos($catchBody, 'throw new \RuntimeException(');
+        // 실패 결과를 실은 예외로 던진다 (ExtensionUpdateFailedException — 안내가 실제 결과를 말하게)
+        $throwAt = strpos($catchBody, 'throw ExtensionUpdateFailedException::fromFailure(');
 
         $this->assertNotFalse($restoreAt, '실패 경로의 상태 복원 코드를 찾지 못했습니다.');
         $this->assertNotFalse($bumpAt, '실패 경로에 캐시 버전 bump 가 없습니다 — 부분 반영된 디스크가 옛 게시본과 함께 남습니다.');

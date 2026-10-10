@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어 66훅 + 확장 132훅 = 총 198훅 (확장별 목록은 그 확장이 소유)
+1. 코어 74훅 + 확장 167훅 = 총 241훅 (확장별 목록은 그 확장이 소유)
 2. Listener에서 Log::channel('activity')->info() 직접 호출 (Monolog → ActivityLogHandler → DB)
 3. 스냅샷 패턴: before_update(priority 5) → 캡처, after_update → ChangeDetector로 비교
 4. 사용자 행위: ActivityLogType::User (장바구니/위시리스트/쿠폰 다운로드/주문/결제)
@@ -41,9 +41,9 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 ## 2. 코어 훅 (CoreActivityLogListener)
 
 **파일**: `app/Listeners/CoreActivityLogListener.php`
-**총 66훅**
+**총 74훅**
 
-### User (8훅)
+### User (10훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -55,20 +55,26 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.user.after_list` | `handleUserAfterList` | `user.list` | Admin | - |
 | `core.user.after_search` | `handleUserAfterSearch` | `user.search` | Admin | - |
 | `sirsoft-core.user.after_bulk_update` | `handleUserAfterBulkUpdate` | `user.bulk_update` | Admin | - |
+| `core.user.after_bulk_update_roles` | `handleUserAfterBulkUpdateRoles` | `user.bulk_roles` | Admin | User |
+| `core.user.after_update_roles` | `handleUserAfterUpdateRoles` | `user.roles_update` | Admin | User |
 
-### Auth (9훅)
+`user.bulk_roles`·`user.roles_update` 는 권한 부여·변경 기록이라 활동 로그 보관 기간과 관계없이 최소 3년 보관한다 — [activity-log.md](activity-log.md) 「보관 기간」.
+
+### Auth (11훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login` | User | User |
-| `core.auth.logout` | `handleAuthLogout` | `auth.logout` | User | User |
-| `core.auth.register` | `handleAuthRegister` | `auth.register` | User | User |
-| `core.auth.forgot_password` | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
-| `core.auth.reset_password` | `handleAuthResetPassword` | `auth.reset_password` | User | - |
+| `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login`(설명 키: 관리자 로그인 경로 `api/auth/admin/*` 면 `auth_admin_login`, 그 외 `auth_login`) | User | User |
+| `core.auth.logout` | `handleAuthLogout` | `auth.logout`(설명 키: 관리자 경로 `api/admin/*` 면 `auth_admin_logout`, 그 외 `auth_logout`) | 관리자 경로면 Admin, 그 외 User | User |
+| `core.auth.after_register` | `handleAuthRegister` | `auth.register` | User | User |
+| `core.auth.after_reset_password_request` (sync — 인자에 재설정 토큰) | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
+| `core.auth.password_change_recorded` | `handlePasswordChangeRecorded` | `source=reset` 이면 `auth.reset_password`, 그 외 `auth.password_change`(설명 키 `auth_password_change_self` · `_by_admin` · `_on_login_expired` · `_on_login_admin_assigned`) | `admin` 이면 Admin, 그 외 User | User (행위자: 훅 인자 `actor_id`) |
+| `core.auth.password_change_postponed` | `handlePasswordChangePostponed` | `auth.password_change_postpone` | User | User |
+| `core.auth.password_expired` | `handlePasswordExpired` | `auth.password_expiry_logout` (토큰을 폐기한 경우만 — '변경해야 로그인' 모드) | System | User |
 | `core.auth.record_consents` | `handleAuthRecordConsents` | `auth.record_consents` | User | User |
 | `core.auth.login_failed` | `handleAuthLoginFailed` | `auth.login_failed` | User | - |
 | `core.auth.account_locked` | `handleAuthAccountLocked` | `auth.account_locked` | User | User |
-| `core.auth.account_unlocked` | `handleAuthAccountUnlocked` | `auth.account_unlocked` | User | User |
+| `core.auth.account_unlocked` | `handleAuthAccountUnlocked` | `auth.account_unlocked` (관리자 해제·비밀번호 재설정 — `context.reason=password_reset` 이면 설명 키 `auth_account_unlocked_by_password_reset`) | User | User |
 
 ### Identity (3훅)
 
@@ -79,6 +85,14 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.identity.after_request` | `handleIdentityRequested` | `identity.request` | User | - |
 | `core.identity.after_verify` | `handleIdentityVerified` | `identity.verify` / `identity.verify_failed` | User | - |
 | `core.identity.challenge_expired` | `handleIdentityExpired` | `identity.expired` | User | - |
+
+### Member Notification (1훅)
+
+관리자가 회원 알림함의 알림을 일괄 삭제한 기록이다. 삭제된 알림은 모델이 사라지므로 대상 없이 요청·삭제 건수와 uuid 를 `properties` 로 남긴다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `core.member_notification.after_bulk_delete` | `handleMemberNotificationAfterBulkDelete` | `member_notification.bulk_delete` | Admin | - |
 
 ### Role (5훅)
 
@@ -127,37 +141,43 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
 | `core.attachment.after_bulk_delete` | `handleAttachmentAfterBulkDelete` | `attachment.bulk_delete` | Admin | - |
 
+> **확장 생명주기 훅의 LogType**: 설치·활성화·비활성화·업데이트·제거 훅은 Manager 가 발화하므로 어드민 UI 와
+> Artisan 커맨드(`module:install` 등) 양쪽에서 기록된다. 어드민 UI 는 `Admin`, CLI 는 요청 경로가 없어 `System` 으로
+> 기록되고 `properties.via = 'cli'` 가 붙어 관리자 화면 행위자 칸에 "시스템(CLI)" 로 보인다.
+
 ### Module (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.modules.after_install` | `handleModuleAfterInstall` | `module.install` | Admin | - |
-| `core.modules.after_activate` | `handleModuleAfterActivate` | `module.activate` | Admin | - |
-| `core.modules.after_deactivate` | `handleModuleAfterDeactivate` | `module.deactivate` | Admin | - |
-| `core.modules.after_uninstall` | `handleModuleAfterUninstall` | `module.uninstall` | Admin | - |
-| `core.modules.after_update` | `handleModuleAfterUpdate` | `module.update` | Admin | - |
+| `core.modules.after_install` | `handleModuleAfterInstall` | `module.install` | Admin / System(CLI) | - |
+| `core.modules.after_activate` | `handleModuleAfterActivate` | `module.activate` | Admin / System(CLI) | - |
+| `core.modules.after_deactivate` | `handleModuleAfterDeactivate` | `module.deactivate` | Admin / System(CLI) | - |
+| `core.modules.after_uninstall` | `handleModuleAfterUninstall` | `module.uninstall` | Admin / System(CLI) | - |
+| `core.modules.after_update` | `handleModuleAfterUpdate` | `module.update` | Admin / System(CLI) | - |
 | `core.modules.after_refresh_layouts` | `handleModuleAfterRefreshLayouts` | `module.refresh_layouts` | Admin | - |
 
 ### Plugin (5훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.plugins.after_install` | `handlePluginAfterInstall` | `plugin.install` | Admin | - |
-| `core.plugins.after_activate` | `handlePluginAfterActivate` | `plugin.activate` | Admin | - |
-| `core.plugins.after_deactivate` | `handlePluginAfterDeactivate` | `plugin.deactivate` | Admin | - |
-| `core.plugins.after_uninstall` | `handlePluginAfterUninstall` | `plugin.uninstall` | Admin | - |
-| `core.plugins.after_update` | `handlePluginAfterUpdate` | `plugin.update` | Admin | - |
+| `core.plugins.after_install` | `handlePluginAfterInstall` | `plugin.install` | Admin / System(CLI) | - |
+| `core.plugins.after_activate` | `handlePluginAfterActivate` | `plugin.activate` | Admin / System(CLI) | - |
+| `core.plugins.after_deactivate` | `handlePluginAfterDeactivate` | `plugin.deactivate` | Admin / System(CLI) | - |
+| `core.plugins.after_uninstall` | `handlePluginAfterUninstall` | `plugin.uninstall` | Admin / System(CLI) | - |
+| `core.plugins.after_update` | `handlePluginAfterUpdate` | `plugin.update` | Admin / System(CLI) | - |
 
 ### Template (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.templates.after_install` | `handleTemplateAfterInstall` | `template.install` | Admin | - |
-| `core.templates.after_activate` | `handleTemplateAfterActivate` | `template.activate` | Admin | - |
-| `core.templates.after_deactivate` | `handleTemplateAfterDeactivate` | `template.deactivate` | Admin | - |
-| `core.templates.after_uninstall` | `handleTemplateAfterUninstall` | `template.uninstall` | Admin | - |
-| `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin | - |
+| `core.templates.after_install` | `handleTemplateAfterInstall` | `template.install` | Admin / System(CLI) | - |
+| `core.templates.after_activate` | `handleTemplateAfterActivate` | `template.activate` | Admin / System(CLI) | - |
+| `core.templates.after_deactivate` | `handleTemplateAfterDeactivate` | `template.deactivate` | Admin / System(CLI) | - |
+| `core.templates.after_uninstall` | `handleTemplateAfterUninstall` | `template.uninstall` | Admin / System(CLI) | - |
+| `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin / System(CLI) | - |
 | `core.templates.after_refresh_layouts` | `handleTemplateAfterRefreshLayouts` | `template.refresh_layouts` | Admin | - |
+
+> **업데이트 기록의 레이아웃 처리 결과** — `module.update`·`plugin.update`·`template.version_update` 는 훅 `$result` 의 `layout_strategy`·`layout_sync` 를 읽어 `properties.layout_strategy`, `properties.layout_sync`(카운트만 — `applied_count`·`conflict_count`·`kept_*_count`·`modified_count`, entries 제외), `properties.layout_sync_conflicts`(겹친 단위 최대 50건 `{layout, unit, reason}`)를 싣는다. `changes` 에는 운영자 관련 화면마다 한 줄 — `field`·`label` = `{템플릿 식별자} · {화면 이름}`, `type: enum`, `old: operator_modified` → `new: {verdict}`, 라벨 키 `activity_log.layout_sync.operator_modified` / `extensions.layout_sync.verdict.{verdict}` — 이라 목록에서 행을 펼치면 변경 내역 표에 번역된 결과가 보인다. 보고할 화면이 없으면(덮어쓰기, 운영자 수정 없음) 붙지 않는다. 병합 규칙: [extension-update-system.md §10](../extension/extension-update-system.md#10-레이아웃-충돌-전략-3종-공통)
 
 ### Extension 공통 (1훅)
 
@@ -165,14 +185,17 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.custom_assets.after_change` | `handleCustomAssetAfterChange` | `custom_asset.{save\|upload\|delete}` | Admin | 운영자 CSS·JS 는 사이트 전 화면에서 실행되므로 변경 이력이 남아야 한다 |
+| `core.custom_assets.after_change` | `handleCustomAssetAfterChange` | `custom_asset.{save\|upload\|delete\|rename}` | Admin | 운영자 CSS·JS 는 사이트 전 화면에서 실행되므로 변경 이력이 남아야 한다 |
 
-### Layout (2훅)
+### Layout (5훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
 | `core.layout.after_update` | `handleLayoutAfterUpdate` | `layout.update` | Admin | - |
 | `core.layout.after_version_restore` | `handleLayoutAfterVersionRestore` | `layout.version_restore` | Admin | - |
+| `core.layout.after_create` | `handleLayoutAfterCreate` | `layout.create` | Admin | TemplateLayout |
+| `core.layout.after_rename` | `handleLayoutAfterRename` | `layout.rename` | Admin | TemplateLayout — `properties.from/to` |
+| `core.layout.after_delete` | `handleLayoutAfterDelete` | `layout.delete` | Admin | TemplateLayout(soft delete 라 행은 남는다) — 파괴적 연산의 되돌림 근거 |
 
 ### Module Settings (2훅)
 
@@ -197,21 +220,21 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 | 확장 | 훅 수 | 문서 |
 |------|------|------|
-| `sirsoft-ecommerce` | 92 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
+| `sirsoft-ecommerce` | 138 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
 | `sirsoft-board` | 30 | [docs/extension-points.md](../../modules/_bundled/sirsoft-board/docs/extension-points.md) |
 | `sirsoft-page` | 7 | [docs/extension-points.md](../../modules/_bundled/sirsoft-page/docs/extension-points.md) |
 | `sirsoft-pay_kginicis` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md) |
 | `sirsoft-pay_nhnkcp` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md) |
 | `sirsoft-pay_nicepayments` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md) |
-| **합계** | **132** | |
+| **합계** | **178** | |
 
-코어 66훅 + 확장 132훅 = **총 198훅**입니다.
+코어 71훅 + 확장 167훅 = **총 238훅**입니다.
 
-확장에 새 활동 로그 항목을 추가할 때도 **다국어 키는 코어가 SSoT** 입니다 — action 라벨과
-description 본문을 코어 `lang/{ko,en}/activity_log.php` 에 정의해야 하며, 모듈 lang 파일에
-넣으면 해석되지 않습니다. 번들 일본어 팩도 같은 작업 단위에서 동기화합니다.
-
----
+확장에 새 활동 로그 항목을 추가할 때는 **그 확장의 lang 파일**(`src/lang/{ko,en}/activity_log.php`)에
+action 라벨과 description 본문을 정의합니다. description 은 리스너가 `{확장}::activity_log.description.*`
+키로 남기므로 확장 lang 에서 해석되고, action 라벨은 `ActivityLog::getActionLabelAttribute()` 가 확장 lang 을
+먼저 찾은 뒤 없을 때만 코어 `lang/{ko,en}/activity_log.php` 로 내려갑니다. 번들 일본어 팩도 같은 작업 단위에서
+동기화합니다.
 
 ## 4. 스냅샷/변경감지 패턴
 

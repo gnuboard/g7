@@ -21,7 +21,6 @@
  * 드래그 핸들 렌더 / 고스트(body 포털·실제 복제·커서 정합) / 드롭 슬롯 표시 /
  * 슬롯 레벨 한정(자기 자손·래퍼 밖 break-out 슬롯 부재).
  *
- * @scenario drag_drop reorder
  * 효과 요약(마커 아님 — 평문): drag_handle_present_for_draggable, explicit_drop_slots_render, drop_slots_scoped_to_relevant_levels, editor_attrs_passthrough_marks_nesting_nodes, drop_slots_span_all_accepting_containers, handle_zindex_depth_ordered, selection_based_drag_substitution, child_reselect_under_selected_parent, inner_child_nests_into_sibling_filled_card, nav_destination_unreachable_affordance_hidden, data_bound_node_draggable_and_selectable, iteration_instance_not_individually_draggable, iteration_virtual_group_select_move_ghost.
  */
 import type { Page } from '@playwright/test';

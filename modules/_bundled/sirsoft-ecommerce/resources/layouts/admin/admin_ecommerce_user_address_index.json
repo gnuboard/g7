@@ -1,0 +1,248 @@
+{
+    "comment": "e2e:allow 2026-09-21 회원 배송지 화면 전면 재작성 — Playwright spec 대신 **작성자가 직접 브라우저로 관통 실측**했다(로그인 → 회원 2명 다중선택 → 28건→10건 → 「이 회원으로 검색」 10건→5건, 콘솔 오류 0). 전용 시드(저장 배송지를 가진 회원 다수 + manage 권한 운영자)가 필요해 기존 admin spec 의 시드로는 세울 수 없고, 그 시드 신설은 별도 과제다. 구조 회귀는 레이아웃 계약 테스트 18건이 막는다.\n\n  회원 배송지 목록 (운영자) — 전 회원이 저장해 둔 배송지를 조회하고 정리한다.\n  쿠폰·주문·상품 목록과 **같은 뼈대**로 짰다(2026-09-21 요구사항으로 전면 재작성): 셸이 데이터소스와\n  명명 액션을 소유하고, 필터 조각과 표 조각을 include 하며, 확인 창은 modal 로 붙인다.\n  조회 조건은 전부 URL 쿼리에 실리므로 주소가 바뀌는 것이 곧 재조회다 — 재진입·뒤로가기·주소\n  공유에서 같은 화면이 선다.\n\n  세 화면과 **다른 점**은 둘이다.\n  ① 회원 한정이 검색 대상/검색어와 **다른 축**이라 전용 필터가 쥔다(`user_uuids[]`, 여러 명).\n     종전에는 상단 배너만 「특정 회원만 표시 중」 이라 말하고 필터 줄에는 「검색 대상=회원 ·\n     검색어 비어 있음」 이 서 있어, 두 칸이 한 조건인 것처럼 읽혔다.\n     고른 회원의 이름표는 서버가 목록 응답에 `filters.members` 로 실어 준다 — 코어 회원 검색은\n     uuid 를 한 건씩만 받아, 한정이 세 명이면 화면이 왕복을 세 번 해야 한다.\n  ② 이 화면에는 등록·수정이 없다. 배송지는 회원이 만드는 데이터이고 운영자가 하는 일은\n     「보고 정리하는 것」 뿐이라, 쿠폰 목록의 [등록] 버튼과 행 [수정] 갈래를 덜어냈다.\n     검색 편집·상세검색 토글·프리셋도 두지 않는다 — 필터가 넷이라 접어 둘 이유가 없다.",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_user_address_index",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.user_addresses.title",
+        "description": "$t:sirsoft-ecommerce.admin.user_addresses.description"
+    },
+    "data_sources": [
+        {
+            "id": "addresses",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.addresses",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/user-addresses",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "sort": "{{query.sort || 'created_at_desc'}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "user_uuid": "{{query.user_uuid}}",
+                "user_uuids": "{{query['user_uuids[]']}}",
+                "start_date": "{{query.start_date}}",
+                "end_date": "{{query.end_date}}",
+                "is_default": "{{query.is_default}}"
+            },
+            "onSuccess": [
+                {
+                    "comment": "적용된 회원 한정을 서버가 이름까지 붙여 돌려준다. 회원 상세에서 건너온 진입(uuid 만 있는\n           상태)에서도 이 값이 도착하면 칩이 이름으로 선다",
+                    "handler": "setState",
+                    "if": "{{(response.data.data.filters?.members ?? []).length > 0}}",
+                    "params": {
+                        "target": "local",
+                        "filter": {
+                            "memberUuids": "{{(response.data.data.filters?.members ?? []).map(m => m.uuid)}}",
+                            "memberOptions": "{{(response.data.data.filters?.members ?? []).map(m => ({ value: m.uuid, label: m.name, description: m.email }))}}"
+                        }
+                    }
+                }
+            ],
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽는다"
+        }
+    ],
+    "initLocal": {
+        "filter": {
+            "searchField": "all",
+            "searchKeyword": "",
+            "memberUuids": [],
+            "memberOptions": [],
+            "startDate": "",
+            "endDate": "",
+            "dateQuick": "",
+            "isDefault": "all"
+        },
+        "memberSearchResults": [],
+        "selectedItems": [],
+        "visibleColumns": [
+            "created_at",
+            "member",
+            "recipient",
+            "contact",
+            "address_summary"
+        ]
+    },
+    "initGlobal": {
+        "bulkSelectedItems": [],
+        "isBulkDeleting": false,
+        "deleteTarget": null,
+        "isDeleting": false,
+        "errorMessage": ""
+    },
+    "computed": {
+        "canManage": "{{addresses?.data?.abilities?.can_manage === true}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.user-addresses.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "addresses"
+        ]
+    },
+    "named_actions": {
+        "searchUserAddresses": {
+            "comment": "검색 — 필터 조각과 초기화 버튼이 이 액션 하나를 공유한다. 「전체」는 조건이 아니므로 빈 값으로\n       떨어뜨리고, 조건이 바뀌었으니 쪽수는 1로 되돌린다. 레거시 단건 키(user_uuid)는 비운다 —\n       mergeQuery 라 남겨 두면 확장 링크로 들어온 회원이 새 선택과 겹쳐 걸려 교집합이 빈다",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/user-addresses",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "pc_data_table__body",
+                "query": {
+                    "search_field": "{{_local.filter.searchField !== 'all' ? _local.filter.searchField : ''}}",
+                    "search_keyword": "{{_local.filter.searchKeyword}}",
+                    "user_uuid": "",
+                    "user_uuids[]": "{{(_local.filter.memberUuids ?? []).length > 0 ? _local.filter.memberUuids : null}}",
+                    "start_date": "{{_local.filter.startDate}}",
+                    "end_date": "{{_local.filter.endDate}}",
+                    "is_default": "{{_local.filter.isDefault !== 'all' ? _local.filter.isDefault : ''}}",
+                    "page": 1
+                }
+            }
+        },
+        "resetUserAddressFilters": {
+            "comment": "초기화 — 손에 든 조건과 선택을 먼저 비우고 주소를 턴다. URL 만 털면 입력값이 화면에 남는다",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "memberSearchResults": [],
+                        "selectedItems": [],
+                        "filter": {
+                            "searchField": "all",
+                            "searchKeyword": "",
+                            "memberUuids": [],
+                            "memberOptions": [],
+                            "startDate": "",
+                            "endDate": "",
+                            "dateQuick": "",
+                            "isDefault": "all"
+                        }
+                    }
+                },
+                {
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/ecommerce/user-addresses",
+                        "mergeQuery": false,
+                        "replace": true
+                    }
+                }
+            ]
+        }
+    },
+    "init_actions": [
+        {
+            "comment": "쿼리를 필터 입력값으로 되돌려 담는다. 회원 한정은 확장 링크가 싣는 단건(user_uuid)도 같은\n         칸으로 흡수한다 — 이름은 아직 없고(uuid 뿐) 목록 응답이 도착하면 칩이 이름으로 선다",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filter": {
+                    "searchField": "{{query.search_field || 'all'}}",
+                    "searchKeyword": "{{query.search_keyword || ''}}",
+                    "memberUuids": "{{Array.isArray(query['user_uuids[]']) ? query['user_uuids[]'] : (query['user_uuids[]'] ? [query['user_uuids[]']] : (query.user_uuid ? [query.user_uuid] : []))}}",
+                    "startDate": "{{query.start_date || ''}}",
+                    "endDate": "{{query.end_date || ''}}",
+                    "isDefault": "{{query.is_default !== undefined && query.is_default !== '' ? query.is_default : 'all'}}"
+                }
+            }
+        },
+        {
+            "comment": "선택은 화면 상태다 — 재진입 시 이전 선택이 남아 있으면 보이지 않는 행이 일괄 삭제에 실린다",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "bulkSelectedItems": []
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "user_address_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.user_addresses.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.user_addresses.description"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_user_address_index/_partial_filter_section.json"
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_user_address_index/_partial_address_datagrid.json"
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "단건 삭제 확인 — 지우는 것은 회원이 담아 둔 기록이다",
+            "partial": "partials/admin_ecommerce_user_address_index/_modal_delete_confirm.json"
+        },
+        {
+            "comment": "선택 삭제 확인 — 건수를 본문에 싣는다",
+            "partial": "partials/admin_ecommerce_user_address_index/_modal_bulk_delete_confirm.json"
+        },
+        {
+            "comment": "삭제 실패 — 서버 문구를 그대로 싣는다. 여러 건을 다루는 자리라 사유를 스쳐 보내지 않는다",
+            "partial": "partials/admin_ecommerce_user_address_index/_modal_error.json"
+        }
+    ]
+}

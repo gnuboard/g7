@@ -125,6 +125,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
     <Div
       ref={setNodeRef}
       style={style}
+      data-uploader-item=""
       className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
     >
       {/* 썸네일 영역 */}
@@ -181,6 +182,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         {onPrimaryClick && (
           <Button
             type="button"
+            data-uploader-action="primary"
             onClick={(e) => {
               e.stopPropagation();
               onPrimaryClick();
@@ -188,40 +190,46 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             className={`absolute top-1.5 left-1.5 z-10 p-1 rounded-full transition-colors ${
               isPrimary
                 ? 'bg-yellow-500 text-white'
-                : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100'
+                : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
             }`}
             title={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
+            aria-label={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
           >
-            <I className="fa-solid fa-star text-xs" />
+            <I className="fa-solid fa-star text-xs" aria-hidden="true" />
           </Button>
         )}
 
-        {/* 호버 시 액션 버튼들 */}
-        <Div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-start justify-end p-1 gap-1 opacity-0 group-hover:opacity-100">
+        {/* 호버 시 액션 버튼들 — 키보드 초점이 썸네일 안에 있을 때도 보여야 어느 단추에 초점이 있는지 보인다 */}
+        <Div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 group-focus-within:bg-black/40 transition-colors flex items-start justify-end p-1 gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
           {/* 드래그 핸들 */}
           <Button
             type="button"
+            data-uploader-action="drag"
             {...attributes}
             {...listeners}
             className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-gray-600 dark:text-gray-300 hover:bg-white cursor-grab active:cursor-grabbing"
             title={t('attachment.drag_to_reorder')}
+            aria-label={t('attachment.drag_to_reorder')}
             onClick={(e) => e.stopPropagation()}
           >
-            <I className="fa-solid fa-grip-vertical text-sm" />
+            {/* 아이콘만 있는 단추 — 글꼴 아이콘의 CSS 글리프가 title 보다 먼저 이름으로 잡히므로 이름은 aria-label 로 달고 아이콘은 숨긴다 */}
+            <I className="fa-solid fa-grip-vertical text-sm" aria-hidden="true" />
           </Button>
 
           {/* 다운로드 버튼 (기존 첨부파일만) */}
           {!isPending && onDownload && (
             <Button
               type="button"
+              data-uploader-action="download"
               onClick={(e) => {
                 e.stopPropagation();
                 onDownload();
               }}
               className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-blue-500 hover:bg-white"
               title={t('common.download')}
+              aria-label={t('common.download')}
             >
-              <I className="fa-solid fa-download text-sm" />
+              <I className="fa-solid fa-download text-sm" aria-hidden="true" />
             </Button>
           )}
 
@@ -229,20 +237,23 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
           {hasError && onRetry && (
             <Button
               type="button"
+              data-uploader-action="retry"
               onClick={(e) => {
                 e.stopPropagation();
                 onRetry();
               }}
               className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-orange-500 hover:bg-white"
               title={t('common.retry')}
+              aria-label={t('common.retry')}
             >
-              <I className="fa-solid fa-arrow-rotate-right text-sm" />
+              <I className="fa-solid fa-arrow-rotate-right text-sm" aria-hidden="true" />
             </Button>
           )}
 
           {/* 삭제 버튼 */}
           <Button
             type="button"
+            data-uploader-action="remove"
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
@@ -250,8 +261,9 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             disabled={isUploading || isCompressing}
             className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-red-500 hover:bg-white disabled:opacity-50"
             title={t('common.delete')}
+            aria-label={t('common.delete')}
           >
-            <I className="fa-solid fa-times text-sm" />
+            <I className="fa-solid fa-times text-sm" aria-hidden="true" />
           </Button>
         </Div>
       </Div>

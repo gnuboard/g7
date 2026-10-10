@@ -10,12 +10,18 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SetTimezoneTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -24,6 +30,8 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 미들웨어 테스트용 next 클로저를 생성합니다.
+     *
+     * @return \Closure 빈 응답을 돌려주는 클로저
      */
     protected function getNextClosure(): \Closure
     {
@@ -32,6 +40,8 @@ class SetTimezoneTest extends TestCase
 
     /**
      * SetTimezone 미들웨어 인스턴스를 생성합니다.
+     *
+     * @return SetTimezone 미들웨어
      */
     protected function createMiddleware(): SetTimezone
     {
@@ -40,6 +50,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 인증된 사용자의 타임존이 우선 적용되는지 테스트합니다.
+     *
+     * @scenario timezone_source=user_setting
+     *
+     * @effects authenticated_user_timezone_has_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_timezone_has_priority(): void
     {
@@ -57,6 +73,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * X-Timezone 헤더가 비인증 사용자에게 적용되는지 테스트합니다.
+     *
+     * @scenario timezone_source=browser_header
+     *
+     * @effects browser_timezone_header_applied_for_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_timezone_header_applied_for_guest(): void
     {
@@ -73,6 +95,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 지원하지 않는 타임존은 무시되는지 테스트합니다.
+     *
+     * @scenario timezone_source=default
+     *
+     * @effects unsupported_timezone_is_ignored
+     *
+     * @return void 반환값 없음
      */
     public function test_unsupported_timezone_is_ignored(): void
     {
@@ -91,8 +119,14 @@ class SetTimezoneTest extends TestCase
     /**
      * 기존 화이트리스트에 없던 IANA 타임존도 허용되는지 테스트합니다.
      *
-     * @dataProvider arbitraryIanaTimezoneProvider
+     * @scenario timezone_source=user_setting
+     *
+     * @effects arbitrary_iana_timezone_accepted
+     *
+     * @param  string  $timezone  IANA 타임존
+     * @return void 반환값 없음
      */
+    #[DataProvider('arbitraryIanaTimezoneProvider')]
     public function test_arbitrary_iana_timezone_accepted(string $timezone): void
     {
         $user = User::factory()->create(['timezone' => $timezone]);
@@ -107,7 +141,9 @@ class SetTimezoneTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string}>
+     * 기존 허용 목록에 없던 IANA 타임존을 돌려줍니다.
+     *
+     * @return array<string, array{string}> 타임존
      */
     public static function arbitraryIanaTimezoneProvider(): array
     {
@@ -122,6 +158,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 타임존 설정이 없는 경우 기본값이 적용되는지 테스트합니다.
+     *
+     * @scenario timezone_source=default
+     *
+     * @effects default_timezone_applied_when_no_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_default_timezone_applied_when_no_setting(): void
     {
@@ -137,6 +179,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 인증된 사용자의 지원하지 않는 타임존은 무시되는지 테스트합니다.
+     *
+     * @scenario timezone_source=browser_header
+     *
+     * @effects authenticated_user_unsupported_timezone_falls_back
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_unsupported_timezone_falls_back(): void
     {
@@ -155,6 +203,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * getTimezone 정적 메서드가 미들웨어 실행 전에도 기본값을 반환하는지 테스트합니다.
+     *
+     * @scenario timezone_source=default
+     *
+     * @effects get_timezone_returns_default_before_middleware
+     *
+     * @return void 반환값 없음
      */
     public function test_get_timezone_returns_default_before_middleware(): void
     {
@@ -166,6 +220,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * GeoIP가 활성화되었을 때 IP 기반 타임존이 적용되는지 테스트합니다.
+     *
+     * @scenario timezone_source=geoip
+     *
+     * @effects geoip_timezone_applied_when_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_geoip_timezone_applied_when_enabled(): void
     {
@@ -202,6 +262,12 @@ class SetTimezoneTest extends TestCase
      *
      * 미들웨어 레벨의 short-circuit을 검증합니다 — GeoIpService::getTimezoneByIp()가
      * 단 한 번도 호출되지 않아야 합니다.
+     *
+     * @scenario timezone_source=default
+     *
+     * @effects geoip_skipped_when_feature_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_geoip_skipped_when_feature_disabled(): void
     {
@@ -225,6 +291,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 마스터 스위치가 ON이면 GeoIP 조회가 수행되는지 테스트합니다.
+     *
+     * @scenario timezone_source=geoip
+     *
+     * @effects geoip_invoked_when_feature_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_geoip_invoked_when_feature_enabled(): void
     {
@@ -249,14 +321,26 @@ class SetTimezoneTest extends TestCase
 
     /**
      * X-Timezone 헤더가 GeoIP보다 우선하는지 테스트합니다.
+     *
+     * GeoIP 마스터 스위치를 켠 상태여야 두 경로가 실제로 겨룬다 — 스위치가 꺼져 있으면
+     * GeoIP 조회 자체가 없어 헤더가 이기는 것이 우선순위 덕인지 알 수 없다.
+     *
+     * @scenario timezone_source=browser_header
+     *
+     * @effects browser_timezone_has_priority_over_geoip
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_timezone_has_priority_over_geoip(): void
     {
         Auth::logout();
 
-        // GeoIpService 목업: 다른 타임존 반환
+        config(['g7_settings.core.geoip.feature_enabled' => true]);
+
+        // GeoIpService 목업: 다른 타임존 반환. 헤더가 먼저 결정하므로 조회되지 않아야 한다
         $mockGeoIpService = $this->createMock(GeoIpService::class);
-        $mockGeoIpService->method('getTimezoneByIp')
+        $mockGeoIpService->expects($this->never())
+            ->method('getTimezoneByIp')
             ->willReturn('America/New_York');
 
         $this->app->instance(GeoIpService::class, $mockGeoIpService);
@@ -273,14 +357,26 @@ class SetTimezoneTest extends TestCase
 
     /**
      * GeoIP가 null을 반환하면 기본값이 적용되는지 테스트합니다.
+     *
+     * 마스터 스위치를 켜고 조회가 실제로 한 번 일어난 뒤 기본값으로 떨어지는지 본다 — 스위치가
+     * 꺼져 있으면 조회 없이 기본값이 나와 이 경로를 거치지 않는다.
+     *
+     * @scenario timezone_source=default
+     *
+     * @effects default_timezone_when_geoip_returns_null
+     *
+     * @return void 반환값 없음
      */
     public function test_default_timezone_when_geoip_returns_null(): void
     {
         Auth::logout();
 
+        config(['g7_settings.core.geoip.feature_enabled' => true]);
+
         // GeoIpService 목업: null 반환 (조회 실패)
         $mockGeoIpService = $this->createMock(GeoIpService::class);
-        $mockGeoIpService->method('getTimezoneByIp')
+        $mockGeoIpService->expects($this->once())
+            ->method('getTimezoneByIp')
             ->willReturn(null);
 
         $this->app->instance(GeoIpService::class, $mockGeoIpService);
@@ -300,6 +396,12 @@ class SetTimezoneTest extends TestCase
      *
      * 마스터 스위치 ON + 실제 mmdb 파일 + 실제 GeoIpService로
      * 미들웨어 전 계층(가드 → Service → Reader)이 정상 동작하는지 검증합니다.
+     *
+     * @scenario timezone_source=geoip
+     *
+     * @effects real_geoip_with_korean_ip
+     *
+     * @return void 반환값 없음
      */
     public function test_real_geoip_with_korean_ip(): void
     {
@@ -333,6 +435,12 @@ class SetTimezoneTest extends TestCase
      * 실제 GeoIP DB를 사용한 통합 테스트 (미국 IP).
      *
      * 한국 외 지역 IP에서도 올바른 타임존이 감지되는지 검증합니다.
+     *
+     * @scenario timezone_source=geoip
+     *
+     * @effects real_geoip_with_us_ip
+     *
+     * @return void 반환값 없음
      */
     public function test_real_geoip_with_us_ip(): void
     {
@@ -365,6 +473,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 실제 GeoIP DB를 사용한 통합 테스트 (일본 IP).
+     *
+     * @scenario timezone_source=geoip
+     *
+     * @effects real_geoip_with_japanese_ip
+     *
+     * @return void 반환값 없음
      */
     public function test_real_geoip_with_japanese_ip(): void
     {
@@ -395,6 +509,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 마스터 스위치 OFF 시 실제 mmdb 파일이 있어도 GeoIP가 스킵되는지 테스트합니다.
+     *
+     * @scenario timezone_source=default
+     *
+     * @effects real_geoip_skipped_when_feature_disabled_even_with_db
+     *
+     * @return void 반환값 없음
      */
     public function test_real_geoip_skipped_when_feature_disabled_even_with_db(): void
     {
@@ -427,6 +547,12 @@ class SetTimezoneTest extends TestCase
 
     /**
      * 인증 사용자 타임존이 GeoIP 결과보다 우선하는지 통합 테스트합니다.
+     *
+     * @scenario timezone_source=user_setting
+     *
+     * @effects authenticated_user_timezone_overrides_geoip
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_timezone_overrides_geoip(): void
     {

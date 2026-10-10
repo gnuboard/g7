@@ -1,0 +1,88 @@
+# 시나리오 매니페스트 — 금액 서비스 결함 수정 (#599 validate P2-B)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+feature: validate_p2_money
+
+description: |
+  브랜치 전체 검증이 금액 서비스(취소 가능 금액 산정기·주문 변경 금액 계산·주문 옵션·환불 실행·
+  클레임 추가결제·마일리지·주문 취소)와 비교 스냅샷 표시 재료에서 찾은 결함을 닫는다. 결함은
+  모두 **오류 없이 금액·장부로만** 드러나는 종류라, 항목마다 실패하는 테스트를 먼저 세웠다.
+
+  핵심 동작:
+    - 반품 발 환불신청서의 취소 가능 한도(D19 ① 축)는 완료 경로와 같은 회차 차분이다 —
+      상한 없는 누적 재계산에서 다른 신청서 몫을 뺀다.
+    - 재계산 기준선은 누적 환불액이 아니라 종결 행(취소·교환완료)의 존재로 다시 구한다.
+    - 교환 후속 행의 회계 단가는 치환 패스와 같은 식(신규 단가 − 상품 스냅샷 판매가)이다.
+    - 정가 합계는 재계산과 같은 회계 주체 판정으로 교환 상품을 한 번만 센다.
+    - 헤더 결제금액 정합화는 기준 통화 금액만 옮기고 소수를 보존한다.
+    - 클레임 환불이 헤더에 쓰는 컬럼은 세금 분류 화이트리스트뿐이다.
+    - 승인 금액을 대조할 수 없는 승인은 확정하지 않고, 확정·실패 기록은 결제 대기일 때만 쓴다.
+      API 승인 경로의 금액 거절은 망취소 훅(`claim_payment.void_approval`)으로 보상한다.
+    - 부분 환급은 결제 통화 자릿수로 누적 차분 환산하고, 결제 건 행 잠금 안에서 PG 를 부른다.
+    - 클레임 추가결제 마일리지 차감·환급은 결제 건 행을 잠근 트랜잭션에서 멱등하다.
+    - 도메인 예외는 다국어 키와 치환 파라미터를 싣는다.
+
+axes:
+  defect:
+    - return_round_cap
+    - baseline_closed_rows
+    - successor_unit_price
+    - list_price_double_count
+    - substitution_coupon_cap
+    - substitution_line_match
+    - missing_rate_fallback
+    - refund_row_unit_price
+    - fractional_collection_fee
+    - earned_points_label
+    - approve_amount_missing
+    - approve_conditional_update
+    - approve_void_compensation
+    - partial_refund_rounding
+    - refund_lock
+    - mileage_idempotency
+    - header_paid_currency
+    - repository_boundary
+    - tax_column_whitelist
+    - exception_message_key
+    - raw_response_masking
+
+effects:
+  - second_return_round_cap_equals_its_own_delta
+  - partial_cancel_after_zero_refund_closure_refunds_only_its_item
+  - successor_cancel_refunds_the_new_unit_price
+  - list_price_total_counts_an_exchanged_item_once
+  - substitution_coupon_cap_split_sums_to_the_original_cap
+  - substitution_targets_the_line_of_its_own_order_option
+  - missing_rate_fallback_is_logged
+  - refund_option_row_uses_one_unit_price
+  - fractional_collection_fee_is_deducted_as_is
+  - comparison_snapshot_carries_the_earned_points_label
+  - approval_without_paid_amount_is_rejected_as_mismatch
+  - approval_failure_does_not_overwrite_a_paid_row
+  - approval_does_not_confirm_an_already_paid_row_twice
+  - rejected_approval_is_voided_through_the_hook
+  - callback_path_with_its_own_compensation_does_not_void_twice
+  - partial_refund_local_amounts_are_whole_and_sum_to_the_total
+  - pg_refund_runs_inside_the_payment_row_lock
+  - pg_refund_failure_reason_survives_the_rollback
+  - mileage_restore_is_capped_by_the_locked_row
+  - mileage_restore_locks_the_claim_payment_row
+  - mileage_deduct_for_a_claim_payment_is_idempotent
+  - header_paid_amount_is_never_the_payment_currency_amount
+  - header_paid_amount_keeps_the_fraction
+  - claim_option_transfer_goes_through_the_repository
+  - issued_tax_invoices_are_read_through_the_repository
+  - claim_refund_writes_only_tax_columns_to_the_header
+  - pg_refund_failure_carries_its_message_key
+  - cancellation_failure_keeps_the_claim_key_and_params
+  - approved_claim_payment_raw_response_is_masked
+  - failed_claim_payment_raw_response_is_masked
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ValidateP2MoneyCalculationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ValidateP2MoneyPaymentTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ValidateP2MoneyLedgerTest.php
+  # 승인 경로의 조건부 갱신이 원응답 마스킹을 그대로 지나는지 함께 잰다(기존 P18 테스트 편입).
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentRawResponseMaskingTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file login-session-expired-toast.test.tsx
  * @description 로그인 레이아웃 세션 만료 토스트 init_action 구조 검증 (Issue #301)
@@ -9,11 +10,13 @@
 
 import { describe, it, expect } from 'vitest';
 import loginJson from '../../layouts/auth/login.json';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('sirsoft-basic 로그인 레이아웃 - 세션 만료 토스트 init_action (Issue #301)', () => {
-  it('최상위 init_actions 배열이 존재해야 한다', () => {
-    expect(Array.isArray((loginJson as any).init_actions)).toBe(true);
-    expect((loginJson as any).init_actions.length).toBeGreaterThan(0);
+  it('최상위 init_actions 가 하나 이상 있어야 한다', () => {
+    // 컨테이너 모양(배열이냐 단일 객체냐)은 단언하지 않는다 — 컴파일러가 단일 원소를 객체로
+    // 접으므로 그 모양을 외우면 다음 굽기에서 깨진다(D67 ⓐ · U-SHAPEASSERT).
+    expect(asArray((loginJson as any).init_actions).length).toBeGreaterThan(0);
   });
 
   it('session_expired 토스트 액션이 정확한 if 조건과 핸들러로 등록되어야 한다', () => {

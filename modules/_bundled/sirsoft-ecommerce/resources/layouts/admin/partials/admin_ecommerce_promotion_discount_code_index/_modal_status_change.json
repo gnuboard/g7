@@ -1,55 +1,56 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Discount Code Status Change Modal"
-  },
-  "id": "modal_status_change",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-sm text-secondary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.description"
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
+    "comment": "할인코드 사용 상태를 바꾸기 전 확인받는 창.\n  **아직 시안이다** — 확인 버튼이 창을 닫기만 하고 아무것도 바꾸지 않는다. 옆 삭제 확인 창\n  (`_modal_delete_confirm`)과 같은 상태다.\n  안내 문구의 건수와 상태 이름만 목록의 `_local.selectedItems`·`_local.bulkStatus` 를 `$parent` 로 읽어\n  채운다. 번역문의 `{{count}}`·`{{status}}` 자리에 인자를 넘기지 않으면 그 글자가 화면에 그대로 나온다.\n  상태를 고르지 않고 열면 상태 자리는 `-` 다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Discount Code Status Change Modal"
     },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.confirm",
-      "actions": [
+    "id": "modal_status_change",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.confirm"
+            }
+        ]
+    },
+    "children": [
         {
-          "type": "click",
-          "handler": "closeModal"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-secondary"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.description|count={{($parent?._local?.selectedItems ?? []).length}}|status={{$parent?._local?.bulkStatus === 'active' ? $t('sirsoft-ecommerce.admin.promotion_discount_code.status.active') : ($parent?._local?.bulkStatus === 'inactive' ? $t('sirsoft-ecommerce.admin.promotion_discount_code.status.inactive') : '-')}}"
         }
-      ]
-    }
-  ]
+    ]
 }

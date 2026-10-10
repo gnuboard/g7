@@ -5,7 +5,7 @@
 #     - 백엔드 Feature(MileageTransactionControllerTest, 13건): 페이지네이션/통화/search_field/
 #       날짜/type 4분류/sort/권한 403
 #     - 백엔드 Unit(MileageTransactionRepositoryTest): type 역매핑/search_field 분기/sort
-#     - 프론트 레이아웃 렌더링(admin_ecommerce_mileage_transaction_index.test.tsx, 33건):
+#     - 프론트 레이아웃 렌더링(admin_ecommerce_mileage_transaction_index.test.tsx, 63건):
 #       공통 유틸/카운트 헤더/통화필터/권한 disabled/expand 일원화
 #     - 브라우저 E2E(mileage-transaction-index.spec.ts): data-testid 보강 후 활성화 골격
 #   effects ↔ 테스트 매핑은 본 매니페스트 effects 블록과 각 테스트가 1:1 대응한다.
@@ -76,14 +76,49 @@ effects:
   - total_count_header_reads_pagination_total
   - manual_button_disabled_when_no_manage_ability
   - row_expand_unified_via_datagrid_expandable
+  # 목록 화면 구조·필터 상태 모델 (Vitest 레이아웃 계약)
+  - list_screen_requires_read_permission_and_extends_admin_base
+  - list_datasource_reads_filters_from_query
+  - filter_state_restored_from_query_on_entry
+  - classification_filters_commit_on_search_button   # 검색어·유형·통화는 검색 버튼에서 한 번에 반영
+  - sort_and_per_page_navigate_immediately           # 정렬·페이지당 개수는 즉시 이동
+  - date_quick_select_fills_filter_dates
+  - filter_rows_labeled_and_actions_centered
+  - no_summary_stat_cards
+  - page_header_uses_common_util_classes
+  - bulk_extend_bar_always_visible_and_disabled_without_selection_or_manage
+  - modals_declared_top_level
+  # 목록 표·셀 (Vitest 레이아웃 계약)
+  - grid_selectable_server_paginated_expandable
+  - grid_columns_render_transaction_fields
+  - order_cell_opens_order_detail_in_new_window
+  - member_and_granter_cells_have_context_menu
+  - row_edit_action_loads_row_and_opens_edit_modal
+  # 수동 지급/차감 창 (Vitest 레이아웃 계약)
+  - manual_modal_member_search_submits_uuid          # 검색 자동완성 → uuid 저장 → user_id 로 전송
+  - manual_modal_deduct_exceed_warning_and_submit_guard
+  - manual_modal_submit_refreshes_list_on_success
+  - manual_modal_validation_feedback_and_saving_state
+  - manual_modal_earn_expiry_policy_or_custom_date
+  # 유효기간 연장 창·사유/기간 변경 창 (Vitest 레이아웃 계약)
+  - extend_modal_validation_feedback_and_saving_state
+  - edit_modal_readonly_info_and_editable_memo
+  - edit_modal_expiry_min_is_earned_date
+  - edit_modal_submit_saving_state
   # 행 편집(사유·기간 변경) — 원장 불변, 적립계만 (PHPUnit Controller/Service/Resource 커버)
   - row_edit_updates_memo_and_expiry            # PATCH {id} — memo/expires_at 갱신
   - row_edit_rejects_non_earning_422            # 비적립계 편집 거부
   - row_edit_expired_lot_blocks_expiry_allows_memo  # 소멸/전액사용 lot 만료일 거부, memo 허용
   - row_edit_requires_manage_permission_403
   - row_data_exposes_can_edit_ability           # 적립계+권한 → can_edit true, 그 외 false
+  # 행 응답의 표시 재료 (Resource — 화면이 enum 규칙을 다시 적지 않게 서버가 낸다)
+  - row_data_carries_badge_group_display_category_and_formatted_timestamps
+  - row_badge_group_matches_the_five_color_map_for_every_type
+  - row_amounts_are_normalized_to_the_currency_precision_with_formatted_twins
+  - collection_wraps_rows_with_the_can_manage_ability
   # 소멸 집계 표시 (Resource expired_amount/expiry_state)
   - earning_row_exposes_expired_amount_and_state  # 부분/전체 소멸 집계
+  - non_earning_row_stays_active_even_with_an_expired_amount  # 적립계만 소멸 상태를 갖는다
   - expiry_column_shows_partial_vs_full_with_amount  # 일부/전체 구분 + 소멸액 (Vitest 레이아웃)
   # 브라우저 E2E (Playwright — data-testid 보강 후 활성화)
   - admin_can_open_list_and_see_count
@@ -94,6 +129,38 @@ effects:
   - partial_expiry_shows_amount_in_expiry_column
   # 행 확장 연결 거래 표시 (expandContext fallback 결함 회귀 — `|| {}` 제거)
   - expand_row_shows_linked_transactions
+  # 수동 액션·행 편집의 경계 (PHPUnit Controller/Repository 커버)
+  - member_uuid_resolves_to_user_id_or_null                 # 회원 식별은 uuid → 정수 id 해석, 없으면 null
+  - manual_action_rejects_an_integer_member_id_with_422     # 정수 id 전송은 uuid 검증 실패로 422
+  - admin_deduct_within_balance_records_an_admin_deduct_row # 잔액 내 수동 차감 = admin_deduct 거래(분류 adjust)
+  - extend_expiry_pushes_the_lot_expiry_by_the_given_days   # 일괄 연장이 지정 일수만큼 만료일을 늘린다
+  - non_admin_cannot_open_the_list_403                      # 관리자가 아닌 회원은 목록 403
+  - row_edit_rejects_expiry_before_earned_at_422            # 만료일을 적립일시보다 과거로 → 422
+  - row_edit_of_a_missing_transaction_returns_422           # 없는 거래 편집 → 422
+  # 마일리지 원장 서비스 계약 (PHPUnit Unit — UserMileageServiceTest: 잔액·FIFO·사용 검증·적립·복원·소멸·관리자 편집·연장)
+  - balance_is_sum_of_active_lots
+  - fifo_deducts_oldest_expiring_lot_first
+  - deduct_throws_when_insufficient_balance
+  - validate_usage_rules
+  - max_usable_caps_and_floors
+  - earn_for_order_option_is_idempotent_and_updates_cache
+  - restore_for_cancel_is_idempotent
+  - restore_links_original_use_transaction_via_cancel_id
+  - expire_lots_records_expired_transactions
+  - expire_lots_only_expires_remaining_not_full_earn
+  - admin_earn_unlimited
+  - update_admin_transaction_edits_memo_and_expiry
+  - update_admin_transaction_rejects_expiry_before_earned
+  - update_admin_transaction_allows_expiry_after_earned
+  - update_admin_transaction_rejects_non_earning
+  - update_admin_transaction_expired_lot_blocks_expiry_allows_memo
+  - admin_deduct_rejects_when_exceeds_balance
+  - extend_lot_expiry_revives_expired_lot
+  - guest_order_earn_returns_null
+  - get_balance_reads_from_cache
+  - get_balance_reflects_disabled_setting
+  - earn_uses_base_currency_not_display_currency
+  - base_currency_for_order_resolution
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageTransactionControllerTest.php

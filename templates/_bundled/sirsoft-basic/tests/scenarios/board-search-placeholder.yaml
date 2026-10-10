@@ -1,0 +1,16 @@
+feature: 게시판 목록 검색칸 안내가 실제 찾는 곳과 어긋나지 않는다
+
+description: |
+  게시판 목록(일반·카드·갤러리)의 검색칸은 옆의 「찾을 곳」 선택(기본 제목+내용)과 함께 제출된다.
+  안내가 「제목, 내용, 작성자로 검색...」이라 기본 상태에서 작성자 이름을 넣으면 0건이었다
+  (7.1.0 실측 K3 관측 O-K3-9 재측정: title_content → total 0, author → total 22).
+  찾을 곳은 선택이 정하므로 안내는 특정 대상을 약속하지 않는 문구로 바꾼다.
+
+axes:
+  locale: [ko, en, ja]
+
+effects:
+  - board_search_placeholder_matches_selected_field
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-search-placeholder.test.ts

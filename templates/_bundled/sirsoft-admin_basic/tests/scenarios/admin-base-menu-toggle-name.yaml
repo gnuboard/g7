@@ -1,0 +1,21 @@
+feature: 관리자 머리말 메뉴(☰) 버튼 이름
+
+description: |
+  관리자 모든 화면 머리말 왼쪽의 메뉴 버튼은 데스크톱 사이드바를 접고 펼친다(toggleSidebar → _global.sidebarCollapsed).
+  아이콘만 그려 화면 낭독기가 이름 없는 「버튼」 으로만 읽었다. 접힘 상태에 따라 「사이드바 펼치기」/「사이드바 접기」 로
+  읽고, 펼침 여부를 aria-expanded 로 알린다.
+
+  수정 이력: 이커머스 전수 실측 S5-D32 (2026-10-07).
+
+axes:
+  case: [label, expanded, mobile]
+
+effects:
+  - menu_toggle_named_by_sidebar_state   # 접힘 상태에 따른 버튼 이름
+  - menu_toggle_announces_expanded       # aria-expanded 로 펼침 여부
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/adminBaseMenuToggleName.test.ts
+
+validation:
+  browser_check: 관리자 화면 머리말 ☰ 버튼 — 펼친 상태 「사이드바 접기」·aria-expanded=true, 누르면 「사이드바 펼치기」·false

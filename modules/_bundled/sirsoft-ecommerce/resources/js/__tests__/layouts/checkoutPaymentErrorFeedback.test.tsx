@@ -61,7 +61,7 @@ function setupTestRegistry(): ComponentRegistry {
     return registry;
 }
 
-// ========== 에러 배너 레이아웃 (checkout.json의 에러 표시 부분 간소화) ==========
+// ========== 에러 배너 레이아웃 (checkout.g7.html의 에러 표시 부분 간소화) ==========
 
 function createErrorLayout(orderErrorValue: string | null) {
     return {
@@ -78,7 +78,7 @@ function createErrorLayout(orderErrorValue: string | null) {
                 name: 'Container',
                 children: [
                     {
-                        comment: '에러 배너 (checkout.json line 152-186 동일 구조)',
+                        comment: '에러 배너 (checkout.g7.html line 152-186 동일 구조)',
                         type: 'basic',
                         name: 'Div',
                         if: '{{_local.orderError}}',

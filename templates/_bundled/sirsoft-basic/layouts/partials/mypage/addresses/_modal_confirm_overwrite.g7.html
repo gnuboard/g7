@@ -1,0 +1,43 @@
+<!-- 같은 이름의 배송지가 이미 있을 때 뜨는 확인 창. 저장이 409 로 거절된 **뒤에** 열리고, 확인하면
+     `force_overwrite` 를 실어 같은 요청을 다시 보낸다. 마이페이지·주문서·주문 상세가 같은 창을 쓴다. -->
+<partial description="배송지명 중복 덮어쓰기 확인 모달" editor_label="$t:user.modal_label.mypage_addresses.confirmOverwriteModal">
+  <modal data-type="composite" data-ref="confirmOverwriteModal" title="$t:mypage.addresses.overwrite_title" size="sm">
+    <div class="space-y-4">
+      <div class="flex items-start gap-3">
+        <icon name="triangle-exclamation" class="text-2xl text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <p class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.addresses.overwrite_message</p>
+      </div>
+      <div class="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700"/>
+        <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"/>
+          <on type="click">
+            <!-- 덮어쓰기 진행 — 창을 먼저 닫는 이유는 이 요청이 성공하면 뒤에 열려 있던 편집 창까지 함께 닫혀야 하기 때문이다 -->
+            <sequence>
+              <close-modal/>
+              <api-call :auth_required="true" target="{{_global.editingAddress?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/' + _global.editingAddress.id : '/api/modules/sirsoft-ecommerce/user/addresses'}}" method="{{_global.editingAddress?.id ? 'PUT' : 'POST'}}">
+                <success>
+                  <refetch-data-source dataSourceId="addresses"/>
+                  <toast type="success" message="$t:mypage.addresses.updated"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body :force_overwrite="true" name="{{_global.editingAddress?.name ?? ''}}" recipient_name="{{_global.editingAddress?.recipient_name ?? ''}}" recipient_phone="{{_global.editingAddress?.recipient_phone ?? ''}}" zipcode="{{_global.editingAddress?.zipcode ?? ''}}" address="{{_global.editingAddress?.address ?? ''}}" address_detail="{{_global.editingAddress?.address_detail ?? ''}}" is_default="{{_global.editingAddress?.is_default ?? false}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          $t:mypage.addresses.overwrite_confirm
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

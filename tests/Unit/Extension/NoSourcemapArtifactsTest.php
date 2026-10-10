@@ -173,13 +173,20 @@ class NoSourcemapArtifactsTest extends TestCase
      * `_bundled` 에 없는 활성 디렉토리는 과거 설치의 로컬 잔재이며 gitignore 대상이라
      * 공개 배포본에 포함되지 않으므로 판정에서 제외한다.
      *
+     * 판정은 디렉토리 존재가 아니라 **manifest 존재**로 한다. 저장소에서 제거된 확장은
+     * `_bundled` 에 gitignore 대상인 `node_modules`/`vendor` 만 남기고 사라지는데,
+     * 디렉토리 존재만 보면 그 껍데기를 번들 원본으로 오판해 "재빌드하라" 고 요구하게 된다
+     * — 재빌드할 원본이 이미 없으므로 아무도 그 요구를 이행할 수 없다.
+     *
      * @param  string  $type  확장 타입 (templates|modules|plugins)
      * @param  string  $identifier  확장 식별자
      * @return bool 번들 확장 여부
      */
     private function isBundledExtension(string $type, string $identifier): bool
     {
-        return is_dir(base_path("{$type}/_bundled/{$identifier}"));
+        $manifest = ['templates' => 'template.json', 'modules' => 'module.json', 'plugins' => 'plugin.json'][$type];
+
+        return is_file(base_path("{$type}/_bundled/{$identifier}/{$manifest}"));
     }
 
     /**

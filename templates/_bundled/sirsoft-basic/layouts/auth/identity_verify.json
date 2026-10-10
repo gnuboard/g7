@@ -1,0 +1,202 @@
+{
+    "comment": "본인인증 확인 링크의 착지 화면 — 메일의 링크(/identity/verify?challenge=…&token=…)를 열면 그 토큰으로 확인한다. 확인 결과는 인증을 시작한 원래 화면이 일회용 비밀값으로 받아 가므로(다른 기기에서 열어도 된다), 이 화면은 결과만 알린다.",
+    "version": "1.0.0",
+    "layout_name": "auth/identity_verify",
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:user.identity.verify_link.title"
+    },
+    "initLocal": {
+        "state": "verifying",
+        "error": null
+    },
+    "init_actions": [
+        {
+            "comment": "건 번호나 토큰이 빠진 주소는 확인할 수 없다 — 요청을 보내지 않고 바로 실패를 알린다.",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "state": "{{query.challenge && query.token ? 'verifying' : 'failed'}}"
+            }
+        },
+        {
+            "handler": "apiCall",
+            "target": "/api/identity/challenges/{{query.challenge ?? ''}}/verify",
+            "if": "{{!!query.challenge && !!query.token}}",
+            "params": {
+                "method": "POST",
+                "body": {
+                    "token": "{{query.token ?? ''}}"
+                }
+            },
+            "onSuccess": {
+                "handler": "setState",
+                "params": {
+                    "target": "local",
+                    "state": "verified"
+                }
+            },
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "state": "failed",
+                        "error": "{{error.message ?? ''}}"
+                    }
+                },
+                {
+                    "handler": "suppress"
+                }
+            ]
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-[60vh] flex items-center justify-center py-12 px-4"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center",
+                            "role": "status",
+                            "aria-live": "polite"
+                        },
+                        "children": [
+                            {
+                                "comment": "확인 중",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.state === 'verifying'}}",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "inline-flex items-center justify-center w-16 h-16 mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fas fa-spinner fa-spin",
+                                                    "className": "text-3xl text-indigo-600 dark:text-indigo-400"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:user.identity.verify_link.verifying"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "확인 완료 — 원래 화면이 결과를 받아 이어 간다",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.state === 'verified'}}",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fas fa-check",
+                                                    "className": "text-3xl text-green-600 dark:text-green-400"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2"
+                                        },
+                                        "text": "$t:user.identity.verify_link.verified_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "$t:user.identity.verify_link.verified_body"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "확인 실패 — 만료·이미 사용·잘못된 링크",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.state === 'failed'}}",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fas fa-circle-exclamation",
+                                                    "className": "text-3xl text-red-600 dark:text-red-400"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2"
+                                        },
+                                        "text": "$t:user.identity.verify_link.failed_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.error}}",
+                                        "props": {
+                                            "className": "text-sm text-red-700 dark:text-red-300 mb-2"
+                                        },
+                                        "text": "{{_local.error}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "$t:user.identity.verify_link.failed_body"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

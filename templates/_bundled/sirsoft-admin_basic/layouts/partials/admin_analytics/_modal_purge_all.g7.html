@@ -1,0 +1,65 @@
+<!-- 모든 통계 데이터 삭제 확인 창(설정 › 보존 탭). 원장·집계·봇 기록·실패 로그·실행 이력·솔트를 전부
+  지우며 되돌릴 수 없다. 서버도 `confirm` 없이는 422 로 막지만, 화면은 그 전에 체크 없이 버튼을
+  잠가 실수로 누르는 길 자체를 없앤다. -->
+<partial description="방문자 통계 — 모든 통계 데이터 삭제 확인 창" editor_label="$t:admin.modal_label.analytics.purge_all_modal">
+  <modal data-type="composite" data-ref="analytics_purge_all_modal" title="$t:admin.analytics.modals.purge.title" size="md">
+    <div class="py-2 space-y-3">
+      <div class="danger-confirm-alert">
+        <!-- 원은 감싸는 칸이 그린다. 아이콘 요소에 원 자산을 직접 주면 글꼴 아이콘이 48px 칸 위쪽에
+          본문 글자 크기로 붙는다(#682 실측 후속 4). -->
+        <div class="danger-confirm-icon">
+          <icon name="triangle-exclamation" aria-hidden="true"/>
+        </div>
+        <p class="danger-confirm-message">$t:admin.analytics.modals.purge.body</p>
+      </div>
+      <!-- 행 수는 조회 권한 API 에서 온다. 권한이 없으면 403 을 삼킨 fallback 0 이 남아 「0행」으로 읽히므로,
+        되돌릴 수 없는 삭제 앞에서 거짓 수를 보이지 않고 보존 탭 카드와 같은 권한 안내로 갈음한다. -->
+      <p data-if="{{_global.analyticsPurgeRowsReadable === true}}" class="text-label-subtle">$t:admin.analytics.modals.purge.rows|visits={{(analytics_storage?.data?.exact?.analytics_visits ?? 0) | number}}|actions={{(analytics_storage?.data?.exact?.analytics_actions ?? 0) | number}}</p>
+      <p data-if="{{_global.analyticsPurgeRowsReadable !== true}}" class="text-label-subtle">$t:admin.analytics.settings.retention.storage_permission_required</p>
+      <label class="inline-clickable">
+        <input type="checkbox" class="checkbox" checked="{{_global.analyticsPurgeConfirm === true}}">
+          <on type="change">
+            <!-- 확인 체크 — 켜야 삭제 버튼이 풀린다. 서버도 `confirm` 없이는 거절하지만 화면에서 먼저 막는다. -->
+            <set-state target="global" analyticsPurgeConfirm="{{$event.target.checked}}"/>
+          </on>
+        </input>
+        <span class="text-label">$t:admin.analytics.modals.purge.confirm_label</span>
+      </label>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsPurging}}">
+        <on type="click">
+          <!-- 취소 — 체크를 걷고 닫는다. 다시 열었을 때 체크가 켜진 채면 클릭 한 번으로 전부 지워진다. -->
+          <sequence>
+            <set-state target="global" :analyticsPurgeConfirm="false"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="purge_execute_button" type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.analyticsPurgeConfirm !== true || _global.analyticsPurging}}">
+        <on type="click">
+          <!-- 삭제 실행. 끝나면 저장소 현황을 다시 받아 표가 0 행으로 되맞춰진다. -->
+          <sequence>
+            <set-state target="global" :analyticsPurging="true"/>
+            <api-call :auth_required="true" target="/api/admin/analytics/data" method="DELETE">
+              <body :confirm="true"/>
+              <success>
+                <set-state target="global" :analyticsPurging="false" :analyticsPurgeConfirm="false"/>
+                <close-modal/>
+                <refetch-data-source dataSourceId="analytics_storage"/>
+                <toast type="success" message="$t:admin.analytics.modals.purge.success"/>
+              </success>
+              <fail>
+                <set-state target="global" :analyticsPurging="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.analyticsPurging}}" name="spinner" :spin="true" class="text-sm"/>
+        <span>$t:admin.analytics.modals.purge.button</span>
+      </button>
+    </div>
+  </modal>
+</partial>

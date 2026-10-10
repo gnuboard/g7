@@ -1,10 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { isSameOriginRequest } from '../../support/sameOriginRequest';
+
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:LanguageSelector')) ?? {
@@ -42,7 +50,7 @@ export interface LanguageSelectorProps {
   availableLocales?: string[];
   /** 언어 설정 텍스트 */
   languageText?: string;
-  /** 언어 변경 API 엔드포인트 */
+  /** 언어 변경 API 엔드포인트 (G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다) */
   apiEndpoint?: string;
   /** 언어 변경 후 콜백 */
   onLanguageChange?: (locale: string) => void;
@@ -89,7 +97,7 @@ export interface LanguageSelectorProps {
  */
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   availableLocales = ['ko', 'en'],
-  languageText = 'Language',
+  languageText: languageTextProp,
   apiEndpoint = '/api/admin/users/me/language',
   onLanguageChange,
   className = '',
@@ -98,12 +106,20 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const languageText = languageTextProp ?? tOr('admin.language', 'Language');
   const [showMenu, setShowMenu] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [currentLocale, setCurrentLocale] = useState<string>(() => {
     return localStorage.getItem('g7_locale') || 'ko';
   });
   const menuRef = useRef<HTMLDivElement>(null);
+  // 독립 모드 목록은 listbox 패턴이다(7.1.0 O-PF-1) — 단추는 aria-haspopup="listbox"·aria-controls 로 목록을 가리키고,
+  // 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로 초점을 돌린다.
+  const listboxId = `${useId()}-language-listbox`;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const pendingFocusRef = useRef<number | null>(null);
 
   /**
    * 외부 클릭 감지 (인라인 모드가 아닐 때만)
@@ -122,55 +138,125 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }, [inline]);
 
   /**
-   * 쿠키에서 XSRF 토큰 읽기
+   * 목록이 열린 뒤 맡겨 둔 항목으로 초점을 옮긴다
    */
-  const getXsrfToken = (): string | null => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; XSRF-TOKEN=`);
-    if (parts.length === 2) {
-      return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+  useEffect(() => {
+    if (!showMenu || pendingFocusRef.current === null) return;
+    optionRefs.current[pendingFocusRef.current]?.focus();
+    pendingFocusRef.current = null;
+  }, [showMenu]);
+
+  /**
+   * 목록을 연다 — 초점은 현재 언어 항목(없으면 where 쪽 끝 항목)에 둔다
+   *
+   * @param where 현재 언어가 목록에 없을 때 초점을 둘 쪽
+   */
+  const openMenu = (where: 'first' | 'last' = 'first') => {
+    const selected = availableLocales.indexOf(currentLocale);
+    const index = selected >= 0 ? selected : (where === 'last' ? availableLocales.length - 1 : 0);
+    if (showMenu) {
+      optionRefs.current[index]?.focus();
+      return;
     }
-    return null;
+    pendingFocusRef.current = index;
+    setShowMenu(true);
   };
 
   /**
-   * 로컬 스토리지에서 Bearer 토큰 읽기
+   * 목록을 닫는다
+   *
+   * @param returnFocus 단추로 초점을 돌릴지
    */
-  const getBearerToken = (): string | null => {
-    return localStorage.getItem('auth_token');
+  const closeMenu = (returnFocus: boolean) => {
+    setShowMenu(false);
+    if (returnFocus) triggerRef.current?.focus();
+  };
+
+  /**
+   * 단추 키보드 — ↓/↑ 는 목록을 열고 항목으로 들어간다(Enter·Space 는 단추 기본 동작인 클릭으로 연다)
+   */
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      openMenu(event.key === 'ArrowUp' ? 'last' : 'first');
+    }
+  };
+
+  /**
+   * 목록 키보드 — 항목 사이 이동, Esc 로 닫기, Tab 으로 벗어나면 닫기
+   */
+  const handleListboxKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const count = availableLocales.length;
+    if (count === 0) return;
+    const current = optionRefs.current.findIndex((el) => el === document.activeElement);
+    let next: number | null = null;
+    switch (event.key) {
+      case 'ArrowDown':
+        next = current < 0 ? 0 : (current + 1) % count;
+        break;
+      case 'ArrowUp':
+        next = current < 0 ? count - 1 : (current - 1 + count) % count;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = count - 1;
+        break;
+      case 'Escape':
+        event.preventDefault();
+        event.stopPropagation();
+        closeMenu(true);
+        return;
+      case 'Tab':
+        closeMenu(false);
+        return;
+      default:
+        return;
+    }
+    event.preventDefault();
+    optionRefs.current[next]?.focus();
   };
 
   /**
    * 언어 변경 처리
+   *
+   * 저장 요청은 코어 `G7Core.api` 로 보낸다 — Bearer·XSRF 첨부, 교차 출처 대상의 토큰 제외,
+   * 401 처리를 코어가 맡는다. 화면 언어 전환은 공개 API `G7Core.locale.change()` 를 쓴다.
    */
   const handleLanguageChange = async (locale: string) => {
-    if (isChanging || locale === currentLocale) return;
+    if (isChanging) return;
+    // 현재 언어를 다시 고르면 화면은 그대로 두고 목록만 닫는다. 회원 언어는 맞춘다 — 다른 기기에서 바뀐 회원 언어가
+    // 이 화면 언어와 갈려 있을 수 있어, 코어 언어 전환이 같은 언어일 때 로그인 회원의 언어만 저장한다(7.1.0 결정)
+    if (locale === currentLocale) {
+      void (window as any).G7Core?.locale?.change?.(locale);
+      closeMenu(true);
+      return;
+    }
+
+    const G7Core = (window as any).G7Core;
 
     try {
       setIsChanging(true);
 
-      const xsrfToken = getXsrfToken();
-      const bearerToken = getBearerToken();
+      // 엔드포인트는 레이아웃 prop 이라 표현식으로 외부 주소를 만들 수 있다. 토큰은 코어가 동일 출처
+      // 대상에만 싣지만(KVE-2026-2350), 교차 출처 주소가 들어온 사실은 남긴다
+      if (!isSameOriginRequest(apiEndpoint)) {
+        logger.warn('교차 출처 언어 저장 주소라 인증 정보를 싣지 않습니다.', apiEndpoint);
+      }
 
       // API 호출로 DB에 저장 (실패해도 UI는 변경)
       try {
-        const response = await fetch(apiEndpoint, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            ...(xsrfToken && { 'X-XSRF-TOKEN': xsrfToken }),
-            ...(bearerToken && { Authorization: `Bearer ${bearerToken}` }),
-          },
-          credentials: 'include',
-          body: JSON.stringify({ language: locale }),
-        });
-
-        if (!response.ok) {
-          logger.warn('언어 설정 저장 실패 (UI는 변경됨):', response.statusText);
+        if (typeof G7Core?.api?.patch !== 'function') {
+          throw new Error('G7Core.api is not available');
         }
-      } catch (apiError) {
-        logger.warn('언어 설정 API 호출 실패 (UI는 변경됨):', apiError);
+        await G7Core.api.patch(apiEndpoint, { language: locale });
+      } catch (apiError: any) {
+        if (apiError?.response) {
+          logger.warn('언어 설정 저장 실패 (UI는 변경됨):', apiError.response.statusText ?? apiError.response.status);
+        } else {
+          logger.warn('언어 설정 API 호출 실패 (UI는 변경됨):', apiError);
+        }
       }
 
       // UI 상태 업데이트
@@ -180,11 +266,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       // 콜백 실행
       onLanguageChange?.(locale);
 
-      // TemplateApp의 changeLocale 호출하여 UI 리렌더링
-      if ((window as any).__templateApp) {
-        await (window as any).__templateApp.changeLocale(locale);
+      // 공개 API 로 화면 언어 전환 (새로고침 없이 리렌더링). 회원 언어는 위에서 이미 저장했으므로
+      // 코어가 다시 저장하지 않게 한다(저장 요청 1회 — 7.1.0 O-C3-3)
+      if (typeof G7Core?.locale?.change === 'function') {
+        await G7Core.locale.change(locale, { persist: false });
       } else {
-        logger.warn('TemplateApp not found, reloading page');
+        logger.warn('G7Core.locale not found, reloading page');
         window.location.reload();
       }
     } catch (error) {
@@ -248,7 +335,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs}>
       <Button
-        onClick={() => setShowMenu(!showMenu)}
+        ref={triggerRef}
+        onClick={() => (showMenu ? closeMenu(false) : openMenu())}
+        onKeyDown={handleTriggerKeyDown}
         className={
           showCode
             ? 'flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer'
@@ -256,6 +345,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         }
         aria-haspopup="listbox"
         aria-expanded={showMenu}
+        aria-controls={showMenu ? listboxId : undefined}
         aria-label={languageText}
       >
         <Icon
@@ -272,10 +362,21 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
       {showMenu && (
         <Div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-          <Div className="py-2">
-            {availableLocales.map((locale) => (
+          <Div
+            id={listboxId}
+            role="listbox"
+            aria-label={languageText}
+            className="py-2"
+            onKeyDown={handleListboxKeyDown}
+          >
+            {availableLocales.map((locale, index) => (
               <Button
                 key={locale}
+                ref={(el: HTMLButtonElement | null) => { optionRefs.current[index] = el; }}
+                type="button"
+                role="option"
+                aria-selected={currentLocale === locale}
+                tabIndex={currentLocale === locale ? 0 : -1}
                 onClick={() => handleLanguageChange(locale)}
                 disabled={isChanging}
                 className={`

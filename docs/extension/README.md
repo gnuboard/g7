@@ -14,6 +14,21 @@
 
 ---
 
+## 코어와 확장의 책임 경계
+
+코어는 **계약**(훅·필터·코어 API·매니페스트 선언 항목)을 소유하고, 확장은 그 계약에 **답한다**. 코어가 특정 확장을 이름으로 알면 그 확장이 없거나 다른 확장으로 대체된 설치에서 코어가 조용히 다르게 동작한다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 코어(`app`·`config`·`routes`·`database`·`resources/js/core`)가 확장 식별자·네임스페이스·API 경로·훅 키·소유 테이블·이벤트 이름을 직접 적음 | 코어가 훅·필터·API 를 정의하고, 답하는 확장이 있는지는 그 계약으로 판정 |
+| 확장이 매니페스트 `dependencies` 에 선언하지 않은 다른 확장의 식별자·API 경로·번역 키·클래스를 사용 | 의존하는 확장은 `dependencies` 에 선언한다. 선언 없이 협력할 때는 상대가 내보내는 **훅 키**를 구독·호출한다 |
+| 설치·런타임 경로가 `_bundled/`(동봉 원본)를 읽거나 활성본이 없을 때 `_bundled` 로 폴백 | 설치본(활성 디렉토리)과 설치 기록만 읽는다. `_bundled` 는 설치·업데이트 원본과 개발 도구만 읽는다 |
+| 코어가 특정 템플릿 식별자를 골라 기본값·문맥으로 사용 | 템플릿은 설치 기록·활성 상태·템플릿이 선언한 매니페스트로 결정한다 |
+
+템플릿의 `extensions/{확장 식별자}/` 오버라이드와 컴포넌트의 템플릿별 판본(`components.json` 의 `for`, `forTemplate`)은 경로·선언으로 대상을 밝히는 계약이라 허용된다 — 대상이 없으면 쓰이지 않을 뿐 깨지지 않는다.
+
+---
+
 ## 확장 시스템 개요
 
 G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
@@ -32,6 +47,9 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [hooks.md](hooks.md) | Action/Filter Hook, 리스너 구현, 우선순위 |
+| [hook-catalog.md](hook-catalog.md) | 공개 훅 목록 — 코어가 발화하는 훅 이름·유형·인자 개수 (자동 생성). 기본 제공 확장 훅은 각 확장 문서로 링크 |
+| [analytics-extension-points.md](analytics-extension-points.md) | 방문자 통계에 전환·커스텀 차원 선언, 판정·개인정보·출력 훅 |
+| [consent-provider.md](consent-provider.md) | 동의 제공자 계약 — 동의 관리 확장 구현, 서버·브라우저에서 동의 확인, fail-closed 소비 규칙 |
 
 ### 모듈 개발
 
@@ -60,12 +78,14 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [extension-manager.md](extension-manager.md) | Composer 오토로드, 서비스 등록, hidden 필터링 |
+| [extension-icons.md](extension-icons.md) | 확장 아이콘 — 파일 관례·manifest icon 필드·규격·언어팩 합성 |
 
 ### 학습용 샘플
 
 | 문서 | 설명 |
 |------|------|
 | [sample-extensions.md](sample-extensions.md) | 학습용 최소 샘플 확장 4종 (gnuboard7-hello_*) — 계층 1:1 비교 레퍼런스 |
+| [admin-template-contract.md](admin-template-contract.md) | 관리자 템플릿 교체 계약 — 번들 확장 관리자 화면이 기대는 컴포넌트·공용 문구 키·스타일 클래스·조각 앵커 |
 
 ### 템플릿 시스템
 
@@ -187,7 +207,7 @@ php artisan extension:update-autoload   # Composer 오토로드 업데이트
 
 ## 관련 문서
 
-- [AGENTS.md](../../../AGENTS.md) - 프로젝트 개발 가이드
+- [AGENTS.md](../../AGENTS.md) - 프로젝트 개발 가이드
 - [backend/](../backend/) - 백엔드 개발 가이드
 - [frontend/](../frontend/) - 프론트엔드 개발 가이드
 - [database-guide.md](../database-guide.md) - 데이터베이스 가이드

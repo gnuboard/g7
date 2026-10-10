@@ -1,0 +1,90 @@
+feature: G7Core 전역 표면 — 확장이 기대어 쓰는 API 가 지키는 약속
+
+description: |
+  `window.G7Core` 는 템플릿·모듈·플러그인이 엔진에 닿는 **유일한 공개 표면**이다. 여기의 약속이
+  조용히 바뀌면 깨지는 쪽은 코어가 아니라 그 표면에 기댄 확장들이라, 한 파일(102 케이스)로
+  표면 전체를 잠근다.
+
+  ## 효과 단위를 `describe` 그룹으로 잡은 이유
+
+  케이스마다 효과 이름을 새로 지으면 목록이 테스트 파일의 사본이 되고, 사본은 갈린다. 그룹은
+  이미 "이 API 가 지키는 약속" 을 뜻하고 케이스들은 그 약속을 여러 각도에서 재는 조각이므로,
+  그룹을 계약 단위로 둔다 — `action-dispatcher-handler-contract.yaml` 과 같은 규약이다.
+  한 효과를 여러 케이스가 마킹하는 것은 정상이다.
+
+  ## 축
+
+  `surface` 는 **G7Core 의 어느 면을 건드리는가** 다.
+
+  - `namespace` — 네임스페이스 생성과 노출 자체(React 전역·`__runtime`·style·translation·helper·
+    코어 싱글턴). 이 자리의 실패는 «없는 것을 부른다» 로 나타난다.
+  - `state` — 전역/격리 상태의 읽기·쓰기와, 그리드 행 확장이 자식에게 상태를 물려주는 경로.
+  - `events` — 컴포넌트 이벤트 버스와 액션 dispatch.
+  - `ui` — 화면에 바로 드러나는 표면(toast·modal·locale·navigation·websocket).
+  - `settings` — 플러그인·모듈 설정 조회.
+  - `assets` — 확장 자산 URL 생성과 로더.
+  - `security` — `loadScript` 출처 게이트.
+
+  보안 축을 따로 세운 이유는 그 자리의 실패가 **기능 실패로 보이지 않기** 때문이다 —
+  출처 우회는 화면이 멀쩡한 채로 성립한다.
+
+  ## 이 파일이 뒤늦게 매니페스트를 갖게 된 경위
+
+  #524 에서 `getGlobalState()` 규약을 흉내 내던 낡은 테스트 더블 한 줄을 고치면서 이 파일이
+  변경셋에 들어왔고, 그제야 소유 매니페스트가 없다는 것이 드러났다. 규약(`state.get()` 은
+  `_global` 의 내용물을 평평하게 돌려준다)은 `expand_children_context_carries_global_local_and_computed`
+  가 지킨다.
+
+axes:
+  surface: [namespace, state, events, ui, settings, assets, security]
+
+effects:
+  - asset_failure_notice_api_is_exposed
+  - asset_retry_loader_is_exposed
+  - component_event_listener_error_does_not_break_siblings
+  - component_event_subscribe_and_emit_round_trip
+  - component_event_unsubscribe_and_clear_remove_listeners
+  - core_singletons_and_hooks_are_exposed
+  - dispatch_returns_failure_when_engine_pieces_are_missing
+  - dispatch_runs_actions_through_the_dispatcher
+  - expand_children_context_carries_global_local_and_computed
+  - expand_content_prefers_state_ref_over_captured_state
+  - expand_context_mixed_expression_is_interpolated
+  - expand_context_single_binding_keeps_its_type
+  - extension_asset_urls_are_same_origin_and_composable
+  # #712 후속: 확장자를 가로채는 서버 + 정적 게시본 없음 — AMD 디렉토리도 file 쿼리 형태(서버가 .js 를 메운다)
+  - amd_directory_url_uses_file_query_in_extensionless_mode
+  - g7core_namespace_is_created_with_react_globals
+  - helper_apis_are_exposed
+  - isolated_state_is_read_from_registry_or_action_context
+  - isolated_state_writes_expand_dot_notation
+  - isolated_state_writes_reach_registry_and_action_context
+  - isolated_state_writes_warn_when_no_scope_is_resolvable
+  - load_script_gate_allows_same_origin_and_declared_hosts
+  - load_script_gate_exposes_its_predicate_as_a_seam
+  - load_script_gate_rejects_untrusted_origins
+  - locale_api_falls_back_to_ko_without_template_app
+  - locale_api_reads_supported_and_changes_locale
+  - modal_api_dispatches_open_close_actions
+  - modal_api_reports_open_state_and_stack
+  - module_settings_are_readable_by_key_and_in_bulk
+  - module_settings_support_default_values
+  - navigation_api_reports_pending_and_notifies_on_complete
+  - plugin_settings_are_readable_by_key_and_in_bulk
+  - plugin_settings_missing_sources_return_empty
+  - plugin_settings_support_default_values
+  - render_item_children_lets_item_context_win_over_global_local
+  - render_item_children_merges_global_local_and_computed
+  - runtime_surface_is_exposed_and_idempotent
+  - state_api_degrades_safely_without_template_app
+  - state_api_exposes_data_sources
+  - state_api_reads_writes_and_subscribes_global_state
+  - style_helpers_are_exposed
+  - toast_api_dispatches_typed_toast_actions
+  - toast_show_defaults_to_info
+  - translation_api_exposes_hook_and_translates_with_params
+  - websocket_api_reports_initialization_and_subscription_count
+  - websocket_api_subscribes_and_tears_down_channels
+
+test_files:
+  - resources/js/core/__tests__/G7CoreGlobals.test.ts

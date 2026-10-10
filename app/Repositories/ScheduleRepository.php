@@ -110,9 +110,14 @@ class ScheduleRepository implements ScheduleRepositoryInterface
         $this->applyFilters($query, $filters);
 
         // 정렬 적용 (허용 컬럼 화이트리스트로 해석)
-        foreach ($this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at') as $sort) {
+        $sortSpec = $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at');
+        foreach ($sortSpec as $sort) {
             $query->orderBy($sort['column'], $sort['direction']);
         }
+
+        // 같은 값끼리의 순서를 id 로 고정한다 — 확장 설치가 스케줄 여러 개를 같은 초에 등록하므로
+        // created_at 만으로 정렬하면 쪽마다 순서가 달라져 2쪽이 1쪽 행을 다시 보이고 일부 행이 빠졌다.
+        $query->orderBy('id', $sortSpec[0]['direction'] ?? 'desc');
 
         // 페이지네이션 적용
         $perPage = $filters['per_page'] ?? 15;
@@ -201,7 +206,8 @@ class ScheduleRepository implements ScheduleRepositoryInterface
     private function applyDateFilters(Builder $query, array $filters): void
     {
         // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 범위 조건으로 준다.
-        $this->applyDateRangeFilter(
+        // 목록은 등록일을 보는 사람의 시간대로 그린다 — 같은 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
             $query,
             'created_at',
             $filters['created_from'] ?? null,

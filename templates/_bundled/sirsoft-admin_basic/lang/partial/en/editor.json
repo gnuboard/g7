@@ -1127,6 +1127,18 @@
     },
     "sh_description": {
       "label": "Description"
+    },
+    "ecg_view_mode": {
+      "label": "View mode"
+    },
+    "ecg_min_card_width": {
+      "label": "Min card width (px)"
+    },
+    "ecg_max_columns": {
+      "label": "Max columns"
+    },
+    "ecg_pagination": {
+      "label": "Pagination"
     }
   },
   "component": {
@@ -1183,6 +1195,7 @@
     "product_card": "Product card",
     "template_card": "Template card",
     "bar_chart": "Bar chart",
+    "line_chart": "Line chart",
     "donut_chart": "Donut chart",
     "html_content": "HTML content",
     "html_editor": "HTML editor",
@@ -1202,6 +1215,7 @@
     "multilingual_tag_input": "Multilingual tag input",
     "language_selector": "Language selector",
     "permission_tree": "Permission tree",
+    "menu_access_tree": "Menu access tree",
     "category_tree": "Category tree",
     "extension_badge": "Extension badge",
     "user_profile": "User profile",
@@ -1215,7 +1229,8 @@
     "theme_toggle": "Theme Toggle",
     "notification_center": "Notification Center",
     "column_selector": "Column Selector",
-    "section_header": "Section Header"
+    "section_header": "Section Header",
+    "extension_card_grid": "Extension card grid"
   },
   "action": {
     "go_to_page": {
@@ -1292,6 +1307,20 @@
     "init_filter_visibility": {
       "label": "Initialize filter visibility",
       "param_storage_key": "Storage key"
+    },
+    "persist_view_mode": {
+      "label": "Persist view mode (save then read back)",
+      "param_storage_key": "Browser storage key",
+      "param_state_key": "Global state key",
+      "param_value": "Value to save (literal)"
+    },
+    "set_analytics_period": {
+      "label": "Analytics period preset",
+      "param_preset": "Period",
+      "preset_today": "Today",
+      "preset_7d": "7 days",
+      "preset_30d": "30 days",
+      "preset_this_month": "This month"
     }
   },
   "computed": {
@@ -1423,6 +1452,7 @@
     "settings_mail": "Mail tab",
     "settings_upload": "Upload tab",
     "settings_security": "Security tab",
+    "settings_security_ip_restriction": "Security tab — IP access restriction",
     "settings_drivers": "Drivers tab",
     "settings_advanced": "Advanced tab",
     "settings_notification_definitions": "Notification definitions tab",
@@ -1453,6 +1483,7 @@
       "seo": "SEO tab",
       "notification_definitions": "Notification definitions tab",
       "identity_policies": "Identity policy tab",
+      "privacy_retention": "Privacy retention tab",
       "basic_info": "Basic info tab",
       "language_currency": "Language & currency tab",
       "order_settings": "Order settings tab",
@@ -1462,8 +1493,55 @@
       "mileage": "Mileage tab",
       "deposit": "Deposit tab",
       "template_user": "User templates tab",
-      "template_admin": "Admin templates tab"
-    }
+      "template_admin": "Admin templates tab",
+      "connection": "Connection tab",
+      "alimtalk_templates": "Alimtalk templates tab",
+      "settings": "Settings tab",
+      "history": "Run history tab"
+    },
+    "extensions_list_view_gallery": "Extension list — gallery view",
+    "extensions_list_view_list": "Extension list — list view",
+    "bizppurio_templates_not_ready": "Templates tab — not ready",
+    "bizppurio_template_new": "Alimtalk template — new",
+    "bizppurio_template_rejected": "Alimtalk template — rejected & extra",
+    "bizppurio_template_image": "Alimtalk template — emphasis image",
+    "bizppurio_template_item_list": "Alimtalk template — item list",
+    "bizppurio_sms_edit": "Fallback SMS body editing",
+    "bizppurio_cancel_approval": "Cancel approval confirmation",
+    "bizppurio_rejection_view": "Rejection reasons",
+    "bizppurio_delete_confirm": "Template delete confirmation",
+    "read_only": "Read-only (no permission)",
+    "notification_template_edit": "Notification template editing",
+    "notification_template_preview": "Notification template preview",
+    "policy_history_open": "Policy version history expanded",
+    "cookie_category_expanded": "Cookie category detail expanded",
+    "filtered_by_search": "Search filter applied",
+    "policy_version_snapshot": "Policy version snapshot",
+    "rows_selected": "Rows selected (bulk actions)",
+    "delete_confirm": "Delete confirmation",
+    "withdraw_confirm": "Withdrawal confirmation",
+    "bulk_delete_confirm": "Bulk delete confirmation",
+    "editor_preview_open": "Editor preview expanded",
+    "marketing_channel_edit": "Marketing channel editing",
+    "marketing_channel_create": "Marketing channel creation",
+    "marketing_channel_deactivate": "Marketing channel restore confirmation",
+    "totp_enrolled": "Enrolled",
+    "totp_not_enrolled": "Not enrolled (intro)",
+    "totp_enrolling": "Enrolling (QR & code)",
+    "totp_backup_codes": "Backup codes shown",
+    "totp_error": "Verification code error",
+    "postcode_layer_mode": "Layer mode",
+    "postcode_popup_mode": "Popup mode",
+    "hello_plugin_log_disabled": "Logging disabled",
+    "bulk_publish_confirm": "Bulk publish confirmation",
+    "bulk_unpublish_confirm": "Bulk unpublish confirmation",
+    "version_restore_confirm": "Version restore confirmation",
+    "version_preview": "Version preview",
+    "modal_filled": "Modal content filled",
+    "uninstall_done": "Uninstall finished",
+    "read_normal": "Normal post",
+    "attachments_replies_open": "Attachments & replies expanded",
+    "screen_filled": "Screen state filled"
   },
   "cell_border": {
     "side_all": "All",
@@ -1561,6 +1639,7 @@
     "tree_data": "Tree data",
     "images": "Images",
     "menu_items": "Menu items",
+    "role_options": "Role labels",
     "items": "Items",
     "filters": "Filters",
     "suggestions": "Suggestions",
@@ -1578,6 +1657,7 @@
     "options": "Options",
     "selected_tags": "Selected tags",
     "selected_permissions": "Selected permissions",
+    "selected_menus": "Selected menus",
     "admin_sidebar_menu": "Sidebar menu",
     "admin_footer_quick_links": "Quick links",
     "notification_items": "Notification items",
@@ -1614,7 +1694,7 @@
     "dashboard_templates": "Dashboard Templates",
     "extension_versions": "Extension Versions",
     "identityLogs": "Identity Logs",
-    "identityMessages": "Identity Messages",
+    "identityPolicyDefinitions": "Policies With Identity Messages",
     "identityProviders": "Identity Providers",
     "identityPurposes": "Identity Purposes",
     "installed_modules": "Installed Modules",
@@ -1625,6 +1705,7 @@
     "language_packs": "Language Packs",
     "layout_extensions": "Layout Extensions",
     "layout_files": "Layout Files",
+    "layout_search": "Layout content search",
     "layout_versions": "Layout Versions",
     "menus": "Menus",
     "moduleDetail": "Module Detail",
@@ -1632,6 +1713,7 @@
     "modules": "Modules",
     "notificationChannels": "Notification Channels",
     "notificationDefinitions": "Notification Definitions",
+    "memberNotifications": "Member notifications",
     "notificationLogs": "Notification Logs",
     "notification_unread_count": "Unread Notification Count",
     "notification_ws": "Notifications (Live)",
@@ -1643,13 +1725,14 @@
     "policies": "Policies",
     "role": "Role",
     "role_check": "Role Check",
+    "role_menus_tree": "Accessible menus tree",
     "roles": "Roles",
     "schedule_history": "Schedule History",
     "schedules": "Schedules",
     "settings": "Settings",
+    "sitemap_progress_ws": "Sitemap Generation Progress (Live)",
     "sitemap_status": "Sitemap Generation Status",
     "staticCacheStatus": "Startup static file status",
-    "sitemap_progress_ws": "Sitemap Generation Progress (Live)",
     "systemInfo": "System Info",
     "templateDetail": "Template Detail",
     "templateInstallPreview": "Template Install Preview",
@@ -1658,6 +1741,34 @@
     "tokenValidation": "Token Validation",
     "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
-    "users": "Users"
+    "users": "Users",
+    "analytics_overview": "Analytics overview",
+    "analytics_realtime": "Realtime visitors",
+    "analytics_realtime_ws": "Realtime broadcast",
+    "analytics_status": "Analytics collection status",
+    "analytics_report": "Analytics report",
+    "analytics_registered": "Registered extension breakdowns and goals",
+    "analytics_referrer_urls": "Referrer URLs",
+    "analytics_patterns": "Weekday/hour patterns",
+    "analytics_visitors": "Visitor list",
+    "analytics_visitor": "Visitor detail",
+    "analytics_bots": "Bot aggregates",
+    "analytics_diagnostics": "Analytics diagnostics",
+    "analytics_archive_runs": "Archive runs",
+    "analytics_collect_failures": "Collection failures",
+    "analytics_archive_progress_ws": "Archive progress broadcast",
+    "analytics_settings": "Analytics settings",
+    "analytics_opt_out": "My opt-out state",
+    "analytics_storage": "Analytics storage",
+    "analytics_notification_definitions": "Analytics notification definitions",
+    "analytics_subjects": "Data subject records",
+    "dashboard_analytics": "Dashboard analytics",
+    "privacyPreview": "Privacy processing target counts",
+    "privacyManualRuns": "Privacy action manual run status",
+    "privacyTargets": "Privacy action target list",
+    "analytics_row_trend": "Analytics item trend",
+    "passwordExpiryPreview": "Password expiry target counts",
+    "passwordExpiryManualRuns": "Password expiry manual run status",
+    "user_check": "User Create Check"
   }
 }

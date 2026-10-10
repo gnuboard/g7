@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Support\SiteUrl;
 use Illuminate\Http\RedirectResponse;
 use Plugins\Sirsoft\VerificationNhnkcp\Http\Requests\KcpCallbackRequest;
 use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpCallbackResolver;
@@ -47,7 +48,8 @@ class KcpCallbackController extends PublicBaseController
             ],
         );
 
-        $bridgeUrl = url('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/bridge')
+        // 보안: 요청 Host 가 아니라 사이트 주소 — 위조 Host 로 들어온 콜백이 검증 토큰을 다른 도메인으로 보내지 않게.
+        $bridgeUrl = SiteUrl::absolute('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/bridge')
             .'?'.http_build_query($outcome->toBridgeQuery());
 
         return redirect()->away($bridgeUrl);

@@ -44,7 +44,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | --- | --- | --- | --- |
 | id | integer | `10` | 기본 키 (내부 식별자) |
 | version | integer | `10` | 정책 버전 번호(단조 증가 정수). 발행 시마다 1씩 증가하며 회원 동의 시점의 버전과 비교해 재동의 필요 여부를 판정하는 기준입니다 |
-| change_type | string | `material` | 변경 종류. `material`=카테고리 key/설명·slug 변경 등 모든 회원 재동의를 트리거하는 중대 변경, `non_material`=도메인/라벨/힌트 정정 등 재동의 미유발, `initial`=최초 발행(시드) |
+| change_type | string | `material` | 변경 종류. `material`=카테고리 key/설명·처리방침 주소 변경 등 모든 회원 재동의를 트리거하는 중대 변경, `non_material`=도메인/라벨/힌트 정정 등 재동의 미유발, `initial`=최초 발행(시드) |
 | memo | string | `Chrome MCP 정밀 점검 — 마이페이지 정책 갱신 트리거 (P…` | 발행 사유 메모(최대 500자). 수동 발행 시 운영자가 입력하는 감사 추적용 설명으로 자동 감지 밖의 변경 배경을 남깁니다 |
 | created_at | string | `2026-06-18 09:27:39` | 생성 일시 |
 | publisher | object | `{"uuid":"a1e0a91a-fba6-491c-a53e-7285a5686857","name":"관리…` | 이 버전을 발행한 운영자 정보(uuid/name/email). raw FK(created_by)는 노출하지 않고 관계가 로드된 경우에만 포함되며, 발행자가 없으면 null입니다 |
@@ -160,7 +160,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 운영자가 새 개인정보 처리방침 정책 버전을 수동으로 발행합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.update` 권한이 필요하며, `memo`(1~500자)가 필수입니다. 자동 감지되는 변경(카테고리 key/설명·slug 변경) 밖의 변경(정책 본문 외부 수정, 법인명 변경 후 의도적 재동의 트리거 등)을 발행 시점의 현재 settings 스냅샷과 함께 새 버전으로 기록하며, settings 자체는 변경하지 않습니다. 이 발행이 회원의 `needs_renewal`을 true로 만드는 트리거가 됩니다.
+**설명** 운영자가 새 개인정보 처리방침 정책 버전을 수동으로 발행합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.update` 권한이 필요하며, `memo`(1~500자)가 필수입니다. 자동 감지되는 변경(카테고리 key/설명·처리방침 주소 변경) 밖의 변경(정책 본문 외부 수정, 법인명 변경 후 의도적 재동의 트리거 등)을 발행 시점의 현재 settings 스냅샷과 함께 새 버전으로 기록하며, settings 자체는 변경하지 않습니다. 이 발행이 회원의 `needs_renewal`을 true로 만드는 트리거가 됩니다.
 
 
 ### GET /api/plugins/sirsoft-gdpr/admin/policy-versions/current
@@ -256,7 +256,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | blocked_domains | object | `{"analytics":["google-analytics.com","*.google-analytics.…` | 발행 시점에 설정된 카테고리별 차단 도메인 패턴(키→도메인 배열). 동의 전 로드를 차단하는 대상이며, 분쟁 시 당시 어떤 도메인이 차단 대상이었는지 확인하는 근거입니다 |
 | cookie_categories | array | `[{"key":"necessary","label":{"en":"Strictly Necessary","k…` | 발행 시점의 쿠키 카테고리 카탈로그 배열. 각 항목은 `key`, 필수 여부, 다국어 `label`/`description`을 담으며, 회원 분쟁 시 당시 동의 대상 카테고리 본문을 확인하는 근거가 됩니다 |
 | legal_entity_name | string | `` | 발행 시점에 표기된 개인정보 처리 법인/사업자명. 미설정 시 빈 문자열입니다 |
-| privacy_policy_slug | string | `privacy` | 발행 시점의 개인정보 처리방침 페이지 slug. 배너/마이페이지의 방침 링크 대상이며, 미설정 시 빈 값입니다 |
+| privacy_policy_url | string | `/page/privacy` | 발행 시점의 개인정보처리방침 주소(1.1.0 이후 발행분). 1.0.x 발행분 스냅샷에는 대신 `privacy_policy_slug`(페이지 슬러그)가 원문 그대로 남아 있습니다 |
 | data_storage_location | string | `` | 발행 시점에 표기된 데이터 저장 위치 문자열(국가 단위 안내). 미설정 시 빈 문자열입니다 |
 
 **응답 예시**
@@ -289,6 +289,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 특정 정책 버전의 상세(발행 시점 settings 스냅샷 본문 포함)를 반환합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.view` 권한이 필요합니다. `{version}`은 정수 path 파라미터로, 관리자 동의 이력·정책 버전 이력 화면에서 행 클릭 시 그 시점의 cookie_categories·privacy_policy_slug·blocked_domains를 모달로 표시해 회원 분쟁 시 당시 정책 본문을 확인할 수 있게 합니다(Art.7(1) 입증 책임). 해당 버전이 없으면 404를 반환합니다.
+**설명** 특정 정책 버전의 상세(발행 시점 settings 스냅샷 본문 포함)를 반환합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.view` 권한이 필요합니다. `{version}`은 정수 path 파라미터로, 관리자 동의 이력·정책 버전 이력 화면에서 행 클릭 시 그 시점의 cookie_categories·처리방침 주소·blocked_domains를 모달로 표시해 회원 분쟁 시 당시 정책 본문을 확인할 수 있게 합니다(Art.7(1) 입증 책임). 해당 버전이 없으면 404를 반환합니다.
+
+`snapshot` 은 발행 당시 원문 그대로입니다. 화면이 쓸 처리방침 링크는 별도 필드 `privacy_policy` 로 내보냅니다 — `{ "url": string|null, "legacy_slug": string|null }`. 1.1.0 이후 발행분은 `snapshot.privacy_policy_url` 을 그대로(허용 형식이 아니면 null), 1.0.x 발행분은 `snapshot.privacy_policy_slug` 를 당시 링크가 가리키던 경로(`/page/{slug}`)로 풀어 `url` 에 담고 원래 슬러그를 `legacy_slug` 에 담습니다. 주소가 없으면 둘 다 null 입니다.
 
 

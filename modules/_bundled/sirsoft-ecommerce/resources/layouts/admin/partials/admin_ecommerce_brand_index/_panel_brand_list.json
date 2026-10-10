@@ -1,310 +1,314 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Brand List Panel - Left Sidebar with Search/Sort"
-  },
-  "id": "brand_list_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card col-span-1-lg flex flex-col"
-  },
-  "children": [
-    {
-      "id": "brand_list_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header flex-between"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "tag",
-                "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "text-heading"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.brand.list.title"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              },
-              "text": "{{brands?.data?.data?.length ?? 0}}"
-            }
-          ]
-        }
-      ]
+    "comment": "브랜드 화면 왼쪽 목록. 검색·정렬·선택·노출토글을 다 쥐고 있고, 오른쪽 패널은 여기서 정한\n  `_global.selectedBrandId` 를 따라 움직인다.\n  **검색과 정렬은 화면 상태가 아니라 URL 로 간다** — 주소를 그대로 붙여넣으면 같은 목록이 나오고,\n  뒤로가기가 이전 검색으로 돌아간다. 반면 어떤 브랜드를 골랐는지는 주소를 갈아끼우기만 해서\n  (`replace-url`) 뒤로가기 이력에 쌓이지 않는다 — 목록을 훑는 동안 이력이 브랜드 수만큼 늘어나는\n  것을 막는 선택이다.\n  드래그 정렬은 꺼 두었다(`enableDrag=false`). 브랜드 순서는 정렬 조건이 정하지 손으로 끌어\n  바꾸는 값이 아니다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Brand List Panel - Left Sidebar with Search/Sort"
     },
-    {
-      "id": "search_sort_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
+    "id": "brand_list_panel",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card col-span-1-lg flex flex-col"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "search-bar"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1 min-w-0"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "SearchBar",
-                  "props": {
-                    "placeholder": "$t:sirsoft-ecommerce.admin.brand.list.search_placeholder",
-                    "value": "{{query.search || ''}}",
-                    "className": "w-full"
-                  },
-                  "actions": [
-                    {
-                      "type": "submit",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/ecommerce/brands",
-                        "mergeQuery": true,
-                        "query": {
-                          "search": "{{$event.target.search.value}}",
-                          "sort": "{{query.sort || 'name_asc'}}"
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
+            "id": "brand_list_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header flex-between"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "shrink-0"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "sortOrder",
-                    "className": "search-bar-select",
-                    "value": "{{query.sort || 'name_asc'}}",
-                    "options": [
-                      {
-                        "value": "name_asc",
-                        "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.name_asc"
-                      },
-                      {
-                        "value": "name_desc",
-                        "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.name_desc"
-                      },
-                      {
-                        "value": "created_desc",
-                        "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.created_desc"
-                      },
-                      {
-                        "value": "created_asc",
-                        "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.created_asc"
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "tag",
+                                "className": "text-xl text-gray-700 dark:text-gray-300"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.brand.list.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{brands?.data?.data?.length ?? 0}}"
+                        }
                     ]
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/ecommerce/brands",
-                        "mergeQuery": true,
-                        "query": {
-                          "search": "{{query.search}}",
-                          "sort": "{{$event.target.value}}"
-                        }
-                      }
-                    }
-                  ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "id": "sortable_brand_list",
-          "type": "composite",
-          "name": "SortableMenuList",
-          "if": "{{(brands?.data?.data?.length ?? 0) > 0}}",
-          "props": {
-            "items": "{{brands?.data?.data ?? []}}",
-            "selectedId": "{{_global.selectedBrandId}}",
-            "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto",
-            "itemClassName": "py-1 px-5 mb-1 rounded-lg border",
-            "itemSelectedClassName": "bg-blue-50 dark:bg-blue-900/30 border-blue-500",
-            "itemDefaultClassName": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
-            "enableDrag": false,
-            "toggleDisabled": "{{brands?.data?.abilities?.can_update !== true}}"
-          },
-          "lifecycle": {
-            "onMount": [
-              {
-                "type": "click",
-                "handler": "sirsoft-ecommerce.initBrandFromUrl"
-              }
             ]
-          },
-          "actions": [
-            {
-              "event": "onSelect",
-              "type": "action",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "selectedBrandId": "{{$args[0].id}}",
-                    "selectedBrand": "{{$args[0]}}",
-                    "panelMode": "view"
-                  }
-                },
-                {
-                  "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어·정렬은 그대로 둔다. 병합하지 않으면 항목을 고르는 순간 목록이 초기화된다 (#75).",
-                  "handler": "replaceUrl",
-                  "params": {
-                    "mergeQuery": true,
-                    "query": {
-                      "id": "{{$args[0].id}}",
-                      "mode": "view"
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "event": "onToggleStatus",
-              "type": "action",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isTogglingStatus": true
-                  }
-                },
-                {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/modules/sirsoft-ecommerce/admin/brands/{{$args[0]}}/toggle-status",
-                  "params": {
-                    "method": "PATCH"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTogglingStatus": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:sirsoft-ecommerce.admin.brand.messages.status_changed"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "brands"
-                      }
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTogglingStatus": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "brands"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "empty_brand_state",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(brands?.data?.data?.length ?? 0) === 0}}",
-      "props": {
-        "className": "flex-center flex-1 justify-center gap-3 px-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "tag",
-            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
-          }
         },
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.brand.list.empty"
+            "id": "search_sort_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "search-bar"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1 min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "SearchBar",
+                                    "actions": [
+                                        {
+                                            "comment": "검색어를 URL 에 실어 다시 들어간다. `mergeQuery` 로 기존 조건을 남기면서도 정렬을\n                명시로 다시 넣는 이유는, 정렬이 없던 주소에서 검색했을 때 기본값이 URL 에도 박혀\n                이후 정렬 변경이 같은 자리를 덮어쓰게 하기 위해서다.",
+                                            "type": "submit",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/brands",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "search": "{{$event.target.search.value}}",
+                                                    "sort": "{{query.sort || 'name_asc'}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.brand.list.search_placeholder",
+                                        "value": "{{query.search || ''}}",
+                                        "className": "w-full"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "정렬 변경도 URL 로 간다. 검색 쪽과 달리 `mergeQuery` 없이 두 값을 통째로 다시 쓰므로,\n                브랜드 선택 같은 다른 파라미터는 여기서 떨어져 나간다 — 정렬을 바꾸면 오른쪽 패널\n                선택이 풀리는 것이 그 결과다.",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/brands",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "search": "{{query.search}}",
+                                                    "sort": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "sortOrder",
+                                        "className": "search-bar-select",
+                                        "value": "{{query.sort || 'name_asc'}}",
+                                        "options": [
+                                            {
+                                                "value": "name_asc",
+                                                "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.name_asc"
+                                            },
+                                            {
+                                                "value": "name_desc",
+                                                "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.name_desc"
+                                            },
+                                            {
+                                                "value": "created_desc",
+                                                "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.created_desc"
+                                            },
+                                            {
+                                                "value": "created_asc",
+                                                "label": "$t:sirsoft-ecommerce.admin.brand.list.sort.created_asc"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "id": "sortable_brand_list",
+                    "type": "composite",
+                    "name": "SortableMenuList",
+                    "if": "{{(brands?.data?.data?.length ?? 0) > 0}}",
+                    "lifecycle": {
+                        "onMount": [
+                            {
+                                "handler": "sirsoft-ecommerce.initBrandFromUrl"
+                            }
+                        ]
+                    },
+                    "actions": [
+                        {
+                            "comment": "브랜드 선택 — 목록이 이미 들고 있는 행 전체(`$args[0]`)를 그대로 전역에 옮긴다. 오른쪽\n            보기 패널은 이 값을 읽어 그리므로 상세를 따로 부르지 않는다(목록 응답에 없는 필드는\n            상세에도 없다는 뜻이다).\n            주소는 `replace-url` 로 갈아끼운다 — 새로고침·공유에는 선택이 남지만 뒤로가기 이력에는\n            쌓이지 않는다.",
+                            "type": "action",
+                            "event": "onSelect",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedBrandId": "{{$args[0].id}}",
+                                        "selectedBrand": "{{$args[0]}}",
+                                        "panelMode": "view"
+                                    }
+                                },
+                                {
+                                    "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어·정렬은 그대로 둔다. 병합하지 않으면 항목을 고르는 순간 목록이 초기화된다 (#75).",
+                                    "handler": "replaceUrl",
+                                    "params": {
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "id": "{{$args[0].id}}",
+                                            "mode": "view"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "행의 노출 스위치. **실패 갈래에서도 목록을 다시 부른다** — 토글은 화면에서 먼저 넘어가\n            버리므로, 서버가 거부했을 때 되돌려 놓지 않으면 꺼진 브랜드가 켜진 것처럼 남는다.\n            그 되돌리기를 손으로 계산하지 않고 목록 재조회로 처리하는 것이 이 두 갈래의 요점이다.",
+                            "type": "action",
+                            "event": "onToggleStatus",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isTogglingStatus": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/brands/{{$args[0]}}/toggle-status",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PATCH"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isTogglingStatus": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.brand.messages.status_changed"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "brands"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isTogglingStatus": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "brands"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "items": "{{brands?.data?.data ?? []}}",
+                        "selectedId": "{{_global.selectedBrandId}}",
+                        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto",
+                        "itemClassName": "py-1 px-5 mb-1 rounded-lg border",
+                        "itemSelectedClassName": "bg-blue-50 dark:bg-blue-900/30 border-blue-500",
+                        "itemDefaultClassName": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+                        "enableDrag": false,
+                        "toggleDisabled": "{{brands?.data?.abilities?.can_update !== true}}"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "empty_brand_state",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(brands?.data?.data?.length ?? 0) === 0}}",
+            "props": {
+                "className": "flex-center flex-1 justify-center gap-3 px-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "tag",
+                        "className": "text-xl text-gray-400 dark:text-gray-500"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.brand.list.empty"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

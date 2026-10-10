@@ -316,14 +316,23 @@ describe('storageHandlers', () => {
     const FUTURE = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const PAST = new Date(Date.now() - 60 * 1000).toISOString();
 
+    // @scenario claim_type=exchange, entry=with_token, screen=detail
+    // @effects guest_order_number_is_published_alongside_the_token
     it('sessionStorage 에 유효 토큰이 있으면 그 값으로 _global.guestOrderToken 을 set 한다 (새로고침/재방문 경로)', () => {
       mockSessionStorage.store['g7_guest_order_token'] = 'tok-from-session';
       mockSessionStorage.store['g7_guest_order_expires_at'] = FUTURE;
+      mockSessionStorage.store['g7_guest_order_number'] = 'ORD-9';
       mockG7Core.state.get.mockReturnValue({ guestOrderToken: null });
 
       initGuestOrderTokenHandler();
 
-      expect(mockG7Core.state.set).toHaveBeenCalledWith({ guestOrderToken: 'tok-from-session' });
+      // 주문번호도 함께 올린다 — 비회원 클레임 화면 주소(`{shopBase}/guest/claims/{번호}`)에는
+      // 주문번호가 없는데 그 API 는 전부 주문 스코프다. 토큰과 같은 자리에서 세워야 한쪽만
+      // 남는 상태(주소는 만들어지는데 토큰이 없어 404)가 생기지 않는다.
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({
+        guestOrderToken: 'tok-from-session',
+        guestOrderNumber: 'ORD-9',
+      });
     });
 
     it('sessionStorage 가 비었지만 _global 에 in-memory 토큰이 있으면 보존한다 (조회 폼 verify→상세 SPA 전이, sessionStorage 미영속 환경 포함)', () => {
@@ -346,9 +355,11 @@ describe('storageHandlers', () => {
 
       initGuestOrderTokenHandler();
 
-      expect(mockG7Core.state.set).toHaveBeenCalledWith({ guestOrderToken: null });
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ guestOrderToken: null, guestOrderNumber: null });
     });
 
+    // @scenario claim_type=exchange, entry=expired_token, screen=order_section
+    // @effects guest_order_number_is_cleared_with_the_token
     it('sessionStorage 토큰이 만료됐으면 폐기하고, in-memory 토큰이 있어도 보존하지 않는다 (만료 우선)', () => {
       mockSessionStorage.store['g7_guest_order_token'] = 'tok-expired';
       mockSessionStorage.store['g7_guest_order_expires_at'] = PAST;
@@ -358,7 +369,7 @@ describe('storageHandlers', () => {
 
       // 만료 → sessionStorage 정리 + _global 도 null
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('g7_guest_order_token');
-      expect(mockG7Core.state.set).toHaveBeenCalledWith({ guestOrderToken: null });
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ guestOrderToken: null, guestOrderNumber: null });
     });
   });
 
@@ -371,7 +382,7 @@ describe('storageHandlers', () => {
       expect(mockSessionStorage.setItem).toHaveBeenCalledWith('g7_guest_order_token', 'tok-1');
       expect(mockSessionStorage.setItem).toHaveBeenCalledWith('g7_guest_order_number', 'ORD-1');
       expect(mockSessionStorage.setItem).toHaveBeenCalledWith('g7_guest_order_expires_at', '2099-01-01T00:00:00Z');
-      expect(mockG7Core.state.set).toHaveBeenCalledWith({ guestOrderToken: 'tok-1' });
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ guestOrderToken: 'tok-1', guestOrderNumber: 'ORD-1' });
     });
   });
 

@@ -1,0 +1,23 @@
+feature: sirsoft-admin_basic 아이콘 단추와 영역 접근 이름의 다국어화
+
+description: |
+  머리글 테마 전환 단추의 접근 이름이 한국어·일본어 화면에서도 영문 「Toggle theme」였다(7.1.0 O-C3-1).
+  같은 결함군으로 알림 삭제 단추, 경고 닫기 단추, 현재 위치(breadcrumb) 영역, 태그 지우기 단추도 영문 고정 이름이었다.
+  각 이름은 다국어 키로 화면 언어(ko/en/ja)를 따르고, 번역이 없거나 엔진 밖이면 대체 문구를 쓴다.
+  테마 전환 단추는 펼침 여부(aria-expanded)도 알린다.
+
+axes:
+  component: [theme_toggle, notification_delete, alert_close, breadcrumb, tag_remove, fallback]
+
+effects:
+  - label_translated
+  - menu_expanded_state
+  - label_includes_item
+  - fallback_without_engine
+  - theme_toggle_button_named_by_locale
+  - theme_toggle_applies_and_persists_selected_mode
+  - theme_toggle_dropdown_opens_closes_and_marks_current
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/AccessibleNameI18n.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ThemeToggle.test.tsx

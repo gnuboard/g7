@@ -1,0 +1,75 @@
+<!-- 「기본값」 탭의 답변글 구획 — 새 게시판이 답글을 받을지, 받는다면 몇 단까지 이어 붙일지. 댓글 깊이와는 다른 축이다(이쪽은 글이 글에 달리는 것) -->
+<partial description="게시판 설정 > 답변글 탭">
+  <div data-ref="reply" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div>
+      <section-layout data-type="layout" data-ref="section_reply" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.reply</h3>
+        <div class="row-stack">
+          <div data-ref="field_use_reply" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reply')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「답변글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.use_reply</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_reply</p>
+                </div>
+              </label>
+              <toggle data-type="composite" name="basic_defaults.use_reply" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_max_reply_depth" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 「답변글을 몇 단까지 이어 붙일지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.max_reply_depth</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_reply_depth|min={{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}</p>
+                </div>
+              </label>
+              <div class="flex-shrink-0">
+                <input type="number" name="basic_defaults.max_reply_depth" min="{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}" class="{{(_local.errors?.['basic_defaults.max_reply_depth']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.max_reply_depth']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_reply_depth']) ? _local.errors['basic_defaults.max_reply_depth'][0] : _local.errors?.['basic_defaults.max_reply_depth']) ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="field_reply_delete_policy" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 이 항목을 일괄 적용 대상에 넣고 뺀다. 배열에서 빼고 다시 넣는 식이라 같은 값이 두 번 들어가지 않는다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'reply_delete_policy') : [...(_local.bulkApplyFields ?? []), 'reply_delete_policy']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.reply_delete_policy</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.reply_delete_policy</p>
+                </div>
+              </label>
+              <select name="basic_defaults.reply_delete_policy" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+                <options>
+                  <option value="cascade">$t:sirsoft-board.admin.settings.options.reply_delete_policy.cascade</option>
+                  <option value="block">$t:sirsoft-board.admin.settings.options.reply_delete_policy.block</option>
+                </options>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section-layout>
+    </div>
+  </div>
+</partial>

@@ -2,117 +2,31 @@
 
 namespace Database\Seeders;
 
-use App\Extension\Helpers\IdentityMessageSyncHelper;
-use App\Extension\HookManager;
 use Illuminate\Database\Seeder;
 
 /**
- * IDV 메시지 정의 시더.
+ * (호환 심) 옛 IDV 메시지 정의 시더 — 7.1.0 부터 아무 일도 하지 않는다.
  *
- * config/core.php 의 `identity_messages` 블록을 SSoT 로 읽어 DB 로 동기화합니다.
- * IdentityPolicySeeder / NotificationDefinitionSeeder 와 동일한 config-기반 패턴.
+ * 본인인증 메시지는 7.1.0 에서 알림 정의(`notification_definitions`, category=identity)로 합쳐졌고
+ * `NotificationDefinitionSeeder` 가 `config('core.notification_definitions')` 의 `identity.*` 항목을
+ * 함께 동기화한다. 옛 표(`identity_message_definitions/templates`)는 7.1.0 업그레이드 스텝이 이관 후 드랍한다.
  *
- * 운영자가 관리자 UI 에서 수정한 값은 user_overrides 로 보존되어 재시딩 시 덮어써지지 않습니다.
+ * 이 클래스를 지우지 않는 이유: 7.0.x 에서 7.1.0 으로 올리는 **부모 프로세스**는 업데이트 중에도
+ * 메모리에 남은 옛 `CoreUpdateService::reloadCoreConfigAndResync()` 를 실행하고, 그 코드는 이 클래스를
+ * `new` 한다. 클래스가 없으면 예외는 잡혀 업데이트는 진행되지만 upgrade.log 에 「IDV 메시지 정의
+ * 재시딩 실패」 경고가 남아 운영자를 오도한다. 그래서 이름만 남겨 조용히 끝낸다.
  *
- * @since 7.0.0-beta.4
+ * @deprecated 7.1.0 — 8.0 에서 제거. 본인인증 메시지는 NotificationDefinitionSeeder 가 동기화한다.
  */
 class IdentityMessageDefinitionSeeder extends Seeder
 {
     /**
-     * 시드 실행.
+     * 시드 실행 — 호환을 위해 남긴 무동작.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function run(): void
     {
-        $this->command?->info('코어 IDV 메시지 정의 시딩 시작...');
-
-        $helper = app(IdentityMessageSyncHelper::class);
-        $definitions = $this->getDefaultDefinitions();
-
-        // 언어팩 시스템: 활성 코어 언어팩의 seed/identity_messages.json 으로 다국어 키 병합.
-        // NotificationDefinitionSeeder 와 동일 패턴.
-        $definitions = HookManager::applyFilters('seed.identity_messages.translations', $definitions);
-
-        $definedScopes = [];
-
-        if (empty($definitions)) {
-            $this->command?->warn('config/core.php 에 identity_messages 선언이 없습니다.');
-
-            return;
-        }
-
-        foreach ($definitions as $data) {
-            $definition = $helper->syncDefinition($data);
-            $definedScopes[] = [
-                'provider_id' => $definition->provider_id,
-                'scope_type' => $definition->scope_type->value,
-                'scope_value' => $definition->scope_value,
-            ];
-
-            $definedChannels = [];
-            foreach ($data['templates'] as $template) {
-                $helper->syncTemplate($definition->id, $template);
-                $definedChannels[] = $template['channel'];
-            }
-
-            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
-
-            $this->command?->info("  - {$definition->provider_id} | {$definition->scope_type->value} | {$definition->scope_value} 등록 완료");
-        }
-
-        $helper->cleanupStaleDefinitions('core', 'core', $definedScopes);
-
-        $this->command?->info('코어 IDV 메시지 정의 시딩 완료 ('.count($definitions).'종)');
-    }
-
-    /**
-     * 코어 기본 메시지 정의 데이터를 config/core.php 에서 조회합니다.
-     *
-     * `extension_type='core'` / `extension_identifier='core'` 자동 주입.
-     * `variables: '__common__'` 마커는 commonVariables() 로 expand.
-     *
-     * @return array<string, array<string, mixed>> config 복합 키('mail.purpose.signup' 등) => 정의
-     */
-    private function getDefaultDefinitions(): array
-    {
-        $messages = config('core.identity_messages', []);
-        $result = [];
-
-        foreach ($messages as $key => $data) {
-            if (($data['variables'] ?? null) === '__common__') {
-                $data['variables'] = $this->commonVariables();
-            }
-            $data['extension_type'] = 'core';
-            $data['extension_identifier'] = 'core';
-            // config 복합 키('mail.purpose.signup' 등)를 보존 — 언어팩 주입 필터
-            // (seed.identity_messages.translations)가 이 키로 seed 를 매칭한다.
-            // 리스트로 만들면 전 항목이 매칭 불가로 스킵되어 팩 로케일이 오류 없이
-            // 주입되지 않는다 (#597 에서 실측·교정 — IdentityMessageTemplateService
-            // ::loadCoreMessageDefinitions 의 동형 보존과 짝을 이룬다).
-            $result[$key] = $data;
-        }
-
-        return $result;
-    }
-
-    /**
-     * 표준 변수 메타데이터 (모든 mail 정의 공통).
-     *
-     * config/core.php 에서 `'variables' => '__common__'` 마커로 참조됩니다.
-     *
-     * @return array<int, array{key: string, description: string}>
-     */
-    protected function commonVariables(): array
-    {
-        return [
-            ['key' => 'code', 'description' => '인증 코드 (text_code 흐름)'],
-            ['key' => 'action_url', 'description' => '검증 링크 URL (link 흐름)'],
-            ['key' => 'expire_minutes', 'description' => '만료까지 남은 분'],
-            ['key' => 'purpose_label', 'description' => '인증 목적 라벨 (다국어)'],
-            ['key' => 'app_name', 'description' => '사이트명'],
-            ['key' => 'site_url', 'description' => '사이트 URL'],
-            ['key' => 'recipient_email', 'description' => '수신자 이메일'],
-        ];
+        $this->command?->info('본인인증 메시지는 알림 정의로 동기화됩니다 (NotificationDefinitionSeeder) — 건너뜀');
     }
 }

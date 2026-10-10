@@ -1,0 +1,187 @@
+<!-- KG이니시스 본인인증 플러그인 환경설정 화면 — 상점 인증정보와 중복 판정 기준을 정한다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-verification_kginicis.settings.title" description="$t:sirsoft-verification_kginicis.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
+  <data-source id="settings" label_key="$t:sirsoft-verification_kginicis.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_kginicis.settings.title" description="$t:sirsoft-verification_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-verification_kginicis.plugin_read_only</span>
+      </div>
+      <div data-ref="info_panel" class="alert-info">
+        <div class="flex gap-3">
+          <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <div class="space-y-1 text-info-soft">
+            <p>$t:sirsoft-verification_kginicis.settings.info.activation</p>
+            <p>$t:sirsoft-verification_kginicis.settings.info.logs</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="mt-6 alert-danger">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="text-error-soft">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-6">
+          <div class="flex-between">
+            <div>
+              <label class="form-label">$t:sirsoft-verification_kginicis.settings.test_mode</label>
+              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.test_mode_hint</p>
+            </div>
+            <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-verification_kginicis.settings.live_mode_warning_title</h3>
+            <p class="mt-1 text-warning-soft">$t:sirsoft-verification_kginicis.settings.live_mode_warning_body</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-verification_kginicis.settings.section_live_keys</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_live_mid" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-verification_kginicis.settings.live_mid</label>
+              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.live_mid_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="{{_local.errors?.live_mid ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 verification-kginicis-focus-group'}}">
+                <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SRB</span>
+                <input type="text" name="live_mid" autoComplete="one-time-code" placeholder="1234567" class="flex-1 font-mono outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
+              </div>
+              <p data-ref="field_live_mid_error" data-if="{{_local.errors?.live_mid}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_mid?.[0] ?? ''}}</p>
+            </div>
+          </div>
+          <div data-ref="field_live_api_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-verification_kginicis.settings.live_api_key</label>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="password" name="live_api_key" autoComplete="new-password" placeholder="••••••••••••••••" class="{{_local.errors?.live_api_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-ref="field_live_api_key_error" data-if="{{_local.errors?.live_api_key}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_api_key?.[0] ?? ''}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="duplicate_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_duplicate_header" class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-verification_kginicis.settings.section.duplicate_field</h3>
+        </div>
+        <div data-ref="section_duplicate_body" class="p-6 space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+            <div class="lg:col-span-8">
+              <label class="form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_field.label</label>
+              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.duplicate_field.hint</p>
+            </div>
+            <div class="lg:col-span-4 space-y-3">
+              <div class="flex-center justify-end gap-6">
+                <label class="inline-clickable text-body">
+                  <on type="click">
+                    <!-- 중복 판정 기준을 DI 로 — 라벨을 눌러도 선택되도록 라디오가 아니라 라벨에 액션을 건다(라디오는 클릭을 통과시킨다) -->
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                      <field name="form">
+                        <field name="duplicate_field" value="di"/>
+                      </field>
+                    </set-state>
+                  </on>
+                  <input type="radio" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
+                    <on type="change">
+                      <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
+                      <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                        <field name="form">
+                          <field name="duplicate_field" value="di"/>
+                        </field>
+                      </set-state>
+                    </on>
+                  </input>
+                  <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.di</span>
+                </label>
+                <label class="inline-clickable text-body">
+                  <on type="click">
+                    <!-- 중복 판정 기준을 CI 로 — 위와 같은 이유로 라벨에 액션을 건다 -->
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                      <field name="form">
+                        <field name="duplicate_field" value="ci"/>
+                      </field>
+                    </set-state>
+                  </on>
+                  <input type="radio" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
+                    <on type="change">
+                      <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
+                      <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                        <field name="form">
+                          <field name="duplicate_field" value="ci"/>
+                        </field>
+                      </set-state>
+                    </on>
+                  </input>
+                  <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.ci</span>
+                </label>
+              </div>
+              <p class="text-xs text-amber-600 dark:text-amber-400 text-right">$t:sirsoft-verification_kginicis.settings.duplicate_field.warning</p>
+            </div>
+          </div>
+          <div data-ref="field_duplicate_block_enabled" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="lg:col-span-8">
+              <label class="form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.hint</p>
+              <p class="text-hint mt-1 italic">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.note</p>
+            </div>
+            <div class="flex-center lg:col-span-4 justify-end">
+              <toggle data-type="composite" name="duplicate_block_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

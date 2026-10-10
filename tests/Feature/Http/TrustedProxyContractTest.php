@@ -34,6 +34,8 @@ class TrustedProxyContractTest extends TestCase
 
     /**
      * 각 테스트 후 정적 신뢰 상태를 원복합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -72,6 +74,8 @@ class TrustedProxyContractTest extends TestCase
      * @scenario proxies_setting=unset, forwarded_proto=https, forwarded_for=single
      *
      * @effects unset_ignores_forwarded_headers
+     *
+     * @return void 반환값 없음
      */
     public function test_미설정이면_전달_헤더를_신뢰하지_않는다(): void
     {
@@ -88,6 +92,8 @@ class TrustedProxyContractTest extends TestCase
      * @scenario proxies_setting=star, forwarded_proto=https, forwarded_for=single, forwarded_host=same, forwarded_port=nonstandard
      *
      * @effects star_restores_scheme_ip_and_root
+     *
+     * @return void 반환값 없음
      */
     public function test_별표는_직전_호출_i_p_를_신뢰한다(): void
     {
@@ -108,6 +114,8 @@ class TrustedProxyContractTest extends TestCase
      * @scenario proxies_setting=double_star, forwarded_proto=https, forwarded_for=single
      *
      * @effects double_star_behaves_like_star
+     *
+     * @return void 반환값 없음
      */
     public function test_별표두개는_별표와_동일하게_동작한다(): void
     {
@@ -126,6 +134,8 @@ class TrustedProxyContractTest extends TestCase
      * @scenario proxies_setting=star, forwarded_for=chain
      *
      * @effects chain_requires_listing_every_hop
+     *
+     * @return void 반환값 없음
      */
     public function test_다단계_체인은_모든_프록시를_나열해야_클라이언트_i_p_가_해석된다(): void
     {
@@ -145,6 +155,8 @@ class TrustedProxyContractTest extends TestCase
      * @scenario proxies_setting=single_ip_match, forwarded_proto=https
      *
      * @effects ip_list_match_trusts_and_mismatch_rejects
+     *
+     * @return void 반환값 없음
      */
     public function test_i_p_목록은_일치할_때만_신뢰한다(): void
     {
@@ -164,6 +176,8 @@ class TrustedProxyContractTest extends TestCase
      * @scenario proxies_setting=cidr, forwarded_proto=https
      *
      * @effects cidr_notation_is_honored
+     *
+     * @return void 반환값 없음
      */
     public function test_cid_r_표기가_신뢰_판정에_사용된다(): void
     {
@@ -177,6 +191,8 @@ class TrustedProxyContractTest extends TestCase
      * `config/trustedproxy.php` 는 `proxies` 키를 노출하고 TRUSTED_PROXIES 를 그대로 반영합니다.
      *
      * @effects config_file_exposes_proxies_key_from_env
+     *
+     * @return void 반환값 없음
      */
     public function test_설정_파일이_truste_d_proxie_s_를_그대로_반영한다(): void
     {
@@ -205,9 +221,13 @@ class TrustedProxyContractTest extends TestCase
      *
      * `withMiddleware` 클로저는 `.env` 로드 전에 평가되므로 그 자리의 `env()` 는 항상 null 이다
      * — 오류 없이 no-op 이 되어, 설정한 것처럼 보이는데 아무 프록시도 신뢰하지 않는다.
-     * `trustHosts()` 는 호출 자체가 모든 설치처에서 Host 검증을 켠다(opt-in 원칙 위반).
+     * 그래서 `trustHosts()` 의 활성 판정은 `config/trustedhosts.php` 를 경유해야 하고, 패턴은
+     * 요청 시점에 평가되는 closure(`TrustedHosts::patterns`)로 넘겨야 한다. 운영 기본 ON 은 2026-10-03
+     * 확정 — 런타임 판정(기본 ON·비활성·설치 전)은 TrustedHostsTest 가 소유한다.
      *
      * @effects bootstrap_does_not_reintroduce_env_trust_proxies
+     *
+     * @return void 반환값 없음
      */
     public function test_bootstrap_에_env_기반_trust_proxies_가_없다(): void
     {
@@ -216,11 +236,18 @@ class TrustedProxyContractTest extends TestCase
         // 주석을 제거해 "하면 안 되는 것" 설명문이 오탐되지 않게 한다.
         $stripped = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
 
-        $this->assertStringNotContainsString(
-            'trustHosts(',
-            $stripped,
-            'trustHosts() 호출은 모든 설치처에서 Host 검증을 켭니다 — opt-in 원칙 위반입니다.'
-        );
+        if (preg_match('/trustHosts\s*\((.*?)\)\s*;/s', $stripped, $hosts) === 1) {
+            $this->assertStringNotContainsString(
+                'env(',
+                $hosts[1],
+                'bootstrap/app.php 의 trustHosts() 안에서 env() 를 읽으면 항상 null 입니다 — config/trustedhosts.php 를 쓰세요.'
+            );
+            $this->assertMatchesRegularExpression(
+                '/at\s*:\s*(fn|function)\b.*TrustedHosts::patterns/s',
+                $hosts[1],
+                'trustHosts() 의 at: 는 요청 시점에 평가되는 closure 로 TrustedHosts::patterns() 를 참조해야 합니다.'
+            );
+        }
 
         if (preg_match('/trustProxies\s*\(([^;]*)\)/s', $stripped, $m) === 1) {
             $this->assertStringNotContainsString(
@@ -237,6 +264,8 @@ class TrustedProxyContractTest extends TestCase
      * `.env.example` 과 `.env.testing.example` 이 TRUSTED_PROXIES 를 안내합니다.
      *
      * @effects env_examples_document_trusted_proxies
+     *
+     * @return void 반환값 없음
      */
     public function test_env_예시_파일이_truste_d_proxie_s_를_안내한다(): void
     {
@@ -256,6 +285,8 @@ class TrustedProxyContractTest extends TestCase
      * 갈라지면 "설치 때는 안내가 떴는데 운영 화면에는 경고가 없다"(또는 그 반대)가 된다.
      *
      * @effects installer_header_list_matches_core_diagnostic
+     *
+     * @return void 반환값 없음
      */
     public function test_설치_마법사의_전달_헤더_목록이_코어와_같다(): void
     {
@@ -279,6 +310,8 @@ class TrustedProxyContractTest extends TestCase
      * @scenario proxies_setting=star, session_secure_cookie=unset
      *
      * @effects cookie_secure_follows_trusted_scheme
+     *
+     * @return void 반환값 없음
      */
     public function test_쿠키_secure_는_신뢰된_스킴을_따른다(): void
     {

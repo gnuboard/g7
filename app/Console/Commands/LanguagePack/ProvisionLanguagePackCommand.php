@@ -91,7 +91,8 @@ class ProvisionLanguagePackCommand extends Command
             $identifier = (string) ($pack->getAttribute('bundled_identifier') ?? $pack->identifier);
             $blockedReason = $pack->getAttribute('install_blocked_reason');
 
-            // 대상 확장 미설치/미활성 등으로 설치가 불가한 팩은 best-effort 로 건너뛴다.
+            // 대상 확장 미설치·버전 미달 등으로 설치가 불가한 팩은 best-effort 로 건너뛴다.
+            // 대상이 설치돼 있으나 꺼진 팩은 차단 사유가 아니다 — 꺼진 채 설치되고 그 확장을 켤 때 함께 켜진다.
             if ($blockedReason !== null && $blockedReason !== '') {
                 $this->warn(sprintf('건너뜀 (설치 불가: %s): %s', $blockedReason, $identifier));
                 $skipped++;

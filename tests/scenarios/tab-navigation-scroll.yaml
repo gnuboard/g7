@@ -1,0 +1,39 @@
+feature: 관리자 탭 네비게이션(TabNavigationScroll) 표시·스크롤·접근성·항목 조건
+
+description: |
+  긴 상세·폼 화면(회원 상세·회원 등록/수정·환경설정 등)의 섹션 탭이다. 탭을 누르면 해당 섹션으로
+  스크롤하고, Scroll Spy 가 보이는 섹션의 탭을 활성화한다. 좁은 화면(768px 미만)은 탭 대신 선택 목록 하나로 바뀐다.
+
+  항목 조건(if): 확장이 inject_props 로 덧붙이는 탭(회원 상세 「반응」·「스크랩」 등)과 회원 등록 화면의
+  「활동정보」 같은 탭은 항목에 if 를 싣는다. 엔진이 표현식을 값으로 풀어 넘기면 컴포넌트가 거짓 항목을
+  탭 버튼·선택 목록·화살표 이동·Scroll Spy 에서 모두 뺀다. 예전에는 이 키를 읽지 않아 권한이 없어 본문이
+  빠진 「반응」 탭 버튼만 남았다(K1 실측 2026-10-06, O-K1-15).
+
+  누른 탭 고정: 탭을 누른 뒤 스크롤 이동이 지연보다 길거나 섹션이 맨 위까지 오지 못하면(페이지 바닥) 다시 켜진
+  Scroll Spy 가 다른 섹션·마지막 탭을 활성으로 바꿨다(7.1.0 실측 O-KF-2). 누른 탭은 사용자가 휠·터치·스크롤 키로
+  직접 스크롤할 때까지 활성으로 남는다.
+
+  축은 화면 폭 한 가지다 — 데스크톱은 role=tablist 탭 버튼, 모바일은 선택 목록. 나머지 동작은 효과로 잠근다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigationScroll.test.tsx
+
+axes:
+  viewport:
+    - desktop
+    - mobile
+
+effects:
+  - tab_nav_renders_tabs_and_initial_active
+  - tab_nav_click_scrolls_and_activates
+  - tab_nav_callback_priority
+  - tab_nav_scroll_settings_per_tab
+  - tab_nav_scroll_spy_activates_visible_section
+  - tab_nav_style_customizable
+  - tab_nav_scroll_container_custom
+  - tab_nav_mobile_select_fallback
+  - tab_nav_wai_aria_tabs_keyboard
+  # 항목 if 가 거짓이면 탭 버튼·모바일 선택지·화살표 이동에서 빠진다(K1 후속 2026-10-06)
+  - tab_nav_hides_items_with_falsy_if
+  # 누른 탭은 사용자가 직접 스크롤할 때까지 활성으로 남는다(7.1.0 실측 O-KF-2)
+  - tab_nav_clicked_tab_stays_active_until_user_scroll

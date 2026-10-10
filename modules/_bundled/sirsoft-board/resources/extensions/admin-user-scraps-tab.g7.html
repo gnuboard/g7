@@ -1,0 +1,64 @@
+<!-- 회원 상세 화면에 스크랩 탭을 하나 더 얹는 조각. 마일리지 탭과 같은 짜임으로 주입이 **두 군데**로
+  갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에 항목을 덧붙이고(`append`), 그 탭이 펼칠
+  본문은 별도 앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은 `id`(`ext_board_scraps`)
+  하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
+
+  이 탭은 **요약만** 낸다(결정 R1) — 건수와 최근 스크랩 시각, 그리고 「이 회원 스크랩 목록 보기」
+  링크. 목록 자체는 스크랩 관리 화면이 검색·필터·일괄 삭제까지 갖추고 있으므로, 같은 표를 회원 상세
+  안에 한 벌 더 두지 않고 그 화면으로 회원 uuid 를 실어 보낸다.
+
+  `board_scraps` 는 UserScrapInfoListener 가 **관리자 응답에만** 넣으므로, 프로필(/api/me)에서는
+  이 조각 전체가 조건(`!!user?.data?.board_scraps`)에서 걸러진다. -->
+<extension target-layout="admin_user_detail" priority="310">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_board_scraps" label="$t:sirsoft-board.admin.users.scraps.tab_label" iconName="bookmark" if="{{!!user?.data?.board_scraps}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_board_scraps_content" data-if="{{!!user?.data?.board_scraps}}" id="ext_board_scraps" class="scroll-mt-32">
+      <div data-ref="section_board_scraps" class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="bookmark" class="text-xl text-gray-600 dark:text-gray-400"/>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.scraps.title</h3>
+          </div>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div data-ref="field_scrap_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.scraps.count</span>
+            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.scraps.count_unit|count={{user?.data?.board_scraps?.count ?? 0}}</span>
+          </div>
+          <div data-ref="field_latest_scrapped_at" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.scraps.latest_scrapped_at</span>
+            <span class="block text-lg font-semibold text-gray-900 dark:text-white">{{user?.data?.board_scraps?.latest_scrapped_at ?? '-'}}</span>
+          </div>
+        </div>
+        <!-- 0건이면 링크를 숨긴다 — 눌러 봐야 빈 목록이고, 그 사실은 위 숫자가 이미 말한다 -->
+        <p data-if="{{(user?.data?.board_scraps?.count ?? 0) === 0}}" class="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">
+          <icon name="circle-info" class="text-base flex-shrink-0"/>
+          <span>$t:sirsoft-board.admin.users.scraps.none</span>
+        </p>
+        <!--
+          이동은 `navigate` 액션으로 한다. `href="{{식}}"` 은 렌더 시 prop 값이 undefined 가 되어
+          DOM 에 속성 자체가 실리지 않는다(2026-09-15 브라우저 실측) — 링크가 조용히 죽는다.
+          같은 화면의 표에서 쓰는 `navigate path="…{{식}}"` 은 정상 평가된다.
+        -->
+        <a data-ref="view_member_scraps" data-testid="user-scraps-link" data-if="{{(user?.data?.board_scraps?.count ?? 0) > 0}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <on type="click">
+            <navigate path="/admin/boards/scraps">
+              <query user_uuid="{{user?.data?.uuid ?? ''}}"/>
+            </navigate>
+          </on>
+          <icon name="list" class="text-base"/>
+          <span>$t:sirsoft-board.admin.users.scraps.view_list</span>
+        </a>
+      </div>
+    </div>
+  </inject>
+</extension>

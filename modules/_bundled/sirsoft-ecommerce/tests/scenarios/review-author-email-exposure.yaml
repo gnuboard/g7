@@ -1,0 +1,33 @@
+feature: 상품평 응답의 작성자 이메일 노출 게이트
+
+description: |
+  상품평 목록은 인증 없이 열린다. 그 응답에 구매자 이메일이 실리면 화면이 이메일을 그리지
+  않더라도 **응답 본문에서 구매자 주소록을 통째로 수집**할 수 있다.
+
+  게이트는 코어의 `canExposeMemberEmail()` 한 곳이 소유하고, `ProductReviewResource` 는 그
+  판정만 읽는다. 판정 근거는 클라이언트가 보내는 값이 아니라 **요청이 도달한 컨트롤러**
+  (관리자 컨트롤러인가)와 **열람자 본인 여부**다 — 헤더·쿼리로는 바꿀 수 없다.
+
+  가리는 것은 **값뿐**이다. `user` 블록과 `name` 은 그대로 두고 `email` 만 `null` 로 만든다.
+  필드를 없애면 응답 구조가 바뀌어 소비처가 깨진다.
+
+axes:
+  case: [review_email_public, review_email_owner]
+
+effects:
+  - review_author_email_masked_on_public_response
+  - review_author_email_visible_to_owner
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Review/ProductReviewEmailExposureTest.php
+
+notes:
+  - |
+    축 이름이 `case` 인 것은 테스트가 이미 그렇게 작성돼 있어서다. 이 매니페스트는 그 마크업을
+    그대로 귀속시키는 것이 목적이므로 마킹을 고쳐 쓰지 않는다 — 고치면 같은 커밋이 아닌
+    사람이 남의 테스트의 축 어휘를 바꾸는 셈이고, 그 축이 다른 곳에서 쓰이는지 알 수 없다.
+  - |
+    관리자 경로(`AdminBaseController` 를 거쳐 이메일이 그대로 실리는 축)는 이 테스트가
+    덮지 않는다. 코어 게이트 자체의 단위 테스트(`tests/Unit/Http/Resources/MemberEmailExposureGateTest.php`)가
+    그 판정을 따로 검증하지만 마킹이 없어 이 매니페스트의 축에는 들어오지 않는다.
+    관리자 축 편입 여부는 별건.

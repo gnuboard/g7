@@ -4,6 +4,7 @@ namespace App\Seo;
 
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\Contracts\SeoRendererInterface;
+use App\Support\SiteUrl;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SeoMiddleware
 {
+    /**
+     * SEO 미들웨어를 생성합니다.
+     *
+     * @param  BotDetector  $botDetector  검색 봇 판별기
+     * @param  SeoCacheManagerInterface  $cacheManager  SEO 캐시 관리자
+     * @param  SeoRendererInterface  $renderer  SEO HTML 렌더러
+     * @param  SeoCacheStatsService  $statsService  캐시 적중 통계 기록기
+     */
     public function __construct(
         private readonly BotDetector $botDetector,
         private readonly SeoCacheManagerInterface $cacheManager,
@@ -37,6 +46,10 @@ class SeoMiddleware
             return $next($request);
         }
 
+        // 봇 판정을 요청에 남긴다 — 방문자 통계가 같은 판정을 다시 하지 않고 이 값을
+        // 읽어 봇을 사람 방문에서 가른다(판정이 두 벌이면 두 기능의 숫자가 갈린다).
+        $request->attributes->set('seo.is_bot', true);
+
         // 기본 로케일을 setLocale() 전에 저장 (setLocale이 config('app.locale')을 변경하므로)
         $defaultLocale = config('app.locale');
 
@@ -45,7 +58,9 @@ class SeoMiddleware
 
         // 기본 로케일을 ?locale=xx로 명시한 경우 → clean URL로 301 리다이렉트 (중복 URL 방지)
         if ($request->query('locale') === $defaultLocale) {
-            $cleanUrl = $request->url();
+            // 요청 Host 가 아니라 사이트 주소 기준 — 위조 Host 로 다른 사이트로 보내는 리다이렉트 방지.
+            // 요청 경로는 언제나 경로로 취급한다(`//다른호스트/…` 가 완전 URL 로 통과하지 않게).
+            $cleanUrl = SiteUrl::forPath($request->getPathInfo());
 
             // 기존 쿼리에서 locale 제거
             $query = $request->query();
@@ -91,15 +106,22 @@ class SeoMiddleware
 
         // 미스 렌더는 IP 당 분당 예산 안에서만 — 초과분은 오류가 아니라 SPA 를 받는다.
         // 봇에게 429 를 주면 그 URL 이 색인에서 빠지므로 차단이 곧 손해가 된다.
-        if (! SeoCacheBounds::renderAllowed($ip)) {
+        if (! SeoCacheBounds::claimRender($ip)) {
             return $this->bypass($request, $next);
         }
 
-        SeoCacheBounds::recordRender($ip);
+        // 사이트 전체 동시 렌더 상한 — IP 당 예산은 동시에 몰아친 요청을 막지 못한다.
+        // 렌더 1건이 워커 2개(자기 + 내부 API 호출)를 잡으므로 상한 없이 몰리면 워커가 고갈된다.
+        $releaseSlot = SeoCacheBounds::acquireRenderSlot();
+        if ($releaseSlot === null) {
+            SeoCacheBounds::refundRender($ip);
+
+            return $this->bypass($request, $next);
+        }
 
         $startedAt = microtime(true);
 
-        // 렌더링
+        // 렌더링 (슬롯은 렌더가 끝나는 즉시 반환 — 저장·응답까지 붙잡지 않는다)
         try {
             $html = $this->renderer->render($request);
         } catch (\Throwable $e) {
@@ -130,6 +152,8 @@ class SeoMiddleware
             ]);
 
             return $next($request);
+        } finally {
+            $releaseSlot();
         }
 
         // 렌더링 실패 시 SPA fallback
@@ -207,6 +231,7 @@ class SeoMiddleware
      *
      * @param  string  $ip  요청 IP
      * @param  callable  $record  기록 동작
+     * @return void 없음
      */
     private function recordStat(string $ip, callable $record): void
     {
@@ -223,7 +248,7 @@ class SeoMiddleware
      *
      * 경로 + 정규화된 쿼리 파라미터로 구성한다. 정규화는 시스템 파라미터(`locale`,
      * `_escaped_fragment_`)를 제거하고 키 순서로 정렬하므로, 같은 조합은 순서와 무관하게
-     * 같은 키가 되고 봇 렌더 표식만 다른 두 URL 이 두 벌로 저장되지 않는다.
+     * 같은 키가 되고 옛 크롤러 표식만 다른 두 URL 이 두 벌로 저장되지 않는다.
      *
      * @param  Request  $request  HTTP 요청
      * @param  array<string, mixed>  $normalizedQuery  정규화된 쿼리 파라미터

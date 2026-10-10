@@ -1,0 +1,38 @@
+<!-- 코어를 올리는 방법(터미널 명령)을 적어 둔 안내 창 — 버튼이 아니라 **읽는 창**이다.
+  코어 업데이트는 화면에서 실행하지 않기 때문이다.
+  이 조각은 설정 화면 소유이지만 **모듈·플러그인·템플릿 목록 세 화면이 함께 빌려 쓴다** —
+  자동 비활성 배너의 안내 링크가 여는 것이 이것이다(안내 내용이 확장 종류와 무관하다). -->
+<partial description="코어 업데이트 터미널 안내 모달" editor_label="$t:admin.modal_label.admin_settings.core_update_guide_modal">
+  <modal data-type="composite" data-ref="core_update_guide_modal" title="$t:admin.settings.info.update_guide_title" size="md">
+    <div class="row-stack">
+      <div class="alert-warning">
+        <div class="flex gap-2">
+          <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+          <p class="text-warning-soft">$t:admin.settings.info.update_guide_warning</p>
+        </div>
+      </div>
+      <p class="text-label">$t:admin.settings.info.update_guide_desc</p>
+      <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 space-y-1">
+        <p class="text-xs font-mono text-gray-400 dark:text-gray-400">$t:admin.settings.info.update_guide_cmd_comment</p>
+        <p class="text-sm font-mono text-green-400 dark:text-green-400">$t:admin.settings.info.update_guide_cmd</p>
+      </div>
+      <p class="text-tertiary">$t:admin.settings.info.update_guide_note</p>
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+        <p class="text-label mb-2">$t:admin.settings.info.upgrade_guide_link_desc</p>
+        <a href="https://github.com/gnuboard/g7/blob/main/INSTALL.md#%EC%97%85%EA%B7%B8%EB%A0%88%EC%9D%B4%EB%93%9C" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <span>$t:admin.settings.info.upgrade_guide_link_label</span>
+          <icon name="arrow-up-right-from-square" class="text-xs"/>
+        </a>
+      </div>
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.settings.info.manual_update_title</p>
+        <p class="text-label mb-3">$t:admin.settings.info.manual_update_desc</p>
+        <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 space-y-1">
+          <p class="text-xs font-mono text-gray-400 dark:text-gray-400">$t:admin.settings.info.manual_update_step1</p>
+          <p class="text-xs font-mono text-gray-400 dark:text-gray-400">$t:admin.settings.info.manual_update_step2</p>
+          <p class="text-sm font-mono text-green-400 dark:text-green-400">$t:admin.settings.info.manual_update_cmd</p>
+        </div>
+      </div>
+    </div>
+  </modal>
+</partial>

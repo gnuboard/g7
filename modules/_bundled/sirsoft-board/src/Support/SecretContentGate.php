@@ -5,7 +5,9 @@ namespace Modules\Sirsoft\Board\Support;
 use App\Enums\PermissionType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -85,6 +87,108 @@ class SecretContentGate
 
         return $this->checkBoardPermission($slug, 'posts.read-secret', PermissionType::User)
             || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+    }
+
+    /**
+     * 비밀 댓글의 원문을 현재 요청자가 열람할 수 있는지 판정합니다.
+     *
+     * 게이트가 게시글에만 걸려 있어, 공개 게시글에 달린 비밀 댓글은 목록·상세 어느 경로로도
+     * 원문이 그대로 나가던 결함(KVE-2026-2371)을 막습니다. 비밀 댓글은 게시글과 소유자 집합이
+     * 다릅니다 — 댓글 작성자 본인, 대댓글이면 **부모 댓글 작성자**(답글 알림으로 이미 본문을 받는
+     * 사람), 그리고 **부모 게시글을 연 사람**(글 작성자·비밀번호를 맞혀 열람 토큰을 받은 사람·
+     * 비밀글 읽기 권한자·게시판 관리자)이 봅니다. 마지막 집합은 부모 게시글에 canView() 를 그대로
+     * 적용해 얻으므로 규칙이 갈라지지 않습니다.
+     *
+     * 부모 게시글을 받지 못했고 post 관계도 로드되지 않았으면 lazy-load(N+1) 대신 false 로
+     * 실패합니다(fail-closed). 부모 댓글 작성자는 목록 경로가 `parent_comment_user_id_preloaded`
+     * 로 미리 실어 주고, 실리지 않은 경로에서만 한 건 조회합니다.
+     *
+     * @param  Comment  $comment  대상 댓글
+     * @param  Post|null  $parentPost  부모 게시글 (호출부가 이미 가진 인스턴스)
+     * @param  Request|null  $request  HTTP 요청 (미지정 시 현재 요청)
+     * @return bool 열람 가능 여부
+     */
+    public function canViewSecretComment(Comment $comment, ?Post $parentPost = null, ?Request $request = null): bool
+    {
+        // 1. 댓글 작성자 본인 (회원 댓글 — 비회원 댓글은 본인 판정 불가)
+        $user = Auth::user();
+        if ($user && $comment->user_id && $comment->user_id === $user->id) {
+            return true;
+        }
+
+        $parentPost = $parentPost ?? ($comment->relationLoaded('post') ? $comment->post : null);
+        if (! $parentPost) {
+            return false;
+        }
+
+        // 2. 부모 게시글의 원문을 열 수 있는 사람 (글 작성자·비밀번호 검증·열람 토큰·권한자·관리자)
+        if ($this->canView($parentPost, $request)) {
+            return true;
+        }
+
+        // 3. 대댓글이면 부모 댓글 작성자 (회원 댓글)
+        if ($user && $comment->parent_id) {
+            $parentCommentUserId = $this->resolveParentCommentUserId($comment);
+
+            return $parentCommentUserId !== null && $parentCommentUserId === (int) $user->id;
+        }
+
+        return false;
+    }
+
+    /**
+     * 댓글 목록의 대댓글마다 부모 댓글 작성자 ID 를 미리 실어 둡니다.
+     *
+     * 비밀 대댓글 판정(canViewSecretComment 의 3번)이 댓글마다 부모를 조회하지 않도록, 목록을
+     * 이미 쥔 호출부가 한 번 돌려 준다. 부모가 이 목록 밖(다른 페이지)이면 싣지 않고 남겨
+     * 게이트가 한 건 조회로 폴백하게 한다 — null 을 실으면 "부모가 비회원 댓글" 로 읽혀 막힌다.
+     *
+     * @param  iterable<Comment>  $comments  같은 게시글의 댓글 목록
+     * @return void
+     */
+    public static function preloadParentCommentOwners(iterable $comments): void
+    {
+        $ownerById = [];
+        foreach ($comments as $comment) {
+            $ownerById[(int) $comment->id] = $comment->user_id;
+        }
+
+        foreach ($comments as $comment) {
+            if ($comment->parent_id && array_key_exists((int) $comment->parent_id, $ownerById)) {
+                $comment->parent_comment_user_id_preloaded = $ownerById[(int) $comment->parent_id];
+            }
+        }
+    }
+
+    /**
+     * 대댓글의 부모 댓글 작성자 ID 를 해석합니다.
+     *
+     * 목록 경로는 댓글 전량을 이미 쥐고 있어 `parent_comment_user_id_preloaded` 로 넘겨준다
+     * (댓글마다 조회하지 않게). 그 값이 없는 경로(생성 응답 등 단건)에서만 한 건 조회합니다.
+     *
+     * @param  Comment  $comment  대댓글
+     * @return int|null 부모 댓글 작성자 ID (비회원 댓글이거나 부모가 없으면 null)
+     */
+    private function resolveParentCommentUserId(Comment $comment): ?int
+    {
+        $attributes = $comment->getAttributes();
+        if (array_key_exists('parent_comment_user_id_preloaded', $attributes)) {
+            $value = $attributes['parent_comment_user_id_preloaded'];
+
+            return $value === null ? null : (int) $value;
+        }
+
+        if ($comment->relationLoaded('parent')) {
+            $owner = $comment->parent?->user_id;
+
+            return $owner === null ? null : (int) $owner;
+        }
+
+        $owner = app(CommentRepositoryInterface::class)
+            ->findByBoardId((int) $comment->board_id, (int) $comment->parent_id)
+            ?->user_id;
+
+        return $owner === null ? null : (int) $owner;
     }
 
     /**

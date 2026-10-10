@@ -1,0 +1,18 @@
+feature: 정책 버전 스냅샷 창 카테고리 설명의 로케일 해석 (`description[$locale]` 우선 + 폴백)
+
+description: |
+  관리자 정책 버전 스냅샷 창이 쿠키 카테고리 설명을 그릴 때 **보고 있는 언어를 먼저 본다**.
+  이름은 이미 `label[$locale]` 를 먼저 보는데 설명만 `description.ko ?? description.en` 이라,
+  영어 화면에서 이름은 영어·설명은 한국어가 섞여 나왔다(스냅샷에는 en 설명이 들어 있다).
+  쿠키 배너(cookie-banner-category-locale.yaml)와 같은 폴백 사슬로 맞춘다.
+
+axes:
+  viewer_locale: [ko, en]
+  category_description: [present_for_locale, missing_for_locale]
+
+effects:
+  - snapshot_category_description_uses_current_locale
+  - snapshot_category_description_falls_back_when_locale_missing
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/policy-snapshot-category-locale.test.ts

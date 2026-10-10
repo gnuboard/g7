@@ -1,0 +1,19 @@
+feature: 관리자 로그인 거부된 복귀 경로의 대체 경로 (7.1.0 관측 R-16·N O-N1, 2026-10-07 결정 「/admin 으로」)
+
+description: |
+  관리자 로그인 주소의 `?redirect=` 가 사이트 안 경로가 아니면(외부 주소·`//host`·`javascript:`·역슬래시·공백/제어문자)
+  엔진 이동 sink 가 사이트 첫 화면 `/` 로 보냈다. 엔진 공용 sink 는 그대로 두고, 레이아웃이 엔진 판정보다 좁게 거른
+  값을 넘겨 거부된 값은 관리자 첫 화면 `/admin` 으로 간다. 로그인이 끝나는 네 갈래(자격증명·2단계·비밀번호 변경·
+  변경 연기)가 같은 식을 쓴다.
+
+axes:
+  redirect: [rejected, same_origin]
+
+effects:
+  - rejected_admin_login_redirect_lands_on_admin_home
+  - same_origin_admin_login_redirect_is_kept
+  - layout_redirect_never_wider_than_engine_sink
+  - all_login_success_paths_use_the_fallback
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-login-redirect-fallback.test.ts

@@ -39,6 +39,8 @@ const sources: AnyJson[] = layout.data_sources;
 const byId = (id: string) => sources.find(s => s.id === id);
 
 describe('admin_settings — sitemap 진행상황 데이터소스', () => {
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects progress_cached_when_reverb_off
   it('sitemap_status 는 seo 탭 게이트 + 상태 엔드포인트를 가진다', () => {
     const s = byId('sitemap_status');
     expect(s).toBeTruthy();
@@ -50,6 +52,8 @@ describe('admin_settings — sitemap 진행상황 데이터소스', () => {
     expect(s!.auto_fetch).not.toBe(false);
   });
 
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects polling_starts_only_when_reverb_off_and_running
   it('sitemap_status onSuccess: OFF + 진행중이면 startInterval 로 폴링', () => {
     const s = byId('sitemap_status')!;
     const start = (s.onSuccess as AnyJson[]).find(a => a.handler === 'startInterval');
@@ -74,6 +78,8 @@ describe('admin_settings — sitemap 진행상황 데이터소스', () => {
     expect(start!.params.id).toBe('sitemap_progress_poll');
   });
 
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects polling_stops_on_completed
   it('sitemap_status onSuccess: 완료/실패 전이면 stopInterval', () => {
     const s = byId('sitemap_status')!;
     const stop = (s.onSuccess as AnyJson[]).find(a => a.handler === 'stopInterval');
@@ -86,6 +92,8 @@ describe('admin_settings — sitemap 진행상황 데이터소스', () => {
     expect(stop!.params.id).toBe('sitemap_progress_poll');
   });
 
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_on
+  // @effects progress_broadcast_when_reverb_on
   it('sitemap_progress_ws 는 관리자 채널을 구독하고 sitemap_status 로 병합한다', () => {
     const ws = byId('sitemap_progress_ws');
     expect(ws).toBeTruthy();
@@ -98,6 +106,8 @@ describe('admin_settings — sitemap 진행상황 데이터소스', () => {
 });
 
 describe('_tab_seo — sitemap 진행상황 표시 UI', () => {
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects progress_recorded_per_phase
   it('진행상황 블록은 상태 집합으로 게이트되고 progress 를 바인딩한다', () => {
     const block = collectNodes(seoTab, n => n.id === 'sitemap_progress_block')[0];
     expect(block).toBeTruthy();
@@ -106,16 +116,22 @@ describe('_tab_seo — sitemap 진행상황 표시 UI', () => {
     expect(block.if).toContain('failed');
   });
 
+  // 엔진은 노드 최상위 classMap 만 읽는다 — props.classMap 은 무시돼 배지 색이 한 번도 칠해지지 않았다(#703).
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects progress_recorded_per_phase
   it('상태 배지 classMap 이 5개 상태 variant 를 모두 정의한다', () => {
-    const badge = collectNodes(seoTab, n => n?.props?.classMap?.key
-      && String(n.props.classMap.key).includes('progress?.status'))[0];
+    const badge = collectNodes(seoTab, n => n?.classMap?.key
+      && String(n.classMap.key).includes('progress?.status'))[0];
     expect(badge).toBeTruthy();
-    const variants = badge.props.classMap.variants;
+    expect(badge.props?.classMap).toBeUndefined();
+    const variants = badge.classMap.variants;
     ['queued', 'running', 'writing', 'completed', 'failed'].forEach(st => {
       expect(variants[st]).toBeTruthy();
     });
   });
 
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_on
+  // @effects progress_broadcast_when_reverb_on
   it('실시간(구독) / 폴링 안내 문구가 realtime_enabled 로 분기된다', () => {
     const hint = collectNodes(seoTab, n => typeof n.text === 'string'
       && n.text.includes('sitemap_realtime_connected')
@@ -124,6 +140,8 @@ describe('_tab_seo — sitemap 진행상황 표시 UI', () => {
     expect(hint.text).toContain('realtime_enabled');
   });
 
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects progress_recorded_per_phase
   it('현재 단계(phase)와 누적 URL 문구가 존재한다', () => {
     const phase = collectNodes(seoTab, n => typeof n.text === 'string'
       && n.text.includes('sitemap_progress_phase'))[0];
@@ -133,6 +151,8 @@ describe('_tab_seo — sitemap 진행상황 표시 UI', () => {
     expect(urls).toBeTruthy();
   });
 
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects async_dispatch_from_admin
   it('재생성 버튼은 progress 상태로 disabled/label 분기하고 클릭 시 status 를 refetch 한다', () => {
     const btn = collectNodes(seoTab, n => n.name === 'Button'
       && typeof n?.props?.disabled === 'string'

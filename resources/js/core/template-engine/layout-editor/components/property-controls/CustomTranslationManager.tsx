@@ -27,6 +27,7 @@ import {
 import { getPendingValue } from '../../hooks/pendingCustomTranslations';
 import { localeDisplayLabel } from '../LocaleSwitcher';
 import { PlaceholderChipInput } from './PlaceholderChipInput';
+import { useEditorDialog } from '../EditorDialog';
 import { paramPlaceholderTokens } from '../../spec/inlineBindingUtils';
 
 export interface CustomTranslationManagerProps {
@@ -178,20 +179,21 @@ export function CustomTranslationManager({
     [templateIdentifier, draftFor, t],
   );
 
+  // 삭제 확인 — 편집기 대화상자(engine-v1.78.7). 브라우저 기본 confirm 대신.
+  const dialog = useEditorDialog(t);
   const confirmMsg = useCallback(
-    (count: number): boolean => {
-      const ok =
-        typeof window !== 'undefined' && typeof window.confirm === 'function'
-          ? window.confirm(t('layout_editor.translation_manager.delete_confirm', { count }))
-          : true;
-      return ok;
-    },
-    [t],
+    (count: number): Promise<boolean> =>
+      dialog.confirm({
+        message: t('layout_editor.translation_manager.delete_confirm', { count }),
+        confirmLabel: t('layout_editor.translation_manager.delete'),
+        danger: true,
+      }),
+    [dialog, t],
   );
 
   const handleDelete = useCallback(
     async (it: CustomTranslation): Promise<void> => {
-      if (!confirmMsg(1)) return;
+      if (!(await confirmMsg(1))) return;
       const res = await deleteCustomTranslation(templateIdentifier, it.id);
       if (res.ok) {
         setItems((prev) => prev.filter((p) => p.id !== it.id));
@@ -210,7 +212,7 @@ export function CustomTranslationManager({
   const runBulkDelete = useCallback(
     async (ids: number[]): Promise<void> => {
       if (ids.length === 0) return;
-      if (!confirmMsg(ids.length)) return;
+      if (!(await confirmMsg(ids.length))) return;
       const res = await bulkDeleteCustomTranslations(templateIdentifier, ids);
       if (res.ok) {
         const removed = new Set(ids);

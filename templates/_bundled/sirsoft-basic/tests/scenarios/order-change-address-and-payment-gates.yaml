@@ -1,0 +1,23 @@
+feature: 주문 배송지 변경 적용 잠금 + 주문서 결제수단 0건 안내·잠금 (#703)
+
+description: |
+  배송지 변경 창의 「저장된 배송지」 탭에서 고른 것이 없으면 적용을 잠그고, 저장 배송지 0건 회원은 직접 입력 탭으로 연다.
+  서버가 입금 계좌 없는 무통장입금을 걸러 내 결제수단이 0건이면 주문서가 안내를 보이고 결제하기를 잠근다.
+  두 잠금은 서로 다른 화면의 것이라 축을 「화면 × 잠금 조건」으로 둔다. 종전처럼 배송지 변경 창의 축
+  (change_mode·selection)과 주문서 결제 영역의 축(surface·active_account)을 한 조합에 묶으면
+  「주문서 결제 영역에서 저장된 배송지 탭을 비운 채 적용」처럼 어느 화면에도 없는 조합이 만들어진다.
+
+axes:
+  surface: [order_change_address_modal, checkout_payment]
+  gate: [saved_mode_without_selection, no_active_payment_method]
+
+exclusions:
+  - { surface: order_change_address_modal, gate: no_active_payment_method, reason: "배송지 변경 창에는 결제수단 선택이 없다 — 활성 결제수단 0건(입금 계좌 없는 무통장입금만 설정)은 주문서 결제 영역에서만 생긴다" }
+  - { surface: checkout_payment, gate: saved_mode_without_selection, reason: "주문서 결제 영역에는 「저장된 배송지」 탭과 그 적용 버튼이 없다 — 저장 배송지 미선택 적용은 주문 상세의 배송지 변경 창에서만 생긴다" }
+
+effects:
+  - saved_mode_without_selection_is_not_sent
+  - checkout_explains_and_blocks_when_no_payment_method
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/order-change-address-and-payment-gates.test.tsx

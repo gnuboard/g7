@@ -20,7 +20,7 @@
 - **관리자 설정 화면이 없다.** 조정 가능한 값은 첨부 제한 셋뿐이고 개점 후 거의 바뀌지 않아
   설정 파일에 두었습니다. 조정이 잦아지면 그때 화면을 더하는 것이 맞습니다.
 
-**의도적으로 하지 않는 것**: 알림·브로드캐스트·미들웨어·레이아웃 확장·프론트 액션 핸들러.
+**의도적으로 하지 않는 것**: 알림·브로드캐스트·미들웨어·레이아웃 확장. 프론트 액션 핸들러는 관리자 첨부 내려받기(`sirsoft-page.downloadAttachment`) 하나만 둡니다 — 관리자 화면이 특정 관리자 템플릿의 핸들러에 기대지 않게 하려는 것입니다.
 이 모듈은 다른 확장의 화면이나 요청 흐름에 개입하지 않습니다.
 <!-- @intent END -->
 
@@ -36,7 +36,7 @@ FormRequest (slug 유일성 · 다국어 제목 · 첨부 용량/형식)
         ▼
 Services 3종
         │  ├─ PageService        : CRUD + 발행 + 버전 스냅샷·복원
-        │  ├─ PageAttachmentService : 업로드·순서·삭제 (개수 상한 판정)
+        │  ├─ PageAttachmentService : 업로드·순서·삭제 (개수 상한 판정 · URL 은 만들지 않음 — 리소스의 해시 download_url, 저장소 직접 URL 을 돌려주던 getUrl() 은 7.0.11 에서 제거)
         │  └─ PageSettingsService  : 설정 파일 해석
         │       before_* → filter_*_data → 실행 → after_*
         ▼
@@ -75,12 +75,14 @@ Listeners 5종은 별도 레인입니다 — 활동 로그·검색 결과 편입
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update sirsoft-page --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-page --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan module:update sirsoft-page --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-page --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update sirsoft-page --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update sirsoft-page --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->

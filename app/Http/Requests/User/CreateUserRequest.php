@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\PasswordExpiryPolicy;
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\Role;
 use App\Models\User;
@@ -36,11 +38,16 @@ class CreateUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'nickname' => 'nullable|string|max:50',
             'email' => ['required', 'email', Rule::unique(User::class, 'email'), 'max:255'],
-            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
+            // 관리자가 정해 준 비밀번호는 재사용 검사를 하지 않는다(D11) — 회원이 다음 로그인 때 직접 바꾼다.
+            'password' => ['required', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
+            'password_expiry_policy' => ['nullable', 'string', Rule::in(PasswordExpiryPolicy::values())],
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
             'timezone' => ['nullable', 'string', 'timezone'],
-            'status' => 'nullable|string|in:active,inactive,blocked,withdrawn',
+            // 어휘는 Enum 단독 소유다 — 여기에 목록을 박아 두면 일괄 변경 경로
+            // (`Rule::in(UserStatus::values())`)와 어휘가 갈려, 일괄은 통과하는 값이
+            // 개별에서만 거부되는 강도 비대칭이 생긴다.
+            'status' => ['nullable', 'string', Rule::in(UserStatus::values())],
 
             // 연락처 정보
             'homepage' => 'nullable|url|max:255',
@@ -57,10 +64,14 @@ class CreateUserRequest extends FormRequest
             'bio' => 'nullable|string|max:5000',
             'admin_memo' => 'nullable|string|max:5000',
 
-            // 역할 정보 (객체 배열 또는 id 배열 모두 허용, 하나 이상 필수)
-            'roles' => 'required_without:role_ids|array|min:1',
+            // 역할 정보 (객체 배열 또는 id 배열 모두 허용, 생략 가능)
+            // 생략하거나 비워 보내면 서비스가 기본 역할('user')을 배정한다(UserService::createUser).
+            // 필수로 두면 역할 부여 권한(core.users.update) 없이 회원 생성 권한만 가진 운영자는
+            // 역할 칸이 잠긴 폼으로 등록하므로 늘 422 가 난다 — 부여 가능 여부는 화면이
+            // `can_assign_roles` 로, 부여 범위는 서버 상한(PermissionEscalationGuard)이 따로 정한다.
+            'roles' => 'nullable|array',
             'roles.*.id' => ['required', 'integer', Rule::exists(Role::class, 'id')],
-            'role_ids' => 'required_without:roles|array|min:1',
+            'role_ids' => 'nullable|array',
             'role_ids.*' => ['integer', Rule::exists(Role::class, 'id')],
         ];
 
@@ -94,6 +105,8 @@ class CreateUserRequest extends FormRequest
             'country.alpha' => __('user.validation.country_alpha'),
             'timezone.in' => __('user.validation.timezone_invalid'),
             'status.in' => __('user.validation.status_invalid'),
+            'password_expiry_policy.string' => __('user.validation.password_expiry_policy_invalid'),
+            'password_expiry_policy.in' => __('user.validation.password_expiry_policy_invalid'),
 
             // 연락처 정보
             'homepage.url' => __('user.validation.homepage_url'),
@@ -112,19 +125,27 @@ class CreateUserRequest extends FormRequest
             'signature.max' => __('user.validation.signature_max'),
             'bio.max' => __('user.validation.bio_max'),
             'admin_memo.max' => __('user.validation.admin_memo_max'),
-
-            // 역할 정보
-            'roles.required_without' => __('user.validation.roles_required'),
-            'roles.min' => __('user.validation.roles_min'),
-            'role_ids.required_without' => __('user.validation.roles_required'),
-            'role_ids.min' => __('user.validation.roles_min'),
         ];
+    }
+
+    /**
+     * 아이디(이메일 앞부분) 포함 판정에 쓸 이메일을 반환합니다.
+     *
+     * @return string|null 입력 이메일 (없으면 null)
+     */
+    private function identifierEmail(): ?string
+    {
+        $email = $this->input('email');
+
+        return is_string($email) && $email !== '' ? $email : null;
     }
 
     /**
      * 유효성 검사를 위해 데이터를 준비합니다.
      *
      * role_ids와 roles가 동시에 전송될 경우 role_ids를 우선하여 roles를 제거합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {

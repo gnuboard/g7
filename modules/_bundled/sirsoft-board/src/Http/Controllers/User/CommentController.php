@@ -17,8 +17,11 @@ use Modules\Sirsoft\Board\Http\Requests\VerifyCommentPasswordRequest;
 use Modules\Sirsoft\Board\Http\Resources\CommentResource;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
+use Modules\Sirsoft\Board\Services\ReactionService;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 
 /**
  * 사용자용 댓글 컨트롤러
@@ -32,6 +35,7 @@ class CommentController extends PublicBaseController
      *
      * @param  CommentService  $commentService  댓글 서비스
      * @param  BoardService  $boardService  게시판 서비스
+     * @param  mixed  $postRepository
      */
     public function __construct(
         private CommentService $commentService,
@@ -88,6 +92,24 @@ class CommentController extends PublicBaseController
             }
 
             $comments = $this->commentService->getCommentsByPostId($slug, $postId);
+
+            // 내 댓글 반응 일괄 조회 — 프리로드 키가 없으면 Resource 가 댓글마다
+            // 개별 조회로 퇴화한다(정당한 null 과 미프리로드를 키 존재로 구분한다).
+            $user = request()->user();
+            $myCommentReactions = $user
+                ? app(ReactionRepositoryInterface::class)->getUserReactionTypeIdsByTargets(
+                    $user->id,
+                    ReactionService::TARGET_COMMENT,
+                    $comments->pluck('id')->all(),
+                )
+                : [];
+
+            foreach ($comments as $comment) {
+                $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
+            }
+
+            // 비밀 대댓글 판정에 쓰는 부모 댓글 작성자 — 댓글마다 조회하지 않게 목록에서 미리 싣는다
+            SecretContentGate::preloadParentCommentOwners($comments);
 
             return $this->success(
                 'sirsoft-board::messages.comments.index_success',

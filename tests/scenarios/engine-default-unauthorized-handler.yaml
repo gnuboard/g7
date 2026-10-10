@@ -1,0 +1,25 @@
+feature: 시스템 기본 401 처리와 세션 만료 이동 중 오류 처리 (engine-v1.78.2)
+
+description: |
+  토큰이 만료된 채 화면을 열면 로그인 화면으로 옮겨지기 직전 「요청을 보내지 못했습니다. 네트워크 연결을
+  확인…」 토스트가 떴다(7.1.0 O-F1). 기본 401 처리 `navigate {{auth.loginPath}}` 의 `auth` 를 싣는 문맥이
+  없어 빈 경로 이동이 TypeError 를 냈고, 그 TypeError 가 네트워크 실패로 분류됐다.
+
+  규칙:
+    - 오류 처리 문맥(데이터소스·액션)에 `auth.loginPath`(템플릿 로그인 화면 + 현재 주소 복귀 경로)를 싣는다
+    - 빈 경로 navigate 는 건너뛴다
+    - ApiClient 401 로 세션 만료 로그인 이동을 시작하면 이탈 가드를 미리 켜 오류 처리(토스트·이동)를 돌리지 않는다
+
+axes:
+  path: [data_source_error, action_error]
+  state: [no_redirect_pending, session_expiry_redirect_pending]
+
+exclusions:
+  - { path: action_error, state: session_expiry_redirect_pending, reason: "이탈 가드 판정은 두 진입점(ErrorHandlingResolver.execute·ActionDispatcher 오류 경로)이 같은 isDocumentUnloading 을 본다 — 데이터소스 갈래로 마킹한 테스트가 액션 apiCall 401 도 같은 케이스 안에서 함께 잰다" }
+
+effects:
+  - default_unauthorized_navigates_to_login_path
+  - errors_suppressed_while_leaving_for_login
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.defaultUnauthorizedHandler.test.ts

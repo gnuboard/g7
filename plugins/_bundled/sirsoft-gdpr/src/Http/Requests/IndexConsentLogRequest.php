@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\Gdpr\Enums\ConsentAction;
 use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
+use Plugins\Sirsoft\Gdpr\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 관리자 동의 로그 목록 조회 요청을 검증합니다.
@@ -16,6 +17,8 @@ use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
  */
 class IndexConsentLogRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /** 기본 페이지 크기 */
     public const DEFAULT_PER_PAGE = 20;
 
@@ -44,6 +47,8 @@ class IndexConsentLogRequest extends FormRequest
      *
      * `?sources[]=banner` 와 `?sources=banner` 를 모두 허용하기 위한 것으로, 정규화하지
      * 않으면 후자가 `array` 규칙에 걸려 목록 전체가 422 가 됩니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -87,6 +92,25 @@ class IndexConsentLogRequest extends FormRequest
             // 상·하한은 규칙이 아니라 접근자에서 클램프한다 — 기존 컨트롤러가 범위를 벗어난
             // per_page 를 거부하지 않고 조정해 응답하던 계약을 유지한다.
             'per_page' => ['nullable', 'integer'],
+        ];
+    }
+
+    /**
+     * 검증 문구의 :attribute 자리에 넣을 화면 필터 이름을 반환합니다.
+     *
+     * 허용 밖 값을 고른 필터가 항목 키(actions.0)로 문구에 실리지 않게 와일드카드도 덮습니다.
+     *
+     * @return array<string, string> 필드별 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'consent_keys' => __('sirsoft-gdpr::messages.admin.consent_log.filter.consent_key_label'),
+            'consent_keys.*' => __('sirsoft-gdpr::messages.admin.consent_log.filter.consent_key_label'),
+            'actions' => __('sirsoft-gdpr::messages.admin.consent_log.filter.action_label'),
+            'actions.*' => __('sirsoft-gdpr::messages.admin.consent_log.filter.action_label'),
+            'sources' => __('sirsoft-gdpr::messages.admin.consent_log.filter.source_label'),
+            'sources.*' => __('sirsoft-gdpr::messages.admin.consent_log.filter.source_label'),
         ];
     }
 

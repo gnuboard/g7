@@ -1,348 +1,371 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "게시판 설정 > 일괄 적용 섹션"
-  },
-  "id": "bulk_apply",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "comment": "========== 섹션 9: 기존 게시판에 일괄 적용 ==========",
-      "id": "section_bulk_apply",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.bulk_apply.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(boards_list?.data?.data ?? []).length > 0}}",
-          "props": {
-            "className": "flex flex-col gap-3 mt-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "alert-warning"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "triangle-exclamation",
-                    "className": "text-amber-600 dark:text-amber-400 flex-shrink-0",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-warning-soft"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "no_boards_notice",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!(boards_list?.data?.data ?? []).length}}",
-          "props": {
-            "className": "flex-center p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "circle-info",
-                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-300"
-              },
-              "text": "$t:sirsoft-board.admin.settings.bulk_apply.no_boards_notice"
-            }
-          ]
-        },
-        {
-          "id": "bulk_apply_target",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(boards_list?.data?.data ?? []).length > 0}}",
-          "props": {
-            "className": "mt-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.settings.bulk_apply.target_boards"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2"
-              },
-              "children": [
-                {
-                  "id": "bulk_apply_target_all",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "{{_local.bulkApplyAll !== false ? 'flex-center gap-2 p-3 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex-center gap-2 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyAll": true
-                      }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "_bulkApplyAll",
-                        "className": "radio",
-                        "checked": "{{_local.bulkApplyAll !== false}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "bulkApplyAll": true
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary text-sm font-semibold"
-                      },
-                      "text": "$t:sirsoft-board.admin.settings.bulk_apply.apply_all"
-                    }
-                  ]
-                },
-                {
-                  "id": "bulk_apply_target_selected",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "{{_local.bulkApplyAll === false ? 'flex-center gap-2 p-3 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex-center gap-2 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyAll": false
-                      }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "_bulkApplyAll",
-                        "className": "radio",
-                        "checked": "{{_local.bulkApplyAll === false}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "bulkApplyAll": false
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary text-sm font-semibold"
-                      },
-                      "text": "$t:sirsoft-board.admin.settings.bulk_apply.apply_selected"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_local.bulkApplyAll === false}}",
-              "props": {
-                "className": "mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-tertiary mb-2"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_hint"
-                },
-                {
-                  "type": "composite",
-                  "name": "TagInput",
-                  "props": {
-                    "value": "{{_local._bulkApplyBoardIds ?? []}}",
-                    "options": "{{$computed.boardOptions ?? []}}",
-                    "placeholder": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder",
-                    "className": "w-full",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "_bulkApplyBoardIds": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(boards_list?.data?.data ?? []).length > 0}}",
-          "props": {
-            "className": "flex justify-end mt-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "comment": "검증 실패 안내 토스트 - 적용할 항목 미선택",
-                      "handler": "toast",
-                      "if": "{{!(_local.bulkApplyFields ?? []).length}}",
-                      "params": {
-                        "type": "error",
-                        "message": "$t:sirsoft-board.admin.settings.bulk_apply.no_fields_selected"
-                      }
-                    },
-                    {
-                      "comment": "검증 실패 안내 토스트 - 선택한 게시판 미선택 (적용 항목은 선택된 경우에만 표시)",
-                      "handler": "toast",
-                      "if": "{{(_local.bulkApplyFields ?? []).length > 0 && _local.bulkApplyAll === false && !(_local._bulkApplyBoardIds ?? []).length}}",
-                      "params": {
-                        "type": "error",
-                        "message": "$t:sirsoft-board.admin.settings.bulk_apply.no_boards_selected"
-                      }
-                    },
-                    {
-                      "comment": "모달 열기 전 현재 _local 상태를 _global 스냅샷에 저장 + 오류 상태 초기화",
-                      "handler": "setState",
-                      "if": "{{(_local.bulkApplyFields ?? []).length > 0 && (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}",
-                      "params": {
-                        "target": "global",
-                        "bulkApplySnapshot": "{{(function() { const fields = _local.bulkApplyFields ?? []; const applyAll = _local.bulkApplyAll !== false; const boardIds = _local._bulkApplyBoardIds ?? []; const tab = _global.activeBoardSettingsTab || 'basic_defaults'; const form = _local.form || {}; return { fields: fields, applyAll: applyAll, boardIds: boardIds, tab: tab, form: form }; })()}}"
-                      }
-                    },
-                    {
-                      "comment": "이전 오류/롤백 안내 초기화 (모달 재오픈 시 직전 실패 안내 잔존 방지)",
-                      "handler": "setState",
-                      "if": "{{(_local.bulkApplyFields ?? []).length > 0 && (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}",
-                      "params": {
-                        "target": "local",
-                        "bulkApplySaveError": false,
-                        "bulkApplyAborted": false,
-                        "bulkApplyAbortedBoard": null
-                      }
-                    },
-                    {
-                      "handler": "openModal",
-                      "if": "{{(_local.bulkApplyFields ?? []).length > 0 && (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}",
-                      "target": "bulk_apply_confirm_modal"
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.settings.bulk_apply.apply_button"
-                }
-              ]
-            }
-          ]
+    "comment": "「기본값」 탭 맨 아래의 일괄 적용 구획 — 위 탭들에서 체크해 둔 항목(`bulkApplyFields`)을 이미 있는 게시판에 소급해 덮어쓴다. 여기서는 «어디에»(전체냐 고른 것이냐)만 정하고, 실제 실행은 확인 창이 맡는다",
+    "meta": {
+        "is_partial": true,
+        "description": "게시판 설정 > 일괄 적용 섹션"
+    },
+    "id": "bulk_apply",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
         }
-      ]
-    }
-  ]
+    },
+    "children": [
+        {
+            "comment": "========== 섹션 9: 기존 게시판에 일괄 적용 ==========",
+            "id": "section_bulk_apply",
+            "type": "layout",
+            "name": "SectionLayout",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.bulk_apply.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(boards_list?.data?.data ?? []).length > 0}}",
+                    "props": {
+                        "className": "flex flex-col gap-3 mt-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "text-amber-600 dark:text-amber-400 flex-shrink-0",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "no_boards_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!(boards_list?.data?.data ?? []).length}}",
+                    "props": {
+                        "className": "flex-center p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.bulk_apply.no_boards_notice"
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_apply_target",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(boards_list?.data?.data ?? []).length > 0}}",
+                    "props": {
+                        "className": "mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_apply.target_boards"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2"
+                            },
+                            "children": [
+                                {
+                                    "id": "bulk_apply_target_all",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "actions": [
+                                        {
+                                            "comment": "전체 게시판에 적용. 라디오 자체가 아니라 감싼 자리를 눌러도 고르게 하려고 클릭으로 값을 세운다. 일괄 적용 권한이 없으면 카드를 눌러도 바뀌지 않는다",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "if": "{{_computed.canBulkApply}}",
+                                            "params": {
+                                                "target": "local",
+                                                "bulkApplyAll": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "{{_local.bulkApplyAll !== false ? 'flex-center gap-2 p-3 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex-center gap-2 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "「모든 게시판에」 — 아래 게시판 고르는 칸이 사라진다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "bulkApplyAll": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "_bulkApplyAll",
+                                                "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.apply_all",
+                                                "className": "radio",
+                                                "disabled": "{{!_computed.canBulkApply}}",
+                                                "checked": "{{_local.bulkApplyAll !== false}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-primary text-sm font-semibold"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.bulk_apply.apply_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "bulk_apply_target_selected",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "actions": [
+                                        {
+                                            "comment": "고른 게시판에만 적용",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "if": "{{_computed.canBulkApply}}",
+                                            "params": {
+                                                "target": "local",
+                                                "bulkApplyAll": false
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "{{_local.bulkApplyAll === false ? 'flex-center gap-2 p-3 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex-center gap-2 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "「고른 게시판에만」 — 아래에 게시판 고르는 칸이 나타나고, 하나도 고르지 않으면 적용 버튼이 잠긴다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "bulkApplyAll": false
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "_bulkApplyAll",
+                                                "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.apply_selected",
+                                                "className": "radio",
+                                                "disabled": "{{!_computed.canBulkApply}}",
+                                                "checked": "{{_local.bulkApplyAll === false}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-primary text-sm font-semibold"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.bulk_apply.apply_selected"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.bulkApplyAll === false}}",
+                            "props": {
+                                "className": "mt-3 p-3 rounded-lg board-bulk-apply-scope border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary mb-2"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_hint"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "actions": [
+                                        {
+                                            "comment": "적용할 게시판을 고른다 — 이 값은 폼과 함께 저장되는 설정이 아니라 이번 적용에만 쓰는 것이라 `_` 로 시작하는 임시 키에 담는다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "_bulkApplyBoardIds": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_local._bulkApplyBoardIds ?? []}}",
+                                        "options": "{{$computed.boardOptions ?? []}}",
+                                        "placeholder": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder",
+                                        "className": "w-full",
+                                        "disabled": "{{!_computed.canBulkApply}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_apply_no_permission",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_computed.isReadOnly && !_computed.canBulkApply && (boards_list?.data?.data ?? []).length > 0}}",
+                    "props": {
+                        "className": "form-hint mt-6"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.bulk_apply.no_permission"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(boards_list?.data?.data ?? []).length > 0}}",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "id": "bulk_apply_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "일괄 적용 실행. 고른 항목만 덮어쓰므로 체크하지 않은 설정은 각 게시판의 값이 그대로 남는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{!(_local.bulkApplyFields ?? []).length}}",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "$t:sirsoft-board.admin.settings.bulk_apply.no_fields_selected"
+                                            }
+                                        },
+                                        {
+                                            "comment": "검증 실패 안내 토스트 - 선택한 게시판 미선택 (적용 항목은 선택된 경우에만 표시)",
+                                            "handler": "toast",
+                                            "if": "{{(_local.bulkApplyFields ?? []).length > 0 && _local.bulkApplyAll === false && !(_local._bulkApplyBoardIds ?? []).length}}",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "$t:sirsoft-board.admin.settings.bulk_apply.no_boards_selected"
+                                            }
+                                        },
+                                        {
+                                            "comment": "모달 열기 전 현재 _local 상태를 _global 스냅샷에 저장 + 오류 상태 초기화",
+                                            "handler": "setState",
+                                            "if": "{{(_local.bulkApplyFields ?? []).length > 0 && (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}",
+                                            "params": {
+                                                "target": "global",
+                                                "bulkApplySnapshot": "{{(function() { const fields = _local.bulkApplyFields ?? []; const applyAll = _local.bulkApplyAll !== false; const boardIds = _local._bulkApplyBoardIds ?? []; const tab = _global.activeBoardSettingsTab || 'basic_defaults'; const form = _local.form || {}; return { fields: fields, applyAll: applyAll, boardIds: boardIds, tab: tab, form: form }; })()}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "이전 오류/롤백 안내 초기화 (모달 재오픈 시 직전 실패 안내 잔존 방지)",
+                                            "handler": "setState",
+                                            "if": "{{(_local.bulkApplyFields ?? []).length > 0 && (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}",
+                                            "params": {
+                                                "target": "local",
+                                                "bulkApplySaveError": false,
+                                                "bulkApplyAborted": false,
+                                                "bulkApplyAbortedBoard": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "bulk_apply_confirm_modal",
+                                            "if": "{{(_local.bulkApplyFields ?? []).length > 0 && (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{!_computed.canBulkApply}}",
+                                "className": "flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_apply.apply_button"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

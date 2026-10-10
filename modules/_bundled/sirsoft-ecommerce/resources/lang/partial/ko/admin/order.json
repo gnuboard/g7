@@ -10,6 +10,7 @@
   },
   "detail": {
     "title": "주문 상세",
+    "progress_title": "진행 단계",
     "description": "주문 상세 정보를 확인합니다",
     "placeholder": "주문 상세가 여기에 표시됩니다",
     "order_number": "주문번호",
@@ -61,7 +62,8 @@
       },
       "earn_status": {
         "earned": "적립완료",
-        "pending": "적립예정"
+        "pending": "적립예정",
+        "cancelled": "적립 없음"
       },
       "summary": {
         "total": "합계",
@@ -132,11 +134,12 @@
       "bulk_change_success": "{{count}}개 옵션의 상태가 변경되었습니다.",
       "bulk_change_failed": "상태 변경에 실패했습니다.",
       "memo_save_success": "관리자 메모가 저장되었습니다.",
+      "memo_save_failed": "관리자 메모 저장에 실패했습니다.",
       "address_save_success": "배송지 정보가 저장되었습니다."
     },
     "batch_modal": {
       "title": "일괄변경 확인",
-      "description": "선택한 상품을 {{status}}(으)로 변경합니다.",
+      "description": "선택한 상품의 상태를 다음으로 변경합니다: {{status}}",
       "columns": {
         "product_name": "상품명",
         "current_status": "현재상태",
@@ -148,97 +151,35 @@
       "confirm": "확인"
     },
     "claim_history": {
-      "title": "클레임내역",
-      "tabs": {
-        "refund": "환불내역",
-        "return": "반품내역",
-        "exchange": "교환내역"
+      "source_claim": "원 신청서 {{number}}",
+      "title": "클레임 내역",
+      "readonly_badge": "조회 전용",
+      "subtabs": {
+        "exchange": "교환",
+        "return": "반품",
+        "cancel": "취소",
+        "refund": "환불"
       },
-      "view_refund_management": "환불관리에서 보기",
-      "view_return_management": "반품관리에서 보기",
-      "view_exchange_management": "교환관리에서 보기",
-      "empty": {
-        "refund": "환불 내역이 없습니다",
-        "return": "반품 내역이 없습니다",
-        "exchange": "교환 내역이 없습니다"
-      },
-      "sort": {
-        "label": "정렬",
-        "request_date_desc": "신청일시 최근순"
-      },
-      "per_page": "페이지당",
-      "items_count": "{{count}}개",
+      "empty": "접수된 건이 없습니다.",
+      "unavailable": "클레임 내역을 불러오지 못했습니다.",
       "columns": {
-        "request_date": "신청일시",
-        "refund_number": "환불번호",
-        "return_number": "반품번호",
-        "exchange_number": "교환번호",
-        "product_info": "상품정보",
-        "amount_info": "금액정보",
+        "claim_number": "신청번호",
+        "product": "상품",
         "quantity": "수량",
-        "refund_method": "환불수단",
-        "refund_status": "환불상태",
-        "return_status": "반품상태",
-        "exchange_status": "교환상태",
-        "refund_reason": "환불사유",
-        "return_reason": "반품사유",
-        "exchange_reason": "교환사유"
+        "amount": "금액",
+        "status": "상태"
       },
-      "amount": {
-        "actual_price": "실제 가격",
-        "expected_refund": "환불 예상",
-        "actual_refund": "실 환불",
-        "return_request": "반품신청",
-        "original_order": "원주문",
-        "order_quantity": "주문",
-        "difference": "차액"
+      "reject_reason": "반려 사유",
+      "shipping_fee": "왕복배송비",
+      "total_charge": "총 청구액",
+      "original_product": "원상품",
+      "exchange_product": "교환상품",
+      "amount_type": {
+        "charge": "추가 청구",
+        "refund": "환불",
+        "none": "-"
       },
-      "method": {
-        "direct_refund": "직접 환불",
-        "deposit": "예치금"
-      },
-      "status": {
-        "refund_rejected": "환불반려",
-        "refund_hold": "환불보류",
-        "refund_approved": "환불승인",
-        "refund_completed": "환불완료",
-        "return_requested": "반품접수",
-        "return_pickup_in_progress": "반품회수중",
-        "return_pickup_completed": "반품회수도착",
-        "return_completed": "반품완료",
-        "exchange_requested": "교환접수",
-        "exchange_shipping": "교환배송",
-        "exchange_completed": "교환완료"
-      },
-      "delivery": {
-        "carrier": "배송사",
-        "tracking_number": "송장번호",
-        "pickup_carrier": "회수 배송사",
-        "pickup_tracking": "회수 송장번호",
-        "shipping_carrier": "발송 배송사",
-        "shipping_tracking": "발송 송장번호",
-        "pickup_fee": "회수배송료",
-        "round_trip_fee": "왕복배송료"
-      },
-      "reason": {
-        "customer_fault": "고객귀책",
-        "seller_fault": "판매자귀책",
-        "simple_change": "단순변심",
-        "wrong_color": "색상 다름",
-        "defect": "초기불량",
-        "defective_product": "상품불량",
-        "color_change": "색상 변경",
-        "size_exchange": "사이즈교환"
-      },
-      "product": {
-        "original_product": "원상품",
-        "exchange_product": "교환상품",
-        "same_product": "동일상품교환",
-        "same_product_exchange": "동일상품교환",
-        "size": "사이즈",
-        "color": "색상",
-        "capacity": "용량"
-      }
+      "pending_refund_badge": "환불 미접수"
     },
     "payment_info": {
       "title": "결제정보",
@@ -277,7 +218,9 @@
       "cancelled_amount": "취소금액",
       "refunded_amount": "환불금액",
       "refund_status": "환불상태",
-      "refund_points_amount": "마일리지 환불",
+      "refund_points_amount": "사용 마일리지 반환",
+      "refund_mileage_credit_amount": "└ 마일리지로 환불(현금분)",
+      "claim_additional_paid": "클레임 추가결제 합계",
       "payment_currency": "결제 통화: {{currency}}",
       "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구"
     },
@@ -361,9 +304,11 @@
         "due_amount": "결제예정금액",
         "mark_order_complete": "주문을 결제완료로 처리",
         "mark_order_complete_hint": "체크하면 입금 기록과 함께 주문 상태를 결제완료로 변경합니다(마일리지 적립·재고 차감·알림 발송 포함). 체크하지 않으면 입금 내역만 기록합니다.",
+        "past_payment_hint": "이 주문은 이미 {{status}} 단계라 입금 내역과 결제금액만 기록하고 주문 상태는 바꾸지 않습니다.",
         "cancel": "취소",
         "confirm": "입금확인",
-        "confirm_success": "입금이 확인되어 처리되었습니다."
+        "confirm_success": "입금이 확인되어 처리되었습니다.",
+        "confirm_failed": "입금 확인에 실패했습니다."
       },
       "batch_change": {
         "title": "일괄변경 확인",
@@ -371,7 +316,7 @@
         "confirm_prefix": "선택한",
         "confirm_count": "{{count}}개 상품을",
         "confirm_status": "{{status}}",
-        "confirm_suffix": "(으)로 일괄 변경하시겠습니까?",
+        "confirm_suffix": " 상태로 일괄 변경하시겠습니까?",
         "status_label": "변경 상태:",
         "carrier_label": "택배사:",
         "tracking_label": "송장번호:",
@@ -386,7 +331,7 @@
       },
       "cancel": {
         "title": "주문 취소",
-        "description": "선택한 상품의 주문을 취소합니다.",
+        "description": "취소 즉시 환불되지 않습니다. 환불신청서가 만들어지고 승인·환불완료를 거쳐야 주문취소가 확정됩니다.",
         "validation_error_title": "입력값을 확인해주세요",
         "pg_error_title": "PG 환불 실패",
         "pg_error_description": "PG 환불 처리에 실패했습니다. 오류 내용을 확인하고 다시 시도하거나, PG 관리자 화면에서 직접 환불 처리를 진행해주세요.",
@@ -394,8 +339,10 @@
         "unit_price_col": "단가",
         "cancel_quantity_col": "취소수량",
         "status_col": "현재상태",
-        "cancel_pg": "PG 결제도 함께 취소합니다",
-        "cancel_pg_description": "체크 해제 시 주문 상태만 변경되며, PG 환불은 별도로 진행해야 합니다.",
+        "auto_advance_refund_label": "환불까지 한 번에 처리",
+        "auto_advance_refund_hint": "체크하면 환불신청서를 만든 뒤 승인·환불완료까지 자동으로 진행합니다. 계좌로 송금해야 하는 환불 수단은 환불신청에서 멈추고, 운영자가 승인한 뒤 송금하고 [환불하기]로 완료합니다.",
+        "auto_advance_refund_no_permission": "환불 실행 권한이 없어 이 항목을 켤 수 없습니다. 접수한 환불신청서는 권한이 있는 관리자가 클레임 상세에서 처리합니다.",
+        "auto_advance_refund_blocked_hint": "이 주문의 결제수단은 사람이 송금해야 환불이 끝나므로, 체크해도 환불신청 상태에서 멈춥니다. 운영자가 승인한 뒤 [환불하기]로 송금을 마쳐 주세요.",
         "cancel_reason_type_label": "취소 사유",
         "reason_placeholder": "취소 사유를 선택하세요",
         "reason": {
@@ -417,7 +364,7 @@
         "refund_product_amount": "상품 환불액",
         "refund_shipping_diff": "배송비 변동",
         "refund_discount_diff": "할인 조정",
-        "refund_points_amount": "마일리지 환불",
+        "refund_points_amount": "사용 마일리지 반환",
         "refund_total": "최종 환불 예정액",
         "remaining_pg_balance": "환불 후 PG 잔액",
         "remaining_points_balance": "환불 후 마일리지 잔액",
@@ -448,13 +395,19 @@
         "close_btn": "닫기",
         "estimate_failed": "환불 예상금액 계산에 실패했습니다.",
         "cancel_success": "주문이 취소되었습니다.",
+        "refund_request_created": "환불신청서가 접수되었습니다. 승인·환불완료를 거쳐야 주문취소가 확정됩니다.",
+        "refund_request_created_no_claim_access": "환불신청서 {{number}}가 접수되었습니다. 클레임 권한이 있는 운영자가 승인·환불완료를 처리해야 주문취소가 확정됩니다.",
+        "refund_request_auto_stopped": "환불신청서를 접수했습니다. 자동으로 환불할 수 없는 결제수단이라 자동 처리는 멈췄습니다 — 신청서에서 승인한 뒤 [환불하기]로 환불완료를 처리해야 주문취소가 확정됩니다.",
         "cancel_failed": "주문 취소에 실패했습니다.",
         "refund_bank_label": "환불 계좌",
         "refund_bank_select": "은행 선택",
         "refund_bank_account_placeholder": "계좌번호 (- 없이 입력)",
         "refund_bank_holder_placeholder": "예금주",
         "refund_bank_required_hint": "입금이 완료된 가상계좌 주문은 환불 계좌가 필요합니다.",
-        "refund_bank_partial_notice": "셋 중 하나라도 입력하면 나머지도 입력해야 합니다."
+        "refund_bank_empty_hint": "환불 계좌로 고를 은행이 등록되어 있지 않습니다. 환경설정 > 주문 설정의 [은행 관리]에서 먼저 등록해 주세요.",
+        "refund_bank_partial_notice": "셋 중 하나라도 입력하면 나머지도 입력해야 합니다.",
+        "partial_unsupported": "이 주문의 결제수단은 전액취소만 가능합니다. 일부 상품·수량만 취소하면 결제대행사가 거절합니다.",
+        "partial_unsupported_vbank_awaiting": "입금 전 가상계좌 주문은 전액취소만 가능합니다. 발급된 가상계좌 금액은 바꿀 수 없어, 일부만 취소하면 고객이 입금해도 확인되지 않습니다."
       }
     },
     "cash_receipt": {
@@ -479,6 +432,7 @@
       "issue": "현금영수증 발급",
       "cancel": "취소",
       "cancel_issue": "발급취소",
+      "cancel_confirm": "이 현금영수증의 발급을 취소합니다. 결제사에서 취소되며 되돌릴 수 없습니다. 계속할까요?",
       "reissue": "수동 재발급",
       "view_receipt": "영수증 보기",
       "history": "발급 이력 ({{count}}건)",
@@ -488,6 +442,15 @@
       "cancel_failed": "현금영수증 발급 취소에 실패했습니다.",
       "reissue_failed": "재발급 실패",
       "reissue_success": "현금영수증이 재발급되었습니다."
+    },
+    "deposit_after_cancel": {
+      "warning": "취소된 주문의 가상계좌에 {{amount}} 입금이 확인되었습니다. 자동으로 환불되지 않으니 고객에게 환불해 주세요."
+    },
+    "vbank_close_failed": {
+      "warning": "입금 전에 취소했지만 결제사에서 가상계좌를 닫지 못했습니다. 고객이 입금하지 않도록 결제사 관리자 화면에서 가상계좌를 직접 닫아 주세요."
+    },
+    "tax_invoice": {
+      "needs_review": "이 주문은 취소가 발생했지만 발급된 세금계산서가 그대로 남아 있습니다. 세금계산서 취소·수정 발행은 자동으로 처리되지 않으므로 국세청 홈택스에서 직접 처리해 주세요."
     }
   },
   "preset": {
@@ -529,6 +492,7 @@
   },
   "filter": {
     "date": "일자",
+    "date_type_select": "일자 기준",
     "date_type": {
       "order_date": "주문일자",
       "payment_date": "결제일자",
@@ -536,6 +500,7 @@
     },
     "start_date": "시작일",
     "end_date": "종료일",
+    "site_day_notice": "대시보드 「오늘」 배지와 같은 사이트 표준시({{timezone}}) 기준 하루로 거른 목록입니다. 날짜·기간을 바꿔 검색하면 내 시간대 기준으로 돌아갑니다.",
     "date_quick": {
       "today": "오늘",
       "week": "일주일",
@@ -551,7 +516,7 @@
       "payment_complete": "결제완료",
       "shipping_hold": "배송보류",
       "preparing": "상품준비중",
-      "shipping_ready": "배송준비완료",
+      "shipping_ready": "배송준비중",
       "shipping": "배송중",
       "delivered": "배송완료",
       "cancelled": "주문취소",
@@ -611,6 +576,7 @@
     "category": "상품카테고리",
     "category_level": "카테고리{{level}}",
     "price": "구매금액",
+    "currency_select": "통화",
     "min_price": "최소금액",
     "max_price": "최대금액",
     "currency": "원",
@@ -644,6 +610,20 @@
       "all": "전체",
       "member": "회원",
       "guest": "비회원"
+    },
+    "claim": {
+      "block_title": "클레임 기준",
+      "block_hint": "이 주문에 접수된 클레임의 유형·상태로 주문을 거릅니다. 유형별 상태를 지정하지 않으면 유형과 무관하게 거릅니다. 단 귀책을 지정하면 취소는 제외됩니다 — 취소에는 귀책 정보가 없습니다.",
+      "presence": "클레임",
+      "presence_none": "클레임 없음",
+      "presence_any": "클레임 있음",
+      "presence_active": "진행 중만",
+      "exchange": "교환",
+      "return": "반품",
+      "refund": "환불",
+      "cancel": "취소",
+      "fault": "귀책",
+      "requested_at": "클레임 신청일"
     }
   },
   "action": {
@@ -739,14 +719,15 @@
   },
   "status": {
     "waiting": "주문대기",
-    "payment_pending": "입금대기",
+    "payment_pending": "결제대기",
     "payment_complete": "결제완료",
-    "shipping_hold": "발송보류",
+    "shipping_hold": "배송보류",
     "preparing": "상품준비중",
     "shipping_ready": "배송준비중",
     "shipping": "배송중",
     "delivered": "배송완료",
     "cancelled": "주문취소",
+    "returned": "반품완료",
     "confirmed": "구매확정"
   },
   "datagrid": {
@@ -773,6 +754,7 @@
     "description": "다운로드할 주문서 범위를 선택하세요",
     "download": "다운로드",
     "download_success": "엑셀 파일이 다운로드되었습니다",
+    "download_failed": "엑셀 파일을 내려받지 못했습니다",
     "option_search": "현재 검색 조건으로 다운로드",
     "option_search_desc": "총 {{count}}개의 주문서가 다운로드됩니다",
     "option_selected": "선택한 주문서만 다운로드",
@@ -798,7 +780,8 @@
     "confirm_tracking_label": "운송장번호: ",
     "confirm_cancel": "취소",
     "confirm_apply": "변경 적용",
-    "confirm_no_changes": "변경할 항목이 없습니다."
+    "confirm_no_changes": "변경할 항목이 없습니다.",
+    "error": "일괄 처리에 실패했습니다."
   },
   "column": {
     "no": "번호",
@@ -817,6 +800,7 @@
     "delivery_method": "배송방법",
     "country": "배송국가",
     "device": "구매환경",
+    "claim": "클레임",
     "first_order": "첫구매",
     "action": "작업"
   },
@@ -856,6 +840,83 @@
       "reshipping": "교환발송",
       "reshipping_completed": "교환배송완료",
       "completed": "교환완료"
+    }
+  },
+  "claim_request": {
+    "button_exchange": "교환 접수",
+    "button_return": "반품 접수",
+    "button_cancel_refund": "취소·환불 접수",
+    "gate_hint": "고른 상품의 상태로는 접수할 수 없습니다 — 교환·반품은 배송중·배송완료·구매확정, 취소·환불은 아직 보내지 않은 상품만 받습니다.",
+    "no_permission": "교환·반품·취소 접수 권한이 없습니다.",
+    "context_load_failed": "접수 가능 여부를 불러오지 못했습니다. 새로고침해 주세요.",
+    "title_exchange": "교환 접수 (고객 대신)",
+    "title_return": "반품 접수 (고객 대신)",
+    "editor_label": "고객 대신 교환·반품 접수 창",
+    "description": "고객을 대신해 접수합니다. 신청 기간·신청 가능 상태 설정은 적용되지 않습니다.",
+    "same_option": "같은 옵션으로 교환",
+    "sold_out": "품절",
+    "reason": "사유",
+    "reason_placeholder": "사유 선택",
+    "seller_fault": "판매자 귀책",
+    "reason_detail_placeholder": "상세 사유 (상담 내용 등)",
+    "charge_method": "청구 방식",
+    "charge_method_auto": "자동 (청구액이 있으면 선택)",
+    "redelivery_address": "재발송지",
+    "recipient_name": "받는 분",
+    "phone": "연락처",
+    "zipcode": "우편번호",
+    "address1": "주소",
+    "address2": "상세 주소",
+    "city": "도시",
+    "state": "주/도",
+    "shipping_fee": "배송비",
+    "total_charge": "청구액 {{amount}}",
+    "refund_estimate": "환불 예정 {{amount}}",
+    "preview_needs_reason": "사유를 고르면 배송비와 청구액을 계산합니다.",
+    "preview_error": "청구액을 계산하지 못했습니다.",
+    "approve": "접수와 함께 승인",
+    "approve_no_permission": "클레임 상태 변경 권한이 없어 접수만 합니다. 승인은 권한이 있는 관리자가 클레임 상세에서 처리합니다.",
+    "customer_notice": "고객에게 「판매자가 고객님을 대신해 접수했습니다」 알림이 가고, 고객은 이 신청을 철회·수정할 수 없습니다.",
+    "submit": "접수",
+    "success": "고객을 대신해 접수했습니다.",
+    "error": "접수하지 못했습니다.",
+    "reason_required": "사유를 선택해주세요."
+  },
+  "manual_paid": {
+    "title": "결제 처리 항목",
+    "description": "선택한 주문 중 {{count}}건은 결제 전이거나 취소된 주문입니다. 함께 처리할 항목을 고르세요.",
+    "description_single": "이 주문은 결제 전이거나 취소된 주문입니다. 함께 처리할 항목을 고르세요.",
+    "loading": "결제 처리 항목을 확인하는 중…",
+    "preview_error": "결제 처리 항목을 불러오지 못했습니다. 창을 닫고 다시 시도하세요.",
+    "stock_label": "재고 차감 ({{count}}건)",
+    "stock_label_single": "재고 차감 (상품 {{count}}개)",
+    "stock_hint": "주문한 수량만큼 상품 재고를 줄입니다.",
+    "stock_off_warning": "재고를 차감하지 않으면 이후 이 주문을 취소해도 재고를 되돌리지 않습니다.",
+    "mileage_label": "사용 마일리지 차감 ({{count}}건, {{amount}})",
+    "mileage_label_single": "사용 마일리지 차감 ({{amount}})",
+    "mileage_hint": "고객이 이 주문에 쓴 마일리지를 회원 잔액에서 뺍니다. 취소한 주문을 되살리면 취소 때 돌려준 마일리지를 다시 뺍니다.",
+    "mileage_short_warning": "잔액이 부족해 변경되지 않을 주문: {{order_numbers}}",
+    "mileage_short_warning_single": "회원 마일리지 잔액({{balance}})이 부족해 변경되지 않습니다. 차감을 끄면 바꿀 수 있습니다.",
+    "mileage_off_warning": "마일리지를 차감하지 않으면 이후 환불 때 마일리지를 돌려주지 않습니다.",
+    "record_label": "결제금액 기록 ({{count}}건, {{amount}})",
+    "record_label_single": "결제금액 기록 ({{amount}})",
+    "record_hint": "결제예정금액을 받은 것으로 기록합니다. PG 관리 화면에서 승인을 확인한 경우에만 켜 두세요. PG 거래번호는 기록되지 않습니다.",
+    "record_off_warning": "결제금액을 기록하지 않으면 결제금액 0원으로 남아, 이후 취소·반품 때 현금으로 돌려줄 수 있는 금액이 0원이 됩니다.",
+    "auto_sync_note": "입금이 이미 기록된 {{count}}건은 기록된 입금액으로 결제금액을 맞춥니다.",
+    "auto_sync_note_single": "이미 기록된 입금액 {{amount}}으로 결제금액을 맞춥니다.",
+    "never_paid_note": "결제 기록 없이 취소된 주문 {{count}}건은 「결제금액 기록」을 켜 두면 되살린 주문 합계를 받은 것으로 기록합니다. 끄면 미수금으로 남습니다.",
+    "never_paid_note_single": "결제 기록 없이 취소된 주문입니다. 「결제금액 기록」을 켜 두면 되살린 주문 합계를 받은 것으로 기록하고, 끄면 미수금으로 남습니다.",
+    "restoration_label": "취소된 상품 되살리기·주문 합계 다시 계산 ({{count}}건, 상품 {{quantity}}개)",
+    "restoration_label_single": "취소된 상품 {{quantity}}개를 되살리고 주문 합계를 {{before}} → {{after}}으로 다시 계산합니다",
+    "restoration_hint": "취소로 0원이 된 주문 금액·배송비·할인과 쿠폰 사용 기록을 처음 주문 조건으로 되돌립니다. 취소·환불 내역은 그대로 남습니다.",
+    "restoration_hint_partial": "되살리는 상품을 포함해 주문 금액·배송비·할인을 다시 계산합니다. 취소·환불 내역은 그대로 남습니다.",
+    "restoration_coupon_conflict": "이 주문에 쓴 쿠폰을 다른 주문이 이미 사용해 되살릴 수 없는 주문: {{order_numbers}}",
+    "restoration_coupon_conflict_single": "이 주문에 쓴 쿠폰({{coupons}})을 다른 주문이 이미 사용해 되살릴 수 없습니다.",
+    "restoration_legacy_snapshot": "{{count}}건은 처음 주문 쿠폰 정보가 남아 있지 않아 현재 쿠폰 정보로 다시 계산합니다. 합계가 처음 주문과 다를 수 있습니다.",
+    "restoration_legacy_snapshot_single": "처음 주문 쿠폰 정보가 남아 있지 않아 현재 쿠폰 정보로 다시 계산합니다. 합계가 처음 주문과 다를 수 있습니다.",
+    "warning": {
+      "pg_already_cancelled": "카드 등 PG 결제가 이미 취소된 주문입니다. 이후 환불은 계좌 환불 또는 마일리지로 처리해야 합니다.",
+      "pg_already_cancelled_orders": "카드 등 PG 결제가 이미 취소된 주문입니다({{order_numbers}}). 이후 환불은 계좌 환불 또는 마일리지로 처리해야 합니다."
     }
   }
 }

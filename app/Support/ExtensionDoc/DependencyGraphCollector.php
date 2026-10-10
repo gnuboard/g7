@@ -2,11 +2,16 @@
 
 namespace App\Support\ExtensionDoc;
 
+use App\Support\ExtensionIntegrations;
+
 /**
  * 확장 의존 관계 수집기
  *
  * manifest 의 `dependencies` 선언을 정방향(내가 의존하는 확장)과 역방향(나에게 의존하는
  * 확장) 양쪽으로 해석합니다.
+ *
+ * 선택 연동(`integrations`, #639)도 같은 두 방향으로 모읍니다 — 의존과 달리 없어도 동작하지만, 어느 확장이 이 확장의
+ * 화면·훅에 끼어드는지 운영자가 알아야 끄고 켤 때 무엇이 사라지는지 예상할 수 있습니다.
  *
  * 역방향이 이 수집기의 존재 이유입니다 — 운영자가 "이 확장을 끄면 무엇이 같이 죽는가" 를
  * 알아야 하는데, 그 정보는 어느 한 manifest 에도 없고 번들 전수를 교차 스캔해야만 나옵니다.
@@ -28,15 +33,65 @@ class DependencyGraphCollector
      * 확장의 의존 관계를 수집합니다.
      *
      * @param  array<string, mixed>  $record  ExtensionInventory 레코드
-     * @return array{requires: array<int, array{type: string, id: string, constraint: string, bundled: bool}>, requiredBy: array<int, array{type: string, id: string, constraint: string}>, coreVersion: string|null}
+     * @return array{requires: array<int, array{type: string, id: string, constraint: string, bundled: bool}>, requiredBy: array<int, array{type: string, id: string, constraint: string}>, integrates: array<int, array{type: string, id: string, bundled: bool}>, integratedBy: array<int, array{type: string, id: string}>, coreVersion: string|null}
      */
     public function collect(array $record): array
     {
         return [
             'requires' => $this->requires($record),
             'requiredBy' => $this->requiredBy($record),
+            'integrates' => $this->integrates($record),
+            'integratedBy' => $this->integratedBy($record),
             'coreVersion' => $this->coreConstraint($record),
         ];
+    }
+
+    /**
+     * 이 확장이 선택 연동으로 선언한 확장 목록을 반환합니다.
+     *
+     * @param  array<string, mixed>  $record  확장 레코드
+     * @return array<int, array{type: string, id: string, bundled: bool}> 연동 대상
+     */
+    private function integrates(array $record): array
+    {
+        $out = [];
+        foreach (ExtensionIntegrations::normalize($record['manifest']['integrations'] ?? []) as $type => $ids) {
+            foreach ($ids as $id) {
+                $out[] = ['type' => $type, 'id' => $id, 'bundled' => $this->isBundled($type, $id)];
+            }
+        }
+
+        usort($out, static fn (array $a, array $b): int => [$a['type'], $a['id']] <=> [$b['type'], $b['id']]);
+
+        return $out;
+    }
+
+    /**
+     * 이 확장을 선택 연동으로 선언한 확장 목록을 반환합니다 (번들 전수 교차 스캔).
+     *
+     * @param  array<string, mixed>  $record  확장 레코드
+     * @return array<int, array{type: string, id: string}> 연동해 오는 확장
+     */
+    private function integratedBy(array $record): array
+    {
+        $selfType = $this->pluralize((string) $record['type']);
+        $selfId = (string) $record['id'];
+        $out = [];
+
+        foreach ($this->allExtensions() as $other) {
+            if ($other['id'] === $selfId && $other['type'] === $record['type']) {
+                continue;
+            }
+
+            $declared = ExtensionIntegrations::normalize($other['manifest']['integrations'] ?? []);
+            if (in_array($selfId, $declared[$selfType] ?? [], true)) {
+                $out[] = ['type' => (string) $other['type'], 'id' => (string) $other['id']];
+            }
+        }
+
+        usort($out, static fn (array $a, array $b): int => [$a['type'], $a['id']] <=> [$b['type'], $b['id']]);
+
+        return $out;
     }
 
     /**

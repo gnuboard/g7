@@ -61,9 +61,6 @@
     },
     "password": {
       "min": "비밀번호는 최소 :min자 이상이어야 합니다."
-    },
-    "ip_address": {
-      "required": "IP 주소는 필수입니다."
     }
   },
   "board": {

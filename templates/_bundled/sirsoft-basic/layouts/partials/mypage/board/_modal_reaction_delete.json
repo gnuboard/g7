@@ -1,0 +1,205 @@
+{
+    "comment": "반응 한 건을 해제하는 창. 지우는 것은 내가 누른 표시일 뿐이고 글·댓글은 그대로라는\n     사실을 본문이 분명히 말한다 — 「삭제」로 읽히면 누르기를 주저하게 된다.\n\n     대상이 이미 지워진 건은 제목을 실을 수 없으므로 문구가 갈린다(`isDeleted`).",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 게시판 활동 - 반응 해제 확인",
+        "editor_label": "$t:user.modal_label.mypage_board.reactionDeleteModal"
+    },
+    "id": "reaction_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "id": "reaction_delete_modal",
+        "title": "$t:mypage.board_activities.reactions.delete_title",
+        "icon": "trash",
+        "iconClassName": "text-red-500",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "data-testid": "reaction-delete-modal",
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_global.reactionDeleteModal?.isDeleted}}",
+                    "props": {
+                        "className": "text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.board_activities.reactions.delete_confirm|title={{_global.reactionDeleteModal?.title ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.reactionDeleteModal?.isDeleted}}",
+                    "props": {
+                        "className": "text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.board_activities.reactions.delete_confirm_deleted"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-500"
+                    },
+                    "text": "$t:mypage.board_activities.reactions.delete_notice"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "취소 — 이 창은 여러 행이 돌려 쓰므로 대상 정보를 비우지 않으면 다음에 열 때 앞의 행이 남는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactionDeleteModal": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "반응 단건 해제 — 성공하면 선택 배열에서 그 ID 를 빼고 목록·통계를 다시 받는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "reactionDeleteSubmitting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/me/reactions/{{_global.reactionDeleteModal?.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "comment": "지운 행이 선택 배열에 남아 있으면 다음 일괄 해제가 없는 ID 를 싣는다.\n                    처리 중 표시는 이 창의 값이고 선택 배열은 목록과 함께 쓰는 전역 값이라 스코프가\n                    갈린다 — 한 set-state 로 묶으면 둘 중 하나가 엉뚱한 자리에 쓰인다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "reactionDeleteSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "myReactionsSelectedIds": "{{(_global.myReactionsSelectedIds ?? []).filter(v => v !== _global.reactionDeleteModal?.id)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:mypage.board_activities.reactions.removed"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "myReactions"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "위쪽 통계 카드의 「남긴 반응」 숫자도 같이 줄어야 한다",
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "myActivityStats"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reactionDeleteModal": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "reactionDeleteSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "reaction-delete-confirm",
+                                "disabled": "{{_local.reactionDeleteSubmitting}}",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.reactionDeleteSubmitting}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "className": "animate-spin mr-2"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:mypage.board_activities.reactions.delete_confirm_button"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

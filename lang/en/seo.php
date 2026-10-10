@@ -3,7 +3,7 @@
 return [
     // Cache clear
     'cache_cleared_all' => 'All SEO cache has been cleared.',
-    'cache_cleared_layout' => ':count SEO cache entries for layout :layout have been cleared.',
+    'cache_cleared_layout' => ':count SEO cache entry for layout :layout has been cleared.|:count SEO cache entries for layout :layout have been cleared.',
 
     // Cache warmup
     'warmup_started' => 'SEO cache warmup started.',
@@ -21,7 +21,7 @@ return [
     'sitemap_generate_failed' => 'Sitemap generation failed: :error',
 
     // Cache stats
-    'stats_period' => 'SEO cache statistics for the last :days days',
+    'stats_period' => 'SEO cache statistics for the last :days day|SEO cache statistics for the last :days days',
     'stats_overall' => 'Overall Statistics',
     'stats_metric' => 'Metric',
     'stats_value' => 'Value',

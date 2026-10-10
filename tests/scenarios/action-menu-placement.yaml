@@ -1,0 +1,37 @@
+feature: 목록 행 메뉴(ActionMenu)의 열림 위치와 항목 동작
+
+description: |
+  목록 표의 행 메뉴(…)는 화면에 고정(fixed)된 채 document.body 에 그려지고, 스크롤·창 크기 변경 때
+  닫힌다. 그래서 버튼 아래로만 열면 화면 아래쪽 행에서 항목이 뷰포트 밖으로 나가 누를 방법이 없었다
+  (#705 회원 목록 — 필터 카드가 길어진 1280×720 화면, 결과 1행에서 「수정」 이 화면 밖).
+  아래 공간이 모자라고 위에 들어가면 버튼 위로 연다.
+
+  축은 버튼 아래 공간 한 가지다 — 좌우 경계 보정은 기존 동작이고, 열림·항목 클릭·비활성·바깥 클릭
+  닫힘·위험 항목 표시는 위치와 무관하게 같은 경로를 탄다(효과로 잠근다).
+
+  - enough: 버튼 아래에 메뉴가 들어간다 → 버튼 아래(top = 버튼 bottom + 8)
+  - short: 아래로 열면 창 높이를 넘는다 → 버튼 위(top = 버튼 top - 8 - 메뉴 높이)
+
+  E2E 는 tests/Playwright/specs/admin/user-list-filters.spec.ts 「행 메뉴의 수정·삭제」 가 1280×720 결과
+  1행에서 실제로 항목을 누른다(그 spec 은 admin-user-list-filters.yaml 이 소유한다).
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ActionMenu.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.rowActionsName.test.tsx
+
+axes:
+  space_below:
+    - enough
+    - short
+
+effects:
+  - action_menu_opens_with_items
+  - action_menu_item_click_runs_and_closes
+  - action_menu_disabled_item_ignored
+  - action_menu_closes_on_outside_click
+  - action_menu_danger_item_styled
+  - action_menu_stays_inside_viewport
+  # 키보드로 열고(children 트리거 포함 Enter·Space·아래 화살표) 항목을 화살표로 옮겨 Enter·Space 로 고르며 Escape 로 닫는다 — 반응·스크랩 관리 회원 이름 메뉴(K1 후속 2026-10-06)
+  - action_menu_keyboard_operable
+  # 글자 없는 아이콘 트리거(DataGrid 행 메뉴 …, 게시판 목록·글 상세의 ⋮)도 이름을 단다 — ariaLabel, 없으면 공용 「작업」. DataGrid 는 작업 열 머리말을 넘긴다(K2 후속 2026-10-07, O-KF-1)
+  - action_menu_trigger_has_accessible_name

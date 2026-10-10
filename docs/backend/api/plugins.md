@@ -67,6 +67,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | has_settings | boolean | `true` | settings 여부 |
 | settings_route | string | `/admin/plugins/sirsoft-ckeditor5/sett…` | 설정 페이지 경로 (설정 UI 진입 라우트, 설정 미제공 시 null) |
 | assets | object | `{"js":"\/api\/plugins\/assets\/sirsoft-ckeditor5?file=dis…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| icon_url | string\|null | `/api/extensions/plugin/sirsoft-ckeditor5/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
+| icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
@@ -202,8 +204,17 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+**업데이트가 있는 행에만 실리는 필드** — 실측 시점에 업데이트가 없으면 위 생성 표에 나타나지 않아 여기 따로 둔다(7.1.0).
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| is_compatible | boolean | `false` | (업데이트가 있는 행에만) 업데이트할 새 버전이 지금 코어와 호환되는지. 업데이트 창의 코어 호환 경고·「강제 업데이트」 체크가 읽는다. 업데이트가 없으면 키 자체가 없다 — 설치본 호환은 `core_compatible` |
+| required_core_version | string\|null | `>=7.2.0` | (업데이트가 있는 행에만) 새 버전이 요구하는 코어 버전 — 번들 출처면 _bundled 매니페스트, GitHub 출처면 설치된 매니페스트의 `g7_version`(원격 매니페스트는 받지 않는 추정) |
+| current_core_version | string | `7.1.0` | (업데이트가 있는 행에만) 현재 코어 버전 |
+
 **설명** 설치된 플러그인과 미설치 플러그인을 모두 포함한 전체 플러그인 목록을 페이지네이션으로 조회합니다. `search` 는 이름·식별자·설명·벤더에 대한 OR 검색이고 `filters` 는 AND 조건으로 적용됩니다. `core.plugins.read` 권한이 필요하며, 응답의 `abilities` 는 현재 사용자의 install/activate/uninstall 권한 보유 여부를 담습니다. 관리자 플러그인 관리 화면의 목록 그리드를 구성하는 기본 엔드포인트입니다.
 
+**목록 권한 값(7.1.0)** 응답 `abilities` 는 컬렉션 권한 맵(`can_install`·`can_activate`·`can_uninstall`)에 더해 카드 「언어팩 관리」 이동 가능 여부 `can_view_language_packs`(= `core.language_packs.read`)를 싣는다. 검색·필터 결과가 0건이어도 항상 싣는다. 플러그인은 설정 화면 저장 권한 `can_update`(= `core.plugins.update`)도 싣는다 — 행 `abilities.can_update` 가 카드 「설정」 메뉴를 잠근다.
 
 ### POST /api/admin/plugins/activate
 <!-- @generated:start:api.admin.plugins.activate -->
@@ -243,6 +254,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | plugin | object | `{"identifier":"sirsoft-daum_postcode","status":"active", …}` | 활성화된 플러그인 리소스 (PluginResource — 목록 항목과 동일 필드 구성) |
 | pending_language_packs | array | `[]` | 이 플러그인 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 대기 후보) |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -308,7 +320,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다.
+**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다.
 
 
 ### POST /api/admin/plugins/check-updates
@@ -487,7 +499,7 @@ _단건 응답: `data` 객체의 필드 — 비활성화된 플러그인 리소�
 
 <!-- @generated:end -->
 
-**설명** 활성 플러그인을 비활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 이 플러그인에 의존하는 템플릿·모듈·플러그인이 있으면 409 응답으로 `dependent_templates`·`dependent_modules`·`dependent_plugins` 목록과 함께 경고를 반환합니다. 의존 관계 확인 후 `force: true` 로 강제 비활성화할 수 있습니다.
+**설명** 활성 플러그인을 비활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 이 플러그인에 의존하는 템플릿·모듈·플러그인이 있으면 409 응답으로 `dependent_templates`·`dependent_modules`·`dependent_plugins` 목록과 함께 경고를 반환합니다(모듈·플러그인 항목은 `identifier`·`name`·`version` — 경고 창이 「v{버전}」 배지로 보인다). 의존 관계 확인 후 `force: true` 로 강제 비활성화할 수 있습니다.
 
 
 ### POST /api/admin/plugins/install
@@ -544,6 +556,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | settings_route | string\|null | `/admin/plugins/sirsoft-daum_postcode/settings` | 설정 페이지 경로 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계(번들 언어팩 best-effort 설치) 에서 실패한 항목 목록 (성공 시 빈 배열) |
+| language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -606,8 +619,9 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 
 <!-- @generated:end -->
 
-**설명** `_pending`·`_bundled` 대기소에 있는 플러그인을 활성 디렉토리로 설치합니다. `core.plugins.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담겨 반환됩니다.
+**설명** `_pending`·`_bundled` 대기소에 있는 플러그인을 활성 디렉토리로 설치합니다. `core.plugins.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담겨 반환됩니다. 설치 직후 플러그인은 비활성이라 그 플러그인 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 플러그인을 켤 때 함께 켜집니다.
 
+**동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
 
 ### POST /api/admin/plugins/install-from-file
 <!-- @generated:start:api.admin.plugins.install-from-file -->
@@ -864,6 +878,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | has_settings | boolean | `true` | settings 여부 |
 | settings_route | string | `/admin/plugins/sirsoft-ckeditor5/sett…` | 설정 페이지 경로 (설정 UI 진입 라우트, 설정 미제공 시 null) |
 | assets | object | `{"js":"\/api\/plugins\/assets\/sirsoft-ckeditor5?file=dis…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| icon_url | string\|null | `/api/extensions/plugin/sirsoft-ckeditor5/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
+| icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
@@ -1109,6 +1125,7 @@ _단건 응답: `data` 객체의 필드._
 | updated | integer | `2` | 내용이 변경되어 갱신된 레이아웃 건수 |
 | deleted | integer | `0` | 파일에서 사라져 DB 에서도 삭제된 레이아웃 건수 |
 | unchanged | integer | `0` | 변경 없이 그대로 유지된 레이아웃 건수 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 **응답 예시**
 
@@ -1510,7 +1527,7 @@ HTTP/1.1 200
     "success": true,
     "message": "플러그인 정보를 성공적으로 가져왔습니다.",
     "data": {
-        "content": "프로그램 명칭 : 그누보드7용 Daum 우편번호 플러그인 (sirsoft-daum_postcode)\n\n저작자 : (주)에스아이알소프트\n\n----- MIT 라이선스 (한국어 번역) --------------------------------------------------------\n\nMIT 라이선스\n\nCopyright (c) 2026 (주)에스아이알소프트\n\n이 소프트웨어와 관련 문서 파일(이하 \"소프트웨어\")의 복사본을 취득하는 모든 사람에게\n소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 배포, 서브라이선스 허여 및/또는\n판매할 수 있는 권리를 무상으로 부여합니다. 다만, 소프트웨어를 제공받은 사람은 다음\n조건을 따라야 합니다:\n\n위 저작권 고지와 본 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 포함되어야\n합니다.\n\n소프트웨어는 \"있는 그대로\" 제공되며, 명시적이든 묵시적이든 어떠한 종류의 보증도 하지\n않습니다. 여기에는 상품성, 특정 목적에의 적합성 및 비침해에 대한 보증이 포함되나 이에\n국한되지 않습니다. 어떠한 경우에도 저작자 또는 저작권자는 소프트웨어나 소프트웨어의\n사용 또는 기타 거래로 인해 발생하는 계약, 불법행위 또는 기타 청구, 손해 또는 기타\n책임에 대해 책임을 지지 않습니다.\n\n----- MIT License (English Original) --------------------------------------------------------\n\nThe MIT License (MIT)\n\nCopyright (c) 2026 SIRSOFT\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+        "content": "프로그램 명칭 : 그누보드7용 Daum 우편번호 플러그인 (sirsoft-daum_postcode)\n\n작성자 : (주)에스아이알소프트\n\n----- MIT 라이선스 (한국어 번역) --------------------------------------------------------\n\nMIT 라이선스\n\nCopyright (c) 2026 (주)에스아이알소프트\n\n이 소프트웨어와 관련 문서 파일(이하 \"소프트웨어\")의 복사본을 취득하는 모든 사람에게\n소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 배포, 서브라이선스 허여 및/또는\n판매할 수 있는 권리를 무상으로 부여합니다. 다만, 소프트웨어를 제공받은 사람은 다음\n조건을 따라야 합니다:\n\n위 저작권 고지와 본 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 포함되어야\n합니다.\n\n소프트웨어는 \"있는 그대로\" 제공되며, 명시적이든 묵시적이든 어떠한 종류의 보증도 하지\n않습니다. 여기에는 상품성, 특정 목적에의 적합성 및 비침해에 대한 보증이 포함되나 이에\n국한되지 않습니다. 어떠한 경우에도 작성자 또는 저작권자는 소프트웨어나 소프트웨어의\n사용 또는 기타 거래로 인해 발생하는 계약, 불법행위 또는 기타 청구, 손해 또는 기타\n책임에 대해 책임을 지지 않습니다.\n\n----- MIT License (English Original) --------------------------------------------------------\n\nThe MIT License (MIT)\n\nCopyright (c) 2026 SIRSOFT\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
     }
 }
 ```
@@ -1597,6 +1614,7 @@ HTTP/1.1 200
 
 설정 스키마(getSettingsSchema)에 `public_asset_disk` 키를 선언한 플러그인(예: `sirsoft-ckeditor5`)은 응답 `data` 에 공개 자산 디스크 카탈로그 `available_public_asset_disks` 가 함께 부착됩니다 — 각 항목은 `{id, label(로케일별 맵), provider?}` 구조입니다. 설정 화면이 코어 환경설정 API(`core.settings.read`)를 따로 조회하지 않고 이 응답 하나로 선택지를 구성하게 하기 위한 것으로, 이 키는 저장 대상이 아니며 PUT 시 검증 whitelist 에서 걸러집니다.
 
+**권한 값(7.1.0)** 응답 `data.abilities.can_update` 는 현재 사용자가 설정을 저장할 수 있는지(`core.plugins.update`, 저장 라우트와 같은 식별자)다. 플러그인 설정 화면은 이 값이 true 가 아니면 읽기 전용으로 연다.
 
 ### PUT /api/admin/plugins/{identifier}/settings
 <!-- @generated:start:api.admin.plugins.settings.update -->
@@ -1659,6 +1677,7 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 
 **설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다. 설정 스키마에 `public_asset_disk` 키를 선언한 플러그인은 저장 응답에도 `available_public_asset_disks` 카탈로그가 재부착됩니다 (GET 응답과 동형 — 저장 직후 화면 폼 상태 갱신용).
 
+**권한 값(7.1.0)** 요청 본문의 `abilities` 키는 저장하지 않고 버린다(화면이 조회 응답을 그대로 되돌려 보내므로 섞여 온다). 저장 응답에도 `abilities.can_update` 가 실린다.
 
 ### GET /api/admin/plugins/{identifier}/settings/layout
 <!-- @generated:start:api.admin.plugins.settings.layout -->
@@ -1779,7 +1798,7 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 | is_installed | boolean | `true` | 설치 여부 |
 | has_settings | boolean | `true` | 설정 UI 제공 여부 |
 | settings_route | string\|null | `/admin/plugins/sirsoft-daum_postcode/settings` | 설정 페이지 경로 |
-| permissions | array | `[]` | 연결된 권한 목록 |
+| permissions | array | `[]` | 권한 분류 목록 — 항목마다 `identifier`·`name`·`permissions`(`action`·`name`). 모듈 상세와 같은 모양이다 |
 | roles | array | `[]` | 플러그인이 정의한 역할 목록 |
 | hooks | array | `[]` | 훅 설정 정보 |
 | config | array | `[]` | 플러그인 설정 값 맵 |
@@ -1856,6 +1875,7 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 
 **설명** 특정 플러그인의 상세 정보를 조회합니다. `core.plugins.read` 권한이 필요합니다. 목록보다 자세한 `toDetailArray()` 형태를 반환하며, 이 플러그인이 지원하는 번들 언어팩 정보가 함께 주입됩니다. 플러그인을 찾을 수 없으면 404 를 반환합니다.
 
+**권한 값(7.1.0)** 상세 응답에도 행 목록과 같은 `abilities` 가 실린다 — 상세 창이 목록 행을 담던 전역을 이 응답으로 덮어써도 권한 값이 남는다.
 
 ### GET /api/admin/plugins/{pluginName}/check-modified-layouts
 <!-- @generated:start:api.admin.plugins.check-modified-layouts -->
@@ -1925,7 +1945,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 특정 플러그인에서 사용자가 수정한 레이아웃이 있는지 확인합니다. `core.plugins.read` 권한이 필요합니다. 업데이트 실행 전 이 정보를 조회하여 레이아웃 전략(overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) 선택을 안내하는 데 사용됩니다.
+**설명** 특정 플러그인에서 사용자가 수정한 레이아웃이 있는지 확인합니다. `core.plugins.read` 권한이 필요합니다. 업데이트 실행 전 이 정보를 조회하여 레이아웃 전략(overwrite: 새 버전으로 교체, keep: 운영자 수정본에 새 버전 3자 병합) 선택을 안내하는 데 사용됩니다. 목록에는 그 확장의 확장 조각 수정본도 포함되며(`kind: "extension"`, 레이아웃은 `kind: "layout"`), 「수정됨」 판정은 원본과의 정규화 비교(키 순서·빈 map 차이 무시)입니다.
 
 
 ### GET /api/admin/plugins/{pluginName}/install-preview
@@ -1973,7 +1993,8 @@ _단건 응답: `data` 객체의 필드._
 | language_packs[].locale_native_name | string | `日本語` | 로케일 원어 표기 |
 | language_packs[].locale_name | string | `일본어` | 로케일 이름 (현재 로케일 표기) |
 | language_packs[].version | string | `1.0.0` | 언어팩 버전 |
-| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 확장 소유이면 null) |
+| language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 확장 소유이면 null). 이미 설치·활성화되어 충족된 의존 확장의 언어팩도 null — 그 의존 확장은 함께 고를 항목이 아니므로 언어팩을 따로 고를 수 있다 |
+| language_packs[].target_identifier | string | `sirsoft-board` | 이 언어팩이 번역하는 확장 식별자(본 확장·의존 확장 모두) — 창의 「종속: …」 배지가 쓴다 |
 | language_packs[].available | boolean | `true` | 함께 설치 가능한지 여부 |
 | language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 |
 
@@ -2020,6 +2041,7 @@ _단건 응답: `data` 객체의 필드._
 
 **설명** 플러그인 설치 시 함께 처리될 cascade 후보(의존 확장 + 동반 가능한 번들 언어팩) 트리를 반환합니다. `core.plugins.install` 권한이 필요합니다. 설치 모달 오픈 시 호출되어 사용자가 함께 설치할 항목을 선택하도록 노출하며, ZIP 업로드 기반의 `manifest-preview` 와 달리 이미 알려진 식별자에 대한 GET 조회입니다.
 
+**항목별 권한(7.1.0)** `dependencies[]`·`language_packs[]` 의 각 항목에 `can_select`(불리언)가 실린다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지이며(판정은 설치 API 의 403 과 같다), false 면 `default_selected` 도 false 다.
 
 ### GET /api/admin/plugins/{pluginName}/uninstall-info
 <!-- @generated:start:api.admin.plugins.uninstall-info -->
@@ -2055,7 +2077,7 @@ _단건 응답: `data` 객체의 필드._
 | storage_directories | array | `[]` | `storage/app/plugins/{identifier}` 하위 1-depth 디렉토리 목록 (name/size_bytes/size_formatted) |
 | vendor_directory | object\|null | `{"items":[…],"total_size_bytes":1048576,"total_size_formatted":"1 MB"}` | Composer vendor/ 및 composer.lock 정보 (없으면 null) |
 | extension_directory | object\|null | `{"path":"plugins/sirsoft-daum_postcode","size_bytes":524288,"size_formatted":"512 KB"}` | 확장 설치 디렉토리 경로와 용량 (없으면 null) |
-| shared_records | array | `[{"table":"permissions","label_key":"permissions","count":3}]` | 코어 공유 테이블에 적재된 이 플러그인 소유 레코드 (permissions/menus/notification_definitions/identity_policies/identity_message_definitions, 0건 항목은 제외) |
+| shared_records | array | `[{"table":"permissions","label_key":"permissions","count":3}]` | 코어 공유 테이블에 적재된 이 플러그인 소유 레코드 (permissions/menus/notification_definitions/identity_policies, 0건 항목은 제외) |
 | total_table_size_bytes | integer | `16384` | 삭제 대상 테이블 총 용량 (바이트) |
 | total_table_size_formatted | string | `16 KB` | 테이블 총 용량 표기 |
 | total_storage_size_bytes | integer | `0` | 스토리지 디렉토리 총 용량 (바이트) |
@@ -2117,7 +2139,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | pluginName | path | string | 예 | — | 대상 plugin의 이름 (식별자) |
-| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 레이아웃 처리 전략 (overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) |
+| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 레이아웃 처리 전략 (overwrite: 새 버전으로 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | rebuild_search_index | body | boolean | 아니오 | — | 업데이트 후 색인이 누락된 검색 인덱스를 재생성할지 여부 (기본 false). 재생성 중에는 대상 인덱스가 잠기거나 재색인되므로 운영 중인 사이트에서는 접속이 적은 시간에 별도로 수행하는 것을 권장 |
@@ -2154,6 +2176,7 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | update_available | boolean | `false` | 업데이트 후 재계산된 업데이트 가능 여부 |
 | latest_version | string\|null | `1.1.0` | 감지된 최신 배포 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의). 업데이트할 내용이 없고 `force` 도 없는 경우에는 `{"success": false, "from_version": …, "to_version": …, "message": "업데이트할 내용이 없습니다."}` 형태가 `data` 로 반환됩니다.
 
@@ -2212,11 +2235,12 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 업데이트 실패 (`plugin_name` 에 번역된 사유 — 다운그레이드 차단, 강제 업데이트 소스 없음, 코어 버전 비호환, 진행 중 상태 등) |
+| 409 | Conflict | 같은 플러그인의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) |
 | 500 | Server Error | 업데이트 처리 중 예외 발생 (`plugins.errors.update_failed`) |
 
 <!-- @generated:end -->
 
-**설명** 특정 플러그인을 최신 버전으로 업데이트합니다. `core.plugins.install` 권한이 필요합니다. `layout_strategy` 로 레이아웃 처리 방식을(overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) 지정하며, `vendor_mode` 로 Composer 의존성 처리 방식을 선택합니다. 버전 제약·호환성 문제로 막힐 경우 `force: true` 로 강제 진행할 수 있습니다. `keep` 을 지정하면 사용자가 수정한 레이아웃(원본 해시와 현재 내용이 다른 레이아웃)은 갱신 대상에서 제외되어 현재 내용이 그대로 유지되고, 나머지 레이아웃만 파일 기준으로 갱신됩니다. 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. `rebuild_search_index: true` 를 함께 보내면 업데이트 후 색인이 누락된 검색 인덱스를 재생성합니다 — 인덱스 잠금·재색인 비용이 있어 기본은 수행하지 않으며, 보내지 않아도 응답의 `search_index` 에 현재 누락 여부가 담깁니다.
+**설명** 특정 플러그인을 최신 버전으로 업데이트합니다. `core.plugins.install` 권한이 필요합니다. `layout_strategy` 로 레이아웃 처리 방식을(overwrite: 새 버전으로 교체, keep: 운영자 수정본에 새 버전 3자 병합) 지정하며, `vendor_mode` 로 Composer 의존성 처리 방식을 선택합니다. 버전 제약·호환성 문제로 막힐 경우 `force: true` 로 강제 진행할 수 있습니다. `keep` 을 지정하면 운영자가 수정한 레이아웃·확장 조각에 새 버전을 3자 병합합니다 — 고친 부분(조각·최상위 키·data_sources 항목 단위)은 운영자 것, 손대지 않은 부분은 새 버전이고, 같은 곳을 양쪽이 고쳤으면 운영자 것을 남깁니다. 운영자가 고치지 않은 레이아웃은 파일 기준으로 갱신됩니다. 보고할 행이 있으면 성공 메시지 뒤에 「레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.」 요약이 붙고, 응답 `data.layout_sync` 에 `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[{kind, template, name, verdict, applied, conflicts}]}` 가 실립니다(규칙: docs/extension/extension-update-system.md §10). 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. `rebuild_search_index: true` 를 함께 보내면 업데이트 후 색인이 누락된 검색 인덱스를 재생성합니다 — 인덱스 잠금·재색인 비용이 있어 기본은 수행하지 않으며, 보내지 않아도 응답의 `search_index` 에 현재 누락 여부가 담깁니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `plugins.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 플러그인의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
 
 
 ### GET /api/plugins/assets/{identifier}
@@ -2605,6 +2629,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -2671,10 +2696,11 @@ Cache-Control: public, max-age=3600
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 해당 식별자의 플러그인이 없거나 비활성 상태인 경우 (`plugins.errors.not_found`) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 플러그인처럼 파일이 없으면 빈 components 로 폴백합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 플러그인 미존재 시 404.
+**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 설치본만 읽고 구버전 플러그인처럼 설치본에 파일이 없으면 배포 원본을 대신 읽지 않고 빈 components 로 응답합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 플러그인 미존재 시 404. 코어 프론트엔드에는 이 엔드포인트의 호출자가 없습니다 — 런타임 ComponentRegistry 와 레이아웃 편집기는 `/api/templates/{identifier}/components.json` 만 조회하고, 확장 UI 는 매니페스트가 아니라 레이아웃 확장(`extension_point`)으로 주입됩니다. 확장이 자체적으로 소비하거나 제3자 도구가 읽는 공개 표면으로 제공됩니다.
 
 
 ### GET /api/plugins/{identifier}/editor-spec
@@ -2733,9 +2759,10 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 플러그인만 대상으로 하며 활성 디렉토리 → `_bundled` 폴백 순으로 읽어 `data.spec` 형태로 반환합니다. 비활성·미존재 플러그인은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다.
+**설명** 플러그인의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 플러그인만 대상으로 하며 설치본(`plugins/{identifier}`)만 읽어(배포 원본 폴백 없음) `data.spec` 형태로 반환합니다. 비활성·미존재 플러그인은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다.
 
 

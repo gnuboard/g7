@@ -1,260 +1,260 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Category Delete Confirm Modal"
-  },
-  "id": "modal_delete_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.category.delete_modal.title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "comment": "분류 삭제 확인 창. 브랜드 쪽 같은 이름의 창은 여는 쪽이 `_global.modal_data` 에 실어 준 값을\n  읽지만, 이 창은 선택된 분류(`_global.selectedCategory`)를 직접 본다 — 여는 자리가 한 곳뿐이고\n  그 시점에 이미 선택이 잡혀 있어서다. 잠금 판단도 그 안의 `children_count`/`products_count` 를\n  쓴다(관계 배열 길이를 세는 것보다 정확하다 — 응답이 관계를 안 실어도 수는 온다).\n  막는 사유가 둘이다: 하위 분류가 있거나 연결된 상품이 있으면 삭제 버튼이 잠기고, 두 사유가\n  겹치면 안내 목록에 두 줄이 함께 뜬다.\n  삭제 후 트리와 **활성 분류 목록을 둘 다** 다시 부른다 — 뒤엣것은 상품 폼 같은 다른 화면의\n  선택지라, 지운 분류가 그 목록에 남으면 없는 분류로 저장이 나간다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Category Delete Confirm Modal"
+    },
+    "id": "modal_delete_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.category.delete_modal.title",
+        "size": "medium"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{(_global.selectedCategory?.children_count ?? 0) === 0 && (_global.selectedCategory?.products_count ?? 0) === 0}}",
-              "props": {
-                "className": "text-primary text-base"
-              },
-              "text": "{{$localized(_global.selectedCategory?.name)}}{{$t('sirsoft-ecommerce.admin.category.delete_modal.message_can_delete')}}"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{(_global.selectedCategory?.children_count ?? 0) > 0 || (_global.selectedCategory?.products_count ?? 0) > 0}}",
-              "props": {
-                "className": "text-primary text-base"
-              },
-              "text": "{{$localized(_global.selectedCategory?.name)}}{{$t('sirsoft-ecommerce.admin.category.delete_modal.message_cannot_delete')}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(_global.selectedCategory?.children_count ?? 0) > 0 || (_global.selectedCategory?.products_count ?? 0) > 0}}",
-              "props": {
-                "className": "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-start gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-shrink-0 mt-0.5"
-                      },
-                      "children": [
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "exclamation-triangle",
-                            "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-1"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-sm font-semibold text-warning-soft mb-2"
-                          },
-                          "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.cannot_delete_title"
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_global.selectedCategory?.children_count ?? 0) === 0 && (_global.selectedCategory?.products_count ?? 0) === 0}}",
+                            "props": {
+                                "className": "text-primary text-base"
+                            },
+                            "text": "{{$localized(_global.selectedCategory?.name)}}{{$t('sirsoft-ecommerce.admin.category.delete_modal.message_can_delete')}}"
                         },
                         {
-                          "type": "basic",
-                          "name": "Ul",
-                          "props": {
-                            "className": "list-disc list-inside space-y-1 text-warning-soft"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Li",
-                              "if": "{{(_global.selectedCategory?.children_count ?? 0) > 0}}",
-                              "text": "{{$t('sirsoft-ecommerce.admin.category.delete_modal.has_children_cannot_delete').replace('{count}', _global.selectedCategory?.children_count ?? 0)}}"
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_global.selectedCategory?.children_count ?? 0) > 0 || (_global.selectedCategory?.products_count ?? 0) > 0}}",
+                            "props": {
+                                "className": "text-primary text-base"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Li",
-                              "if": "{{(_global.selectedCategory?.products_count ?? 0) > 0}}",
-                              "text": "{{$t('sirsoft-ecommerce.admin.category.delete_modal.has_products_cannot_delete').replace('{count}', _global.selectedCategory?.products_count ?? 0)}}"
-                            }
-                          ]
+                            "text": "{{$localized(_global.selectedCategory?.name)}}{{$t('sirsoft-ecommerce.admin.category.delete_modal.message_cannot_delete')}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.selectedCategory?.children_count ?? 0) > 0 || (_global.selectedCategory?.products_count ?? 0) > 0}}",
+                            "props": {
+                                "className": "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-shrink-0 mt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "exclamation-triangle",
+                                                        "className": "text-xl text-yellow-600 dark:text-yellow-400"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm font-semibold text-warning-soft mb-2"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.cannot_delete_title"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Ul",
+                                                    "props": {
+                                                        "className": "list-disc list-inside space-y-1 text-warning-soft"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Li",
+                                                            "if": "{{(_global.selectedCategory?.children_count ?? 0) > 0}}",
+                                                            "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.has_children_cannot_delete|count={{_global.selectedCategory?.children_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Li",
+                                                            "if": "{{(_global.selectedCategory?.products_count ?? 0) > 0}}",
+                                                            "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.has_products_cannot_delete|count={{_global.selectedCategory?.products_count ?? 0}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_global.selectedCategory?.children_count ?? 0) === 0 && (_global.selectedCategory?.products_count ?? 0) === 0}}",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.irreversible_warning"
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{(_global.selectedCategory?.children_count ?? 0) === 0 && (_global.selectedCategory?.products_count ?? 0) === 0}}",
-              "props": {
-                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.irreversible_warning"
-            }
-          ],
-          "props": {
-          }
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_local.isDeleting || (_global.selectedCategory?.children_count ?? 0) > 0 || (_global.selectedCategory?.products_count ?? 0) > 0}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "isDeleting": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/modules/sirsoft-ecommerce/admin/categories/{{_global.selectedCategoryId}}",
-                  "params": {
-                    "method": "DELETE"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "isDeleting": false
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "삭제 실행. `isDeleting` 이 버튼 잠금과 라벨을 함께 쥐고 있어 성공·실패 양쪽에서 모두\n            풀어야 한다 — 한쪽만 풀면 실패 후 버튼이 \"처리 중\" 인 채 잠긴다.\n            성공 갈래 순서가 화면 복구 순서다: 트리·활성목록 갱신 → 패널 비우기 → 알림 → 창 닫기.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/categories/{{_global.selectedCategoryId}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "categories"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "activeCategories"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "empty",
+                                                "selectedCategoryId": null,
+                                                "selectedCategory": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.category.messages.deleted"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_local.isDeleting || (_global.selectedCategory?.children_count ?? 0) > 0 || (_global.selectedCategory?.products_count ?? 0) > 0}}"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "categories"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "activeCategories"
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "panelMode": "empty",
-                        "selectedCategoryId": null,
-                        "selectedCategory": null
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:sirsoft-ecommerce.admin.category.messages.deleted"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "isDeleting": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_local.isDeleting}}",
+                            "text": "$t:common.delete"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.isDeleting}}",
+                            "text": "$t:common.loading"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{!_local.isDeleting}}",
-              "text": "$t:common.delete"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.isDeleting}}",
-              "text": "$t:common.loading"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

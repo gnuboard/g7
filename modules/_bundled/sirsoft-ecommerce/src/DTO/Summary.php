@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\DTO;
 
+use Modules\Sirsoft\Ecommerce\Support\EarnedPointsFormatter;
+
 /**
  * 주문 계산 합계 정보 DTO
  *
@@ -127,7 +129,8 @@ class Summary
             'vat_amount' => $this->vatAmount,
             'points_earning' => $this->pointsEarning,
             'total_mileage' => $this->pointsEarning,
-            'mileage_formatted' => number_format($this->pointsEarning).'P',
+            // 적립 표기는 공용 포맷터 한 곳이다(단위 글자는 다국어 키) — 주문 응답·신청 미리보기와 같은 문자열.
+            'mileage_formatted' => EarnedPointsFormatter::format($this->pointsEarning),
             'points_used' => $this->pointsUsed,
             // 마일리지 사용액(차감) 포맷 — 다른 금액과 동일한 통화 포맷 (요약/결제완료 화면이 바인딩).
             // 마일리지는 base_currency 단일 정산이므로 multi_currency 변환 없이 루트 키로만 제공.

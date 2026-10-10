@@ -67,8 +67,8 @@ class GdprAdminPolicyVersionController extends AdminBaseController
     /**
      * 운영자 수동 정책 버전 발행.
      *
-     * 자동 감지 영역 (카테고리 key/description 변경, slug 변경) 밖의 변경 — 예:
-     * - 정책 본문 페이지(sirsoft-page) 외부 수정
+     * 자동 감지 영역 (카테고리 key/description 변경, 처리방침 주소 변경) 밖의 변경 — 예:
+     * - 처리방침 본문 외부 수정 (주소는 그대로이고 내용만 바뀐 경우)
      * - 법인명 변경 후 의도적 재동의 트리거
      * - 운영 위탁자 변경 등 Art.13 정보 변경
      *
@@ -110,7 +110,7 @@ class GdprAdminPolicyVersionController extends AdminBaseController
      * 특정 정책 버전의 detail (snapshot 본문 포함) 을 반환합니다.
      *
      * admin 동의 이력 / 정책 버전 이력 화면에서 행 클릭 시 호출되어
-     * 그 시점의 settings snapshot (cookie_categories / privacy_policy_slug / blocked_domains)
+     * 그 시점의 settings snapshot (cookie_categories / privacy_policy_url / blocked_domains)
      * 을 모달로 표시. DPO 가 회원 분쟁 시 즉시 그 시점 정책 본문 확인 가능
      * (GDPR Art.7(1) 입증 책임 충족).
      *

@@ -3,7 +3,7 @@
  * @description 비인증 화면(로그인·비밀번호찾기·비밀번호재설정) 테마 버튼의 setTheme 액션 형태 회귀 테스트
  *
  * 배경: 세 화면의 테마 버튼(밝게/어둡게/자동)이 `"params": { "theme": "dark" }` 형태로
- * `setTheme` 을 호출했으나, 템플릿 핸들러(`src/handlers/setThemeHandler.ts`)는 **`action.target`
+ * `setTheme` 을 호출했으나, 템플릿 핸들러(`templates/_bundled/sirsoft-admin_basic/src/handlers/setThemeHandler.ts`)는 **`action.target`
  * 만** 읽는다. 엔진(ActionDispatcher)에도 `target` ↔ `params` 상호 폴백이 없으므로 클릭 시
  * `[Handler:SetTheme] Invalid theme: undefined` 경고만 남기고 아무 일도 일어나지 않았다.
  * 로그인 이후 화면은 핸들러를 경유하지 않는 `ThemeToggle` 컴포지트를 쓰므로 정상이었고,
@@ -14,9 +14,21 @@
  *
  * 이 테스트를 `params.theme` 로 되돌리면 세 화면의 테마 전환이 조용히 죽는다.
  *
+ * 조합: 세 화면 × 세 버튼 — 아래 라인 마커가 9조합을 선언한다.
+ * @effects settheme_action_uses_top_level_target
+ *
  * @vitest-environment jsdom
  */
 
+// @scenario screen=admin_login, theme=light
+// @scenario screen=admin_login, theme=dark
+// @scenario screen=admin_login, theme=auto
+// @scenario screen=admin_forgot_password, theme=light
+// @scenario screen=admin_forgot_password, theme=dark
+// @scenario screen=admin_forgot_password, theme=auto
+// @scenario screen=admin_reset_password, theme=light
+// @scenario screen=admin_reset_password, theme=dark
+// @scenario screen=admin_reset_password, theme=auto
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';

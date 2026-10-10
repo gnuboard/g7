@@ -1,0 +1,37 @@
+<!-- 본인인증 탭의 **기본** 하위 구획 — 기본 제공자, 코드 유효 시간, 시도 횟수 상한.
+  정책·메시지와 달리 목록이 아니라 값 몇 개를 고치는 자리라, 저장은 화면 하단의 공용 저장 버튼이 맡는다
+  (이 조각에는 저장 배선이 없다). -->
+<partial description="환경설정 > 본인인증 탭 > 기본 sub-tab — provider 기술 파라미터 (default_provider, challenge_ttl, max_attempts)">
+  <div data-ref="identity_section_basic" class="space-y-6 scroll-mt-44">
+    <div data-ref="card_identity_basic" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.identity.basic.title</h3>
+      <div class="card-description">$t:admin.settings.identity.basic.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_identity_default_provider" class="">
+          <label class="form-label">$t:admin.settings.identity.basic.default_provider</label>
+          <select name="identity.default_provider" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.default_provider'] ? 'w-full md:w-72 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full md:w-72 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}" options="{{(identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; })}}"/>
+          <span data-if="{{_local.errors?.['identity.default_provider']}}" class="form-error">{{_local.errors?.['identity.default_provider']?.[0] ?? ''}}</span>
+          <p class="text-hint mt-1">$t:admin.settings.identity.basic.default_provider_desc</p>
+        </div>
+        <div data-ref="field_identity_ttl" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.identity.basic.challenge_ttl_minutes</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <input type="number" name="identity.challenge_ttl_minutes" placeholder="15" min="{{_local?.form?._meta?.limits?.identity_challenge_ttl_minutes_min ?? 1}}" max="{{_local?.form?._meta?.limits?.identity_challenge_ttl_minutes_max ?? 1440}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.challenge_ttl_minutes'] ? 'input-error md:w-48' : 'md:w-48'}}"/>
+          <span data-if="{{_local.errors?.['identity.challenge_ttl_minutes']}}" class="form-error">{{_local.errors?.['identity.challenge_ttl_minutes']?.[0] ?? ''}}</span>
+          <p class="text-hint mt-1">$t:admin.settings.identity.basic.challenge_ttl_desc</p>
+        </div>
+        <div data-ref="field_identity_max_attempts" class="">
+          <label class="form-label">
+            <span>$t:admin.settings.identity.basic.max_attempts</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <input type="number" name="identity.max_attempts" placeholder="5" min="{{_local?.form?._meta?.limits?.identity_max_attempts_min ?? 1}}" max="{{_local?.form?._meta?.limits?.identity_max_attempts_max ?? 20}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.max_attempts'] ? 'input-error md:w-48' : 'md:w-48'}}"/>
+          <span data-if="{{_local.errors?.['identity.max_attempts']}}" class="form-error">{{_local.errors?.['identity.max_attempts']?.[0] ?? ''}}</span>
+          <p class="text-hint mt-1">$t:admin.settings.identity.basic.max_attempts_desc</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

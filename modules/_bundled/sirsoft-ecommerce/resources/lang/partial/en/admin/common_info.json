@@ -5,6 +5,7 @@
     "title": "Common Info",
     "add": "Add",
     "languages_count": "{count} languages",
+    "languages_count_one": "{count} language",
     "default": "Default",
     "empty": "No common info registered.",
     "search_placeholder": "Search by name"

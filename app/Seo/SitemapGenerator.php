@@ -6,6 +6,7 @@ use App\Enums\SitemapChangeFreq;
 use App\Extension\TemplateManager;
 use App\Seo\Contracts\SitemapContributorInterface;
 use App\Services\TemplateService;
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -35,6 +36,7 @@ class SitemapGenerator
      * Sitemap 기여자를 등록합니다.
      *
      * @param  SitemapContributorInterface  $contributor  Sitemap 기여자
+     * @return void 반환값 없음
      */
     public function registerContributor(SitemapContributorInterface $contributor): void
     {
@@ -150,7 +152,8 @@ class SitemapGenerator
     private function normalizeEntry(array $entry): array
     {
         if (isset($entry['url']) && ! isset($entry['loc'])) {
-            $entry['loc'] = url($entry['url']);
+            // 보안: 요청 Host 가 아니라 사이트 주소 기준 (익명 sitemap 요청 안에서 생성될 수 있다)
+            $entry['loc'] = SiteUrl::absolute($entry['url']);
             unset($entry['url']);
         }
 
@@ -290,7 +293,7 @@ class SitemapGenerator
                 }
 
                 $urls[] = [
-                    'loc' => url($routePath),
+                    'loc' => SiteUrl::absolute($routePath),
                     'changefreq' => SitemapChangeFreq::Weekly->value,
                     'priority' => 0.5,
                 ];

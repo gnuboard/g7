@@ -62,12 +62,20 @@ effects:
   - chown_recursive_detailed_backward_compatible_without_marker_option
   - audit_rule_no_storage_bulk_in_restore_ownership_detects_violation
   - audit_rule_no_storage_bulk_in_restore_ownership_ignores_other_keys
+  # sudo 로 돌린 업데이트가 남기는 소유권 (#651) — 복원 대상 목록과 신규 생성 지점 양쪽
+  - settings_directory_seed_inherits_ownership
+  - update_temp_directory_inherits_ownership
+  - runtime_ownership_targets_cover_temp_and_logs
+  - bundled_upgrade_migrations_inherit_ownership
 
 test_files:
   - tests/Unit/Services/CoreUpdateServicePermissionPreservationTest.php
   - tests/Unit/Helpers/SettingsMigratorOwnershipTest.php
   - tests/Unit/Helpers/FilePermissionHelperTest.php
   - tests/Unit/Extension/Storage/ModuleStorageDriverTest.php
+  - tests/Unit/Extension/ExtensionSettingsDirectoryOwnershipTest.php
+  - tests/Unit/Services/CoreUpdateRuntimeOwnershipTest.php
+  - tests/Unit/Upgrade/BundledUpgradeMigrationOwnershipParityTest.php
 
 notes: |
   - chown/chmod 동작 검증은 POSIX 환경 전용 (Windows 자동 skip).

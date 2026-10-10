@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Modules\Sirsoft\Board\Services\UserNotificationSettingService;
 
 /**
@@ -33,6 +34,8 @@ class UserNotificationSettingsListener implements HookListenerInterface
 
     /**
      * 구독할 훅 목록 반환
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 → 메서드·우선순위·유형
      */
     public static function getSubscribedHooks(): array
     {
@@ -89,6 +92,7 @@ class UserNotificationSettingsListener implements HookListenerInterface
      * 이 메서드는 호출되지 않지만 인터페이스 준수를 위해 구현
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -112,32 +116,16 @@ class UserNotificationSettingsListener implements HookListenerInterface
     }
 
     /**
-     * 생성 데이터 필터: 알림 설정 필드 추출 후 세션에 임시 저장
+     * 생성 데이터 필터: 알림 설정 필드를 회원 생성 데이터에서 뺍니다.
      *
-     * 체크박스 해제 시 브라우저가 키 자체를 전송하지 않으므로,
-     * 요청에 알림 필드가 하나라도 있으면 미전송 필드는 false로 명시 저장합니다.
+     * 저장은 생성 후 액션이 원본 요청 데이터(훅 인자)로 한다. 예전에는 여기서 세션에 넣고 생성 후 액션이
+     * 세션에서 꺼냈는데, 생성 후 액션은 큐 워커(별도 프로세스)에서 돌 수 있어 세션이 없었다(#138 후속).
      *
      * @param  array  $data  요청 데이터
      * @return array 알림 필드가 제거된 데이터
      */
     public function filterCreateData(array $data): array
     {
-        $notificationData = $this->extractNotificationData($data);
-        $hasAnyNotificationField = ! empty(array_intersect_key($data, array_flip(self::NOTIFICATION_FIELDS)));
-
-        if ($hasAnyNotificationField) {
-            // 미전송 필드는 false로 채움
-            foreach (self::NOTIFICATION_FIELDS as $field) {
-                if (! array_key_exists($field, $notificationData)) {
-                    $notificationData[$field] = false;
-                }
-            }
-        }
-
-        if (! empty($notificationData)) {
-            session(['board_notification_data' => $notificationData]);
-        }
-
         return $this->removeNotificationFields($data);
     }
 
@@ -173,15 +161,27 @@ class UserNotificationSettingsListener implements HookListenerInterface
     }
 
     /**
-     * 생성 후 액션: 세션에서 데이터 가져와 저장
+     * 생성 후 액션: 원본 요청 데이터에서 알림 설정을 꺼내 저장합니다.
+     *
+     * 체크박스 해제 시 브라우저가 키 자체를 전송하지 않으므로,
+     * 요청에 알림 필드가 하나라도 있으면 미전송 필드는 false로 명시 저장합니다.
      *
      * @param  User  $user  생성된 사용자
-     * @param  array  $originalData  원본 요청 데이터
+     * @param  array  $originalData  원본 요청 데이터 (필터 적용 전 — 알림 필드 포함)
+     * @return void
      */
     public function afterCreate(User $user, array $originalData): void
     {
-        $notificationData = session('board_notification_data', []);
-        session()->forget('board_notification_data');
+        $notificationData = $this->extractNotificationData($originalData);
+        $hasAnyNotificationField = ! empty(array_intersect_key($originalData, array_flip(self::NOTIFICATION_FIELDS)));
+
+        if ($hasAnyNotificationField) {
+            foreach (self::NOTIFICATION_FIELDS as $field) {
+                if (! array_key_exists($field, $notificationData)) {
+                    $notificationData[$field] = false;
+                }
+            }
+        }
 
         if (! empty($notificationData)) {
             $this->service->createOrUpdate($user->id, $notificationData);
@@ -212,7 +212,7 @@ class UserNotificationSettingsListener implements HookListenerInterface
                 $data['notify_comment'] = false;
                 $data['notify_reply_comment'] = false;
             }
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // 테이블이 존재하지 않는 경우 (모듈 미설치 등) 기본값 반환
             $data['notify_post_complete'] = false;
             $data['notify_post_reply'] = false;

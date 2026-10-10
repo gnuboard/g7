@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
+use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 옵션 모델
@@ -31,6 +32,11 @@ class ProductOption extends Model
         'sort_order' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sort_order', 'type' => 'number'],
     ];
 
+    /**
+     * 모델 팩토리 인스턴스를 생성합니다.
+     *
+     * @return ProductOptionFactory 상품 옵션 팩토리
+     */
     protected static function newFactory()
     {
         return ProductOptionFactory::new();
@@ -146,7 +152,7 @@ class ProductOption extends Model
             return '';
         }
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedText::pick($name, $locale);
     }
 
     /**
@@ -171,8 +177,8 @@ class ProductOption extends Model
                 $key = $item['key'] ?? [];
                 $value = $item['value'] ?? [];
 
-                $localizedKey = is_array($key) ? ($key[$locale] ?? $key[config('app.fallback_locale', 'ko')] ?? array_values($key)[0] ?? '') : $key;
-                $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
+                $localizedKey = is_array($key) ? LocalizedText::pick($key, $locale) : $key;
+                $localizedValue = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
 
                 if ($localizedKey !== '') {
                     $result[$localizedKey] = $localizedValue;
@@ -234,7 +240,7 @@ class ProductOption extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->generateOptionName();
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedText::pick($name, $locale);
     }
 
     /**

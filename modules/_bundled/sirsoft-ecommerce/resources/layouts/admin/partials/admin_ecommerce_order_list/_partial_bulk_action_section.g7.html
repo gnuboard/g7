@@ -1,0 +1,52 @@
+<partial>
+  <!-- e2e:allow 폭 클래스(w-48)·버튼 dark 변형만 변경 — Chrome MCP 매트릭스(이력 20260913_2132)와 admin_basic Select 단위 테스트가 대체 커버. B-001 ~ B-006 일괄변경 영역 -->
+  <div data-ref="bulk_action_section" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mt-6 mb-4 flex-wrap gap-3">
+    <!-- B-001 -->
+    <span data-ref="b_001_selected_count" class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.bulk.selected_count|count={{(_local.selectedItems || []).length}}</span>
+    <div class="flex-center flex-wrap gap-2">
+      <!-- B-002, D-030 ~ D-039 -->
+      <select data-ref="b_002_order_status_select" name="bulkOrderStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkOrderStatus || ''}}" disabled="{{orders?.data?.abilities?.can_update !== true}}">
+        <options>
+          <option value="" disabled>$t:sirsoft-ecommerce.admin.order.bulk.status_placeholder</option>
+          <option value="pending_payment">$t:sirsoft-ecommerce.admin.order.status.payment_pending</option>
+          <option value="payment_complete">$t:sirsoft-ecommerce.admin.order.status.payment_complete</option>
+          <option value="shipping_hold">$t:sirsoft-ecommerce.admin.order.status.shipping_hold</option>
+          <option value="preparing">$t:sirsoft-ecommerce.admin.order.status.preparing</option>
+          <option value="shipping_ready">$t:sirsoft-ecommerce.admin.order.status.shipping_ready</option>
+          <option value="shipping">$t:sirsoft-ecommerce.admin.order.status.shipping</option>
+          <option value="delivered">$t:sirsoft-ecommerce.admin.order.status.delivered</option>
+          <option value="confirmed">$t:sirsoft-ecommerce.admin.order.status.confirmed</option>
+        </options>
+        <on type="change">
+          <set-state target="_local" bulkOrderStatus="{{$event.target.value}}"/>
+        </on>
+      </select>
+    </div>
+    <div data-if="{{_local.bulkOrderStatus === 'shipping_ready' || _local.bulkOrderStatus === 'shipping' || _local.bulkOrderStatus === 'delivered'}}" class="flex-center gap-2">
+      <!-- B-003 -->
+      <span data-ref="b_003_shipping_label" class="text-label whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.bulk.shipping_label</span>
+      <!-- B-004, D-040 ~ D-044 -->
+      <select data-ref="b_004_courier_select" name="bulkCourier" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkCourier || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.bulk.courier_placeholder" disabled="{{orders?.data?.abilities?.can_update !== true}}" options="{{active_carriers?.data ?? []}}">
+        <on type="change">
+          <set-state target="_local" bulkCourier="{{$event.target.value}}"/>
+        </on>
+      </select>
+      <!-- B-005 -->
+      <input data-ref="b_005_tracking_number_input" type="text" name="bulkTrackingNumber" class="w-40 disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkTrackingNumber}}" placeholder="$t:sirsoft-ecommerce.admin.order.bulk.tracking_placeholder" disabled="{{orders?.data?.abilities?.can_update !== true}}">
+        <on type="change">
+          <set-state target="_local" bulkTrackingNumber="{{$event.target.value}}"/>
+        </on>
+      </input>
+    </div>
+    <div class="flex-1"/>
+    <!-- B-006 -->
+    <button data-ref="b_006_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}">
+      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50">$t:sirsoft-ecommerce.admin.order.bulk.apply_full</responsive>
+      <on type="click">
+        <set-state target="global" bulkOrderStatus="{{_local.bulkOrderStatus}}" bulkCourier="{{_local.bulkCourier}}" bulkTrackingNumber="{{_local.bulkTrackingNumber}}" bulkSelectedItems="{{_local.selectedItems}}"/>
+        <action handler="sirsoft-ecommerce.buildOrderBulkConfirmData"/>
+      </on>
+      $t:sirsoft-ecommerce.admin.order.bulk.apply
+    </button>
+  </div>
+</partial>

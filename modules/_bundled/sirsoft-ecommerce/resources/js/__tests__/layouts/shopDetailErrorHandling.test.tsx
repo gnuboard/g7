@@ -1,6 +1,6 @@
 /**
  * @file shopDetailErrorHandling.test.tsx
- * @description 상품 상세 페이지 (shop/show.json) 에러핸들링 및 auth_mode 검증
+ * @description 상품 상세 페이지 (shop/show.g7.html) 에러핸들링 및 auth_mode 검증
  *
  * 테스트 대상:
  * - errorHandling 401/403 → showErrorPage 핸들러 설정 검증
@@ -13,8 +13,8 @@ import { describe, it, expect } from 'vitest';
 // 1. errorHandling 설정 구조 검증
 // ──────────────────────────────────────────────
 
-describe('shop/show.json — errorHandling 구조 검증', () => {
-  // 실제 shop/show.json의 errorHandling 구조를 직접 검증
+describe('shop/show.g7.html — errorHandling 구조 검증', () => {
+  // 실제 shop/show.g7.html의 errorHandling 구조를 직접 검증
   const errorHandling = {
     '401': {
       handler: 'showErrorPage',
@@ -47,7 +47,7 @@ describe('shop/show.json — errorHandling 구조 검증', () => {
 // 2. data_sources auth_mode 검증
 // ──────────────────────────────────────────────
 
-describe('shop/show.json — data_sources auth_mode 검증', () => {
+describe('shop/show.g7.html — data_sources auth_mode 검증', () => {
   // 실제 레이아웃의 data_sources 구조를 기반으로 검증
   const dataSources = [
     { id: 'product', auth_mode: 'optional' },

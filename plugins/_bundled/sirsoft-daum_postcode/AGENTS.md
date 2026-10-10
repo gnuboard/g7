@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 플러그인 (sirsoft-daum_postcode) — 주소 입력 자리(`address_search_slot`)에 Daum 우편번호 검색을 붙인다. 백엔드 0(라우트·모델·테이블 없음), 조각 1 + 핸들러 2 가 전부
-2. 확장 방식: 발행 훅 2개 — 필드에 쓰기 전 가공은 `filter_address_data`, 확정 후 후속 동작은 `address.selected`
+2. 확장 방식: 서버 훅 없음 — 어느 칸에 쓸지는 `targetFields`(설정 `target_fields`), 기본 기록 대신 할 동작은 `callbackAction` 레이아웃 액션
 3. 건드리면 안 되는 것: 외부 호스트 선언에서 사유(`trusted_script_hosts_reason`) 누락, SDK 실패 시 직접 입력 폴백 제거, 확보 확인 전에 필드를 읽기 전용으로 잠그기
 4. 작업 위치: `plugins/_bundled/sirsoft-daum_postcode` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-daum_postcode --force`
@@ -44,15 +44,21 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 |---|---|---|
 | `plugin.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json·composer.json 동기화 |
 | `plugin.php` | 진입 클래스 (선언형 표면 SSoT) | 표면 변경 시 `ext:docgen` 재실행 + 코어 최소 버전 검토 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
+| `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
+| `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-daum_postcode --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
+| `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-daum_postcode --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-daum_postcode --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
+| `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
 
 ## 3. 핵심 흐름
@@ -61,7 +67,7 @@ manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reaso
 백엔드 흐름이 없으므로 전부 프론트에서 일어납니다.
 
 **장착**: 어떤 화면이 `address_search_slot` 확장점을 열면 → 코어가
-`resources/extensions/ecommerce-address-search.json` 을 그 자리에 넣음 → 조각의 `scripts` 가
+`resources/extensions/ecommerce-address-search.g7.html` 을 그 자리에 넣음 → 조각의 `scripts` 가
 Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.setFieldReadOnly` 가 대상
 주소 필드를 읽기 전용으로 바꿉니다(검색으로만 채우게 해서 오타를 막습니다). 이 핸들러는
 **SDK 확보를 먼저 확인**하고, 확보하지 못했으면 필드를 편집 가능한 상태로 남깁니다 — 읽기
@@ -69,9 +75,9 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 하므로 확보를 기다리지 않습니다.
 
 **검색 → 필드 채움**: 사용자가 버튼을 누름 → `openPostcode` 핸들러가 설정
-(`display_mode`: 레이어/팝업, 팝업 크기, 테마 색상)대로 검색 창을 엶 → 주소를 고르면
-`filter_address_data` 필터로 데이터를 가공할 기회를 준 뒤 지정된 필드들에 값을 쓰고
-`address.selected` 액션을 발행합니다.
+(`display_mode`: 레이어/팝업, 팝업 크기, 테마 색상)대로 검색 창을 엶 → 주소를 고르면, 조각이
+`callbackAction` 레이아웃 액션을 넘겼으면 그 액션만 실행하고(주소 값은 액션이 받아 직접 씀), 넘기지
+않았으면 `targetFields`(없으면 플러그인 설정 `target_fields`)가 가리키는 필드들에 값을 씁니다.
 
 **SDK 확보 실패**: `postcodeSdk.ts` 가 스크립트 로드에 `onerror` 를 걸어 실패를 감지하고,
 `G7Core.assets.notifyFailure` 로 사용자에게 사실과 재시도 통로를 제시합니다. 필드는 편집
@@ -84,9 +90,9 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 0개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 0개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 0개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 1개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -95,19 +101,22 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
-발행 훅 2종은 **선택된 주소를 가로채는** 자리입니다.
+서버 훅은 **없습니다.** 주소 선택은 브라우저에서 일어나는 흐름이고 프론트엔드 엔진에는 확장이 끼어드는
+훅 체계가 없습니다. 종전에 선언했던 `address.selected`·`filter_address_data` 는 발화처가 한 번도 없어
+7.1.0 에서 선언에서 뺐습니다(코어 `docs/extension/hooks.md` 「공개 훅 호환 원칙」).
 
-| 훅 | 언제 쓰는가 |
+선택된 주소에 끼어드는 자리는 `openPostcode` 핸들러의 두 매개변수입니다.
+
+| 자리 | 언제 쓰는가 |
 |---|---|
-| `filter_address_data` | 주소 데이터를 필드에 쓰기 **전**에 가공. 도로명/지번 중 어느 것을 기본으로 쓸지, 건물명을 상세주소에 미리 넣을지 등 |
-| `address.selected` | 주소가 확정된 **후**. 배송비 재계산·배송 가능 지역 판정 같은 후속 동작 |
+| `targetFields` (없으면 설정 `target_fields`) | 우편번호·주소·시도·시군구를 **어느 칸에** 쓸지. 사이트·화면마다 다르므로 코드에 고정하지 않는다 |
+| `callbackAction` | 주소가 확정되면 기본 필드 기록 **대신** 실행할 레이아웃 액션(주소 값을 받아 직접 씀). 배송비 재계산·배송 가능 지역 판정처럼 기록과 후속 동작을 함께 해야 할 때 |
 
-두 훅 모두 `getHooks()` 에 파라미터까지 선언되어 있습니다 —
-`zonecode`(우편번호) · `address`(기본) · `roadAddress`(도로명) · `jibunAddress`(지번) ·
-`buildingName`(건물명). 발행 위치가 "선언(호출 위치 미확인)" 인 것은 실제 발행이 **프론트
-핸들러**에서 이루어져 PHP 소스 스캔에 잡히지 않기 때문입니다.
+확장점을 여는 화면은 `disabled` prop 으로 읽기 전용 상태를 넘길 수 있습니다. 조각은 그 값이 `true` 이면 [주소 검색] 버튼을
+잠급니다 — 확장점은 호스트 화면의 수정 권한을 모르므로, 읽기 전용 폼에서 버튼만 살아 남지 않게 호스트가 알려 줘야 합니다
+(이커머스 설정 기본정보 `_computed.isReadOnly`, 관리자 주문 상세 배송지 `order.abilities.can_update !== true`).
 
-레이아웃 조각 하나(`ecommerce-address-search.json`)가 이 플러그인의 UI 전부입니다. 파일
+레이아웃 조각 하나(`ecommerce-address-search.g7.html`)가 이 플러그인의 UI 전부입니다. 파일
 이름에 `ecommerce` 가 붙어 있지만 **확장점 이름(`address_search_slot`)으로 매칭**되므로,
 그 확장점을 여는 화면이면 어디든 붙습니다 — 이커머스 전용이 아닙니다.
 
@@ -119,7 +128,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 - [ ] `_bundled` 에서만 수정하고 `php artisan plugin:update sirsoft-daum_postcode --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 외부 스크립트 호스트를 늘린다면 `trusted_script_hosts` 와 **사유**(`trusted_script_hosts_reason`)를 함께 선언 — 자체 제공이 원칙이고 이 플러그인은 예외 기재의 선례다
 - [ ] SDK 확보 실패 경로(통지·재시도·직접 입력)를 건드렸다면 `resources/js/__tests__/postcode-fallback.test.ts` 를 함께 갱신·실행
@@ -137,8 +146,8 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 | SDK 확보 실패 시 검색 버튼만 죽이고 끝내기 | 사용자 통지 + 재시도 + **필드를 편집 가능하게 남겨 직접 입력 폴백** | 검색이 막힌 환경에서 주소를 아예 넣을 수 없게 되면 그 화면 전체(주문·배송지 등록)가 불능이 된다 |
 | 스크립트 로드에 `onerror` 를 걸지 않거나 실패를 `resolve()` 로 삼키기 | 실패를 명시적으로 감지해 폴백으로 분기 | 삼키면 "버튼을 눌러도 아무 일이 없다" 가 되고 콘솔 외에는 흔적이 없다 |
 | SDK 확보를 확인하지 않고 필드를 먼저 읽기 전용으로 만들기 | 확보 확인 후에만 읽기 전용 적용 (해제는 확인 없이) | 읽기 전용 + 검색 불가 = 입력 불가. 순서가 뒤집히면 실패 환경에서 필드가 잠긴 채 남는다 |
-| 선택된 주소를 이 플러그인이 직접 저장 | 필드에 쓰고 `address.selected` 발행까지 | 저장 위치·형식은 화면을 소유한 확장이 정한다. 여기서 저장하면 그 확장마다 분기가 늘어난다 |
-| 도로명/지번 중 하나를 코드에 고정 | `filter_address_data` 로 소비처가 고르게 | 사이트마다 표기 정책이 다르다 |
+| 선택된 주소를 이 플러그인이 직접 저장 | 필드에 쓰기(또는 `callbackAction` 에 넘기기)까지 | 저장 위치·형식은 화면을 소유한 확장이 정한다. 여기서 저장하면 그 확장마다 분기가 늘어난다 |
+| 쓸 칸을 코드에 고정 | `targetFields`·설정 `target_fields` 로 소비처가 고르게 | 사이트·화면마다 필드 구성이 다르다 |
 | 자산 URL 을 문자열로 조립 | `G7Core.asset.plugin` | 확장자를 정적 location 이 가로채는 서버에서 조립한 URL 만 404 가 된다 |
 <!-- @intent END -->
 
@@ -147,12 +156,17 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 0개 | — |
-| Vitest | 1개 | `vitest.config.ts` |
+| PHPUnit | 2개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
+| Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
+
+기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
+# PHPUnit (변경 범위만) (Bash)
+php vendor/bin/phpunit plugins/_bundled/sirsoft-daum_postcode/tests --filter='<대상클래스>'
+
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-daum_postcode && powershell -Command "npm run test:run -- <대상>"
 
@@ -175,3 +189,27 @@ cd plugins/_bundled/sirsoft-daum_postcode && powershell -Command "npm run test:r
 | [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 확장 조각의 CSS 클래스 규약
+
+resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
+클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+
+두 가지를 지킨다.
+
+1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
+   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
+   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
+   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
+   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
+   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
+
+2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
+   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
+   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
+   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
+
+이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
+열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
+떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
+정적 검사가 대조한다.

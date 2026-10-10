@@ -11,7 +11,7 @@ description: |
     · 확장 목록(D)       — 목록 표현(toListArray)에서 본문 제거, 크기 표기는 유지
     · 역할 목록(F)       — 권한 배열을 목록에서 제거, 상세/폼은 유지
     · 알림 정의 목록(G)  — 채널×로케일 템플릿 본문을 요청 채널 1종으로 스코프
-    · IDV 정의 목록(H)   — 채널별 템플릿을 대표 1건으로 축소, 총 개수는 집계로
+    · (H 였던 본인인증 메시지 정의 목록은 7.1.0 에서 알림 정의로 통합되어 G 가 덮는다 — #699)
     · 메뉴 목록(M)       — 하위 메뉴의 역할 목록을 목록에서 제거
 
   기능 축소가 없다는 것이 이 매트릭스의 핵심이다. 목록에서 뺀 값은 전부 (a) 집계로 대체되거나
@@ -32,7 +32,7 @@ description: |
 #   "집계로 대체됐는가 / 조건부 필드가 새지 않는가" 는 입력 축이 아니라 검증 항목이라
 #   effects 로 둔다 (축으로 만들면 성립하지 않는 조합이 대부분이 된다).
 axes:
-  resource: [layout, layout_version, layout_extension, role, notification_definition, identity_message_definition, menu]
+  resource: [layout, layout_version, layout_extension, role, notification_definition, menu]
   endpoint: [list, detail]
   observation: [response_payload, consumer_screen]
 
@@ -47,31 +47,28 @@ exclusions:
   - { resource: layout_extension, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 캔버스가 본문을 종전대로 로드한다" }
   - { resource: role, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 역할 폼이 권한 트리를 종전대로 받는다" }
   - { resource: notification_definition, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 설정 탭이 전 채널 템플릿을 종전대로 받는다" }
-  - { resource: identity_message_definition, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 정의 편집이 전 채널 템플릿을 종전대로 받는다" }
 
 effects:
+  # 7.1.0 abilities 게이트(core-admin-users #5) — 주소 ?mode=edit 진입도 수정 권한을 본다
+  - menu_url_edit_mode_requires_update_ability
   # 목록에서 빠졌는가
   - list_omits_layout_content
   - list_omits_extension_content
   - list_omits_role_permissions
   - list_omits_menu_child_roles
-  # 알림/IDV 정의(G/H): 템플릿 본문을 목록에서 좁혔는가 + 좁힌 값의 대체 지표가 정확한가.
-  # 두 리소스 모두 "제거" 가 아니라 "스코프 축소" 라, 무엇이 남았는지까지 고정해야 한다.
+  # 알림 정의(G): 템플릿 본문을 목록에서 좁혔는가 + 좁힌 값의 대체 지표가 정확한가.
+  # "제거" 가 아니라 "스코프 축소" 라, 무엇이 남았는지까지 고정해야 한다.
   - notification_list_carries_only_requested_channel_template
   - notification_list_without_channel_omits_templates
+  - notification_list_all_channel_carries_every_template
   - notification_customized_flag_spans_every_channel
-  - identity_definition_list_carries_representative_template_only
-  - identity_definition_list_reports_total_template_count
-  - identity_definition_every_row_gets_its_own_representative
   # 좁힌 값의 대체 경로 (기능 축소 아님)
   - notification_detail_returns_every_channel_template
-  - identity_definition_detail_returns_every_template
   # 소비 화면이 좁혀진 계약 위에서 그대로 동작하는가.
   # 서버가 좁혀 보낸 채널과 화면이 찾는 채널은 각각 옳아도 서로 다르면 깨진다 —
   # 그래서 "일치하는가" 를 응답이 아니라 화면 쪽에서 관측한다.
   - definition_list_channel_scope_matches_consumer
   - definition_list_cross_channel_judgment_uses_aggregate
-  - identity_definition_list_uses_representative_template
   # 빠진 값의 대체 경로가 있는가 (기능 축소 아님)
   - layout_size_reported_without_reading_content
   - extension_size_matches_actual_content_length
@@ -135,10 +132,9 @@ test_files:
   - tests/Feature/Api/Admin/CoreListPayloadPruningTest.php
   - tests/Feature/Api/Admin/RoleControllerTest.php
   - tests/Feature/Api/Admin/MenuControllerTest.php
-  # G/H — 알림 정의 / IDV 메시지 정의 목록
+  # G — 알림 정의 목록 (본인인증 문구 포함)
   - tests/Feature/Api/Admin/NotificationDefinitionListPayloadTest.php
-  - tests/Feature/Api/Admin/Identity/AdminIdentityMessageDefinitionListPayloadTest.php
-  # F/G/H — 관리자 화면의 소비 경로 (권한 개수 열 / 채널 스코프 데이터소스)
+  # F/G — 관리자 화면의 소비 경로 (권한 개수 열 / 채널 스코프 데이터소스)
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-list-permission-pruning.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-definition-template-pruning.test.tsx
   # B/D — 파일트리·라우트트리가 목록 응답에서 본문을 읽지 않는가 (두 목록의 유일한 소비자)

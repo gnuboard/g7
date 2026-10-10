@@ -1,0 +1,486 @@
+{
+    "comment": "「기본값」 탭 맨 아래의 게시판 관리자·스텝 일괄 지정 구획. 한 회원을 여러 게시판의 관리자·스텝으로 지정하려면 게시판 폼을\n  하나씩 저장해야 했던 것을 한 번에 한다. 여기서는 대상 게시판(전체/고른 것)·구분(관리자/스텝)·회원·작업(추가/제거)만 정하고,\n  실행은 확인 창이 맡는다. 입력은 전역 `boardBulkMembers` 한 묶음에 담아 확인 창과 나눠 쓰고, 탭을 옮기면 비운다.\n  관리자가 0명이 되는 게시판은 서버가 건너뛰고 그 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다).\n  잠금은 서버(bulk-members)와 같은 게시판 수정 권한(boards.update)만 따른다 — 환경설정 수정 권한(settings.update)이 없어도\n  게시판 수정 권한이 있으면 쓸 수 있다(7.1.0 실측 O-K3-5). 화면 본체의 computed `bulkMembersLocked` 는 게시판 목록 응답의\n  abilities.can_update 로 판정해 목록이 오기 전·실패하면 잠근 채 두고, `bulkMembersNoPermission` 은 권한 없음이 확인됐을 때(응답의 abilities 또는 목록 조회 403)만,\n  `bulkMembersLoadFailed` 는 목록 조회가 그 밖의 이유(5xx 등)로 실패했을 때만 이유를 보인다(7.1.0 S2 #8 — 서버 오류에도 「권한 없음」 이 떴다).\n  「모든 게시판」 에서 역할을 줄 수 없는 게시판은 서버가 not_grantable 로, 역할 행이 없는(데이터 손상) 게시판은 role_missing 으로 건너뛴다.\n  이 카드는 설정 화면의 자동 바인딩 폼 안에 있으므로 이름을 가진 입력은 :autoBinding=\"false\" 로 폼에서 떼어 낸다 —\n  붙여 두면 값이 _local.form 으로 들어가 전역을 비워도 라디오가 옛 값으로 남고 설정 저장 본문에도 섞인다.",
+    "meta": {
+        "is_partial": true,
+        "description": "게시판 설정 > 관리자·스텝 일괄 지정 섹션"
+    },
+    "id": "bulk_members",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+    "classMap": {
+        "key": "{{_computed.bulkMembersLocked ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
+    "children": [
+        {
+            "id": "section_bulk_members",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.bulk_members.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.bulk_members.description"
+                },
+                {
+                    "comment": "게시판 수정 권한이 없다고 판정되면(게시판 목록 응답의 abilities) 잠근 이유를 보인다",
+                    "id": "bulk_members_no_permission",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_computed.bulkMembersNoPermission}}",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary mt-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "lock",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-board.admin.settings.bulk_members.no_permission"
+                        }
+                    ]
+                },
+                {
+                    "comment": "게시판 목록 조회가 권한 밖의 이유(서버 오류 등)로 실패하면 권한 문구 대신 불러오지 못했다고 알린다",
+                    "id": "bulk_members_load_failed",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_computed.bulkMembersLoadFailed}}",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary mt-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-board.admin.settings.bulk_members.load_failed"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4"
+                    },
+                    "children": [
+                        {
+                            "id": "bulk_members_target",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_members.target_label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "대상 게시판 범위 — 「고른 게시판」 일 때만 아래 게시판 칸이 보인다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "boardBulkMembers.all": "{{$event.target.value !== 'selected'}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "board_bulk_members_target",
+                                        "autoBinding": false,
+                                        "value": "{{_global.boardBulkMembers?.all === false ? 'selected' : 'all'}}",
+                                        "inline": true,
+                                        "disabled": "{{_computed.bulkMembersLocked}}",
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-board.admin.settings.bulk_members.target_all",
+                                                "value": "all"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-board.admin.settings.bulk_members.target_selected",
+                                                "value": "selected"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "bulk_members_boards",
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "if": "{{_global.boardBulkMembers?.all === false}}",
+                                    "actions": [
+                                        {
+                                            "comment": "고른 게시판 — 태그 입력이 준 배열을 통째로 담는다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "boardBulkMembers.boardIds": "{{$event.target.value ?? []}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_global.boardBulkMembers?.boardIds ?? []}}",
+                                        "options": "{{_computed.boardOptions ?? []}}",
+                                        "placeholder": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder",
+                                        "className": "w-full mt-2",
+                                        "defaultVariant": "blue",
+                                        "disabled": "{{_computed.bulkMembersLocked}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "bulk_members_type",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_members.type_label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "관리자/스텝 구분",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "boardBulkMembers.type": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "board_bulk_members_type",
+                                        "autoBinding": false,
+                                        "value": "{{_global.boardBulkMembers?.type ?? 'manager'}}",
+                                        "inline": true,
+                                        "disabled": "{{_computed.bulkMembersLocked}}",
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-board.admin.settings.bulk_members.type_manager",
+                                                "value": "manager"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-board.admin.settings.bulk_members.type_step",
+                                                "value": "step"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "bulk_members_users",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_members.users_label"
+                                },
+                                {
+                                    "id": "bulk_members_users_input",
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "actions": [
+                                        {
+                                            "comment": "회원 찾기 — 게시판 폼의 관리자 칸과 같이 300ms 쉬었다 보내고, 결과는 이미 고른 사람과 합쳐 선택지를 만든다.\n                   검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 목록 API 는 빈 필터 값을 지우고 전체 회원을 돌려주므로(게시판 폼 권한 칸·알림 템플릿 특정 회원 칸과 같은 기준)",
+                                            "event": "onInputChange",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/users",
+                                            "if": "{{String($event.target.value ?? '').trim() !== ''}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET",
+                                                "body": {
+                                                    "filters[0][field]": "all",
+                                                    "filters[0][value]": "{{$event.target.value}}",
+                                                    "filters[0][operator]": "like",
+                                                    "per_page": 20
+                                                }
+                                            },
+                                            "debounce": 300,
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "boardBulkMembers.searchResults": "{{result.data?.data ?? []}}"
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "boardBulkMembers.searchResults": []
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "회원 확정 — uuid 목록과 「사람 정보」 목록을 함께 갱신해 다음 검색에도 고른 사람의 이름표가 남게 한다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "boardBulkMembers.userUuids": "{{$event.target.value ?? []}}",
+                                                "boardBulkMembers.users": "{{ [...(_global.boardBulkMembers?.users ?? []), ...(_global.boardBulkMembers?.searchResults ?? [])].filter(u => ($event.target.value ?? []).includes(u.uuid)).filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i) }}",
+                                                "boardBulkMembers.searchResults": []
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_global.boardBulkMembers?.userUuids ?? []}}",
+                                        "options": "{{ [...(_global.boardBulkMembers?.users ?? []), ...(_global.boardBulkMembers?.searchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}",
+                                        "placeholder": "$t:sirsoft-board.admin.form.permissions.search_placeholder",
+                                        "noOptionsMessage": "$t:sirsoft-board.admin.form.permissions.no_search_results",
+                                        "className": "w-full",
+                                        "defaultVariant": "blue",
+                                        "isSearchable": true,
+                                        "disabled": "{{_computed.bulkMembersLocked}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "bulk_members_mode",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_members.mode_label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "actions": [
+                                        {
+                                            "comment": "추가/제거",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "boardBulkMembers.mode": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "board_bulk_members_mode",
+                                        "autoBinding": false,
+                                        "value": "{{_global.boardBulkMembers?.mode ?? 'add'}}",
+                                        "inline": true,
+                                        "disabled": "{{_computed.bulkMembersLocked}}",
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-board.admin.settings.bulk_members.mode_add",
+                                                "value": "add"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-board.admin.settings.bulk_members.mode_remove",
+                                                "value": "remove"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_members_hint",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-board.admin.settings.bulk_members.hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_members_result",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.boardBulkMembers?.result}}",
+                    "props": {
+                        "className": "mt-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.bulk_members.result_summary|count={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|updated={{_global.boardBulkMembers?.result?.updated_count ?? 0}}|skipped={{_global.boardBulkMembers?.result?.skipped_count ?? 0}}|unchanged={{_global.boardBulkMembers?.result?.unchanged_count ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "mt-2 text-sm space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "comment": "다섯 줄만 보인다. 「모든 게시판」 이면 범위 밖(scope) 줄이 수십 개라 그 밖의 사유(역할을 줄 수 없음·관리자 0명·역할 행 없음)를 앞에 세운다",
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "{{[...(_global.boardBulkMembers?.result?.skipped ?? [])].sort((a, b) => (a.reason === 'scope' ? 1 : 0) - (b.reason === 'scope' ? 1 : 0)).slice(0, 5)}}",
+                                        "item_var": "skip"
+                                    },
+                                    "props": {
+                                        "className": "flex justify-between gap-3 text-gray-600 dark:text-gray-400"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "이름은 서버가 함께 싣는 board_name 을 먼저 쓴다 — 관리 범위 밖 게시판은 이 화면 선택지(boardOptions)에 없어 번호만 보였다",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "truncate"
+                                            },
+                                            "text": "{{skip.board_name || (_computed.boardOptions ?? []).find(o => o.value == skip.board_id)?.label || skip.board_id}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "flex-shrink-0"
+                                            },
+                                            "text": "{{skip.reason === 'not_grantable' ? $t:sirsoft-board.admin.settings.bulk_members.reason_not_grantable : (skip.reason === 'last_manager' ? $t:sirsoft-board.admin.settings.bulk_members.reason_last_manager : (skip.reason === 'role_missing' ? $t:sirsoft-board.admin.settings.bulk_members.reason_role_missing : $t:sirsoft-board.admin.settings.bulk_members.reason_scope))}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-4"
+                    },
+                    "children": [
+                        {
+                            "id": "bulk_members_apply_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "적용 — 확인 창을 연다. 지난 결과·실패 문구는 비운다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "boardBulkMembers.result": null,
+                                                "boardBulkMembers.error": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "bulk_members_confirm_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_computed.bulkMembersLocked || (_global.boardBulkMembers?.userUuids ?? []).length === 0 || (_global.boardBulkMembers?.all === false && (_global.boardBulkMembers?.boardIds ?? []).length === 0)}}",
+                                "className": "flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "users",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.settings.bulk_members.apply"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

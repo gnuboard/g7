@@ -1,0 +1,18 @@
+feature: 이커머스 1.3.0 미만에서 결제 플러그인 갱신을 멈추는 가드 (1.1.0)
+
+description: |
+  이 버전의 결제 콜백·환불 경로는 이커머스 1.3.0 의 새 클래스를 주입받는다. 플러그인 갱신 경로는 manifest 의
+  의존 버전을 다시 검사하지 않으므로, 이커머스 갱신이 거절·실패한 채 이 플러그인만 올라가면 결제 화면이 500 으로
+  끝난다. 업그레이드 스텝 맨 앞(파일명 `00_`)의 가드가 예외를 던져 갱신 경로가 파일·버전 칸을 되돌리게 한다.
+
+axes:
+  ecommerce: [below_min, at_or_above_min, not_installed, below_min_full_step]
+
+effects:
+  - update_is_stopped_when_ecommerce_is_below_1_3_0   # 이커머스 1.3.0 미만이면 예외
+  - update_proceeds_when_ecommerce_is_1_3_0_or_later   # 1.3.0 이상이면 통과
+  - update_is_not_blocked_without_ecommerce            # 이커머스 미설치면 막지 않음
+  - guard_runs_before_other_migrations_of_the_step     # 같은 스텝의 다른 마이그레이션보다 먼저 돈다
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Upgrade/RequireEcommerce130Test.php

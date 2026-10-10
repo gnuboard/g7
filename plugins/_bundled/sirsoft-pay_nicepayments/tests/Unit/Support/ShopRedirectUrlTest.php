@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\PayNicepayments\Tests\Unit\Support;
 
 use Illuminate\Support\Facades\Config;
+use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\PayNicepayments\Support\ShopRedirectUrl;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
@@ -17,21 +18,28 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
  *
  * @effects payment_redirect_follows_route_path, payment_redirect_drops_segment_when_no_route,
  *          operator_supplied_redirect_url_is_preserved
- *
- * @group payment
  */
+#[Group('payment')]
 class ShopRedirectUrlTest extends PluginTestCase
 {
     /**
      * 상점 주소 설정을 주입합니다.
      *
      * @param  array<string, mixed>  $basicInfo  `basic_info` 하위 설정
+     * @return void 반환값 없음
      */
     private function setShopSettings(array $basicInfo): void
     {
         Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', $basicInfo);
     }
 
+    /**
+     * 설정이 없으면 기본 상점 주소를 쓴다.
+     *
+     * @effects default_shop_redirect_unchanged
+     *
+     * @return void 반환값 없음
+     */
     public function test_설정이_없으면_기본_상점_주소를_쓴다(): void
     {
         $this->setShopSettings([]);
@@ -43,6 +51,13 @@ class ShopRedirectUrlTest extends PluginTestCase
         $this->assertSame('/shop/checkout', ShopRedirectUrl::resolve(ShopRedirectUrl::DEFAULT_FAIL_URL));
     }
 
+    /**
+     * 운영자가 바꾼 상점 주소를 따른다.
+     *
+     * @effects payment_redirect_follows_route_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_운영자가_바꾼_상점_주소를_따른다(): void
     {
         $this->setShopSettings(['route_path' => 'store']);
@@ -54,6 +69,13 @@ class ShopRedirectUrlTest extends PluginTestCase
         $this->assertSame('/store/checkout', ShopRedirectUrl::resolve(ShopRedirectUrl::DEFAULT_FAIL_URL));
     }
 
+    /**
+     * 주소 없이 운영하면 루트에 붙는다.
+     *
+     * @effects payment_redirect_drops_segment_when_no_route
+     *
+     * @return void 반환값 없음
+     */
     public function test_주소_없이_운영하면_루트에_붙는다(): void
     {
         $this->setShopSettings(['no_route' => true]);
@@ -65,6 +87,13 @@ class ShopRedirectUrlTest extends PluginTestCase
         $this->assertSame('/checkout', ShopRedirectUrl::resolve(ShopRedirectUrl::DEFAULT_FAIL_URL));
     }
 
+    /**
+     * 운영자가 직접 넣은 주소는 그대로 쓴다.
+     *
+     * @effects operator_supplied_redirect_url_is_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_운영자가_직접_넣은_주소는_그대로_쓴다(): void
     {
         $this->setShopSettings(['route_path' => 'store']);

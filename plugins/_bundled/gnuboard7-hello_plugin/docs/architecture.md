@@ -17,7 +17,7 @@
   것이 아니라 연쇄를 이룹니다.
 
 **플러그인의 경계**도 구조로 드러납니다. 완전한 페이지 레이아웃을 등록할 수 없고, 설정 화면
-(`plugin_settings.json`)과 `layout_extensions`(다른 화면에 끼워 넣는 조각)만 허용됩니다. 이
+(`plugin_settings.g7.html`)과 `layout_extensions`(다른 화면에 끼워 넣는 조각)만 허용됩니다. 이
 샘플에는 설정 화면 하나가 있고 `layout_extensions` 는 없습니다.
 
 **의도적으로 하지 않는 것**: 모델·테이블·마이그레이션·API 라우트·권한·메뉴. 플러그인이 자기
@@ -39,7 +39,7 @@ plugin.php                       진입 클래스 — 설정 스키마 · 발행
             gnuboard7-hello_module.memo.title.filter 의 값을 가공해 반환
 
 config/settings/defaults.json    설정 기본값
-resources/layouts/admin/plugin_settings.json   설정 화면 (파일 이름이 계약)
+resources/layouts/admin/plugin_settings.g7.html   설정 화면 (파일 이름이 계약)
 src/routes/web.php               web 라우트 — 플러그인도 라우트를 가질 수 있음을 보이는 예시
 resources/lang/{ko,en}.json      프론트 다국어 (백엔드 PHP 다국어는 없음)
 ```
@@ -49,7 +49,7 @@ Controller → Service → Repository → Model 사슬이 필요 없습니다. �
 갖는 것들(결제·GDPR 등)은 그 사슬을 갖지만, 그것은 플러그인의 필수 구조가 아니라 그 도메인의
 필요입니다.
 
-`plugin_settings.json` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
+`plugin_settings.g7.html` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면 자체가 사라집니다.
 <!-- @intent END -->
 
@@ -63,9 +63,11 @@ Controller → Service → Repository → Model 사슬이 필요 없습니다. �
 | `src/Services/` | 비즈니스 로직 | Repository 인터페이스 주입 (구체 클래스 금지) |
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update gnuboard7-hello_plugin --force` |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update gnuboard7-hello_plugin --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->

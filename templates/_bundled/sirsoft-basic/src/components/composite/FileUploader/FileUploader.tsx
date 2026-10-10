@@ -21,12 +21,13 @@ import { FileUploaderProvider } from './FileUploaderContext';
 import { useFileUploader } from './useFileUploader';
 import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
+import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
 import { t } from './utils';
 
-/** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지) */
-const EMPTY_FILES: Attachment[] = [];
-const EMPTY_ROLE_IDS: number[] = [];
+/** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지). 얼려 두어 공유 상수가 바뀌지 않게 한다(7.1.0 O-PD-2) */
+const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
+const EMPTY_ROLE_IDS = Object.freeze([]) as unknown as number[];
 
 // ========== Main Component ==========
 
@@ -38,8 +39,14 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       attachmentableId,
       collection = 'default',
       maxFiles = 10,
-      maxSize = 10,
-      maxConcurrentUploads = 3,
+      // 용량 상한은 **기본값을 두지 않는다**. 리터럴 기본(10MB)을 두면 상한을 넘기지 않은
+      // 화면까지 드롭존이 「각 10MB까지」를 광고하는데, 그 화면의 진짜 거절선은 서버 설정이라
+      // 한 화면에서 두 상한이 맞선다(#599 세션A 실측 SA-D5 — 클레임 신청서 안내 「1장당
+      // 2048KB」 ↔ 드롭존 「각 10MB까지」 · 원 계획서 고정값 image_max_size_kb=2048).
+      // 미선언이면 컴포지트는 상한을 말하지도, 스스로 거르지도 않는다 — 판정은 호출부 몫이다(S2-D10).
+      maxSize,
+      // 기본은 고른 순서대로 하나씩 — 게시판 서버가 도착 순서로 첨부 번호를 매기면 동시 업로드는 먼저 끝난 파일이 앞에 선다
+      maxConcurrentUploads = 1,
       accept,
       imageCompression: compressionOptions,
       roleIds = EMPTY_ROLE_IDS,
@@ -208,9 +215,13 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       authenticatedImageUrls: uploader.authenticatedImageUrls,
     }), [uploader, maxFiles, maxSize, accept, endpoints, confirmBeforeRemove]);
 
+    // 항목을 지우거나 파일을 고른 뒤 초점을 쥔 요소가 사라지면 가까운 자리로 초점을 돌린다(7.1.0 P-6)
+    const rootRef = useRef<HTMLDivElement>(null);
+    useFocusRecovery(rootRef);
+
     return (
       <FileUploaderProvider value={contextValue}>
-        <Div id={id} className={className} {...editorAttrs}>
+        <Div ref={rootRef} id={id} className={className} {...editorAttrs}>
           {/* 드롭존 + 파일 목록 통합 영역 */}
           <FileDropZone
             isDragOver={uploader.isDragOver}

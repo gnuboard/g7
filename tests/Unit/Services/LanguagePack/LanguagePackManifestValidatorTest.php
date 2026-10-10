@@ -16,9 +16,9 @@ class LanguagePackManifestValidatorTest extends TestCase
     private LanguagePackManifestValidator $validator;
 
     /**
-     * 테스트 픽스처 초기화.
+     * 테스트 픽스처를 초기화합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -29,7 +29,7 @@ class LanguagePackManifestValidatorTest extends TestCase
     /**
      * 코어 manifest 의 기본 형태를 반환합니다 (신규 스키마).
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 매니페스트 배열
      */
     private function coreManifest(): array
     {
@@ -53,7 +53,7 @@ class LanguagePackManifestValidatorTest extends TestCase
     /**
      * 모듈 manifest 의 기본 형태를 반환합니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 매니페스트 배열
      */
     private function moduleManifest(): array
     {
@@ -75,18 +75,45 @@ class LanguagePackManifestValidatorTest extends TestCase
         ];
     }
 
+    /**
+     * 정상적인 코어 매니페스트는 통과합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_01_valid_core_manifest_passes(): void
     {
         $this->validator->validate($this->coreManifest());
         $this->assertTrue(true);
     }
 
+    /**
+     * 정상적인 모듈 매니페스트는 통과합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_02_valid_module_manifest_passes(): void
     {
         $this->validator->validate($this->moduleManifest());
         $this->assertTrue(true);
     }
 
+    /**
+     * identifier 의 첫 세그먼트가 namespace 와 다르면 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_03_identifier_first_segment_must_match_namespace(): void
     {
         $manifest = $this->coreManifest();
@@ -97,6 +124,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * scope=core 에 target_identifier 가 있으면 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_04_core_must_not_have_target_identifier(): void
     {
         $manifest = $this->coreManifest();
@@ -106,6 +142,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * scope=module 에 target_identifier 가 없으면 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_05_module_requires_target_identifier(): void
     {
         $manifest = $this->moduleManifest();
@@ -115,6 +160,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * 예약어 namespace 는 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_06_reserved_namespace_rejected(): void
     {
         $manifest = $this->coreManifest();
@@ -125,6 +179,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * BCP-47 형식이 아닌 locale 은 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_07_invalid_locale_rejected(): void
     {
         $manifest = $this->coreManifest();
@@ -135,6 +198,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * g7_version 이 semver 제약이 아니면 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_08_invalid_g7_version_constraint_rejected(): void
     {
         $manifest = $this->coreManifest();
@@ -144,6 +216,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * requires.target_version 이 semver 제약이 아니면 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_09_invalid_target_version_constraint_rejected(): void
     {
         $manifest = $this->moduleManifest();
@@ -153,6 +234,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * identifier 가 스코프별 네이밍 공식과 어긋나면 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_10_identifier_naming_format_mismatch_rejected(): void
     {
         $manifest = $this->moduleManifest();
@@ -163,6 +253,15 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
     }
 
+    /**
+     * vendor 가 kebab-case 가 아니면 거부합니다.
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_case_11_vendor_required_and_kebab_case(): void
     {
         $manifest = $this->coreManifest();
@@ -170,5 +269,62 @@ class LanguagePackManifestValidatorTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->validator->validate($manifest);
+    }
+
+    /**
+     * 패키지 밖을 가리키는 icon 선언은 설치 전에 막힙니다.
+     *
+     * 규격(정사각·크기)은 파일을 읽어야 알 수 있어 해석기가 맡지만, 경로가 루트를
+     * 벗어나는 것은 문자열만으로 판정되므로 여기서 거른다.
+     *
+     * @scenario extension_type=language_pack, declaration=manifest_path, validity=path_escape
+     *
+     * @effects manifest_icon_path_is_validated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_case_12_icon_path_escaping_package_rejected(): void
+    {
+        $manifest = $this->coreManifest();
+        $manifest['icon'] = '../../etc/passwd.svg';
+
+        $this->expectException(ValidationException::class);
+        $this->validator->validate($manifest);
+    }
+
+    /**
+     * 관례를 따르는 icon 선언은 통과합니다.
+     *
+     * @scenario extension_type=language_pack, declaration=manifest_path, validity=valid
+     *
+     * @effects manifest_icon_path_is_validated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_case_13_icon_relative_path_accepted(): void
+    {
+        $manifest = $this->coreManifest();
+        $manifest['icon'] = 'assets/icon.svg';
+
+        $this->validator->validate($manifest);
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * icon 은 선택 필드라 없어도 통과합니다.
+     *
+     * @scenario extension_type=language_pack, declaration=none
+     *
+     * @effects manifest_icon_path_is_validated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_case_14_icon_absent_is_accepted(): void
+    {
+        $manifest = $this->coreManifest();
+        unset($manifest['icon']);
+
+        $this->validator->validate($manifest);
+        $this->addToAssertionCount(1);
     }
 }

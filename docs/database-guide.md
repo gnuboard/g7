@@ -13,6 +13,7 @@
 4. 다국어 필드: JSON 구조 {"ko": "한글", "en": "English"}
 5. 시더: 콘솔 메시지 필수, truncate() 대신 delete() 사용
 6. 모듈/플러그인 down(): 테이블/컬럼/인덱스 존재 확인 후 삭제 (방어적 코딩 필수)
+7. 삭제는 Service 에서 명시적으로 (DB CASCADE 에 의존한 삭제 금지 — 마이그레이션의 CASCADE 는 안전망)
 ```
 
 ---
@@ -34,6 +35,7 @@
 - enum/boolean은 값 설명 포함
 - 외래키 제약조건 명시
 - down() 메서드 구현
+- 모듈/플러그인의 DB 변경은 마이그레이션만으로 끝나지 않는다 — 업그레이드 스텝(`upgrades/Upgrade_X_Y_Z.php`) 필요 여부를 함께 확인한다 ([extension-update-system.md](extension/extension-update-system.md))
 
 **파일명 네이밍 규칙**:
 
@@ -221,6 +223,39 @@ public function up(): void
 }
 ```
 
+#### 가드는 한 단계가 아니라 전 단계에 건다
+
+MySQL 은 DDL 을 트랜잭션으로 되돌리지 않는다. `up()` 이 중간에 실패하면 앞 단계는 커밋된 채 남고 마이그레이션 기록만 남지 않아, 다음 실행이 같은 `up()` 을 처음부터 다시 돈다. 컬럼에만 가드를 걸어 두면 그 다음 인덱스·외래키 단계가 `Duplicate key name` 으로 실패하고, 재실행할 때마다 같은 지점에서 멈추므로 사람이 손으로 정리하기 전에는 복구되지 않는다.
+
+한 마이그레이션이 컬럼·인덱스·외래키를 함께 추가한다면 세 단계 모두 가드를 갖는다. 정적 검사는 컬럼 단계만 보므로, 인덱스·외래키 가드는 작성자와 리뷰어가 확인한다.
+
+외래키는 `Schema::hasIndex` 에 해당하는 헬퍼가 없어 제약 이름으로 조회한다:
+
+```php
+Schema::table($table, function (Blueprint $blueprint) use ($table) {
+    if (! Schema::hasIndex($table, 'orders_source_index')) {
+        $blueprint->index(['source_type', 'source_id'], 'orders_source_index');
+    }
+    if (! $this->hasForeignKey($table, 'fk_orders_requested_by')) {
+        $blueprint->foreign('requested_by', 'fk_orders_requested_by')
+            ->references('id')->on('users')->nullOnDelete();
+    }
+});
+
+private function hasForeignKey(string $table, string $name): bool
+{
+    foreach (Schema::getForeignKeys($table) as $foreignKey) {
+        if (($foreignKey['name'] ?? null) === $name) {
+            return true;
+        }
+    }
+
+    return false;
+}
+```
+
+외래키에 이름을 명시하는 이유도 여기에 있다 — 자동 생성 이름에 의존하면 존재 확인의 기준이 사라진다.
+
 #### 정렬을 덮는 복합 인덱스의 선행 컬럼
 
 인덱스가 `ORDER BY` 를 덮으려면 **선행 컬럼이 모두 등치로 고정**되고 그 다음 컬럼이 정렬 컬럼이어야 한다. 선택적 필터 컬럼을 선행에 두면, 그 필터를 걸지 않은 기본 진입에서 정렬을 못 덮어 filesort 가 그대로 남는다.
@@ -242,7 +277,7 @@ $table->index(['deleted_at', 'created_at']);
 
 #### `->change()` 패턴의 멱등성
 
-`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. 정적 검사는 `->change()` 라인을 자동 제외하므로 false positive 미발생.
+`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. 자동 검증은 `->change()` 라인을 자동 제외하므로 false positive 미발생.
 
 #### 검증 절차
 
@@ -539,6 +574,38 @@ public function checkCanDelete(Product $product): array
 }
 ```
 
+### 다형(polymorphic) 타입 컬럼
+
+다형 관계의 타입 컬럼에 FQCN 대신 짧은 별칭을 저장하려면 `Relation::morphMap()` 으로 별칭 ↔ 모델 대응을 등록한다. 별칭은 저장값이 짧고 읽히며, 네임스페이스가 바뀌어도 기존 행이 깨지지 않는다.
+
+`enforceMorphMap()` 은 쓰지 않는다 — 등록 목록 밖의 별칭을 전부 거부하므로, 코어나 다른 확장이 등록한 다형 관계가 조용히 깨진다. 확장은 자기 별칭만 추가한다.
+
+```php
+// modules/{vendor-module}/src/Providers/{X}ServiceProvider.php::boot()
+Relation::morphMap([
+    ClaimTypeEnum::EXCHANGE->value => OrderExchange::class,
+    ClaimTypeEnum::RETURN->value => OrderReturn::class,
+]);
+```
+
+타입 컬럼의 값 집합에 **대응 모델이 없는 값**이 하나라도 있으면 (`direct` / `manual` / `system` 처럼 "출처 없음" 을 뜻하는 값) `morphTo()` 를 쓰지 않는다. Eloquent 는 매핑되지 않은 값을 클래스명으로 간주해 그 이름으로 인스턴스화를 시도하다 fatal 이 난다. 그 값이 실제로 저장되기 전까지는 아무 증상이 없어 운영 중에 처음 드러난다.
+
+```php
+// ✅ 명시 해석기 — 대응 모델이 없는 값은 null 로 끝난다
+public function resolveRefundSource(): ?Model
+{
+    $modelClass = $this->refund_source_type?->sourceModelClass();
+
+    if ($modelClass === null || $this->refund_source_id === null) {
+        return null;
+    }
+
+    return $modelClass::find($this->refund_source_id);
+}
+```
+
+타입 컬럼은 Enum 으로 캐스팅하고, 별칭 → 모델 대응은 그 Enum 의 메서드(`sourceModelClass()`)에 둔다. 저장 가능한 값과 그 해석이 한 파일에 모여 있어야 값이 늘 때 해석이 함께 늘어난다.
+
 ### 시더
 
 **규칙**:
@@ -664,6 +731,8 @@ php artisan module:seed sirsoft-ecommerce --sample
 php artisan db:seed --class="Database\Seeders\Sample\DummyUserSeeder"
 php artisan module:seed sirsoft-ecommerce --class=Sample\\ProductSeeder
 ```
+
+설치가 끝난 사이트에서 `db:seed`(`--sample` 포함)를 다시 실행해도 관리자 시더(`AdminUserSeeder`)는 최고관리자가 이미 있거나 `INSTALLER_ADMIN_EMAIL`·`INSTALLER_ADMIN_PASSWORD` 환경변수가 없으면 안내만 하고 건너뛴다 — 기존 회원은 그대로 두고 나머지 설치·샘플 시더는 계속 실행된다. 첫 관리자 계정은 설치 마법사가 두 환경변수를 넣고 만든다.
 
 **패턴**:
 ```php

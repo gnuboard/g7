@@ -1,164 +1,166 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Coupon - Cancel Issue Confirm Modal (발급취소 확인)"
-  },
-  "id": "modal_cancel_issue_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.title",
-    "width": "420px"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-primary text-base"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.message|name={{_global.cancelIssueTarget?.user_name}}"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-sm text-red-600 dark:text-red-400 font-medium mt-2"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.warning"
-        }
-      ]
+    "comment": "쿠폰 목록 — 발급취소 확인 창. 이미 회원에게 나간 쿠폰 한 장을 거둬들인다. 대상 회원과\n  어느 쿠폰의 발급분인지는 발급내역 창이 `_global` 에 담아 둔 것을 읽는다(창끼리는 서로의\n  `_local` 을 보지 못한다).\n  \n  성공 후 목록을 **둘 다** 다시 부른다 — 발급내역(그 줄이 사라진다)과 쿠폰 목록(발급 수가\n  줄어든다). 한쪽만 부르면 뒤에 있는 창의 숫자가 낡은 채로 남는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Coupon - Cancel Issue Confirm Modal (발급취소 확인)"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "modal_cancel_issue_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.title",
+        "width": "420px"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.cancelIssueSubmitting}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.cancelIssueSubmitting}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "cancelIssueSubmitting": true
-                  }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-primary text-base"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.message|name={{_global.cancelIssueTarget?.user_name}}"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_mode": "required",
-                  "target": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues/{{_global.cancelIssueTarget?.id}}",
-                  "params": {
-                    "method": "DELETE"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "cancelIssueSubmitting": false,
-                        "cancelIssueTarget": null
-                      }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-red-600 dark:text-red-400 font-medium mt-2"
                     },
-                    {
-                      "handler": "closeModal"
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "couponIssues"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "coupons"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "{{response.message}}"
-                      }
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "cancelIssueSubmitting": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.errors?.detail ?? error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.failed'}}"
-                      }
-                    }
-                  ]
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.warning"
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.cancelIssueSubmitting}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.confirm_btn"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.cancelIssueSubmitting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "발급취소. 되돌릴 수 없는 동작이라 확인 창을 거치고, 성공하면 대상까지 비워 같은 값이 다음 열림에 남지 않게 한다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "cancelIssueSubmitting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues/{{_global.cancelIssueTarget?.id}}",
+                                    "auth_mode": "required",
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "cancelIssueSubmitting": false,
+                                                "cancelIssueTarget": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "couponIssues"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "coupons"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.message}}"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "cancelIssueSubmitting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.errors?.detail ?? error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.cancelIssueSubmitting || _global.issueHistoryCoupon?.can_update !== true}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.cancelIssueSubmitting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.confirm_btn"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

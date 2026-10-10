@@ -1,0 +1,174 @@
+<!-- 마일리지 거래 내역 (운영자) — 적립·차감 내역을 조회하고, 여기서 직접 지급/회수하거나 만료일을
+  연장한다. 조회 조건은 전부 URL 쿼리에 실려 재진입 시 그대로 재현되고, 진입 시 `<init>` 이 그
+  쿼리를 필터 입력값으로 되돌려 담는다. 창에 넘길 값은 _local 이 아니라 _global 에 싣는다 —
+  모달은 별도 컨텍스트라 부모의 _local 을 보지 못한다. -->
+<layout name="admin_ecommerce_mileage_transaction_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.mileage_transactions.title" description="$t:sirsoft-ecommerce.admin.mileage_transactions.description"/>
+  <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 조회가 실패해도 표 골격은 서도록 빈 페이지네이션을 fallback 으로 둔다 -->
+  <data-source id="transactions" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/mileage-transactions" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort="{{query.sort || 'created_at_desc'}}" search_field="{{query.search_field || 'member'}}" search_keyword="{{query.search_keyword || ''}}" type="{{query.type || ''}}" currency="{{query.currency || ''}}" start_date="{{query.start_date || ''}}" end_date="{{query.end_date || ''}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="searchField" value="member"/>
+      <field name="searchKeyword" value=""/>
+      <field name="type" value=""/>
+      <field name="currency" value=""/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="dateQuick" value=""/>
+    </field>
+    <field name="selectedItems" :value="[]"/>
+    <field name="expandedRows" :value="[]"/>
+    <field name="linkedTransactions" :value="{}"/>
+    <field name="batchAction" value=""/>
+    <field name="manualModalOpen" :value="false"/>
+    <field name="extendModalOpen" :value="false"/>
+    <field name="manual">
+      <field name="action" value="earn"/>
+      <field name="amount" value=""/>
+      <field name="currency" value=""/>
+      <field name="reason" value=""/>
+      <field name="useDefaultExpiry" :value="true"/>
+      <field name="expiresAt" value=""/>
+    </field>
+    <field name="extendDays" :value="30"/>
+    <field name="memberSearchKeyword" value=""/>
+    <field name="memberSearchResults" :value="[]"/>
+    <field name="memberSearchResultsKeyword" :value="null"/>
+    <field name="selectedMember" :value="null"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.mileage.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>transactions</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local">
+      <field name="filter">
+        <field name="searchField" value="{{query.search_field || 'member'}}"/>
+        <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+        <field name="type" value="{{query.type || ''}}"/>
+        <field name="currency" value="{{query.currency || ''}}"/>
+        <field name="startDate" value="{{query.start_date || ''}}"/>
+        <field name="endDate" value="{{query.end_date || ''}}"/>
+        <field name="dateQuick" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="mileage_transactions_content" class="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div data-ref="page_header" class="page-header">
+        <div data-ref="page_header_left">
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.mileage_transactions.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="page-actions">
+          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).
+                   모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다 -->
+              <sequence>
+                <set-state target="global">
+                  <field name="mileageManual">
+                    <field name="selectedMember" :value="null"/>
+                    <field name="memberSearchKeyword" value=""/>
+                    <field name="memberSearchResults" :value="[]"/>
+                    <field name="memberSearchResultsKeyword" :value="null"/>
+                    <field name="action" value="earn"/>
+                    <field name="amount" value=""/>
+                    <field name="currency" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? ''}}"/>
+                    <field name="reason" value=""/>
+                    <field name="useDefaultExpiry" :value="true"/>
+                    <field name="expiresAt" value=""/>
+                  </field>
+                </set-state>
+                <open-modal target="modal_manual_transaction"/>
+              </sequence>
+            </on>
+            <icon name="plus" size="sm"/>
+            <span>$t:sirsoft-ecommerce.admin.mileage_transactions.manual_action</span>
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html"/>
+      <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
+        <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
+        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다) -->
+            <sequence>
+              <set-state target="global">
+                <field name="mileageExtend">
+                  <field name="days" :value="30"/>
+                  <field name="lotIds" value="{{_local.selectedItems ?? []}}"/>
+                </field>
+              </set-state>
+              <open-modal target="modal_extend_expiry"/>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.extend_expiry</span>
+        </button>
+      </div>
+      <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}</span>
+        <div data-ref="table_header_controls" class="flex items-center gap-3">
+          <select data-ref="sort_select" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+            <options>
+              <option value="created_at_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc</option>
+              <option value="amount_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_desc</option>
+              <option value="amount_asc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_asc</option>
+            </options>
+            <on type="change">
+              <!-- 정렬이 바뀌면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다 -->
+              <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
+                <query sort="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+          <select data-ref="per_page_select" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+            <options>
+              <option value="10">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10</option>
+              <option value="20">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20</option>
+              <option value="50">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.50</option>
+              <option value="100">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.100</option>
+            </options>
+            <on type="change">
+              <!-- 한 쪽에 담는 수가 달라지면 현재 쪽 번호도 뜻을 잃으므로 함께 되돌린다 -->
+              <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_mileage_transaction_index/_transactions_table.g7.html"/>
+    </div>
+  </slot>
+  <!-- 수동 지급/회수 — 회원을 찾아 고르고 금액·사유·만료일을 직접 넣는다 -->
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.g7.html"/>
+  <!-- 만료일 연장 — 목록에서 고른 적립 건들에 일수를 더한다 -->
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.g7.html"/>
+  <!-- 기록 수정 — 표 행에서 열며 사유·만료일 같은 부수 항목만 고친다 -->
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.g7.html"/>
+</layout>

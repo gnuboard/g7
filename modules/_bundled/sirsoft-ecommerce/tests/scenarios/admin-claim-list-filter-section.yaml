@@ -1,0 +1,112 @@
+feature: 관리자 클레임 목록 필터 섹션 (#599 S8a — D21/D27/D28)
+
+description: |
+  클레임 목록의 필터 카드는 주문관리 `modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.g7.html` 의 구조를 정본으로
+  복제한 화면이다(D21). 복제이므로 "무엇이 그려지는가" 보다 "어떤 순서로, 어떤 축이"
+  놓였는지가 계약이고, 어긋나도 오류가 나지 않는다 — 운영자가 늘 보던 자리에서 컨트롤이
+  사라질 뿐이다.
+
+  이 화면에서 조용히 깨질 수 있는 지점은 셋이다.
+
+  ① 상태 어휘가 유형마다 다르다(교환 14 / 반품 11 / 환불 7 / 취소 2). 화면 칩 집합이
+     게이트(`Admin\ClaimListRequest::allowedStatuses()`)의 부분집합이면 그 상태로 기록된
+     신청서가 어떤 필터 조합으로도 도달 불가가 되고, 초과집합이면 칩 하나를 누르는 순간
+     목록 전체가 422 가 되면서 화면에는 직전 목록이 그대로 남는다.
+
+  ② 귀책·청구는 그 축이 없는 유형에서 게이트가 `prohibited` 로 거절한다. 유형을 바꾼 뒤
+     남아 있던 값을 그대로 실어 보내면 같은 422 가 된다 — 그래서 필터 행 자체가 유형별로
+     등록되지 않아야 하고, 검색 액션도 그 파라미터를 싣지 않아야 한다.
+
+  ③ 검색 드롭다운 4축(클레임번호·주문번호·신청자·상품명)을 상세 필터에 또 두면 같은 값을
+     두 경로로 걸 수 있고, 어느 쪽이 이겼는지는 화면에 드러나지 않는다(D27).
+
+  ④ 그 4축이 **각자 맞는 컬럼을 짚는지**는 드롭다운에 있다는 것만으로 보장되지 않는다.
+     「신청자」는 주문자 이름을 **배송지 행**(`OrderAddress.orderer_name`)에서 찾아야 한다 —
+     주문 헤더에는 그 컬럼이 없어서 `order` 관계에 직접 걸면 SQL 이 죽고 **목록 전체가 500**
+     이 된다(S3-D19). 화면에는 그것이 「검색 결과 없음」으로 보여 **장애가 빈 결과로 위장**
+     된다. 그래서 이 축은 「0건이 아니라 맞는 행이 나온다」까지 잠근다.
+
+     「상품명」도 같은 계열이다 — `product_name` 은 다국어 JSON 이고 MySQL 이 비ASCII 를
+     유니코드 이스케이프로 저장하므로, 평문 `like` 로 훑으면 **한글이 영영 안 걸리고 영문만
+     걸린다**(S3-D20). 영문 상품명으로 시험하면 통과하기 때문에 결함이 가려진다. 로케일별
+     `->{locale}` 로 꺼내 비교하고, **한글과 영문이 같은 건을 집는다**를 단언한다.
+
+# axis 의미:
+#   축을 가르는 것은 유형 서브탭 하나다 — 상태 어휘·귀책 유무·청구 유무가 전부 여기서 갈린다.
+#   필터 축(검색·기간·사유·회원구분)은 유형과 무관하게 같은 모양이라 별도 축으로 세지 않는다.
+axes:
+  claim_type: [exchange, return, refund, cancel]
+
+effects:
+  # 카드 구조 (D21)
+  - filter_card_node_order_matches_order_screen
+  - claim_list_i18n_partial_declared          # ko·en 사전의 admin.claim partial 선언과 파일 실재
+  - filter_rows_registered_through_slot_system
+  - filter_visibility_has_a_single_persistence_owner
+  - detail_filter_opens_only_by_toggle
+  - filter_actions_are_three_column_split
+  # 상태 필터 (D21 · D28)
+  - status_filter_uses_chip_checkbox_not_dropdown
+  - status_vocabulary_matches_request_gate
+  - status_labels_read_type_prefixed_enum_keys
+  - status_chips_scoped_to_active_subtab
+  # 게이트가 거절하는 축 (prohibited)
+  - fault_axis_absent_for_cancel
+  - charge_axis_absent_for_refund_and_cancel
+  - search_action_omits_params_for_axes_the_type_lacks
+  # 검색 드롭다운 (D27 · S3-D19)
+  - search_dropdown_has_four_fields_and_no_all_option
+  - search_field_options_match_request_gate
+  - search_axes_not_duplicated_in_detail_filter
+  # 각 검색 축이 실제로 맞는 컬럼을 짚는다 — 되돌리면 빈 결과가 아니라 SQL 예외가 난다
+  - requester_search_reads_orderer_name_from_shipping_address
+  # 회원구분 축도 같은 계열이다 — 신청자 컬럼(`requested_by`·`cancelled_by`)은 비회원 신청과
+  # **운영자 대리 접수**가 똑같이 null 이라 회원 주문의 운영자 접수 건이 「비회원」 목록에 선다.
+  # 판정은 주문의 주인(`order.user_id`)이 한다 — 모델 `isGuestRequest()` 와 같은 기준(#599 세션A).
+  - claim_list_requester_filter_reads_order_owner
+  # 상품명은 다국어 JSON — 평문 like 는 한글을 영영 못 만난다(영문만 걸려 결함이 가려진다)
+  - product_name_search_matches_korean_not_only_ascii
+  # 목록 컨텍스트 왕복
+  - search_navigate_merges_list_context
+  - reset_clears_every_filter_key_but_keeps_subtab
+  # 프리셋
+  - preset_actions_target_claim_scoped_modals
+  - presets_scoped_to_claims_target_screen
+  - preset_carries_its_claim_type
+  - preset_axis_gates_follow_the_applied_type
+  - preset_state_keys_match_shell_state
+  # 상세 필터 축 (와이어프레임 §6-4 ④)
+  - amount_axis_matches_the_list_amount_column
+  - currency_options_come_from_shop_settings
+  - charge_payment_axis_absent_for_refund_and_cancel
+  - charge_payment_options_come_from_claim_settings
+  # 셸 computed 참조
+  - computed_options_are_referenced_with_computed_prefix
+  # 목록 데이터소스 게이트 (URL 경로 — 검색 액션과 같은 규칙)
+  - list_datasource_gates_prohibited_axes_like_the_search_action
+  - search_action_and_datasource_gate_the_same_axis_set
+  # 게이트 어휘 (설정 → 실제 기록값 순서)
+  - currency_gate_accepts_codes_recorded_on_claims_even_when_settings_dropped_them
+  - currency_gate_rejects_codes_never_used
+  - charge_payment_gate_accepts_methods_recorded_on_claim_payments
+  - charge_payment_gate_rejects_methods_never_used
+  # 금액 범위 게이트
+  - max_amount_alone_is_a_valid_combination
+  - amount_range_reads_the_column_the_list_amount_shows
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/AdminClaimListRequesterSearchTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListFilterSection.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListFilterSectionRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimControllerTest.php
+
+notes: |
+  브라우저 축: S8a 는 목록 본체(서브탭·DataGrid·일괄 바)를 아직 갖지 않으므로 이 세션의
+  브라우저 확인은 Chrome MCP 실측(T1~T3·T6)으로 수행하고 그 결과를 계획서 인계 로그에 남긴다.
+  Playwright spec 은 목록 본체가 생기는 S8b 이후에 얹는다 — 필터가 만든 URL 로 목록이 실제로
+  다시 그려지는지까지가 그 spec 의 검증 대상이고, 본체 없이 쓰면 그 절반만 검증하는 spec 이
+  먼저 자리를 잡아 이후에 넓히기 어려워진다.
+
+  상태 어휘 대조는 레이아웃과 PHP Enum 파일을 함께 읽어 집합 동일성을 단언한다. 값 목록을
+  테스트에 다시 적으면 그 사본이 세 번째 출처가 되어, Enum 이 늘 때 화면과 테스트가 같이
+  낡은 채로 초록이 된다.

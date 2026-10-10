@@ -1,0 +1,23 @@
+feature: sirsoft-admin_basic FileUploader — 항목 삭제·파일 선택 뒤 초점 자리
+
+description: |
+  키보드로 항목의 「삭제」를 누르면 그 단추가 목록에서 사라지며 초점이 문서 맨 위(BODY)로 빠졌다(7.1.0 O-M3-1).
+  빈 드롭존에서 키보드로 파일을 고르면 드롭존이 목록으로 바뀌며 같은 일이 생겼다(O-G3-2). 결정(P-6)대로
+  지운 뒤에는 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 자리 — 목록이 비면 드롭존)으로, 파일을 고른 뒤에는
+  「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 초점을 돌린다. 삭제 확인 창을 거친 삭제도 같다.
+  삭제 요청이 늦게 끝나 확인 창 단추가 잠기는 동안 초점이 빠져도 끝난 뒤 다음 항목으로 간다.
+  초점이 업로더 밖으로 나가거나 업로더 밖을 누른 뒤에는 목록이 바뀌어도 초점을 끌어오지 않는다.
+
+axes:
+  case: [remove_middle, remove_last, remove_only, remove_after_confirm, remove_after_slow_confirm, pick_from_dropzone, pick_fills_limit, focus_outside, pointer_elsewhere]
+
+effects:
+  - focus_moves_to_next_item
+  - focus_moves_to_previous_item
+  - focus_moves_to_add_area
+  - focus_moves_to_add_tile
+  - focus_moves_to_first_new_item
+  - focus_not_stolen
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx

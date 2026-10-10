@@ -1,195 +1,189 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Index - Excel Download Modal"
-  },
-  "id": "modal_excel_download",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.title",
-    "description": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.description",
-    "size": "md"
-  },
-  "children": [
-    {
-      "id": "excel_download_options",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "id": "option_search",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "radio",
-                    "name": "excelDownloadType",
-                    "value": "search",
-                    "className": "radio mt-0.5"
-                  },
-                  "bindings": {
-                    "checked": "excelDownloadType === 'search'"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "key": "excelDownloadType",
-                        "value": "search"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary block font-medium"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "block text-label-subtle mt-1"
-                      },
-                      "text": "총 12개의 상품이 다운로드됩니다."
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "option_selected",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "radio",
-                    "name": "excelDownloadType",
-                    "value": "selected",
-                    "className": "radio mt-0.5"
-                  },
-                  "bindings": {
-                    "checked": "excelDownloadType === 'selected'"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "key": "excelDownloadType",
-                        "value": "selected"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary block font-medium"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "block text-label-subtle mt-1"
-                      },
-                      "text": "10개의 상품만 다운로드됩니다."
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "props": {
-          }
-        }
-      ]
+    "comment": "상품 목록 — 엑셀 내려받기 창. **아직 동작하지 않는다.** 주문 목록의 같은 창과 나란히 두고 보면\n  빠진 것이 분명하다:\n\n  ⓐ 내려받기 버튼에 `<on>` 이 없다 — 눌러도 아무 일도 일어나지 않는다.\n  ⓑ 건수 안내(\"총 12개…\", \"10개만…\")가 코드에 박힌 한국어 고정 문구다. 실제 검색 결과 수·선택\n     수를 읽지도, 다국어로 바뀌지도 않는다.\n  ⓒ 갈래 선택이 `<set-state key= value=>` 형태라 `target` 이 없다 — 주문 쪽은\n     `<set-state target=\"_local\" …>` 로 담고 그 값을 요청 본문이 읽는데, 여기에는 그 소비처도 없다.\n\n  정본은 주문 목록의 `_modal_excel_download` 다(검색조건 전체 vs 선택분, blob 응답 처리까지).\n  세 가지 다 산출 값이 달라지는 수정이라 주석 주입 단락에서는 손대지 않았다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Index - Excel Download Modal"
     },
-    {
-      "id": "excel_download_footer",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-2 mt-6"
-      },
-      "children": [
+    "id": "modal_excel_download",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-outline"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
+            "id": "excel_download_options",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "id": "option_search",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "검색결과 갈래. 담는 자리가 `target` 없이 선언돼 있고 그 값을 읽는 곳도 없어 지금은 선택해도 아무 데도 반영되지 않는다(파일 머리 ⓒ).",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "key": "excelDownloadType",
+                                                "value": "search"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "excelDownloadType",
+                                        "value": "search",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-primary block font-medium"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "block text-label-subtle mt-1"
+                                            },
+                                            "text": "총 12개의 상품이 다운로드됩니다."
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "option_selected",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "선택분 갈래. 주문 쪽과 달리 체크한 상품이 없을 때 잠기지도 않는다 — 소비처가 생길 때 그 잠금도 함께 세워야 한다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "key": "excelDownloadType",
+                                                "value": "selected"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "excelDownloadType",
+                                        "value": "selected",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-primary block font-medium"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "block text-label-subtle mt-1"
+                                            },
+                                            "text": "10개의 상품만 다운로드됩니다."
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-primary"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "download",
-                "className": "w-4 h-4 mr-2"
-              }
+            "id": "excel_download_footer",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-2 mt-6"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.download"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-outline"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "download",
+                                "className": "text-base mr-2"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.download"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

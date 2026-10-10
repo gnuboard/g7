@@ -1,0 +1,134 @@
+{
+    "comment": "회원관리 목록 필터에 덧붙이는 「마일리지 잔액」 행 (#705 예제 E1).\n  관리자 템플릿의 회원 목록이 상세검색 아래에 연 확장점(`admin_user_list_filters`)에 붙으므로 기본/상세\n  이동 대상이 아니고, 상세검색을 펼쳤을 때만 보인다.\n  e2e:allow 값 조립 핸들러의 소유만 관리자 템플릿에서 이 모듈로 옮겼다 — 조립 규칙은 그대로이고 모듈 Vitest 가 같은 계약을 고정한다.\n  값은 직접 URL 에 싣지 않는다 — 이 모듈의 핸들러 `sirsoft-ecommerce.setUserFilterExt` 로\n  `_local.userFilterExtraQuery` 배열에 `sirsoft-ecommerce.mileage_min=…` 원소를 넣고 빼면, 확장점을 연\n  관리자 템플릿의 검색 버튼이 그 배열을 `ext_filters[]` 로 보낸다. 핸들러는 템플릿이 아니라 이 모듈이\n  소유한다 — 조각은 어느 관리자 템플릿으로 그려지든 같은 동작을 해야 한다. 칸의 표시값도 같은 배열에서 되읽으므로 새로고침·뒤로가기에서 URL 로부터 복원된다.\n  서버 쪽 규칙·조건은 `UserListMileageFilterListener` 가 맡는다. 잔액은 상점 기본 통화 기준이다.\n  마일리지를 볼 권한이 없는 운영자에게는 행 자체를 내지 않는다(서버도 조건을 무시한다).",
+    "extension_point": "admin_user_list_filters",
+    "mode": "append",
+    "priority": 200,
+    "components": [
+        {
+            "id": "ext_ecommerce_mileage_filter_row",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex flex-col gap-2 items-start"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex flex-col gap-2 md:flex-row md:items-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.user_filter.mileage"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center flex-wrap gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "잔액 하한. 0 도 유효한 값이다 — 비우면 조건에서 빠진다(핸들러가 빈 값의 원소를 지운다).",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.setUserFilterExt",
+                                            "params": {
+                                                "key": "sirsoft-ecommerce.mileage_min",
+                                                "value": "{{$event.target.value}}",
+                                                "current": "{{_local.userFilterExtraQuery || []}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "userFilterExtraQuery": "{{$prev}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "number",
+                                "name": "ecommerceMileageMin",
+                                "min": "0",
+                                "className": "input w-32",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.user_filter.mileage_min",
+                                "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_min=')) || '').slice('sirsoft-ecommerce.mileage_min='.length)}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-400 dark:text-gray-500"
+                            },
+                            "text": "~"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "잔액 상한. 하한보다 작으면 서버가 422 로 거절한다. 잔액 행이 없는 회원은 0 으로 보고 상한 안에 든다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.setUserFilterExt",
+                                            "params": {
+                                                "key": "sirsoft-ecommerce.mileage_max",
+                                                "value": "{{$event.target.value}}",
+                                                "current": "{{_local.userFilterExtraQuery || []}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "userFilterExtraQuery": "{{$prev}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "number",
+                                "name": "ecommerceMileageMax",
+                                "min": "0",
+                                "className": "input w-32",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.user_filter.mileage_max",
+                                "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_max=')) || '').slice('sirsoft-ecommerce.mileage_max='.length)}}"
+                            }
+                        },
+                        {
+                            "type": "composite",
+                            "name": "ExtensionBadge",
+                            "props": {
+                                "type": "module",
+                                "identifier": "sirsoft-ecommerce",
+                                "installedModules": "{{_global.installedModules}}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "permissions": [
+                "sirsoft-ecommerce.mileage.read"
+            ]
+        }
+    ]
+}

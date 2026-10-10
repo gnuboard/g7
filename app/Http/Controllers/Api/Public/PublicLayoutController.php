@@ -8,6 +8,7 @@ use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -28,6 +29,9 @@ class PublicLayoutController extends PublicBaseController
 
     /**
      * TemplateService 및 LayoutService 주입
+     *
+     * @param  TemplateService  $templateService  템플릿 서비스 (활성 템플릿 조회)
+     * @param  LayoutService  $layoutService  레이아웃 서비스 (병합·확장 적용·권한 필터)
      */
     public function __construct(
         private TemplateService $templateService,
@@ -117,6 +121,9 @@ class PublicLayoutController extends PublicBaseController
                 $mergedLayout,
                 request()->user()
             );
+
+            // 비어 있는 맵 섹션(meta, initLocal 등)은 `{}` 로 낸다 — 배열로 읽은 탓에 `[]` 가 되지 않게
+            $mergedLayout = LayoutEmptyObjects::restoreRootMapSections($mergedLayout);
 
             // ETag 및 Cache-Control 헤더와 함께 응답 반환
             return $this->successWithCache(

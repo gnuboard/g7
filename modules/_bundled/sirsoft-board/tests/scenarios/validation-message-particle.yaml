@@ -1,0 +1,30 @@
+feature: 게시판 한국어 문구의 조사 자리표시 제거 (7.1.0 전수 실측 O-K4-2)
+
+description: |
+  회원이 댓글 상태를 조작하면 「선택한 상태이(가) 올바르지 않습니다.」처럼 조사 자리표시가
+  그대로 응답에 실렸다. 게시판 요청 규칙 중 자기 문구가 없는 것(in·exists·required_with 등)이
+  코어 기본 문구로 떨어지기 때문이다. 같은 꼴(「{{name}}이(가)」「:status(으)로」)과 자리표시
+  바로 뒤에 받침을 가정한 조사(「":keyword"가」)가 게시판 문구 곳곳에 있었다.
+
+  - 댓글 상태는 게시글과 같은 전용 문구(「유효하지 않은 댓글 상태입니다.」)를 쓴다
+  - 자기 문구가 없는 규칙은 게시판 요청 공용 대체 문구(Concerns\ProvidesFallbackRuleMessages)를
+    쓴다 — 「선택한 :attribute 값이 올바르지 않습니다.」처럼 받침과 무관하게 읽힌다. 요청이 정한
+    칸별 문구가 있으면 그것이 먼저다
+  - 게시판 한국어 문구(백엔드 언어 파일·프론트엔드 언어 파셜·module.php 기본 알림 템플릿)는
+    조사 자리표시와 자리표시 뒤 조사를 쓰지 않는다 — 단위 검사로 잠근다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/ValidationMessageParticleTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Lang/KoreanParticlePlaceholderTest.php
+
+axes:
+  case:
+    - comment_status_message
+    - fallback_rule_message
+    - module_strings_scan
+
+effects:
+  - comment_status_message_natural
+  - fallback_rule_message_natural
+  - no_particle_placeholder_in_board_strings
+  - no_particle_after_variable_in_board_strings

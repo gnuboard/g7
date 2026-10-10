@@ -23,9 +23,13 @@ return [
         'invalid_code' => '인증 코드가 올바르지 않습니다.',
         'invalid_verification_token' => '유효하지 않은 본인인증 토큰입니다.',
         'missing_target' => '인증 대상(이메일·전화번호)이 필요합니다.',
+        'claim_denied' => '본인 확인 결과를 받을 수 없습니다. 인증을 다시 시작해 주세요.',
+        'claim_already_used' => '이미 처리된 본인 확인입니다. 인증을 다시 시작해 주세요.',
+        'claim_unavailable' => '본인 확인이 만료되었거나 끝나지 않았습니다. 인증을 다시 시작해 주세요.',
         'target_mismatch' => '인증한 대상과 요청한 대상이 일치하지 않습니다.',
         'purpose_not_supported' => '선택된 프로바이더는 이 목적을 지원하지 않습니다.',
         'provider_unavailable' => '본인인증 프로바이더를 사용할 수 없습니다.',
+        'challenge_dispatch_failed' => '인증 코드를 보내지 못했습니다. 잠시 후 다시 시도하시거나 다른 인증 수단을 이용해주세요.',
         'generic' => '본인인증에 실패했습니다.',
         'missing_scope_or_target' => '정책 조회를 위해 scope 와 target 이 모두 필요합니다.',
         'admin_policy_has_no_default' => '관리자가 직접 생성한 정책에는 선언 기본값이 없습니다.',
@@ -37,6 +41,7 @@ return [
     'messages' => [
         'challenge_requested' => '본인인증 코드를 발송했습니다.',
         'challenge_verified' => '본인 확인이 완료되었습니다.',
+        'challenge_pending' => '메일의 링크로 본인 확인을 기다리고 있습니다.',
         'challenge_cancelled' => '본인인증 요청이 취소되었습니다.',
     ],
 
@@ -75,6 +80,7 @@ return [
 
     'channels' => [
         'email' => '이메일',
+        'app' => '인증 앱',
     ],
 
     'origin_types' => [
@@ -107,14 +113,6 @@ return [
             'module' => '모듈',
             'plugin' => '플러그인',
             'admin' => '관리자',
-        ],
-    ],
-
-    'message' => [
-        'scope_type' => [
-            'provider_default' => 'Provider 기본',
-            'purpose' => 'Purpose 별',
-            'policy' => 'Policy 별',
         ],
     ],
 ];

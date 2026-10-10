@@ -9,7 +9,7 @@ enum ShippingStatusEnum: string
 {
     case PENDING = 'pending';                       // 배송대기
     case PREPARING = 'preparing';                   // 상품준비중
-    case READY = 'ready';                           // 배송준비완료
+    case READY = 'ready';                           // 배송준비중
     case SHIPPED = 'shipped';                       // 배송중
     case IN_TRANSIT = 'in_transit';                 // 이동중
     case OUT_FOR_DELIVERY = 'out_for_delivery';     // 배송출발

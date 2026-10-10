@@ -132,15 +132,18 @@ export const Icon: React.FC<IconProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  // 접근성: ariaLabel이 없으면 name에서 생성
-  const accessibilityLabel = ariaLabel || iconName.replace(/-/g, ' ');
+  // 접근성: 이름(ariaLabel)을 받은 아이콘만 이미지로 읽힌다. 이름 없는 아이콘은 꾸밈이라 접근성 트리에서 숨긴다.
+  // 종전에는 글리프 이름(영어)을 이름표로 달아 버튼 이름이 「refresh 업데이트 확인」·「trash can」·「ellipsis」 로
+  // 읽혔다(7.1.0 영역 J D-J4). 아이콘만 있는 버튼은 버튼 쪽에 사람이 읽는 다국어 이름(aria-label)을 단다.
+  const a11yProps = ariaLabel
+    ? { role: 'img' as const, 'aria-label': ariaLabel }
+    : { 'aria-hidden': true as const };
 
   return (
     <i
       className={classes}
       style={style}
-      aria-label={accessibilityLabel}
-      role="img"
+      {...a11yProps}
       {...props}
     />
   );

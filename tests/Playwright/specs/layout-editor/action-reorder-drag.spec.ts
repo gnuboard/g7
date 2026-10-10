@@ -13,7 +13,6 @@
  * 동작 카드 드래그는 HTML5 native drag(dnd-kit 아님)이라 onDragStart/onDragOver/onDrop 이 직접
  * 결선돼 Playwright dispatchEvent 로 검증 가능하다(캔버스 노드 재배치의 dnd-kit 비호환과 별개).
  *
- * @scenario page_settings_init_actions_reorder
  * 효과 요약(마커 아님 — 평문): reorder_buttons_removed, drag_handle_reorders, dropline_shows_target.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

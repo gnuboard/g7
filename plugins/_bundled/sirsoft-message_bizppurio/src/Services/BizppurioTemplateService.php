@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
 
 use App\Services\PluginSettingsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
@@ -432,6 +433,14 @@ class BizppurioTemplateService
                 ]);
 
                 continue;
+            } catch (ConnectionException $e) {
+                // 서버에 닿지 못한 경우도 이번 주기만 건너뛴다 — 놓치면 예약 명령이 예외로 끝난다.
+                Log::warning('[sirsoft-message_bizppurio] 템플릿 상태 일괄 조회 중 서버 연결 실패 — 이번 주기 건너뜀', [
+                    'sender_key' => $senderKey,
+                    'message' => $e->getMessage(),
+                ]);
+
+                continue;
             }
 
             foreach ($group as $row) {
@@ -465,6 +474,8 @@ class BizppurioTemplateService
      * kapi delete 는 status R + REG/REJ 에서만 허용된다(부록 A-4). 우리 상태가
      * draft/rejected 면 kapi 삭제를 시도하고, 그 외 상태(또는 kapi 삭제 실패)면 카카오측은
      * 그대로 두고 DB 행만 삭제한다 — 응답에 사유를 명시해 운영자가 알 수 있게 한다.
+     * 비즈뿌리오 서버에 닿지 못한 경우(ConnectionException)도 kapi 삭제 실패와 같이 다루고,
+     * 사유에는 연결 실패 안내를 적는다.
      *
      * @param  BizppurioTemplate  $template  대상 행
      * @return array{kakao_deleted: bool, kakao_skip_reason: string|null} 카카오측 삭제 여부·미삭제 사유
@@ -490,6 +501,12 @@ class BizppurioTemplateService
                 Log::warning('[sirsoft-message_bizppurio] 카카오측 템플릿 삭제 실패 — DB 행만 삭제', [
                     'template_code' => $template->template_code,
                     'result_code' => $e->getResultCode(),
+                    'message' => $e->getMessage(),
+                ]);
+            } catch (ConnectionException $e) {
+                $skipReason = __('sirsoft-message_bizppurio::messages.error.connection_failed');
+                Log::warning('[sirsoft-message_bizppurio] 카카오측 템플릿 삭제 중 서버 연결 실패 — DB 행만 삭제', [
+                    'template_code' => $template->template_code,
                     'message' => $e->getMessage(),
                 ]);
             }
@@ -626,6 +643,14 @@ class BizppurioTemplateService
             ]);
 
             return null;
+        } catch (ConnectionException $e) {
+            Log::warning('[sirsoft-message_bizppurio] 템플릿 상세 조회 중 서버 연결 실패 — 반려 사유를 저장하지 못했습니다', [
+                'sender_key' => $senderKey,
+                'template_code' => $templateCode,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 
@@ -704,6 +729,7 @@ class BizppurioTemplateService
      * kapi 응답이 성공(200)이 아니면 message 원문을 담아 예외를 던집니다.
      *
      * @param  array<string, mixed>  $response  kapi 응답
+     * @return void 반환값 없음
      *
      * @throws BizppurioApiException 실패 코드 시
      */

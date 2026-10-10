@@ -3,14 +3,14 @@
  *
  * 사용자 화면 `/shop/checkout` 은 sirsoft-basic 템플릿 레이아웃이며, 캔버스가
  * 의존하는 세 데이터소스(`checkoutData` / `userAddresses` / `paymentSettings`)는
- * 템플릿 레이아웃(`layouts/shop/checkout.json`)에 선언되어 출처(`__source`)가
+ * 템플릿 레이아웃(`layouts/shop/checkout.g7.html`)에 선언되어 출처(`__source`)가
  * 템플릿이다. 따라서 편집기 샘플은 **템플릿** editor-spec(`editor-spec/sampleData.json`)
  * 의 `byDataSourceId` 가 SSoT 다(모듈 editor-spec 아님).
  *
  * 주문서 작성 화면 샘플이 단일 상품뿐이고 적용 쿠폰·할인·
  * 배송지 목록·받는사람·배송 메모·결제수단 샘플이 비어 있던 결함의 회귀 방지.
  *
- * 바인딩 SSoT: templates/_bundled/sirsoft-basic/layouts/shop/checkout.json
+ * 바인딩 SSoT: templates/_bundled/sirsoft-basic/layouts/shop/checkout.g7.html
  *              (+ partials/shop/_checkout_*.json)
  */
 import { describe, it, expect } from 'vitest';

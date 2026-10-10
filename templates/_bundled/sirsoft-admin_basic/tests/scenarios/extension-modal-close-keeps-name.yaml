@@ -1,0 +1,18 @@
+feature: admin_basic 확장 관리 확인 창 — 성공 뒤 닫히는 동안 확장 이름 유지
+
+description: |
+  설치·제거·업데이트·레이아웃 새로고침·활성화·비활성화 확인 창은 문구에 고른 확장 이름을 넣는다. 성공 처리 맨 앞에서
+  선택을 비우고 목록·메뉴를 다시 받고 확장을 새로 읽은 뒤에야 창을 닫아, 닫히기 전 몇 초 동안 문구가
+  「{{name}} 플러그인을 설치하시겠습니까?」 로 바뀌어 보였다(7.1.0 O-G3-7). 창을 먼저 닫고 선택을 비운다.
+  제거 창은 보존 백업이 있으면 닫지 않으므로 비우는 조건과 닫는 조건이 같아야 한다.
+
+axes:
+  modal: [install_update_refresh_deactivate, uninstall]
+  list: [on_success]
+
+effects:
+  - close_before_clearing_selection
+  - uninstall_clear_and_close_share_condition
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-modal-close-keeps-name.test.ts

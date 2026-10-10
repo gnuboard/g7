@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\Gdpr\Concerns;
 
+use Illuminate\Http\Request;
+
 /**
  * 게스트 세션 식별 쿠키(gdpr_session) 발급/검증 트레이트
  *
@@ -28,7 +30,7 @@ trait IssuesGuestSessionCookie
      * 쿠키 값에 서명을 붙입니다.
      *
      * @param  string  $sessionId  UUID v4 게스트 세션 식별자
-     * @return string  "{sessionId}|{expiresTs}|{signature}" 형태의 쿠키 값
+     * @return string "{sessionId}|{expiresTs}|{signature}" 형태의 쿠키 값
      */
     protected function signGuestSessionId(string $sessionId): string
     {
@@ -44,7 +46,7 @@ trait IssuesGuestSessionCookie
      * (호출자는 미식별 게스트로 취급해야 함).
      *
      * @param  string|null  $cookieValue  요청 쿠키 원본 값
-     * @return string|null  검증된 session_id, 위조/형식 오류/만료 시 null
+     * @return string|null 검증된 session_id, 위조/형식 오류/만료 시 null
      */
     protected function verifyGuestSessionId(?string $cookieValue): ?string
     {
@@ -75,11 +77,39 @@ trait IssuesGuestSessionCookie
     }
 
     /**
+     * 요청의 게스트 동의 식별자를 정합니다 — 이 플러그인의 게스트 식별 규칙은 이 메서드 하나다.
+     *
+     * 회원 요청이면 null(회원은 회원 번호로 찾는다). 게스트면 서명을 검증한 `gdpr_session` 쿠키의 UUID, 쿠키가
+     * 없거나 위조됐으면 시작된 라라벨 세션 ID(없으면 null). 동의 저장(컨트롤러)·응답 쿠키 걸러내기(미들웨어)·코어
+     * 동의 계약(제공자)이 같은 규칙을 써야 저장한 동의를 다시 찾을 수 있다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return string|null 게스트 동의 식별자
+     */
+    protected function resolveGuestSessionId(Request $request): ?string
+    {
+        if ($request->user() !== null) {
+            return null;
+        }
+
+        $verified = $this->verifyGuestSessionId($request->cookie('gdpr_session'));
+        if ($verified !== null) {
+            return $verified;
+        }
+
+        try {
+            return $request->hasSession() ? substr($request->session()->getId(), 0, 100) : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * session_id + 만료시각에 대한 HMAC-SHA256 서명을 계산합니다.
      *
      * @param  string  $sessionId  게스트 세션 식별자
      * @param  int  $expiresTs  서명 만료 시각(unix timestamp)
-     * @return string  64자 hex 서명
+     * @return string 64자 hex 서명
      */
     private function computeGuestSessionSignature(string $sessionId, int $expiresTs): string
     {

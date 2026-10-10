@@ -1,0 +1,58 @@
+<!-- 발송 기록 한 건의 상세 창 — **지금은 어디에서도 열리지 않는다.**
+  알림 발송 기록 화면은 이 조각을 심지 않고(그 화면이 여는 창은 삭제 확인 둘뿐이다), 이 창이
+  읽는 `_local.selectedLog` 를 채우는 곳도 소스 어디에도 없다. 실사용 정본은 표에서 줄을
+  펼치는 쪽이고, 거기서 실패 사유와 본문까지 함께 보여 준다.
+  고치려는 사람은 이 파일을 살릴지 지울지부터 정하고 손대는 편이 낫다 — 지금 이대로 심으면
+  값이 비어 빈 창이 뜬다. -->
+<partial description="알림 발송 이력 상세 모달" editor_label="$t:admin.modal_label.admin_notification_log_list.modal_notification_log_detail">
+  <modal data-type="composite" data-ref="modal_notification_log_detail" title="$t:admin.notification_log.detail_title" size="lg">
+    <div>
+      <div class="grid-2col">
+        <div>
+          <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.col_channel</label>
+          <span class="text-primary text-sm">{{$parent._local.selectedLog?.channel ?? ''}}</span>
+        </div>
+        <div>
+          <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.col_status</label>
+          <span class="{{($parent._local.selectedLog?.status === 'sent') ? 'text-sm text-green-600 dark:text-green-400 font-medium' : ($parent._local.selectedLog?.status === 'failed') ? 'text-sm text-red-600 dark:text-red-400 font-medium' : 'text-sm text-gray-500 dark:text-gray-400 font-medium'}}">{{$parent._local.selectedLog?.status ?? ''}}</span>
+        </div>
+        <div>
+          <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.col_type</label>
+          <span class="text-primary text-sm font-mono">{{$parent._local.selectedLog?.notification_type ?? ''}}</span>
+        </div>
+        <div>
+          <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.col_sent_at</label>
+          <span class="text-primary text-sm">{{$parent._local.selectedLog?.sent_at ?? ''}}</span>
+        </div>
+        <div>
+          <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.col_recipient</label>
+          <span class="text-primary text-sm">{{($parent._local.selectedLog?.recipient_name ?? '') + ' (' + ($parent._local.selectedLog?.recipient_identifier ?? '') + ')'}}</span>
+        </div>
+        <div>
+          <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.col_extension</label>
+          <span class="text-primary text-sm">{{$parent._local.selectedLog?.extension_identifier ?? ''}}</span>
+        </div>
+      </div>
+      <div data-if="{{$parent._local.selectedLog?.subject}}">
+        <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.col_subject</label>
+        <p class="text-primary text-sm">{{$parent._local.selectedLog?.subject ?? ''}}</p>
+      </div>
+      <div data-if="{{$parent._local.selectedLog?.body}}">
+        <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.detail_body</label>
+        <div class="text-body bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-64 overflow-y-auto" dangerouslySetInnerHTML="{{$parent._local.selectedLog?.body ?? ''}}"/>
+      </div>
+      <div data-if="{{$parent._local.selectedLog?.error_message}}">
+        <label class="form-error-xs block font-medium mb-1">$t:admin.notification_log.detail_error</label>
+        <p class="text-error-soft bg-red-50 dark:bg-red-900/20 rounded-lg p-3">{{$parent._local.selectedLog?.error_message ?? ''}}</p>
+      </div>
+    </div>
+    <div class="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <button type="button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal target="modal_notification_log_detail"/>
+        </on>
+        $t:common.close
+      </button>
+    </div>
+  </modal>
+</partial>

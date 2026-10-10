@@ -29,14 +29,31 @@
 | --- | --- | --- | --- | --- | --- |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| filters | query | array | 아니오 | max 10 | 추가 필터 조건 맵 (필드별 조건) |
-| start_date | query | date | 아니오 | — | 조회 기간 시작일 (이 날짜 이후 데이터) |
-| end_date | query | date | 아니오 | — | 조회 기간 종료일 (이 날짜 이전 데이터) |
+| filters | query | array | 아니오 | max 10 | 검색어 조건 목록 — `filters[N][field]`(`all`·`name`·`nickname`·`email`·`contact`·`identifier`·`admin_memo`) / `filters[N][value]`(max 255) / `filters[N][operator]`(`like`·`eq`·`starts_with`·`ends_with`) |
+| status[] | query | array | 아니오 | `active`, `inactive`, `blocked`, `withdrawn`, `pending_verification`, `dormant` | 계정 상태 (여럿이면 OR, 여섯 전부는 조건 없음) |
+| role_ids[] | query | array\<integer\> | 아니오 | 존재하는 역할 id | 권한 그룹 — 고른 역할 중 하나라도 가진 회원 |
+| admin_scope | query | string | 아니오 | `all`, `admin`, `member` | 관리자 여부 (admin = 슈퍼관리자 또는 관리자 권한이 든 역할 보유) |
+| lock_state | query | string | 아니오 | `all`, `locked`, `unlocked` | 계정 잠금 (locked = 영구 잠금 또는 해제 시각이 미래) |
+| start_date | query | date | 아니오 | — | 가입일 시작 (그날 0시부터) |
+| end_date | query | date | 아니오 | ≥ start_date | 가입일 종료 (그날 끝까지 포함) |
 | date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정) |
-| sort_by | query | string | 아니오 | `created_at`, `name`, `email`, `last_login_at` | 정렬 기준 필드명 |
+| last_login_start | query | date | 아니오 | — | 최근 로그인 시작 |
+| last_login_end | query | date | 아니오 | ≥ last_login_start | 최근 로그인 종료 |
+| never_logged_in | query | boolean | 아니오 | `true`, `false`, `1`, `0` | 로그인 이력이 없는 회원만 (참이면 최근 로그인 기간은 무시) |
+| dormant_start | query | date | 아니오 | — | 휴면 전환일 시작 |
+| dormant_end | query | date | 아니오 | ≥ dormant_start | 휴면 전환일 종료 |
+| status_changed_type | query | string | 아니오 | `withdrawn`, `blocked` | 상태 변경 종류 (탈퇴일/차단일). 날짜 없이 주면 그 일이 있었던 회원 전부 |
+| status_changed_start | query | date | 아니오 | — | 상태 변경일 시작 (status_changed_type 과 함께) |
+| status_changed_end | query | date | 아니오 | ≥ status_changed_start | 상태 변경일 종료 |
+| language | query | string | 아니오 | 지원 로케일 | 회원 표시 언어 |
+| country | query | string | 아니오 | 영문 2자리 | 국가 코드 (대소문자 무관) |
+| email_verified | query | string | 아니오 | `all`, `verified`, `unverified` | 이메일 인증 여부 |
+| identity_verified | query | string | 아니오 | `all`, `verified`, `unverified` | 본인인증 완료 여부 |
+| ext_filters[] | query | array\<string\> | 아니오 | max 20, 원소 `{확장id}.{키}={값}` | 모듈·플러그인이 더한 필터 값 채널 — 서버가 `ext.{확장id}.{키}` 로 펴고 확장이 규칙·조건을 건다 |
+| sort_by | query | string | 아니오 | `created_at`, `name`, `email`, `last_login_at`, `status`, `language`, `country` | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.list_validation_rules`).
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 — 검증 규칙 `core.user.list_validation_rules`, 항목명 `core.user.list_validation_attributes`, 파라미터 정규화 `core.user.filter_list_params`, 쿼리 조건 `core.user.list_query_extensions`. 값은 `ext_filters[]` 로 받는다.
 
 **요청 예시**
 
@@ -63,12 +80,13 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
 | country_flag | null | `null` | 국가 코드의 국기 이모지 (country 값에서 파생) |
 | country_name | null | `null` | 국가 코드의 현지화 국가명 (country 값에서 파생) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | mobile | null | `null` | 휴대폰 번호 |
 | roles | array | `[{"id":1,"identifier":"admin","name":"관리자"},{"id":892,"id…` | 사용자에게 부여된 역할 목록 (원소: id/identifier/name — 역할 관계 파생) |
 | email_verified_at | string | `2026-08-04 16:57:08` | email verified 일시 |
+| identity_verified_at | null | `null` | 최종 본인인증 성공 일시 (열 선택기의 「본인인증일」) |
 | last_login_at | null | `null` | last login 일시 |
 | created_at | string | `2026-08-04` | 생성 일시 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -204,7 +222,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 사용자 관리 화면(`admin_user_list.json`)의 목록을 제공합니다. `filters` 로 이름/이메일 다중 검색(operator: like, eq, starts_with, ends_with), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
+관리자 사용자 관리 화면(`admin_user_list.g7.html`)의 목록을 제공합니다. `filters` 로 검색어 다중 검색(대상 7종, operator: like, eq, starts_with, ends_with — `contact` 는 휴대폰·전화 OR, `identifier` 는 숫자면 회원번호·UUID 면 고유ID 정확 일치, `admin_memo` 는 연산자와 무관하게 포함 검색, 「전체」는 이름·닉네임·이메일·휴대폰·전화 + 회원번호/고유ID 정확 일치이며 관리자 메모는 제외; LIKE 검색어의 `%`·`_` 는 글자 그대로 찾는다), 필터 12축(위 표), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 필터끼리는 AND, 다중선택 값끼리는 OR 이다. 날짜 경계는 시작일 0시 ~ 종료일 하루 끝까지다. 확장 필터(`ext_filters[]`)는 코어 조건을 다 건 뒤에 적용되어 결과를 더 좁히기만 한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
 
 
 ### POST /api/admin/users
@@ -220,11 +238,12 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 예 | — | 비밀번호 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다(#736) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
-| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn` | 계정 상태 (미지정 시 active) |
+| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn`, `dormant` | 계정 상태 (미지정 시 active) |
 | homepage | body | string | 아니오 | max 255 | 홈페이지 URL |
 | mobile | body | string | 아니오 | max 20 | 휴대전화 번호 |
 | phone | body | string | 아니오 | max 20 | 전화번호 |
@@ -305,7 +324,7 @@ _단건 응답: `data` 객체의 필드 (생성된 사용자 — `UserResource::
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: English) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (`user.language.{code}` 번역) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn) |
+| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn/dormant) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label()) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() — UI 배지용) |
 | is_admin | boolean | `false` | 관리자 역할 보유 여부 (User::isAdmin()) |
@@ -386,7 +405,7 @@ HTTP/1.1 201
 
 **설명**
 
-관리자가 새 사용자를 생성합니다. `name`, `email`, `password`(8자 이상, `password_confirmation` 확인 필수), 그리고 역할이 필수이다 — 역할은 `roles`(객체 배열 `[{id}]`) 또는 `role_ids`(id 배열) 중 하나로 지정하며 둘 다 보내면 `role_ids` 가 우선한다. `language`(미지정 시 `ko`), `status`(미지정 시 `active`), 연락처/주소/자기소개 등은 선택 항목이다. 성공 시 201 과 함께 생성된 사용자를 `UserResource` 형태로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
+관리자가 새 사용자를 생성합니다. `name`, `email`, `password`(보안 설정의 작성 규칙, `password_confirmation` 확인 필수), 그리고 역할이 필수이다 — 역할은 `roles`(객체 배열 `[{id}]`) 또는 `role_ids`(id 배열) 중 하나로 지정하며 둘 다 보내면 `role_ids` 가 우선한다. `language`(미지정 시 `ko`), `status`(미지정 시 `active`), 연락처/주소/자기소개 등은 선택 항목이다. 성공 시 201 과 함께 생성된 사용자를 `UserResource` 형태로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
 
 
 ### PATCH /api/admin/users/bulk-status
@@ -400,7 +419,7 @@ HTTP/1.1 201
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | ids | body | array | 예 | min 1 | 대상 리소스 식별자 배열 (대량 작업 대상) |
-| status | body | string | 예 | — | 일괄 적용할 계정 상태 (UserStatus Enum 값: active/inactive/blocked/withdrawn/pending_verification) |
+| status | body | string | 예 | — | 일괄 적용할 계정 상태 (UserStatus Enum 값: active/inactive/blocked/withdrawn/pending_verification/dormant) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.bulk_update_status_validation_rules`).
 
@@ -464,11 +483,90 @@ HTTP/1.1 200
 
 **설명**
 
-여러 사용자의 계정 상태를 한 번에 변경합니다. `ids` 는 대상 사용자 UUID 배열이며, `status` 는 `active`/`inactive`/`blocked`/`withdrawn`/`pending_verification`(UserStatus Enum 값) 중 하나이다. `ExcludeCurrentUser` 규칙으로 요청자 본인은 대상에서 제외된다. 목록 화면의 다중 선택 후 일괄 상태 변경에 사용한다.
+여러 사용자의 계정 상태를 한 번에 변경합니다. `ids` 는 대상 사용자 UUID 배열이며, `status` 는 `active`/`inactive`/`blocked`/`withdrawn`/`pending_verification`/`dormant`(UserStatus Enum 값) 중 하나이다. `ExcludeCurrentUser` 규칙으로 요청자 본인은 대상에서 제외된다. 목록 화면의 다중 선택 후 일괄 상태 변경에 사용한다.
 
 `status=withdrawn` 요청은 상태 컬럼만 바꾸지 않고 **건별로 정식 탈퇴 처리**를 수행한다 (익명화 + 연계 데이터 정리 + 탈퇴 훅). 회원이 직접 탈퇴한 경우와 결과가 같다. 관리자 역할을 가진 대상은 건너뛰고 `failed_count` 로 집계되며, 나머지 대상의 처리는 계속된다.
 
 전건이 차단되어도 응답은 200 이다. 소비자는 `updated_count` 와 `failed_count` 를 함께 읽어 결과를 판정해야 한다 — 200 만 보고 성공으로 안내하면 아무 일도 일어나지 않은 요청이 처리된 것으로 표시된다. 사유는 `failed_reasons` 로 전달되므로 그대로 노출하면 된다.
+
+
+### PATCH /api/admin/users/bulk-roles
+<!-- @generated:start:api.admin.users.bulk-roles -->
+- **라우트명**: `api.admin.users.bulk-roles`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UserController@bulkUpdateRoles`
+- **인증/권한**: `auth:sanctum` + `permission:core.users.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| uuids | body | array\<string\> | 예 | min 1, max 500, 존재하는 회원 UUID | 역할을 더하거나 뺄 회원 |
+| role_ids | body | array\<integer\> | 예 | min 1, 존재하는 역할 ID | 더하거나 뺄 역할 ID 목록 |
+| mode | body | string | 예 | `add`, `remove` | 추가 또는 제거 |
+
+**요청 예시**
+
+```http
+PATCH /api/admin/users/bulk-roles HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "uuids": ["b89e33f8-0000-0000-0000-000000000001", "65fbba33-0000-0000-0000-000000000002"],
+    "role_ids": [7],
+    "mode": "add"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| updated_count | integer | `1` | 역할 구성이 실제로 바뀐 회원 수 (이미 같은 상태인 회원은 제외) |
+| skipped_count | integer | `2` | 건너뛴 회원 수 |
+| skipped | array | `[{"uuid":"…","reason":"grade"},{"uuid":"…","reason":"scope"}]` | 건너뛴 회원과 사유 — `grade`(최고관리자 등 등급 상한), `scope`(권한 범위 밖), `last_admin`(마지막 관리자인 본인에게서 관리자 역할 제거), `last_role`(빼고 나면 역할이 하나도 남지 않는 회원) |
+| unchanged_count | integer | `1` | 이미 원하는 상태라 바뀌지 않은 회원 수 (변경·제외 어디에도 들지 않는다 — 고른 회원 수 = 변경 + 제외 + 변경 없음) |
+| unchanged | array | `[{"uuid":"…","reason":"already_assigned"}]` | 바뀌지 않은 회원과 사유 — `already_assigned`(추가할 역할을 이미 가짐), `not_assigned`(뺄 역할을 가지지 않음) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "1명의 역할을 변경했습니다. (제외 2명)",
+    "data": {
+        "updated_count": 1,
+        "skipped_count": 2,
+        "skipped": [
+            { "uuid": "f672c40a-0000-0000-0000-000000000003", "reason": "grade" },
+            { "uuid": "9d1d7a07-0000-0000-0000-000000000004", "reason": "scope" }
+        ],
+        "unchanged_count": 0,
+        "unchanged": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.users.update`)이 없거나, 요청자가 가지지 않은 권한이 담긴 역할이 하나라도 섞인 경우 (`user.bulk_roles_ceiling`, 요청 전체 거부) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 일괄 변경 중 예외 발생 (`user.bulk_roles_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+회원 목록의 선택 일괄 작업 「역할 추가」「역할 제거」. 일괄 상태 변경과 같은 두 축으로 판정한다 — ① 권한 상승 상한: 고른 역할 중 하나라도 요청자가 부여할 수 없으면 아무것도 바꾸지 않고 403, ② 대상 필터: 등급 가드(최고관리자) → 권한 범위(scope) 순으로 걸러진 회원은 `skipped` 에 사유와 함께 돌려준다. 제거 모드에서 이번 요청으로 관리자가 한 명도 남지 않게 되면 요청자 본인은 `last_admin` 으로 건너뛰고, 빼고 나면 역할이 하나도 남지 않는 회원은 `last_role` 로 건너뛴다(회원 수정의 「역할을 하나 이상 선택」 규칙과 같다). 추가한 역할에는 `assigned_by`(요청자)·`assigned_at` 이 기록되고, 바뀐 회원마다 권한 캐시를 비우며 활동 로그 `user.bulk_roles` 를 남긴다. 요청 앞뒤로 `core.user.before_bulk_update_roles`·`core.user.after_bulk_update_roles` 가 발화한다. 같은 요청을 다시 보내도 행이 겹치지 않는다(`updated_count` 0). 제외가 있어도 응답은 200 이므로 `skipped_count` 를 함께 읽어야 한다.
 
 
 ### POST /api/admin/users/check-email
@@ -699,7 +797,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
@@ -805,6 +903,23 @@ HTTP/1.1 200
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.search_validation_rules`).
 
+**응답 메타 — `meta.keyword`**
+
+응답은 `data` 와 나란히 **그 목록을 만든 키워드**를 싣습니다. `uuid`·`id` 로 한 건을 집은
+조회는 키워드가 없어 `null` 입니다(빈 문자열로 내려보내면 「검색어가 비었을 때」와 구분되지
+않습니다).
+
+| 필드 | 타입 | 예시 | 용도 |
+| --- | --- | --- | --- |
+| meta.keyword | string\|null | `MEAS599T-S2` | 이 목록을 만든 검색어. uuid·id 조회는 `null` |
+
+화면의 회원 자동완성이 **「지금 그리는 목록이 지금 입력값의 것인가」를 판정하는 유일한
+근거**입니다. 자동완성은 글자마다 요청을 내고 응답의 도착 순서는 보장되지 않는데, 화면이
+응답 도착 시점의 입력칸을 다시 읽어 도장을 찍으면 한 글자가 부른 가장 큰 응답(전체 회원)이
+가장 늦게 와서 현재 키워드의 것으로 둔갑합니다 — 2026-09-22 실측에서 `MEAS599T-S2` 를 친
+관리자 마일리지 수동 지급 모달에 전체 회원 83행이 떴고, 그 목록에서 고르면 **엉뚱한 회원에게
+돈이 지급됩니다**(#599 3차 실측 T2-D1).
+
 **요청 예시**
 
 ```http
@@ -828,7 +943,7 @@ _목록 응답: `data[]` 배열 항목의 필드 (페이지네이션 없는 단�
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: English) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (`user.language.{code}` 번역) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn) |
+| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn/dormant) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label()) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin()) |
@@ -942,7 +1057,7 @@ _단건 응답: `data` 객체의 필드._
 | total_users | integer | `82` | 전체 사용자 수 (통계 객체는 count/추이 포함) |
 | users_this_week | integer | `82` | 이번 주 신규 가입자 수 |
 | users_this_month | integer | `82` | 이번 달 신규 가입자 수 |
-| users_today | integer | `70` | 오늘 신규 가입자 수 |
+| users_today | integer | `70` | 오늘 신규 가입자 수 (보는 사람의 시간대로 오늘) |
 | active_users_this_week | integer | `3` | 이번 주 활동(로그인) 사용자 수 |
 | language_distribution | object | `{"ko":82}` | 언어별 사용자 분포 (언어 코드 => 사용자 수) |
 
@@ -1042,6 +1157,7 @@ HTTP/1.1 200
 
 삭제는 원자적으로 처리된다 — 역할 연결 해제·약관 동의 이력 삭제·토큰 삭제·계정 삭제가 하나의 트랜잭션이며, 마지막 삭제가 외래키 제약 등으로 실패하면 앞 단계도 전부 취소된다(연결만 끊긴 활성 계정이 남지 않는다). 아바타 파일 삭제는 커밋 후에 수행된다.
 
+**본인 삭제(7.1.0)** 요청한 운영자 본인 계정은 관리자 화면에서 삭제할 수 없다 — 422(`exceptions.cannot_delete_self`). 탈퇴는 마이페이지 경로로만 한다. 목록·상세 응답의 본인 행 `abilities.can_delete` 도 false 다.
 
 ### GET /api/admin/users/{user}
 <!-- @generated:start:api.admin.users.show -->
@@ -1078,7 +1194,8 @@ _단건 응답: `data` 객체의 필드._
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| country_name | string | `대한민국` | 국가 코드의 현지화 국가명 (country 값에서 파생, 없으면 null) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
@@ -1112,10 +1229,21 @@ _단건 응답: `data` 객체의 필드._
 | ip_address | null | `null` | 마지막 접속 IP 주소 |
 | withdrawn_at | null | `null` | withdrawn 일시 |
 | blocked_at | null | `null` | blocked 일시 |
+| dormant_at | null | `null` | 휴면 전환 일시 (해제 시 NULL. 관리자 전용 필드) |
 | failed_login_attempts | integer | `0` | 연속 로그인 실패 횟수 |
 | locked_permanently | boolean | `false` | 영구 잠금 여부. true 면 `locked_until` 과 무관하게 잠금이 유지되며, 해제는 성공 로그인 또는 관리자의 잠금 해제로만 이뤄진다 (잠금 시간 설정이 `0`= 무기한일 때 세워진다) |
 | locked_until | null | `null` | 계정 잠금 해제 시각 (NULL = 잠금 없음) |
 | is_locked | boolean | `false` | locked 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 개별 설정 (`inherit` 따름 · `apply` 적용 · `exempt` 제외 — #736) |
+| password_status | object | `{"applies":true, …}` | 비밀번호 상태 — 상세 응답에만 실린다(목록은 회원마다 역할 판정이 들어 제외) |
+| password_status.changed_at | string\|null | `2026-07-01 10:20:00` | 마지막 변경 일시 (사용자 시간대) |
+| password_status.expires_at | string\|null | `2026-09-29 10:20:00` | 만료 예정 일시 (적용되지 않으면 null) |
+| password_status.expired | boolean | `false` | 만료됐는지 |
+| password_status.applies | boolean | `true` | 만료가 이 회원에게 적용되는지 (회원 개별 > 역할 > 사이트 범위 판정) |
+| password_status.policy | string | `inherit` | 회원 개별 설정 |
+| password_status.change_required | boolean | `false` | 다음 로그인 때 비밀번호를 바꿔야 하는지 (관리자가 정해 준 비밀번호) |
+| password_status.postponed_until | string\|null | `null` | '다음에 변경' 연기 종료 일시 (연기 중일 때만) |
+| password_status.days_left | integer\|null | `3` | 만료까지 남은 날수 (적용되지 않으면 null) |
 | notify_post_complete | boolean | `false` | 게시글 작성 완료 알림 수신 여부 (게시판 모듈 알림 설정) |
 | notify_post_reply | boolean | `false` | 내 게시글 답글 알림 수신 여부 |
 | notify_comment | boolean | `false` | 내 게시글 댓글 알림 수신 여부 |
@@ -1273,7 +1401,7 @@ HTTP/1.1 200
 
 **설명**
 
-특정 사용자의 상세 정보를 조회합니다(경로 파라미터는 UUID 로 바인딩). `withAdminInfo()` 를 통해 기본 필드에 더해 관리자 전용 필드(admin_memo, ip_address, withdrawn_at, blocked_at)와 관계형 데이터(modules, plugins, menus, roles, permissions, consents 및 개수 필드)를 함께 반환한다. `core.user.filter_resource_data` 필터로 확장이 자신의 필드(sirsoft-marketing 의 알림/동의 설정, sirsoft-ecommerce 의 마일리지/선호 통화·배송국 등)를 병합한다. 관리자 사용자 상세/수정 화면(`admin_user_detail.json`/`admin_user_form.json`)이 소비한다.
+특정 사용자의 상세 정보를 조회합니다(경로 파라미터는 UUID 로 바인딩). `withAdminInfo()` 를 통해 기본 필드에 더해 관리자 전용 필드(admin_memo, ip_address, withdrawn_at, blocked_at)와 관계형 데이터(modules, plugins, menus, roles, permissions, consents 및 개수 필드)를 함께 반환한다. `core.user.filter_resource_data` 필터로 확장이 자신의 필드(sirsoft-marketing 의 알림/동의 설정, sirsoft-ecommerce 의 마일리지/선호 통화·배송국 등)를 병합한다. 관리자 사용자 상세/수정 화면(`admin_user_detail.g7.html`/`admin_user_form.g7.html`)이 소비한다.
 
 
 ### PUT /api/admin/users/{user}
@@ -1290,11 +1418,13 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 아니오 | — | 비밀번호 |
+| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 비밀번호 — **다른 회원**이면 재사용 검사 없이 정하고 그 회원은 다음 로그인 때 바꿔야 하며 모든 기기가 로그아웃된다. **본인**이면 재사용 금지가 걸리고 현재 기기만 남는다(#736) |
+| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
-| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn` | 계정 상태 (미지정 시 active) |
+| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn`, `dormant` | 계정 상태 (미지정 시 active) |
 | homepage | body | string | 아니오 | max 255 | 홈페이지 URL |
 | mobile | body | string | 아니오 | max 20 | 휴대전화 번호 |
 | phone | body | string | 아니오 | max 20 | 전화번호 |
@@ -1375,7 +1505,7 @@ _단건 응답: `data` 객체의 필드 (수정된 사용자 — `UserResource::
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: English) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (`user.language.{code}` 번역) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn) |
+| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn/dormant) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label()) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin()) |
@@ -1457,7 +1587,7 @@ HTTP/1.1 200
 
 **설명**
 
-기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 8자 이상·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
+기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 보안 설정의 작성 규칙·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다. `ecommerce_preferred_currency`(결제 통화)·`ecommerce_preferred_shipping_country`(배송국가)는 sirsoft-ecommerce 가 같은 방식으로 주입한 필드로, 관리자 회원 수정 화면이 이 요청 한 번에 함께 보낸다 — 이커머스가 검증(등록 통화·활성 국가, 값이 바뀔 때만 이커머스 관리 권한)과 저장을 같은 요청 안에서 처리하고, 오류는 그 필드 이름 키로 돌아온다.
 
 
 ### POST /api/admin/users/{user}/unlock
@@ -1611,7 +1741,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | avatar | null | `null` | 프로필 아바타 이미지 URL (미설정 시 null) |
 | bio | null | `null` | 자기소개 |
@@ -1654,6 +1784,6 @@ HTTP/1.1 200
 
 **설명**
 
-타인의 공개 프로필을 인증 없이 조회합니다(경로 파라미터는 UUID 로 바인딩, `users/show.json` 이 소비). 사용자 상태에 따라 노출 필드가 달라진다 — active 는 name/avatar/bio/created_at 전체, inactive 는 bio 를 제외, blocked 는 avatar/bio/created_at 를 모두 제외한다. withdrawn 사용자는 이름을 익명 표기로 대체하고 `is_withdrawn=true` 로 반환하며, 미존재 사용자는 404(`user.not_found`)를 반환한다. 게시글 통계는 게시판 모듈 API 로 별도 조회한다.
+타인의 공개 프로필을 인증 없이 조회합니다(경로 파라미터는 UUID 로 바인딩, `users/show.g7.html` 이 소비). 사용자 상태에 따라 노출 필드가 달라진다 — active 는 name/avatar/bio/created_at 전체, inactive 는 bio 를 제외, blocked 는 avatar/bio/created_at 를 모두 제외한다. withdrawn 사용자는 이름을 익명 표기로 대체하고 `is_withdrawn=true` 로 반환하며, 미존재 사용자는 404(`user.not_found`)를 반환한다. 게시글 통계는 게시판 모듈 API 로 별도 조회한다.
 
 

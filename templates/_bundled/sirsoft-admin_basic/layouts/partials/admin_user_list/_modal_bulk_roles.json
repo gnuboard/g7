@@ -1,0 +1,408 @@
+{
+    "comment": "회원 목록에서 고른 회원들에게 역할을 한꺼번에 더하거나 빼는 창(모드 값 하나로 추가/제거를 겸한다).\n  서버가 최고관리자·권한 범위 밖·마지막 관리자(본인)를 걸러 내고 그 사유를 돌려주므로, 제외된 회원이 있으면 창을 닫지 않고\n  결과(변경 수·제외 수·사유 최대 5행)를 보여 준다. 이미 원하는 상태라 바뀌지 않은 회원(unchanged)도 따로 세어 같은 카드에 보인다 —\n  그렇지 않으면 고른 수와 「N명 변경, M명 제외」 의 합이 어긋난다. 내가 부여할 수 없는 역할이 섞이면 요청 전체가 거부(403)되고\n  창 안에 문구가 남는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "회원 역할 일괄 변경 모달",
+        "editor_label": "$t:admin.modal_label.user_list.bulk_roles_modal"
+    },
+    "id": "bulk_roles_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{_global.userBulkRoleMode === 'remove' ? '$t:admin.users.bulk_roles.remove_title' : '$t:admin.users.bulk_roles.add_title'}}",
+        "size": "md"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "comment": "안내 문구는 적용 전에만 — 적용하면 선택이 비워져 「0명에게…」로 바뀌므로 결과 화면에서는 결과 카드가 대신 말한다",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_global.userBulkRoleResult && _global.userBulkRoleMode !== 'remove'}}",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:admin.users.bulk_roles.add_desc|count={{(_global.selectedIds_admin_users || []).length}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_global.userBulkRoleResult && _global.userBulkRoleMode === 'remove'}}",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:admin.users.bulk_roles.remove_desc|count={{(_global.selectedIds_admin_users || []).length}}"
+                },
+                {
+                    "id": "bulk_roles_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.userBulkRoleResult}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.users.bulk_roles.roles_label"
+                        },
+                        {
+                            "id": "bulk_roles_input",
+                            "type": "composite",
+                            "name": "TagInput",
+                            "actions": [
+                                {
+                                    "comment": "적용할 역할 — 태그 입력이 준 배열을 통째로 담는다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "userBulkRoleIds": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_global.userBulkRoleIds ?? []}}",
+                                "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}",
+                                "placeholder": "$t:admin.users.bulk_roles.roles_placeholder",
+                                "noOptionsMessage": "$t:admin.users.form.fields.role_no_options",
+                                "className": "w-full",
+                                "defaultVariant": "blue"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_roles_hint",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.userBulkRoleResult}}",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.users.bulk_roles.hint"
+                        }
+                    ]
+                },
+                {
+                    "comment": "제거에만 생기는 건너뜀(역할이 하나도 남지 않게 되는 회원·마지막 관리자인 나)을 적용 전에 알린다",
+                    "id": "bulk_roles_remove_hint",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.userBulkRoleResult && _global.userBulkRoleMode === 'remove'}}",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.users.bulk_roles.remove_hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_roles_error",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.userBulkRoleError}}",
+                    "props": {
+                        "className": "alert-danger text-sm"
+                    },
+                    "text": "{{_global.userBulkRoleError}}"
+                },
+                {
+                    "id": "bulk_roles_result",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.userBulkRoleResult}}",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "text-heading mb-2"
+                            },
+                            "text": "$t:admin.users.bulk_roles.result_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:admin.users.bulk_roles.result_summary|updated={{_global.userBulkRoleResult?.updated_count ?? 0}}|skipped={{_global.userBulkRoleResult?.skipped_count ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "text-sm space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "{{(_global.userBulkRoleResult?.skipped ?? []).slice(0, 5)}}",
+                                        "item_var": "skip"
+                                    },
+                                    "props": {
+                                        "className": "flex justify-between gap-3 text-gray-600 dark:text-gray-400"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "truncate"
+                                            },
+                                            "text": "{{(users?.data?.data ?? []).find(u => u.uuid === skip.uuid)?.name ?? skip.uuid}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "flex-shrink-0"
+                                            },
+                                            "text": "{{skip.reason === 'grade' ? $t:admin.users.bulk_roles.reason_grade : (skip.reason === 'scope' ? $t:admin.users.bulk_roles.reason_scope : (skip.reason === 'last_role' ? $t:admin.users.bulk_roles.reason_last_role : $t:admin.users.bulk_roles.reason_last_admin))}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "이미 원하는 상태라 바뀌지 않은 회원 — 변경도 제외도 아니므로 따로 센다",
+                            "id": "bulk_roles_unchanged",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.userBulkRoleResult?.unchanged_count ?? 0) > 0}}",
+                            "props": {
+                                "className": "mt-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "text": "$t:admin.users.bulk_roles.result_unchanged|unchanged={{_global.userBulkRoleResult?.unchanged_count ?? 0}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "text-sm space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "{{(_global.userBulkRoleResult?.unchanged ?? []).slice(0, 5)}}",
+                                                "item_var": "same"
+                                            },
+                                            "props": {
+                                                "className": "flex justify-between gap-3 text-gray-600 dark:text-gray-400"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "truncate"
+                                                    },
+                                                    "text": "{{(users?.data?.data ?? []).find(u => u.uuid === same.uuid)?.name ?? same.uuid}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "flex-shrink-0"
+                                                    },
+                                                    "text": "{{same.reason === 'not_assigned' ? $t:admin.users.bulk_roles.reason_not_assigned : $t:admin.users.bulk_roles.reason_already_assigned}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.isProcessing}}",
+                        "className": "btn btn-secondary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.userBulkRoleResult ? $t:admin.users.bulk_roles.close : $t:common.cancel}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "bulk_roles_apply",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{!_global.userBulkRoleResult}}",
+                    "actions": [
+                        {
+                            "comment": "역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —\n               제외되거나 이미 반영되어 바뀌지 않은 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을\n               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아\n               300ms 디바운스로 연타를 한 번으로 모은다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": true,
+                                        "userBulkRoleError": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/users/bulk-roles",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PATCH",
+                                        "body": {
+                                            "uuids": "{{_global.selectedIds_admin_users ?? []}}",
+                                            "role_ids": "{{_global.userBulkRoleIds ?? []}}",
+                                            "mode": "{{_global.userBulkRoleMode ?? 'add'}}"
+                                        }
+                                    },
+                                    "onSuccess": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "selectedIds_admin_users": [],
+                                                    "userBulkRoleResult": "{{response.data}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "if": "{{(response.data?.skipped_count ?? 0) === 0 && (response.data?.unchanged_count ?? 0) === 0}}"
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "users"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false,
+                                            "userBulkRoleError": "{{error.errors?.role_ids?.[0] ?? error.errors?.uuids?.[0] ?? error.message ?? '$t:errors.server_error'}}"
+                                        }
+                                    },
+                                    "errorHandling": {
+                                        "403": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": false,
+                                                "userBulkRoleError": "{{error.message ?? '$t:auth.permission_denied'}}"
+                                            }
+                                        }
+                                    }
+                                }
+                            ],
+                            "debounce": 300
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.isProcessing || (_global.userBulkRoleIds ?? []).length === 0}}",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isProcessing}}",
+                            "props": {
+                                "name": "spinner",
+                                "size": "sm",
+                                "spin": true
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isProcessing ? $t:common.processing : $t:admin.users.bulk_roles.apply}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

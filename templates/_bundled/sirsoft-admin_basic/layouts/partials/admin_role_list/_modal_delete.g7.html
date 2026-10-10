@@ -1,0 +1,43 @@
+<!-- 역할 하나를 지우기 전 되묻는 창. 지울 대상은 목록이 번호·이름으로 나눠 담아 준 것을 읽는다.
+  그 역할을 쓰고 있는 회원이 있으면 서버가 막으므로, 여기서 미리 세어 보여 주지는 않는다 —
+  거절 사유는 실패 알림으로 온다. -->
+<partial description="역할 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_role_list.delete_confirm_modal">
+  <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:admin.roles.modals.delete_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.roles.modals.delete_confirm</p>
+    <!-- 어떤 역할을 지우는지 창만 보고 알 수 있게 목록이 담아 준 이름을 보인다(예약 작업 삭제 창과 같은 모양). -->
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <span class="text-primary font-medium">{{_global.deleteTargetName}}</span>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <close-modal target="delete_confirm_modal"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <!-- 지운 뒤 담아 뒀던 번호·이름을 비운다 — 전역이라 남겨 두면 다음에 연 창이 이미 없는 역할을 가리킨다. 실패하면 창을 닫지 않아 사유를 읽고 다시 시도할 수 있다. -->
+          <sequence>
+            <set-state target="global" :isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/admin/roles/{{_global.deleteTargetId}}" method="DELETE">
+              <success>
+                <set-state target="global" :isDeleting="false"/>
+                <set-state target="global" :deleteTargetId="null" deleteTargetName=""/>
+                <toast type="success" message="$t:admin.roles.modals.delete_success"/>
+                <refetch-data-source dataSourceId="roles"/>
+                <close-modal target="delete_confirm_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeleting="false"/>
+                <toast type="error" message="{{error.message ?? $t:admin.roles.errors.delete_failed}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

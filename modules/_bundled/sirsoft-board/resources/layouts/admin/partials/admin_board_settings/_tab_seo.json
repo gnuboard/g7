@@ -1,679 +1,703 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "게시판 설정 SEO 탭 콘텐츠"
-  },
-  "id": "tab_content_seo",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'seo'}}",
-  "props": {},
-  "children": [
-    {
-      "id": "meta_settings_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "section-header"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.title"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.description"
-        }
-      ]
+    "comment": "설정의 「SEO」 탭 — 검색엔진에 어떻게 보일지(주소 형태·메타 정보 등)를 정하고, 맨 아래에 만들어 둔 SEO 캐시를 비우는 버튼이 하나 붙어 있다",
+    "meta": {
+        "is_partial": true,
+        "description": "게시판 설정 SEO 탭 콘텐츠"
     },
-    {
-      "id": "boards_page_card",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "id": "tab_content_seo",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'seo'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.seo.boards_page.title"
+            "id": "meta_settings_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "section-header"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.description"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "field_boards_title",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.meta_boards_title",
-                    "placeholder": "$t:sirsoft-board.admin.settings.seo.boards_page.title_placeholder",
-                    "className": "{{_local.errors?.['seo.meta_boards_title'] ? 'input input-error' : 'input'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['seo.meta_boards_title']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['seo.meta_boards_title']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}"
-                }
-              ]
+            "id": "boards_page_card",
+            "type": "layout",
+            "name": "SectionLayout",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "id": "field_boards_description",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
-                },
-                {
-                  "type": "basic",
-                  "name": "Textarea",
-                  "props": {
-                    "name": "seo.meta_boards_description",
-                    "rows": 3,
-                    "className": "{{_local.errors?.['seo.meta_boards_description'] ? 'input-error resize-none' : ' resize-none'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['seo.meta_boards_description']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['seo.meta_boards_description']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "board_page_card",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.seo.board_page.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "field_board_title",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.meta_board_title",
-                    "placeholder": "$t:sirsoft-board.admin.settings.seo.board_page.title_placeholder",
-                    "className": "{{_local.errors?.['seo.meta_board_title'] ? 'input input-error' : 'input'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['seo.meta_board_title']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['seo.meta_board_title']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}"
-                }
-              ]
-            },
-            {
-              "id": "field_board_description",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
-                },
-                {
-                  "type": "basic",
-                  "name": "Textarea",
-                  "props": {
-                    "name": "seo.meta_board_description",
-                    "rows": 3,
-                    "className": "{{_local.errors?.['seo.meta_board_description'] ? 'input-error resize-none' : ' resize-none'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['seo.meta_board_description']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['seo.meta_board_description']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {board_description}"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "post_page_card",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.seo.post_page.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "field_post_title",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "seo.meta_post_title",
-                    "placeholder": "$t:sirsoft-board.admin.settings.seo.post_page.title_placeholder",
-                    "className": "{{_local.errors?.['seo.meta_post_title'] ? 'input input-error' : 'input'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['seo.meta_post_title']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['seo.meta_post_title']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}"
-                }
-              ]
-            },
-            {
-              "id": "field_post_description",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
-                },
-                {
-                  "type": "basic",
-                  "name": "Textarea",
-                  "props": {
-                    "name": "seo.meta_post_description",
-                    "rows": 3,
-                    "className": "{{_local.errors?.['seo.meta_post_description'] ? 'input-error resize-none' : ' resize-none'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['seo.meta_post_description']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['seo.meta_post_description']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "seo_friendly_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "id": "seo_friendly_title",
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.title"
-        },
-        {
-          "id": "seo_friendly_description",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.description"
-        },
-        {
-          "id": "seo_friendly_content",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.provide_pages"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-center gap-2 cursor-pointer"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "name": "seo.seo_boards",
-                        "className": "checkbox"
-                      }
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-sm text-secondary"
-                      },
-                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.boards"
-                    }
-                  ]
+                    "text": "$t:sirsoft-board.admin.settings.seo.boards_page.title"
                 },
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-center gap-2 cursor-pointer"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "name": "seo.seo_board",
-                        "className": "checkbox"
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-sm text-secondary"
-                      },
-                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.board"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-center gap-2 cursor-pointer"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "name": "seo.seo_post_detail",
-                        "className": "checkbox"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-sm text-secondary"
-                      },
-                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.post_detail"
-                    }
-                  ]
-                }
-              ],
-              "props": {}
-            },
-            {
-              "id": "cache_section",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_management"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_description"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "btn btn-danger",
-                        "disabled": "{{_local.clearingCache ?? false}}"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Icon",
-                          "if": "{{_local.clearingCache ?? false}}",
-                          "props": {
-                            "name": "circle-notch",
-                            "className": "fa-spin mr-2"
-                          }
+                            "id": "field_boards_title",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.meta_boards_title",
+                                        "placeholder": "$t:sirsoft-board.admin.settings.seo.boards_page.title_placeholder",
+                                        "className": "{{_local.errors?.['seo.meta_boards_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['seo.meta_boards_title']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['seo.meta_boards_title']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}"
+                                }
+                            ]
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache"
-                        }
-                      ],
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "clearingCache": true
-                              }
+                            "id": "field_boards_description",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
                             },
-                            {
-                              "handler": "apiCall",
-                              "auth_required": true,
-                              "target": "/api/admin/seo/clear-cache",
-                              "params": {
-                                "method": "POST",
-                                "body": {
-                                  "layout": "board/boards"
-                                }
-                              },
-                              "onSuccess": {
-                                "handler": "apiCall",
-                                "auth_required": true,
-                                "target": "/api/admin/seo/clear-cache",
-                                "params": {
-                                  "method": "POST",
-                                  "body": {
-                                    "layout": "board/index"
-                                  }
-                                },
-                                "onSuccess": {
-                                  "handler": "apiCall",
-                                  "auth_required": true,
-                                  "target": "/api/admin/seo/clear-cache",
-                                  "params": {
-                                    "method": "POST",
-                                    "body": {
-                                      "layout": "board/show"
-                                    }
-                                  },
-                                  "onSuccess": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "clearingCache": false
-                                      }
-                                    },
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "success",
-                                        "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_success"
-                                      }
-                                    }
-                                  ],
-                                  "onError": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "clearingCache": false
-                                      }
-                                    },
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "error",
-                                        "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
-                                      }
-                                    }
-                                  ]
-                                },
-                                "onError": [
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "local",
-                                      "clearingCache": false
-                                    }
-                                  },
-                                  {
-                                    "handler": "toast",
-                                    "params": {
-                                      "type": "error",
-                                      "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
-                                    }
-                                  }
-                                ]
-                              },
-                              "onError": [
+                            "children": [
                                 {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "local",
-                                    "clearingCache": false
-                                  }
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
                                 },
                                 {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "error",
-                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
-                                  }
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "props": {
+                                        "name": "seo.meta_boards_description",
+                                        "rows": 3,
+                                        "className": "{{_local.errors?.['seo.meta_boards_description'] ? 'input-error resize-none' : ' resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['seo.meta_boards_description']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['seo.meta_boards_description']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}"
                                 }
-                              ]
-                            }
-                          ]
+                            ]
                         }
-                      ]
-                    }
-                  ],
-                  "props": {}
+                    ]
                 }
-              ]
-            }
-          ],
-          "props": {
-            "className": "row-stack"
-          }
+            ]
+        },
+        {
+            "id": "board_page_card",
+            "type": "layout",
+            "name": "SectionLayout",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.seo.board_page.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_board_title",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.meta_board_title",
+                                        "placeholder": "$t:sirsoft-board.admin.settings.seo.board_page.title_placeholder",
+                                        "className": "{{_local.errors?.['seo.meta_board_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['seo.meta_board_title']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['seo.meta_board_title']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_board_description",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "props": {
+                                        "name": "seo.meta_board_description",
+                                        "rows": 3,
+                                        "className": "{{_local.errors?.['seo.meta_board_description'] ? 'input-error resize-none' : ' resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['seo.meta_board_description']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['seo.meta_board_description']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {board_description}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "post_page_card",
+            "type": "layout",
+            "name": "SectionLayout",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.seo.post_page.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_post_title",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "seo.meta_post_title",
+                                        "placeholder": "$t:sirsoft-board.admin.settings.seo.post_page.title_placeholder",
+                                        "className": "{{_local.errors?.['seo.meta_post_title'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['seo.meta_post_title']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['seo.meta_post_title']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_post_description",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "props": {
+                                        "name": "seo.meta_post_description",
+                                        "rows": 3,
+                                        "className": "{{_local.errors?.['seo.meta_post_description'] ? 'input-error resize-none' : ' resize-none'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['seo.meta_post_description']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['seo.meta_post_description']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "seo_friendly_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "id": "seo_friendly_title",
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.title"
+                },
+                {
+                    "id": "seo_friendly_description",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.description"
+                },
+                {
+                    "id": "seo_friendly_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.provide_pages"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "stack-tight"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "seo.seo_boards",
+                                                "className": "checkbox",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.boards"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "seo.seo_board",
+                                                "className": "checkbox",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.board"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "seo.seo_post_detail",
+                                                "className": "checkbox",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.post_detail"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cache_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_management"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_description"
+                                        },
+                                        {
+                                            "comment": "코어 SEO 캐시 API(core.settings.update) 를 부른다 — 그 권한이 없으면 잠그고 이유를 아래에 적는다",
+                                            "id": "seo_clear_cache_button",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "SEO 캐시 비우기 — 게시판이 가진 화면 셋(`board/boards` → `board/index` → `board/show`)을 차례로 비운다. 한 엔드포인트가 레이아웃 하나씩만 받으므로 중첩해 이어 붙였고, 앞이 실패하면 뒤는 돌지 않는다. 성공 토스트는 마지막 하나가 끝난 뒤에야 뜬다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "clearingCache": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/seo/clear-cache",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "layout": "board/boards"
+                                                                }
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "apiCall",
+                                                                "target": "/api/admin/seo/clear-cache",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "layout": "board/index"
+                                                                    }
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/admin/seo/clear-cache",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "POST",
+                                                                        "body": {
+                                                                            "layout": "board/show"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "clearingCache": false
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "success",
+                                                                                "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_success"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "clearingCache": false
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "clearingCache": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "clearingCache": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-danger",
+                                                "disabled": "{{!_computed.canClearSeoCache || (_local.clearingCache ?? false)}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{_local.clearingCache ?? false}}",
+                                                    "props": {
+                                                        "name": "circle-notch",
+                                                        "spin": true,
+                                                        "className": "mr-2"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "seo_clear_cache_no_permission",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_computed.canClearSeoCache}}",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_no_permission"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

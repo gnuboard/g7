@@ -1,196 +1,201 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "게시판 설정 > 알림 탭"
-  },
-  "id": "notification",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "id": "section_notification",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.sections.notification"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "field_notify_author",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "checkbox",
-                            "className": "checkbox-aligned",
-                            "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author') : [...(_local.bulkApplyFields ?? []), 'notify_author']}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.settings.fields.notify_author"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": {
-                                "className": "text-field-hint"
-                              },
-                              "text": "$t:sirsoft-board.admin.settings.fields.notify_author_description"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "name": "basic_defaults.notify_author",
-                        "className": "flex-shrink-0",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "field_notify_admin_on_post",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "checkbox",
-                            "className": "checkbox-aligned",
-                            "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post']}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": {
-                                "className": "text-field-hint"
-                              },
-                              "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post_description"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "name": "basic_defaults.notify_admin_on_post",
-                        "className": "flex-shrink-0",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+    "comment": "「기본값」 탭의 알림 구획 — 새 게시판이 물려받을 알림 두 갈래(새 글이 올라오면 관리자에게 · 답글·댓글이 달리면 글쓴이에게). 어느 채널로 보낼지는 여기가 아니라 「알림 정의」 탭이 정한다",
+    "meta": {
+        "is_partial": true,
+        "description": "게시판 설정 > 알림 탭"
+    },
+    "id": "notification",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
         }
-      ]
-    }
-  ]
+    },
+    "children": [
+        {
+            "id": "section_notification",
+            "type": "layout",
+            "name": "SectionLayout",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.sections.notification"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_notify_author",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「답글·댓글이 달리면 글쓴이에게 알림」을 일괄 적용 대상에 넣었다 뺐다 한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author') : [...(_local.bulkApplyFields ?? []), 'notify_author']}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.notify_author"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-field-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.notify_author_description"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "basic_defaults.notify_author",
+                                                "className": "flex-shrink-0",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_notify_admin_on_post",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「새 글이 올라오면 관리자에게 알림」을 일괄 적용 대상에 넣었다 뺐다 한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post']}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-field-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post_description"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "basic_defaults.notify_admin_on_post",
+                                                "className": "flex-shrink-0",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

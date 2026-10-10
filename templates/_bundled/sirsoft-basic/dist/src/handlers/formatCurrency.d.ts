@@ -2,7 +2,7 @@ import { HandlerContext, TemplateActionDefinition } from '../types';
 /**
  * 숫자 값을 통화 형식으로 포맷팅합니다.
  *
- * 원화 계열(₩/원)은 금액 뒤에 "원", 그 외는 기호를 앞에 붙입니다
+ * 원화 계열(₩/원)은 보는 언어의 접두·접미(ko 「원」 뒤·en 「₩」 앞·ja 「ウォン」 뒤), 그 외는 기호를 앞에 붙입니다
  * (백엔드 messages.currency.prefix/suffix 와 동일한 표기 규칙).
  *
  * @param action - 액션 정의 (`params.value` / `params.currencyCode` / `params.locale`)

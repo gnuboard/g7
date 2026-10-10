@@ -5,7 +5,7 @@
         "ko": "Hello Admin Template",
         "en": "Hello Admin Template"
     },
-    "version": "0.1.1",
+    "version": "0.2.0",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 학습용 최소 Admin 템플릿 스켈레톤",
@@ -22,12 +22,14 @@
         "email": "contact@gnuboard.com",
         "url": "https://gnuboard.com"
     },
-    "release_date": "2026-04-21",
-    "g7_version": ">=7.0.10",
+    "release_date": "2026-10-10",
+    "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {},
         "plugins": {}
     },
+    "github_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_admin_template",
+    "github_changelog_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_admin_template/blob/main/CHANGELOG.md",
     "assets": {
         "js": [
             "dist/js/components.iife.js"

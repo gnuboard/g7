@@ -1,0 +1,134 @@
+<!-- 주문서의 할인 칸. 고른 쿠폰·할인코드는 화면에서 금액을 깎지 않고 **주문서를 통째로 서버에 다시
+     보내(PUT)** 계산된 결과를 받아 온다 — 쿠폰·적립금·배송비가 서로 물려 있어 한 조각만 계산할 수 없다. -->
+<partial description="할인/쿠폰 적용 섹션 - 쿠폰 선택 및 할인코드 입력 (PC/모바일 반응형). 카드 전체가 회원 전용 — 비회원은 쿠폰(회원 발급) 미지원이며 할인코드 시스템도 백엔드 미구현 상태">
+  <div data-if="{{_global.currentUser?.uuid}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+    <!-- 섹션 헤더 -->
+    <div class="flex-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="flex-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+      <!-- 좌측: 아이콘 + 타이틀 -->
+      <div class="flex items-center gap-2">
+        <icon name="tag" class="text-gray-700 dark:text-gray-300" size="md"/>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+          $t:shop.checkout.discount_section_title
+        </h2>
+      </div>
+      <!-- 우측: 쿠폰 다운로드 버튼 (로그인 사용자만) -->
+      <button data-if="{{_global.currentUser?.uuid}}" type="button" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+        <on type="click">
+          <set-state target="local" :downloadableCouponsLoading="true" :downloadableCouponsPage="1"/>
+          <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/downloadable?page=1&amp;per_page=8" auth_mode="required" method="GET">
+            <success>
+              <set-state target="local" downloadableCoupons="{{response.data}}" :downloadableCouponsLoading="false"/>
+              <open-modal target="coupon_download_modal"/>
+            </success>
+            <fail>
+              <set-state target="local" :downloadableCouponsLoading="false"/>
+              <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon name="download" size="sm"/>
+        <span>$t:shop.checkout.coupon_download_btn</span>
+      </button>
+    </div>
+    <!-- 주문 쿠폰 선택 (로그인 사용자만) -->
+    <div data-if="{{_global.currentUser?.uuid}}" class="mb-4">
+      <responsive on="portable" class="mb-3"/>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <span>$t:shop.checkout.order_coupon_select</span>
+        <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length}}$t:shop.checkout.coupon_count_suffix)</span>
+      </label>
+      <!-- 주문 쿠폰 드롭다운 -->
+      <select name="order_coupon_issue_id" value="{{_local.checkout?.order_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+        <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+        <on type="change">
+          <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { order_coupon_issue_id: $event.target.value || null })}}"/>
+          <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+            <success>
+              <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+              <toast type="success" message="{{$event.target.value ? '$t:shop.checkout.order_coupon_applied' : '$t:shop.checkout.order_coupon_removed'}}"/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available'}}</option>
+        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
+      </select>
+      <!-- 적용된 주문 쿠폰 정보 -->
+      <div data-if="{{_local.checkout?.order_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+        <icon name="check-circle" size="sm"/>
+        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}</span>
+      </div>
+    </div>
+    <!-- 배송비 쿠폰 선택 (로그인 사용자만) -->
+    <div data-if="{{_global.currentUser?.uuid}}" class="mb-4">
+      <responsive on="portable" class="mb-3"/>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <span>$t:shop.checkout.shipping_coupon_select</span>
+        <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length}}$t:shop.checkout.coupon_count_suffix)</span>
+      </label>
+      <!-- 배송비 쿠폰 드롭다운 -->
+      <select name="shipping_coupon_issue_id" value="{{_local.checkout?.shipping_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+        <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+        <on type="change">
+          <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { shipping_coupon_issue_id: $event.target.value || null })}}"/>
+          <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+            <success>
+              <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+              <toast type="success" message="{{$event.target.value ? '$t:shop.checkout.shipping_coupon_applied' : '$t:shop.checkout.shipping_coupon_removed'}}"/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available'}}</option>
+        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
+      </select>
+      <!-- 적용된 배송비 쿠폰 정보 -->
+      <div data-if="{{_local.checkout?.shipping_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+        <icon name="check-circle" size="sm"/>
+        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + checkoutData.data.calculation?.summary?.shipping_discount + $t('sirsoft-ecommerce.currency.krw_suffix'))}}</span>
+      </div>
+    </div>
+    <!-- 할인코드 입력 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:shop.checkout.discount_code</label>
+      <div class="flex gap-2">
+        <input type="text" name="discount_code" value="{{_local.checkout?.discount_code ?? ''}}" placeholder="$t:shop.checkout.discount_code_placeholder" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <responsive on="portable" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+          <on type="change">
+            <!-- 코드는 담기만 하고 적용은 옆 버튼이 한다. `Object.assign` 으로 통째 교체하는 이유는
+                 주문서 상태가 한 객체이고 그 객체 전체가 다음 PUT 의 본문이 되기 때문이다 -->
+            <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { discount_code: $event.target.value || null })}}"/>
+          </on>
+        </input>
+        <!-- 할인코드 적용. 서버가 코드의 유효성과 이 주문에 쓸 수 있는지를 함께 판정하므로 화면에서 미리 거르지 않는다 -->
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{!_local.checkout?.discount_code}}">
+          <responsive on="portable" class="px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/>
+          <on type="click">
+            <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+              <success>
+                <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                <toast type="success" message="$t:shop.checkout.discount_code_applied"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:shop.checkout.discount_code_invalid'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          $t:shop.checkout.discount_code_apply
+        </button>
+      </div>
+      <!-- 적용된 할인코드 정보 -->
+      <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+        <icon name="check-circle" size="sm"/>
+        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}</span>
+      </div>
+    </div>
+  </div>
+</partial>

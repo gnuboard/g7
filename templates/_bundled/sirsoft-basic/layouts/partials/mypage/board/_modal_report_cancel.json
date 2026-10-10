@@ -1,0 +1,198 @@
+{
+    "comment": "아직 처리되지 않은 내 신고를 거두는 창. 취소해도 신고 대상은 그대로다 — 「신고를 넣은\n     사실」만 없애는 것이라는 점을 본문이 말한다.\n\n     이 창은 대기 중인 건에서만 열린다(목록의 취소 버튼이 `can_cancel` 로 걸러진다).",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 게시판 활동 - 신고 취소 확인",
+        "editor_label": "$t:user.modal_label.mypage_board.reportCancelModal"
+    },
+    "id": "report_cancel_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "id": "report_cancel_modal",
+        "title": "$t:mypage.board_activities.reports.cancel_title",
+        "icon": "flag",
+        "iconClassName": "text-red-500",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "data-testid": "report-cancel-modal",
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.board_activities.reports.cancel_confirm"
+                },
+                {
+                    "comment": "어느 신고를 거두는지 — 목록이 담아 둔 대상(글은 제목, 댓글은 본문 요약)을 그대로 보인다.\n           반응 해제 창과 같은 자리이며, 여러 건을 차례로 취소할 때 엉뚱한 행을 누르지 않게 한다.",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_global.reportCancelModal?.title}}",
+                    "props": {
+                        "data-testid": "report-cancel-target",
+                        "className": "px-3 py-2 text-sm font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg line-clamp-2"
+                    },
+                    "text": "{{raw:_global.reportCancelModal?.title}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-500"
+                    },
+                    "text": "$t:mypage.board_activities.reports.cancel_notice"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "취소 — 이 창은 여러 행이 돌려 쓰므로 대상 정보를 비우지 않으면 다음에 열 때 앞의 행이 남는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reportCancelModal": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "신고 취소 — 접수(pending) 상태에서만 허용되고 다른 상태는 서버가 422 로 막는다. 성공하면 목록·통계를 다시 받는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "reportCancelSubmitting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/me/reports/{{_global.reportCancelModal?.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "reportCancelSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{result.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "myReports"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "위쪽 통계 카드의 「신고한 건」 숫자도 같이 줄어야 한다",
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "myActivityStats"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reportCancelModal": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "reportCancelSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "report-cancel-confirm",
+                                "disabled": "{{_local.reportCancelSubmitting}}",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.reportCancelSubmitting}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "className": "animate-spin mr-2"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:mypage.board_activities.reports.cancel_confirm_button"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

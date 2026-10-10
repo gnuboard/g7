@@ -34,7 +34,7 @@ export interface ToastProps {
  * - 수동 닫기 버튼
  *
  * @example
- * // 레이아웃 JSON 사용 예시 (_admin_base.json)
+ * // 레이아웃 JSON 사용 예시 (_admin_base.g7.html)
  * {
  *   "id": "global_toast",
  *   "type": "composite",

@@ -1,0 +1,388 @@
+<!-- 쇼핑몰 설정 — 본인인증 정책 탭. 어느 지점에서 인증을 요구할지 목록으로 보고 켜고 끈다.
+  
+  다른 설정 탭과 성격이 다르다 — 여기 값은 폼에 담겼다가 한꺼번에 저장되는 것이 아니라
+  **그 자리에서 서버로 나간다**(켜고 끄기는 바로 PUT). 그래서 이 탭에는 저장 버튼이 없다.
+  
+  목록의 쪽·필터는 URL query 로 나가는데 `tab=identity_policies` 를 함께 실어야 새로고침 후
+  같은 탭이 선다. `scroll` 을 함께 주는 이유는 설정 화면이 긴 한 장이라 이동 후 정책 구획으로
+  다시 데려다 놓아야 하기 때문이다.
+  
+  모듈이 기본 제공하는 정책은 지울 수 없고 관리자가 만든 것(`source_type === 'admin'`)만
+  지워진다 — 그 판정은 서버가 준 값과 `abilities` 가 한다.
+
+  목록·켜고 끄기·추가·수정·삭제는 이커머스 모듈 경로(`/api/modules/sirsoft-ecommerce/admin/identity-policies`)를
+  이커머스 권한으로 쓴다 — 조회 권한이 없으면 탭 내용 대신 「권한 없음」, 수정 권한이 없으면 읽기 전용 안내를 보인다.
+  
+  넓은 화면 표와 좁은 화면 카드가 **같은 동작을 두 벌** 갖고 있으므로 한쪽만 고치면 화면 폭에
+  따라 동작이 갈린다. -->
+<partial description="환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)">
+  <div data-ref="tab_content_identity_policies" data-if="{{(_global.activeEcommerceSettingsTab || query.tab) === 'identity_policies'}}">
+    <!-- 본인인증 정책 조회 권한(`sirsoft-ecommerce.identity.policies.read`)이 없으면 목록이 403 이다 — 탭 내용 대신 이유를 보인다 -->
+    <div data-ref="identity_policies_no_permission" data-if="{{_computed.identityPoliciesNoReadPermission}}" class="admin-card">
+      <div class="flex gap-2 text-tertiary">
+        <icon name="lock" size="sm" class="mt-0.5 flex-shrink-0"/>
+        <span>$t:sirsoft-ecommerce.admin.settings.identity.no_read_permission</span>
+      </div>
+    </div>
+    <div data-ref="page_root" data-if="{{!_computed.identityPoliciesNoReadPermission}}" class="admin-card">
+      <!-- 수정 권한(`sirsoft-ecommerce.identity.policies.update`)이 없으면 읽기 전용이다 — 추가·토글·편집은 잠기고 삭제는 숨는다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다 -->
+      <div data-ref="identity_policies_read_only_notice" data-if="{{ecommerceIdentityPolicies?.data?.abilities?.can_update === false}}" class="alert-warning mb-4">
+        <icon name="lock" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-ecommerce.admin.settings.identity.read_only_notice</span>
+      </div>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_description</div>
+      <div data-ref="page_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h3 class="section-title">$t:admin.identity.policies.page_title</h3>
+          <p class="text-label-subtle">$t:admin.identity.policies.page_description</p>
+        </div>
+        <div>
+          <button type="button" class="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500" disabled="{{ecommerceIdentityPolicies?.data?.abilities?.can_create !== true}}">
+            <on type="click">
+              <!-- 정책 만들기. 빈 폼을 세워 편집 창을 연다 — 만들기와 고치기가 같은 창을 쓰고 `isNew` 가 주소와 메서드를 가른다. -->
+              <sequence>
+                <set-state target="global">
+                  <field name="identity_policy_form_modal">
+                    <field name="form">
+                      <field name="id" :value="null"/>
+                      <field name="key" value=""/>
+                      <field name="scope" value="route"/>
+                      <field name="target" value=""/>
+                      <field name="purpose" value="sensitive_action"/>
+                      <field name="provider_id" value=""/>
+                      <field name="grace_minutes" :value="0"/>
+                      <field name="applies_to" value="both"/>
+                      <field name="fail_mode" value="block"/>
+                      <field name="enabled" :value="true"/>
+                      <field name="priority" :value="100"/>
+                      <field name="conditions" :value="{}"/>
+                      <field name="source_type" value="admin"/>
+                    </field>
+                    <field name="isNew" :value="true"/>
+                    <field name="errors" :value="null"/>
+                    <field name="isSaving" :value="false"/>
+                  </field>
+                </set-state>
+                <open-modal target="identity_policy_form_modal"/>
+              </sequence>
+            </on>
+            <span>$t:admin.identity.policies.add_button</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="identity_purposes_card" class="mb-6 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <h4 class="text-primary text-sm font-semibold mb-2">$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_title</h4>
+        <div class="flex flex-wrap gap-2">
+          <span data-each="purpose in (ecommerceIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-ecommerce')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300" title="{{(purpose.description ?? '') + ((purpose.allowed_channels ?? []).length > 0 ? ' [' + (purpose.allowed_channels ?? []).join(', ') + ']' : '')}}">
+            <span class="font-mono text-[10px] text-indigo-600 dark:text-indigo-400">{{purpose.id}}</span>
+            <span>{{purpose.label ?? purpose.id}}</span>
+          </span>
+          <span data-if="{{(ecommerceIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-ecommerce').length === 0}}" class="text-tertiary italic">$t:sirsoft-ecommerce.admin.settings.identity.purposes_empty</span>
+        </div>
+      </div>
+      <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
+        <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다. -->
+        <select name="filter.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+          <options>
+            <option value="">$t:admin.identity.policies.all_scopes</option>
+            <option value="route">$t:admin.identity.policies.scope.route</option>
+            <option value="hook">$t:admin.identity.policies.scope.hook</option>
+            <option value="custom">$t:admin.identity.policies.scope.custom</option>
+          </options>
+          <on type="change">
+            <!-- 범위 필터. 빈 값이면 query 에서 아예 빼고(`undefined`), 쪽은 1로 되돌린다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
+              <query tab="identity_policies" scope="{{$event.target.value || undefined}}" :page="1"/>
+              <field name="scroll">
+                <field name="container" value="#right_content_area"/>
+                <field name="to" value="#identity_section_policies"/>
+                <field name="offset" :value="180"/>
+                <field name="block" value="start"/>
+              </field>
+            </navigate>
+          </on>
+        </select>
+        <!-- 검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식. -->
+        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
+          <on type="change">
+            <!-- 입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다 -->
+            <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>
+          </on>
+          <on type="keypress" key="Enter">
+            <!-- 검색어 Enter. 필터와 같이 query 로 나가고 쪽을 1로 되돌린다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
+              <query tab="identity_policies" search="{{$event.target.value || undefined}}" :page="1"/>
+              <field name="scroll">
+                <field name="container" value="#right_content_area"/>
+                <field name="to" value="#identity_section_policies"/>
+                <field name="offset" :value="180"/>
+                <field name="block" value="start"/>
+              </field>
+            </navigate>
+          </on>
+        </input>
+        <button type="button" class="px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+          <on type="click">
+            <!-- Enter 키와 같이 입력값을 쿼리로 실어 옮긴다 — 다시 받기만 하면 입력 중인 검색어가 반영되지 않는다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
+              <query tab="identity_policies" search="{{(_local.identityPolicySearch ?? query.search) || undefined}}" :page="1"/>
+              <field name="scroll">
+                <field name="container" value="#right_content_area"/>
+                <field name="to" value="#identity_section_policies"/>
+                <field name="offset" :value="180"/>
+                <field name="block" value="start"/>
+              </field>
+            </navigate>
+          </on>
+          <span>$t:common.search</span>
+        </button>
+        <button data-if="{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <!-- 입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다. -->
+            <set-state target="local" identityPolicySearch=""/>
+          </on>
+          <on type="click">
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="false" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
+              <query tab="identity_policies"/>
+              <field name="scroll">
+                <field name="container" value="#right_content_area"/>
+                <field name="to" value="#identity_section_policies"/>
+                <field name="offset" :value="180"/>
+                <field name="block" value="start"/>
+              </field>
+            </navigate>
+          </on>
+          <span>$t:admin.identity.policies.reset_filters</span>
+        </button>
+      </div>
+      <div data-ref="policy_table_card" class="admin-card">
+        <div data-ref="policy_table_desktop" class="overflow-x-auto">
+          <responsive on="mobile" data-if="{{false}}"/>
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
+              <tr>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.key</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.scope</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.target</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.purpose</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.grace_minutes</th>
+                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.priority</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.enabled</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.source_type</th>
+                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">$t:common.actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-each="policy in ecommerceIdentityPolicies?.data?.data ?? []" class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs">{{policy.key ?? ''}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs">{{policy.target ?? ''}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{(ecommerceIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums">{{policy.priority ?? 100}}</td>
+                <td class="px-3 py-2">
+                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+                    <on type="change">
+                      <!-- 넓은 화면 표 — 사용 여부. 폼에 담지 않고 바로 서버로 나간다. 성공 알림과 목록 다시 부르기를 `<parallel>` 로 함께 하는 이유는 둘이 서로를 기다릴 필요가 없어서다. -->
+                      <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/identity-policies/{{policy.id}}" method="PUT">
+                        <success>
+                          <parallel>
+                            <toast type="success" message="{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"/>
+                            <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
+                          </parallel>
+                        </success>
+                        <fail>
+                          <parallel>
+                            <toast type="error" message="{{error.message ?? $t('admin.identity.policies.toggle_failed')}}"/>
+                            <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
+                          </parallel>
+                        </fail>
+                        <body enabled="{{$event.target.checked}}"/>
+                      </api-call>
+                    </on>
+                  </toggle>
+                </td>
+                <td class="px-3 py-2">
+                  <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
+                    <on type="click">
+                      <!-- 넓은 화면 표 — 고치기. 그 줄의 값을 폼에 담아 편집 창을 연다(만들기와 같은 창을 쓰고 isNew 가 주소·메서드를 가른다). -->
+                      <sequence>
+                        <set-state target="global">
+                          <field name="identity_policy_form_modal">
+                            <field name="form">
+                              <field name="id" value="{{policy.id}}"/>
+                              <field name="key" value="{{policy.key ?? ''}}"/>
+                              <field name="scope" value="{{policy.scope ?? 'route'}}"/>
+                              <field name="target" value="{{policy.target ?? ''}}"/>
+                              <field name="purpose" value="{{policy.purpose ?? 'sensitive_action'}}"/>
+                              <field name="provider_id" value="{{policy.provider_id ?? ''}}"/>
+                              <field name="grace_minutes" value="{{policy.grace_minutes ?? 0}}"/>
+                              <field name="applies_to" value="{{policy.applies_to ?? 'both'}}"/>
+                              <field name="fail_mode" value="{{policy.fail_mode ?? 'block'}}"/>
+                              <field name="enabled" value="{{Boolean(policy.enabled)}}"/>
+                              <field name="priority" value="{{policy.priority ?? 100}}"/>
+                              <field name="conditions" value="{{(policy.conditions ?? {})}}"/>
+                              <field name="source_type" value="{{policy.source_type ?? 'admin'}}"/>
+                              <field name="user_overrides" value="{{policy.user_overrides ?? []}}"/>
+                            </field>
+                            <field name="isNew" :value="false"/>
+                            <field name="errors" :value="null"/>
+                            <field name="isSaving" :value="false"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="identity_policy_form_modal"/>
+                      </sequence>
+                    </on>
+                    $t:common.edit
+                  </button>
+                  <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                    <on type="click">
+                      <!-- 넓은 화면 표 — 삭제. 관리자가 만든 정책만 버튼이 뜬다. 대상 id 를 담아 두고 확인 창을 연다(창은 부모 `_local` 을 못 본다). -->
+                      <sequence>
+                        <set-state target="global" ecommerceIdentityPolicyDeleteId="{{policy.id}}"/>
+                        <open-modal target="ecommerce_identity_policy_delete_modal"/>
+                      </sequence>
+                    </on>
+                    <span>$t:common.delete</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="policy_cards_mobile" data-if="{{false}}" class="divider-list">
+          <responsive on="mobile" data-if="{{true}}"/>
+          <div data-each="policy in ecommerceIdentityPolicies?.data?.data ?? []" class="p-4">
+            <div class="flex-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="text-primary font-mono text-xs break-all">{{policy.key ?? ''}}</div>
+                <div class="form-hint">
+                  <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
+                  <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                  <span class="font-mono break-all">{{policy.target ?? ''}}</span>
+                </div>
+              </div>
+              <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+            </div>
+            <div class="flex-between gap-3">
+              <div class="text-tertiary">
+                <span>{{(ecommerceIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</span>
+                <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                <span>$t:admin.identity.policies.col.grace_minutes</span>
+                <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">{{policy.grace_minutes ?? 0}}</span>
+                <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                <span>$t:admin.identity.policies.col.priority</span>
+                <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
+              </div>
+              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+                <on type="change">
+                  <!-- 좁은 화면 카드 — 사용 여부. 위 표 판본과 같은 호출이다. -->
+                  <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/identity-policies/{{policy.id}}" method="PUT">
+                    <success>
+                      <parallel>
+                        <toast type="success" message="{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"/>
+                        <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
+                      </parallel>
+                    </success>
+                    <fail>
+                      <parallel>
+                        <toast type="error" message="{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"/>
+                        <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
+                      </parallel>
+                    </fail>
+                    <body enabled="{{$event.target.checked}}"/>
+                  </api-call>
+                </on>
+              </toggle>
+            </div>
+            <div class="flex-center justify-end gap-2">
+              <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
+                <on type="click">
+                  <!-- 좁은 화면 카드 — 고치기. 위 표 판본과 같다. -->
+                  <sequence>
+                    <set-state target="global">
+                      <field name="identity_policy_form_modal">
+                        <field name="form">
+                          <field name="id" value="{{policy.id}}"/>
+                          <field name="key" value="{{policy.key ?? ''}}"/>
+                          <field name="scope" value="{{policy.scope ?? 'route'}}"/>
+                          <field name="target" value="{{policy.target ?? ''}}"/>
+                          <field name="purpose" value="{{policy.purpose ?? 'sensitive_action'}}"/>
+                          <field name="provider_id" value="{{policy.provider_id ?? ''}}"/>
+                          <field name="grace_minutes" value="{{policy.grace_minutes ?? 0}}"/>
+                          <field name="applies_to" value="{{policy.applies_to ?? 'both'}}"/>
+                          <field name="fail_mode" value="{{policy.fail_mode ?? 'block'}}"/>
+                          <field name="enabled" value="{{Boolean(policy.enabled)}}"/>
+                          <field name="priority" value="{{policy.priority ?? 100}}"/>
+                          <field name="conditions" value="{{(policy.conditions ?? {})}}"/>
+                          <field name="source_type" value="{{policy.source_type ?? 'admin'}}"/>
+                          <field name="user_overrides" value="{{policy.user_overrides ?? []}}"/>
+                        </field>
+                        <field name="isNew" :value="false"/>
+                        <field name="errors" :value="null"/>
+                        <field name="isSaving" :value="false"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="identity_policy_form_modal"/>
+                  </sequence>
+                </on>
+                $t:common.edit
+              </button>
+              <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                <on type="click">
+                  <!-- 좁은 화면 카드 — 삭제. 위 표 판본과 같다. -->
+                  <sequence>
+                    <set-state target="global" ecommerceIdentityPolicyDeleteId="{{policy.id}}"/>
+                    <open-modal target="ecommerce_identity_policy_delete_modal"/>
+                  </sequence>
+                </on>
+                <span>$t:common.delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div data-if="{{(ecommerceIdentityPolicies?.data?.data ?? []).length === 0}}" class="py-10 text-center text-label-subtle">$t:admin.identity.policies.empty</div>
+        <div data-ref="policy_pagination" class="footer-buttons-between">
+          <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
+          <div class="flex-center gap-1">
+            <button type="button" disabled="{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              <on type="click">
+                <!-- 이전 쪽. 첫 쪽에서는 버튼이 잠기고, 이동 후 정책 구획으로 스크롤을 되돌린다. -->
+                <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
+                  <query tab="identity_policies" page="{{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}"/>
+                  <field name="scroll">
+                    <field name="container" value="#right_content_area"/>
+                    <field name="to" value="#identity_section_policies"/>
+                    <field name="offset" :value="180"/>
+                    <field name="block" value="start"/>
+                  </field>
+                </navigate>
+              </on>
+              <span>$t:common.prev</span>
+            </button>
+            <span class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">$t:admin.identity.policies.page_indicator|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
+            <button type="button" disabled="{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              <on type="click">
+                <!-- 다음 쪽. 마지막 쪽에서는 잠긴다. -->
+                <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
+                  <query tab="identity_policies" page="{{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}"/>
+                  <field name="scroll">
+                    <field name="container" value="#right_content_area"/>
+                    <field name="to" value="#identity_section_policies"/>
+                    <field name="offset" :value="180"/>
+                    <field name="block" value="start"/>
+                  </field>
+                </navigate>
+              </on>
+              <span>$t:common.next</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

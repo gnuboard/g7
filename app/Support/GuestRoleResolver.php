@@ -61,7 +61,8 @@ class GuestRoleResolver
     {
         $role = self::resolve();
 
-        if (! $role) {
+        // 사용 여부를 끈 guest 역할은 비회원에게 아무 권한도 주지 않는다 — 회원 역할과 같은 기준.
+        if (! $role || ! $role->is_active) {
             return false;
         }
 
@@ -83,6 +84,8 @@ class GuestRoleResolver
      *
      * 권한 재시드(코어 업데이트 / 확장 설치) 직후처럼 같은 요청 안에서 권한 구성이
      * 바뀌는 경우에 호출합니다.
+     *
+     * @return void 반환값 없음
      */
     public static function flush(): void
     {

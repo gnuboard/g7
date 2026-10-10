@@ -1,10 +1,8 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 이번 변경은 다국어 키 참조 오타(fetc_failed → fetch_failed) 1건 정정뿐이며
-// 엔드포인트·파라미터·응답 필드 등 API 표면은 변경되지 않아 갱신할 문서가 없다.
-
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
@@ -13,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartEmptyException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\TempOrderNotFoundException;
@@ -32,6 +31,12 @@ use Modules\Sirsoft\Ecommerce\Services\TempOrderService;
  */
 class CheckoutController extends PublicBaseController
 {
+    /**
+     * 체크아웃 컨트롤러를 생성합니다.
+     *
+     * @param  TempOrderService  $tempOrderService  임시 주문 서비스
+     * @param  CheckoutDataService  $checkoutDataService  주문서 화면 데이터 서비스
+     */
     public function __construct(
         private TempOrderService $tempOrderService,
         private CheckoutDataService $checkoutDataService
@@ -106,6 +111,16 @@ class CheckoutController extends PublicBaseController
                 'messages.checkout.create_failed',
                 422,
                 ['code' => 'mileage_exceeds_balance', 'message' => $e->getMessage()],
+            );
+        } catch (CartOperationException $e) {
+            // 바로 구매 항목의 옵션 없음 / 구매할 수 있는 옵션이 없는 상품 — 서버 오류(500)가 아닌 사유별 422.
+            // 메시지 키가 이미 `sirsoft-ecommerce::` 를 포함하므로 모듈 도메인을 다시 붙이지 않는다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                $e->getStatusCode(),
+                ['code' => $e->getReason()]
             );
         } catch (CartEmptyException $e) {
             // 장바구니 비어있음 — i18n 문자열 매칭 대신 타입 분기 (U14/MP06)
@@ -190,6 +205,9 @@ class CheckoutController extends PublicBaseController
                 $result['unavailable_items'] ?? []
             );
 
+            // [결제하기] 를 잠그는 키 — 주문 생성(`POST user/orders`)의 라우트 권한과 같다(비회원은 guest 역할로 판정).
+            $responseData['abilities'] = ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')];
+
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.fetched', $responseData);
         } catch (Exception $e) {
             Log::error('Checkout show error', [
@@ -263,6 +281,9 @@ class CheckoutController extends PublicBaseController
                 $tempOrder->calculation_result,
                 $userId
             );
+
+            // 화면이 주문서 데이터를 이 응답으로 통째로 바꾸므로 조회(show)와 같은 [결제하기] 권한 키를 싣는다
+            $responseData['abilities'] = ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')];
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.updated', $responseData);
         } catch (TempOrderNotFoundException $e) {

@@ -74,6 +74,10 @@ function findButtonByChildText(allNodes: any[], textMatch: string): any {
 describe('배송설정 탭에서 배송유형 섹션 참조', () => {
     const allTabNodes = flattenAll(tabShipping);
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_tab_includes_type_section
+     */
     it('_tab_shipping.json에 _shipping_type_section.json partial이 포함되어 있다', () => {
         const partials = allTabNodes.filter(
             (n: any) => n.partial === '_shipping_type_section.json'
@@ -81,6 +85,10 @@ describe('배송설정 탭에서 배송유형 섹션 참조', () => {
         expect(partials.length).toBeGreaterThanOrEqual(1);
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_tab_includes_type_section
+     */
     it('배송유형 섹션은 배송사 섹션보다 앞에 위치한다', () => {
         const jsonStr = JSON.stringify(tabShipping);
         const typePos = jsonStr.indexOf('_shipping_type_section.json');
@@ -95,6 +103,10 @@ describe('배송설정 탭에서 배송유형 섹션 참조', () => {
 describe('배송유형 관리 섹션 구조', () => {
     const allNodes = flattenAll(typeSection);
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_section_structure
+     */
     it('카드 구조 (admin-card → card-header + 테이블)를 가진다', () => {
         expect(typeSection.props?.className).toBe('admin-card');
         const cardHeaders = allNodes.filter(
@@ -103,6 +115,10 @@ describe('배송유형 관리 섹션 구조', () => {
         expect(cardHeaders.length).toBeGreaterThanOrEqual(1);
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_section_structure
+     */
     it('섹션 제목이 다국어 키를 사용한다', () => {
         const h3 = findAllByName(allNodes, 'H3').find(
             (n: any) => n.props?.className === 'card-title'
@@ -110,6 +126,10 @@ describe('배송유형 관리 섹션 구조', () => {
         expect(h3?.text).toBe('$t:sirsoft-ecommerce.admin.settings.shipping.types.section_title');
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_section_structure
+     */
     it('추가 버튼이 존재하고 isAddingShippingType 조건으로 표시된다', () => {
         const addBtn = findButtonByChildText(allNodes, 'types.add_button');
         expect(addBtn).toBeDefined();
@@ -123,6 +143,10 @@ describe('배송유형 관리 섹션 구조', () => {
 describe('배송유형 추가 폼', () => {
     const allNodes = flattenAll(typeSection);
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_add_form_requires_site_locale_name
+     */
     it('추가 폼이 isAddingShippingType 조건으로 표시된다', () => {
         const addForm = allNodes.find(
             (n: any) => n.if === '{{_local.isAddingShippingType}}' && n.props?.className?.includes('border-b')
@@ -130,6 +154,10 @@ describe('배송유형 추가 폼', () => {
         expect(addForm).toBeDefined();
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_add_form_requires_site_locale_name
+     */
     it('코드, 유형명(MultilingualInput), 카테고리(Select) 3개 필드가 있다', () => {
         // 추가 폼 내 Input (code)
         const codeInput = allNodes.find(
@@ -150,6 +178,10 @@ describe('배송유형 추가 폼', () => {
         expect(categorySelect).toBeDefined();
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_add_form_requires_site_locale_name
+     */
     it('카테고리 Select에 domestic, international, other 옵션이 있다', () => {
         const selects = findAllByName(allNodes, 'Select');
         const categorySelect = selects.find(
@@ -161,6 +193,10 @@ describe('배송유형 추가 폼', () => {
         expect(options.map((o: any) => o.value)).toEqual(['domestic', 'international', 'other']);
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_add_form_requires_site_locale_name
+     */
     it('취소/추가 버튼이 있다', () => {
         const cancelBtn = findButtonByChildText(allNodes, 'types.form.cancel');
         const saveBtn = findButtonByChildText(allNodes, 'types.form.save');
@@ -168,12 +204,42 @@ describe('배송유형 추가 폼', () => {
         expect(saveBtn).toBeDefined();
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_add_form_requires_site_locale_name
+     */
     it('추가 버튼은 conditions 핸들러로 코드/이름 필수 검증을 수행한다', () => {
         const saveBtn = findButtonByChildText(allNodes, 'types.form.save');
         const clickAction = saveBtn.actions?.find((a: any) => a.type === 'click');
         expect(clickAction?.handler).toBe('conditions');
         expect(clickAction?.conditions).toBeDefined();
         expect(clickAction.conditions.length).toBeGreaterThanOrEqual(2);
+    });
+
+    // 이름 필수 판정은 **현재 로케일**이다 — `ko` 고정이 아니다. 형제인 배송사·사유 3종과 같은
+    // 계약이며(S10), en/ja 로케일 운영자가 자기 언어 칸을 채우고도 폼 게이트에서 막히던 것을 없앤다.
+    //
+    // 배송사에는 이 단언이 있었고 배송유형에는 없었다 — 같은 수정을 두 파셜에 넣었는데 한쪽만
+    // 계약으로 고정돼, 배송유형은 `ko` 로 되돌려도 어느 테스트도 붉어지지 않는 상태였다.
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_add_form_requires_site_locale_name
+     */
+    it('이름 필수 판정이 현재 로케일을 읽는다 (ko 고정 금지)', () => {
+        const saveBtn = findButtonByChildText(allNodes, 'types.form.save');
+        const clickAction = saveBtn.actions?.find((a: any) => a.type === 'click');
+
+        const validCondition = clickAction.conditions[0];
+        expect(validCondition.if).toContain("shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')]");
+        expect(validCondition.if).not.toContain('shippingTypeForm?.name?.ko');
+
+        const elseCondition = clickAction.conditions[clickAction.conditions.length - 1];
+        expect(elseCondition.then.params?.shippingTypeFormErrors?.name_ko).toContain(
+            "shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')]"
+        );
+        expect(elseCondition.then.params?.shippingTypeFormErrors?.name_ko).not.toContain(
+            'shippingTypeForm?.name?.ko'
+        );
     });
 });
 
@@ -183,11 +249,19 @@ describe('배송유형 추가 폼', () => {
 describe('배송유형 테이블', () => {
     const allNodes = flattenAll(typeSection);
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_table
+     */
     it('6개 컬럼 헤더가 있다 (드래그핸들, code, name, category, is_active, actions)', () => {
         const ths = findAllByName(allNodes, 'Th');
         expect(ths.length).toBe(6);
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_table
+     */
     it('Tbody에 sortable이 정의되어 _local.form.shipping.types를 순회한다', () => {
         const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
         const sortableTbody = tbodies.find((tb: any) => tb.sortable);
@@ -197,6 +271,10 @@ describe('배송유형 테이블', () => {
         expect(sortableTbody.sortable.wrapperElement).toBe('tr');
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_table
+     */
     it('sortable onSortEnd가 sort_order를 재계산한다', () => {
         const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
         const sortableTbody = tbodies.find((tb: any) => tb.sortable);
@@ -205,6 +283,10 @@ describe('배송유형 테이블', () => {
         expect(sortEndAction.params['form.shipping.types']).toContain('sort_order');
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_table
+     */
     it('itemTemplate에 드래그 핸들, MultilingualInput, Select, Toggle이 있다', () => {
         const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
         const sortableTbody = tbodies.find((tb: any) => tb.sortable);
@@ -224,6 +306,10 @@ describe('배송유형 테이블', () => {
         expect(toggles.length).toBeGreaterThanOrEqual(1);
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_table
+     */
     it('itemTemplate에 삭제 버튼이 confirm 포함 setState를 사용한다', () => {
         const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
         const sortableTbody = tbodies.find((tb: any) => tb.sortable);
@@ -235,6 +321,10 @@ describe('배송유형 테이블', () => {
         expect(clickAction?.confirm).toContain('confirm_delete');
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_table
+     */
     it('빈 상태 메시지가 있다', () => {
         const emptyMsg = allNodes.find(
             (n: any) => n.text?.includes('types.empty')
@@ -247,6 +337,10 @@ describe('배송유형 테이블', () => {
 // 5. 반응형 (모바일 카드뷰) 검증
 // ══════════════════════════════════════════════════════════
 describe('배송유형 모바일 카드뷰', () => {
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_mobile_cards
+     */
     it('데스크톱 테이블에 responsive.portable이 정의되어 있다', () => {
         const allNodes = flattenAll(typeSection);
         const listDiv = allNodes.find((n: any) => n.id === 'shipping_type_list');
@@ -254,6 +348,10 @@ describe('배송유형 모바일 카드뷰', () => {
         expect(listDiv.responsive?.portable).toBeDefined();
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_mobile_cards
+     */
     it('shipping_type_list에 overflow-x-clip 사용 (Select 드롭다운 가려짐 방지)', () => {
         const allNodes = flattenAll(typeSection);
         const listDiv = allNodes.find((n: any) => n.id === 'shipping_type_list');
@@ -261,6 +359,10 @@ describe('배송유형 모바일 카드뷰', () => {
         expect(listDiv?.props?.className).not.toContain('overflow-x-auto');
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_mobile_cards
+     */
     it('카드뷰가 _shipping_type_cards.json partial을 참조한다', () => {
         const allNodes = flattenAll(typeSection);
         const listDiv = allNodes.find((n: any) => n.id === 'shipping_type_list');
@@ -276,6 +378,10 @@ describe('배송유형 모바일 카드뷰', () => {
 describe('배송유형 카드뷰 구조', () => {
     const allNodes = flattenAll(typeCards);
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_card_structure
+     */
     it('iteration으로 _local.form.shipping.types를 순회한다', () => {
         const card = allNodes.find((n: any) => n.id === 'shipping_type_card_{{tIdx}}');
         expect(card).toBeDefined();
@@ -283,6 +389,10 @@ describe('배송유형 카드뷰 구조', () => {
         expect(card.iteration.item_var).toBe('type');
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_card_structure
+     */
     it('카드 헤더에 code 텍스트와 is_active Toggle이 있다', () => {
         const cardHeader = allNodes.find(
             (n: any) => n.props?.className === 'excel-card-header'
@@ -301,6 +411,10 @@ describe('배송유형 카드뷰 구조', () => {
         expect(toggles.length).toBeGreaterThanOrEqual(1);
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_card_structure
+     */
     it('카드 본문에 name(MultilingualInput)과 category(Select)가 있다', () => {
         const body = allNodes.find(
             (n: any) => n.props?.className === 'excel-card-body'
@@ -314,6 +428,10 @@ describe('배송유형 카드뷰 구조', () => {
         expect(selects.length).toBeGreaterThanOrEqual(1);
     });
 
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_card_structure
+     */
     it('카드 푸터에 삭제 버튼이 있다', () => {
         const footer = allNodes.find(
             (n: any) => n.props?.className === 'excel-card-footer'
@@ -328,6 +446,10 @@ describe('배송유형 카드뷰 구조', () => {
 // 7. 다국어 키 검증
 // ══════════════════════════════════════════════════════════
 describe('배송유형 관리 다국어 키', () => {
+    /**
+     * @scenario section=type
+     * @effects settings_shipping_type_i18n_keys_exist
+     */
     it('섹션에 필수 다국어 키가 포함되어 있다', () => {
         const keys = collectI18nKeys(typeSection);
 
@@ -364,6 +486,10 @@ describe('주문목록 필터 배송유형 동적화', () => {
     // 주문목록 레이아웃 임포트
     const orderList = require('../../../layouts/admin/admin_ecommerce_order_list.json');
 
+    /**
+     * @scenario section=type
+     * @effects order_list_filter_uses_active_shipping_types
+     */
     it('computed에 shippingTypeOptions가 정의되어 있다', () => {
         expect(orderList.computed?.shippingTypeOptions).toBeDefined();
         expect(orderList.computed.shippingTypeOptions).toContain('shipping?.types');
@@ -377,6 +503,10 @@ describe('주문목록 필터 배송유형 동적화', () => {
 describe('배송정책 폼 배송방법 동적화', () => {
     const policyForm = require('../../../layouts/admin/admin_ecommerce_shipping_policy_form.json');
 
+    /**
+     * @scenario section=type
+     * @effects shipping_policy_form_methods_from_shipping_types
+     */
     it('computed의 shippingMethodOptions가 DB 기반 동적으로 변경되었다', () => {
         const options = policyForm.computed?.shippingMethodOptions;
         expect(options).toBeDefined();

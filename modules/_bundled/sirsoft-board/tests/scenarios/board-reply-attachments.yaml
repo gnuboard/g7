@@ -1,0 +1,37 @@
+feature: 답글 첨부 — 목록 직렬화와 답글별 펼침
+
+description: |
+  관리자 게시글 상세에서 답글의 「첨부파일 (N)」을 눌러도 목록이 비어 있었고, 답글이 여럿이면
+  한 답글을 펼칠 때 모든 답글의 첨부가 함께 열렸다. 두 겹의 결함이 겹쳐 있었다.
+
+  ① 직렬화 — 부모 상세의 `replies[]` 가 `attachments: null` 로 내려왔다. 개수는 DB 컬럼
+     (`attachments_count`)에서 오므로 「(1)」은 맞게 뜬다. 후손 답글을 모으는 적재가
+     `with('user')` 만 걸어 attachments 관계를 얹지 않았고, 리소스는 관계 미로드를 null 로
+     이른 반환한다. 같은 글을 단독 조회하면 배열이 정상으로 왔다.
+     삭제된 답글의 첨부는 원글과 같은 cascade 노출 규칙을 탄다.
+
+  ② 펼침 상태 — 반복 안에서 `showAttachments` 스칼라 하나를 나눠 썼다. 같은 조각의 본문 펼침은
+     진작 `expandedReplies` 표(답글 id 별)를 쓰고 있었고 첨부만 스칼라로 남아 있었다.
+     원글 카드는 화면에 하나뿐이라 스칼라 그대로 둔다.
+
+axes:
+  reply_count: [single, multiple]
+
+cross_product: |
+  reply_count × (첨부 목록 표시 · 펼침 격리)
+    - single   : 목록이 실제로 실리는가 (null 이 아닌 배열인가)
+    - multiple : 한 답글을 펼쳐도 다른 답글이 따라 열리지 않는가
+
+effects:
+  - reply_attachments_serialized
+  - reply_attachments_not_shared
+  - nested_reply_attachments_serialized
+  - empty_reply_attachments_is_array
+  - reply_attachment_toggle_isolated_per_reply
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReplyAttachmentSerializationTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-reply-attachments-toggle-scope.test.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

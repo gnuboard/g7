@@ -1,0 +1,36 @@
+feature: 본인인증 시작 요청의 모양과 링크 방식 완료 — 428 의 정책 키, 비로그인 화면의 인증 대상, 링크 확인 결과 받아 가기 (#699)
+
+description: |
+  이 템플릿이 본인인증 challenge 를 여는 두 자리 — 428 을 받은 launcher 와 인증 창의 [코드 재전송] — 가
+  서버에 무엇을 싣는지 잠근다(#699 브라우저 실측 중 발견, 7.0.11 부터 있던 결함).
+
+  - launcher 와 재전송이 428 의 정책 키를 싣지 않아 운영자의 정책별 문구가 쓰이지 않았다.
+  - 비밀번호 찾기·재설정 화면은 로그인 세션이 없어 인증 대상을 세션에서 얻을 수 없는데, API 호출이
+    `identity_target` 을 선언하지 않아 재설정 정책을 켜면 challenge 요청이 대상 없이 나가 422 로 멈췄다.
+
+  - 링크 방식(비밀번호 재설정)은 확인을 메일 링크가 하므로 인증 창을 띄운 화면이 결과를 몰랐다. 시작 응답의
+    일회용 비밀값으로 3초마다 결과를 물어 토큰을 받으면 원래 요청을 이어 가고, [다시 보내기]는 새 건의 비밀값으로 갈아 끼운다.
+
+  레이아웃 검사는 레이아웃 디렉터리를 훑어 모집단을 도출한다(비면 실패).
+
+# axis 의미: 결함이 드러난 진입면(surface) 하나. 면마다 다른 계층(훅 인자 · challenge API · 화면 처리기 · 레이아웃)이라 곱해지지 않는다.
+axes:
+  surface: [launcher_policy_key, challenge_resend_layout, guest_password_flow_layout, launcher_link_claim]
+
+effects:
+  - launcher_sends_policy_key_from_428          # 428 의 정책 키를 challenge 요청 본문에 싣고, 없으면 싣지 않는다
+  - challenge_resend_keeps_policy_key           # 인증 창 재전송도 전역 인증 상태의 정책 키를 싣는다
+  - guest_password_flows_declare_identity_target  # 비밀번호 찾기·재설정 API 호출은 인증 대상 이메일을 선언한다
+  - guest_password_flows_carry_challenge_modal  # _admin_base 를 상속하지 않는 비밀번호 재설정 화면도 본인인증 창을 스스로 선언한다(7.1.0 실측 D-1)
+  - resend_replaces_claim_secret                # 재전송 성공 시 새 건의 비밀값으로 갈아 끼운다
+  - launcher_claims_link_verification_with_secret  # 링크 방식은 비밀값으로 결과를 물어 토큰을 받으면 이어 간다(인증번호 방식은 묻지 않음)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/identityLauncher.policyKey.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/identity-challenge-target-and-policy.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/identityLauncher.linkClaim.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-reset-password-identity-modal.test.ts
+
+validation:
+  note: |
+    서버가 정책 키를 받아들이는 조건(있음·켜짐·목적 일치)은 코어 매니페스트 `tests/scenarios/identity-policy-trigger-paths.yaml` 이 잰다.

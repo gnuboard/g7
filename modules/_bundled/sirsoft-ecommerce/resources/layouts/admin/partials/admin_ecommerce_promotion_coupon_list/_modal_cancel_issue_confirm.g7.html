@@ -1,0 +1,45 @@
+<!-- 쿠폰 목록 — 발급취소 확인 창. 이미 회원에게 나간 쿠폰 한 장을 거둬들인다. 대상 회원과
+  어느 쿠폰의 발급분인지는 발급내역 창이 `_global` 에 담아 둔 것을 읽는다(창끼리는 서로의
+  `_local` 을 보지 못한다).
+  
+  성공 후 목록을 **둘 다** 다시 부른다 — 발급내역(그 줄이 사라진다)과 쿠폰 목록(발급 수가
+  줄어든다). 한쪽만 부르면 뒤에 있는 창의 숫자가 낡은 채로 남는다. -->
+<partial description="Coupon - Cancel Issue Confirm Modal (발급취소 확인)">
+  <modal data-type="composite" data-ref="modal_cancel_issue_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.title" width="420px">
+    <div>
+      <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.message|name={{_global.cancelIssueTarget?.user_name}}</p>
+      <p class="text-sm text-red-600 dark:text-red-400 font-medium mt-2">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.warning</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting || _global.issueHistoryCoupon?.can_update !== true}}">
+        <on type="click">
+          <!-- 발급취소. 되돌릴 수 없는 동작이라 확인 창을 거치고, 성공하면 대상까지 비워 같은 값이 다음 열림에 남지 않게 한다. -->
+          <sequence>
+            <set-state target="global" :cancelIssueSubmitting="true"/>
+            <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues/{{_global.cancelIssueTarget?.id}}" method="DELETE">
+              <success>
+                <set-state target="global" :cancelIssueSubmitting="false" :cancelIssueTarget="null"/>
+                <close-modal/>
+                <refetch-data-source dataSourceId="couponIssues"/>
+                <refetch-data-source dataSourceId="coupons"/>
+                <toast type="success" message="{{response.message}}"/>
+              </success>
+              <fail>
+                <set-state target="global" :cancelIssueSubmitting="false"/>
+                <toast type="error" message="{{error.errors?.detail ?? error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.cancelIssueSubmitting}}" name="spinner" class="spinner-sm"/>
+        <span>$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.confirm_btn</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,30 @@
+feature: 관리자 레이아웃·레이아웃 확장 API — 목록·상세·저장·버전·복원·미리보기와 권한 가드
+
+description: |
+  관리자 템플릿 레이아웃 편집 화면이 부르는 코어 API(`/api/admin/templates/{식별자}/layouts…`, `…/layout-extensions…`)의
+  엔드포인트별 계약을 한 매니페스트로 묶는다. 편집기 기능별 매니페스트(layout-editor-*, layout-extension-*)가 같은 테스트 파일의
+  일부 테스트를 소유하고, 여기서는 엔드포인트 축으로 나머지 기존 테스트까지 빠짐없이 소유한다.
+  미리보기 생성은 템플릿 종류에 맞는 화면 셸 주소(`preview_url` — 관리자 템플릿 `/admin/preview/{token}`, 사용자 템플릿
+  `/preview/{token}`)를 돌려준다(7.1.0 O-G3-6). 인증·권한이 없으면 모든 엔드포인트가 거절한다.
+
+axes:
+  endpoint: [layout_index, layout_show, layout_update, layout_versions, layout_restore, layout_preview, extension_index, extension_show, extension_update, extension_versions, extension_preview]
+
+effects:
+  - layout_index_lists_layout_files
+  - layout_show_returns_layout_document
+  - layout_update_saves_and_keeps_fields
+  - layout_versions_listed_and_shown
+  - layout_version_restored
+  - layout_preview_token_issued
+  - extension_index_lists_extensions
+  - extension_show_returns_content
+  - extension_update_saves_and_versions
+  - extension_versions_listed_and_restored
+  - extension_preview_token_issued
+  - preview_url_shell_matches_template_type
+  - layout_api_rejects_unauthorized
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutControllerTest.php
+  - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php

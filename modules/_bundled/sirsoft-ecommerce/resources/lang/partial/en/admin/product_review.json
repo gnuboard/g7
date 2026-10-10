@@ -96,6 +96,7 @@
       "edited": "Edited",
       "attached_images": "Attached Images",
       "images_count": "({{count}} images)",
+      "images_count_one": "({{count}} image)",
       "attached_images_label": "Attached Images ({{count}})",
       "created_at_label": "Created: ",
       "updated_at_label": "Updated: "
@@ -120,6 +121,7 @@
       "hint_1": "Please be kind and clear in your response",
       "hint_2": "Respond sincerely to customer inquiries",
       "char_count": "{{count}} chars",
+      "char_count_one": "{{count}} char",
       "submit": "Submit Reply"
     },
     "expand": "Collapse",
@@ -140,7 +142,8 @@
   "modal": {
     "status_change": {
       "title": "Confirm",
-      "message": "Are you sure you want to change {{count}} review(s) to \"{{status}}\"?",
+      "message": "Are you sure you want to change {{count}} reviews to \"{{status}}\"?",
+      "message_one": "Are you sure you want to change {{count}} review to \"{{status}}\"?",
       "cancel": "Cancel",
       "confirm": "Confirm"
     },

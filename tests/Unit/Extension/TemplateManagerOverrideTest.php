@@ -21,6 +21,11 @@ class TemplateManagerOverrideTest extends TestCase
 
     private string $testTemplatePath;
 
+    /**
+     * TemplateManager 인스턴스와 테스트용 템플릿 경로를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -31,6 +36,11 @@ class TemplateManagerOverrideTest extends TestCase
         $this->testTemplatePath = base_path('templates/test-admin');
     }
 
+    /**
+     * 테스트가 만든 템플릿 디렉터리를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트 템플릿 디렉토리 정리
@@ -43,6 +53,8 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 테스트용 템플릿 구조 생성
+     *
+     * @return void 반환값 없음
      */
     private function createTestTemplateStructure(): void
     {
@@ -86,6 +98,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 레이아웃 등록 테스트
+     *
+     * @scenario step=register
+     *
+     * @effects override_file_registered_as_template_source
+     *
+     * @return void 반환값 없음
      */
     public function test_register_layout_overrides(): void
     {
@@ -124,6 +142,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 레이아웃 content 추출 테스트
+     *
+     * @scenario step=content_extract
+     *
+     * @effects content_excludes_layout_meta_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_extract_layout_content(): void
     {
@@ -152,6 +176,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 레이아웃 이름 생성 테스트
+     *
+     * @scenario step=name_resolution
+     *
+     * @effects override_name_prefixed_with_module_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_override_layout_name(): void
     {
@@ -173,6 +203,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 중첩된 경로의 오버라이드 레이아웃 이름 생성 테스트
+     *
+     * @scenario step=name_resolution
+     *
+     * @effects nested_path_segments_joined_with_underscore
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_override_layout_name_with_nested_path(): void
     {
@@ -196,6 +232,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 파일 스캔 테스트
+     *
+     * @scenario step=scan
+     *
+     * @effects override_files_scanned_recursively
+     *
+     * @return void 반환값 없음
      */
     public function test_scan_override_layout_files(): void
     {
@@ -219,6 +261,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 캐시 무효화 테스트
+     *
+     * @scenario step=cache
+     *
+     * @effects override_layout_cache_invalidated
+     *
+     * @return void 반환값 없음
      */
     public function test_invalidate_override_layout_caches(): void
     {
@@ -259,6 +307,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * source_type이 template으로 설정되는지 테스트
+     *
+     * @scenario step=register
+     *
+     * @effects override_source_type_is_template
+     *
+     * @return void 반환값 없음
      */
     public function test_override_source_type_is_template(): void
     {
@@ -287,6 +341,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 여러 모듈의 오버라이드 등록 테스트
+     *
+     * @scenario step=register
+     *
+     * @effects overrides_for_each_module_registered
+     *
+     * @return void 반환값 없음
      */
     public function test_register_overrides_for_multiple_modules(): void
     {
@@ -343,6 +403,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * updateOrCreate로 중복 오버라이드 방지 테스트
+     *
+     * @scenario step=register
+     *
+     * @effects reregistration_updates_single_row
+     *
+     * @return void 반환값 없음
      */
     public function test_prevent_duplicate_override_registration(): void
     {
@@ -401,6 +467,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 디렉토리가 없는 경우 테스트
+     *
+     * @scenario step=register
+     *
+     * @effects missing_overrides_directory_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_missing_overrides_directory(): void
     {
@@ -445,6 +517,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * incrementExtensionCacheVersion 메서드가 캐시 버전을 증가시키는지 테스트
+     *
+     * @scenario step=cache
+     *
+     * @effects extension_cache_version_bumped
+     *
+     * @return void 반환값 없음
      */
     public function test_increment_extension_cache_version(): void
     {
@@ -466,6 +544,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * getExtensionCacheVersion 정적 메서드 테스트
+     *
+     * @scenario step=cache
+     *
+     * @effects extension_cache_version_read
+     *
+     * @return void 반환값 없음
      */
     public function test_get_extension_cache_version(): void
     {
@@ -479,11 +563,18 @@ class TemplateManagerOverrideTest extends TestCase
     }
 
     /**
-     * 캐시 버전 키가 없으면 유효한 새 버전을 생성·저장하는지 테스트
+     * 캐시 버전 키가 없으면 새 버전을 재생성해 반환
      *
-     * 0 을 반환하면 버전 기반 캐시 무효화가 통째로 붕괴한다(모든 URL 이 `?v=0`
-     * 으로 고정되어 갱신이 전파되지 않음). 키 부재는 캐시 플러시·TTL 만료로
-     * 언제든 발생하므로, 그 자리에서 새 버전을 만들어 저장한다.
+     * 종전 계약은 "미설정 시 0 반환" 이었으나, 0 은 캐시 무효화를 붕괴시킨다 — 번들 URL 의
+     * `?v=0` 이 갱신되지 않아 브라우저가 낡은 확장 번들을 계속 쓴다. 키 부재는 캐시
+     * 플러시·TTL 만료로 언제든 발생하므로, 그것을 정상 상태로 보지 않고 그 자리에서
+     * 유효 버전을 재생성해 저장하도록 바뀌었다.
+     *
+     * @scenario step=cache
+     *
+     * @effects missing_cache_version_regenerated
+     *
+     * @return void 반환값 없음
      */
     public function test_get_extension_cache_version_regenerates_when_not_set(): void
     {
@@ -506,6 +597,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * layout_name 변경 시 이전 이름의 고아 레코드가 삭제되는지 테스트
+     *
+     * @scenario step=orphan_cleanup
+     *
+     * @effects renamed_override_orphan_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_orphan_override_when_layout_name_changes(): void
     {
@@ -529,6 +626,9 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
+            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         // registerLayoutOverrides 실행 (파일에는 sirsoft-sample_admin_index만 존재)
@@ -552,6 +652,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 다른 템플릿의 오버라이드는 정리하지 않는지 테스트
+     *
+     * @scenario step=orphan_cleanup
+     *
+     * @effects other_template_overrides_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_does_not_affect_other_template_overrides(): void
     {
@@ -593,6 +699,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * overrides 디렉토리 삭제 시 기존 override가 모두 정리되는지 테스트
+     *
+     * @scenario step=orphan_cleanup
+     *
+     * @effects all_file_overrides_removed_when_directory_gone
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_all_overrides_when_directory_removed(): void
     {
@@ -613,6 +725,9 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
+            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         TemplateLayout::create([
@@ -621,6 +736,9 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
+            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         // overrides 디렉토리가 없는 상태에서 registerLayoutOverrides 실행
@@ -640,6 +758,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 고아 레코드 정리 시 관련 캐시도 삭제되는지 테스트
+     *
+     * @scenario step=orphan_cleanup
+     *
+     * @effects orphan_cleanup_clears_layout_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_orphan_overrides_also_clears_cache(): void
     {
@@ -662,6 +786,9 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
+            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         // 캐시 설정

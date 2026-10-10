@@ -1,0 +1,185 @@
+<partial description="Claim Detail - Activity Log Section (claim + claim payments + attachments) — S9a">
+  <!-- 주문상세 활동 로그 섹션(`admin_ecommerce_order_detail/_partial_activity_log.json`)의 동형이다 — 행 마크업·정렬/페이지 크기 컨트롤·변경 내역(changes/bulk_changes) 표·페이지네이션이 같다. 주문상세가 나중에 바뀌면 이 partial 도 함께 바꾼다. 데이터 축만 다르다: 이 목록은 신청서와 그 신청서의 추가결제·첨부에 남은 로그를 서버가 하나로 합쳐 내려준다. -->
+  <div data-ref="section_activity_log" data-section-id="activity_log" class="mt-6">
+    <div data-ref="activity_log_card" class="admin-card">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.title</h2>
+      <div data-ref="log_filters" class="flex-center justify-end gap-4 mb-4">
+        <div class="flex-center gap-2">
+          <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.sort.label</span>
+          <!-- 정렬은 서버가 한다 — 받아 둔 한 쪽만 뒤집으면 다른 쪽 로그와 순서가 섞이므로, 정렬을 바꾸면 1쪽으로 돌아가 다시 받는다. -->
+          <select value="{{_local.logsSort}}" class="w-auto min-w-40">
+            <options>
+              <option value="date_desc">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.sort.date_desc</option>
+              <option value="date_asc">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.sort.date_asc</option>
+            </options>
+            <on type="change">
+              <sequence>
+                <set-state target="local" logsSort="{{$event.target.value}}" :logsPage="1"/>
+                <refetch-data-source dataSourceId="claim_logs"/>
+              </sequence>
+            </on>
+          </select>
+        </div>
+        <div class="flex-center gap-2">
+          <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page</span>
+          <!-- 쪽당 건수가 바뀌면 지금 쪽 번호가 가리키던 범위도 달라진다 — 없는 쪽에 떨어지지 않도록 1쪽으로 되돌린 뒤 다시 받는다. -->
+          <select value="{{String(_local.logsPerPage)}}" class="w-auto min-w-20">
+            <options>
+              <option value="5">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page_option|count=5</option>
+              <option value="10">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page_option|count=10</option>
+              <option value="20">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page_option|count=20</option>
+              <option value="50">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page_option|count=50</option>
+            </options>
+            <on type="change">
+              <sequence>
+                <set-state target="local" logsPerPage="{{Number($event.target.value)}}" :logsPage="1"/>
+                <refetch-data-source dataSourceId="claim_logs"/>
+              </sequence>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="log_table_header" class="hidden md:block py-3 px-2 border-b border-gray-200 dark:border-gray-700">
+        <div class="text-tertiary flex gap-4 font-medium uppercase">
+          <span class="w-40 shrink-0">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.columns.date</span>
+          <span class="w-40 shrink-0">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.columns.actor</span>
+          <span class="flex-1">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.columns.event</span>
+        </div>
+      </div>
+      <div data-ref="log_empty" data-if="{{(claim_logs.data?.data ?? []).length === 0}}" class="py-12 text-center text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.empty</div>
+      <div data-ref="log_rows_{{logIdx}}" data-each="log, logIdx in {{claim_logs.data?.data ?? []}}">
+        <div class="hidden md:block py-3 px-2 border-b border-gray-100 dark:border-gray-800">
+          <div class="flex-center gap-4">
+            <span class="w-40 shrink-0 text-label">{{log.created_at ?? ''}}</span>
+            <div class="w-40 shrink-0">
+              <!-- 행위자 이름을 누르면 그 회원 상세를 새 창으로 연다 — 보던 신청서를 잃지 않고 누가 처리했는지 확인하게 한다. 행위자가 없는 시스템 기록에는 메뉴 대신 글자만 선다. -->
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
+                <prop name="items">
+                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
+                </prop>
+                <on event="onItemClick">
+                  <switch on="{{$args[0]}}">
+                    <case when="view_member">
+                      <open-window path="/admin/users/{{log.user.uuid}}"/>
+                    </case>
+                  </switch>
+                </on>
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                  <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
+                  </div>
+                  <span class="text-primary text-sm">{{log.user?.name ?? ''}}</span>
+                </div>
+              </action-menu>
+              <div data-if="{{!log.user?.uuid}}" class="flex-center gap-2">
+                <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-300">S</span>
+                </div>
+                <span class="text-primary text-sm">{{log.user?.name ?? '$t:sirsoft-ecommerce.admin.claim.detail.activity_log.system'}}</span>
+              </div>
+            </div>
+            <div class="flex-1">
+              <span class="text-sm text-gray-900 dark:text-gray-100">{{log.localized_description ?? ''}}</span>
+              <div data-if="{{log.changes &amp;&amp; log.changes.length > 0}}" class="toggle-group mt-2">
+                <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-4">
+                  <span class="flex-1">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.field</span>
+                  <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.before</span>
+                  <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.after</span>
+                </div>
+                <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
+                  <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                  <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
+                  <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+                </div>
+              </div>
+              <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
+                <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="toggle-group">
+                  <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-4">
+                    <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.model_id|id={{group.model_id}}</span>
+                    <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.before</span>
+                    <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.after</span>
+                  </div>
+                  <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
+                    <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                    <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
+                    <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="md:hidden border-b border-gray-100 dark:border-gray-800 py-3 px-2 space-y-1">
+          <div class="flex-between gap-2">
+            <div class="flex-center gap-2">
+              <!-- 좁은 화면 카드의 행위자 메뉴 — 넓은 화면 행의 메뉴와 같은 동작이므로 한쪽을 고치면 다른 쪽도 함께 고친다. -->
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
+                <prop name="items">
+                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
+                </prop>
+                <on event="onItemClick">
+                  <switch on="{{$args[0]}}">
+                    <case when="view_member">
+                      <open-window path="/admin/users/{{log.user.uuid}}"/>
+                    </case>
+                  </switch>
+                </on>
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                  <div class="flex-center w-5 h-5 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
+                  </div>
+                  <span class="text-primary text-xs font-medium">{{log.user?.name ?? ''}}</span>
+                </div>
+              </action-menu>
+              <div data-if="{{!log.user?.uuid}}" class="flex-center gap-2">
+                <div class="flex-center w-5 h-5 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-300">S</span>
+                </div>
+                <span class="text-primary text-xs font-medium">{{log.user?.name ?? '$t:sirsoft-ecommerce.admin.claim.detail.activity_log.system'}}</span>
+              </div>
+            </div>
+            <span class="text-tertiary">{{log.created_at ?? ''}}</span>
+          </div>
+          <span class="text-sm text-gray-900 dark:text-gray-100 block">{{log.localized_description ?? ''}}</span>
+          <div data-if="{{log.changes &amp;&amp; log.changes.length > 0}}" class="toggle-group mt-2">
+            <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-3">
+              <span class="flex-1">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.field</span>
+              <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.before</span>
+              <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.after</span>
+            </div>
+            <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
+              <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+              <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
+              <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+            </div>
+          </div>
+          <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
+            <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="toggle-group">
+              <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-3">
+                <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.model_id|id={{group.model_id}}</span>
+                <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.before</span>
+                <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.after</span>
+              </div>
+              <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
+                <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
+                <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="log_pagination" class="flex justify-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+        <!-- 쪽 이동 — 정렬과 쪽당 건수는 그대로 두고 쪽 번호만 바꿔 다시 받는다. 전체 쪽 수와 다음 쪽 유무는 응답의 meta 가 알려 준다. -->
+        <pagination data-type="composite" currentPage="{{claim_logs.data?.meta?.current_page ?? 1}}" totalPages="{{claim_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{claim_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
+          <on event="onPageChange">
+            <sequence>
+              <set-state target="local" logsPage="{{$args[0]}}"/>
+              <refetch-data-source dataSourceId="claim_logs"/>
+            </sequence>
+          </on>
+        </pagination>
+      </div>
+    </div>
+  </div>
+</partial>

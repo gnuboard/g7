@@ -1,0 +1,22 @@
+# e2e:allow 관리자 주문 상세 배너 두 개는 07 문서 Chrome MCP 실측(취소 주문 입금 · 계좌 폐쇄 실패)이 잰다.
+feature: 입금 전 취소 가상계좌의 PG 폐쇄와 취소 후 입금 기록·알림 (P-D1 · Q11) — #747 C7
+
+description: |
+  입금 전 취소는 돌려줄 돈이 없어 PG 를 부르지 않았고, 발급된 가상계좌가 PG 에 남아 고객이 뒤늦게 입금할 수 있었다.
+  취소된 주문에 들어온 입금은 결제 플러그인 로그 한 줄로만 남았다(KCP 는 재통보를 10번 받았다).
+
+    - 취소 커밋 뒤(큐 기본값) 필터 sirsoft-ecommerce.payment.close_vbank 로 이 주문의 결제 플러그인에게 계좌를 닫게 한다.
+      닫지 못하거나 응답한 플러그인이 없으면 payment_meta.vbank_close_failed 를 남기고 관리자 결제 정보에 배너를 띄운다.
+    - 결제 플러그인의 입금통보가 취소된 주문을 만나면 DepositAfterCancelRecorder 가 금액·시각·거래를 기록하고
+      sirsoft-ecommerce.order.deposit_after_cancel 을 낸다 → 직원 알림 deposit_after_cancel_admin + 관리자 배너. 자동 환불 없음.
+
+axes:
+  close_result: [success, failure, not_applicable, deposit_after_cancel]
+
+effects:
+  - unpaid_vbank_is_closed_after_cancel
+  - vbank_close_failure_is_flagged_for_the_operator
+  - deposit_after_cancel_is_recorded_and_notified_once
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Payment/UnpaidVbankCancelTest.php

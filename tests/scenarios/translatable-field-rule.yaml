@@ -1,0 +1,42 @@
+feature: 다국어 입력 칸 검증 규칙
+
+description: |
+  언어별 값을 담는 입력 칸의 형식, 필수 언어, 길이 검사를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 value_case 는 검사에 넣는 값의 형태, rule_flag 는 규칙 생성 옵션(strictLocales, required)이다.
+
+axes:
+  value_case: [valid_map, not_array, non_string_entry, unknown_locale_key, empty_entries, partial_entries, within_max_length, over_max_length]
+  rule_flag: [none, strict_locales, required]
+
+exclusions:
+  - { rule_flag: strict_locales, value_case: [valid_map, not_array, non_string_entry, empty_entries, partial_entries, within_max_length, over_max_length],
+      reason: "strictLocales 는 지원 목록 밖 로케일 키가 있을 때만 판정을 바꾸므로 그런 키가 없는 값에서는 기본 옵션과 결과가 같다." }
+  - { rule_flag: required, value_case: [valid_map, not_array, non_string_entry, unknown_locale_key, partial_entries, within_max_length, over_max_length],
+      reason: "required 는 모든 언어 값이 비었을 때만 판정에 끼어들므로 배열이 아니거나 값이 하나라도 있으면 기본 옵션과 결과가 같다." }
+
+effects:
+  - passes_with_valid_translatable_array
+  - fails_when_not_array
+  - fails_with_unsupported_language_when_strict
+  - passes_with_stale_locale_key_by_default
+  - locale_required_rule_passes_with_stale_locale_key_by_default
+  - stale_locale_value_survives_model_round_trip
+  - supported_locale_length_still_validated_in_lenient_mode
+  - fails_when_translation_not_string
+  - fails_when_exceeds_max_length
+  - fails_when_required_and_all_empty
+  - passes_when_not_required_and_empty
+  - passes_with_partial_translations
+  - passes_with_null_values
+  - error_messages_in_english
+  - error_messages_in_korean
+  - korean_text_under_max_length_passes
+  - korean_text_at_max_length_boundary_passes
+  - korean_text_over_max_length_fails
+  - ascii_text_boundary_matches_character_count
+  - both_translatable_rules_agree_on_length
+
+test_files:
+  - tests/Feature/Rules/TranslatableFieldTest.php

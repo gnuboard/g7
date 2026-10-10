@@ -1,0 +1,179 @@
+<partial description="Board Form - Basic Tab Content" _e2e_allow="e2e:allow 반응 유형 체크박스 시각 스타일(배경 박스·들여쓰기·아이콘·정렬)만 변경, 클릭 동작(setState/hasChanges)은 기존과 동일. 렌더 분기·바인딩은 admin-board-reaction-settings.test.tsx(Vitest 레이아웃 테스트)로 커버, MCP 실브라우저로 시각 회귀 확인.">
+  <!-- 게시판 폼 「기본」 탭 — 이름·주소(slug)·유형·분류처럼 게시판의 정체를 정하는 값들과, 켜고 끄는 성격의 스위치(활성·비밀글·조회수 표시·신고 사용·관리자 메뉴 등재)를 담는다. 읽기 전용일 때는 카드 전체가 잠긴 모습으로 바뀐다 -->
+  <div data-ref="section_basic_card" class="admin-card">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <h3 data-ref="section_basic_settings" class="card-title">$t:sirsoft-board.admin.form.tabs.basic</h3>
+    <div data-ref="section_basic_fields" class="row-stack">
+      <div data-ref="field_is_active" class="flex-start justify-between">
+        <div class="flex-1">
+          <label class="text-heading">$t:sirsoft-board.admin.form.fields.is_active</label>
+          <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.is_active</p>
+        </div>
+        <toggle data-type="composite" name="is_active" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+      </div>
+      <div data-ref="field_slug" class="space-y-2">
+        <label data-ref="field_slug_label" :required="true" class="block text-heading mb-1">
+          <span>$t:sirsoft-board.admin.form.fields.slug</span>
+          <span class="text-required">*</span>
+        </label>
+        <input data-ref="field_slug_input" name="slug" type="text" placeholder="$t:sirsoft-board.admin.form.placeholders.slug" :required="true" disabled="{{!!route?.slug || _computed.isReadOnly}}" class="{{!!route?.slug ? 'input-readonly font-mono border border-gray-200 dark:border-gray-600' : 'font-mono'}}"/>
+        <span data-if="{{_local.errors?.slug}}" class="form-error-xs mt-1">{{_local.errors?.slug?.[0] ?? ''}}</span>
+        <p data-ref="field_slug_description" class="form-hint">$t:sirsoft-board.admin.form.descriptions.slug</p>
+        <div data-ref="field_menu_guide" class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-start gap-2 mb-3">
+            <icon name="circle-info" class="text-secondary text-base mt-0.5 flex-shrink-0"/>
+            <p class="text-body">$t:sirsoft-board.admin.form.menu.manual_guide</p>
+          </div>
+          <div class="text-secondary space-y-2 text-xs">
+            <div class="flex items-baseline gap-2">
+              <span class="font-medium text-gray-700 dark:text-gray-300">•</span>
+              <div class="flex-center gap-2 flex-1">
+                <div>
+                  <span class="font-medium">$t:sirsoft-board.admin.form.menu.manual_admin_label:</span>
+                  <span class="ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono">/admin/board/{{_local.form?.slug ?? 'notice'}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span class="font-medium text-gray-700 dark:text-gray-300">•</span>
+              <div>
+                <span class="font-medium">$t:sirsoft-board.admin.form.menu.manual_user_label:</span>
+                <span class="ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono">/board/{{_local.form?.slug ?? 'notice'}}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex-center gap-3 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex-1">
+              <p class="text-heading">$t:sirsoft-board.admin.form.menu.show_in_admin_menu</p>
+              <p class="text-secondary text-xs mt-0.5">$t:sirsoft-board.admin.form.menu.show_in_admin_menu_desc</p>
+            </div>
+            <toggle data-type="composite" name="add_to_menu" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="field_name" class="space-y-2">
+        <label data-ref="field_name_label" :required="true" class="block text-heading mb-1">
+          <span>$t:sirsoft-board.admin.form.fields.name</span>
+          <span class="text-required">*</span>
+        </label>
+        <multilingual-input data-type="composite" data-ref="field_name_input" name="name" layout="tabs" placeholder="$t:sirsoft-board.admin.form.placeholders.name" :maxLength="100" :required="true" disabled="{{_computed.isReadOnly}}"/>
+        <span data-if="{{_local.errors?.name}}" class="form-error-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
+      </div>
+      <div data-ref="field_description" class="space-y-2">
+        <label data-ref="field_description_label" class="block text-heading mb-1">
+          <span>$t:sirsoft-board.admin.form.fields.description</span>
+        </label>
+        <multilingual-input data-type="composite" data-ref="field_description_input" name="description" layout="tabs" inputType="textarea" placeholder="$t:sirsoft-board.admin.form.placeholders.description" :rows="3" disabled="{{_computed.isReadOnly}}"/>
+        <span data-if="{{_local.errors?.description}}" class="form-error-xs mt-1">{{_local.errors?.description?.[0] ?? ''}}</span>
+        <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.description</p>
+      </div>
+      <div data-ref="field_type" class="space-y-2">
+        <label data-ref="field_type_label" :required="true" class="block text-heading mb-1">
+          <span>$t:sirsoft-board.admin.form.fields.type</span>
+        </label>
+        <select data-ref="field_type_select" name="type" options="{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" placeholder="$t:sirsoft-board.admin.form.placeholders.select_type" disabled="{{_computed.isReadOnly}}" class="w-full"/>
+        <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.type</p>
+      </div>
+      <div data-ref="field_categories" class="space-y-2">
+        <label data-ref="field_categories_label" class="text-heading">
+          <span>$t:sirsoft-board.admin.form.fields.categories</span>
+        </label>
+        <p data-ref="field_categories_description" class="text-tertiary mb-2">$t:sirsoft-board.admin.form.descriptions.categories</p>
+        <tag-input data-type="composite" data-ref="field_categories_input" name="categories" options="{{_local.form?.category_options ?? []}}" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
+        <span data-if="{{_local.errors?.categories}}" class="form-error-xs mt-1">{{_local.errors?.categories?.[0] ?? ''}}</span>
+        <p data-ref="field_categories_notice" class="text-xs text-amber-600 dark:text-amber-400 mt-2">$t:sirsoft-board.admin.form.descriptions.categories_notice</p>
+      </div>
+      <div data-ref="field_secret_mode" class="flex-between">
+        <label data-ref="field_secret_mode_label" class="text-heading">
+          <span>$t:sirsoft-board.admin.form.fields.secret_mode</span>
+        </label>
+        <select data-ref="field_secret_mode_select" name="secret_mode" disabled="{{_computed.isReadOnly}}" class="w-48">
+          <options>
+            <option value="disabled">$t:sirsoft-board.admin.form.options.secret_mode.disabled</option>
+            <option value="enabled">$t:sirsoft-board.admin.form.options.secret_mode.enabled</option>
+            <option value="always">$t:sirsoft-board.admin.form.options.secret_mode.always</option>
+          </options>
+        </select>
+      </div>
+      <div data-ref="field_show_view_count" class="flex-start justify-between">
+        <div class="flex-1">
+          <label class="text-heading">$t:sirsoft-board.admin.form.fields.show_view_count</label>
+          <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.show_view_count</p>
+        </div>
+        <toggle data-type="composite" name="show_view_count" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+      </div>
+      <div data-ref="field_use_report" class="flex-start justify-between">
+        <div class="flex-1">
+          <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_report</label>
+          <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_report</p>
+        </div>
+        <toggle data-type="composite" name="use_report" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+      </div>
+      <div data-ref="field_use_scrap" class="flex-start justify-between">
+        <div class="flex-1">
+          <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_scrap</label>
+          <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_scrap</p>
+        </div>
+        <toggle data-type="composite" name="use_scrap" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+      </div>
+      <div data-ref="field_use_reaction">
+        <div class="flex-start justify-between">
+          <div class="flex-1">
+            <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_reaction</label>
+            <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_reaction</p>
+          </div>
+          <toggle data-type="composite" name="use_reaction" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        </div>
+        <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. DB 등록 유형 전체(reactionTypes)를 순회해 체크박스로 active_reaction_types(code 배열) 를 토글. 게시판 환경설정 화면과 동일하게 배경 박스 + 좌측 들여쓰기로 시각적 구분 (검수 피드백). -->
+        <div data-if="{{_local.form?.use_reaction === true}}" class="ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-between gap-2 mb-2">
+            <p class="form-hint">$t:sirsoft-board.admin.form.fields.active_reaction_types</p>
+            <!-- 유형 자체(이름·아이콘·순서)는 게시판마다 다르지 않고 사이트 공통이라 환경설정에서
+              고친다. 여기서는 그중 어느 것을 쓸지만 고르므로, 만들거나 고치러 갈 길을 열어 둔다
+              (형제 화면 「게시판 유형」의 관리 버튼과 같은 모양). 옮겨 간 환경설정에서 유형을 고치려면 게시판
+              환경설정 수정 권한이 필요하다(form-data _meta.can_manage_reaction_types) — 없으면 잠그고 이유를 툴팁으로 알린다. -->
+            <button data-ref="board_form_btn_manage_reaction_types" data-testid="board-form-manage-reaction-types" type="button" class="inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed" title="{{_local.form?._meta?.can_manage_reaction_types === true ? '' : '$t:sirsoft-board.admin.form.fields.manage_reaction_types_no_permission'}}" disabled="{{_local.form?._meta?.can_manage_reaction_types !== true}}">
+              <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 목록 왕복이 아니라 **다른 화면**(환경설정)으로 건너가는 이동이다. 게시판 목록의 쪽·검색 조건을 그쪽 주소에 실어 보낼 이유가 없고, 실으면 환경설정이 알지 못하는 조건이 주소에 남는다. 되돌아오는 것은 브라우저 뒤로가기가 맡는다. -->
+                <navigate path="/admin/boards/settings">
+                  <query tab="basic_defaults"/>
+                </navigate>
+              </on>
+              <icon name="gear" size="sm"/>
+              <span>$t:sirsoft-board.admin.form.fields.manage_reaction_types</span>
+            </button>
+          </div>
+          <div class="flex flex-col gap-2">
+            <div data-each="reactionType, reactionIdx in {{reactionTypes?.data?.reaction_types ?? []}}">
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code)}}">
+                  <on type="change">
+                    <!-- 사용 반응 유형 토글 — 코드 배열에 넣고 빼며 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
+                    <set-state target="local" form.active_reaction_types="{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
+                  </on>
+                </input>
+                <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
+                <icon data-if="{{!reactionType.icon_url}}" name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
+                <span>{{reactionType.name ?? reactionType.code}}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- 댓글 반응 — 글 반응의 하위 토글이다. 글 반응을 끄면 댓글 반응만 남을 수 없으므로
+          상위가 꺼져 있으면 이 줄도 잠근다(백엔드도 같은 판정을 한다). -->
+        <div data-ref="field_use_comment_reaction" class="flex-start justify-between mt-4">
+          <div>
+            <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_comment_reaction</label>
+            <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_comment_reaction</p>
+          </div>
+          <div data-testid="board-form-use-comment-reaction" class="flex-shrink-0 ml-4">
+            <toggle data-type="composite" name="use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.use_reaction !== true}}"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

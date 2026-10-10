@@ -31,6 +31,8 @@ effects:
   - successful_save_appends_version_history
   - layout_extension_update_shares_same_409_semantics
   - lock_version_exposed_in_layout_resource
+  # 409 안내 문구는 화면에 뜬다 — 내부 자원 표기(template_layouts:{id})는 errors.resource 에만 둔다(7.1.0 실측 O-I1-2)
+  - conflict_message_hides_internal_resource_key
 
 test_files:
   - tests/Feature/Api/Admin/LayoutControllerEditorSaveTest.php

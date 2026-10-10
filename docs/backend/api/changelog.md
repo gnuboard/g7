@@ -55,7 +55,7 @@ HTTP/1.1 200
     "success": true,
     "message": "성공적으로 처리되었습니다.",
     "data": {
-        "content": "# Changelog\n\n이 프로젝트의 모든 주요 변경사항을 기록합니다.\n형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,\n[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.\n\n## [7.0.6] - 2026-07-19\n\n### Security\n\n- 보안 환경설정의 계정 잠금 시간을 `0`(무한대)으로 설정하면 실제로 무기한 잠기도록 수정했습니다. 화면 안내는 \"0을 입력하면 무한대\"였지만 실제로는 1분 뒤 자동 해제되어, 무차별 대입 시도를 영구 차단할 수 없었습니다. 무기한 잠긴 계정에는 남은 시간 대신 관리자 문의 안내가 표시됩니다. (#81 @jiwonpapa 님께서 제보해주셨습니… (생략)"
+        "content": "# Changelog\n\n이 프로젝트의 모든 주요 변경사항을 기록합니다.\n형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,\n[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.\n\n## [7.1.0] - 2026-10-10\n\n### Security\n\n- 운영 모드에서 레이아웃·확장 조각·커스텀 다국어 관리(저장·미리보기·판본 복원)가 데이터베이스 오류 같은 내부 오류로 실패하면 응답에 원래 오류 문장(SQL·DB 이름 등)이 그대로 실리던 문제를 막았습니다. 이제 일반 안내만 보여 주고 원문은 서버 로그에 남깁니다.\n… (생략)"
     }
 }
 ```

@@ -7,5 +7,13 @@
   "translation_load_failed": "多言語ファイルの読み込みに失敗しました",
   "translation_load_failed_with_locale": "{locale}多言語ファイルの読み込みに失敗しました",
   "template_init_error": "テンプレートエンジンの初期化中にエラーが発生しました",
-  "network_request_failed": "リクエストを送信できませんでした。ネットワーク接続を確認してから再度お試しください。"
+  "network_request_failed": "リクエストを送信できませんでした。ネットワーク接続を確認してから再度お試しください。",
+  "page_load_failed": "ページの読み込みに失敗しました",
+  "init_failed": "初期化に失敗しました",
+  "reload": "再読み込み",
+  "layout_forbidden": "この画面を表示する権限がありません。",
+  "layout_not_found": "要求された画面が見つかりません。",
+  "layout_editor_load_failed": "レイアウトエディターの読み込みに失敗しました",
+  "layout_editor_bundle_failed": "エディターを読み込めませんでした。ネットワーク状態を確認してから、もう一度お試しください。",
+  "layout_editor_init_failed": "エディターを読み込みましたが、初期化できませんでした。ページを再読み込みしてください。"
 }

@@ -862,8 +862,8 @@ describe('DataBindingEngine', () => {
    * 회귀 테스트 (Regression Tests)
    *
    * 트러블슈팅 가이드에 기록된 버그 사례들의 재발 방지를 위한 테스트
-   * @see docs/frontend/troubleshooting-cache.md
-   * @see docs/frontend/troubleshooting-state-setstate.md
+   * @see 트러블슈팅 가이드 troubleshooting-cache.md
+   * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
    */
   describe('Regression Tests', () => {
     describe('[TS-CACHE-1~4] skipCache 옵션 검증', () => {

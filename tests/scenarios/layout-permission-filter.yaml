@@ -1,0 +1,29 @@
+feature: 레이아웃 서빙 시 컴포넌트·모달·defines 권한 필터링
+
+description: |
+  레이아웃 JSON 의 노드·모달·define 에 permissions 를 달면 서빙 시 사용자 권한으로 걸러 낸다
+  (LayoutService::filterComponentsByPermissions). 걸러 낸 뒤 permissions 속성은 지워 클라이언트에
+  노출하지 않는다.
+
+  defines 는 레이아웃이 `_defines.이름` 으로 읽는 **이름 붙은 맵**이다. 필터가 결과를 목록으로 다시
+  쌓아 이름을 잃던 결함(#705 브라우저 실측 — 국가 목록·계정 상태 선택지가 비었다)을 고친 뒤로,
+  이름 붙은 맵은 키를 보존하고 목록형(이름 없는 컴포넌트 정의 묶음)만 재색인한다.
+
+test_files:
+  - tests/Unit/Services/LayoutPermissionFilterTest.php
+
+axes:
+  case:
+    - component_filter
+    - modal_filter
+    - define_filter
+
+effects:
+  # 7.1.0 abilities 게이트(G25) — 모달 children·props 안 컴포넌트 목록까지 재귀
+  - layout_modal_children_filtered_by_permission
+  - layout_props_embedded_children_filtered_by_permission
+  - layout_children_with_non_component_entry_still_filtered
+  - layout_components_filtered_by_permission
+  - layout_modals_filtered_by_permission
+  - layout_defines_filtered_by_permission
+  - layout_named_defines_preserved

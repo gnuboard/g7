@@ -1,359 +1,371 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_ecommerce_shipping_policy_list",
-  "permissions": [
-    "sirsoft-ecommerce.shipping-policies.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
-  },
-  "state": {
-    "filter": {
-      "searchType": "name",
-      "search": "",
-      "shipping_methods": [],
-      "charge_policies": [],
-      "countries": [],
-      "is_active": ""
+    "comment": "배송정책 목록 (운영자) — 검색·필터·정렬·쪽수를 전부 URL 쿼리에 싣는 목록 화면이다. 화면을 다시\n  열거나 뒤로 가도 같은 조건이 재현되어야 하므로 상태를 _local 에만 두지 않고, 진입 시 `<init>` 이\n  쿼리를 필터 입력값으로 되돌려 담는다.",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_shipping_policy_list",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
     },
-    "selectedItems": [],
-    "selectAll": false,
-    "sortBy": "created_at_desc",
-    "perPage": "20",
-    "bulkToggleValue": ""
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "shipping_policies",
-      "ecommerce_settings"
-    ]
-  },
-  "initGlobal": {
-    "targetPolicy": null,
-    "targetDefaultPolicy": null,
-    "isDeleting": false,
-    "isBulkDeleting": false,
-    "isBulkToggling": false,
-    "isSettingDefault": false,
-    "bulkSelectedItems": [],
-    "bulkToggleValue": ""
-  },
-  "data_sources": [
-    {
-      "id": "shipping_policies",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.shipping_policies",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "params": {
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 20}}",
-        "search": "{{query.search}}",
-        "shipping_methods": "{{query['shipping_methods[]']}}",
-        "charge_policies": "{{query['charge_policies[]']}}",
-        "countries": "{{query['countries[]']}}",
-        "is_active": "{{query.is_active}}",
-        "sort_by": "{{query.sort_by || 'created_at'}}",
-        "sort_order": "{{query.sort_order || 'desc'}}"
-      },
-      "errorHandling": {
-        "403": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
-        },
-        "default": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
-        }
-      }
-    },
-    {
-      "id": "ecommerce_settings",
-      "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "global",
-        "_local": {
-          "filter": {
-            "search": "{{query.search || ''}}",
-            "shipping_methods": "{{query['shipping_methods[]'] || []}}",
-            "charge_policies": "{{query['charge_policies[]'] || []}}",
-            "countries": "{{query['countries[]'] || []}}",
-            "is_active": "{{query.is_active || ''}}"
-          }
-        }
-      }
-    }
-  ],
-  "named_actions": {
-    "searchShippingPolicies": {
-      "handler": "navigate",
-      "params": {
-        "path": "/admin/ecommerce/shipping-policies",
-        "mergeQuery": true,
-        "query": {
-          "page": 1,
-          "search": "{{_local.filter.search || undefined}}",
-          "shipping_methods[]": "{{_local.filter.shipping_methods?.length > 0 ? _local.filter.shipping_methods : undefined}}",
-          "charge_policies[]": "{{_local.filter.charge_policies?.length > 0 ? _local.filter.charge_policies : undefined}}",
-          "countries[]": "{{_local.filter.countries?.length > 0 ? _local.filter.countries : undefined}}",
-          "is_active": "{{_local.filter.is_active || undefined}}"
-        },
-        "replace": true,
-        "transition_overlay_target": "shipping_policy_datagrid__body"
-      }
-    }
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "shipping_policy_list_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content"
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "flex-between mb-6"
+    "data_sources": [
+        {
+            "id": "shipping_policies",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.shipping_policies",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "shipping_methods": "{{query['shipping_methods[]']}}",
+                "charge_policies": "{{query['charge_policies[]']}}",
+                "countries": "{{query['countries[]']}}",
+                "is_active": "{{query.is_active}}",
+                "sort_by": "{{query.sort_by || 'created_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}"
             },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "page-title"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                      "className": "text-label-subtle mt-1"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.description"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "type": "button",
-                  "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
-                  "disabled": "{{shipping_policies?.data?.abilities?.can_create !== true}}"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "plus",
-                      "size": "sm"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.add"
-                  }
-                ],
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "navigate",
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
                     "params": {
-                      "path": "/admin/ecommerce/shipping-policies/create",
-                      "mergeQuery": true,
-                      "query": {}
+                        "target": "content"
                     }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_filter.json"
-          },
-          {
-            "id": "data_table_section",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "mt-6"
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
             },
-            "children": [
-              {
-                "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_bulk_actions.json"
-              },
-              {
-                "id": "table_header_bar",
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다 — 필터·정렬·쪽수 변경이 모두 navigate 로 처리되는 이유다"
+        },
+        {
+            "id": "ecommerce_settings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "comment": "쇼핑몰 설정 — 기본 통화·기본 배송정책 같은 표시 기준을 목록이 함께 읽는다"
+        }
+    ],
+    "initLocal": {
+        "filter": {
+            "searchType": "name",
+            "search": "",
+            "shipping_methods": [],
+            "charge_policies": [],
+            "countries": [],
+            "is_active": ""
+        },
+        "selectedItems": [],
+        "selectAll": false,
+        "sortBy": "created_at_desc",
+        "perPage": "20",
+        "bulkToggleValue": ""
+    },
+    "initGlobal": {
+        "targetPolicy": null,
+        "targetDefaultPolicy": null,
+        "isDeleting": false,
+        "isBulkDeleting": false,
+        "isBulkToggling": false,
+        "isSettingDefault": false,
+        "bulkSelectedItems": [],
+        "bulkToggleValue": ""
+    },
+    "permissions": [
+        "sirsoft-ecommerce.shipping-policies.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "shipping_policies",
+            "ecommerce_settings"
+        ]
+    },
+    "named_actions": {
+        "searchShippingPolicies": {
+            "comment": "필터 적용 — 검색은 입력칸이 여럿이라 필터 조각·초기화 버튼이 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려 주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/shipping-policies",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "shipping_policy_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "shipping_methods[]": "{{_local.filter.shipping_methods?.length > 0 ? _local.filter.shipping_methods : undefined}}",
+                    "charge_policies[]": "{{_local.filter.charge_policies?.length > 0 ? _local.filter.charge_policies : undefined}}",
+                    "countries[]": "{{_local.filter.countries?.length > 0 ? _local.filter.countries : undefined}}",
+                    "is_active": "{{_local.filter.is_active || undefined}}"
+                }
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "filter": {
+                        "search": "{{query.search || ''}}",
+                        "shipping_methods": "{{query['shipping_methods[]'] || []}}",
+                        "charge_policies": "{{query['charge_policies[]'] || []}}",
+                        "countries": "{{query['countries[]'] || []}}",
+                        "is_active": "{{query.is_active || ''}}"
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "shipping_policy_list_content",
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex-between flex-wrap gap-3 mb-4"
+                    "className": "admin-page-content"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "text-label"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.pagination.total|count={{shipping_policies?.data?.pagination?.total || 0}}"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "flex-center gap-3"
-                    },
-                    "children": [
-                      {
-                        "type": "composite",
-                        "name": "Select",
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
                         "props": {
-                          "name": "sortBy",
-                          "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
-                          "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
-                          "options": [
-                            {
-                              "value": "created_at_desc",
-                              "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_desc"
-                            },
-                            {
-                              "value": "created_at_asc",
-                              "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_asc"
-                            },
-                            {
-                              "value": "name_asc",
-                              "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_asc"
-                            },
-                            {
-                              "value": "name_desc",
-                              "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_desc"
-                            },
-                            {
-                              "value": "sort_order_asc",
-                              "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.sort_order_asc"
-                            }
-                          ]
+                            "className": "flex-between mb-6"
                         },
-                        "actions": [
-                          {
-                            "type": "change",
-                            "handler": "navigate",
-                            "params": {
-                              "path": "/admin/ecommerce/shipping-policies",
-                              "mergeQuery": true,
-                              "query": {
-                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                "page": 1
-                              },
-                              "replace": true,
-                              "transition_overlay_target": "shipping_policy_datagrid__body"
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "새 배송정책 등록. 등록을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/shipping-policies/create",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{shipping_policies?.data?.abilities?.can_create !== true}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.add"
+                                    }
+                                ]
                             }
-                          }
                         ]
-                      },
-                      {
-                        "type": "composite",
-                        "name": "Select",
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_filter.json"
+                    },
+                    {
+                        "id": "data_table_section",
+                        "type": "basic",
+                        "name": "Div",
                         "props": {
-                          "name": "perPage",
-                          "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
-                          "value": "{{query.per_page || '20'}}",
-                          "options": [
-                            {
-                              "value": "10",
-                              "label": "10"
-                            },
-                            {
-                              "value": "20",
-                              "label": "20"
-                            },
-                            {
-                              "value": "50",
-                              "label": "50"
-                            },
-                            {
-                              "value": "100",
-                              "label": "100"
-                            }
-                          ]
+                            "className": "mt-6"
                         },
-                        "actions": [
-                          {
-                            "type": "change",
-                            "handler": "navigate",
-                            "params": {
-                              "path": "/admin/ecommerce/shipping-policies",
-                              "mergeQuery": true,
-                              "query": {
-                                "per_page": "{{$event.target.value}}",
-                                "page": 1
-                              },
-                              "replace": true,
-                              "transition_overlay_target": "shipping_policy_datagrid__body"
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_bulk_actions.json"
+                            },
+                            {
+                                "id": "table_header_bar",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-between flex-wrap gap-3 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.pagination.total|count={{shipping_policies?.data?.pagination?.total || 0}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`created_at_desc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다)",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/shipping-policies",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "shipping_policy_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "name": "sortBy",
+                                                    "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "created_at_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_desc"
+                                                        },
+                                                        {
+                                                            "value": "created_at_asc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_asc"
+                                                        },
+                                                        {
+                                                            "value": "name_asc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_asc"
+                                                        },
+                                                        {
+                                                            "value": "name_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_desc"
+                                                        },
+                                                        {
+                                                            "value": "sort_order_asc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.sort_order_asc"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "한 쪽에 담는 수가 달라지면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/shipping-policies",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "shipping_policy_datagrid__body",
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "name": "perPage",
+                                                    "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.per_page || '20'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "10",
+                                                            "label": "10"
+                                                        },
+                                                        {
+                                                            "value": "20",
+                                                            "label": "20"
+                                                        },
+                                                        {
+                                                            "value": "50",
+                                                            "label": "50"
+                                                        },
+                                                        {
+                                                            "value": "100",
+                                                            "label": "100"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json"
                             }
-                          }
                         ]
-                      }
-                    ]
-                  }
+                    }
                 ]
-              },
-              {
-                "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json"
-              }
-            ]
-          }
+            }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "한 건 삭제 확인",
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_delete.json"
+        },
+        {
+            "comment": "정책 복사 — 같은 조건의 정책을 조금만 바꿔 쓰는 일이 잦아 목록에서 바로 복제한다",
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_copy.json"
+        },
+        {
+            "comment": "선택한 여러 건 삭제 확인",
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_bulk_delete.json"
+        },
+        {
+            "comment": "선택한 여러 건의 사용 여부를 한꺼번에 켜고 끄기",
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_bulk_toggle.json"
+        },
+        {
+            "comment": "기본 배송정책 지정 — 한 건만 가질 수 있어 기존 기본값이 함께 풀린다",
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_set_default.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_delete.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_copy.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_bulk_delete.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_bulk_toggle.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_set_default.json"
-    }
-  ]
 }

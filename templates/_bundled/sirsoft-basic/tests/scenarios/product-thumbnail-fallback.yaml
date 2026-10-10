@@ -1,0 +1,27 @@
+feature: 사용자 상품 그림 없음 자리 표시
+
+description: |
+  상품 그림이 없는 상품도 장바구니·주문서·주문 상세 등에서 깨진 그림 없이 보이는지
+  
+  상품 이미지를 올리지 않은 상품은 API 가 `thumbnail_url: null` 을 준다. 그런데 장바구니 줄, 주문서 상품 목록,
+  주문 상세 상품 줄, 신청서 상품 줄, 옵션 변경·구매불가·구매 확정·리뷰 작성 창이
+  `<img src="{{…thumbnail…}}">` 을 조건 없이 그려, 브라우저의 깨진 그림 표시와 함께 상품명(alt)이
+  회색 칸 밖으로 넘쳐 보였다(2026-10-07 실측 — 이미지 없는 상품을 담은 장바구니).
+  주문 목록(`mypage/orders/_list`)처럼 그림 주소가 있을 때만 그림을, 없으면 아이콘을 그려야 한다.
+  
+  레이아웃 원본(.g7.html) 전체에서 상품 그림 주소(`thumbnail`)를 src 로 쓰는 `<img>` 를 모두 찾아,
+  그 태그나 감싸는 요소가 같은 주소를 조건(data-if)으로 걸고, 같은 파일에 주소가 없을 때의 아이콘이 있는지 본다.
+
+  수정 이력: 이커머스 전수 실측 S5-D15 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03]
+  # c01: 검사할 상품 그림 자리가 있다(장바구니·주문서·주문 상세 포함)
+  # c02: $file 의 그림($src)은 주소가 있을 때만 그린다
+  # c03: $file 은 그림($src)이 없을 때 아이콘을 그린다
+
+effects:
+  - missing_thumbnail_shows_placeholder
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/productThumbnailFallback.test.ts

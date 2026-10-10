@@ -1,0 +1,14 @@
+feature: 업데이트 창의 검색 인덱스 상자는 레이아웃 처리 방식 묶음 밖에 있다
+
+description: |
+  모듈·플러그인 업데이트 창에서 검색 인덱스 재생성 상자가 「레이아웃 처리 방식」 제목과 그 선택지 사이에 끼어
+  있었다(#736 F 영역 실측 O-F8). 서로 다른 결정이므로 레이아웃 처리 방식 묶음 다음의 형제로 둔다.
+
+axes:
+  surface: [module_update, plugin_update]
+
+effects:
+  - search_index_box_outside_layout_strategy
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-update-modal-order.test.tsx

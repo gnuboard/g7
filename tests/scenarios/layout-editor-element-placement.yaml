@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage:test-files reason: 미작성 테스트를 매니페스트가 거짓 선언하지 않도록 명시.
+# audit:allow test-scenario-coverage[cross_product,effects,test_files] reason: 미작성 테스트를 매니페스트가 거짓 선언하지 않도록 명시.
 #   test-files 면제 사유: link-edit-affordance.test.tsx 미작성 (#383 이월)
 feature: 레이아웃 편집기 요소 배치 (팔레트 / 컨텍스트 + 버튼 / 드래그앤드롭 / 오버레이 / 저장)
 phase: 3

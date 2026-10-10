@@ -13,6 +13,7 @@
   "create": "Create",
   "search": "Search",
   "search_placeholder": "Search...",
+  "no_results": "No results found",
   "back": "Back",
   "next": "Next",
   "prev": "Previous",
@@ -61,5 +62,22 @@
   "next_page": "Next page",
   "last_page": "Last page",
   "page_n": "Page {{n}}",
-  "currency_unit": ""
+  "currency_unit": "",
+  "select_all": "Select all",
+  "file_input": {
+    "clear": "Clear file",
+    "browse": "Browse",
+    "no_file": "No file selected",
+    "too_large": "File size exceeds the {{size}}MB limit."
+  },
+  "theme_select": "Theme",
+  "delete_notification": "Delete notification",
+  "expand": "Expand",
+  "collapse": "Collapse",
+  "quantity": "Quantity",
+  "quantity_decrease": "Decrease quantity",
+  "quantity_increase": "Increase quantity",
+  "close_menu": "Close menu",
+  "page_transitioning": "Changing page",
+  "page_loading": "Loading page"
 }

@@ -6,20 +6,21 @@ use App\Enums\IdentityVerificationPurpose;
 use App\Enums\IdentityVerificationStatus;
 use App\Enums\UserStatus;
 use App\Models\IdentityVerificationLog;
+use App\Models\NotificationLog;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\IdentityVerificationService;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * [case:backend-29] 로그인 2단계 인증 테스트
+ * [case:backend-30] 로그인 2단계 인증 테스트
  *
  * `security.two_factor_auth` 는 설정 화면에만 있고 구현이 없어, 켜도 아무 일도 일어나지
  * 않았습니다. 관리자는 2단계 인증이 걸린 줄 알지만 실제로는 비밀번호 하나로 로그인됩니다.
@@ -29,20 +30,26 @@ use Tests\TestCase;
  */
 class TwoFactorAuthTest extends TestCase
 {
+    use CapturesSentMail;
     use RefreshDatabase;
 
     private User $user;
 
+    /**
+     * 메일을 격리하고 본인인증 알림 정의·메일 채널을 준비한 뒤 테스트 사용자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         Mail::fake();
 
-        // 인증번호 메일을 구성하려면 본인인증 메시지 정의가 있어야 한다. 실제 설치에는 있고
-        // RefreshDatabase 직후에는 비어 있으므로, 없는 상태를 그대로 두면 "코드 발송 실패" 가 되어
-        // 게이트 동작이 아니라 시드 부재를 측정하게 된다.
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        // 인증번호 메일은 알림 시스템(본인인증 알림 정의 + 메일 채널)을 거친다. 실제 설치에는 정의가 있고
+        // 메일이 설정돼 있지만 RefreshDatabase 직후에는 둘 다 없으므로, 그대로 두면 "코드 발송 실패" 가
+        // 되어 게이트 동작이 아니라 준비 부재를 측정하게 된다.
+        $this->prepareIdentityNotifications();
 
         $this->user = User::factory()->create([
             'email' => 'two-factor@test.com',
@@ -55,6 +62,7 @@ class TwoFactorAuthTest extends TestCase
      * 2단계 인증 설정을 켜거나 끕니다.
      *
      * @param  bool  $enabled  활성화 여부
+     * @return void 반환값 없음
      */
     private function setTwoFactor(bool $enabled): void
     {
@@ -75,7 +83,11 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 2단계 인증이 꺼져 있으면 비밀번호 로그인이 곧바로 토큰을 발급한다.
+     *
      * @scenario two_factor=off, controller=user
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function login_issues_a_token_directly_when_two_factor_is_off(): void
@@ -89,9 +101,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 2단계 인증이 켜져 있으면 로그인 응답은 토큰 없이 two_factor_required 와 challenge_id 만 돌려준다.
+     *
      * @scenario two_factor=on, controller=user, delivery=sent
      *
      * @effects challenge_response_has_no_token, challenge_response_has_no_user
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function login_withholds_the_token_when_two_factor_is_on(): void
@@ -114,7 +130,11 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 발급된 challenge 의 코드를 맞히면 토큰과 사용자 정보가 발급된다.
+     *
      * @scenario two_factor=on, controller=user, code=valid
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function verifying_the_challenge_completes_the_login(): void
@@ -134,7 +154,11 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 틀린 코드로 2단계 인증을 완료하려 하면 401 이고 토큰이 없다.
+     *
      * @scenario two_factor=on, controller=user, code=invalid
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_wrong_code_does_not_issue_a_token(): void
@@ -153,7 +177,11 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 비밀번호 재설정 등 다른 목적으로 발급된 challenge 로는 코드가 맞아도 로그인할 수 없다(401).
+     *
      * @scenario two_factor=on, controller=user, code=invalid
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_challenge_issued_for_another_purpose_cannot_be_used_to_log_in(): void
@@ -178,9 +206,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 인증번호 메일 전송이 예외로 실패하면 401 이 아니라 503 과 발송 실패 문구로 답하고 토큰을 내주지 않는다.
+     *
      * @scenario two_factor=on, controller=user, delivery=failed
      *
      * @effects delivery_failure_503_with_reason
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function login_fails_clearly_when_the_code_cannot_be_delivered(): void
@@ -189,8 +221,8 @@ class TwoFactorAuthTest extends TestCase
 
         // 메일 발송이 실패하면 프로바이더가 challenge 를 failed 로 표시한다. 그 상태를 무시하면
         // 사용자는 "인증번호를 보냈습니다" 안내를 받고 완료할 수 없는 challenge 를 들고 막힌다.
-        Mail::shouldReceive('send')->andThrow(new \RuntimeException('SMTP unavailable'));
-        Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP unavailable'));
+        // 알림 메일 채널은 메일러를 `mailer()` 로 꺼낸다 — 거기서 전송 계층 예외를 낸다.
+        Mail::shouldReceive('mailer')->andThrow(new \RuntimeException('SMTP unavailable'));
 
         $response = $this->login();
 
@@ -205,9 +237,66 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 「알림 채널 관리」에서 메일을 끄면 인증번호를 보내지 않는다 — 503, 발송 로그 skipped, 토큰 없음.
+     *
+     * 7.1.0 전에는 본인인증 메일이 채널 토글을 무시하고 나갔다(#699). 이제 토글을 따르므로, 메일을 끈
+     * 사이트에서 TOTP 를 등록하지 않은 계정은 로그인할 수 없다(관리 화면이 끄기 전에 확인을 받는다).
+     *
+     * @scenario two_factor=on, controller=user, delivery=failed
+     *
+     * @effects mail_channel_off_blocks_two_factor_503
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function login_fails_with_503_when_the_mail_channel_is_turned_off(): void
+    {
+        $this->setTwoFactor(true);
+        $this->setCoreMailChannelActive(false);
+
+        $response = $this->login();
+
+        $response->assertStatus(503);
+        $this->assertSame(__('auth.two_factor_delivery_failed'), $response->json('message'));
+        $this->assertNull($response->json('data.token'));
+
+        $log = NotificationLog::where('notification_type', 'identity.purpose.login')->latest('id')->first();
+        $this->assertNotNull($log, '메일을 끈 사이트의 본인인증 발송 시도가 발송 로그에 남아야 한다.');
+        $this->assertSame('skipped', $log->status->value ?? $log->status);
+        $this->assertSame(__('notification.channel_disabled_by_extension'), $log->error_message);
+    }
+
+    /**
+     * 로그인 인증번호는 로그인 전용 정의(identity.purpose.login)로 나간다 — 범용 문구가 아니다.
+     *
+     * @scenario two_factor=on, controller=user, delivery=sent
+     *
+     * @effects login_code_uses_login_definition
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function login_code_is_sent_with_the_login_definition(): void
+    {
+        $this->setTwoFactor(true);
+
+        $this->login()->assertStatus(200);
+
+        $log = NotificationLog::where('channel', 'mail')->latest('id')->first();
+        $this->assertNotNull($log);
+        $this->assertSame('identity.purpose.login', $log->notification_type);
+        $this->assertSame('sent', $log->status->value ?? $log->status);
+        $this->assertSame($this->user->id, (int) $log->recipient_user_id);
+    }
+
+    /**
+     * 관리자 로그인도 2단계 인증이 켜져 있으면 500 없이 토큰 대신 challenge 를 돌려준다.
+     *
      * @scenario two_factor=on, controller=admin, actor=admin, delivery=sent
      *
      * @effects admin_login_returns_challenge_not_500
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function admin_login_returns_a_challenge_instead_of_failing(): void
@@ -228,9 +317,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 관리자가 관리자 2단계 인증 경로에서 코드를 맞히면 토큰이 발급된다.
+     *
      * @scenario two_factor=on, controller=admin, actor=admin, code=valid
      *
      * @effects admin_two_factor_issues_token_for_admin
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function admin_two_factor_completes_the_login(): void
@@ -253,9 +346,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 관리자가 아닌 사용자가 관리자 2단계 인증을 완료하면 403 이고 발급된 토큰이 회수돼 남지 않는다.
+     *
      * @scenario two_factor=on, controller=admin, actor=non_admin, code=valid
      *
      * @effects non_admin_two_factor_revokes_token
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_non_admin_completing_admin_two_factor_keeps_no_token(): void
@@ -279,9 +376,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 2단계 인증이 꺼진 상태에서 관리자가 아닌 사용자의 관리자 로그인은 403 이고 토큰이 남지 않는다.
+     *
      * @scenario two_factor=off, controller=admin, actor=non_admin
      *
      * @effects non_admin_admin_login_revokes_token
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_non_admin_rejected_at_admin_login_keeps_no_token(): void
@@ -298,9 +399,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 재발송은 새 challenge 를 발급하고 앞선 challenge 를 cancelled 로 바꾸며 토큰은 내주지 않는다.
+     *
      * @scenario two_factor=on, controller=user, resend=active
      *
      * @effects resend_cancels_previous_challenge
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function resending_cancels_the_previous_challenge_and_issues_a_new_one(): void
@@ -328,9 +433,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 이미 검증을 마친 challenge 는 재발송할 수 없다(422).
+     *
      * @scenario two_factor=on, controller=user, resend=verified
      *
      * @effects resend_rejects_verified_challenge
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_verified_challenge_cannot_be_resent(): void
@@ -350,9 +459,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 만료된 challenge 는 재발송할 수 없다(422).
+     *
      * @scenario two_factor=on, controller=user, resend=expired
      *
      * @effects resend_rejects_expired_challenge
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function an_expired_challenge_cannot_be_resent(): void
@@ -371,9 +484,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 취소된 challenge 는 재발송할 수 없다(422).
+     *
      * @scenario two_factor=on, controller=user, resend=cancelled
      *
      * @effects resend_rejects_cancelled_challenge
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_cancelled_challenge_cannot_be_resent(): void
@@ -390,9 +507,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * challenge 를 받은 뒤 계정이 잠기면 재발송이 423 으로 거절된다.
+     *
      * @scenario two_factor=on, controller=user, resend=active, lock_state=active
      *
      * @effects resend_refused_while_locked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function resending_is_refused_while_the_account_is_locked(): void
@@ -410,9 +531,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 관리자는 관리자 재발송 경로로 새 challenge 를 받고, 응답에 토큰·사용자 정보는 실리지 않는다.
+     *
      * @scenario two_factor=on, controller=admin, actor=admin, resend=active
      *
      * @effects admin_resend_returns_new_challenge
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function an_admin_can_resend_through_the_admin_endpoint(): void
@@ -438,9 +563,13 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
+     * 관리자가 아닌 사용자는 관리자 재발송 경로에서 403 을 받고 토큰이 남지 않는다.
+     *
      * @scenario two_factor=on, controller=admin, actor=non_admin, resend=active
      *
      * @effects admin_resend_refuses_non_admin
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_non_admin_cannot_resend_through_the_admin_endpoint(): void
@@ -464,6 +593,7 @@ class TwoFactorAuthTest extends TestCase
      * 사용자에게 admin 역할을 부여합니다.
      *
      * @param  User  $user  대상 사용자
+     * @return void 반환값 없음
      */
     private function makeAdmin(User $user): void
     {
@@ -484,7 +614,7 @@ class TwoFactorAuthTest extends TestCase
      * 알려진 값의 해시를 심어 "코드가 맞을 때" 를 재현합니다 — 검증 대상은 코드 생성이 아니라
      * 로그인 게이트(코드 확인 전 토큰 미발급 / 확인 후 발급)입니다.
      *
-     * @param  string  $challengeId  challenge UUID
+     * @param  string  $challengeId  인증 요청(challenge) UUID
      * @return string 심어 둔 인증 코드
      */
     private function issuedCode(string $challengeId): string

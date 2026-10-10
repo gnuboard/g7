@@ -8,12 +8,14 @@
  * - 필터 UI 렌더링 (검색, 로그 타입 체크박스, 날짜)
  * - 페이지네이션 렌더링
  * - abilities 기반 삭제 버튼 제어
+ * - 행위자 칸: 회원이 없는 로그(시스템·CLI)에는 회원 메뉴를 그리지 않음 (실제 partial 사용)
  */
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import datagridPartial from '../../layouts/partials/admin_activity_log_list/_partial_datagrid.json';
 
 // 테스트용 컴포넌트 정의
 const TestDiv: React.FC<{
@@ -304,7 +306,7 @@ function createActivityLogListLayout() {
             { field: 'action_label', header: '액션' },
             { field: 'localized_description', header: '설명' },
             { field: 'loggable_type_display', header: '대상' },
-            { field: 'actor_name', header: '행위자' },
+            { field: 'actor', header: '행위자' },
             { field: 'ip_address', header: 'IP 주소' },
             { field: 'created_at', header: '일시' },
           ],
@@ -337,6 +339,8 @@ describe('활동 로그 목록 - 필터 UI 렌더링', () => {
     testUtils.cleanup();
   });
 
+  // @scenario actor_kind=member
+  // @effects filter_controls_render
   it('검색 타입 드롭다운, 검색 입력, 행위자, 날짜 필터가 렌더링됨', async () => {
     testUtils.mockApi('activityLogs', {
       response: { data: { data: [], pagination: { current_page: 1, last_page: 1, per_page: 20, total: 0 } } },
@@ -394,6 +398,8 @@ describe('활동 로그 목록 - DataGrid 렌더링', () => {
     testUtils.cleanup();
   });
 
+  // @scenario actor_kind=member
+  // @effects datagrid_renders_log_rows
   it('데이터 로드 시 DataGrid에 로그 항목 렌더링됨', async () => {
     // mockApi response는 데이터소스에 직접 저장됨
     // 레이아웃에서 activityLogs?.data?.data로 접근하므로 response.data 안에 중첩 필요
@@ -438,6 +444,8 @@ describe('활동 로그 목록 - DataGrid 렌더링', () => {
     expect(rows.length).toBe(2);
   });
 
+  // @scenario actor_kind=member
+  // @effects datagrid_shows_empty_state
   it('빈 데이터 시 빈 상태 표시', async () => {
     testUtils.mockApi('activityLogs', {
       response: {
@@ -458,6 +466,8 @@ describe('활동 로그 목록 - DataGrid 렌더링', () => {
     expect(emptyState).not.toBeNull();
   });
 
+  // @scenario actor_kind=member
+  // @effects bulk_delete_enabled_with_ability
   it('삭제 권한 있을 때 일괄 삭제 버튼 활성화', async () => {
     testUtils.mockApi('activityLogs', {
       response: {
@@ -486,6 +496,8 @@ describe('활동 로그 목록 - DataGrid 렌더링', () => {
     expect(bulkDeleteButton).not.toBeNull();
   });
 
+  // @scenario actor_kind=member
+  // @effects bulk_delete_disabled_without_ability
   it('삭제 권한 없을 때 일괄 삭제 버튼 비활성화', async () => {
     testUtils.mockApi('activityLogs', {
       response: {
@@ -515,6 +527,8 @@ describe('활동 로그 목록 - DataGrid 렌더링', () => {
     expect(bulkDeleteButton?.getAttribute('disabled')).not.toBeNull();
   });
 
+  // @scenario actor_kind=member
+  // @effects datagrid_always_selectable
   it('DataGrid에 selectable이 항상 활성화됨', async () => {
     testUtils.mockApi('activityLogs', {
       response: {
@@ -532,5 +546,105 @@ describe('활동 로그 목록 - DataGrid 렌더링', () => {
     expect(datagrid).not.toBeNull();
     // selectable이 항상 true로 설정됨 (권한과 무관하게 체크박스 표시)
     expect(datagrid?.getAttribute('data-selectable')).toBe('true');
+  });
+});
+
+// ─── 행위자 칸 — 실제 partial 의 cellChildren 을 그대로 렌더 ───
+
+const TestActionMenu: React.FC<{
+  items?: Array<{ id: string; if?: unknown }>;
+  children?: React.ReactNode;
+}> = ({ items, children }) => (
+  <div data-testid="actor-menu" data-items={(items ?? []).map((i) => i.id).join(',')}>{children}</div>
+);
+
+/**
+ * 실제 활동 로그 partial 에서 행위자(actor) 칸의 셀 노드를 꺼낸다.
+ */
+function findActorCellChildren(): any[] {
+  const stack: any[] = [datagridPartial];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (node && typeof node === 'object') {
+      if (Array.isArray(node)) {
+        stack.push(...node);
+        continue;
+      }
+      if (node.field === 'actor' && Array.isArray(node.cellChildren)) {
+        return node.cellChildren;
+      }
+      stack.push(...Object.values(node));
+    }
+  }
+  throw new Error('actor 칸을 찾지 못했습니다');
+}
+
+describe('활동 로그 목록 - 행위자 칸 (실제 partial)', () => {
+  let testUtils: ReturnType<typeof createLayoutTest>;
+
+  beforeEach(() => {
+    const registry = setupTestRegistry();
+    (registry as any).registry.ActionMenu = {
+      component: TestActionMenu,
+      metadata: { name: 'ActionMenu', type: 'composite' },
+    };
+
+    testUtils = createLayoutTest(
+      {
+        components: [
+          {
+            id: 'rows',
+            type: 'basic',
+            name: 'Div',
+            props: { 'data-testid': 'actor-row' },
+            iteration: { source: '_local.rows', item_var: 'row' },
+            children: findActorCellChildren(),
+          },
+        ],
+      } as any,
+      {
+        componentRegistry: registry,
+        initialState: {
+          _local: {
+            rows: [
+              {
+                id: 1,
+                actor_name: '홍길동',
+                user: { uuid: 'a26219fc-94a0-4f63-9404-04c2a6ac99e4', name: '홍길동', email: 'hong@example.com' },
+              },
+              {
+                id: 2,
+                actor_name: '시스템(CLI)',
+                user: { uuid: null, name: '시스템(CLI)' },
+              },
+            ],
+          },
+        },
+      },
+    );
+  });
+
+  afterEach(() => {
+    testUtils.cleanup();
+  });
+
+  // @scenario actor_kind=member
+  // @scenario actor_kind=system_cli
+  // @effects member_log_actor_has_member_menu, system_log_actor_has_no_member_menu
+  it('회원이 없는 로그는 회원 메뉴 없이 행위자 라벨만 보인다', async () => {
+    await testUtils.render();
+
+    const rows = screen.getAllByTestId('actor-row');
+    expect(rows).toHaveLength(2);
+
+    // 회원 로그 — 메뉴(회원 정보 보기·이 사람으로 검색)가 있다
+    const memberMenu = rows[0].querySelector('[data-testid="actor-menu"]');
+    expect(memberMenu).not.toBeNull();
+    expect(memberMenu?.getAttribute('data-items')).toContain('view_member');
+    expect(rows[0].textContent).toContain('홍길동');
+
+    // 시스템(CLI) 로그 — 메뉴가 없고 라벨만 보인다(종전: 메뉴가 그려져 /admin/users/undefined 이동)
+    expect(rows[1].querySelector('[data-testid="actor-menu"]')).toBeNull();
+    expect(rows[1].textContent).toContain('시스템(CLI)');
   });
 });

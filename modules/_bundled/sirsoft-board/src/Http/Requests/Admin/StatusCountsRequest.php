@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 관리자 신고 상태별 건수 조회 요청 폼 검증
@@ -13,6 +14,8 @@ use Modules\Sirsoft\Board\Enums\ReportStatus;
  */
 class StatusCountsRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인합니다.
      *

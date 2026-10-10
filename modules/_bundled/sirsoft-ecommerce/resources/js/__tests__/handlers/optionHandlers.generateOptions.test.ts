@@ -27,11 +27,7 @@ const mockG7Core = {
     modal: {
         open: vi.fn(),
     },
-    config: (key: string) => {
-        if (key === 'app.supported_locales') return ['ko', 'en'];
-        if (key === 'app.locale') return 'ko';
-        return undefined;
-    },
+    locale: { current: () => 'ko', supported: () => ['ko', 'en'] },
     t: (key: string, params?: Record<string, any>) => {
         if (params?.count) return `${params.count} options have been generated.`;
         return key;
@@ -124,6 +120,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
     });
 
     describe('정가/판매가 자동 입력', () => {
+        /**
+         * @scenario case=c01
+         * @effects option_generate_combinations
+         */
         it('생성된 옵션에 상품의 정가(list_price)가 입력되어야 한다', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -136,6 +136,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(options[1].list_price).toBe(66000);
         });
 
+        /**
+         * @scenario case=c02
+         * @effects option_generate_combinations
+         */
         it('생성된 옵션에 상품의 판매가(selling_price)가 입력되어야 한다', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -147,6 +151,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(options[1].selling_price).toBe(53000);
         });
 
+        /**
+         * @scenario case=c03
+         * @effects option_generate_combinations
+         */
         it('price_adjustment는 0이어야 한다 (상품 가격과 동일하므로)', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -158,6 +166,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(options[1].price_adjustment).toBe(0);
         });
 
+        /**
+         * @scenario case=c04
+         * @effects option_generate_combinations
+         */
         it('상품에 정가/판매가가 없으면 0으로 설정되어야 한다', () => {
             mockLocalState.form.list_price = undefined;
             mockLocalState.form.selling_price = undefined;
@@ -174,6 +186,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
     });
 
     describe('다중통화 판매가 자동 입력', () => {
+        /**
+         * @scenario case=c05
+         * @effects option_generate_combinations
+         */
         it('상품 판매가 기반으로 다중통화 가격이 자동 계산되어야 한다', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -190,6 +206,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(multiCurrency.JPY.price).toBe(6095);
         });
 
+        /**
+         * @scenario case=c06
+         * @effects option_generate_combinations
+         */
         it('다중통화 가격은 { price: number } 객체 구조여야 한다', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -201,6 +221,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(typeof multiCurrency.USD.price).toBe('number');
         });
 
+        /**
+         * @scenario case=c07
+         * @effects option_generate_combinations
+         */
         it('모든 생성된 옵션에 동일한 다중통화 가격이 입력되어야 한다', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -214,6 +238,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
                 .toBe(options[1].multi_currency_selling_price.JPY.price);
         });
 
+        /**
+         * @scenario case=c08
+         * @effects option_generate_combinations
+         */
         it('상품에 multi_currency_selling_price가 설정되어 있으면 그대로 복사되어야 한다', () => {
             mockLocalState.form.multi_currency_selling_price = {
                 USD: { price: 50 },
@@ -230,6 +258,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(options[0].multi_currency_selling_price.JPY.price).toBe(7000);
         });
 
+        /**
+         * @scenario case=c09
+         * @effects option_generate_combinations
+         */
         it('복사된 multi_currency_selling_price는 독립 객체여야 한다 (참조 공유 방지)', () => {
             mockLocalState.form.multi_currency_selling_price = {
                 USD: { price: 50 },
@@ -247,6 +279,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             );
         });
 
+        /**
+         * @scenario case=c10
+         * @effects option_generate_combinations
+         */
         it('판매가가 0이면 다중통화 가격도 빈 객체여야 한다', () => {
             mockLocalState.form.selling_price = 0;
             mockLocalState.form.multi_currency_selling_price = undefined;
@@ -260,6 +296,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(Object.keys(multiCurrency).length).toBe(0);
         });
 
+        /**
+         * @scenario case=c11
+         * @effects option_generate_combinations
+         */
         it('환율 설정된 통화가 없으면 빈 객체여야 한다', () => {
             mockGlobalState.modules['sirsoft-ecommerce'].language_currency.currencies = [
                 { code: 'KRW', is_default: true, exchange_rate: 1 },
@@ -276,6 +316,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
     });
 
     describe('기존 옵션 병합 시 가격 유지', () => {
+        /**
+         * @scenario case=c12
+         * @effects option_generate_combinations
+         */
         it('기존 옵션과 동일한 이름의 옵션은 기존 가격을 유지해야 한다', () => {
             // 기존 옵션 (사용자가 가격을 수정한 상태)
             mockLocalState.form.options = [
@@ -320,6 +364,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
     });
 
     describe('다중 옵션 그룹', () => {
+        /**
+         * @scenario case=c13
+         * @effects option_generate_combinations
+         */
         it('2개 옵션 그룹의 카테시안 곱 결과에도 가격이 자동 입력되어야 한다', () => {
             mockLocalState.ui.optionInputs = [
                 {
@@ -356,6 +404,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
     });
 
     describe('상품 재고 자동 동기화', () => {
+        /**
+         * @scenario case=c14
+         * @effects option_generate_combinations
+         */
         it('신규 등록 시 옵션 2개 생성하면 상품 재고가 옵션 재고 합계(2)로 동기화되어야 한다', () => {
             // 색상 2개(빨강/파랑) → 옵션 2개, isCreate 면 옵션당 기본 재고 1
             generateOptionsHandler(
@@ -371,6 +423,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(mockLocalState.form.stock_quantity).toBe(2);
         });
 
+        /**
+         * @scenario case=c15
+         * @effects option_generate_combinations
+         */
         it('카테시안 곱(2×2=4) 옵션 생성 시 상품 재고가 합계(4)로 동기화되어야 한다', () => {
             mockLocalState.ui.optionInputs = [
                 { name: { ko: '색상' }, values: [{ ko: '빨강' }, { ko: '파랑' }] },
@@ -387,6 +443,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(mockLocalState.form.stock_quantity).toBe(4);
         });
 
+        /**
+         * @scenario case=c16
+         * @effects option_generate_combinations
+         */
         it('수정 모드(isCreate 미지정)에서는 옵션 기본 재고 0 → 상품 재고 0 으로 동기화되어야 한다', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -397,6 +457,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(mockLocalState.form.stock_quantity).toBe(0);
         });
 
+        /**
+         * @scenario case=c17
+         * @effects option_generate_combinations
+         */
         it('기존 옵션 병합 시에도 상품 재고가 전체 옵션 합계로 동기화되어야 한다', () => {
             // 기존 빨강(재고 10) + 신규 파랑(재고 1) → 합계 11
             mockLocalState.form.options = [
@@ -426,6 +490,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
     });
 
     describe('필드명 호환성', () => {
+        /**
+         * @scenario case=c18
+         * @effects option_generate_combinations
+         */
         it('multi_currency_selling_price 필드명을 사용해야 한다 (multi_currency_prices 아님)', () => {
             generateOptionsHandler(
                 { handler: 'sirsoft-ecommerce.generateOptions' },
@@ -439,6 +507,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
     });
 
     describe('기존 옵션 존재 시 확인 모달', () => {
+        /**
+         * @scenario case=c19
+         * @effects option_generate_combinations
+         */
         it('기존 옵션이 존재하면 확인 모달을 열고 생성을 중단해야 한다', () => {
             mockLocalState.form.options = [
                 {
@@ -466,6 +538,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(mockG7Core.state.setLocal).not.toHaveBeenCalled();
         });
 
+        /**
+         * @scenario case=c20
+         * @effects option_generate_combinations
+         */
         it('skipConfirm이 true이면 확인 모달 없이 바로 생성해야 한다', () => {
             mockLocalState.form.options = [
                 {
@@ -494,6 +570,10 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(mockLocalState.form.options.length).toBeGreaterThan(0);
         });
 
+        /**
+         * @scenario case=c21
+         * @effects option_generate_combinations
+         */
         it('기존 옵션이 없으면 확인 모달 없이 바로 생성해야 한다', () => {
             mockLocalState.form.options = [];
 

@@ -1,0 +1,681 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "인증키와 자동 갱신 정책 입력"
+    },
+    "comment": "설정 폼 — 인증키·자동 관리·갱신 시각·환율 종류·재시도·소수 자릿수·조회 소급일·이력 보존일·실패 알림·실행 요일. 입력은 data-key 폼(_local.form)에 묶이고 저장은 상위 레이아웃의 저장 버튼이 한다",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-4"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-koreaexim.settings_tab"
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "form-hint"
+            },
+            "text": "$t:sirsoft-koreaexim.time_hint"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid-2col-responsive"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_auth_key"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.auth_key"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "koreaexim_auth_key",
+                                "name": "auth_key",
+                                "type": "password",
+                                "autoComplete": "new-password",
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['auth_key']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['auth_key']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_auto_manage"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.auto_manage"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "id": "koreaexim_auto_manage",
+                                "name": "auto_manage",
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['auto_manage']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['auto_manage']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_update_time"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.update_time"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "koreaexim_update_time",
+                                "name": "update_time",
+                                "type": "text",
+                                "placeholder": "11:30",
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-koreaexim.site_time {{koreaeximStatus?.data?.update_time_site ?? '-'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['update_time']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['update_time']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_rate_type"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.rate_type"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "id": "koreaexim_rate_type",
+                                "name": "rate_type",
+                                "disabled": "{{_computed.isSettingsReadOnly}}",
+                                "options": [
+                                    {
+                                        "value": "deal_bas_r",
+                                        "label": "$t:sirsoft-koreaexim.RateType.deal_bas_r"
+                                    },
+                                    {
+                                        "value": "ttb",
+                                        "label": "$t:sirsoft-koreaexim.RateType.ttb"
+                                    },
+                                    {
+                                        "value": "tts",
+                                        "label": "$t:sirsoft-koreaexim.RateType.tts"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['rate_type']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['rate_type']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_retry_max"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.retry_max"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "koreaexim_retry_max",
+                                "name": "retry_max",
+                                "type": "number",
+                                "min": 0,
+                                "max": 12,
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['retry_max']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['retry_max']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_rate_decimal_places"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.rate_decimal_places"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "koreaexim_rate_decimal_places",
+                                "name": "rate_decimal_places",
+                                "type": "number",
+                                "min": 0,
+                                "max": 8,
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['rate_decimal_places']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['rate_decimal_places']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_lookback_days"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.lookback_days"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "koreaexim_lookback_days",
+                                "name": "lookback_days",
+                                "type": "number",
+                                "min": 0,
+                                "max": 14,
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['lookback_days']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['lookback_days']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_history_retention_days"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.history_retention_days"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "id": "koreaexim_history_retention_days",
+                                "name": "history_retention_days",
+                                "type": "number",
+                                "min": 30,
+                                "max": 3650,
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['history_retention_days']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['history_retention_days']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "koreaexim_notify_on_failure"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.notify_on_failure"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "id": "koreaexim_notify_on_failure",
+                                "name": "notify_on_failure",
+                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['notify_on_failure']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['notify_on_failure']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "form-group"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-koreaexim.fields.run_days"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.run_days": "{{(_local.form?.run_days ?? []).includes(1) ? (_local.form.run_days ?? []).filter(day => day !== 1) : [...(_local.form?.run_days ?? []), 1]}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{(_local.form?.run_days ?? []).includes(1)}}",
+                                                "aria-label": "$t:sirsoft-koreaexim.days.1",
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-koreaexim.days.1"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.run_days": "{{(_local.form?.run_days ?? []).includes(2) ? (_local.form.run_days ?? []).filter(day => day !== 2) : [...(_local.form?.run_days ?? []), 2]}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{(_local.form?.run_days ?? []).includes(2)}}",
+                                                "aria-label": "$t:sirsoft-koreaexim.days.2",
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-koreaexim.days.2"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.run_days": "{{(_local.form?.run_days ?? []).includes(3) ? (_local.form.run_days ?? []).filter(day => day !== 3) : [...(_local.form?.run_days ?? []), 3]}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{(_local.form?.run_days ?? []).includes(3)}}",
+                                                "aria-label": "$t:sirsoft-koreaexim.days.3",
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-koreaexim.days.3"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.run_days": "{{(_local.form?.run_days ?? []).includes(4) ? (_local.form.run_days ?? []).filter(day => day !== 4) : [...(_local.form?.run_days ?? []), 4]}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{(_local.form?.run_days ?? []).includes(4)}}",
+                                                "aria-label": "$t:sirsoft-koreaexim.days.4",
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-koreaexim.days.4"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.run_days": "{{(_local.form?.run_days ?? []).includes(5) ? (_local.form.run_days ?? []).filter(day => day !== 5) : [...(_local.form?.run_days ?? []), 5]}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{(_local.form?.run_days ?? []).includes(5)}}",
+                                                "aria-label": "$t:sirsoft-koreaexim.days.5",
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-koreaexim.days.5"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.run_days": "{{(_local.form?.run_days ?? []).includes(6) ? (_local.form.run_days ?? []).filter(day => day !== 6) : [...(_local.form?.run_days ?? []), 6]}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{(_local.form?.run_days ?? []).includes(6)}}",
+                                                "aria-label": "$t:sirsoft-koreaexim.days.6",
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-koreaexim.days.6"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "요일 토글 — run_days 배열에 넣고 빼며 새 배열로 갈아 끼우고 변경 표시를 켠다(저장 버튼이 활성화된다)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.run_days": "{{(_local.form?.run_days ?? []).includes(7) ? (_local.form.run_days ?? []).filter(day => day !== 7) : [...(_local.form?.run_days ?? []), 7]}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{(_local.form?.run_days ?? []).includes(7)}}",
+                                                "aria-label": "$t:sirsoft-koreaexim.days.7",
+                                                "disabled": "{{_computed.isSettingsReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-koreaexim.days.7"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.run_days}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.run_days?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

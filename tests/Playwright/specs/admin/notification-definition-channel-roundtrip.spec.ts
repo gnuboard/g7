@@ -29,7 +29,6 @@ const DEFINITIONS_TAB = '/admin/settings?tab=notification_definitions';
 const SETTINGS_PERMISSIONS = [
   'core.settings.read',
   'core.settings.update',
-  'core.admin.notifications.read',
 ] as const;
 
 /** 채널 탭 표시명 (lang/ko/notification.php) */
@@ -39,6 +38,11 @@ const CHANNEL_DATABASE = '사이트내 알림';
 /** 설정 탭 표시명 (templates/.../lang/partial/ko/admin.json) */
 const TAB_NOTIFICATION = '알림 설정';
 const TAB_IDENTITY = '본인인증';
+
+/** 알림 설정 본인인증 분류 (templates/.../lang/partial/ko/admin.json · common.json) */
+const IDENTITY_RECIPIENT_FIXED = '받는 사람: 인증을 요청한 사람에게만 보냅니다';
+const BTN_EDIT = '편집';
+const BTN_SAVE = '저장';
 
 /**
  * 알림 정의 목록 요청의 `template_channel` 값을 순서대로 수집합니다.
@@ -197,6 +201,57 @@ test.describe('알림 정의 채널 왕복 (#518)', () => {
       `목록은 ${lastRequested} 로 불러왔는데 화면은 ${active} 을 활성으로 표시한다 — ` +
         '두 채널이 어긋나면 행마다 「이 채널에 대한 템플릿이 없습니다」 가 뜬다'
     ).toBe(expectedLabel);
+  });
+
+  /**
+   * 본인인증 메일 문구(category=identity, #699)는 분류 칩으로 고른다. 칩은 URL(`?category=`)에 남아
+   * 새로고침해도 같은 분류로 다시 불러와야 한다 — 로컬 상태에만 두면 새로고침 뒤 전체 목록으로 돌아간다.
+   * 편집 창은 값을 바꾸지 않고 저장한다(같은 값 저장은 「기본」 표시를 유지하는 계약이라 데이터가 변하지 않는다).
+   *
+   * @scenario surface=core_settings,action=identity_category_roundtrip
+   *
+   * @effects notification_identity_category_persists_across_reload
+   */
+  test('본인인증 분류 칩 → 편집 저장 → 새로고침 뒤에도 같은 분류로 불러온다', async ({ page }) => {
+    await authenticatePage(page, issueToken(...SETTINGS_PERMISSIONS));
+
+    const categories: string[] = [];
+    page.on('request', request => {
+      const url = request.url();
+      if (url.includes('/api/admin/notification-definitions') && !url.includes('category=identity&per_page=100')) {
+        const value = new URL(url).searchParams.get('category');
+        if (value !== null && new URL(url).searchParams.get('template_channel')) categories.push(value);
+      }
+    });
+
+    await gotoDefinitionsTab(page);
+
+    await page.getByRole('button', { name: TAB_IDENTITY, exact: true }).click();
+    await expect(page).toHaveURL(/category=identity/, { timeout: 15_000 });
+    await expect.poll(() => categories.at(-1), { timeout: 20_000 }).toBe('identity');
+
+    // 본인인증 카드는 수신자 규칙 대신 고정 문구를 보인다
+    const fixed = page.getByText(IDENTITY_RECIPIENT_FIXED).first();
+    await expect(fixed).toBeVisible({ timeout: 20_000 });
+
+    await page.getByRole('button', { name: BTN_EDIT, exact: true }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15_000 });
+    // 편집 창도 수신자 편집 영역 대신 고정 문구를 보인다
+    await expect(page.getByRole('dialog').getByText(IDENTITY_RECIPIENT_FIXED)).toBeVisible();
+
+    const saved = page.waitForResponse(
+      response => response.url().includes('/api/admin/notification-templates/') && response.request().method() === 'PUT',
+      { timeout: 20_000 }
+    );
+    await page.getByRole('dialog').getByRole('button', { name: BTN_SAVE, exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    await expect(page.getByRole('dialog')).toBeHidden({ timeout: 15_000 });
+
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+    await expect(page).toHaveURL(/category=identity/);
+    await expect.poll(() => categories.at(-1), { timeout: 20_000 }).toBe('identity');
+    await expect(page.getByText(IDENTITY_RECIPIENT_FIXED).first()).toBeVisible({ timeout: 20_000 });
   });
 
   /**

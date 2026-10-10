@@ -1,0 +1,253 @@
+<partial description="Claim Detail - 접수 시점 주문금액 비교(전/후) 표 — #599 후속 (정산 카드 · 취소 신청서 카드 공용)">
+  <!-- 접수 시점 주문금액 비교(전/후) — ClaimResource.calculation_comparison(저장 스냅샷 + 읽을 때 재생성한 다통화 줄). 값은 서버 formatted 직독이며 화면이 포맷·합산하지 않는다. 후열은 전열과 다를 때만 강조색. 교환은 후열이 옵션 치환 재계산 값이고 치환 근거 행이 함께 선다. 구형 신청서(스냅샷 없음)는 안내 한 줄. PC 3열 / 모바일 kv(원값 → 변경값). -->
+  <div data-ref="claim_comparison_block" class="mb-6" data-testid="claim-detail-comparison">
+    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block mb-2">$t:sirsoft-ecommerce.admin.claim.detail.comparison.title</span>
+    <p data-if="{{!claim?.data?.claim?.calculation_comparison?.original}}" class="text-sm text-secondary" data-testid="claim-detail-comparison-empty">$t:sirsoft-ecommerce.admin.claim.detail.comparison.empty</p>
+    <!-- 주문금액 비교표 (§4-1 1~16행) — 금액은 서버 formatted 직독, 후열은 전열과 다를 때만 강조색. 클라이언트 포맷·합산 금지. -->
+    <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.original}}" class="text-xs" data-testid="claim-detail-comparison-table">
+      <!-- 표 머리글 — 열 라벨은 유형별 키(취소 전/후 · 환불 전/후 · 반품 전/후 · 교환 전/후) -->
+      <div class="grid grid-cols-3 gap-x-3 pb-1 mb-1 border-b border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="hidden"/>
+        <span class="text-xs font-medium text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.comparison.col_item</span>
+        <span class="text-xs font-medium text-secondary text-right">{{claim?.data?.claim?.claim_type === 'exchange' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_exchange') : (claim?.data?.claim?.claim_type === 'return' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_return') : (claim?.data?.claim?.claim_type === 'cancel' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_cancel') : $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_refund')))}}</span>
+        <span class="text-xs font-medium text-secondary text-right">{{claim?.data?.claim?.claim_type === 'exchange' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_exchange') : (claim?.data?.claim?.claim_type === 'return' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_return') : (claim?.data?.claim?.claim_type === 'cancel' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_cancel') : $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_refund')))}}</span>
+      </div>
+      <!-- row_item_count — item_count -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="item_count">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="item_count"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_item_count</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.claim.detail.comparison.unit_count</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.item_count ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.item_count ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{(claim?.data?.claim?.calculation_comparison?.recalculated?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.claim.detail.comparison.unit_count</span>
+        </div>
+      </div>
+      <!-- row_list_price — total_list_price_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_list_price_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_list_price_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_list_price</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_list_price_amount ?? ''}}</span>
+          <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+          </div>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_list_price_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_list_price_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_list_price_amount ?? ''}}</span>
+          <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- row_subtotal — subtotal_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="subtotal_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="subtotal_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_subtotal</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.subtotal_amount ?? ''}}</span>
+          <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted}}" class="mt-0.5">
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+          </div>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.subtotal_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.subtotal_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.subtotal_amount ?? ''}}</span>
+          <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted}}" class="mt-0.5">
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- row_product_coupon — total_product_coupon_discount_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_product_coupon_discount_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_product_coupon_discount_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_product_coupon</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_product_coupon_discount_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_product_coupon_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_product_coupon_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_product_coupon_discount_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_order_coupon — total_order_coupon_discount_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_order_coupon_discount_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_order_coupon_discount_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_order_coupon</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_order_coupon_discount_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_order_coupon_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_order_coupon_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_order_coupon_discount_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_code_discount — total_code_discount_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_code_discount_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_code_discount_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_code_discount</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_code_discount_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_code_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_code_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_code_discount_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_shipping_coupon — shipping_discount_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="shipping_discount_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="shipping_discount_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_shipping_coupon</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.shipping_discount_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.shipping_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.shipping_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{(claim?.data?.claim?.calculation_comparison?.recalculated?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.shipping_discount_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_base_shipping — base_shipping_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="base_shipping_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="base_shipping_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_base_shipping</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.base_shipping_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.base_shipping_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.base_shipping_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.base_shipping_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_extra_shipping — extra_shipping_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="extra_shipping_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="extra_shipping_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_extra_shipping</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.extra_shipping_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.extra_shipping_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.extra_shipping_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.extra_shipping_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_points_used — total_points_used_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_points_used_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_points_used_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_points_used</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_points_used_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_points_used_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_points_used_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_points_used_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_taxable — total_tax_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_tax_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_tax_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_taxable</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_tax_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_tax_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_tax_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_tax_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_vat — total_vat_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_vat_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_vat_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_vat</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_vat_amount ?? ''}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_vat_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_vat_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_vat_amount ?? ''}}</span>
+        </div>
+      </div>
+      <!-- row_total_paid — total_paid_amount -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_paid_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_paid_amount"/>
+        <span class="text-sm text-secondary break-keep font-semibold">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_total_paid</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100 font-semibold">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_paid_amount ?? ''}}</span>
+          <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted}}" class="mt-0.5">
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+          </div>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_paid_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_paid_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100 font-semibold'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_paid_amount ?? ''}}</span>
+          <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted}}" class="mt-0.5">
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- row_earned_points — total_earned_points_amount. 표기는 서버가 스냅샷 양쪽에 채워 준 `total_earned_points_amount_formatted` 를 먼저 읽고, 그 필드가 없는 옛 응답만 종전 표기(toLocaleString + 'P')로 떨어진다. -->
+      <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_earned_points_amount">
+        <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_earned_points_amount"/>
+        <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_earned_points</span>
+        <div class="text-right">
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount_formatted ?? ((claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
+        </div>
+        <span class="hidden">
+          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          →
+        </span>
+        <div class="text-right">
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount_formatted ?? ((claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
+        </div>
+      </div>
+      <!-- row_substituted — 교환만. 치환 근거 행(상품별 old→new). 서버 substituted_items 를 그대로 옮긴다. -->
+      <div data-if="{{claim?.data?.claim?.claim_type === 'exchange' &amp;&amp; (claim?.data?.claim?.calculation_comparison?.substituted_items ?? []).length > 0}}" class="pt-1 mt-1 border-t border-dashed border-gray-200 dark:border-gray-700" data-row="substituted">
+        <span class="text-sm text-secondary break-keep block mb-0.5">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_substituted</span>
+        <div data-each="row in {{claim?.data?.claim?.calculation_comparison?.substituted_items ?? []}}" class="flex flex-wrap items-baseline justify-between gap-x-2" data-substituted-item="{{row.order_option_id}}">
+          <span class="text-sm text-gray-900 dark:text-gray-100 min-w-0 break-keep">{{row.option_label ?? ''}} × {{row.quantity ?? 0}}</span>
+          <span class="text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{{row.unit_price_formatted ?? ''}} → {{row.new_unit_price_formatted ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

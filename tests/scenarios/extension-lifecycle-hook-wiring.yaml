@@ -1,0 +1,52 @@
+feature: 확장 생명주기 정규 훅 배선 통합 (CLI·어드민 UI 동일 발화)
+
+description: |
+  공개 이슈 #138 — CLI 로 확장을 업데이트하면 큐 워커가 재시작되지 않았다. 원인은 한 사건에
+  훅이 두 벌이었기 때문이다. Manager 는 구훅(installed/activated/updated, identifier 1개)만,
+  Service 는 정규 훅(after_install/after_activate/after_update/after_uninstall, 완전한 인자)만
+  발화했고, CLI 커맨드는 Manager 를 직접 부르므로 정규 훅 구독자(큐 재시작·활동 로그·언어팩
+  동기화)가 CLI 에서 전부 누락됐다.
+
+  핵심 동작:
+    - Manager 가 정규 훅 12건(모듈·플러그인·템플릿 × 설치·활성화·업데이트·제거)을 완전한 인자로
+      직접 발화하고, Service 의 중복 발화는 제거한다(deactivate 선례와 동형).
+    - update 는 "업데이트할 것 없음" 조기 리턴에서도 정규 훅을 발화한다(구훅은 발화하지 않음).
+    - 구훅 9건은 identifier 1개로 계속 발화한다(deprecated, 사외 확장 호환).
+    - 제거 훅의 정보는 파괴 단계 이전에 캡처한다. 플러그인 제거만 인자 순서가 (id, deleteData, result).
+    - 큐 재시작 리스너는 모듈·플러그인의 설치·활성화·업데이트에만 반응하고 동기 실행한다.
+    - 죽은 구독 2건(단수형 훅 이름)과 템플릿 언어팩 오결선(after_update → after_version_update)을 교정한다.
+
+axes:
+  extension_type: [module, plugin, template]
+  lifecycle_event: [install, activate, update, update_noop, uninstall]
+  entry_point: [cli_manager, admin_service]
+
+effects:
+  # 발화 계약
+  - canonical_hook_fires_once_from_cli_manager_path
+  - canonical_hook_fires_once_from_admin_service_path_without_duplicate
+  - canonical_hook_arguments_match_listener_signature
+  - deactivate_handler_accepts_string_identifier
+  - update_noop_early_return_fires_canonical_hook_but_not_legacy
+  - legacy_hook_still_fires_with_identifier_only
+  - uninstall_info_captured_before_destructive_steps
+  - plugin_uninstall_arguments_keep_id_deletedata_result_order
+  - template_activate_passes_info_array_only
+  - template_uninstall_delete_data_forwarded_from_service
+  - template_activate_filter_runs_once_after_before_hook
+  - no_lifecycle_hook_fires_on_failure_path
+  - uninstall_blocked_while_active_dependents_exist
+  # 소비자
+  - queue_restart_listener_subscribes_code_intake_events_sync
+  - queue_restart_runs_on_install_or_activate
+  - queue_restart_runs_on_successful_update
+  - queue_restart_skipped_when_update_not_successful
+  - queue_restart_failure_does_not_break_extension_operation
+  - dashboard_listeners_subscribe_plural_hook_names
+  - template_language_pack_syncs_on_version_update_with_real_version
+
+test_files:
+  - tests/Feature/Extension/ExtensionLifecycleHookContractTest.php
+  - tests/Unit/Listeners/ExtensionUpdateQueueListenerTest.php
+  - tests/Unit/Listeners/ExtensionLifecycleSubscriptionWiringTest.php
+  - tests/Unit/Listeners/CoreActivityLogListenerSignatureTest.php

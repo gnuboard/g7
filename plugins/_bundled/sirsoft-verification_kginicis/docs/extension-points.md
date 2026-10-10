@@ -70,14 +70,14 @@ PII 레코드를 흡수하거나 정리하는 대칭 구조입니다 — 하나�
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/identity_provider_inicis.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/mypage_identity_card.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/identity_provider_inicis.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `identity_provider_ui:provider` |
+| `resources/extensions/mypage_identity_card.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-`identity_provider_inicis.json`은 코어 IDV 팝업(§코어 AGENTS.md "본인인증(IDV) 공통 UI 가이드")이
+`identity_provider_inicis.g7.html`은 코어 IDV 팝업(§코어 AGENTS.md "본인인증(IDV) 공통 UI 가이드")이
 provider 별로 다른 안내 문구·로고를 보여줘야 할 때 이 플러그인이 자기 몫을 주입하는
-조각입니다. `mypage_identity_card.json`은 마이페이지에 "본인확인 완료" 상태 카드를
+조각입니다. `mypage_identity_card.g7.html`은 마이페이지에 "본인확인 완료" 상태 카드를
 보여주는 조각으로, `sirsoft-verification_nhnkcp`도 동일한 명명 규칙의 자기 조각을 갖습니다
 — 여러 IDV provider 가 동시에 설치돼도 각자 자기 카드만 주입하므로 충돌하지 않습니다.
 <!-- @intent END -->

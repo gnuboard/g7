@@ -1,0 +1,33 @@
+feature: 이커머스 임시 이미지 키 경로 순회 방어 (KVE-2026-2349 부수의무)
+
+description: |
+  상품·분류 이미지의 임시 키(temp_key · image_temp_key)가 저장소 경로를 조작하지 못하게 한다.
+
+  배경:
+    - 게시판 temp_key 경로 순회(KVE-2026-2349)와 같은 패턴이 상품 이미지에 복제돼 있었다.
+      상품 저장 시 `products/temp/{image_temp_key}` 임시 디렉토리를 조회 결과와 무관하게 지웠고,
+      키는 `nullable|string|max:64` 만 검사했다(공개 문의는 max 도 없었다).
+
+  계층 결정:
+    - 요청: ValidatesTempKey 트레잇 — 상품·분류 저장, 이미지 업로드, 공개 문의가 UUID 만 받는다
+      (화면은 $uuid(), 서버 자동 발급은 Str::uuid())
+    - 서비스: ProductImageService::linkTempImages 는 임시 이미지가 없으면 정리하지 않는다
+    - 드라이버 가드(코어 storage-path-guard 시나리오)가 최후 방어선
+
+  상품 복사 저장(ProductControllerCopyStoreTest)은 image_temp_key 로 새 이미지를 잇는
+  흐름이라 키 형식 변경에 맞춰 함께 소유한다.
+
+axes:
+  entry_point: [product_store, image_upload]
+  temp_key_shape: [uuid, path_traversal]
+
+effects:
+  - traversal_temp_key_rejected_with_422
+  - empty_temp_link_deletes_nothing
+  - uuid_temp_image_linked_and_temp_dir_cleaned
+  - copy_store_keeps_selected_source_images
+  - copy_store_links_new_temp_images
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/TempKeyPathSafetyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductControllerCopyStoreTest.php

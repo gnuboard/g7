@@ -1,0 +1,103 @@
+<!-- 상품 상세 요약 칸 — 짧은 설명·고를 수 있는 옵션 값·배송 안내. 값은 모두 `product` 가 준 것이고
+     이 조각이 따로 받아 오는 것은 없다. -->
+<partial description="상품 설명, 색상/사이즈 목록, 배송 정보">
+  <div class="space-y-4">
+    <!-- === 가격 섹션 (데스크톱 전용 — 모바일은 _price_mobile.g7.html에서 표시) === -->
+    <div data-if="{{false}}" class="mb-4">
+      <responsive on="desktop" data-if="{{true}}"/>
+      <!-- 할인 전 금액 (취소선, 할인 있을 때) -->
+      <div data-if="{{product.data?.discount_rate > 0}}" class="mb-1">
+        <span class="text-sm text-gray-500 dark:text-gray-400 line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}</span>
+      </div>
+      <!-- 할인율 + 판매가 (할인 있을 때) -->
+      <div data-if="{{product.data?.discount_rate > 0}}" class="flex items-center gap-2">
+        <span class="text-lg font-bold text-red-500">{{product.data?.discount_rate}}%</span>
+        <span class="text-2xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</span>
+      </div>
+      <!-- 판매가 (할인 없을 때) -->
+      <div data-if="{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}" class="text-2xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</div>
+    </div>
+    <!-- === 다운로드 가능 쿠폰 섹션 === -->
+    <div data-if="{{(productDownloadableCoupons.data?.data ?? []).length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+      <!-- 쿠폰 배지 목록 (좁은 화면에서 여러 줄로 줄바꿈 — 칩 라벨 자체는 whitespace-nowrap 으로 한 줄 유지) -->
+      <div class="flex flex-wrap items-center gap-2 pb-1">
+        <icon name="ticket" class="text-sm text-orange-500 dark:text-orange-400 flex-shrink-0"/>
+        <div data-each="dlCoupon, dlCouponIdx in {{(productDownloadableCoupons.data?.data ?? []).slice(0, 3)}}">
+          <button type="button" disabled="{{dlCoupon.is_downloaded}}" class="{{dlCoupon.is_downloaded ? 'flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors'}}">
+            <on type="click">
+              <!-- 쿠폰 칩 — 회원이면 받기 확인 창으로, 비회원이면 로그인 안내로. 이미 받은 쿠폰은 버튼이 꺼져 있다 -->
+              <conditions>
+                <when if="{{_global.currentUser?.uuid}}">
+                  <sequence>
+                    <set-state target="local" selectedCouponForDownload="{{dlCoupon}}"/>
+                    <open-modal target="coupon_download_confirm_modal"/>
+                  </sequence>
+                </when>
+                <!-- 비회원: 로그인 필요 안내 -->
+                <else>
+                  <open-modal target="login_required_modal"/>
+                </else>
+              </conditions>
+            </on>
+            <span class="whitespace-nowrap">{{dlCoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? dlCoupon.benefit_formatted}}</span>
+            <icon data-if="{{!dlCoupon.is_downloaded}}" name="download" size="xs"/>
+            <icon data-if="{{dlCoupon.is_downloaded}}" name="check" size="xs"/>
+          </button>
+        </div>
+        <!-- 더보기 버튼 (3개 초과 시) -->
+        <button data-if="{{(productDownloadableCoupons.data?.data ?? []).length > 3}}" type="button" class="flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+          <on type="click">
+            <conditions>
+              <when if="{{_global.currentUser?.uuid}}">
+                <!-- 「+N」 배지는 이 상품에 적용되는 쿠폰 수(productDownloadableCoupons)로 계산되므로, 모달도 같은 목록을 보여준다. 전체 다운로드 쿠폰을 다시 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다. -->
+                <sequence>
+                  <set-state target="local" downloadableCoupons="{{productDownloadableCoupons.data}}" :downloadableCouponsLoading="false" :downloadingMore="false"/>
+                  <open-modal target="coupon_download_modal"/>
+                </sequence>
+              </when>
+              <!-- 비회원: 로그인 필요 안내 -->
+              <else>
+                <open-modal target="login_required_modal"/>
+              </else>
+            </conditions>
+          </on>
+          +{{(productDownloadableCoupons.data?.data ?? []).length - 3}}
+        </button>
+      </div>
+    </div>
+    <!-- === 옵션 그룹 목록 (2개 이상 옵션이 있을 때만) === -->
+    <div data-if="{{product.data?.option_groups &amp;&amp; product.data?.option_groups.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 px-2 space-y-1">
+      <div data-each="group in {{product.data?.option_groups ?? []}}">
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-gray-500 dark:text-gray-400 w-16">{{group.name_localized ?? group.name}}</span>
+          <span class="text-sm text-gray-900 dark:text-white">{{(group.values_localized ?? group.values).join(', ')}}</span>
+        </div>
+      </div>
+    </div>
+    <!-- === 브랜드 === -->
+    <div data-if="{{product.data?.brand_name}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 px-2">
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.brand</span>
+        <span class="text-sm text-gray-900 dark:text-white">{{product.data?.brand_name}}</span>
+      </div>
+    </div>
+    <!-- === 배송 정보 === -->
+    <div data-if="{{product.data?.shipping_policy}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 px-2 space-y-1">
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:shop.product.shipping_info</h3>
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.shipping_policy_label</span>
+          <span class="text-sm text-gray-900 dark:text-white">{{product.data?.shipping_policy?.name}}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.shipping_fee</span>
+          <span class="text-sm text-gray-900 dark:text-white">{{product.data?.shipping_policy?.fee_summary}}</span>
+        </div>
+        <div data-if="{{product.data?.shipping_policy?.free_threshold_formatted}}" class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.free_shipping_threshold</span>
+          <span class="text-sm text-green-600 dark:text-green-400">$t:shop.product.free_shipping_over|amount={{product.data?.shipping_policy?.free_threshold_formatted}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

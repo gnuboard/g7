@@ -19,7 +19,7 @@ effects:
   - default_language_rule_removed              # default_language 검증 규칙 부재(validated 떨굼)
   - default_language_ignored_when_sent         # 전달 시 무시(validated 미포함)
   - currency_save_still_works                  # 통화 저장 정상(회귀 0)
-  - language_field_absent_in_layout            # _tab_language_currency.json 기본언어 필드 부재
+  - language_field_absent_in_layout            # _tab_language_currency.g7.html 기본언어 필드 부재
   - defaults_no_default_language_key           # defaults.json default_language 키 부재
 
 test_files:

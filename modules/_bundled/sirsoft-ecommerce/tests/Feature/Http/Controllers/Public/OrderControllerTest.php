@@ -163,6 +163,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 1. 비회원 주문 생성 성공
+     *
+     * @effects guest_orders_store_returns_201_with_order_number, guest_temp_order_matched_by_cart_key_not_user_id
      */
     public function test_비회원_주문_생성_성공(): void
     {
@@ -198,6 +200,10 @@ class OrderControllerTest extends ModuleTestCase
      * 존재하지 않는 페이지로 이동한다.
      *
      * @param  array<string, mixed>  $basicInfo  상점 기본 설정
+     *
+     * @scenario route_setting=default, surface=order_complete_redirect, order_actor=guest
+     *
+     * @effects order_complete_redirect_follows_route_path, order_complete_redirect_drops_segment_when_no_route, resolver_falls_back_to_default_shop_when_unset, resolver_reflects_custom_route_path, resolver_returns_empty_base_when_no_route
      */
     #[DataProvider('shopRoutePathProvider')]
     public function test_주문_완료_이동주소가_상점_주소_설정을_따른다(array $basicInfo, string $expectedPrefix): void
@@ -237,6 +243,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 2. 비회원 주문은 is_first_order = false 로 저장된다 (이슈 #55 정책)
+     *
+     * @effects guest_orders_store_returns_201_with_order_number
      */
     public function test_비회원_주문은_is_first_order_false(): void
     {
@@ -257,6 +265,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 3. 비회원 주문 응답에 민감 필드(admin_memo, 내부 스냅샷)가 노출되지 않는다
+     *
+     * @effects guest_orders_show_response_excludes_admin_memo_user_user_id_promotions_snapshot, guest_lookup_password_not_exposed_in_any_response
      */
     public function test_비회원_주문_응답에_민감필드_미노출(): void
     {
@@ -278,6 +288,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 4. 비회원 주문 생성 시 조회 비밀번호 누락이면 검증 실패
+     *
+     * @effects guest_lookup_password_min_length_enforced_at_order_creation
      */
     public function test_비회원_주문_조회비밀번호_누락_검증실패(): void
     {
@@ -299,6 +311,8 @@ class OrderControllerTest extends ModuleTestCase
      * 4-1. 비회원 주문 생성 시 주문자 이메일 누락이면 검증 실패
      *
      * 비회원은 주문 확인/배송/취소 알림을 받을 통로가 주문자 이메일뿐이므로 필수.
+     *
+     * @effects checkout_orderer_email_required_for_guest_optional_for_member
      */
     public function test_비회원_주문_이메일_누락_검증실패(): void
     {
@@ -322,6 +336,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 5. 조회 비밀번호 길이(8자 이상) 미충족 시 검증 실패
+     *
+     * @effects guest_lookup_password_min_length_enforced_at_order_creation
      */
     public function test_비회원_조회비밀번호_길이_미충족_검증실패(): void
     {
@@ -342,6 +358,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 6. 임시 주문 없이 비회원 주문 생성 시 실패
+     *
+     * @effects guest_temp_order_matched_by_cart_key_not_user_id
      */
     public function test_임시주문_없으면_비회원_주문_생성_실패(): void
     {
@@ -356,6 +374,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 7. 비회원은 회원 전용 주문 목록/상세 API에 접근할 수 없다 (401)
+     *
+     * @effects member_order_list_api_requires_authentication_401
      */
     public function test_비회원은_회원_주문목록_ap_i_접근_불가(): void
     {
@@ -365,6 +385,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 8. 비회원 비통장 주문 생성 후 임시 주문이 즉시 삭제된다 (non-PG)
+     *
+     * @effects non_pg_guest_order_deletes_temp_order_immediately
      */
     public function test_비회원_무통장_주문_생성후_임시주문_삭제(): void
     {
@@ -464,6 +486,56 @@ class OrderControllerTest extends ModuleTestCase
     }
 
     /**
+     * T9-b — 면세 상품이 섞인 PG 주문은 결제 페이로드에 면세 금액을 싣는다 (S1-D12).
+     *
+     * 복합 과세 상점은 결제·결제취소·현금영수증 요청에 면세 금액을 **함께** 보내야 한다는 것이
+     * PG 계약이다(토스 「세금 처리」 가이드). 승인에서 빼고 취소에서만 보내면 PG 는 그 결제를
+     * 전액 과세로 등록해 두었다가, 면세분이 실린 취소를 **「취소 할 수 없는 금액 입니다」** 로
+     * 거절한다 — 면세 상품이 섞인 주문의 부분환불이 통째로 막힌다.
+     *
+     * 실측(주문 20260915-0613504830 · 사과 면세 40,000 포함): 사과 1개 환불이
+     * `PG_API_ERROR / 취소 할 수 없는 금액 입니다` 로 거절됐고, 같은 취소를 `taxFreeAmount` 없이
+     * 보내면 즉시 성공했다.
+     *
+     * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
+     *
+     * @effects pg_payment_data_carries_tax_free_amount
+     */
+    public function test_면세_상품이_섞인_주문은_결제_페이로드에_면세금액을_싣는다(): void
+    {
+        $this->registerExtensionEasyPayMethod();
+        $this->createGuestTempOrder();
+
+        $response = $this->postJson(
+            '/api/modules/sirsoft-ecommerce/user/orders',
+            $this->guestOrderPayload([
+                'payment_method' => 'nhnkcp_naverpay',
+                'depositor_name' => null,
+                'dbank' => null,
+            ]),
+            ['X-Cart-Key' => $this->cartKey]
+        );
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.requires_pg_payment', true);
+
+        $order = Order::where('order_number', $response->json('data.order.order_number'))->first();
+        $taxFree = (int) round((float) $order->total_tax_free_amount);
+
+        // 면세분이 있으면 그 값이, 없으면 키가 null 이어야 한다 — 어느 쪽이든 **계산 결과와 일치**해야 한다.
+        $payloadTaxFree = $response->json('data.pg_payment_data.tax_free_amount');
+
+        if ($taxFree > 0) {
+            $this->assertSame($taxFree, (int) $payloadTaxFree, '면세 금액이 결제 페이로드에 실리지 않았다');
+        } else {
+            $this->assertNull($payloadTaxFree, '면세분이 없으면 키를 싣지 않는다');
+        }
+
+        // 키 자체는 항상 존재해야 한다(프론트가 존재 여부로 분기하지 않도록).
+        $this->assertArrayHasKey('tax_free_amount', $response->json('data.pg_payment_data'));
+    }
+
+    /**
      * T10 — 간편결제 주문은 PG 결제 주문이므로 임시주문이 보존되어 재결제가 가능하다 (#475).
      *
      * 이슈의 핵심 증상: 결제 실패 후 재시도하면 "임시주문을 찾을 수 없습니다" 로 재결제가
@@ -500,6 +572,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 9. 비회원 주문 생성 시 조회 비밀번호가 해시로 저장된다 (평문 미저장)
+     *
+     * @effects guest_lookup_password_stored_as_hash_not_plain
      */
     public function test_비회원_조회비밀번호_해시_저장(): void
     {
@@ -522,6 +596,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 10. 회원 주문은 조회 비밀번호 해시가 null 이다 (회원은 미요구)
+     *
+     * @effects member_order_stores_null_guest_lookup_password_hash
      */
     public function test_회원_주문은_조회비밀번호_해시_null(): void
     {
@@ -732,6 +808,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 10-1. 회원 주문은 주문자 이메일이 없어도 생성된다 (이메일 필수는 비회원 한정)
+     *
+     * @effects checkout_orderer_email_required_for_guest_optional_for_member
      */
     public function test_회원_주문은_이메일_없어도_생성_성공(): void
     {
@@ -790,6 +868,8 @@ class OrderControllerTest extends ModuleTestCase
      *
      * 결제수단(card)을 선택했더라도 결제할 금액이 0원이면 PG 호출 없이 통과해야 한다.
      * 추후 예치금 등 다른 비현금 충당이 추가되어도 동일하게 동작한다(판정 기준 = total_due_amount).
+     *
+     * @effects zero_due_amount_order_completes_without_pg
      */
     public function test_전액_마일리지_결제는_p_g_없이_결제완료(): void
     {
@@ -900,6 +980,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 11. 비회원 주문 응답에 조회 비밀번호 해시가 노출되지 않는다 (모델 $hidden)
+     *
+     * @effects guest_lookup_password_not_exposed_in_any_response
      */
     public function test_비회원_주문_응답에_해시_미노출(): void
     {
@@ -935,6 +1017,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 12. 비회원 조회 인증 성공 시 토큰 발급
+     *
+     * @effects guest_orders_verify_returns_token_and_expires_at_30min
      */
     public function test_비회원_조회_인증_성공_토큰_발급(): void
     {
@@ -954,6 +1038,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 13. 비밀번호 오류 시 "주문을 찾을 수 없습니다" (404 단일 응답)
+     *
+     * @effects guest_orders_verify_fails_with_404_for_wrong_phone_or_password
      */
     public function test_비회원_조회_비밀번호_오류_404(): void
     {
@@ -968,6 +1054,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 14. 존재하지 않는 주문번호도 동일한 404 (존재 여부 비노출)
+     *
+     * @effects guest_orders_verify_fails_with_404_for_wrong_phone_or_password
      */
     public function test_비회원_조회_존재하지_않는_주문_404(): void
     {
@@ -980,6 +1068,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 15. 전화번호 불일치 시 404 (정규화 후에도 다른 번호)
+     *
+     * @effects guest_orders_verify_fails_with_404_for_wrong_phone_or_password
      */
     public function test_비회원_조회_전화번호_불일치_404(): void
     {
@@ -994,6 +1084,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 16. 조회 인증 요청 필수 필드 누락 시 422
+     *
+     * @effects guest_orders_verify_rejects_missing_required_fields_with_422
      */
     public function test_비회원_조회_필수필드_누락_422(): void
     {
@@ -1021,6 +1113,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 17. 토큰 없이 상세 조회 시 차단 (404)
+     *
+     * @effects guest_orders_show_requires_x_guest_order_token_header
      */
     public function test_비회원_상세_토큰_없으면_차단(): void
     {
@@ -1032,6 +1126,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 18. 토큰으로 상세 조회 성공
+     *
+     * @effects guest_orders_show_returns_order_with_valid_token
      */
     public function test_비회원_상세_토큰_조회_성공(): void
     {
@@ -1048,6 +1144,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 19. 비회원 상세 응답에 민감 필드가 노출되지 않는다
+     *
+     * @effects guest_orders_show_response_excludes_admin_memo_user_user_id_promotions_snapshot
      */
     public function test_비회원_상세_민감필드_미노출(): void
     {
@@ -1072,6 +1170,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 20. 다른 주문 토큰으로 접근 차단 (404)
+     *
+     * @effects guest_orders_show_returns_404_for_expired_or_wrong_order_token
      */
     public function test_비회원_상세_다른주문_토큰_차단(): void
     {
@@ -1089,6 +1189,8 @@ class OrderControllerTest extends ModuleTestCase
      *
      * user/orders/{orderNumber} 가 optional.sanctum 으로 회원/비회원 모두 받게 통합된 후,
      * 회원이 본인 회원 주문을 조회하면 기존과 동일하게 OrderResource 가 반환되어야 한다.
+     *
+     * @effects order_complete_backend_branches_member_vs_guest_by_auth_check_in_controller, order_complete_uses_unified_user_orders_endpoint_with_optional_sanctum
      */
     public function test_회원_상세_본인_회원주문_조회_성공(): void
     {
@@ -1158,6 +1260,8 @@ class OrderControllerTest extends ModuleTestCase
      *
      * Auth::check() 분기가 user_id 일치를 검사하므로, 타인 회원 주문이나 비회원 주문 모두
      * 본인 것이 아니면 404 로 차단되어야 한다 (정보 노출 방지).
+     *
+     * @effects showByOrderNumber_404_includes_errors_redirect_to_for_frontend_navigation, order_complete_backend_branches_member_vs_guest_by_auth_check_in_controller
      */
     public function test_회원_상세_타인_주문_차단(): void
     {
@@ -1181,6 +1285,8 @@ class OrderControllerTest extends ModuleTestCase
      * 로그인 시 토큰을 자동 정리하는 프론트 규약이 있지만, 백엔드는 회원 분기를 우선해 토큰을 무시한다.
      * 회원 컨텍스트에서 비회원 주문(user_id NULL)은 본인 주문 아니므로 404. 토큰이 매칭되어도 200 으로
      * 전환되지 않아야 한다 (회원/비회원 컨텍스트 분리 보안 원칙).
+     *
+     * @effects order_complete_backend_branches_member_vs_guest_by_auth_check_in_controller, showByOrderNumber_404_includes_errors_redirect_to_for_frontend_navigation
      */
     public function test_회원_상세_비회원토큰_있어도_본인주문_아니면_404(): void
     {
@@ -1206,6 +1312,8 @@ class OrderControllerTest extends ModuleTestCase
      * 토큰 부재/만료/위조 모두 동일한 응답 — 프론트가 단일 sequence (clearGuestOrderToken → toast → navigate) 로
      * 비회원 조회 폼으로 이동. 프론트의 _global.shopBase 평가 타이밍 의존성을 제거하기 위해
      * 백엔드가 redirect_to 를 명시적으로 전송한다 (회원 분기 /mypage/orders 와 일관된 패턴).
+     *
+     * @effects showByOrderNumber_404_includes_errors_redirect_to_for_frontend_navigation, order_complete_401_404_clears_token_and_shows_lookup_link
      */
     public function test_비회원_상세_토큰_없으면_404_및_lookup_redirect(): void
     {
@@ -1221,6 +1329,10 @@ class OrderControllerTest extends ModuleTestCase
      *
      * 기본값 `/shop` 을 리터럴로 내려보내면 주소를 바꾼 상점에서는 존재하지 않는 화면으로
      * 안내한다. 서버는 문자열을 만들어 보냈을 뿐이라 예외도 404 로그도 남지 않는다.
+     *
+     * @scenario route_setting=custom, surface=guest_lookup_redirect, order_actor=guest
+     *
+     * @effects guest_lookup_redirect_follows_route_path, resolver_reflects_custom_route_path
      */
     public function test_상점_주소_변경시_비회원_lookup_redirect도_따라간다(): void
     {
@@ -1235,6 +1347,10 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 20-2. 주소 없이 운영하는 상점(no_route)에서는 세그먼트 없이 루트에 붙는다 (공개 #85)
+     *
+     * @scenario route_setting=no_route, surface=guest_lookup_redirect, order_actor=guest
+     *
+     * @effects guest_lookup_redirect_drops_segment_when_no_route, resolver_returns_empty_base_when_no_route
      */
     public function test_주소_없는_상점은_비회원_lookup_redirect가_루트_경로다(): void
     {
@@ -1252,6 +1368,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 21. 토큰으로 주문 취소 성공 (결제완료 상태)
+     *
+     * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
      */
     public function test_비회원_주문_취소_성공(): void
     {
@@ -1334,6 +1452,10 @@ class OrderControllerTest extends ModuleTestCase
      *
      * VerifyGuestOrderToken 은 토큰 부재/만료/위조를 모두 동일한 404(order_not_found)로 처리해
      * 주문 존재 여부를 노출하지 않는다 (조회/취소 등 다른 비회원 액션과 일관).
+     *
+     * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
+     *
+     * @effects guest_update_shipping_address_blocked_404_without_or_invalid_token
      */
     public function test_비회원_배송지_변경_토큰_없으면_차단(): void
     {
@@ -1354,6 +1476,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 24. 잘못된(위조) 토큰으로 배송지 변경 시 차단 (404)
+     *
+     * @effects guest_update_shipping_address_blocked_404_without_or_invalid_token
      */
     public function test_비회원_배송지_변경_잘못된_토큰_차단(): void
     {
@@ -1375,6 +1499,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 25. 토큰은 유효하나 받는분/연락처 누락 시 검증 실패 (422)
+     *
+     * @effects guest_update_shipping_address_validation_422_when_recipient_fields_missing
      */
     public function test_비회원_배송지_변경_필수필드_누락_검증실패(): void
     {
@@ -1406,6 +1532,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 26. 비회원 환불 예상 — 토큰 없으면 미들웨어가 404 차단
+     *
+     * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
      */
     public function test_비회원_환불예상_토큰_없으면_차단(): void
     {
@@ -1422,6 +1550,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 27. 비회원 환불 예상 — 위조 토큰도 404 (정상 토큰과 동일 응답으로 정보 노출 차단)
+     *
+     * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
      */
     public function test_비회원_환불예상_위조토큰_차단(): void
     {
@@ -1438,6 +1568,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 28. 비회원 구매확정 — 토큰 없으면 미들웨어가 404 차단
+     *
+     * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
      */
     public function test_비회원_구매확정_토큰_없으면_차단(): void
     {
@@ -1453,6 +1585,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 29. 비회원 구매확정 — 위조 토큰도 404
+     *
+     * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
      */
     public function test_비회원_구매확정_위조토큰_차단(): void
     {
@@ -1472,6 +1606,8 @@ class OrderControllerTest extends ModuleTestCase
      *
      * 잠금 정책을 단순화하면서 유일한 무차별 대입 방어선이 라우트 throttle 이므로
      * 회귀 가드로 검증한다. 라우트 정의에서 throttle 미들웨어가 사라지면 본 테스트가 실패한다.
+     *
+     * @effects guest_orders_verify_route_throttle_limits_to_20_per_minute_with_429
      */
     public function test_verify_throttle_20회_초과시_429(): void
     {
@@ -1847,5 +1983,27 @@ class OrderControllerTest extends ModuleTestCase
 
         $response->assertStatus(500);
         $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
+    }
+
+    /**
+     * 비회원 상세에도 회원 상세와 같은 진행단계 배열이 실린다 — 같은 partial 이 그린다.
+     *
+     * @effects order_progress_steps_seven_stages, order_progress_steps_carry_icon_and_variant, order_progress_reached_index_uses_stamps, order_status_badge_carries_icon
+     */
+    public function test_비회원_상세에_진행단계가_실린다(): void
+    {
+        [$orderNumber, $token] = $this->placeGuestOrderAndToken();
+
+        $response = $this->getJson(
+            "/api/modules/sirsoft-ecommerce/user/orders/{$orderNumber}",
+            ['X-Guest-Order-Token' => $token]
+        );
+
+        $response->assertStatus(200)
+            ->assertJsonCount(7, 'data.progress_steps')
+            ->assertJsonPath('data.progress_steps.0.value', 'pending_payment');
+
+        $this->assertStringStartsWith('status-', $response->json('data.order_status_icon'));
+        $this->assertContains('current', array_column($response->json('data.progress_steps'), 'state'));
     }
 }

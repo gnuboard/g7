@@ -1,0 +1,41 @@
+# 시나리오 매니페스트 — 종결은 돈을 닫는다 (#599 3차 실측 F-8·F-9)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: claim_termination_closes_the_money
+
+description: >-
+  신청서가 종결되는 길은 둘이다 — 구매자의 **철회**와 운영자의 **반려**. 둘 다 「이 신청은
+  더 진행하지 않는다」는 같은 결말인데, 돈을 닫는 책임은 종결 경로 자신에게 있다.
+
+  결제 가드가 보는 것은 결제행의 `isPending()` 뿐이고 신청서 상태가 아니기 때문이다
+  (`ClaimPaymentService::pay()`). 그래서 종결 경로가 대기 건을 직접 취소하지 않으면, 이미 끝난
+  신청서에 구매자가 돈을 낼 수 있고 그 돈을 되돌릴 자리도 남지 않는다 — 종결 전이는 이미
+  끝났으므로 환급을 부를 곳이 없다.
+
+  고아 정리 배치(`CancelOrphanClaimPaymentsCommand`)도 이 계약 위에 서 있다: 「종결 경로는 대기
+  건을 함께 취소하므로, 이 배치의 대상은 그러지 못한 채 끝난 건(프로세스 중단 등)이다」. 종결
+  경로가 정리를 빠뜨리면 그 배치의 보존 기간 내내 결제가 열린 채로 남는다.
+
+  2026-09-22 실측에서 철회는 정리했고 반려는 하지 않았다 — 반려 직후 구매자 상세의 [결제하기]를
+  누르자 PG 결제창이 실제로 열렸다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/AdminClaimRejectPaymentCleanupTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  termination:
+    - reject      # 운영자 반려
+  payment_state:
+    - pending     # 아직 내지 않은 대기 건
+
+exclusions:
+  - { termination: reject, payment_state: pending, reason: "제외 없음 — 이 조합이 이 매니페스트의 전부다(철회 축은 user-claim-list-detail-edit 매니페스트의 claim_withdraw_closes_and_refunds_the_paid_charge 가 소유한다)" }
+
+effects:
+  - claim_reject_cancels_the_pending_payment   # 반려가 대기 건을 함께 취소한다
+  - claim_reject_closes_the_payment_entry      # 반려 뒤에는 결제를 시작할 수 없다
+
+validation:
+  audit_rule: test-scenario-coverage

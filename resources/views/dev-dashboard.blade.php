@@ -535,7 +535,7 @@ if (isset($_GET['ajax_action'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', '그누보드7') }}</title>
     {{-- 스타일: 자체 빌드 CSS (종전 Tailwind Play CDN 대체 — 외부 도달 실패 시 화면이 무너졌다) --}}
-    <link rel="stylesheet" href="{{ asset('build/core/dev-dashboard.css') }}">
+    <link rel="stylesheet" href="/build/core/dev-dashboard.css">
     <style>
         .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
@@ -1089,6 +1089,18 @@ if (isset($_GET['ajax_action'])) {
                                     <span>레이아웃 미리보기 정리</span>
                                     <span class="text-[10px] opacity-60">(layout-previews:cleanup)</span>
                                 </button>
+                                <button onclick="runCommand('layout:decompile --all')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>.g7.html 검증</span>
+                                    <span class="text-[10px] opacity-60">(layout:decompile --all)</span>
+                                </button>
+                                <button onclick="runCommand('layout:check-installed')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>설치본 레이아웃 점검</span>
+                                    <span class="text-[10px] opacity-60">(layout:check-installed)</span>
+                                </button>
+                                <button onclick="runCommand('layout:audit-expressions')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>저장 레이아웃 보안 재검사</span>
+                                    <span class="text-[10px] opacity-60">(layout:audit-expressions)</span>
+                                </button>
                                 <button onclick="runCommand('ext-bundles:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>확장 번들 정리</span>
                                     <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>
@@ -1112,6 +1124,14 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('security:audit-dependencies')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>의존성 취약점 점검</span>
                                     <span class="text-[10px] opacity-60">(security:audit-dependencies)</span>
+                                </button>
+                                <button onclick="runCommand('security:ip-restriction --status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 점검</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --status)</span>
+                                </button>
+                                <button onclick="runCommand('security:ip-restriction --disable')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 비상 해제</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --disable)</span>
                                 </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
@@ -1145,6 +1165,30 @@ if (isset($_GET['ajax_action'])) {
                                     <span>스토리지 잔존물 정리 (실행)</span>
                                     <span class="text-[10px] opacity-60">(storage:prune-leftovers)</span>
                                 </button>
+                                <button onclick="runCommand('privacy:process-retention --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-retention')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant)</span>
+                                </button>
+                                <button onclick="runCommand('auth:process-password-expiry --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>비밀번호 만료 처리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(auth:process-password-expiry --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('auth:process-password-expiry')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>비밀번호 만료 처리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(auth:process-password-expiry)</span>
+                                </button>
                                 <button onclick="runCommand('identity:expire-challenges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>본인인증 challenge 만료 처리</span>
                                     <span class="text-[10px] opacity-60">(identity:expire-challenges)</span>
@@ -1161,6 +1205,38 @@ if (isset($_GET['ajax_action'])) {
                                     <span>대시보드 리소스 브로드캐스트</span>
                                     <span class="text-[10px] opacity-60">(dashboard:broadcast-resources)</span>
                                 </button>
+                                <button onclick="runCommand('analytics:archive --period=hour')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 집계 (시간)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:archive --period=hour)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:archive --period=day')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 집계 (일)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:archive --period=day)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:check-volume')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 용량 점검</span>
+                                    <span class="text-[10px] opacity-60">(analytics:check-volume)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:report --period=weekly')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 주간 리포트</span>
+                                    <span class="text-[10px] opacity-60">(analytics:report --period=weekly)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:update-cloud-ranges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>클라우드 IP 대역 갱신</span>
+                                    <span class="text-[10px] opacity-60">(analytics:update-cloud-ranges)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:broadcast-realtime')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>현재 접속자 브로드캐스트</span>
+                                    <span class="text-[10px] opacity-60">(analytics:broadcast-realtime)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:prune --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 정리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:prune --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 정리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:prune)</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1174,7 +1250,7 @@ if (isset($_GET['ajax_action'])) {
             <div class="space-y-4">
                 <h2 class="text-sm font-medium text-slate-500 uppercase tracking-wider text-left">페이지 이동</h2>
 
-                <a href="{{ url('/admin') }}" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
+                <a href="/admin" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-cyan-500/0 group-hover:from-blue-500/10 group-hover:to-cyan-500/5 transition-all duration-300"></div>
                     <div class="relative z-10 flex items-center gap-4">
                         <div class="card-icon text-4xl shrink-0">⚙️</div>
@@ -1185,7 +1261,7 @@ if (isset($_GET['ajax_action'])) {
                     </div>
                 </a>
 
-                <a href="{{ url('/install') }}" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
+                <a href="/install" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/10 group-hover:to-pink-500/5 transition-all duration-300"></div>
                     <div class="relative z-10 flex items-center gap-4">
                         <div class="card-icon text-4xl shrink-0">📥</div>

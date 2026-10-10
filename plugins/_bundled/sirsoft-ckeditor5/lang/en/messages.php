@@ -19,7 +19,7 @@ return [
         'ids_required' => 'Please select the images to delete.',
         'ids_invalid' => 'Some of the selected images no longer exist. Refresh the list and select again.',
         'deleted' => 'The image has been deleted.',
-        'bulk_deleted' => 'Deleted :deleted selected image(s).',
+        'bulk_deleted' => 'Deleted :deleted selected image.|Deleted :deleted selected images.',
         'bulk_partially_deleted' => 'Deleted :deleted of the selected images; :failed could not be deleted and remain in the list.',
     ],
     'cleanup' => [

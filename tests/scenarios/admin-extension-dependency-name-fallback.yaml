@@ -1,0 +1,19 @@
+feature: 관리자 확장 화면은 의존 확장 이름이 비면 식별자를 보여 준다
+
+description: |
+  7.1.0 CHANGELOG 는 「이름이 비면 식별자를 보여 줍니다」라고 약속했지만 화면은 `name ?? identifier` 로
+  null 만 걸러, 이름이 빈 문자열이면 카드에는 이름 없는 아이콘만·정보 창과 확인 창에는 빈 칸만 남았다.
+  모듈·플러그인 카드는 대체 자체가 없었다(#736 F 영역 실측 O-F10). 서버 보강기도 같은 대체를 한다
+  (extension-dependency-enricher).
+
+axes:
+  surface: [module_card, plugin_card, template_card, confirm_and_detail_modals]
+
+effects:
+  - blank_dependency_name_falls_back_to_identifier
+
+notes:
+  - confirm_and_detail_modals 는 설치 확인·정보·강제 활성화·강제 비활성화·비활성화 경고 창(모듈·플러그인·템플릿 12개)을 한 시험에서 모두 돈다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-dependency-name-fallback.test.tsx

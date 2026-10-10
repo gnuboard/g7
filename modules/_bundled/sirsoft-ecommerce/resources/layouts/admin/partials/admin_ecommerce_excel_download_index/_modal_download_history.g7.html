@@ -1,0 +1,80 @@
+<!-- 엑셀 파일 한 건의 상세와 그 파일을 누가 언제 내려받았는지 보여 주는 창.
+  보여줄 대상을 스스로 고르지 않고 목록이 `_local.selectedItem` 에 담아 둔 행을 읽는다 — 전역이
+  아니라 **지역 상태**라 이 창과 목록이 같은 레이아웃 안에 있어야 성립한다.
+  상태 배지는 넷(완료·처리중·실패·만료)이며 각각 자기 조건으로 나타나므로, 서버가 그 넷 밖의
+  값을 주면 배지 자리가 빈다.
+  만료일이 따로 있는 이유는 생성된 파일이 영구 보관되지 않기 때문이고, 그래서 내려받기 횟수와
+  이력이 이 창의 본론이다. -->
+<partial description="Excel Download - Download History Modal">
+  <modal data-type="composite" data-ref="download_history_modal" title="$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.title" size="lg">
+    <div data-ref="file_info_section" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
+      <div class="grid grid-cols-2 gap-y-3">
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.file_content</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.file_content ?? ''}}</span>
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.category</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.category_name ?? ''}}</span>
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.status</span>
+        <div class="text-right">
+          <span data-if="{{_local.selectedItem?.status === 'completed'}}" class="badge-status badge-status-success">
+            <icon name="check-circle" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+          </span>
+          <span data-if="{{_local.selectedItem?.status === 'processing'}}" class="badge-status badge-status-processing">
+            <icon name="spinner" class="text-xs animate-spin"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
+          </span>
+          <span data-if="{{_local.selectedItem?.status === 'failed'}}" class="badge-status badge-status-error">
+            <icon name="circle-exclamation" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
+          </span>
+          <span data-if="{{_local.selectedItem?.status === 'expired'}}" class="badge-status badge-status-expired">
+            <icon name="file-lines" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+          </span>
+        </div>
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.created_date</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.created_date ?? ''}}</span>
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.expire_date</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.expire_date ?? ''}}</span>
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.total_download</span>
+        <span class="text-primary text-right font-medium">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.download_count|count={{_local.selectedItem?.download_count ?? 0}}</span>
+      </div>
+    </div>
+    <div data-ref="history_list_section" data-if="{{_local.selectedItem}}">
+      <div class="flex-between mb-4">
+        <span class="text-heading">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.history_title</span>
+        <span class="text-secondary">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.history_count|count={{_local.selectedItem?.download_history?.length ?? 0}}</span>
+      </div>
+      <div class="space-y-3 max-h-64 overflow-y-auto">
+        <div data-ref="history_item_{{index}}" data-each="item, index in {{_local.selectedItem?.download_history ?? []}}" class="admin-card mb-3">
+          <div class="flex-center gap-3">
+            <div class="flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 justify-center flex-shrink-0">
+              <icon name="user" class="text-base"/>
+            </div>
+            <div>
+              <div class="text-primary font-medium">
+                <span>{{item.user_name}}</span>
+                <span class="text-secondary ml-1">({{item.user_id}})</span>
+              </div>
+              <div class="flex-center gap-1 text-tertiary">
+                <icon name="calendar" class="text-xs"/>
+                <span>{{item.downloaded_at}}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span class="text-secondary font-medium">#{{item.sequence}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="modal_footer" class="flex justify-end mt-6">
+      <button type="button" class="btn btn-primary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.excel_download.modal.download_history.confirm
+      </button>
+    </div>
+  </modal>
+</partial>

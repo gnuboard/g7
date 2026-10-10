@@ -1,0 +1,73 @@
+feature: 마이페이지 「내 신고」 (조회 + 접수 상태 취소)
+
+description: |
+  이슈 #525 전수조사 §4.3 파생 — 회원이 남긴 신고를 본인이 조회할 표면이 없었다(생성만 가능).
+  반응·스크랩과 동형의 반쪽 표면이라 이번에 닫는다 (결정 R7·R10).
+
+  핵심 동작 (확정):
+    - 본인이 남긴 **신고 로그(boards_report_logs)** 기준 목록이다 — 케이스가 아니라 로그가 행
+    - 제목·본문은 **신고 시점 스냅샷**에서 읽는다 — 원본이 수정·삭제돼도 "내가 무엇을
+      신고했는지" 가 흔들리지 않아야 한다
+    - **다른 신고자·처리자·관리자 메모·신고자 IP/UA 는 싣지 않는다** (결정 R10)
+    - 취소는 **접수(pending) 상태에서만** 가능 — 운영자가 검토에 착수했거나 처리를 끝낸
+      신고를 되돌리면 처리 이력과 조치(자동 숨김 등)의 근거가 사라진다
+    - 내가 마지막 신고자였으면 케이스를 **영구 삭제(forceDelete)** 한다 — 소프트 삭제로
+      남기면 unique(board,target) 제약이 살아 있어 같은 대상을 다시 신고할 수 없다
+    - 다른 신고자가 남아 있으면 케이스는 유지하고 last_reported_at·처리 이력만 갱신한다
+    - 취소는 이미 적용된 자동 숨김 등 조치를 되돌리지 않는다
+    - 남의 로그는 404 (존재 여부를 흘리지 않는다)
+
+axes:
+  case:
+    - list_own_logs_only
+    - list_excludes_processor_and_other_reporters
+    - filters_status_target_board_and_snapshot_search
+    - cancel_pending_last_reporter_force_deletes_case
+    - cancel_pending_keeps_case_when_others_remain
+    - cancel_non_pending_forbidden
+    - cancel_foreign_log_not_found
+    - re_report_after_cancel_succeeds
+    - anonymous_user_unauthorized
+    - cancel_records_activity_log
+    - subtab_lists_reports_with_status_badges
+    - subtab_cancel_only_when_pending
+
+effects:
+  - mypage_filtered_empty_says_no_results
+  - lists_own_logs_with_status_and_can_cancel
+  - excludes_processor_metadata_and_other_reporters
+  - filters_status_target_type_board_and_json_extract_search
+  - cancel_deletes_log_and_force_deletes_case_when_last
+  - cancel_keeps_case_and_appends_history_when_others_remain
+  - cancel_non_pending_returns_403
+  - cancel_foreign_log_returns_404
+  - re_report_after_cancel_succeeds
+  - guest_returns_401
+  - cancel_writes_activity_log_with_explicit_loggable
+
+  # 화면(레이아웃 계약)
+  - mypage_reports_datasource_passes_filters
+  - mypage_reports_status_badge_has_four_branches
+  - mypage_reports_cancel_button_requires_can_cancel
+  - mypage_reports_cancel_modal_calls_delete_and_refetches
+  - mypage_reports_deleted_target_is_toned_down
+  - mypage_reports_search_field_matches_backend
+  # K2 실측(2026-10-06) — 좁은 화면 검색 줄·취소 창 확인 버튼 커서
+  - mypage_reports_search_input_shrinks_on_narrow_screen
+  - mypage_reports_cancel_confirm_shows_pointer
+  - mypage_reports_post_row_leads_with_title
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/MyReportsApiTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-board-reports.test.tsx
+  - tests/Playwright/specs/user/mypage-reports.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    케이스 영구 삭제(forceDelete) 판정의 근거는 boards_reports 의 unique_report_case 제약이다 —
+    소프트 삭제로 남기면 재신고가 막히는 것이 re_report_after_cancel_succeeds 로 고정된다.
+
+    프론트(vitest) 커버리지는 레이아웃 JSON 계약 테스트로 잠근다 — 저작본(.g7.html)의 기계
+    산출물인 .json 을 직접 읽으므로, 화면을 고치고 다시 굽지 않으면 red 가 된다.
+    E2E(Playwright) 는 `playwright:seed-board-reaction` 시드로 세 상태의 행·비활성 유형·
+    탈퇴 회원을 고정해 두고 실브라우저로 잰다(되돌리기는 같은 커맨드 `--teardown`).

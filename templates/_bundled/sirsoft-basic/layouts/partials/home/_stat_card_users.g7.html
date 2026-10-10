@@ -1,0 +1,14 @@
+<!-- 통계 카드(회원 수). -->
+<partial description="홈 통계 카드 - 회원 수 (orange)">
+  <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-orange-50 dark:bg-orange-900/30">
+        <icon name="users" class="text-xl text-orange-600 dark:text-orange-400"/>
+      </div>
+      <div>
+        <span class="text-2xl font-bold text-gray-900 dark:text-white">{{stats?.data?.users ?? 0 | number}}</span>
+        <p class="text-sm text-gray-500 dark:text-gray-400">$t:home.stats.members</p>
+      </div>
+    </div>
+  </div>
+</partial>

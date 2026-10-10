@@ -1,809 +1,872 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "템플릿 업데이트 확인 모달",
-    "editor_label": "$t:admin.modal_label.admin_template_list.template_update_modal"
-  },
-  "id": "template_update_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.templates.modals.update_title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.selectedTemplate?.is_compatible === false}}",
-      "props": {
-        "className": "mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
-        "role": "alert"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "exclamation-triangle",
-                "className": "text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-sm font-medium text-warning-soft"
-                  },
-                  "text": "$t:extensions.update_modal.compat_warning_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-warning-soft mt-1"
-                  },
-                  "text": "$t:defer:extensions.update_modal.compat_warning_message|type=$t:extensions.types.template|required={{_global.selectedTemplate?.required_core_version ?? _global.selectedTemplate?.incompatible_required_version ?? ''}}|installed={{_global.selectedTemplate?.current_core_version ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer mt-2"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "openModal",
-                      "target": "core_update_guide_modal"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "external-link",
-                        "size": "xs"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:extensions.update_modal.compat_guide_link"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "checked": "{{_global.templateForceUpdate === true}}",
-                        "className": "w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "templateForceUpdate": "{{!_global.templateForceUpdate}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:extensions.update_modal.force_label"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "템플릿 업데이트 창 — 모듈 업데이트 창과 같이 셋을 함께 다룬다.\n  ⑴ 코어 비호환 경고(강행 체크 전까지 실행 버튼 잠금) ⑵ 변경 이력 ⑶ 고친 레이아웃을 덮어쓸지 남길지.\n  ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 미리 받아 전역에 담아 준다**.",
+    "meta": {
+        "is_partial": true,
+        "description": "템플릿 업데이트 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_template_list.template_update_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.templateUpdateError}}",
-      "props": {
-        "className": "mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "exclamation-circle",
-                "className": "text-red-500 dark:text-red-400 mt-0.5 shrink-0"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-error-soft break-all"
-              },
-              "text": "{{_global.templateUpdateError}}"
-            }
-          ]
-        }
-      ]
+    "id": "template_update_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.templates.modals.update_title",
+        "size": "medium"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "py-2"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-gray-700 dark:text-gray-300"
-          },
-          "text": "$t:admin.templates.modals.update_confirm|name={{_global.selectedTemplate.name ?? ''}}"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:admin.templates.modals.field_version"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-medium"
-                  },
-                  "text": "$t:admin.templates.modals.update_version_info|from={{_global.selectedTemplate.version ?? ''}}|to={{_global.selectedTemplate.latest_version ?? ''}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:admin.templates.modals.field_vendor"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "{{_global.selectedTemplate.vendor ?? ''}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:admin.templates.modals.field_update_source"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "{{_global.selectedTemplate.update_source === 'github' ? '$t:admin.templates.modals.update_source_github' : (_global.selectedTemplate.update_source === 'pending' ? '$t:admin.templates.modals.update_source_pending' : '$t:admin.templates.modals.update_source_bundled')}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.updateChangelog && _global.updateChangelog.length > 0}}",
-          "props": {
-            "className": "mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-sm font-medium text-info-soft mb-2"
-              },
-              "text": "$t:admin.templates.modals.update_changelog_title"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "max-h-48 overflow-y-auto"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "_global.updateChangelog",
-                    "item_var": "entry",
-                    "index_var": "entryIdx"
-                  },
-                  "props": {
-                    "className": "pb-3 mb-3 border-b border-blue-200 dark:border-blue-700 last:border-b-0 last:mb-0 last:pb-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-2 mb-1.5"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-info-soft inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-blue-100 dark:bg-blue-800"
-                          },
-                          "text": "v{{entry.version}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{entry.date}}",
-                          "props": {
-                            "className": "text-hint"
-                          },
-                          "text": "{{entry.date}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "row-stack"
-                      },
-                      "iteration": {
-                        "source": "entry.categories",
-                        "item_var": "category",
-                        "index_var": "catIdx"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-secondary text-xs font-medium"
-                              },
-                              "text": "{{category.name}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "ml-3 space-y-0.5"
-                              },
-                              "iteration": {
-                                "source": "category.items",
-                                "item_var": "changeItem",
-                                "index_var": "itemIdx"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "text-secondary text-xs"
-                                  },
-                                  "text": "• {{changeItem}}"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.selectedTemplate.github_changelog_url}}",
-          "props": {
-            "className": "mt-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "A",
-              "props": {
-                "href": "{{_global.selectedTemplate.github_changelog_url}}",
-                "target": "_blank",
-                "className": "inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "external-link",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:admin.templates.modals.view_changelog"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              },
-              "text": "$t:admin.templates.modals.layout_strategy_title"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.hasModifiedTemplateLayouts}}",
-              "props": {
-                "className": "mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400"
-              },
-              "text": "$t:admin.templates.modals.modified_layouts_warning|count={{_global.modifiedTemplateLayoutsCount ?? 0}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.modifiedTemplateLayoutsCheckFailed}}",
-              "props": {
-                "className": "mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.selectedTemplate?.is_compatible === false}}",
+            "props": {
+                "className": "mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
                 "role": "alert"
-              },
-              "text": "$t:admin.templates.modals.modified_layouts_check_failed"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{!_global.hasModifiedTemplateLayouts && !_global.modifiedTemplateLayoutsCheckFailed}}",
-              "props": {
-                "className": "mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400"
-              },
-              "text": "$t:admin.templates.modals.no_modified_layouts"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "layout_strategy",
-                        "value": "overwrite",
-                        "checked": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'overwrite'}}",
-                        "className": "radio mt-0.5"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "templateLayoutStrategy": "overwrite"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-2"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
-                          },
-                          "text": "$t:admin.templates.modals.layout_strategy_overwrite"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-tertiary"
-                          },
-                          "text": "$t:admin.templates.modals.layout_strategy_overwrite_desc"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "layout_strategy",
-                        "value": "keep",
-                        "checked": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep'}}",
-                        "className": "radio mt-0.5"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "templateLayoutStrategy": "keep"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
-                          },
-                          "text": "$t:admin.templates.modals.layout_strategy_keep"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-tertiary"
-                          },
-                          "text": "$t:admin.templates.modals.layout_strategy_keep_desc"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep' && _global.modifiedTemplateLayouts && _global.modifiedTemplateLayouts.length > 0}}",
-                  "props": {
-                    "className": "ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "text-xs font-medium text-warning-soft mb-2"
-                      },
-                      "text": "$t:admin.templates.modals.modified_layouts_list_title|count={{_global.modifiedTemplateLayouts?.length ?? 0}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "space-y-1 max-h-40 overflow-y-auto"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "iteration": {
-                            "source": "_global.modifiedTemplateLayouts",
-                            "item_var": "modLayout"
-                          },
-                          "props": {
-                            "className": "flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded"
-                          },
-                          "children": [
-                            {
-                              "type": "composite",
-                              "name": "Icon",
-                              "props": {
-                                "name": "file-alt",
-                                "className": "text-amber-500 dark:text-amber-400 shrink-0"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "font-mono flex-1 text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "{{modLayout.name}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{modLayout.size_diff !== 0}}",
-                              "props": {
-                                "className": "{{modLayout.size_diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
-                              },
-                              "text": "{{Math.abs(modLayout.size_diff) >= 1024 ? (modLayout.size_diff > 0 ? '+' : '-') + (Math.abs(modLayout.size_diff) / 1024).toFixed(1) + 'KB' : (modLayout.size_diff > 0 ? '+' : '') + modLayout.size_diff + 'B'}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
-                              },
-                              "text": "{{modLayout.updated_at}}"
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-triangle",
+                                "className": "text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"
                             }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1"
-                      },
-                      "children": [
-                        {
-                          "type": "composite",
-                          "name": "Icon",
-                          "props": {
-                            "name": "info-circle",
-                            "size": "xs"
-                          }
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.templates.modals.modified_layouts_keep_notice"
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-warning-soft"
+                                    },
+                                    "text": "$t:extensions.update_modal.compat_warning_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-warning-soft mt-1"
+                                    },
+                                    "text": "$t:extensions.update_modal.compat_warning_message|type=$t:extensions.types.template|required={{_global.selectedTemplate?.required_core_version ?? _global.selectedTemplate?.incompatible_required_version ?? ''}}|installed={{_global.selectedTemplate?.current_core_version ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "openModal",
+                                            "target": "core_update_guide_modal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "external-link",
+                                                "size": "xs"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:extensions.update_modal.compat_guide_link"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "비호환을 알고도 진행하겠다는 표시 — 이 값이 참이 되어야 실행 버튼이 풀린다.\n                     체크 상태가 아니라 현재 값을 뒤집어 담는다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "templateForceUpdate": "{{!_global.templateForceUpdate}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "checked": "{{_global.templateForceUpdate === true}}",
+                                                "className": "w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:extensions.update_modal.force_label"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isTemplateUpdating}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isTemplateUpdating || (_global.selectedTemplate?.is_compatible === false && _global.templateForceUpdate !== true)}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.templateUpdateError}}",
+            "props": {
+                "className": "mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isTemplateUpdating": true,
-                    "templateUpdateError": null
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-circle",
+                                "className": "text-red-500 dark:text-red-400 mt-0.5 shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-error-soft break-all"
+                            },
+                            "text": "{{_global.templateUpdateError}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "template_update_icon",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{_global.selectedTemplate?.icon_url}}",
+                                    "props": {
+                                        "src": "{{_global.selectedTemplate.icon_url}}",
+                                        "alt": "",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "className": "w-5 h-5 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_global.selectedTemplate?.icon_url}}",
+                                    "props": {
+                                        "name": "{{_global.selectedTemplate?.type === 'admin' ? 'cog' : 'palette'}}",
+                                        "className": "text-xs text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.templates.modals.update_confirm|name={{_global.selectedTemplate.name ?? ''}}"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/templates/{{_global.selectedTemplate.identifier}}/update",
-                  "params": {
-                    "method": "POST",
-                    "body": {
-                      "layout_strategy": "{{_global.templateLayoutStrategy ?? 'overwrite'}}",
-                      "force": "{{_global.templateForceUpdate === true}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTemplateUpdating": false
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "kv-list gap-y-2 text-sm mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
                     },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedTemplate": null,
-                        "templateLayoutStrategy": "overwrite",
-                        "hasModifiedTemplateLayouts": false,
-                        "modifiedTemplateLayoutsCount": 0,
-                        "modifiedTemplateLayouts": []
-                      }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:admin.templates.modals.field_version"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary font-medium"
+                                    },
+                                    "text": "$t:admin.templates.modals.update_version_info|from={{_global.selectedTemplate.version ?? ''}}|to={{_global.selectedTemplate.latest_version ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:admin.templates.modals.field_vendor"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.selectedTemplate.vendor ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:admin.templates.modals.field_update_source"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.selectedTemplate.update_source === 'github' ? '$t:admin.templates.modals.update_source_github' : (_global.selectedTemplate.update_source === 'pending' ? '$t:admin.templates.modals.update_source_pending' : '$t:admin.templates.modals.update_source_bundled')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.updateChangelog && _global.updateChangelog.length > 0}}",
+                    "props": {
+                        "className": "mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.templates.update_success"
-                      }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-medium text-info-soft mb-2"
+                            },
+                            "text": "$t:admin.templates.modals.update_changelog_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "max-h-48 overflow-y-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_global.updateChangelog",
+                                        "item_var": "entry",
+                                        "index_var": "entryIdx"
+                                    },
+                                    "props": {
+                                        "className": "pb-3 mb-3 border-b border-blue-200 dark:border-blue-700 last:border-b-0 last:mb-0 last:pb-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-info-soft inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-blue-100 dark:bg-blue-800"
+                                                    },
+                                                    "text": "v{{entry.version}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{entry.date}}",
+                                                    "props": {
+                                                        "className": "text-hint"
+                                                    },
+                                                    "text": "{{entry.date}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "entry.categories",
+                                                "item_var": "category",
+                                                "index_var": "catIdx"
+                                            },
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary text-xs font-medium"
+                                                            },
+                                                            "text": "{{category.name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "category.items",
+                                                                "item_var": "changeItem",
+                                                                "index_var": "itemIdx"
+                                                            },
+                                                            "props": {
+                                                                "className": "ml-3 space-y-0.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "text-secondary text-xs"
+                                                                    },
+                                                                    "text": "• {{changeItem}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.selectedTemplate.github_changelog_url}}",
+                    "props": {
+                        "className": "mt-3"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "templates"
-                      }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "{{_global.selectedTemplate.github_changelog_url}}",
+                                "target": "_blank",
+                                "className": "inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "external-link",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.templates.modals.view_changelog"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
                     },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTemplateUpdating": false,
-                        "templateUpdateError": "{{error.message}}"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:admin.templates.modals.layout_strategy_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.hasModifiedTemplateLayouts}}",
+                            "props": {
+                                "className": "mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400"
+                            },
+                            "text": "$t:admin.templates.modals.modified_layouts_warning|count={{_global.modifiedTemplateLayoutsCount ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.modifiedTemplateLayoutsCheckFailed}}",
+                            "props": {
+                                "className": "mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400",
+                                "role": "alert"
+                            },
+                            "text": "$t:admin.templates.modals.modified_layouts_check_failed"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.hasModifiedTemplateLayouts && !_global.modifiedTemplateLayoutsCheckFailed}}",
+                            "props": {
+                                "className": "mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400"
+                            },
+                            "text": "$t:admin.templates.modals.no_modified_layouts"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "덮어쓰기 — 새 판본의 템플릿 레이아웃으로 바꾼다(편집기로 고친 것이 사라진다). 기본값.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "templateLayoutStrategy": "overwrite"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "layout_strategy",
+                                                "value": "overwrite",
+                                                "checked": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'overwrite'}}",
+                                                "className": "radio mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:admin.templates.modals.layout_strategy_overwrite"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "$t:admin.templates.modals.layout_strategy_overwrite_desc"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "남기기 — 고친 부분은 두고 손대지 않은 조각·설정만 새 판본으로 바꾼다(겹치면 고친 쪽 유지).",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "templateLayoutStrategy": "keep"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "layout_strategy",
+                                                "value": "keep",
+                                                "checked": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep'}}",
+                                                "className": "radio mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:admin.templates.modals.layout_strategy_keep"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "$t:admin.templates.modals.layout_strategy_keep_desc"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep' && _global.modifiedTemplateLayouts && _global.modifiedTemplateLayouts.length > 0}}",
+                                    "props": {
+                                        "className": "ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "text-xs font-medium text-warning-soft mb-2"
+                                            },
+                                            "text": "$t:admin.templates.modals.modified_layouts_list_title|count={{_global.modifiedTemplateLayouts?.length ?? 0}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "space-y-1 max-h-40 overflow-y-auto"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "_global.modifiedTemplateLayouts",
+                                                        "item_var": "modLayout"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "file-alt",
+                                                                "className": "text-amber-500 dark:text-amber-400 shrink-0"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-mono flex-1 text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{modLayout.name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{modLayout.size_diff !== 0}}",
+                                                            "props": {
+                                                                "className": "{{modLayout.size_diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
+                                                            },
+                                                            "text": "{{Math.abs(modLayout.size_diff) >= 1024 ? (modLayout.size_diff > 0 ? '+' : '-') + (Math.abs(modLayout.size_diff) / 1024).toFixed(1) + 'KB' : (modLayout.size_diff > 0 ? '+' : '') + modLayout.size_diff + 'B'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
+                                                            },
+                                                            "text": "{{modLayout.updated_at}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "info-circle",
+                                                        "size": "xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.templates.modals.modified_layouts_keep_notice"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isTemplateUpdating}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isTemplateUpdating ? '$t:admin.templates.updating' : '$t:admin.templates.actions.update'}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isTemplateUpdating}}",
+                        "type": "button"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "업데이트 실행 — 레이아웃 처리 방식과 강행 여부를 함께 보낸다.\n               성공 갈래가 대상·선택을 기본값으로 되돌리므로 다음 템플릿에 옛 값이 새지 않는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isTemplateUpdating": true,
+                                        "templateUpdateError": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/templates/{{_global.selectedTemplate.identifier}}/update",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "layout_strategy": "{{_global.templateLayoutStrategy ?? 'overwrite'}}",
+                                            "force": "{{_global.templateForceUpdate === true}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isTemplateUpdating": false
+                                            }
+                                        },
+                                        {
+                                            "comment": "서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response?.message ?? '$t:admin.templates.update_success'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "templates"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": null,
+                                                "templateLayoutStrategy": "overwrite",
+                                                "hasModifiedTemplateLayouts": false,
+                                                "modifiedTemplateLayoutsCount": 0,
+                                                "modifiedTemplateLayouts": []
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "comment": "409 = 같은 템플릿의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고\n                     안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다.",
+                                            "handler": "setState",
+                                            "if": "{{error.status === 409}}",
+                                            "params": {
+                                                "target": "global",
+                                                "isTemplateUpdating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{error.status === 409}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "if": "{{error.status !== 409}}",
+                                            "params": {
+                                                "target": "global",
+                                                "isTemplateUpdating": false,
+                                                "templateUpdateError": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{error.status !== 409}}",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isTemplateUpdating || (_global.selectedTemplate?.is_compatible === false && _global.templateForceUpdate !== true)}}",
+                        "type": "button"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isTemplateUpdating}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isTemplateUpdating ? '$t:admin.templates.updating' : '$t:admin.templates.actions.update'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

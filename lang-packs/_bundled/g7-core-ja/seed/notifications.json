@@ -12,6 +12,14 @@
       "database": {
         "subject": "会員登録をお待ちしていました",
         "body": "{name}様、{app_name}へのご登録ありがとうございます。"
+      },
+      "sms": {
+        "subject": "会員登録をお待ちしていました",
+        "body": "{name}様、{app_name}へのご登録ありがとうございます。"
+      },
+      "alimtalk": {
+        "subject": "会員登録をお待ちしていました",
+        "body": "{name}様、{app_name}へのご登録ありがとうございます。"
       }
     }
   },
@@ -26,6 +34,14 @@
         "body": "<h1>{name}様、こんにちは。</h1><p>パスワードリセットのご要求をお受けしました。下のボタンをクリックしてパスワードをリセットしてください。</p><p>このリンクは<strong>{expire_minutes}分</strong>後に有効期限切れになります。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">パスワードをリセットする</a></td></tr></table><p>パスワードリセットのご要求をされていない場合は、このメールを無視してください。</p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
       },
       "database": {
+        "subject": "パスワードリセットのご案内",
+        "body": "{name}様、パスワードリセットが要求されました。ご自身で要求されていない場合は、この通知を無視してください。"
+      },
+      "sms": {
+        "subject": "パスワードリセットのご案内",
+        "body": "{name}様、パスワードリセットが要求されました。ご自身で要求されていない場合は、この通知を無視してください。"
+      },
+      "alimtalk": {
         "subject": "パスワードリセットのご案内",
         "body": "{name}様、パスワードリセットが要求されました。ご自身で要求されていない場合は、この通知を無視してください。"
       }
@@ -44,6 +60,62 @@
       "database": {
         "subject": "パスワードが変更されました",
         "body": "{name}様、パスワードが変更されました。ご自身で変更されていない場合は、すぐにカスタマーサポートにお問い合わせください。"
+      },
+      "sms": {
+        "subject": "パスワードが変更されました",
+        "body": "{name}様、パスワードが変更されました。ご自身で変更されていない場合は、すぐにカスタマーサポートにお問い合わせください。"
+      },
+      "alimtalk": {
+        "subject": "パスワードが変更されました",
+        "body": "{name}様、パスワードが変更されました。ご自身で変更されていない場合は、すぐにカスタマーサポートにお問い合わせください。"
+      }
+    }
+  },
+  "password_expiry_notice": {
+    "definition": {
+      "name": "パスワード有効期限の事前通知",
+      "description": "パスワードの使用期間がまもなく終了するユーザーに事前に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワード有効期限 {days_left}日前のお知らせ",
+        "body": "<h1>{name}様、こんにちは。</h1><p>お客様のパスワードの使用期間は<strong>{expires_at}</strong>に終了します。</p><p>期限前に変更してください。期限切れ後はログイン時に新しいパスワードを設定する必要があります。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">パスワードを変更する</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "パスワード有効期限の{days_left}日前です",
+        "body": "{name}様、パスワードは{expires_at}に有効期限が切れます。期限前に変更してください。"
+      },
+      "sms": {
+        "subject": "パスワード有効期限の{days_left}日前です",
+        "body": "{name}様、パスワードは{expires_at}に有効期限が切れます。期限前に変更してください。"
+      },
+      "alimtalk": {
+        "subject": "パスワード有効期限の{days_left}日前です",
+        "body": "{name}様、パスワードは{expires_at}に有効期限が切れます。期限前に変更してください。"
+      }
+    }
+  },
+  "password_expired": {
+    "definition": {
+      "name": "パスワード有効期限切れ",
+      "description": "パスワードの使用期間が終了したことを知らせる通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワードの使用期間が終了しました",
+        "body": "<h1>{name}様、こんにちは。</h1><p>お客様のパスワードの使用期間は<strong>{expired_at}</strong>に終了しました。</p><p>次回ログイン時に新しいパスワードを設定する画面が表示されます。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">ログインする</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "パスワードの有効期限が切れました",
+        "body": "パスワードの使用期間は{expired_at}に終了しました。次回ログイン時に新しいパスワードを設定してください。"
+      },
+      "sms": {
+        "subject": "パスワードの有効期限が切れました",
+        "body": "パスワードの使用期間は{expired_at}に終了しました。次回ログイン時に新しいパスワードを設定してください。"
+      },
+      "alimtalk": {
+        "subject": "パスワードの有効期限が切れました",
+        "body": "パスワードの使用期間は{expired_at}に終了しました。次回ログイン時に新しいパスワードを設定してください。"
       }
     }
   },
@@ -58,6 +130,14 @@
         "body": "<h1>サイトマップ再生成完了</h1><p>ご依頼いただいたサイトマップの再生成が完了しました。</p><p>合計<strong>{url_count}</strong>件のURLが<strong>{child_count}</strong>個のファイルに生成されました。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">SEO設定を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
       },
       "database": {
+        "subject": "サイトマップ再生成完了",
+        "body": "ご依頼いただいたサイトマップの再生成が完了しました。合計{url_count}件のURL、{child_count}個のファイルが生成されました。"
+      },
+      "sms": {
+        "subject": "サイトマップ再生成完了",
+        "body": "ご依頼いただいたサイトマップの再生成が完了しました。合計{url_count}件のURL、{child_count}個のファイルが生成されました。"
+      },
+      "alimtalk": {
         "subject": "サイトマップ再生成完了",
         "body": "ご依頼いただいたサイトマップの再生成が完了しました。合計{url_count}件のURL、{child_count}個のファイルが生成されました。"
       }
@@ -76,6 +156,274 @@
       "database": {
         "subject": "サイトマップ再生成失敗",
         "body": "ご依頼いただいたサイトマップの再生成に失敗しました。エラー: {error}"
+      },
+      "sms": {
+        "subject": "サイトマップ再生成失敗",
+        "body": "ご依頼いただいたサイトマップの再生成に失敗しました。エラー: {error}"
+      },
+      "alimtalk": {
+        "subject": "サイトマップ再生成失敗",
+        "body": "ご依頼いただいたサイトマップの再生成に失敗しました。エラー: {error}"
+      }
+    }
+  },
+  "analytics_archive_failed": {
+    "definition": {
+      "name": "訪問者統計集計失敗",
+      "description": "訪問者統計集計バッチが失敗した場合に管理者に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 訪問者統計集計が失敗しました",
+        "body": "<h1>訪問者統計集計失敗</h1><p>{period}期間の{run_type}が失敗しました。集計が遅れている間は、統計画面の数字が更新されません。</p><p>エラー: <strong>{error}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{diagnostics_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">収集診断を開く</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "訪問者統計集計失敗",
+        "body": "{period}期間の{run_type}が失敗しました。エラー: {error}"
+      }
+    }
+  },
+  "analytics_ledger_limit_exceeded": {
+    "definition": {
+      "name": "訪問者統計台帳の閾値超過",
+      "description": "訪問·アクション台帳の行数が設定した警告閾値を超えた場合に管理者に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 訪問者統計台帳が閾値を超えました",
+        "body": "<h1>訪問者統計台帳の閾値超過</h1><p>訪問 {visits}行(閾値 {threshold_visits}) · アクション {actions}行(閾値 {threshold_actions})です。現在の保持日数は{retention_days}日です。</p><p>保持日数を減らすか、クリーンアップバッチが実行されているか確認してください。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{settings_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">保持設定を開く</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "訪問者統計台帳の閾値超過",
+        "body": "訪問 {visits}行 · アクション {actions}行で警告閾値を超えました。"
+      }
+    }
+  },
+  "analytics_visit_limit_exceeded": {
+    "definition": {
+      "name": "訪問あたりアクション上限超過",
+      "description": "1回の訪問のアクション数が上限を超えてその後のアクションが記録されない場合に管理者に残される通知"
+    },
+    "templates": {
+      "database": {
+        "subject": "訪問あたりアクション上限超過",
+        "body": "訪問者 {visitor_key}({ip_display})のアクションが上限 {limit}件を超え、その後のアクションは記録されませんでした。"
+      }
+    }
+  },
+  "analytics_weekly_report": {
+    "definition": {
+      "name": "訪問者統計週間レポート",
+      "description": "毎週月曜日に先週の訪問者統計概要を管理者に送信するレポート"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 週間訪問者統計 ({period_label})",
+        "body": "<h1>週間訪問者統計</h1><p>{period_label}期間の概要です。</p><p>訪問 <strong>{visits}</strong> · ユニークユーザー <strong>{visitors}</strong> · ページビュー <strong>{pageviews}</strong> (前期間比 {change_pct})</p><h2>人気ページ</h2>{top_pages}<h2>流入経路</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">統計全体を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
+  "analytics_monthly_report": {
+    "definition": {
+      "name": "訪問者統計月間レポート",
+      "description": "毎月1日に先月の訪問者統計概要を管理者に送信するレポート"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 月間訪問者統計 ({period_label})",
+        "body": "<h1>月間訪問者統計</h1><p>{period_label}の概要です。</p><p>訪問 <strong>{visits}</strong> · ユニークユーザー <strong>{visitors}</strong> · ページビュー <strong>{pageviews}</strong> (前期間比 {change_pct})</p><h2>人気ページ</h2>{top_pages}<h2>流入経路</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">統計全体を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
+  "dormant_pre_notice": {
+    "definition": {
+      "name": "休眠転換事前通知",
+      "description": "長期未接続により間もなく休眠転換されるユーザーに事前に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {scheduled_date} 休眠アカウント転換予定のお知らせ",
+        "body": "<h1>{name}様、こんにちは。</h1><p>{app_name}に<strong>{dormant_days}日</strong>以上アクセスされていないため、<strong>{scheduled_date}</strong>にお客様のアカウントが休眠状態に転換される予定です。</p><p>その前に一度ログインしていただければ、休眠転換がキャンセルされます。休眠に転換された後でもログインいただければ、すぐに元の状態に復旧されます。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">今すぐログインする</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "休眠アカウント転換予定のお知らせ",
+        "body": "{dormant_days}日以上未接続のため、{scheduled_date}に休眠アカウントに転換されます。ログインすると転換がキャンセルされます。"
+      },
+      "sms": {
+        "subject": "休眠アカウント転換予定のお知らせ",
+        "body": "{dormant_days}日以上未接続のため、{scheduled_date}に休眠アカウントに転換されます。ログインすると転換がキャンセルされます。"
+      },
+      "alimtalk": {
+        "subject": "休眠アカウント転換予定のお知らせ",
+        "body": "{dormant_days}日以上未接続のため、{scheduled_date}に休眠アカウントに転換されます。ログインすると転換がキャンセルされます。"
+      }
+    }
+  },
+  "dormant_converted": {
+    "definition": {
+      "name": "休眠転換完了",
+      "description": "休眠アカウントに転換されたことをお知らせする通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 休眠アカウントに転換されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p>長期未接続のため、{app_name}のアカウントが<strong>休眠状態</strong>に転換されました。</p><p>休眠状態ではサービスの利用が制限されますが、<strong>ログインするだけですぐに元の状態に復旧</strong>されます。特別な申請手続きは不要です。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">ログインして復旧する</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "休眠アカウントに転換されました",
+        "body": "長期未接続のため休眠アカウントになりました。ログインするとすぐに復旧されます。"
+      },
+      "sms": {
+        "subject": "休眠アカウントに転換されました",
+        "body": "長期未接続のため休眠アカウントになりました。ログインするとすぐに復旧されます。"
+      },
+      "alimtalk": {
+        "subject": "休眠アカウントに転換されました",
+        "body": "長期未接続のため休眠アカウントになりました。ログインするとすぐに復旧されます。"
+      }
+    }
+  },
+  "dormant_withdraw_notice": {
+    "definition": {
+      "name": "休眠アカウント退会予定通知",
+      "description": "休眠期間を経過し退会処理される予定であることを事前にお知らせする通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {scheduled_date} 会員退会処理予定のお知らせ",
+        "body": "<h1>{name}様、こんにちは。</h1><p>休眠状態が継続しているため、<strong>{scheduled_date}</strong>にお客様の{app_name}アカウントが退会処理される予定です。</p><p><strong>退会処理後は、アカウントと個人情報を復元することはできません。</strong>アカウントを引き続き利用される場合は、その前にログインしてください。ログインすると、休眠が解除され、退会予定もキャンセルされます。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">今すぐログインする</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "会員退会処理予定のお知らせ",
+        "body": "休眠状態が継続しているため、{scheduled_date}に退会処理されます。復元できないため、引き続き利用される場合はログインしてください。"
+      },
+      "sms": {
+        "subject": "会員退会処理予定のお知らせ",
+        "body": "休眠状態が継続しているため、{scheduled_date}に退会処理されます。復元できないため、引き続き利用される場合はログインしてください。"
+      },
+      "alimtalk": {
+        "subject": "会員退会処理予定のお知らせ",
+        "body": "休眠状態が継続しているため、{scheduled_date}に退会処理されます。復元できないため、引き続き利用される場合はログインしてください。"
+      }
+    }
+  },
+  "identity.default": {
+    "definition": {
+      "name": "メール本人確認（基本）",
+      "description": "特定の目的がマッチしない場合に使用されるデフォルトメールテンプレート"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 本人確認認証コード",
+        "body": "<p>こんにちは。</p><p>下記の認証コードを入力して本人確認を完了してください。</p><p style=\"font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に失効します。</p><p>本人が要求していない場合は、このメールを無視してください。</p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] 本人確認認証コード",
+        "body": "こんにちは。 下記の認証コードを入力して本人確認を完了してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が要求していない場合は、このメールを無視してください。 ありがとうございます。 {app_name}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] 本人確認認証コード",
+        "body": "こんにちは。 下記の認証コードを入力して本人確認を完了してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が要求していない場合は、このメールを無視してください。 ありがとうございます。 {app_name}"
+      }
+    }
+  },
+  "identity.purpose.signup": {
+    "definition": {
+      "name": "会員登録認証",
+      "description": "会員登録段階でメール本人確認時に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 会員登録認証コード",
+        "body": "<h1>{app_name} 会員登録認証</h1><p>下記の認証コードを会員登録画面に入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に失効します。</p><p>本人が登録を試みていない場合は、このメールを無視してください。</p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] 会員登録認証コード",
+        "body": "{app_name} 会員登録認証 下記の認証コードを会員登録画面に入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が登録を試みていない場合は、このメールを無視してください。 ありがとうございます。 {app_name}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] 会員登録認証コード",
+        "body": "{app_name} 会員登録認証 下記の認証コードを会員登録画面に入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が登録を試みていない場合は、このメールを無視してください。 ありがとうございます。 {app_name}"
+      }
+    }
+  },
+  "identity.purpose.password_reset": {
+    "definition": {
+      "name": "パスワード再設定リンク",
+      "description": "パスワード再設定要求時に送信される署名付きリンクメール（link フロー）"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワード再設定のお知らせ",
+        "body": "<h1>パスワード再設定</h1><p>パスワード再設定のリクエストを受け取りました。下記のボタンをクリックしてパスワードを再設定してください。</p><p>このリンクは<strong>{expire_minutes}分</strong>後に失効します。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin:24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display:inline-block; padding:12px 32px; background-color:#2d3748; color:#ffffff; text-decoration:none; border-radius:4px; font-weight:600; font-size:14px;\">パスワードを再設定</a></td></tr></table><p>本人が要求していない場合は、このメールを無視してください。</p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] パスワード再設定のお知らせ",
+        "body": "パスワード再設定 パスワード再設定のリクエストを受け取りました。下記のボタンをクリックしてパスワードを再設定してください。 このリンクは {expire_minutes}分 後に失効します。 パスワードを再設定 本人が要求していない場合は、このメールを無視してください。 ありがとうございます。 {app_name}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] パスワード再設定のお知らせ",
+        "body": "パスワード再設定 パスワード再設定のリクエストを受け取りました。下記のボタンをクリックしてパスワードを再設定してください。 このリンクは {expire_minutes}分 後に失効します。 パスワードを再設定 本人が要求していない場合は、このメールを無視してください。 ありがとうございます。 {app_name}"
+      }
+    }
+  },
+  "identity.purpose.self_update": {
+    "definition": {
+      "name": "アカウント情報変更認証",
+      "description": "アカウント情報変更時の本人確認コードメール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] アカウント情報変更認証コード",
+        "body": "<h1>アカウント情報変更認証</h1><p>{purpose_label}の処理のため、下記の認証コードを入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に失効します。</p><p><strong>本人が変更を試みていない場合は、直ちにパスワードを変更してください。</strong></p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] アカウント情報変更認証コード",
+        "body": "アカウント情報変更認証 {purpose_label}の処理のため、下記の認証コードを入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が変更を試みていない場合は、直ちにパスワードを変更してください。 ありがとうございます。 {app_name}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] アカウント情報変更認証コード",
+        "body": "アカウント情報変更認証 {purpose_label}の処理のため、下記の認証コードを入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が変更を試みていない場合は、直ちにパスワードを変更してください。 ありがとうございます。 {app_name}"
+      }
+    }
+  },
+  "identity.purpose.sensitive_action": {
+    "definition": {
+      "name": "重要な作業認証",
+      "description": "決済や主要な設定変更など重要な作業時の本人確認コードメール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 重要な作業認証コード",
+        "body": "<h1>重要な作業認証</h1><p>{purpose_label}の進行のため、下記の認証コードを入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に失効します。</p><p><strong>本人が試みていない場合は、直ちにカスタマーサポートにお問い合わせください。</strong></p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] 重要な作業認証コード",
+        "body": "重要な作業認証 {purpose_label}の進行のため、下記の認証コードを入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が試みていない場合は、直ちにカスタマーサポートにお問い合わせください。 ありがとうございます。 {app_name}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] 重要な作業認証コード",
+        "body": "重要な作業認証 {purpose_label}の進行のため、下記の認証コードを入力してください。 {code} このコードは {expire_minutes}分 後に失効します。 本人が試みていない場合は、直ちにカスタマーサポートにお問い合わせください。 ありがとうございます。 {app_name}"
+      }
+    }
+  },
+  "identity.purpose.login": {
+    "definition": {
+      "name": "ログイン認証番号",
+      "description": "二段階認証を有効にしたとき、パスワード確認の後に送信するログイン認証番号メール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] ログイン認証番号のご案内",
+        "body": "<p>こんにちは。</p><p>ログインを完了するには、下記の認証番号を入力してください。</p><p style=\"font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>この認証番号は<strong>{expire_minutes}分</strong>後に失効します。</p><p><strong>ご本人がログインを試みていない場合は、直ちにパスワードを変更してください。</strong></p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] ログイン認証番号のご案内",
+        "body": "こんにちは。 ログインを完了するには、下記の認証番号を入力してください。 {code} この認証番号は {expire_minutes}分 後に失効します。 ご本人がログインを試みていない場合は、直ちにパスワードを変更してください。 ありがとうございます。 {app_name}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] ログイン認証番号のご案内",
+        "body": "こんにちは。 ログインを完了するには、下記の認証番号を入力してください。 {code} この認証番号は {expire_minutes}分 後に失効します。 ご本人がログインを試みていない場合は、直ちにパスワードを変更してください。 ありがとうございます。 {app_name}"
       }
     }
   }

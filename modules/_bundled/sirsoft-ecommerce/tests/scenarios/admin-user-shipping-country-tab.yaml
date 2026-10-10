@@ -1,0 +1,22 @@
+feature: 관리자 회원 배송지 국가 탭
+
+description: |
+  관리자 회원 수정 화면 「배송국가」 책갈피 탭과 본문 카드의 표시 조건 일치 회귀
+  
+  배송국가 칸은 해외배송을 켠 쇼핑몰에서만 카드를 낸다(`international_shipping_enabled`). 그런데
+  책갈피 탭 항목은 `route?.id` 만 보고 늘 붙어, 해외배송을 끈 쇼핑몰에서는 「배송국가」 탭을 눌러도 갈 곳이
+  없는 빈 탭이 됐다(2026-10-07 실측: 탭 활성 표시만 바뀌고 `#ext_user_shipping_country` 없음).
+  탭과 카드는 같은 id 하나로 이어지므로 표시 조건도 같아야 한다.
+
+  수정 이력: 이커머스 전수 실측 S5 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02]
+  # c01: 탭 항목과 본문 카드가 하나씩 있다
+  # c02: 해외배송을 끈 쇼핑몰에서는 탭도 붙지 않는다(카드와 같은 조건)
+
+effects:
+  - user_shipping_country_tab_renders
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminUserShippingCountryTab.test.ts

@@ -49,7 +49,32 @@ export interface ColumnSelectorProps {
   id?: string;
   columns: ColumnItem[];
   visibleColumns?: string[];
-  onColumnVisibilityChange?: (visibleFields: string[]) => void;
+  /**
+   * 표시 컬럼이 정해질 때 호출됩니다.
+   *
+   * 두 번째 인자 `meta.source` 가 **이 호출이 무엇 때문에 일어났는지**를 알려줍니다.
+   * 이 콜백은 사람이 체크박스를 누른 순간에만 오는 것이 아니라, 마운트 시 저장값·기본값으로
+   * 부모 상태를 맞출 때(`init`)와 동적 컬럼이 새로 생겨 자동 포함될 때(`dynamic`)도 옵니다.
+   * 그 셋을 구분하지 못하면 "복원"을 "사용자 조작"으로 오해해, 예컨대 주소를 다시 쓰는
+   * 소비처에서 화면에 들어올 때마다 주소가 바뀌는 문제가 생깁니다.
+   *
+   * 두 번째 인자는 **덧붙인 것**이라 기존 소비처(첫 인자만 읽는 곳)는 영향을 받지 않습니다.
+   *
+   * 소비 현황: **현재 `meta.source` 를 읽는 레이아웃은 하나도 없습니다.** 유일하게 구분이
+   * 필요했던 주문 목록은 이 콜백에서 주소를 다시 쓰지 않게 바뀌어(서버가 클레임 요약을 항상
+   * 싣도록 되돌린 결과) 세 출처의 처리가 같아졌기 때문입니다. 그래도 이 인자를 없애지 않는
+   * 이유는, 복원(`init`)·자동 포함(`dynamic`)과 사람의 토글(`user`)을 다르게 다뤄야 하는
+   * 소비처 — 주소·서버 요청·저장을 콜백에서 수행하는 화면 — 가 다시 생길 때 그 구분을
+   * 컴포넌트 밖에서는 복원할 수 없기 때문입니다. 레이아웃에서 읽으려면 `$args[1]` 입니다
+   * (예: `{{$args[1].source === 'user'}}`).
+   *
+   * @param visibleFields 표시할 컬럼 field 목록
+   * @param meta 발화 출처 — `user`(사람이 토글) / `init`(마운트 동기화) / `dynamic`(동적 컬럼 자동 포함)
+   */
+  onColumnVisibilityChange?: (
+    visibleFields: string[],
+    meta?: { source: 'user' | 'init' | 'dynamic' }
+  ) => void;
   triggerLabel?: string;
   triggerIconName?: IconName;
   position?: 'left' | 'right';
@@ -249,7 +274,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
     if (!isInitialized) {
       // 초기 컬럼 값으로 부모 상태 동기화 (localStorage 값 또는 defaultColumns)
       if (onColumnVisibilityChange && internalVisibleColumns.length > 0) {
-        onColumnVisibilityChange(internalVisibleColumns);
+        onColumnVisibilityChange(internalVisibleColumns, { source: 'init' });
       }
       setIsInitialized(true);
     }
@@ -310,7 +335,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
           const updatedVisible = [...currentVisible, ...fieldsToAdd];
           setInternalVisibleColumns(updatedVisible);
           saveToStorage(updatedVisible);
-          onColumnVisibilityChange?.(updatedVisible);
+          onColumnVisibilityChange?.(updatedVisible, { source: 'dynamic' });
         }
       }
 
@@ -382,7 +407,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
 
     setInternalVisibleColumns(newVisibleColumns);
     saveToStorage(newVisibleColumns);
-    onColumnVisibilityChange?.(newVisibleColumns);
+    onColumnVisibilityChange?.(newVisibleColumns, { source: 'user' });
   };
 
   const positionClasses = adjustedPosition === 'left' ? 'left-0' : 'right-0';
@@ -445,11 +470,15 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                     isRequired ? 'cursor-default' : 'cursor-pointer'
                   }`}
                 >
+                  {/* 체크박스에 열 이름을 달고 직접 켜고 끈다 — 종전에는 readOnly·pointer-events 없음이라 이름 없는
+                      체크박스로만 읽히고 키보드(Space)로는 조작할 수 없었다(7.1.0 J D-J13). 행 클릭과 겹치지 않게 전파를 막는다. */}
                   <Checkbox
                     checked={isVisible}
                     disabled={isRequired}
-                    readOnly
-                    className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 pointer-events-none"
+                    aria-label={typeof col.header === 'string' ? col.header : undefined}
+                    onChange={() => !isRequired && handleColumnToggle(col.field)}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600"
                   />
                   <Span className="text-sm text-gray-700 dark:text-gray-300">
                     {col.header}

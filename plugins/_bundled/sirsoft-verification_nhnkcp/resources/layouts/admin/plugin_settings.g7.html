@@ -1,0 +1,182 @@
+<!-- NHN KCP 본인인증 연동 설정 화면 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description"/>
+  <!-- 저장된 플러그인 설정을 폼 초기값으로 싣는다. 저장 응답에서 사이트코드·암호화 키가 정규화되어 돌아오므로 저장 후에도 다시 받는다 -->
+  <data-source id="settings" label_key="$t:sirsoft-verification_nhnkcp.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-verification_nhnkcp.plugin_read_only</span>
+      </div>
+      <div data-ref="info_panel" class="alert-info">
+        <div class="flex gap-3">
+          <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <div class="space-y-1 text-info-soft">
+            <p>$t:sirsoft-verification_nhnkcp.settings.info.activation</p>
+            <p>$t:sirsoft-verification_nhnkcp.settings.info.logs</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="mt-6 alert-danger">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="text-error-soft">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-6">
+          <div class="flex-between">
+            <div>
+              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.test_mode</label>
+              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.test_mode_hint</p>
+            </div>
+            <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title</h3>
+            <p class="mt-1 text-warning-soft">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-verification_nhnkcp.settings.section_live_keys</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div data-ref="field_live_site_cd" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.live_site_cd</label>
+              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.live_site_cd_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="{{_local.errors?.live_site_cd ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 verification-nhnkcp-focus-group'}}">
+                <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SM</span>
+                <input type="text" name="live_site_cd" autoComplete="one-time-code" placeholder="A1B2C" class="flex-1 font-mono outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
+              </div>
+              <p data-ref="field_live_site_cd_error" data-if="{{_local.errors?.live_site_cd}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_site_cd?.[0] ?? ''}}</p>
+            </div>
+          </div>
+          <div data-ref="field_live_enc_key" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.live_enc_key</label>
+              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.live_enc_key_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="password" name="live_enc_key" autoComplete="new-password" placeholder="••••••••••••••••" class="{{_local.errors?.live_enc_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-ref="field_live_enc_key_error" data-if="{{_local.errors?.live_enc_key}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_enc_key?.[0] ?? ''}}</p>
+            </div>
+          </div>
+          <div data-ref="field_web_siteid" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.web_siteid</label>
+              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.web_siteid_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="web_siteid" autoComplete="off" placeholder="" class="font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-ref="field_web_siteid_error" data-if="{{_local.errors?.web_siteid}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.web_siteid?.[0] ?? ''}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="duplicate_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_duplicate_header" class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-verification_nhnkcp.settings.section.duplicate_field</h3>
+        </div>
+        <div data-ref="section_duplicate_body" class="p-6 space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+            <div class="lg:col-span-8">
+              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.label</label>
+              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.hint</p>
+            </div>
+            <div class="lg:col-span-4 space-y-3">
+              <div class="flex-center justify-end gap-6">
+                <label class="inline-clickable text-body">
+                  <on type="click">
+                    <!-- 중복 판정 기준을 DI 로 둔다 — DI 는 같은 사이트 안에서만 같은 사람을 가리키므로, 다른 서비스와 회원을 대조할 일이 없으면 이쪽이 안전하다. 라디오 자체가 아니라 라벨 클릭으로 값을 바꾸는 것은 입력에 pointer-events 를 꺼 두었기 때문이다 -->
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                      <field name="form">
+                        <field name="duplicate_field" value="di"/>
+                      </field>
+                    </set-state>
+                  </on>
+                  <input type="radio" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio pointer-events-none" disabled="{{_computed.isPluginReadOnly}}"/>
+                  <span>$t:sirsoft-verification_nhnkcp.settings.duplicate_field.di</span>
+                </label>
+                <label class="inline-clickable text-body">
+                  <on type="click">
+                    <!-- CI 로 두면 사이트를 넘어 같은 사람을 알아볼 수 있지만, 그만큼 식별 범위가 넓어 화면 아래 경고가 함께 뜬다 -->
+                    <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                      <field name="form">
+                        <field name="duplicate_field" value="ci"/>
+                      </field>
+                    </set-state>
+                  </on>
+                  <input type="radio" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio pointer-events-none" disabled="{{_computed.isPluginReadOnly}}"/>
+                  <span>$t:sirsoft-verification_nhnkcp.settings.duplicate_field.ci</span>
+                </label>
+              </div>
+              <p class="text-xs text-amber-600 dark:text-amber-400 text-right">$t:sirsoft-verification_nhnkcp.settings.duplicate_field.warning</p>
+            </div>
+          </div>
+          <div data-ref="field_duplicate_block_enabled" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="lg:col-span-8">
+              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.hint</p>
+              <p class="text-hint mt-1 italic">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.note</p>
+            </div>
+            <div class="flex-center lg:col-span-4 justify-end">
+              <toggle data-type="composite" name="duplicate_block_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 저장. 성공 응답을 폼에 되돌리는 것이 핵심이다 — 서버가 사이트코드 프리픽스를 떼고 암호화 키를 마스크해 돌려주는데, 뒤이은 refetch 만으로는 운영자가 직접 친 입력칸이 갱신되지 않아 화면에만 옛 입력이 남는다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <!-- 서버가 저장 과정에서 값을 정규화하므로(사이트코드 SM 프리픽스 분리, 암호화 키 마스킹) 응답을 폼에 되돌려 화면과 저장 상태를 일치시킨다. 뒤따르는 refetchDataSource 만으로는 부족하다 — 실측 결과 refetch 는 발생하고 initLocal 도 적용되어 _local.form 은 정규화된 값을 갖지만, 사용자가 직접 입력한 입력칸은 그 값을 다시 받아 쓰지 않아 화면에만 입력값이 남는다. 이 setState 로 폼을 응답으로 명시 재바인딩해야 입력칸이 갱신된다. -->
+                  <set-state target="local" form="{{response.data}}"/>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

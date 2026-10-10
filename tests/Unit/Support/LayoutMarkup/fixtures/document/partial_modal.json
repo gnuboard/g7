@@ -1,0 +1,36 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "사용자 삭제 확인 모달"
+    },
+    "data_sources": [
+        {
+            "id": "user_detail",
+            "endpoint": "/api/admin/users/{{_global.modal_data.uuid}}"
+        }
+    ],
+    "id": "delete_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.users.delete_confirm_title"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-body"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "text": "{{user_detail?.data?.name}}"
+                    }
+                }
+            ]
+        }
+    ]
+}

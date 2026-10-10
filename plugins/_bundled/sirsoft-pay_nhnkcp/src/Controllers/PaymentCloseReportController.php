@@ -8,22 +8,32 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\PayNhnkcp\Http\Requests\PaymentCloseReportRequest;
 
 class PaymentCloseReportController
 {
     use RecordsPaymentWindowClosure;
     use SerializesPaymentCallbacks;
+    use VerifiesOrderOwnership;
 
     private const FAILURE_CODE = 'USER_CANCEL';
 
     private const FAILURE_MESSAGE = '사용자가 NHN KCP 결제창을 닫았습니다.';
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 처리 서비스
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
+        private readonly GuestOrderAuthService $guestOrderAuthService,
     ) {}
 
     /**
@@ -45,6 +55,16 @@ class PaymentCloseReportController
             ]);
         }
         RateLimiter::hit($rateLimitKey, 60);
+
+        // 클레임 추가결제(CP 채번)는 기록할 주문 결제 이력이 없다 — 결제 건은 결제 대기로 남아
+        // 신청서 상세에서 재시도하므로 보고만 받고 무시한다 (주문 조회로 흘리면 404 가 프론트
+        // 흐름을 끊고 error 로그만 쌓인다).
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            return ResponseHelper::success('common.success', [
+                'recorded' => false,
+                'reason' => 'claim_payment',
+            ]);
+        }
 
         $callbackLock = null;
 
@@ -79,9 +99,19 @@ class PaymentCloseReportController
                 ]);
             }
 
-            if (! $this->requestMatchesOrderBuyer($request, $order)) {
+            // 가상계좌가 이미 발급된(입금대기) 주문은 주문 상태가 아직 결제 전이라 위 가드를 통과한다.
+            // 발급 콜백과 경쟁해 늦게 온 닫힘 보고가 그 주문을 실패·취소로 덮으면 고객은 받은 계좌로
+            // 입금할 수 없다 — 결제창이 승인·발급 단계로 넘어가기 전(READY)만 실패로 기록한다.
+            if ($order->payment && $order->payment->payment_status !== PaymentStatusEnum::READY) {
+                return ResponseHelper::success('common.success', [
+                    'status' => 'ignored',
+                    'reason' => 'payment_not_ready',
+                ]);
+            }
+
+            if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
                 return ResponseHelper::error('common.failed', 403, [
-                    'message' => ['Order buyer verification failed.'],
+                    'message' => ['Order ownership verification failed.'],
                 ]);
             }
 
@@ -124,6 +154,13 @@ class PaymentCloseReportController
         }
     }
 
+    /**
+     * 레이트리밋 키를 생성합니다 (IP + 주문번호 조합).
+     *
+     * @param  PaymentCloseReportRequest  $request  요청
+     * @param  string  $oid  주문번호
+     * @return string 레이트리밋 키
+     */
     private function rateLimitKey(PaymentCloseReportRequest $request, string $oid): string
     {
         return 'sirsoft-pay_nhnkcp:payment-close-report:'.sha1($request->ip().'|'.$oid);

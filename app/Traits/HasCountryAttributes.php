@@ -2,12 +2,13 @@
 
 namespace App\Traits;
 
+use App\Support\CountryName;
+
 /**
  * 국가 관련 속성 변환 기능을 제공하는 트레이트.
  *
  * ISO alpha-2 국가 코드를 국기 이모지와 로컬라이즈된 국가명으로 변환합니다.
- * 국가명 데이터는 config/countries.php 설정 파일에서 관리됩니다.
- *
+ * 국가명 데이터는 config/countries.php(코어 내장 ko·en)와 언어팩의 `countries.php` 번역(그 밖의 로케일)에서 옵니다.
  */
 trait HasCountryAttributes
 {
@@ -40,23 +41,15 @@ trait HasCountryAttributes
     /**
      * ISO alpha-2 국가 코드를 현재 로케일에 맞는 국가명으로 변환합니다.
      *
-     * config/countries.php의 localized_names에서 국가명을 조회합니다.
-     * 현재 로케일에 국가명이 없으면 폴백 로케일을 사용하고,
-     * 그마저도 없으면 원본 국가 코드를 반환합니다.
+     * 코어 내장 로케일(ko·en)은 config/countries.php 의 localized_names, 그 밖의 로케일은 언어팩이
+     * 올린 번역 키 `countries.{코드}` 를 읽고, 둘 다 없으면 폴백 로케일 이름 → 원본 코드 순으로
+     * 내려갑니다(`CountryName::resolve`).
      *
      * @param  string  $countryCode  ISO alpha-2 국가 코드
      * @return string 현재 로케일에 맞는 국가명
      */
     protected function getCountryName(string $countryCode): string
     {
-        $countryCode = strtoupper($countryCode);
-        $locale = app()->getLocale();
-        $fallbackLocale = config('app.fallback_locale', 'en');
-
-        $countryNames = config('countries.localized_names', []);
-
-        return $countryNames[$locale][$countryCode]
-            ?? $countryNames[$fallbackLocale][$countryCode]
-            ?? $countryCode;
+        return CountryName::resolve($countryCode);
     }
 }

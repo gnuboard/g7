@@ -1,0 +1,19 @@
+feature: 엔진 — 같은 토스트 겹쳐 쌓기 방지·공통 오류 화면 화면 언어 (engine-v1.78.5)
+
+description: |
+  권한이 좁은 운영자의 화면 공통 데이터소스 403 이 시스템 기본 처리로 같은 「해당 권한이 없습니다.」 토스트를
+  13장 쌓던 것(7.1.0 영역 J D-J10, 관측 O-D3)을 3초 안 같은 종류·문구는 한 장으로 묶는다. 엔진 공통 오류 화면의
+  제목·새로고침 단추가 한국어 고정, 본문이 개발자 원문이던 것(D-J11)을 번역 키 → 내장 ko/en/ja 로 고른다.
+
+axes:
+  case: [toast_same_burst, toast_different, toast_after_window, error_en_builtin, error_ko_builtin, error_ja_translator, error_icons_hidden]
+
+effects:
+  - identical_toast_not_stacked
+  - error_screen_text_follows_locale
+  # engine-v1.78.6 — 레이아웃 편집기 번들 실패 화면 문구도 내장 ko/en/ja 를 갖는다(7.1.0 잔여 관측 R-15)
+  - layout_editor_failure_text_has_builtin_ko_en_ja
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.toastDedupe.test.ts
+  - resources/js/core/template-engine/__tests__/ErrorDisplay.locale.test.ts

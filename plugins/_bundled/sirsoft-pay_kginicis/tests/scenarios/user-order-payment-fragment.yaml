@@ -1,0 +1,34 @@
+feature: 주문 상세 결제 정보 카드 — KG이니시스 결제 블록을 화면 조각으로 그린다 (#639)
+
+description: |
+  주문 상세(회원·비회원)와 신청서 상세(회원·비회원)가 함께 쓰는 결제 정보 카드에 KG이니시스 결제 블록 — 간편결제 이름,
+  가상계좌·일본 편의점 입금 안내, 영수증 링크, CBT 결제확인서 버튼 — 을 붙인다. 예전에는 주입 스크립트 두 개
+  (mypageOrderShowInjector·vbankInfoInjector)가 화면 주소 글자(`/mypage/orders/…`·`/shop/guest/…`)를 보고 DOM 에 끼웠고,
+  로그인 토큰을 저장소에서 직접 읽어 Bearer 를 붙이고 history.pushState 를 덮어썼다. 쇼핑몰 경로를 바꾼 설치본에서는
+  조용히 빠졌다.
+
+  이제 템플릿 슬롯(mypage_order_payment_provider_slot)에 조각(user_order_show)이 붙고, 거래번호가 있는 이니시스 주문일 때만
+  안쪽 노드의 마운트 동작이 플러그인 영수증 API 를 한 번 부른다(조건을 단 노드에 두면 엔진이 조건과 무관하게 실행한다).
+  응답 하나로 블록 전체를 그리고, 비회원 조회 토큰은 상태 계약 `_global.guestOrderToken` 에서 헤더로 싣는다.
+  은행코드는 영수증 API 가 계산해 관리자에게만 보인다(user-receipt-lookup.yaml 의 vbank_waiting 조합이 서버를 잠근다).
+
+  E2E 는 두지 않는다 — 로컬·CI 에 KG이니시스 결제 완료·입금 대기 주문 픽스처가 없다. 설치되는 조각 JSON 을 엔진
+  (createLayoutTest)에 태워 렌더 결과와 요청을 단언한다.
+
+axes:
+  case: [easy_pay, guest, other_pg, vbank_waiting, vbank_admin, cvs_waiting, cbt_confirmation, no_script_injection]
+
+effects:
+  - receipt_fetched_once_on_mount
+  - easy_pay_name_row_from_receipt_api
+  - guest_token_header_sent
+  - order_number_from_loaded_order
+  - hidden_for_other_pg
+  - vbank_info_uses_shop_formatted_due
+  - bank_code_admin_only
+  - cvs_panel_reads_fields_by_key
+  - cbt_confirmation_opens_via_handler
+  - no_route_or_dom_scanning
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/userOrderShowFragment.test.tsx

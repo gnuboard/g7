@@ -2,7 +2,8 @@
 #   Phase 3 는 코어 알림 채널 등록 + 문자 발송 위임 배선(백엔드)이다. axes cross product 의
 #   런타임 효과(채널 노출/readiness/전화번호 해석/발송 Job 위임)는 PHPUnit 로 전수 가드된다:
 #   RegisterNotificationChannelsListenerTest(14) + SmsChannelDriverTest(7) +
-#   GuestPhoneExtractListenerTest(6) + ChannelRegistrationHookTest(4, 실제 훅 체인).
+#   ChannelRegistrationHookTest(실제 훅 체인). 비회원 전화번호 주입은 도메인(이커머스) 책임으로
+#   옮겨 EcommerceNotificationDataListenerTest 가 가드한다.
 #   프론트 변경 없음(레이아웃 JSON/컴포넌트 미변경) → frontend-change-requires-e2e 비대상이라
 #   Playwright spec 은 이번 Phase 미도입. 실발송 왕복(실제 API·webhook)은 계획서 §9 방침대로
 #   직접 수행하는 실연동 검증 단계에서 spec 최초 도입하며, 그때 @scenario/@effects 를 매핑한다.
@@ -17,10 +18,11 @@ description: |
   핵심 동작:
     - filter_available_channels: sms·alimtalk 메타 노출(name_key/allow_guest:true)
     - channel_readiness: 채널별 환경설정 충족 판정(sms=아이디+비번+발신번호, alimtalk=+api_key+sender_key)
-    - {core.auth, sirsoft-ecommerce, sirsoft-board}.notification.channels: 3영역 후보 확장
+    - core.notification.channels: 코어 채널 후보 훅 하나에 답해 모든 도메인 공통으로 후보 확장(도메인 비인지)
     - ChannelManager::extend('sms'): SmsChannelDriver 로 발송 위임(alimtalk 은 Phase 6, no-op 스텁)
     - 전화번호 해석: 회원=users.mobile / 비회원=data 의 _recipient_phone(D1)
-    - 비회원 전화번호 주입: 이커머스 extract_data 구독으로 orderer_phone → data(GuestPhoneExtractListener)
+    - 비회원 전화번호: 도메인이 extract_data 의 data 에 코어 표준 키(GenericNotification::RECIPIENT_PHONE_KEY)로
+      싣는다 — 이 플러그인은 그 키만 읽는다(이커머스 주문 모델을 읽지 않음)
     - sms 본문이 없으면 발송 skip / 본문 byte 로 SMS·LMS 판별
 
   ※ alimtalk 실발송·탭 UI·본문 시드는 Phase 5·6. 발송 이력 DB(bizppurio_dispatches) 영속화는 Phase 4.
@@ -53,8 +55,16 @@ effects:
   - sms_not_ready_reports_sender_number_missing_key
   - alimtalk_not_ready_when_api_key_or_sender_key_missing
   - non_owned_channel_readiness_passes_through
-  # 3영역 후보 (prefix.notification.channels)
-  - three_prefixes_subscribed_core_auth_ecommerce_board
+  - alimtalk_ready_when_all_keys_set
+  # 채널 메타 표시 필드
+  - channel_meta_carries_test_mode_flag
+  - channel_meta_carries_unified_tab_fields
+  # 확장 단위 활성 게이트 (channel_enabled)
+  - channel_enabled_gate_passes_non_owned_channels
+  - unsaved_owned_channel_defaults_off
+  - saved_owned_channel_state_respected
+  # 채널 후보 (core.notification.channels — 코어 단일 훅)
+  - channel_candidates_answered_via_single_core_hook
   - channel_candidates_deduplicated
   # 발송 위임 (SmsChannelDriver)
   - member_phone_resolved_from_mobile
@@ -65,17 +75,12 @@ effects:
   - short_body_dispatched_as_sms
   - long_body_dispatched_as_lms_with_subject
   - send_message_job_dispatched_with_refkey
-  # 게스트 전화번호 주입 (extract_data)
-  - guest_order_phone_injected_into_data
-  - member_order_phone_not_injected
-  - non_order_notification_passthrough
   # 훅 위생
   - all_channel_hooks_declared_as_filter_type
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Listeners/RegisterNotificationChannelsListenerTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/SmsChannelDriverTest.php
-  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Listeners/GuestPhoneExtractListenerTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/ChannelRegistrationHookTest.php
 
 audit:

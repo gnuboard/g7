@@ -401,6 +401,7 @@ Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작
 | -------- | ----------- | ---- |
 | 데몬 프로세스 (Supervisor) | 큐 워커 상시 실행 불가 | `QUEUE_CONNECTION=sync` (동기 처리) |
 | cron 최소 간격 | 스케줄러 분 단위 실행 제한 | 호스팅 cPanel cron (지원 간격 확인) |
+| cron 미지원 | 방문자 통계는 관리자가 화면을 열 때 집계로 동작, 그 밖의 예약 작업(정리·메일 보고서·주문 자동취소 등)은 정지 | 외부 cron 서비스로 `schedule:run` URL 을 호출할 수는 없다 — 호스팅 cron 이 필요 |
 | PHP 확장 제한 (`pcntl`, `posix`, `redis`, `imagick` 등) | 큐 워커, 프로세스 관리, Redis 캐시, 이미지 처리 | 파일/DB 캐시, GD 라이브러리 |
 | PHP 설정 변경 (`memory_limit`, `max_execution_time` 등) | 대용량 파일 업로드, 이미지 처리 | 호스팅 관리자에게 변경 요청 |
 | 커스텀 포트 (80/443 외) | Reverb WebSocket (기본 8080 포트) | Pusher 등 외부 WebSocket 서비스 |

@@ -47,6 +47,7 @@ class PageActivityLogListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러)
      *
      * @param mixed ...$args 훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -62,6 +63,7 @@ class PageActivityLogListener implements HookListenerInterface
      *
      * @param Page $page 생성된 페이지
      * @param array $data 생성 데이터
+     * @return void 반환값 없음
      */
     public function handlePageAfterCreate(Page $page, array $data): void
     {
@@ -79,6 +81,7 @@ class PageActivityLogListener implements HookListenerInterface
      * @param Page $page 수정된 페이지
      * @param array $data 수정 데이터
      * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
+     * @return void 반환값 없음
      */
     public function handlePageAfterUpdate(Page $page, array $data, ?array $snapshot = null): void
     {
@@ -96,6 +99,7 @@ class PageActivityLogListener implements HookListenerInterface
      * 페이지 삭제 후 로그 기록
      *
      * @param Page $page 삭제된 페이지
+     * @return void 반환값 없음
      */
     public function handlePageAfterDelete(Page $page): void
     {
@@ -112,6 +116,7 @@ class PageActivityLogListener implements HookListenerInterface
      *
      * @param Page $page 대상 페이지
      * @param bool $published 공개 여부 (true: 공개, false: 비공개)
+     * @return void 반환값 없음
      */
     public function handlePageAfterPublish(Page $page, bool $published): void
     {
@@ -133,6 +138,7 @@ class PageActivityLogListener implements HookListenerInterface
      *
      * @param Page $page 복원된 페이지
      * @param PageVersion $version 복원 대상 버전
+     * @return void 반환값 없음
      */
     public function handlePageAfterRestore(Page $page, PageVersion $version): void
     {
@@ -155,6 +161,7 @@ class PageActivityLogListener implements HookListenerInterface
      * 페이지 첨부파일 업로드 후 로그 기록
      *
      * @param PageAttachment $attachment 업로드된 첨부파일
+     * @return void 반환값 없음
      */
     public function handleAttachmentAfterUpload(PageAttachment $attachment): void
     {
@@ -165,7 +172,7 @@ class PageActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-page::activity_log.description.page_attachment_upload',
             'description_params' => ['title' => $attachment->page?->title ?? ''],
             'properties' => [
-                'original_name' => $attachment->original_name ?? '',
+                'original_filename' => $attachment->original_filename ?? '',
                 'size' => $attachment->size ?? 0,
                 'page_id' => $attachment->page_id ?? null,
                 'title' => $attachment->page?->title ?? '',
@@ -177,6 +184,7 @@ class PageActivityLogListener implements HookListenerInterface
      * 페이지 첨부파일 삭제 후 로그 기록
      *
      * @param PageAttachment $attachment 삭제된 첨부파일
+     * @return void 반환값 없음
      */
     public function handleAttachmentAfterDelete(PageAttachment $attachment): void
     {
@@ -187,7 +195,7 @@ class PageActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-page::activity_log.description.page_attachment_delete',
             'description_params' => ['title' => $attachment->page?->title ?? ''],
             'properties' => [
-                'original_name' => $attachment->original_name ?? '',
+                'original_filename' => $attachment->original_filename ?? '',
                 'page_id' => $attachment->page_id ?? null,
                 'title' => $attachment->page?->title ?? '',
             ],

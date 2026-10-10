@@ -32,7 +32,7 @@ let memberEmail: string;
 let adminEmail: string;
 let nonAdminEmail: string;
 
-test.beforeAll(async ({ playwright }) => {
+test.beforeAll(async ({ playwright }, testInfo) => {
   adminToken = issueToken('core.settings.read', 'core.settings.update');
 
   memberEmail = ensureTwoFactorUser('user', { password: PASSWORD });
@@ -40,12 +40,17 @@ test.beforeAll(async ({ playwright }) => {
   nonAdminEmail = ensureTwoFactorUser('nonadmin', { password: PASSWORD });
 
   // worker 범위 request 컨텍스트 — baseURL·ignoreHTTPSErrors 는 설정에서 온다.
+  // env 를 직접 읽지 않는다: `playwright.config.ts` 의 resolveBaseUrl() 이 PLAYWRIGHT_BASE_URL → `.env` APP_URL
+  // 순으로 해석한 값을 프로젝트 설정에서 받는다. env 만 읽으면 문서가 약속한 APP_URL 폴백이 없어
+  // 환경변수 없이 실행할 때 상대 경로 요청이 "Invalid URL" 로 죽는다.
   fixtureRequest = await playwright.request.newContext({
-    baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    baseURL: testInfo.project.use.baseURL,
     ignoreHTTPSErrors: true,
   });
 
-  fixtureState = await enableTwoFactorFixture(fixtureRequest, adminToken);
+  // 이 spec 은 일반 회원 로그인도 재므로 적용 범위를 「전체 회원」으로 고정한다 — 사이트가 「관리자만」 이면
+  // 회원 로그인은 챌린지 없이 끝나 회원 축이 통째로 잴 수 없게 된다. 보안 탭 전체가 스냅샷되므로 함께 되돌아간다.
+  fixtureState = await enableTwoFactorFixture(fixtureRequest, adminToken, { two_factor_scope: 'all' });
 });
 
 test.afterAll(async () => {
@@ -86,6 +91,10 @@ async function submitAndReadChallenge(
   return String(body.data.challenge_id);
 }
 
+/**
+ * @scenario controller=user, two_factor=on, delivery=sent, code=valid
+ * @effects challenge_response_has_no_token
+ */
 test('사용자 로그인 — 인증번호 단계로 전환되고 코드 확인 후 로그인된다', async ({ page }) => {
   await page.goto('/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -123,6 +132,10 @@ test('사용자 로그인 — 인증번호 단계로 전환되고 코드 확인 
   expect(token).not.toBe('undefined');
 });
 
+/**
+ * @scenario controller=user, two_factor=on, delivery=sent, resend=active
+ * @effects resend_cancels_previous_challenge
+ */
 test('사용자 로그인 — 인증번호 다시 받기는 새 challenge 를 발급하고 입력을 비운다', async ({ page }) => {
   await page.goto('/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -212,6 +225,10 @@ test('인증번호 단계 — 처음부터·새로고침·재진입 모두 1단�
   await expectCredentialStep();
 });
 
+/**
+ * @scenario controller=admin, two_factor=on, delivery=sent, code=valid, actor=admin
+ * @effects admin_login_returns_challenge_not_500, admin_two_factor_issues_token_for_admin
+ */
 test('관리자 로그인 — 챌린지 응답이 서버 오류가 아니고 코드 확인 후 관리자 화면으로 간다', async ({ page }) => {
   await page.goto('/admin/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -234,6 +251,10 @@ test('관리자 로그인 — 챌린지 응답이 서버 오류가 아니고 코
   });
 });
 
+/**
+ * @scenario controller=admin, two_factor=on, delivery=sent, code=valid, actor=non_admin
+ * @effects non_admin_admin_login_revokes_token
+ */
 test('관리자 로그인 — 관리자가 아닌 계정은 코드 확인에 성공해도 거부되고 토큰이 남지 않는다', async ({ page }) => {
   await page.goto('/admin/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -261,6 +282,10 @@ test('관리자 로그인 — 관리자가 아닌 계정은 코드 확인에 성
   expect(page.url()).toContain('/admin/login');
 });
 
+/**
+ * @scenario controller=user, two_factor=on, delivery=sent, code=valid
+ * @effects enter_key_on_code_step_sends_verify_only
+ */
 test('인증번호 단계 — Enter 키는 확인만 보내고 새 challenge 를 발급하지 않는다', async ({ page }) => {
   await page.goto('/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -300,6 +325,10 @@ test('인증번호 단계 — Enter 키는 확인만 보내고 새 challenge 를
   expect(loginCalls, 'Enter 가 비밀번호 단계를 다시 호출했습니다').toBe(0);
 });
 
+/**
+ * @scenario controller=user, two_factor=on, delivery=sent
+ * @effects code_step_intact_on_mobile_width_and_ja_locale
+ */
 test('인증번호 단계 — 모바일 폭과 일본어 로케일에서 문구·배치가 깨지지 않는다', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.addInitScript(() => localStorage.setItem('g7_locale', 'ja'));
@@ -333,6 +362,10 @@ test('인증번호 단계 — 모바일 폭과 일본어 로케일에서 문구�
   }
 });
 
+/**
+ * @scenario controller=user, two_factor=on, delivery=sent, code=consumed_by_public_verify
+ * @effects public_verify_rejects_login_purpose, login_completes_after_public_endpoints_refuse
+ */
 test('공개 본인인증 화면으로는 로그인 challenge 를 소진할 수 없다', async ({ page }) => {
   await page.goto('/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });

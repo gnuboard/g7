@@ -1,0 +1,35 @@
+feature: 인증·전역 상태 구독의 해제와 인증 경계 알림 (#639 ③⑧)
+
+description: |
+  확장과 템플릿은 엔진보다 늦게 실리고 화면을 오가며 구독을 걸었다 푼다. 코어 구독 API 가
+  해제 함수를 돌려주지 않으면 화면을 떠날 때마다 리스너가 남는다.
+
+  배경(실측 2026-10-05):
+    - `G7Core.state.subscribe` 가 `undefined` 를 돌려줘, 상품 목록을 20번 오가는 동안 전역 리스너가
+      29 → 281 로 늘었다(상품 카드마다 하나씩).
+    - `AuthManager.on()` 은 해제 수단이 없었고, 토큰이 사라져 인증 확인이 실패해도 비인증 전환을
+      알리지 않았다 — 인증 상태에 묶인 캐시(동의 스냅샷 등)를 비울 기회가 없었다.
+
+  적용 지점:
+    - `resources/js/core/TemplateApp.ts` `onGlobalStateChange()` 가 해제 함수를 돌려준다.
+    - `resources/js/core/auth/AuthManager.ts` `on()` 해제 함수, `off()`, `getState()`, `clearState()` 의 경계 발행.
+
+axes:
+  surface: [singleton, check_auth, token_refresh, redirect, logout, two_factor, login, subscription, state]
+
+effects:
+  - single_instance_is_shared
+  - check_auth_reflects_server_session
+  - token_refresh_is_shared_and_reported
+  - login_redirect_url_is_built_safely
+  - logout_clears_session_and_redirects
+  - two_factor_completes_or_resends_challenge
+  - login_establishes_session_or_returns_challenge
+  - auth_listeners_are_releasable_and_boundary_is_emitted
+  - state_subscribe_returns_working_unsubscribe
+
+test_files:
+  - resources/js/core/auth/__tests__/AuthManager.test.ts
+  - resources/js/core/__tests__/G7CoreGlobals.stateSubscribeRealApp.test.ts
+
+# E2E axis 없음: 브라우저 표면은 상품 목록 왕복 리스너 수 계측(Chrome MCP 매트릭스 T8)이 덮는다.

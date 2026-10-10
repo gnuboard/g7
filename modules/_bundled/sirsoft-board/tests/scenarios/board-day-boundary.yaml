@@ -1,0 +1,27 @@
+feature: 게시판 「하루」 경계 — 화면은 유저 시간대, 공용 집계는 사이트 표준시 (7.1.0 전수 실측 O-CF3 · 결정 P4)
+
+description: |
+  원칙(2026-10-07): 유저가 보는 화면은 유저의 시간대 기준, 서버에 기록되는 시각은 UTC.
+  게시판의 하루 경계 세 곳이 UTC 자정으로 잘려 한국 시간 새벽 0~9시의 글·신고가 전날로 묶였다.
+
+  - 하루 신고 한도: 신고하는 사람 자신의 하루(보는 사람 시간대, `applyViewerTodayFilter`).
+  - 대시보드 일별 집계(board_stats)·「오늘」 카드·추이 그래프, 인기글 「오늘」: 모든 운영자·방문자가 함께 보는
+    하루 1행 집계·기간별 공용 캐시라 보는 사람마다 경계를 달리할 수 없다 → 방문자 통계(AnalyticsClock)처럼
+    사이트 표준시의 하루. UTC 자정보다 원칙에 가깝고(사이트 운영 시간대), 저장 시각은 그대로 UTC.
+
+axes:
+  boundary: [report_daily_limit, board_stats_daily, popular_today]
+  timezone: [viewer, site]
+
+exclusions:
+  - { boundary: report_daily_limit, timezone: site, reason: "신고 한도는 신고하는 사람의 하루 — 보는 사람 시간대만 해당" }
+  - { boundary: board_stats_daily, timezone: viewer, reason: "하루 1행 공용 집계라 보는 사람별 경계가 불가능 — 사이트 표준시만 해당" }
+  - { boundary: popular_today, timezone: viewer, reason: "기간별 공용 캐시라 보는 사람별 경계가 불가능 — 사이트 표준시만 해당" }
+
+effects:
+  - board_report_daily_limit_counts_reporter_day
+  - board_stats_rows_follow_site_day
+  - board_popular_today_starts_at_site_midnight
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/BoardDayBoundaryTest.php

@@ -1,4 +1,5 @@
 {
+    "comment": "코어에 함께 들어 있는 언어팩을 깔기 전 되묻는 창. 파일을 올리는 설치와 달리 받아 올 것이\n  없어 식별자 하나만 넘기면 되지만, 그래도 확인을 한 번 두어 목록에서 잘못 누른 팩이 곧바로\n  깔리지 않게 한다.\n  깔아도 **켜지지는 않는다** — 설치와 활성을 갈라 두어, 켜는 것은 목록의 스위치로 따로 한다\n  (같은 언어 자리를 다른 팩이 이미 쓰고 있을 수 있기 때문이다).\n  깔 수 없는 사정이 있으면 그 사유를 창 안에 적고 설치 버튼을 잠근다.",
     "meta": {
         "is_partial": true,
         "description": "번들 언어팩 설치 확인 모달 — 모듈/플러그인의 install 모달과 동일한 패턴. 행의 '설치' 버튼이 즉시 apiCall 하지 않고 본 모달을 열어 운영자가 확인 후 진행.",
@@ -15,54 +16,150 @@
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "py-2 space-y-3" },
+            "props": {
+                "className": "py-2 space-y-3"
+            },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
-                    "props": { "className": "text-gray-700 dark:text-gray-300" },
-                    "text": "$t:admin.language_packs.modals.install_bundled_confirm|identifier={{_global.selectedBundledLanguagePack?.identifier ?? ''}}"
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "lp_install_bundled_icon",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{_global.selectedBundledLanguagePack?.icon_url}}",
+                                    "props": {
+                                        "src": "{{_global.selectedBundledLanguagePack.icon_url}}",
+                                        "alt": "",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "className": "w-5 h-5 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_global.selectedBundledLanguagePack?.icon_url}}",
+                                    "props": {
+                                        "name": "fas fa-language",
+                                        "className": "text-xs text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.modals.install_bundled_confirm|identifier={{_global.selectedBundledLanguagePack?.identifier ?? ''}}"
+                        }
+                    ]
                 },
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm space-y-1" },
+                    "props": {
+                        "className": "rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm space-y-1"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "text-secondary flex justify-between" },
+                            "props": {
+                                "className": "text-secondary flex justify-between"
+                            },
                             "children": [
-                                { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.columns.scope" },
-                                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-gray-100" }, "text": "{{_global.selectedBundledLanguagePack?.scope ?? '-'}}" }
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.language_packs.columns.scope"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.selectedBundledLanguagePack?.scope ?? '-'}}"
+                                }
                             ]
                         },
                         {
                             "type": "basic",
                             "name": "Div",
                             "if": "{{_global.selectedBundledLanguagePack?.target_identifier}}",
-                            "props": { "className": "text-secondary flex justify-between" },
+                            "props": {
+                                "className": "text-secondary flex justify-between"
+                            },
                             "children": [
-                                { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.columns.target" },
-                                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-gray-100" }, "text": "{{_global.selectedBundledLanguagePack?.target_identifier}}" }
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.language_packs.columns.target"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.selectedBundledLanguagePack?.target_identifier}}"
+                                }
                             ]
                         },
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "text-secondary flex justify-between" },
+                            "props": {
+                                "className": "text-secondary flex justify-between"
+                            },
                             "children": [
-                                { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.columns.locale" },
-                                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-gray-100" }, "text": "{{_global.selectedBundledLanguagePack?.locale}} · {{_global.selectedBundledLanguagePack?.locale_native_name ?? ''}}" }
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.language_packs.columns.locale"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.selectedBundledLanguagePack?.locale}} · {{_global.selectedBundledLanguagePack?.locale_native_name ?? ''}}"
+                                }
                             ]
                         },
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "text-secondary flex justify-between" },
+                            "props": {
+                                "className": "text-secondary flex justify-between"
+                            },
                             "children": [
-                                { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.columns.version" },
-                                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-gray-100" }, "text": "{{_global.selectedBundledLanguagePack?.version ?? '-'}}" }
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.language_packs.columns.version"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{_global.selectedBundledLanguagePack?.version ?? '-'}}"
+                                }
                             ]
                         }
                     ]
@@ -71,14 +168,26 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.selectedBundledLanguagePack?.install_blocked_reason}}",
-                    "props": { "className": "rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-warning-soft" },
+                    "props": {
+                        "className": "rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-warning-soft"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex-start gap-2" },
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
                             "children": [
-                                { "type": "basic", "name": "Icon", "props": { "name": "fas fa-triangle-exclamation", "size": "sm", "className": "mt-0.5" } },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fas fa-triangle-exclamation",
+                                        "size": "sm",
+                                        "className": "mt-0.5"
+                                    }
+                                },
                                 {
                                     "type": "basic",
                                     "name": "Span",
@@ -94,14 +203,42 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_inactive'}}",
-                                    "text": "$t:admin.language_packs.modals.install_blocked_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
+                                    "if": "{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_version_too_old'}}",
+                                    "text": "$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "대상 확장이 설치돼 있으나 꺼져 있으면 막지 않고 알리기만 한다 — 꺼진 채 설치되고, 켜는 것은 그 확장을 켠 뒤 목록에서 한다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.selectedBundledLanguagePack?.install_blocked_reason && _global.selectedBundledLanguagePack?.install_notice === 'target_inactive'}}",
+                    "props": {
+                        "className": "rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-info-soft"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fas fa-circle-info",
+                                        "size": "sm",
+                                        "className": "mt-0.5"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_version_too_old'}}",
-                                    "text": "$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
+                                    "text": "$t:admin.language_packs.modals.install_notice_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
                                 }
                             ]
                         }
@@ -112,72 +249,145 @@
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "modal-footer-buttons" },
+            "props": {
+                "className": "modal-footer-buttons"
+            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Button",
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "closeModal"
+                        }
+                    ],
                     "props": {
                         "type": "button",
                         "className": "btn btn-secondary",
                         "disabled": "{{_global.isLanguagePackInstalling}}"
                     },
-                    "actions": [
-                        { "event": "onClick", "handler": "closeModal" }
-                    ],
                     "children": [
-                        { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
                     ]
                 },
                 {
                     "type": "basic",
                     "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "켜지 않고 깔기만 한다는 뜻을 본문에 명시해 보낸다. 성공하면 고른 팩을 비워 다음에 열 때 지난 값이 남지 않게 한다.",
+                            "event": "onClick",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isLanguagePackInstalling": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/language-packs/install-from-bundled",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "identifier": "{{_global.selectedBundledLanguagePack?.identifier}}",
+                                            "auto_activate": "{{_global.languagePackReinstallMode === true && _global.selectedBundledLanguagePack?.abilities?.can_activate === true}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackInstalling": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.language_packs.messages.install_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "language_packs"
+                                            }
+                                        },
+                                        {
+                                            "handler": "reloadExtensions"
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "comment": "고른 팩은 창을 닫은 뒤에 비운다 — 먼저 비우면 목록을 다시 받는 동안 열린 창의 식별자·범위·버전 칸이 빈 값으로 다시 그려진다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedBundledLanguagePack": null
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackInstalling": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.language_packs.messages.install_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
                     "props": {
                         "type": "button",
                         "className": "flex-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isLanguagePackInstalling || _global.selectedBundledLanguagePack?.install_blocked_reason || _global.selectedBundledLanguagePack?.abilities?.can_install !== true}}"
                     },
-                    "actions": [
-                        {
-                            "event": "onClick",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "params": { "target": "global", "isLanguagePackInstalling": true }
-                                    },
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/admin/language-packs/install-from-bundled",
-                                        "params": {
-                                            "method": "POST",
-                                            "body": {
-                                                "identifier": "{{_global.selectedBundledLanguagePack?.identifier}}",
-                                                "auto_activate": "{{_global.languagePackReinstallMode === true && _global.selectedBundledLanguagePack?.abilities?.can_activate === true}}"
-                                            }
-                                        },
-                                        "onSuccess": [
-                                            { "handler": "setState", "params": { "target": "global", "isLanguagePackInstalling": false, "selectedBundledLanguagePack": null } },
-                                            { "handler": "toast", "params": { "type": "success", "message": "$t:admin.language_packs.messages.install_success" } },
-                                            { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } },
-                                            { "handler": "reloadExtensions" },
-                                            { "handler": "closeModal" }
-                                        ],
-                                        "onError": [
-                                            { "handler": "setState", "params": { "target": "global", "isLanguagePackInstalling": false } },
-                                            { "handler": "toast", "params": { "type": "error", "message": "{{error.message ?? '$t:admin.language_packs.messages.install_failed'}}" } }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    ],
                     "children": [
-                        { "type": "basic", "name": "Icon", "if": "{{!_global.isLanguagePackInstalling}}", "props": { "name": "fas fa-download", "size": "sm" } },
-                        { "type": "basic", "name": "Icon", "if": "{{_global.isLanguagePackInstalling}}", "props": { "name": "fas fa-spinner", "className": "animate-spin", "size": "sm" } },
-                        { "type": "basic", "name": "Span", "text": "{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}" }
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{!_global.isLanguagePackInstalling}}",
+                            "props": {
+                                "name": "fas fa-download",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isLanguagePackInstalling}}",
+                            "props": {
+                                "name": "fas fa-spinner",
+                                "className": "animate-spin",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}"
+                        }
                     ]
                 }
             ]

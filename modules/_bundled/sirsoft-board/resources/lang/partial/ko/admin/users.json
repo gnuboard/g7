@@ -9,5 +9,25 @@
       "comment": "댓글 알림",
       "reply_comment": "답변 알림"
     }
+  },
+  "scraps": {
+    "tab_label": "스크랩",
+    "title": "게시글 스크랩",
+    "count": "스크랩 수",
+    "count_unit": "{{count}}개",
+    "latest_scrapped_at": "최근 스크랩",
+    "none": "스크랩한 게시글이 없습니다.",
+    "view_list": "이 회원 스크랩 목록 보기"
+  },
+  "reactions": {
+    "tab_label": "반응",
+    "title": "게시판 반응",
+    "count": "총 반응",
+    "count_unit": "{{count}}건",
+    "breakdown": "게시글 / 댓글",
+    "breakdown_unit": "{{post}} / {{comment}}",
+    "latest_reacted_at": "최근 반응",
+    "none": "남긴 반응이 없습니다.",
+    "view_list": "이 회원 반응 목록 보기"
   }
 }

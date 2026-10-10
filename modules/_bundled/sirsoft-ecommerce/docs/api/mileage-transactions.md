@@ -56,7 +56,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | id | integer | `830` | 기본 키 (내부 식별자) |
 | user_id | integer | `1209` | user 식별자 (연관 리소스 참조) |
 | currency | string | `KRW` | 거래 기록 통화 코드 (주문 기준통화 스냅샷, 금액 표기·잔액 집계 단위) |
-| type | string | `admin_deduct` | 거래 유형 (MileageTransactionTypeEnum 8종: purchase_earn·admin_earn·order_use·admin_deduct·expired·refund_restore·order_cancel_restore·earn_cancel) |
+| type | string | `admin_deduct` | 거래 유형 (MileageTransactionTypeEnum 9종: purchase_earn·admin_earn·order_use·admin_deduct·expired·refund_restore·order_cancel_restore·earn_cancel·refund_credit). `refund_credit` 은 「마일리지로 환불」로 지급한 현금 환불액이며 유효기간이 없다 |
 | type_label | string | `관리자 차감` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | admin_badge_group | string | `amber` | 관리자 내역 화면 배지 색상 그룹 (적립계=green·사용계=blue·소멸=gray·복원계=teal·수동/회수계=amber) |
 | user_display_category | string | `adjust` | 회원 마이페이지 표시용 4분류 (earn·use·expire·adjust — 복원·수동·회수는 adjust 로 통합) |
@@ -69,14 +69,14 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | order_option_id | null | `null` | order option 식별자 (연관 리소스 참조) |
 | order_cancel_id | null | `null` | order cancel 식별자 (연관 리소스 참조) |
 | source_transaction_id | integer | `802` | source transaction 식별자 (연관 리소스 참조) |
-| granted_by | integer | `1209` | 부여 주체 식별자 (NULL=시스템 자동, user ID=관리자 수동 부여) |
+| granted_by | integer | `1209` | 부여 주체 식별자 (NULL=시스템 자동, user ID=관리자 수동 부여) — 관리자 응답에서만 값이 실리고 회원 마일리지 내역에서는 `null`(`granted_by_name`·`granted_by_uuid` 도 같다) |
 | granted_by_name | string | `최고관리자` | 부여 관리자 이름 (grantedByUser 관계 eager load 시에만 노출) |
 | granted_by_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 부여 관리자 UUID (grantedByUser 관계 eager load 시에만 노출) |
 | user_name | string | `최고관리자` | 거래 대상 회원 이름 (user 관계 eager load 시에만 노출) |
 | user_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 거래 대상 회원 UUID (user 관계 eager load 시에만 노출) |
 | order_number | null | `null` | 연관 주문번호 (order 관계 eager load 시에만 노출) |
 | description | string | `관리자 마일리지 차감 (300원)` | 설명 (다국어 필드는 로케일별 값 객체) |
-| memo | string | `D-30 재실측` | 관리자 메모 (수동 지급/차감·적립건 편집 시 입력) |
+| memo | string | `D-30 재실측` | 관리자 메모 (수동 지급/차감·적립건 편집 시 입력) — 관리자 응답에서만 값이 실리고 회원 마일리지 내역에서는 `null` |
 | expires_at | string | `2027-07-31T12:56:55+00:00` | expires 일시 |
 | expires_at_formatted | string | `2027-07-31 21:56:55` | `expires_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | expires_at_date | string | `2027-07-31` | `expires_at` 의 사이트 타임존 기준 날짜 부분 (시각 제외) |
@@ -86,7 +86,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | created_at_formatted | string | `2026-07-31 22:36:05` | `created_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | created_at_date | string | `2026-07-31` | `created_at` 의 사이트 타임존 기준 날짜 부분 (시각 제외) |
 | is_earning | boolean | `false` | earning 여부 |
-| can_edit_expiry | boolean | `false` | edit expiry 수행 가능 여부 (권한 기반) |
+| can_edit_expiry | boolean | `false` | 만료일 편집 가능 여부 — 적립계 + 미소멸 + 잔여 > 0 일 때만 true. 환불 지급(`refund_credit`)은 현금을 대신한 돈이라 언제나 false |
 | expired_amount | integer | `0` | 이 적립 lot 을 source 로 소멸(expired)된 금액 합계 (목록 조회 시 eager 집계, 단건 조회 시 0 폴백) |
 | expired_amount_formatted | string | `0원` | `expired_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | expiry_state | string | `active` | 적립건 소멸 상태 (active=미소멸, partial_expired=일부 소멸, fully_expired=전액 소멸 — 적립계만 의미) |
@@ -380,7 +380,7 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| user_id | body | uuid | 예 | — | user 식별자 |
+| user_id | body | uuid | 아니오 | — | 회원 식별자. 생략하면 고른 lot 이 여러 회원에 걸쳐 있어도 전부 연장하고(관리자 마일리지 내역의 일괄 연장), 지정하면 그 회원의 lot 만 연장한다 |
 | lot_ids | body | array | 예 | min 1 | lot 식별자 배열 |
 | days | body | integer | 예 | min 1, max 3650 | 각 lot 만료일을 연장할 일수 (최대 3650일) |
 
@@ -394,7 +394,6 @@ Authorization: Bearer {YOUR_TOKEN}
 Content-Type: application/json
 
 {
-    "user_id": "9f8b2c1a-4d3e-4a2b-8c1d-0e1f2a3b4c5d",
     "lot_ids": [
         "예시값"
     ],

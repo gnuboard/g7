@@ -1,0 +1,33 @@
+<!-- 환영 카드 — 로그인 여부에 따라 이름을 부르거나 가입을 권한다. 첫 화면 맨 위에서 두 칸을 차지한다. -->
+<partial description="홈 환영 카드 - 로그인 시 사용자명 표시">
+  <div class="col-span-2 bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl px-6 py-10 text-white">
+    <div class="flex items-center gap-2 mb-2">
+      <icon name="sparkles" class="text-xl"/>
+      <span class="text-sm font-medium opacity-90">Welcome</span>
+    </div>
+    <h2 class="text-xl font-bold mb-2">{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix</h2>
+    <p class="text-sm opacity-90 mb-4">{{_global.settings?.general?.site_description ?? '$t:home.welcome_description'}}</p>
+    <div class="flex gap-3">
+      <button data-ref="register_button" data-if="{{!_global.currentUser?.uuid}}" class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
+        <on type="click">
+          <navigate path="/register"/>
+        </on>
+        <span>$t:home.get_started</span>
+        <icon name="arrow-right" class="text-base"/>
+      </button>
+      <button data-ref="dashboard_button" data-if="{{_global.currentUser?.uuid}}" class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
+        <on type="click">
+          <navigate path="/mypage"/>
+        </on>
+        <span>$t:home.go_to_mypage</span>
+        <icon name="arrow-right" class="text-base"/>
+      </button>
+      <button class="px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer">
+        <on type="click">
+          <navigate path="/page/about"/>
+        </on>
+        $t:home.learn_more
+      </button>
+    </div>
+  </div>
+</partial>

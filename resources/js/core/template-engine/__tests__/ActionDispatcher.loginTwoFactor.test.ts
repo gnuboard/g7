@@ -13,6 +13,7 @@ import { ActionDispatcher, ActionDefinition } from '../ActionDispatcher';
 import { Logger } from '../../utils/Logger';
 
 const mockLogin = vi.fn();
+// 핸들러는 서버 안내 필드까지 받는 completeTwoFactorSession 을 부른다 (engine-v1.76.0).
 const mockCompleteTwoFactor = vi.fn();
 const mockResendTwoFactor = vi.fn();
 const mockLogout = vi.fn().mockResolvedValue(undefined);
@@ -22,7 +23,7 @@ vi.mock('../../auth/AuthManager', () => ({
     getInstance: vi.fn(() => ({
       login: mockLogin,
       logout: mockLogout,
-      completeTwoFactor: mockCompleteTwoFactor,
+      completeTwoFactorSession: mockCompleteTwoFactor,
       resendTwoFactor: mockResendTwoFactor,
     })),
   },
@@ -62,6 +63,9 @@ describe('ActionDispatcher - 2단계 인증', () => {
   };
 
   describe('login', () => {
+    // @scenario controller=user, two_factor=on, delivery=sent
+    // @effects layout_handler_exposes_challenge_fields
+    /** @effects login_handlers_expose_password_change_step */
     it('challenge 응답을 레이아웃이 읽을 수 있는 형태로 돌려준다', async () => {
       mockLogin.mockResolvedValue({
         status: 'two_factor_required',
@@ -88,6 +92,9 @@ describe('ActionDispatcher - 2단계 인증', () => {
       });
     });
 
+    // @scenario controller=user, two_factor=off
+    // @effects layout_handler_keeps_user_contract_on_normal_login
+    /** @effects login_handlers_expose_password_change_step */
     it('정상 로그인은 종전대로 user 를 돌려준다', async () => {
       const user = { id: 1, name: 'Test User' };
       mockLogin.mockResolvedValue({ status: 'authenticated', user });
@@ -101,13 +108,72 @@ describe('ActionDispatcher - 2단계 인증', () => {
 
       // 기존 레이아웃이 `response.user` 를 읽으므로 이 계약은 유지되어야 한다.
       expect(result).toMatchObject({ user, two_factor_required: false });
+      // 휴면이 풀리지 않은 로그인에는 키 자체가 없다 — 레이아웃 토스트 조건이 거짓이어야 한다.
+      expect('dormancy_restored' in (result as object)).toBe(false);
+    });
+
+    /** @effects login_handlers_expose_password_change_step */
+    it('휴면이 풀린 로그인이면 dormancy_restored 를 전달한다 (D20)', async () => {
+      const user = { id: 1, name: 'Test User' };
+      mockLogin.mockResolvedValue({ status: 'authenticated', user, extras: { dormancy_restored: true } });
+
+      const result = await run({
+        type: 'click',
+        handler: 'login',
+        target: 'admin',
+        params: { body: { email: 'a@b.c', password: 'pw' } },
+      });
+
+      expect(result).toEqual({
+        user,
+        two_factor_required: false,
+        password_change_required: false,
+        dormancy_restored: true,
+      });
+    });
+
+    /** @effects login_handlers_expose_password_change_step */
+    it('비밀번호 변경 단계면 토큰 없이 단계 정보를 돌려준다 (engine-v1.77.0)', async () => {
+      mockLogin.mockResolvedValue({
+        status: 'password_change_required',
+        challenge: {
+          challengeId: 'pw-challenge',
+          reason: 'admin_assigned',
+          canPostpone: false,
+          postponeDays: null,
+          expiredAt: null,
+          expiresAt: '2026-10-03T10:10:00+09:00',
+        },
+      });
+
+      const result = await run({
+        type: 'click',
+        handler: 'login',
+        target: 'user',
+        params: { body: { email: 'a@b.c', password: 'pw' } },
+      });
+
+      expect(result).toEqual({
+        user: null,
+        two_factor_required: false,
+        password_change_required: true,
+        challenge_id: 'pw-challenge',
+        reason: 'admin_assigned',
+        can_postpone: false,
+        postpone_days: null,
+        expired_at: null,
+        expires_at: '2026-10-03T10:10:00+09:00',
+      });
     });
   });
 
   describe('loginTwoFactor', () => {
+    // @scenario controller=user, two_factor=on, code=valid
+    // @effects layout_handler_completes_two_factor_with_challenge_and_code
+    /** @effects login_handlers_expose_password_change_step */
     it('challenge_id 와 code 로 로그인을 완료한다', async () => {
       const user = { id: 1, name: 'Test User' };
-      mockCompleteTwoFactor.mockResolvedValue(user);
+      mockCompleteTwoFactor.mockResolvedValue({ status: 'authenticated', user });
 
       const result = await run({
         type: 'click',
@@ -121,11 +187,15 @@ describe('ActionDispatcher - 2단계 인증', () => {
         { challengeId: 'challenge-uuid', code: '135790' },
         undefined
       );
-      expect(result).toEqual({ user });
+      // engine-v1.77.0: 변경 단계 여부를 함께 싣는다(`completeTwoFactorSession` 이 변경 단계도 돌려준다)
+      expect(result).toEqual({ user, password_change_required: false });
     });
 
+    // @scenario controller=admin, two_factor=on, code=valid, actor=admin
+    // @effects layout_handler_completes_two_factor_with_challenge_and_code
+    /** @effects login_handlers_expose_password_change_step */
     it('globalHeaders 패턴이 관리자 확인 요청에도 적용된다', async () => {
-      mockCompleteTwoFactor.mockResolvedValue({ id: 1 });
+      mockCompleteTwoFactor.mockResolvedValue({ status: 'authenticated', user: { id: 1 } });
       dispatcher.setGlobalHeaders([
         { pattern: '/api/auth/*', headers: { 'X-Cart-Key': 'ck_admin456' } },
       ]);
@@ -144,6 +214,57 @@ describe('ActionDispatcher - 2단계 인증', () => {
       );
     });
 
+    /** @effects login_handlers_expose_password_change_step */
+    it('코드가 맞아도 비밀번호 변경 단계면 그 모양을 돌려준다 (engine-v1.77.0)', async () => {
+      mockCompleteTwoFactor.mockResolvedValue({
+        status: 'password_change_required',
+        challenge: {
+          challengeId: 'pw-challenge',
+          reason: 'expired',
+          canPostpone: false,
+          postponeDays: null,
+          expiredAt: '2026-09-01T00:00:00+09:00',
+          expiresAt: '2026-10-03T10:10:00+09:00',
+        },
+      });
+
+      const result = await run({
+        type: 'click',
+        handler: 'loginTwoFactor',
+        target: 'admin',
+        params: { body: { challenge_id: 'c', code: '135790' } },
+      });
+
+      expect(result).toEqual({
+        user: null,
+        password_change_required: true,
+        challenge_id: 'pw-challenge',
+        reason: 'expired',
+        can_postpone: false,
+        postpone_days: null,
+        expired_at: '2026-09-01T00:00:00+09:00',
+        expires_at: '2026-10-03T10:10:00+09:00',
+      });
+    });
+
+    /** @effects login_handlers_expose_password_change_step */
+    it('휴면이 풀린 로그인이면 dormancy_restored 를 전달한다 (D20)', async () => {
+      const user = { id: 1 };
+      mockCompleteTwoFactor.mockResolvedValue({ status: 'authenticated', user, extras: { dormancy_restored: true } });
+
+      const result = await run({
+        type: 'click',
+        handler: 'loginTwoFactor',
+        target: 'user',
+        params: { body: { challenge_id: 'c', code: '135790' } },
+      });
+
+      expect(result).toEqual({ user, password_change_required: false, dormancy_restored: true });
+    });
+
+    // @scenario controller=user, two_factor=on, code=invalid
+    // @effects layout_handler_skips_request_without_required_input
+    /** @effects login_handlers_expose_password_change_step */
     it('code 가 없으면 요청을 보내지 않는다', async () => {
       await expect(
         run({
@@ -157,6 +278,9 @@ describe('ActionDispatcher - 2단계 인증', () => {
       expect(mockCompleteTwoFactor).not.toHaveBeenCalled();
     });
 
+    // @scenario controller=user, two_factor=on, code=invalid
+    // @effects layout_handler_surfaces_server_message
+    /** @effects login_handlers_expose_password_change_step */
     it('서버 오류 메시지를 그대로 실어 재포장한다', async () => {
       const error: any = new Error('인증번호가 올바르지 않거나 유효시간이 지났습니다.');
       error.response = { status: 401, data: { message: '인증번호가 올바르지 않거나 유효시간이 지났습니다.' } };
@@ -175,6 +299,9 @@ describe('ActionDispatcher - 2단계 인증', () => {
   });
 
   describe('loginTwoFactorResend', () => {
+    // @scenario controller=user, two_factor=on, resend=active
+    // @effects layout_handler_resend_returns_new_challenge
+    /** @effects two_factor_resend_replaces_challenge */
     it('새 challenge 를 돌려준다', async () => {
       mockResendTwoFactor.mockResolvedValue({
         challengeId: 'new-challenge',
@@ -202,6 +329,9 @@ describe('ActionDispatcher - 2단계 인증', () => {
       });
     });
 
+    // @scenario controller=user, two_factor=on, resend=none
+    // @effects layout_handler_skips_request_without_required_input
+    /** @effects two_factor_resend_replaces_challenge */
     it('challenge_id 가 없으면 요청을 보내지 않는다', async () => {
       await expect(
         run({
@@ -213,6 +343,22 @@ describe('ActionDispatcher - 2단계 인증', () => {
       ).rejects.toThrow();
 
       expect(mockResendTwoFactor).not.toHaveBeenCalled();
+    });
+  });
+  // 트러블슈팅 backend 사례 51 — 레이아웃 response 는 핸들러 반환값이라 서버 키가 자동 전파되지 않는다
+  describe('[case:backend-51] 휴면 해제 안내 키를 네 로그인 핸들러가 모두 전달한다', () => {
+    /** @effects dormancy_restored_reaches_layout_response */
+    it.each([
+      ['login', { email: 'a@b.c', password: 'pw' }],
+      ['loginTwoFactor', { challenge_id: 'c', code: '135790' }],
+    ])('%s 성공 응답에 dormancy_restored 가 실린다', async (handler, body) => {
+      const authenticated = { status: 'authenticated', user: { id: 1 }, extras: { dormancy_restored: true } };
+      mockLogin.mockResolvedValue(authenticated);
+      mockCompleteTwoFactor.mockResolvedValue(authenticated);
+
+      const result: any = await run({ type: 'click', handler: handler as any, target: 'user', params: { body } });
+
+      expect(result.dormancy_restored).toBe(true);
     });
   });
 });

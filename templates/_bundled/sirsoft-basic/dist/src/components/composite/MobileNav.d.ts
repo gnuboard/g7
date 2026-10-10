@@ -14,7 +14,7 @@ interface MobileNavProps {
     /** 드로어 열림 상태 */
     isOpen: boolean;
     /** 닫기 콜백 */
-    onClose: () => void;
+    onClose: (event?: Event | React.SyntheticEvent) => void;
     /** 사이트 로고 URL */
     logo?: string;
     /** 사이트 이름 */

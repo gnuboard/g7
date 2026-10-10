@@ -1,34 +1,10 @@
 {
+    "comment": "본인인증(IDV) 시도 이력. 활동 로그 화면과 같은 방식이다 — 조건은 `_local.filter` 에 모았다가 검색할\n  때 URL 로 옮기고, 이동은 전부 `replace` 로 이력에 쌓지 않는다.\n  다른 점 하나는 **제공자 탭**이다. 탭 목록을 서버가 준 제공자 목록으로 만들므로 플러그인이 새 제공자를\n  들이면 탭이 저절로 늘어난다(맨 앞 \"전체\" 만 이 파일이 붙인다).\n  목록 표는 조각(`_partial_datagrid`)이 갖고 있고 여기에는 뼈대와 창 둘만 있다.",
     "version": "1.0.0",
     "layout_name": "admin_identity_logs",
-    "permissions": [
-        "core.admin.identity.logs.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.identity.logs.page_title"
-    },
-    "state": {
-        "filter": {
-            "searchType": "auto",
-            "search": "",
-            "statuses": [],
-            "purposes": [],
-            "channels": [],
-            "originTypes": [],
-            "dateFrom": "",
-            "dateTo": "",
-            "sourceType": "",
-            "sourceIdentifier": "",
-            "advancedOpen": false
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "identityProviders",
-            "identityPurposes",
-            "identityLogs"
-        ]
     },
     "data_sources": [
         {
@@ -42,7 +18,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "등록된 인증 제공자 목록 — 위쪽 탭을 만드는 값이다. 실패하면 탭이 \"전체\" 하나만 남는다."
         },
         {
             "id": "identityPurposes",
@@ -54,7 +31,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "인증 목적 목록(필터 선택지). **이 화면에서 유일하게 인증 없이 부르는 소스**다 —\n       목적 정의는 공개 값이라 관리자 전용 주소가 아니다."
         },
         {
             "id": "identityLogs",
@@ -104,9 +82,62 @@
                         "can_purge": false
                     }
                 }
-            }
+            },
+            "comment": "인증 시도 이력. 조건이 열둘이라 전부 `query.*` 에서 읽는다(화면 상태를 보지 않는다).\n       403 은 빈 표 대신 에러 화면으로 갈아끼운다."
         }
     ],
+    "initLocal": {
+        "filter": {
+            "searchType": "auto",
+            "search": "",
+            "statuses": [],
+            "purposes": [],
+            "channels": [],
+            "originTypes": [],
+            "dateFrom": "",
+            "dateTo": "",
+            "sourceType": "",
+            "sourceIdentifier": "",
+            "advancedOpen": false
+        }
+    },
+    "permissions": [
+        "core.admin.identity.logs.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "identityProviders",
+            "identityPurposes",
+            "identityLogs"
+        ]
+    },
+    "named_actions": {
+        "searchIdentityLogs": {
+            "comment": "검색 실행 — 필터 조각의 버튼들이 공유한다. 빈 조건은 `undefined` 로 빼고 페이지를 1로 되돌린다.\n       마지막의 `status`·`purpose` 를 null 로 지우는 것은 **옛 단수형 쿼리 키를 청소**하기 위함이다 —\n       그 키로 들어온 링크를 초기화 때 복수형으로 옮겨 읽으므로, 지우지 않으면 둘이 함께 남아 겹친다.",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/identity/logs",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "identity_log_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "search_type": "{{_local.filter.searchType !== 'auto' ? _local.filter.searchType : undefined}}",
+                    "statuses": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}",
+                    "purposes": "{{_local.filter.purposes?.length > 0 ? _local.filter.purposes : undefined}}",
+                    "channels": "{{_local.filter.channels?.length > 0 ? _local.filter.channels : undefined}}",
+                    "origin_types": "{{_local.filter.originTypes?.length > 0 ? _local.filter.originTypes : undefined}}",
+                    "date_from": "{{_local.filter.dateFrom || undefined}}",
+                    "date_to": "{{_local.filter.dateTo || undefined}}",
+                    "source_type": "{{_local.filter.sourceType || undefined}}",
+                    "source_identifier": "{{_local.filter.sourceIdentifier || undefined}}",
+                    "status": null,
+                    "purpose": null
+                }
+            }
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -128,32 +159,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchIdentityLogs": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/identity/logs",
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "search": "{{_local.filter.search || undefined}}",
-                    "search_type": "{{_local.filter.searchType !== 'auto' ? _local.filter.searchType : undefined}}",
-                    "statuses": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}",
-                    "purposes": "{{_local.filter.purposes?.length > 0 ? _local.filter.purposes : undefined}}",
-                    "channels": "{{_local.filter.channels?.length > 0 ? _local.filter.channels : undefined}}",
-                    "origin_types": "{{_local.filter.originTypes?.length > 0 ? _local.filter.originTypes : undefined}}",
-                    "date_from": "{{_local.filter.dateFrom || undefined}}",
-                    "date_to": "{{_local.filter.dateTo || undefined}}",
-                    "source_type": "{{_local.filter.sourceType || undefined}}",
-                    "source_identifier": "{{_local.filter.sourceIdentifier || undefined}}",
-                    "status": null,
-                    "purpose": null
-                },
-                "replace": true,
-                "transition_overlay_target": "identity_log_datagrid__body"
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -205,11 +210,6 @@
                                         "id": "refresh_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn-icon",
-                                            "title": "$t:admin.identity.logs.refresh"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -219,6 +219,11 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "title": "$t:admin.identity.logs.refresh"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -235,10 +240,6 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "if": "{{identityLogs?.data?.abilities?.can_purge === true}}",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-danger whitespace-nowrap"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -246,6 +247,10 @@
                                                 "target": "identity_log_purge_confirm_modal"
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-danger whitespace-nowrap"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -262,52 +267,51 @@
                         "id": "provider_tabs",
                         "type": "composite",
                         "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "comment": "제공자 탭 전환 — 제공자를 바꾸면서 **걸어 둔 조건을 전부 초기화한다**.\n               상태·목적·채널 같은 값이 제공자마다 다르므로, 남겨 두면 새 탭에서 아무것도 안 나오는\n               상태가 되고 그 이유가 화면에 보이지 않는다.",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "filter": {
+                                                "searchType": "auto",
+                                                "search": "",
+                                                "statuses": [],
+                                                "purposes": [],
+                                                "channels": [],
+                                                "originTypes": [],
+                                                "dateFrom": "",
+                                                "dateTo": "",
+                                                "sourceType": "",
+                                                "sourceIdentifier": "",
+                                                "advancedOpen": false
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "comment": "audit:allow layout-list-context-navigate-merge-query 제공자 탭 전환 — 직전 setState 가 필터를 전부 비우고, '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 제공자의 조건이 남아 초기화가 무력화된다.",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/identity/logs",
+                                            "replace": true,
+                                            "query": "{{$args[0] ? {provider_id: $args[0], page: 1} : []}}",
+                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
                         "props": {
                             "tabs": "{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}",
                             "activeTabId": "{{query.provider_id ?? ''}}",
                             "variant": "default",
                             "className": "sticky-tab-nav mb-6"
-                        },
-                        "actions": [
-                            {
-                                "event": "onTabChange",
-                                "type": "change",
-                                "handler": "sequence",
-                                "params": {
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "filter": {
-                                                    "searchType": "auto",
-                                                    "search": "",
-                                                    "statuses": [],
-                                                    "purposes": [],
-                                                    "channels": [],
-                                                    "originTypes": [],
-                                                    "dateFrom": "",
-                                                    "dateTo": "",
-                                                    "sourceType": "",
-                                                    "sourceIdentifier": "",
-                                                    "advancedOpen": false
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "comment": "audit:allow layout-list-context-navigate-merge-query 제공자 탭 전환 — 직전 setState 가 필터를 전부 비우고, '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 제공자의 조건이 남아 초기화가 무력화된다.",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/identity/logs",
-                                                "replace": true,
-                                                "query": "{{$args[0] ? {provider_id: $args[0], page: 1} : []}}",
-                                                "transition_overlay_target": "identity_log_datagrid__body"
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
+                        }
                     },
                     {
                         "partial": "partials/admin_identity_logs/_partial_filter.json"
@@ -336,12 +340,24 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "총 건수를 끝까지 센 경우",
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{identityLogs?.data?.pagination?.total_is_exact !== false}}",
                                                 "props": {
                                                     "className": "text-label"
                                                 },
                                                 "text": "$t:admin.identity.logs.total_count|count={{identityLogs?.data?.pagination?.total || 0}}"
+                                            },
+                                            {
+                                                "comment": "총 건수가 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{identityLogs?.data?.pagination?.total_is_exact === false}}",
+                                                "props": {
+                                                    "className": "text-label"
+                                                },
+                                                "text": "$t:admin.identity.logs.total_at_least|count={{identityLogs?.data?.pagination?.total || 0}}"
                                             }
                                         ]
                                     },
@@ -353,66 +369,89 @@
                                         },
                                         "children": [
                                             {
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "정렬 — 옵션 값 하나에 기준과 방향이 붙어 있어 마지막 조각을 방향으로 떼고 나머지를\n                     기준으로 쓴다(기준명에 `_` 가 있어 앞에서 자를 수 없다). 페이지는 1로 되돌린다.",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/identity/logs",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "identity_log_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "sortBy",
                                                     "className": "w-36 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                                     "options": [
-                                                        { "value": "created_at_desc", "label": "$t:admin.identity.logs.sort.created_at_desc" },
-                                                        { "value": "created_at_asc", "label": "$t:admin.identity.logs.sort.created_at_asc" },
-                                                        { "value": "attempts_desc", "label": "$t:admin.identity.logs.sort.attempts_desc" }
+                                                        {
+                                                            "value": "created_at_desc",
+                                                            "label": "$t:admin.identity.logs.sort.created_at_desc"
+                                                        },
+                                                        {
+                                                            "value": "created_at_asc",
+                                                            "label": "$t:admin.identity.logs.sort.created_at_asc"
+                                                        },
+                                                        {
+                                                            "value": "attempts_desc",
+                                                            "label": "$t:admin.identity.logs.sort.attempts_desc"
+                                                        }
                                                     ]
-                                                },
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "페이지당 항목 수 — 정렬과 같은 이유로 페이지를 1로 되돌린다.",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/identity/logs",
                                                             "mergeQuery": true,
-                                                            "query": {
-                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                                "page": 1
-                                                            },
                                                             "replace": true,
-                                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                                            "transition_overlay_target": "identity_log_datagrid__body",
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
                                                         }
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "composite",
-                                                "name": "Select",
+                                                ],
                                                 "props": {
                                                     "name": "perPage",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [
-                                                        { "value": "10", "label": "10" },
-                                                        { "value": "20", "label": "20" },
-                                                        { "value": "50", "label": "50" },
-                                                        { "value": "100", "label": "100" }
-                                                    ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/identity/logs",
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "per_page": "{{$event.target.value}}",
-                                                                "page": 1
-                                                            },
-                                                            "replace": true,
-                                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                                        {
+                                                            "value": "10",
+                                                            "label": "10"
+                                                        },
+                                                        {
+                                                            "value": "20",
+                                                            "label": "20"
+                                                        },
+                                                        {
+                                                            "value": "50",
+                                                            "label": "50"
+                                                        },
+                                                        {
+                                                            "value": "100",
+                                                            "label": "100"
                                                         }
-                                                    }
-                                                ]
+                                                    ]
+                                                }
                                             }
                                         ]
                                     }
@@ -429,9 +468,11 @@
     },
     "modals": [
         {
+            "comment": "시도 한 건의 상세(요청·응답 원문 포함) — 표 조각의 행에서 연다.",
             "partial": "partials/admin_identity_logs/_modal_log_detail.json"
         },
         {
+            "comment": "보관 기간이 지난 이력을 한꺼번에 지우는 확인 창. 개별 삭제가 아니라 기간 기준 정리라\n       되돌릴 수 없어 확인을 받는다.",
             "partial": "partials/admin_identity_logs/_modal_purge_confirm.json"
         }
     ]

@@ -1,0 +1,19 @@
+feature: 발화처마다 인자 모양이 달랐던 훅의 새 이름 분리
+
+description: |
+  같은 훅 이름이 두 곳에서 다른 모양으로 발화해, 한쪽 모양을 기대한 리스너가 다른 쪽에서 조용히 아무것도
+  하지 않았다(#138 후속 11번 ④⑤). 설계 결정: 공개 훅의 이름·인자 모양은 바꾸지 않는다 — 기존 발화는 그대로 두고
+  (그 자리의 발화는 deprecated), 모양을 이름에 드러낸 새 훅을 나란히 발화한다.
+    - core.templates.before/after_list_paginated — 페이지 목록(필터 배열)
+    - core.menu.after_update_order_flat — 평탄한 메뉴 순서(ID 목록). order 운영자 수정 기록은 이 훅의 구독자가 아니라
+      `Menu::where()->update()` 를 가로채는 UserOverridesAwareBuilder 가 실제로 순서가 바뀐 메뉴에만 남긴다(#727).
+
+axes:
+  case: [template_list, menu_order_flat]
+
+effects:
+  - paginated_list_fires_shape_named_hook
+  - flat_menu_order_fires_shape_named_hook_and_records_override
+
+test_files:
+  - tests/Feature/Hooks/HookPayloadShapeSplitTest.php

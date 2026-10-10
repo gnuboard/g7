@@ -99,6 +99,7 @@ class ComponentHtmlMapper
      * 템플릿 제공 컴포넌트 매핑을 설정합니다.
      *
      * @param  array  $componentMap  seo-config.json의 component_map
+     * @return void
      */
     public function setComponentMap(array $componentMap): void
     {
@@ -109,6 +110,7 @@ class ComponentHtmlMapper
      * 템플릿 제공 렌더 모드를 설정합니다.
      *
      * @param  array  $renderModes  seo-config.json의 render_modes
+     * @return void
      */
     public function setRenderModes(array $renderModes): void
     {
@@ -119,6 +121,7 @@ class ComponentHtmlMapper
      * 셀프 클로징 태그 목록을 설정합니다.
      *
      * @param  array  $selfClosing  seo-config.json의 self_closing
+     * @return void
      */
     public function setSelfClosing(array $selfClosing): void
     {
@@ -129,6 +132,7 @@ class ComponentHtmlMapper
      * 텍스트 추출 대상 props 키 목록을 설정합니다.
      *
      * @param  array  $textProps  seo-config.json의 text_props
+     * @return void
      */
     public function setTextProps(array $textProps): void
     {
@@ -139,6 +143,7 @@ class ComponentHtmlMapper
      * React→HTML 속성명 매핑을 설정합니다.
      *
      * @param  array  $attrMap  seo-config.json의 attr_map
+     * @return void
      */
     public function setAttrMap(array $attrMap): void
     {
@@ -149,6 +154,7 @@ class ComponentHtmlMapper
      * 허용된 HTML 속성 목록을 설정합니다.
      *
      * @param  array  $allowedAttrs  seo-config.json의 allowed_attrs
+     * @return void
      */
     public function setAllowedAttrs(array $allowedAttrs): void
     {
@@ -162,6 +168,7 @@ class ComponentHtmlMapper
      * props → seoVars → defaults 순서로 참조됩니다.
      *
      * @param  array  $seoVars  해석된 SEO 변수 (키 → 값)
+     * @return void
      */
     public function setSeoVars(array $seoVars): void
     {
@@ -172,6 +179,7 @@ class ComponentHtmlMapper
      * _global 표현식 해석 콜백을 설정합니다.
      *
      * @param  \Closure  $resolver  _global 경로를 해석하는 콜백 (string → ?string)
+     * @return void
      */
     public function setGlobalResolver(\Closure $resolver): void
     {
@@ -323,6 +331,7 @@ class ComponentHtmlMapper
      * @param  array  $component  컴포넌트 정의 (해석 후 extensionPointProps 키 제거)
      * @param  array  $context  데이터 컨텍스트 (해석된 값이 주입됨)
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return void
      */
     private function injectExtensionPointContext(array &$component, array &$context, ExpressionEvaluator $evaluator): void
     {
@@ -866,9 +875,9 @@ class ComponentHtmlMapper
                 continue;
             }
 
-            // src 속성의 상대 경로를 절대 경로로 변환
+            // src 속성의 상대 경로를 사이트 주소 기준 절대 경로로 변환 (요청 Host 비의존)
             if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
-                $value = url($value);
+                $value = SeoUrl::absolute($value);
             }
 
             $attrStr .= " {$attrName}=\"".e($value).'"';
@@ -1328,9 +1337,9 @@ class ComponentHtmlMapper
         foreach ($field['attrs'] as $attrName => $fieldPattern) {
             $value = $this->resolveFieldPattern($fieldPattern, $data);
             if ($value !== '') {
-                // src 속성의 상대 경로를 절대 경로로 변환
+                // src 속성의 상대 경로를 사이트 주소 기준 절대 경로로 변환 (요청 Host 비의존)
                 if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
-                    $value = url($value);
+                    $value = SeoUrl::absolute($value);
                 }
                 $attrStr .= " {$attrName}=\"".e($value).'"';
             }
@@ -1396,6 +1405,7 @@ class ComponentHtmlMapper
      * context에서 해당 데이터를 찾아 반환합니다.
      *
      * @param  mixed  $expr  표현식 (문자열 또는 배열)
+     * @param  array  $context  데이터 컨텍스트
      * @return mixed 해석된 데이터 (배열/객체 또는 null)
      */
     private function resolveObjectFromExpression(mixed $expr, array $context): mixed
@@ -1620,6 +1630,7 @@ class ComponentHtmlMapper
      * @param  array  $props  컴포넌트 props
      * @param  array  $context  데이터 컨텍스트
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @param  string  $tag  렌더 대상 HTML 태그 (값을 텍스트로 쓰지 않는 태그 판정용)
      * @return string 텍스트 콘텐츠
      */
     private function resolveTextContent(array $component, array $props, array $context, ExpressionEvaluator $evaluator, string $tag = ''): string
@@ -1740,6 +1751,31 @@ class ComponentHtmlMapper
     }
 
     /**
+     * URL 이 현재 문서에서 코드를 실행하는 스킴인지 판정합니다.
+     *
+     * 브라우저는 스킴 해석 전에 선행 C0 제어문자·공백을 버리고 ASCII tab·개행을 제거하며
+     * 스킴을 대소문자 구분 없이 읽는다. 클라이언트 `support/navPolicy` 와 같은 정규화다.
+     *
+     * @param  string  $url  검사할 URL
+     * @param  bool  $includeData  `data:` 도 실행 스킴으로 볼지 (href 는 true, src 는 이미지 인라인 때문에 false)
+     * @return bool 실행 스킴이면 true
+     */
+    private static function isExecutableUrl(string $url, bool $includeData): bool
+    {
+        $normalized = strtolower((string) preg_replace(['/^[\x00-\x20]+/', '/[\t\n\r]/'], '', $url));
+
+        $schemes = $includeData ? ['javascript:', 'vbscript:', 'data:'] : ['javascript:', 'vbscript:'];
+
+        foreach ($schemes as $scheme) {
+            if (str_starts_with($normalized, $scheme)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * props를 HTML 속성 문자열로 변환합니다.
      *
      * @param  array  $props  컴포넌트 props
@@ -1766,6 +1802,15 @@ class ComponentHtmlMapper
 
             if (is_string($value)) {
                 $evaluated = $evaluator->evaluate($value, $context);
+
+                // URL 속성의 실행 스킴 무해화 — React 렌더러(DynamicRenderer 2.6)와 동형.
+                // href 는 링크 모양을 유지하려 `#`, src 는 data: 이미지를 살리고 스크립트 스킴만 제거.
+                if ($htmlAttr === 'href' && self::isExecutableUrl($evaluated, true)) {
+                    $evaluated = '#';
+                } elseif ($htmlAttr === 'src' && self::isExecutableUrl($evaluated, false)) {
+                    continue;
+                }
+
                 if ($evaluated !== '') {
                     $attrs .= " {$htmlAttr}=\"".e($evaluated).'"';
                 }
@@ -2018,6 +2063,12 @@ class ComponentHtmlMapper
 
         // 빈 문자열이면 skip
         if ($href === '') {
+            return null;
+        }
+
+        // 실행 스킴(`{{query.redirect}}` ← `javascript:…`)은 링크로 만들지 않는다 — 클라이언트
+        // 이동 sink 가 막는 값을 봇 HTML 이 `<a href>` 로 되살리면 그 자리가 우회로가 된다.
+        if (self::isExecutableUrl($href, true)) {
             return null;
         }
 

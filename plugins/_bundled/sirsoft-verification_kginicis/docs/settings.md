@@ -15,7 +15,7 @@
 | `duplicate_field` | `enum` | `di` | 중복 판정 필드 |
 | `duplicate_block_enabled` | `boolean` | `true` | 중복 가입 차단 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -26,6 +26,10 @@ INIAPI 키·모바일 해시키처럼 기능별로 분리된 자격증명이 필
 동적으로 부착하므로(DB 저장값은 원본 그대로) 운영자가 프리픽스를 직접 입력할 필요가
 없습니다. `live_mid`/`live_api_key`는 `is_test_mode=false`일 때만
 `ValidateInicisSettingsListener`가 `required`로 강제합니다(§AGENTS.md "핵심 흐름").
+같은 리스너가 저장 검증 때마다(테스트·라이브 모드 모두) 설정 항목 7개의 이름을 요청 언어로 등록합니다
+(`messages.settings.{필드}_attribute`). 스키마 `label` 은 ko/en 만 들고 있어, 등록하지 않으면
+일본어 화면의 검증 오류에 한국어 항목 이름이 섞입니다. 설정 항목을 더하면 이 번역 키도 ko/en
+lang 과 언어팩에 함께 둡니다.
 `duplicate_field`/`duplicate_block_enabled`는 `sirsoft-ecommerce`와 무관한 코어 레벨
 회원가입 규칙입니다 — 이 플러그인은 이커머스에 의존하지 않습니다(§의존 관계).
 <!-- @intent END -->
@@ -49,9 +53,12 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:menus END -->
 
 <!-- @intent START -->
-설정 화면(`plugin_settings.json`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
+설정 화면(`plugin_settings.g7.html`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
 접근합니다 — IDV provider 마다 전용 사이드바 메뉴를 만들면 provider 를 여러 개 설치했을
 때 메뉴가 난립합니다.
+화면의 입력 줄은 관리자 템플릿 의미 클래스 `grid-3col-responsive`(넓은 화면에서 라벨·설명 1칸, 입력 2칸), 섹션 제목은
+`section-heading-md`, 저장 오류 상자는 제목 `text-error-strong`·목록 줄 `text-error-soft` 를 씁니다(테스트
+`resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.ts` 가 위치를 고정합니다).
 <!-- @intent END -->
 
 ## 라우트

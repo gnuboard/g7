@@ -9,6 +9,8 @@ return [
         'not_found' => 'Template not found. (:template)',
         'not_installed' => 'Template is not installed. (:template)',
         'already_active' => 'Template is already active.',
+        'last_active_deactivate' => 'The last active :type template cannot be deactivated. Activate another template of the same type first.',
+        'last_active_uninstall' => 'The last active :type template cannot be uninstalled. Activate another template of the same type first.',
         'invalid_format' => 'Invalid template format.',
         'activation_failed' => 'Failed to activate template: :error',
         'file_copy_failed' => 'Failed to copy files: :error',
@@ -28,9 +30,11 @@ return [
         'missing_layout_name' => 'Missing layout_name field in layout JSON.',
         'layout_registration_failed' => 'Failed to register layout: :error',
         'layout_validation_failed' => 'Layout validation failed for :template template. (:count errors)',
+        'layout_validation_validation_failed' => 'Layout validation failed for :identifier template. (:count error)|Layout validation failed for :identifier template. (:count errors)',
         'layout_validation_json_error' => ':file - JSON parsing error: :error',
         'layout_validation_missing_name' => ':file - Missing layout_name field.',
         'layout_validation_partial_error' => ':file - Partial processing error (:partial): :error',
+        'layout_validation_markup_error' => ':file - Markup compile error: :error',
         'override_layout_registration_failed' => 'Failed to register override layout: :error',
         'file_not_found' => 'File not found.',
         'file_type_not_allowed' => 'File type not allowed.',
@@ -104,7 +108,8 @@ return [
         'editor_spec_empty' => 'Editor spec is empty.',
         'editor_spec_retrieved' => 'Editor spec retrieved.',
         'editor_assets_retrieved' => 'Editor assets retrieved.',
-        'editor_assets_missing' => 'Editor asset manifest not found (not built).',
+        'editor_assets_missing' => 'The installed copy has no editor build files. Please update the template again.',
+        'installed_file_missing' => 'The installed copy has no :file file. Please update the template again.',
         'language_retrieved' => 'Language data retrieved.',
         'language_empty' => 'Language data is empty.',
     ],
@@ -232,7 +237,7 @@ return [
             'success' => 'Template ":template" installed successfully',
             'already_installed' => 'Template ":template" is already installed.',
             'force_reinstall' => 'Force reinstalling template ":template" (overwriting active directory)...',
-            'layouts_created' => ':count layout(s) created',
+            'layouts_created' => ':count layout created|:count layouts created',
             'type' => 'Type: :type',
             'version' => 'Version: :version',
             'directory_not_found' => 'Template directory not found: :path',
@@ -252,14 +257,15 @@ return [
             'success' => 'Template ":template" uninstalled successfully',
             'confirm_prompt' => 'Are you sure you want to uninstall template ":template"?',
             'confirm_details' => [
-                'layouts' => '- :count layout(s) will be deleted',
+                'layouts' => '- :count layout will be deleted|- :count layouts will be deleted',
                 'versions' => '- Version history will also be deleted for user type templates',
             ],
             'confirm_question' => 'Do you want to continue?',
-            'layouts_deleted' => ':count layout(s) deleted',
+            'layouts_deleted' => ':count layout deleted|:count layouts deleted',
             'versions_deleted' => ':count version(s) deleted',
             'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'aborted' => 'Uninstall aborted.',
+            'delete_data_notice' => '⚠️  --delete-data: Uninstalls as if "Also delete data" was chosen (passed to the activity log and to extensions that subscribe to uninstall).',
         ],
         'list' => [
             'no_templates' => 'No templates found.',
@@ -275,13 +281,13 @@ return [
             'status' => [
                 'uninstalled' => 'Not Installed',
             ],
-            'summary' => 'Total :total template(s) (Installed: :installed, Active: :active)',
+            'summary' => 'Total :total template (Installed: :installed, Active: :active)|Total :total templates (Installed: :installed, Active: :active)',
         ],
         'cache_clear' => [
             'clearing_single' => 'Clearing cache for template ":template"...',
             'clearing_all' => 'Clearing all template caches...',
-            'success_single' => 'Cleared :count cache(s) for template ":template"',
-            'success_all' => 'Cleared :count template cache(s) total',
+            'success_single' => 'Cleared :count cache for template ":template"|Cleared :count caches for template ":template"',
+            'success_all' => 'Cleared :count template cache total|Cleared :count template caches total',
         ],
         'check_updates' => [
             'not_installed' => 'Template ":template" is not installed.',
@@ -309,7 +315,7 @@ return [
             'latest_version' => 'Latest version: :version',
             'update_source' => 'Update source: :source',
             'layout_strategy' => 'Layout strategy: :strategy',
-            'modified_layouts_warning' => ':count modified layout(s) will be overwritten:',
+            'modified_layouts_warning' => ':count operator-modified layout/extension fragment will be overwritten:|:count operator-modified layouts/extension fragments will be overwritten:',
             'modified_layout_item' => '  - :name (modified: :date)',
             'confirm_question' => 'Do you want to proceed with the update?',
             'aborted' => 'Update cancelled.',
@@ -319,6 +325,12 @@ return [
     ],
 
     // Layout attachments (background images, etc.)
+    // Layout install source selection (--layout-source=auto|json)
+    'layout_install_source' => [
+        'invalid' => '❌ --layout-source must be either auto or json. (given: :value)',
+        'json_notice' => '⚠️  Forcing JSON as the layout install source — .g7.html files with a sibling .json will be ignored.',
+    ],
+
     'layout_attachments' => [
         'messages' => [
             'uploaded' => 'Attachment uploaded.',

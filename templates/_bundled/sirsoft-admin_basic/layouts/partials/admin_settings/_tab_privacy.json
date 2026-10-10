@@ -1,0 +1,1169 @@
+{
+    "comment": "개인정보 탭 — 보유기간이 지난 개인정보 파기와 휴면 계정 생명주기를 켜고 끄는 자리다.\n  전 기능 기본 꺼짐이고, 켜는 순간부터 **되돌릴 수 없는 파기**가 일어나므로 각 카드에\n  법령 근거와 사전 안내 의무를 함께 적는다.\n  기간 입력은 토글이 켜져 있을 때만 보여 준다 — 꺼진 채로 보이면 값을 고쳐도 아무 일이\n  없어 설정이 먹히지 않는 것처럼 읽힌다(보안 탭의 적용 범위 칸과 같은 결).\n  저장값이 boolean 이 아닐 수 있어(미저장이면 null) 조건은 느슨하게 참 판정한다.\n  대상 건수는 **기능이 꺼져 있어도** 보인다(켜기 전에 규모와 명단을 확인하는 자리).\n  조치 대상은 **대상마다 한 행**이다 — 이름 · 건수 배지 · 오른쪽 끝 「대상 보기」·「지금 실행」 · 그 행의 직권 실행 결과.\n  실행 버튼이 자기 대상 옆에 붙어야 어느 버튼이 무엇을 처리하는지 눈으로 짝을 맞추지 않아도 된다(2026-09-26 결정).\n  되돌릴 수 없는 실행은 채운 강조색을 쓰지 않는다 — 탭에서 가장 눈에 띄는 버튼이 저장보다 파기가 되면 위계가 거꾸로다.\n  「대상 보기」는 명단을 볼 권한(설정 읽기 + 회원 읽기)이 있으면 대상이 0명이어도 그린다 — 0명인 까닭을 창에서 확인할 수 있어야 한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 개인정보 탭 콘텐츠"
+    },
+    "id": "tab_content_privacy",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab) === 'privacy'}}",
+    "props": {
+        "className": "card-stack"
+    },
+    "children": [
+        {
+            "comment": "동의 관리 제공자 (#639) — 방문자의 쿠키·추적 동의를 판단할 확장을 고르는 자리. 탭 맨 위에 둔다: 아래 파기 카드들과\n      달리 사이트 전체(방문자 통계·외부 스크립트 차단·다른 확장)의 판정을 바꾸는 설정이기 때문이다.\n      선택지는 「자동」(빈 값) + 등록된 제공자. 수집을 꺼 둔 제공자도 목록에 남긴다 — 골라 둔 뒤 꺼지면 사유 안내로 보여야 한다.\n      안내는 서버가 판정한 선택 상태(`_meta.consent_selection`)로만 띄운다 — 저장 전 선택으로 띄우면 아직 적용되지 않은\n      상태를 사실처럼 말한다. none 은 사유(`no_provider` · `provider_unavailable`)로 문구를 가른다.",
+            "id": "card_consent_provider",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.privacy.consent_provider.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.privacy.consent_provider.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "consent_provider_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:admin.settings.privacy.consent_provider.label"
+                                },
+                                {
+                                    "comment": "고른 제공자가 사라진 missing 상태에서는 저장된 id 를 선택지 끝에 덧붙여 선택 상자가 빈 글자로 보이지 않게 한다(경고 문구가 사유를 알린다).",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "w-full md:w-96"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "privacy.consent_provider",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "w-full",
+                                                "aria-label": "$t:admin.settings.privacy.consent_provider.label",
+                                                "error": "{{_local.errors?.['privacy.consent_provider']?.[0] ?? ''}}",
+                                                "options": "{{[{ value: '', label: _local.form?._meta?.consent_selection?.state === 'auto' && _local.form?._meta?.consent_selection?.provider_label ? '$t:admin.settings.privacy.consent_provider.auto_current|provider=' + _local.form._meta.consent_selection.provider_label : '$t:admin.settings.privacy.consent_provider.auto' }].concat((_local.form?._meta?.consent_providers ?? []).map(p => ({ value: p.id, label: p.label }))).concat(_local.form?._meta?.consent_selection?.state === 'missing' && _local.form?.privacy?.consent_provider ? [{ value: _local.form.privacy.consent_provider, label: _local.form.privacy.consent_provider }] : [])}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "consent_provider_ambiguous",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.consent_selection?.state === 'ambiguous'}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "alert-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0",
+                                                "aria-hidden": "true"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft"
+                                            },
+                                            "text": "$t:admin.settings.privacy.consent_provider.ambiguous"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "consent_provider_missing",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.consent_selection?.state === 'missing'}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "alert-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0",
+                                                "aria-hidden": "true"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft"
+                                            },
+                                            "text": "$t:admin.settings.privacy.consent_provider.missing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "consent_provider_none",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.consent_selection?.state === 'none'}}",
+                            "props": {
+                                "role": "status",
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0",
+                                                "aria-hidden": "true"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "{{_local.form?._meta?.consent_selection?.reason === 'provider_unavailable' ? $t('admin.settings.privacy.consent_provider.none_unavailable') : $t('admin.settings.privacy.consent_provider.none_no_provider')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_privacy_notice",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "alert-info"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-xl flex-shrink-0 mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:admin.settings.privacy.policy_notice_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.policy_notice_desc"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.targets.hint"
+                                },
+                                {
+                                    "id": "privacy_manual_run_desc",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.manual_run.section_desc"
+                                },
+                                {
+                                    "id": "privacy_manual_run_save_first",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_local.hasChanges && (privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run)}}",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.manual_run.save_first_hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_withdrawn_retention",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.privacy.withdrawn.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.privacy.withdrawn.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_withdrawn_retention",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.privacy.withdrawn.enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.privacy.withdrawn.enabled_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['privacy.withdrawn_retention_enabled']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['privacy.withdrawn_retention_enabled']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "privacy.withdrawn_retention_enabled",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다",
+                            "id": "withdrawn_target_list_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{privacyPreview?.data?.retention?.['user-withdrawn'] || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}",
+                            "children": [
+                                {
+                                    "id": "withdrawn_target_list",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "rounded-lg border border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "withdrawn_target_row",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2 min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.rows.withdrawn"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null && privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "view_withdrawn_targets",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "탈퇴 잔여정보 대상 명단 — 휴면 네 단계와 같은 창이라 목록 경로·제목을 탈퇴 보유기간 쪽으로 바꾸고\n                           1쪽부터 다시 받은 뒤 연다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets": "{{({ path: 'retention-targets/user-withdrawn', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.withdrawn"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "privacyTargets"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_targets_modal"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-ghost"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.view"
+                                                                },
+                                                                {
+                                                                    "id": "run_withdrawn",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{!!privacyManualRuns?.data?.targets?.['retention:user-withdrawn']}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "탈퇴 잔여정보 파기 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 이 대상에는 대기기간이 없으므로\n                           생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyRun": "{{({ key: 'retention:user-withdrawn', label: privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_run_modal"
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/privacy/manual-runs/retention:user-withdrawn/preview",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "GET"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "privacyRun.preview": "{{response.data}}",
+                                                                                            "privacyRun.loading": false
+                                                                                        }
+                                                                                    },
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "privacyRun.loading": false
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-outline",
+                                                                        "disabled": "{{!privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || _local.hasChanges || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.manual_run.run"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "withdrawn_manual_run_status",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run}}",
+                                                    "props": {
+                                                        "className": "text-hint mt-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'completed'}}",
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.processed_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'failed'}}",
+                                                            "props": {
+                                                                "className": "text-error-soft"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.error ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_withdrawn_retention_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_local.form?.privacy?.withdrawn_retention_enabled && _local.form?.privacy?.withdrawn_retention_enabled !== '0'}}",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.privacy.withdrawn.days"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "privacy.withdrawn_retention_days",
+                                        "placeholder": "365",
+                                        "min": "{{_local?.form?._meta?.limits?.privacy_retention_days_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['privacy.withdrawn_retention_days'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['privacy.withdrawn_retention_days']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['privacy.withdrawn_retention_days']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.withdrawn.days_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-error-soft mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.withdrawn.irreversible_warning"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_dormant",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.privacy.dormant.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.privacy.dormant.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_dormant",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.privacy.dormant.enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.privacy.dormant.enabled_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['privacy.dormant_enabled']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['privacy.dormant_enabled']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "privacy.dormant_enabled",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "휴면 네 단계 — 단계마다 한 행. 탈퇴 쪽 두 단계는 계정이 사라지므로 배지를 붉게 둔다.\n             「대기기간 생략」은 전환·탈퇴 단계만 지원한다(서버가 `supports_skip_waiting` 으로 알린다).\n             row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다.",
+                            "id": "dormant_target_list_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}",
+                            "children": [
+                                {
+                                    "id": "dormant_target_list",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "dormant_target_row_{{stage}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{['pre_notice', 'convert', 'withdraw_notice', 'withdraw']}}",
+                                                "item_var": "stage"
+                                            },
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2 min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "{{$t('admin.settings.privacy.targets.rows.' + stage)}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{privacyPreview?.data?.dormant}}",
+                                                                    "props": {
+                                                                        "className": "badge {{stage === 'withdraw_notice' || stage === 'withdraw' ? 'badge-red' : 'badge-yellow'}}"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.dormant?.[stage] ?? 0}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "view_{{stage}}_targets",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyPreview?.data?.dormant?.can_view_targets}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "휴면 단계별 대상 명단 — 반복 중인 단계(`stage`)를 휴면 대상 목록 경로 끝에 붙이고 제목도 단계별로 만들어 같은 창을 연다.\n                           네 단계가 이 한 블록을 돌려 쓴다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets": "{{({ path: 'dormant-targets/' + stage, currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets.title": "{{$t('admin.settings.privacy.targets.title.' + stage)}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "privacyTargets"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_targets_modal"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-ghost"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.view"
+                                                                },
+                                                                {
+                                                                    "id": "run_dormant_stage_{{stage}}",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{!!privacyManualRuns?.data?.targets?.['dormant:' + stage]}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "휴면 단계 지금 실행 — 대기기간 생략을 이 단계가 지원하는지는 서버가 단계마다 알려 주는 값(`supports_skip_waiting`)으로\n                           넣는다. 생략 선택은 늘 꺼진 채 시작하고, 창에서 켜면 건수를 다시 센다(안내를 받지 못한 회원까지 대상이 되므로).",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyRun": "{{({ key: 'dormant:' + stage, label: privacyManualRuns?.data?.targets?.['dormant:' + stage]?.label ?? '', supportsSkip: !!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.supports_skip_waiting, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_run_modal"
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/privacy/manual-runs/{{'dormant:' + stage}}/preview",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "GET"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "privacyRun.preview": "{{response.data}}",
+                                                                                            "privacyRun.loading": false
+                                                                                        }
+                                                                                    },
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "privacyRun.loading": false
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-outline",
+                                                                        "disabled": "{{!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run || _local.hasChanges || privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.manual_run.run"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "dormant_manual_run_status_{{stage}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run}}",
+                                                    "props": {
+                                                        "className": "text-hint mt-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'completed'}}",
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.processed_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'failed'}}",
+                                                            "props": {
+                                                                "className": "text-error-soft"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.error ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_dormant_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_local.form?.privacy?.dormant_enabled && _local.form?.privacy?.dormant_enabled !== '0'}}",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.days"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "privacy.dormant_days",
+                                        "placeholder": "730",
+                                        "min": "{{_local?.form?._meta?.limits?.privacy_dormant_days_min ?? 30}}",
+                                        "max": "{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['privacy.dormant_days'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['privacy.dormant_days']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['privacy.dormant_days']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.days_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_dormant_notice_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_local.form?.privacy?.dormant_enabled && _local.form?.privacy?.dormant_enabled !== '0'}}",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.notice_days"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "privacy.dormant_notice_days",
+                                        "placeholder": "30",
+                                        "min": "{{_local?.form?._meta?.limits?.privacy_dormant_notice_days_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.privacy_dormant_notice_days_max ?? 365}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['privacy.dormant_notice_days'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['privacy.dormant_notice_days']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['privacy.dormant_notice_days']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.notice_days_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "toggle_dormant_withdraw",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_local.form?.privacy?.dormant_enabled && _local.form?.privacy?.dormant_enabled !== '0'}}",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-heading"
+                                                    },
+                                                    "text": "$t:admin.settings.privacy.dormant.withdraw_enabled"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.privacy.dormant.withdraw_enabled_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['privacy.dormant_withdraw_enabled']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['privacy.dormant_withdraw_enabled']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "privacy.dormant_withdraw_enabled",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_dormant_withdraw_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_local.form?.privacy?.dormant_enabled && _local.form?.privacy?.dormant_enabled !== '0' && !!_local.form?.privacy?.dormant_withdraw_enabled && _local.form?.privacy?.dormant_withdraw_enabled !== '0'}}",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.withdraw_days"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "privacy.dormant_withdraw_days",
+                                        "placeholder": "365",
+                                        "min": "{{_local?.form?._meta?.limits?.privacy_retention_days_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['privacy.dormant_withdraw_days'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['privacy.dormant_withdraw_days']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['privacy.dormant_withdraw_days']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.withdraw_days_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-error-soft mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.withdraw_warning"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-hint"
+                            },
+                            "text": "$t:admin.settings.privacy.dormant.restore_hint"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

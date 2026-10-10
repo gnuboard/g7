@@ -28,6 +28,8 @@ return [
         'file_invalid' => 'The file is not valid.',
         'file_max' => 'The file size cannot exceed :max MB.',
         'file_extension_invalid' => 'This file type is not allowed. Allowed types: :extensions',
+        'file_mimetype_invalid' => 'The file content does not match an allowed type. Allowed types: :extensions',
+        'file_empty' => 'Empty (0-byte) files cannot be uploaded.',
         'files_required' => 'Please select files.',
         'files_array' => 'The files format is invalid.',
         'files_min' => 'Please select at least one file.',

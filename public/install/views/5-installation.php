@@ -57,6 +57,8 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
         </button>
     </div>
 
+    <?php require __DIR__.'/partials/recovery-token-notice.php'; ?>
+
     <!-- 완료 섹션 -->
     <?php
     $completionButtons = '<a href="../admin/login" class="btn btn-success">'.htmlspecialchars(lang('go_to_admin_login')).'</a>';
@@ -115,6 +117,15 @@ if (PHP_OS_FAMILY !== 'Windows' && is_file($envPath)) {
             .'</div>';
     }
 }
+
+// 예약 작업(cron) 등록 안내 — 스케줄러가 없으면 주문 자동취소·오래된 데이터 정리·메일 보고서 같은 예약 작업이
+// 돌지 않는다. 방문자 통계만은 관리자가 화면을 열 때 집계되지만 그 밖은 조용히 멈추므로 설치 직후에 알린다.
+$cronCommand = sprintf('* * * * * cd %s && php artisan schedule:run >> /dev/null 2>&1', htmlspecialchars(BASE_PATH));
+$completionExtra .= '<div class="env-hardening-hint cron-hint">'
+    .'<p class="env-hardening-hint-title">'.htmlspecialchars(lang('cron_hint_title')).'</p>'
+    .'<p class="env-hardening-hint-status">'.htmlspecialchars(lang('cron_hint_body')).'</p>'
+    .'<div class="code-box"><pre>'.$cronCommand.'</pre></div>'
+    .'</div>';
 
 echo renderInstallResultSection('completion', 'success', 'installation_completed', 'installation_complete_message', $completionButtons, $completionExtra);
 ?>

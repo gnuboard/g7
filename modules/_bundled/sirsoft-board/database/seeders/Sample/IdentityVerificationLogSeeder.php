@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Builder;
 /**
  * 게시판 모듈 본인인증 이력 샘플 시더.
  *
- * source_identifier='sirsoft-board' 인 IdentityPolicy(post.blind/delete, report.bulk_action/delete)만
- * 사용하여 게시판 운영 영역 본인인증 이력을 채운다.
+ * source_identifier='sirsoft-board' 인 IdentityPolicy(module.php getIdentityPolicies() 의 9종 —
+ * 관리자 post.delete·post.blind·post.bulk_action·report.bulk_action·report.delete, 사용자
+ * post.user_delete·comment.user_delete·report.create·post.user_create)만 사용하여 게시판 영역
+ * 본인인증 이력을 채운다.
  *
  * 수동 실행:
  *   php artisan module:seed sirsoft-board \

@@ -452,23 +452,6 @@
       "full": "전체",
       "icon": "아이콘"
     },
-    "pr_user_reaction": {
-      "label": "내 반응",
-      "like": "좋아요",
-      "funny": "웃겨요",
-      "agree": "공감해요",
-      "thanks": "고마워요",
-      "wow": "놀라워요"
-    },
-    "pr_post_id": {
-      "label": "게시글 ID"
-    },
-    "pr_size": {
-      "label": "크기",
-      "sm": "작게",
-      "md": "보통",
-      "lg": "크게"
-    },
     "pi_label": {
       "label": "라벨"
     },
@@ -677,6 +660,23 @@
       "label": "드롭다운 정렬",
       "left": "왼쪽",
       "right": "오른쪽"
+    },
+    "vc_today": {
+      "label": "오늘"
+    },
+    "vc_yesterday": {
+      "label": "어제"
+    },
+    "vc_max": {
+      "label": "최대"
+    },
+    "vc_total": {
+      "label": "전체"
+    },
+    "vc_layout": {
+      "label": "배치",
+      "row": "가로",
+      "column": "세로"
     }
   },
   "component": {
@@ -706,6 +706,7 @@
     "pagination": "페이지네이션",
     "search_bar": "검색 바",
     "avatar": "아바타",
+    "visitor_counter": "방문자 카운터",
     "user_info": "사용자 정보",
     "html_content": "HTML 콘텐츠",
     "html_editor": "HTML 편집기",
@@ -717,7 +718,6 @@
     "file_uploader": "파일 업로더",
     "avatar_uploader": "아바타 업로더",
     "social_login_buttons": "소셜 로그인 버튼",
-    "post_reactions": "게시글 반응",
     "input": "입력 필드",
     "textarea": "여러 줄 입력",
     "select": "선택 상자",
@@ -1020,7 +1020,13 @@
     "user_base_default": "기본",
     "mobile_menu_open": "모바일 메뉴 펼침",
     "gdpr_cookie_banner_visible": "쿠키 배너 표시",
-    "identity_challenge_inicis": "본인인증 모달 (이니시스)"
+    "identity_challenge_inicis": "본인인증 모달 (이니시스)",
+    "modal_filled": "창 내용 채움",
+    "replies_expanded": "답글 펼침",
+    "validation_failed": "검증 실패",
+    "screen_filled": "화면 상태 채움",
+    "two_factor_challenge": "2단계 인증 입력",
+    "comment_editing": "댓글 수정 중"
   },
   "cell_border": {
     "side_all": "전체",
@@ -1085,7 +1091,6 @@
     "user": "사용자",
     "current_page": "현재 페이지",
     "total_pages": "전체 페이지 수",
-    "reactions": "반응",
     "product": "상품",
     "author": "작성자",
     "value": "값",
@@ -1101,7 +1106,11 @@
     "footer_social_links": "소셜 링크",
     "footer_link_groups": "링크 그룹",
     "notification_items": "알림 목록",
-    "notification_unread_count": "읽지 않은 알림 수"
+    "notification_unread_count": "읽지 않은 알림 수",
+    "visitor_today": "오늘 방문",
+    "visitor_yesterday": "어제 방문",
+    "visitor_max": "최대 방문",
+    "visitor_total": "전체 방문"
   },
   "state_label": {
     "current_user": "현재 사용자",
@@ -1132,6 +1141,8 @@
     "myComments": "내 댓글",
     "myInquiries": "내 문의",
     "myPosts": "내 게시글",
+    "myReactions": "내 반응",
+    "myReports": "내 신고",
     "navigation": "이전/다음 글",
     "newProducts": "신상품",
     "notification_unread_count": "읽지 않은 알림 수",
@@ -1171,6 +1182,11 @@
     "userPosts": "사용자 게시글",
     "userProfile": "사용자 프로필",
     "user_notification_ws": "알림 (실시간)",
-    "wishlist": "위시리스트"
+    "wishlist": "위시리스트",
+    "scrap": "스크랩",
+    "visitor_summary": "방문자 요약",
+    "claimable": "클레임 신청 가능 상품",
+    "claims": "클레임 신청내역",
+    "claim": "클레임 신청서"
   }
 }

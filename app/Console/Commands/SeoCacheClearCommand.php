@@ -25,7 +25,7 @@ class SeoCacheClearCommand extends Command
     /**
      * 커맨드를 실행합니다.
      *
-     * @param SeoCacheManagerInterface $cacheManager SEO 캐시 매니저
+     * @param  SeoCacheManagerInterface  $cacheManager  SEO 캐시 매니저
      * @return int 종료 코드
      */
     public function handle(SeoCacheManagerInterface $cacheManager): int
@@ -34,7 +34,7 @@ class SeoCacheClearCommand extends Command
 
         if ($layout) {
             $count = $cacheManager->invalidateByLayout($layout);
-            $this->info(__('seo.cache_cleared_layout', [
+            $this->info(trans_choice('seo.cache_cleared_layout', $count, [
                 'layout' => $layout,
                 'count' => $count,
             ]));

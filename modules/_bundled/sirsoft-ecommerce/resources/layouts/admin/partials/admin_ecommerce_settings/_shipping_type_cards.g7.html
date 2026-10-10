@@ -1,0 +1,64 @@
+<!-- 쇼핑몰 설정 — 배송유형 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_type_section`)와
+  같은 배열을 편집한다.
+  배송유형은 상품·주문이 참조하는 분류라(택배·방문수령 등) 지우면 그것을 쓰던 상품의 배송
+  조건이 바뀐다. -->
+<partial description="배송유형 관리 - Mobile 카드 뷰">
+  <div data-ref="shipping_type_cards_container">
+    <div data-ref="shipping_type_card_{{tIdx}}" data-each="type, tIdx in (_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))" class="excel-card mb-3">
+      <div class="excel-card-header">
+        <div class="flex-center gap-2 min-w-0">
+          <div class="min-w-0">
+            <div class="excel-card-title font-mono">{{type.code}}</div>
+          </div>
+        </div>
+        <div class="flex-center gap-2 shrink-0">
+          <toggle data-type="composite" checked="{{type.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 사용 여부. 끄면 새 상품에서 고를 수 없고 이미 그 유형인 상품은 그대로 남는다. -->
+              <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, is_active: !(t.is_active)} : t)}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+        </div>
+      </div>
+      <div class="excel-card-body">
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name</span>
+          <div class="excel-card-value flex-1">
+            <multilingual-input data-type="composite" value="{{type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 유형 이름(언어별). 고객 화면에 그대로 보인다. -->
+                <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>
+              </on>
+            </multilingual-input>
+          </div>
+        </div>
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category</span>
+          <div class="excel-card-value flex-1">
+            <select value="{{type.category ?? 'domestic'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="domestic">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic</option>
+                <option value="international">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international</option>
+                <option value="other">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other</option>
+              </options>
+              <on type="change">
+                <!-- 구분(국내/해외/기타). 배송비 정책을 이 갈래로 나눠 적용한다. -->
+                <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, category: $event.target.value} : t)}}" :hasChanges="true"/>
+              </on>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="excel-card-footer">
+        <div/>
+        <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <!-- 유형 삭제. -->
+            <set-state confirm="$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete" target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== type._idx)}}" :hasChanges="true"/>
+          </on>
+          <icon name="fa-solid fa-trash" class="text-sm"/>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

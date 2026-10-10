@@ -1,260 +1,382 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "마이페이지 배송지 관리 탭 - Nexibase 스타일"
-  },
-  "type": "basic",
-  "name": "Div",
-  "blur_until_loaded": {
-    "enabled": true,
-    "data_sources": "addresses"
-  },
-  "props": { "className": "mt-6" },
-  "responsive": {
-    "portable": {
-      "props": { "className": "mt-4" }
-    }
-  },
-  "children": [
-    {
-      "comment": "헤더: 새 주소 추가 버튼",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex justify-end mb-4" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": { "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" },
-          "responsive": {
-            "portable": {
-              "props": { "className": "inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" }
-            }
-          },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "text-base" } },
-            { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.add" }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                { "handler": "setState", "params": { "target": "global", "editingAddress": { "is_default": false } } },
-                { "handler": "openModal", "target": "addressModal" }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "배송지 목록 본체. 편집 대상(`_global.editingAddress`)이 전역인 이유는 등록·수정 폼이 **모달**이고,\n     모달은 부모 `_local` 을 읽지 못하기 때문이다. 「추가」 버튼이 두 곳(목록 위·빈 목록 안내)에 있는 것은\n     목록이 비었을 때도 시작점이 있어야 해서다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 배송지 관리 탭 - Nexibase 스타일"
     },
-    {
-      "comment": "배송지 목록",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(addresses?.data?.addresses?.data ?? []).length > 0}}",
-      "props": { "className": "space-y-3" },
-      "responsive": {
+    "type": "basic",
+    "name": "Div",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "addresses"
+    },
+    "responsive": {
         "portable": {
-          "props": { "className": "space-y-2" }
-        }
-      },
-      "children": [
-        {
-          "comment": "배송지 카드",
-          "type": "basic",
-          "name": "Div",
-          "iteration": { "source": "{{addresses?.data?.addresses?.data ?? []}}", "item_var": "address", "index_var": "addressIdx" },
-          "props": {
-            "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800",
-            "data-testid": "address-card"
-          },
-          "responsive": {
-            "portable": {
-              "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800" }
+            "props": {
+                "className": "mt-4"
             }
-          },
-          "children": [
-            {
-              "comment": "헤더: 라벨 + 기본배송지 뱃지 + 수정/삭제 버튼",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center justify-between mb-2" },
-              "children": [
+        }
+    },
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "comment": "헤더: 새 주소 추가 버튼",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end mb-4"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center gap-2 flex-wrap" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "font-medium text-gray-900 dark:text-white" },
-                      "text": "{{$localized(address.name)}}"
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                            }
+                        }
                     },
-                    {
-                      "comment": "기본 배송지 뱃지 - 검정 배경 + 흰 텍스트 + 별 아이콘",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{address.is_default}}",
-                      "props": { "className": "inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium" },
-                      "children": [
-                        { "type": "basic", "name": "Icon", "props": { "name": "star", "className": "text-xs" } },
-                        { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.default" }
-                      ]
+                    "actions": [
+                        {
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress": {
+                                            "is_default": false,
+                                            "country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "addressModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "plus",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.addresses.add"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "배송지 목록",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(addresses?.data?.addresses?.data ?? []).length > 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "space-y-2"
                     }
-                  ]
+                }
+            },
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "배송지 카드",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{addresses?.data?.addresses?.data ?? []}}",
+                        "item_var": "address",
+                        "index_var": "addressIdx"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800",
+                        "data-testid": "address-card"
+                    },
+                    "children": [
+                        {
+                            "comment": "헤더: 라벨 + 기본배송지 뱃지 + 수정/삭제 버튼",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between mb-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-2 flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{$localized(address.name)}}"
+                                        },
+                                        {
+                                            "comment": "기본 배송지 뱃지 - 검정 배경 + 흰 텍스트 + 별 아이콘",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{address.is_default}}",
+                                            "props": {
+                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "star",
+                                                        "className": "text-xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:mypage.addresses.default"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "수정/삭제 텍스트 버튼",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "수정 버튼",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{address.abilities?.can_update === true}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙).",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "editingAddress": {
+                                                                    "id": "{{address.id}}",
+                                                                    "name": "{{address.name ?? ''}}",
+                                                                    "recipient_name": "{{address.recipient_name ?? ''}}",
+                                                                    "recipient_phone": "{{address.recipient_phone ?? ''}}",
+                                                                    "country_code": "{{address.country_code ?? 'KR'}}",
+                                                                    "zipcode": "{{address.zipcode ?? ''}}",
+                                                                    "address": "{{address.address ?? ''}}",
+                                                                    "address_detail": "{{address.address_detail ?? ''}}",
+                                                                    "city": "{{address.city ?? ''}}",
+                                                                    "address_line_1": "{{address.address_line_1 ?? ''}}",
+                                                                    "address_line_2": "{{address.address_line_2 ?? ''}}",
+                                                                    "intl_city": "{{address.city ?? ''}}",
+                                                                    "intl_state": "{{address.state ?? ''}}",
+                                                                    "intl_postal_code": "{{address.postal_code ?? ''}}",
+                                                                    "is_default": "{{address.is_default ?? false}}"
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "addressModal"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            },
+                                            "text": "$t:common.edit"
+                                        },
+                                        {
+                                            "comment": "삭제 버튼 - 기본 배송지는 삭제 불가",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{address.abilities?.can_delete === true}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "deletingAddressId": "{{address.id}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "confirmDeleteAddressModal"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "px-3 py-1.5 text-sm text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            },
+                                            "text": "$t:common.delete"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "수령인 / 연락처",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400 mb-1"
+                            },
+                            "text": "{{address.recipient_name}} | {{address.recipient_phone}}"
+                        },
+                        {
+                            "comment": "주소 (국내: [우편번호] 도로명 상세)",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(address.country_code ?? 'KR') === 'KR'}}",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400 break-words"
+                            },
+                            "text": "[{{address.zipcode}}] {{address.address}} {{address.address_detail}}"
+                        },
+                        {
+                            "comment": "주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '[]' 만 보인다)",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(address.country_code ?? 'KR') !== 'KR'}}",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400 break-words"
+                            },
+                            "text": "{{address.full_address ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "빈 상태 - 배송지 없음",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!(addresses?.data?.addresses?.data ?? []).length}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg p-8 text-center"
+                    }
+                }
+            },
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg p-12 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "name": "map-pin",
+                                "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                            }
+                        }
+                    },
+                    "props": {
+                        "name": "map-pin",
+                        "className": "text-6xl mx-auto text-gray-300 dark:text-gray-600 mb-4"
+                    }
                 },
                 {
-                  "comment": "수정/삭제 텍스트 버튼",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center gap-2" },
-                  "children": [
-                    {
-                      "comment": "수정 버튼",
-                      "type": "basic",
-                      "name": "Button",
-                      "if": "{{address.abilities?.can_update === true}}",
-                      "props": {
-                        "type": "button",
-                        "className": "px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      },
-                      "text": "$t:common.edit",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "comment": "조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙).",
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "editingAddress": {
-                                  "id": "{{address.id}}",
-                                  "name": "{{address.name ?? ''}}",
-                                  "recipient_name": "{{address.recipient_name ?? ''}}",
-                                  "recipient_phone": "{{address.recipient_phone ?? ''}}",
-                                  "country_code": "{{address.country_code ?? 'KR'}}",
-                                  "zipcode": "{{address.zipcode ?? ''}}",
-                                  "address": "{{address.address ?? ''}}",
-                                  "address_detail": "{{address.address_detail ?? ''}}",
-                                  "city": "{{address.city ?? ''}}",
-                                  "address_line_1": "{{address.address_line_1 ?? ''}}",
-                                  "address_line_2": "{{address.address_line_2 ?? ''}}",
-                                  "intl_city": "{{address.city ?? ''}}",
-                                  "intl_state": "{{address.state ?? ''}}",
-                                  "intl_postal_code": "{{address.postal_code ?? ''}}",
-                                  "is_default": "{{address.is_default ?? false}}"
-                                }
-                              }
-                            },
-                            { "handler": "openModal", "target": "addressModal" }
-                          ]
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-500 dark:text-gray-400 mb-4"
                     },
-                    {
-                      "comment": "삭제 버튼 - 기본 배송지는 삭제 불가",
-                      "type": "basic",
-                      "name": "Button",
-                      "if": "{{address.abilities?.can_delete === true}}",
-                      "props": {
-                        "type": "button",
-                        "className": "px-3 py-1.5 text-sm text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      },
-                      "text": "$t:common.delete",
-                      "actions": [
+                    "text": "$t:mypage.addresses.empty"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
                         {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            { "handler": "setState", "params": { "target": "global", "deletingAddressId": "{{address.id}}" } },
-                            { "handler": "openModal", "target": "confirmDeleteAddressModal" }
-                          ]
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress": {
+                                            "is_default": false,
+                                            "country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "addressModal"
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ],
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "plus",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.addresses.add"
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "comment": "수령인 / 연락처",
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-1" },
-              "text": "{{address.recipient_name}} | {{address.recipient_phone}}"
-            },
-            {
-              "comment": "주소 (국내: [우편번호] 도로명 상세)",
-              "type": "basic",
-              "name": "P",
-              "if": "{{(address.country_code ?? 'KR') === 'KR'}}",
-              "props": { "className": "text-sm text-gray-600 dark:text-gray-400 break-words" },
-              "text": "[{{address.zipcode}}] {{address.address}} {{address.address_detail}}"
-            },
-            {
-              "comment": "주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '[]' 만 보인다)",
-              "type": "basic",
-              "name": "P",
-              "if": "{{(address.country_code ?? 'KR') !== 'KR'}}",
-              "props": { "className": "text-sm text-gray-600 dark:text-gray-400 break-words" },
-              "text": "{{address.full_address ?? ''}}"
-            }
-          ]
+            ]
         }
-      ]
-    },
-    {
-      "comment": "빈 상태 - 배송지 없음",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!(addresses?.data?.addresses?.data ?? []).length}}",
-      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-12 text-center" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-8 text-center" }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": { "name": "map-pin", "className": "text-6xl mx-auto text-gray-300 dark:text-gray-600 mb-4" },
-          "responsive": {
-            "portable": {
-              "props": { "name": "map-pin", "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3" }
-            }
-          }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-gray-500 dark:text-gray-400 mb-4" },
-          "text": "$t:mypage.addresses.empty"
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": { "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "text-base" } },
-            { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.add" }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                { "handler": "setState", "params": { "target": "global", "editingAddress": { "is_default": false } } },
-                { "handler": "openModal", "target": "addressModal" }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

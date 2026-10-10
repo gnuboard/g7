@@ -11,7 +11,7 @@ interface NotificationDefinitionRepositoryInterface
     /**
      * ID로 알림 정의 조회.
      *
-     * @param int $id
+     * @param  int  $id
      * @return NotificationDefinition|null
      */
     public function findById(int $id): ?NotificationDefinition;
@@ -19,7 +19,7 @@ interface NotificationDefinitionRepositoryInterface
     /**
      * 타입으로 알림 정의 조회.
      *
-     * @param string $type
+     * @param  string  $type
      * @return NotificationDefinition|null
      */
     public function findByType(string $type): ?NotificationDefinition;
@@ -27,7 +27,7 @@ interface NotificationDefinitionRepositoryInterface
     /**
      * 활성 상태인 특정 타입 알림 정의 조회.
      *
-     * @param string $type
+     * @param  string  $type
      * @return NotificationDefinition|null
      */
     public function getActiveByType(string $type): ?NotificationDefinition;
@@ -45,7 +45,7 @@ interface NotificationDefinitionRepositoryInterface
      * 키: type 식별자, 값: 해당 로케일의 다국어 라벨 (fallback: ko → en → 식별자)
      * 알림 목록 응답에서 N+1 회피 목적으로 사용됩니다.
      *
-     * @param string|null $locale 사용자 로케일 (null이면 app locale)
+     * @param  string|null  $locale  사용자 로케일 (null이면 app locale)
      * @return array<string, string>
      */
     public function getLabelMap(?string $locale = null): array;
@@ -60,8 +60,8 @@ interface NotificationDefinitionRepositoryInterface
     /**
      * 특정 확장의 알림 정의 목록 조회.
      *
-     * @param string $extensionType
-     * @param string $extensionIdentifier
+     * @param  string  $extensionType
+     * @param  string  $extensionIdentifier
      * @return Collection
      */
     public function getByExtension(string $extensionType, string $extensionIdentifier): Collection;
@@ -69,17 +69,33 @@ interface NotificationDefinitionRepositoryInterface
     /**
      * 알림 정의 수정.
      *
-     * @param NotificationDefinition $definition
-     * @param array $data
+     * @param  NotificationDefinition  $definition
+     * @param  array  $data
      * @return NotificationDefinition
      */
     public function update(NotificationDefinition $definition, array $data): NotificationDefinition;
 
     /**
+     * 알림 정의를 생성합니다.
+     *
+     * @param  array<string, mixed>  $data  정의 속성
+     * @return NotificationDefinition 생성된 정의
+     */
+    public function create(array $data): NotificationDefinition;
+
+    /**
+     * 알림 정의를 삭제합니다 (소속 템플릿은 FK cascade 로 함께 정리).
+     *
+     * @param  NotificationDefinition  $definition  삭제할 정의
+     * @return bool 삭제 여부
+     */
+    public function delete(NotificationDefinition $definition): bool;
+
+    /**
      * 페이지네이션 목록 조회.
      *
-     * @param array $filters
-     * @param int $perPage
+     * @param  array  $filters
+     * @param  int  $perPage
      * @return LengthAwarePaginator
      */
     public function getPaginated(array $filters = [], int $perPage = 20): LengthAwarePaginator;

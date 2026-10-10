@@ -14,7 +14,7 @@ description: |
   교체한다(속성 패널 ArrayItemsEditor 와 동일 node.props.tabs 패치 경로 SSoT).
 
   (2) P2 배열 capability — 번들 레이아웃 실사용례 전수 스캔(추측 금지) 결과, P2 후보 중
-  정적 리터럴 배열로 실제 사용되는 것은 BarChart(admin_dashboard.json 의 labels: string[])
+  정적 리터럴 배열로 실제 사용되는 것은 BarChart(admin_dashboard.g7.html 의 labels: string[])
   뿐(나머지는 {{...}} 바인딩 또는 미사용). BarChart labels 에 array 노드 에디터(원시 string[]
   primary 필드)를 부착. 원시 배열 add 를 위해 ArrayItemsEditor 가 원시 newItem(string/number)
   골격을 지원하도록 보강(이전엔 newItem falsy → 객체 합성 회귀).

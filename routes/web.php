@@ -25,7 +25,7 @@ Route::get('/dev', function () {
 
 // Admin 라우트 - admin 템플릿 의존성 검증
 Route::prefix('admin')
-    ->middleware('template.dependencies:admin')
+    ->middleware(['canonical.host', 'template.dependencies:admin'])
     ->group(function () {
         Route::get('/{any?}', function (Request $request) {
             // 미등록 경로는 SPA 셸 본문 + HTTP 404 (soft 404 방지 — 공개#47).
@@ -46,8 +46,10 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('web.sitem
 Route::get('/sitemap-{n}.xml', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child');
 Route::get('/sitemap-{n}.xml.gz', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child.gz');
 
-// User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지
-Route::middleware(['template.dependencies:user', 'seo'])
+// User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지 + 방문자 통계
+// 순서가 계약이다: 봇 기록은 SEO 앞에 둬야 그 봇 판정과 캐시 상태를 함께 읽을 수 있고,
+// 서버 폴백은 SEO 뒤에 둬야 봇으로 판정된 요청을 사람 방문으로 세지 않는다.
+Route::middleware(['canonical.host', 'template.dependencies:user', 'analytics.bots', 'seo', 'analytics.fallback'])
     ->group(function () {
         // `where('any', ...)` 의 예약 프리픽스는 전수 제외한다 — catch-all 이 GET 을 먼저
         // 삼키면 그 뒤에 등록된 라우트가 도달 불가가 되는데, 예외도 404 도 아닌 **SPA 셸 200**

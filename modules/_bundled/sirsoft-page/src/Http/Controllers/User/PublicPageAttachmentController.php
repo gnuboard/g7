@@ -22,6 +22,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class PublicPageAttachmentController extends PublicBaseController
 {
+    /**
+     * 컨트롤러를 생성합니다.
+     *
+     * @param  PageAttachmentService  $attachmentService  첨부파일 서비스
+     */
     public function __construct(
         private PageAttachmentService $attachmentService,
     ) {}
@@ -93,6 +98,13 @@ class PublicPageAttachmentController extends PublicBaseController
 
         if (! $published && ! $canReadUnpublished && ! $hasValidSignature) {
             return $this->notFound('sirsoft-page::messages.attachment.not_found');
+        }
+
+        // 미리보기는 일반 이미지만 띄운다. SVG·TXT 등은 파일이 있어도 미리보기를 주지 않으므로
+        // 「저장소에 없음」이 아니라 「미리보기 미지원 형식」으로 알린다. 상태코드는 종전 계약(404)을 지킨다.
+        // 게이트 뒤에 두어 미발행 첨부의 형식이 무인가 요청에 드러나지 않게 한다.
+        if (! $attachment->isImage()) {
+            return $this->error('sirsoft-page::messages.attachment.preview_not_supported', 404);
         }
 
         $response = $this->attachmentService->preview($attachment);

@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   차액 수단(카드·마일리지) × 반품 범위(전량·일부) × 집행 결과(성공·실패)에서 의미 있는 조합은 수단별 성공,
+#   일부 수량 비례, 카드 실패 롤백 넷이다 — 마일리지 환급 실패는 원장 쓰기 실패라 다른 테스트(RefundExecution)가 소유한다.
+# e2e:allow 화면 표시(환불 금액 표의 교환 차액 줄)는 레이아웃 구조 테스트가, 실제 화면은 07 문서 Chrome MCP 실측이 잰다.
+feature: 상위 옵션 교환 차액을 교환품 반품 때 낸 수단 그대로 돌려준다 (S2 · Q9) — #747 C6
+
+description: |
+  24,000원 상품을 29,000원 옵션으로 교환하며 차액 5,000원을 추가결제한 뒤 그 교환품을 반품하면, 주문 재계산은 원 행
+  단가만 돌려주고 차액은 클레임 추가결제 장부에 남아 돌아오지 않았다.
+
+    - 환불신청서를 만들 때 대상 행이 교환 후속 행이면 그 교환의 양수 상품 차액을 반품 수량 비율로 나눠 클레임 결제
+      건별 몫(exchange_difference_refunds)으로 기록한다. 배송비 몫은 빼고, 다른 환불신청서가 잡은 몫을 뺀 만큼만 잡는다.
+    - 실행은 결함 2 순서를 따른다 — 마일리지 몫은 마일리지 단계, 카드 몫은 원 주문 PG 뒤 마지막에. 실패하면 전체 중단.
+    - 관리자·회원 환불 상세에 「교환 차액 환급」 줄을 따로 보인다.
+
+axes:
+  difference_method: [card, point]
+  return_scope: [all, partial]
+  execution: [success, pg_failure]
+
+effects:
+  - exchange_difference_is_refunded_by_the_method_it_was_paid
+  - exchange_difference_share_follows_returned_quantity
+  - exchange_difference_refund_failure_aborts_the_refund
+  - exchange_difference_refund_is_shown_separately
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ExchangeDifferenceRefundOnReturnTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimExchangeDifferenceRefund.test.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-claim-exchange-difference-refund.test.ts

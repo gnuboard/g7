@@ -1,0 +1,75 @@
+feature: 환불신청서 출처별 구매자 조작 가능 판정 (#599 후속 F3)
+
+description: |
+  환불신청서에는 **누가 낸 것인가**가 적혀 있다(`refund_source_type`). 구매자가 직접 낸 것,
+  운영자가 대리 접수한 것, 반품·교환·구형 취소에서 이어진 것 — 다섯이다. 그런데 목록·상세
+  리소스의 `is_withdrawable` / `is_editable` 은 **상태만** 보고 그 출처를 보지 않았다.
+
+  서버는 보고 있었다. `withdraw()` 와 `updateRequest()` 는 `isBuyerEditable()` 이 아닌 출처를
+  거절한다. 그래서 어긋남은 화면에만 남았다 — 반품에서 이어진 환불신청서와 운영자가 건 취소에
+  [수정]·[철회] 버튼이 서고, 누르면 **언제나 422** 다. 눌러야만 드러나고, 눌러도 "왜" 가 없다.
+  오류로 보고되지도 않는다: 구매자는 자기가 잘못 눌렀다고 생각하고 그만둔다.
+
+  출처를 여는 쪽의 위험이 더 크다. 운영자 대리 접수를 구매자가 철회할 수 있으면 **운영자의 취소
+  조치가 고객 손에 되돌려진다**. 반품 발 환불만 따로 철회되면 반품은 완료인데 환불은 사라진,
+  어느 화면에서도 설명되지 않는 상태가 남는다.
+
+  출처 Enum 은 서로 **다른 두 축**을 나른다. `ownsOptionQuantities()` 는 "이 신청서가 주문상품
+  수량을 선점·회수하는가" 이고 `isBuyerEditable()` 은 "구매자가 손댈 수 있는가" 다. 운영자 대리
+  접수는 앞은 참이고 뒤는 거짓이다 — 한 축으로 뭉뚱그리면 둘 중 하나가 반드시 틀린다.
+
+# axis 의미:
+#   refund_source — 이 매니페스트의 유일한 축이다. 판정이 갈리는 자리가 출처 하나뿐이기 때문이다
+#                   (상태 축은 기존 `claim_*_lifecycle` 매니페스트가 덮는다). 다섯 값 전부를
+#                   세우는 이유는 "직접/그 외" 로 묶으면 새 출처가 추가될 때 어느 쪽에 붙는지가
+#                   암묵이 되기 때문이다 — 값마다 명시적으로 판정을 적는다.
+axes:
+  refund_source:
+    - direct     # 구매자가 직접 낸 환불신청 → 접수 상태에서 수정·철회 가능
+    - admin      # 운영자 대리 접수 → 구매자 조작 불가 (운영자 조치를 되돌리지 못하게)
+    - cancel     # 구형 취소 발 환불 → 구매자 조작 불가 (취소신청서가 원본이다)
+    - return     # 반품에서 이어진 환불 → 구매자 조작 불가 (반품 신청서가 조작 주체)
+    - exchange   # 교환 차액 환불 → 구매자 조작 불가 (교환 신청서가 조작 주체)
+
+effects:
+  - direct_refund_stays_buyer_editable                          # 비회귀 — 직접 신청은 계속 열려 있다
+  - admin_filed_refund_is_not_buyer_editable                    # 운영자 조치를 고객이 되돌리지 못한다
+  - return_and_exchange_originated_refunds_are_not_buyer_editable  # 원 신청서가 조작 주체다
+  - refund_source_type_axes_are_explicit                        # 수량 축과 조작 축이 어긋나지 않는다
+  # 출처 뱃지(계획 676) — 위 판정을 **화면에 보이게** 만든 축이다.
+  - request_source_splits_customer_guest_and_admin               # 고객·비회원·운영자 접수 셋을 가른다
+  - guest_flag_reads_the_order_owner_not_the_requester_column   # 비회원 판정은 접수자 컬럼이 아니라 주문의 주인으로 한다
+  # 요청자 링크(계획 676) — 뱃지 옆 이름이 그 회원 화면으로 간다.
+  - requester_link_targets_the_order_owner_not_the_filer         # 접수자가 아니라 주문의 주인으로 간다
+  # 출처 ↔ 원 신청서 대응 (ClaimEnumsTest) — 조작 판정이 기대는 출처 Enum 의 매핑
+  - refund_source_type_maps_to_source_models
+  - refund_source_type_direct_has_no_source_model
+  - refund_source_type_maps_to_claim_types
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimResourceAbilityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/ClaimResourceRequestSourceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
+
+notes: |
+  **서버 거절 자체는 이 매니페스트의 축이 아니다.** `withdraw()`·`updateRequest()` 의 422 는
+  `user-claim-refund-return-apply.yaml` 이 덮는다. 여기서 잠그는 것은 **리소스가 화면에 내려주는
+  판정**이 그 서버 규칙과 같은 축을 보는가 하나다 — 둘이 갈리면 버튼은 서고 실행만 실패한다.
+
+  **출처 뱃지(계획 676)가 이 판정의 보이는 쪽이다.** 위 규칙은 버튼을 **없앨** 뿐이라, 구매자는
+  「왜 [철회] 가 사라졌는지」를 알 수 없었다. 뱃지는 그 이유를 말한다 — 운영자 대리 접수 건에만
+  세운다(자기가 낸 신청서에 「고객 신청」을 붙이면 모든 줄에 같은 뱃지가 서서 정보가 되지 않는다).
+
+  판정 축이 하나 더 있다: **비회원**. `refund_source_type` 에는 그 값이 없고 환불에만 있는
+  컬럼이라, 교환·반품까지 덮으려면 별도 축(`request_source`)이 필요하다. 세 갈래의 근거는
+  ① `refund_source_type=admin` 이면 운영자 접수, ② 나머지는 **주문의 주인**(`isGuestRequest()`
+  와 같은 근거)이다 — `requested_by` 로 가르면 회원 주문의 대리 접수 건이 「비회원」으로 표시된다.
+
+  **요청자 링크도 같은 축을 쓴다.** 뱃지 옆 신청자 이름은 `requester_name` = 주문자명이므로,
+  링크 대상도 **주문의 주인**(`requester_user_id`)이어야 화면에서 본 사람과 도착하는 회원이
+  같다. `requested_by` 로 걸면 대리 접수 건이 그대로 끊긴다 — 그 값은 비회원 신청과 똑같이
+  null 이라 **회원 주문인데 링크가 사라진다**(실측: `RF20260915-1707536717` 은 `requested_by`
+  NULL 이고 주문 766 의 `user_id` 는 3 이다). 하필 운영자가 대신 낸 건일수록 그 회원 화면으로
+  갈 일이 많다. 비회원 주문은 null 이고, 그때 화면은 링크가 아니라 **평문 이름**을 그린다 —
+  누를 곳 없는 링크는 회원이 있다는 오해를 만든다.

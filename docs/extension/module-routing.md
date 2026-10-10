@@ -250,8 +250,8 @@ modules/{identifier}/resources/
 
 **모듈 레이아웃 정의**:
 ```
-modules/{identifier}/resources/layouts/admin/{layout_name}.json
-modules/{identifier}/resources/layouts/user/{layout_name}.json
+modules/{identifier}/resources/layouts/admin/{layout_name}.g7.html
+modules/{identifier}/resources/layouts/user/{layout_name}.g7.html
 ```
 
 **routes에서 레이아웃 참조**:
@@ -263,12 +263,22 @@ modules/{identifier}/resources/layouts/user/{layout_name}.json
 ```
 
 **레이아웃 조회 우선순위**:
-1. 템플릿 오버라이드: `templates/{template}/layouts/overrides/{module}/{layout}.json`
-2. 모듈 원본: `modules/{module}/resources/layouts/admin/{layout}.json`
+1. 템플릿 오버라이드: `templates/{template}/layouts/overrides/{module}/{layout}.g7.html`
+2. 모듈 원본: `modules/{module}/resources/layouts/admin/{layout}.g7.html`
+
+> 설치 스캔은 소스 SSoT `.g7.html` 을 우선 채택하고, 짝 `.json` 이 있으면 건너뛴다
+> ([`ValidatesLayoutFiles::collectLayoutSources()`](../../app/Extension/Traits/ValidatesLayoutFiles.php)).
+> `.g7.html` 이 없는 레이아웃만 `.json` 이 설치원이 된다.
 
 ### 다국어 키 사용
 
 **routes.json에서 다국어 참조**:
+```html
+<meta title="$t:sirsoft-sample.admin.index.title"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "meta": {
@@ -342,4 +352,4 @@ template.routes.{identifier}
 - [모듈 레이아웃](module-layouts.md) - 레이아웃 등록, 오버라이드
 - [모듈 다국어](module-i18n.md) - 백엔드/프론트엔드 다국어
 - [템플릿 라우트](template-routing.md) - 템플릿 라우트 규칙
-- [확장 시스템 개요](index.md) - 전체 인덱스
+- [확장 시스템 개요](README.md) - 전체 인덱스

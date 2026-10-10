@@ -1,32 +1,12 @@
 {
+    "comment": "게시판 생성·편집 화면. 한 레이아웃이 세 갈래를 겸한다 — 신규(`route.slug` 없음) · 편집 · 복제(`query.copy_id`). 본문은 기본/권한/목록/글/알림 5탭을 조각으로 나눠 싣고, 저장은 하단 고정 버튼 하나로 모은다",
     "version": "1.0.0",
     "layout_name": "admin_board_form",
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
     "extends": "_admin_base",
     "meta": {
+        "_e2e_allow": "e2e:allow F6 정정 — initLocal 과 동일한 죽은 state 키 제거뿐(2026-09-17 저작 트랙 게이트), 화면 동작 변화 없음",
         "title": "{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}",
         "description": "$t:sirsoft-board.admin.form.description"
-    },
-    "computed": {
-        "isReadOnly": "{{!!route?.slug && !!boards?.data && boards?.data?.abilities?.can_update !== true}}"
-    },
-    "state": {
-        "activeTab": "section_basic_card",
-        "isSaving": false,
-        "hasChanges": false,
-        "showCancelConfirmModal": false,
-        "form": [],
-        "isDataLoaded": false,
-        "managerSearchResults": [],
-        "stepSearchResults": []
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "roles",
-            "notification_channels"
-        ]
     },
     "data_sources": [
         {
@@ -39,12 +19,15 @@
             "auth_required": true,
             "cache": false,
             "loading_strategy": "blocking",
+            "refetchOnMount": true,
             "params": {
                 "board_slug": "{{route?.slug}}",
                 "copy_id": "{{query?.copy_id}}"
             },
-            "initLocal": "form",
-            "refetchOnMount": true,
+            "initLocal": {
+                "_merge": "replace",
+                "form": "{{data}}"
+            },
             "errorHandling": {
                 "403": {
                     "handler": "showErrorPage",
@@ -58,7 +41,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "폼 한 벌을 통째로 받아 `_local.form` 을 채운다(initLocal) — 신규는 기본값, 편집은 `board_slug`, 복제는 `copy_id` 로 갈린다. 권한 없음(403)·없는 게시판(404)은 화면 자리에 오류 페이지를 세워 빈 폼이 뜨지 않게 한다"
         },
         {
             "id": "roles",
@@ -67,7 +51,8 @@
             "endpoint": "/api/admin/roles/active",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "권한 탭의 역할 선택지 — 비활성 역할까지 고르게 하면 저장은 되고 아무에게도 안 걸리므로 활성 역할만 받는다"
         },
         {
             "id": "availableChannels",
@@ -81,6 +66,56 @@
                 "data": {
                     "channels": []
                 }
+            },
+            "comment": "알림 탭이 고를 수 있는 발송 채널(메일·SMS 등) — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어져 탭이 깨지지 않는다"
+        },
+        {
+            "id": "reactionTypes",
+            "label_key": "$t:sirsoft-board.editor.data_source.reactionTypes",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reaction-types",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "reaction_types": []
+                }
+            },
+            "comment": "반응 유형 전체 목록 — 「기본」 탭의 「사용 반응 유형」 체크박스 선택지. 게시판에 저장되는 값은 코드 배열(active_reaction_types)이다"
+        }
+    ],
+    "initLocal": {
+        "activeTab": "section_basic_card",
+        "isSaving": false,
+        "hasChanges": false,
+        "showCancelConfirmModal": false,
+        "form": [],
+        "isDataLoaded": false,
+        "managerSearchResults": [],
+        "stepSearchResults": []
+    },
+    "computed": {
+        "isReadOnly": "{{!!boards?.data && (route?.slug ? boards?.data?.abilities?.can_update !== true : boards?.data?.abilities?.can_create !== true)}}"
+    },
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "roles",
+            "availableChannels"
+        ]
+    },
+    "init_actions": [
+        {
+            "comment": "생성 모드: 게시판 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_board_form)이라 엔진이 `_local` 을 비우지 않아 직전 게시판의 form(다국어 이름 등)이 남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). boards 데이터소스의 initLocal(_merge: replace)이 이 뒤에 병합돼 서버가 준 새 게시판 폼(복사 진입 포함)만 남는다 — 문자열 initLocal 은 엔진이 기존 form 과 깊은 병합해 두므로 replace 가 함께 필요하다.",
+            "handler": "setState",
+            "if": "{{!route?.slug}}",
+            "params": {
+                "target": "local",
+                "form": null,
+                "hasChanges": false
             }
         }
     ],
@@ -119,7 +154,7 @@
                                 "props": {
                                     "className": "text-warning-soft"
                                 },
-                                "text": "$t:sirsoft-board.admin.form.read_only_message"
+                                "text": "{{route?.slug ? '$t:sirsoft-board.admin.form.read_only_message' : '$t:sirsoft-board.admin.form.create_read_only_message'}}"
                             }
                         ]
                     },
@@ -190,6 +225,7 @@
                         }
                     },
                     {
+                        "comment": "입력 오류 상자 — 아이콘을 제목 첫 줄에 맞추고(items-start + leading-5) 아래 폼과 띄운다(mb-6). 게시글 작성·환경설정 상자와 같은 서식이다.\n           #524 에서 고친 서식이 15차 병합에서 빠져 아이콘이 상자 가운데로 내려가고(제목보다 15~43px 아래) 폼과 0px 로 붙어 있었다(K3 실측 2026-10-07)",
                         "id": "validation_error",
                         "type": "basic",
                         "name": "Div",
@@ -202,7 +238,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "alert-danger"
+                                    "className": "alert-danger items-start mb-6"
                                 },
                                 "children": [
                                     {
@@ -210,7 +246,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
                                         }
                                     },
                                     {
@@ -238,12 +274,12 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
@@ -309,6 +345,18 @@
                                 "id": "footer_list_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "취소. 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "type": "button",
                                     "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
@@ -318,17 +366,6 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "text": "$t:common.list"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/boards",
-                                            "mergeQuery": true,
-                                            "query": {}
-                                        }
                                     }
                                 ]
                             },
@@ -343,6 +380,18 @@
                                         "id": "footer_cancel_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/boards",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-secondary"
@@ -353,23 +402,80 @@
                                                 "name": "Span",
                                                 "text": "$t:common.cancel"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/boards",
-                                                    "mergeQuery": true,
-                                                    "query": {}
-                                                }
-                                            }
                                         ]
                                     },
                                     {
                                         "id": "footer_save_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "저장 — 신규는 POST 후 발급된 slug 의 편집 화면으로 갈아타고(그래야 이어지는 저장이 PUT 이 된다), 편집은 PUT 하고 그 자리에 머문다. 성공하면 변경 표시를 지워 저장 버튼이 다시 잠긴다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "{{route?.slug ? '/api/modules/sirsoft-board/admin/boards/' + route.slug : '/api/modules/sirsoft-board/admin/boards'}}",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "{{route?.slug ? 'PUT' : 'POST'}}",
+                                                            "body": "{{_local.form}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "hasChanges": false,
+                                                                    "errors": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{route?.slug ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openWindow",
+                                                                "if": "{{!route?.slug}}",
+                                                                "params": {
+                                                                    "path": "{{'/admin/boards/' + result.data.slug + '/edit'}}",
+                                                                    "target": "_self"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.slug && !_local.hasChanges)}}",
@@ -390,75 +496,6 @@
                                                 "name": "Span",
                                                 "text": "{{_local.isSaving ? '$t:sirsoft-board.common.saving' : '$t:sirsoft-board.common.save'}}"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "sequence",
-                                                "params": {
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "isSaving": true
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "apiCall",
-                                                            "auth_required": true,
-                                                            "target": "{{route?.slug ? '/api/modules/sirsoft-board/admin/boards/' + route.slug : '/api/modules/sirsoft-board/admin/boards'}}",
-                                                            "params": {
-                                                                "method": "{{route?.slug ? 'PUT' : 'POST'}}",
-                                                                "body": "{{_local.form}}"
-                                                            },
-                                                            "onSuccess": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false,
-                                                                        "hasChanges": false,
-                                                                        "errors": null
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "success",
-                                                                        "message": "{{route?.slug ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "openWindow",
-                                                                    "if": "{{!route?.slug}}",
-                                                                    "params": {
-                                                                        "path": "{{'/admin/boards/' + result.data.slug + '/edit'}}",
-                                                                        "target": "_self"
-                                                                    }
-                                                                }
-                                                            ],
-                                                            "onError": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false,
-                                                                        "errors": "{{error.errors}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "{{error.message}}"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            }
                                         ]
                                     }
                                 ]
@@ -468,6 +505,5 @@
                 ]
             }
         ]
-    },
-    "modals": []
+    }
 }

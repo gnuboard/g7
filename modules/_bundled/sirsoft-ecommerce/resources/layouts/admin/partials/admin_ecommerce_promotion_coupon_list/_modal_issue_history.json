@@ -1,448 +1,460 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Coupon - Issue History Modal"
-  },
-  "id": "modal_issue_history",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title",
-    "width": "920px"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-between mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}"
-            },
-            {
-              "if": "{{_global.issueHistoryFilterUser}}",
-              "type": "composite",
-              "name": "Badge",
-              "props": {
-                "color": "blue",
-                "size": "sm",
-                "className": "flex-center gap-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "{{_global.issueHistoryFilterUser?.name}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "className": "ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "issueHistoryFilterUser": null,
-                            "issueHistoryPage": 1
-                          }
-                        },
-                        {
-                          "handler": "refetchDataSource",
-                          "params": {
-                            "dataSourceId": "couponIssues"
-                          }
-                        }
-                      ]
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "x",
-                        "className": "text-xs"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Select",
-          "props": {
-            "name": "issueHistoryPerPage",
-            "className": "w-20",
-            "value": "{{String(_global.issueHistoryPerPage || 10)}}",
-            "options": [
-              {
-                "value": "10",
-                "label": "10"
-              },
-              {
-                "value": "20",
-                "label": "20"
-              },
-              {
-                "value": "50",
-                "label": "50"
-              }
-            ]
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "issueHistoryPerPage": "{{parseInt($event.target.value)}}",
-                    "issueHistoryPage": 1
-                  }
-                },
-                {
-                  "handler": "refetchDataSource",
-                  "params": {
-                    "dataSourceId": "couponIssues"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "쿠폰 목록 — 발급내역 창. 이 쿠폰이 누구에게 언제 나갔는지 보고, 아직 안 쓴 건은 회수한다.\n  \n  **창 안에 자기 목록이 하나 더 있다** — 그래서 페이지·페이지당 개수·회원 필터를 이 창이\n  따로 들고 있고(`issueHistory*`), 값을 바꿀 때마다 `couponIssues` 데이터소스를 다시 부른다.\n  쿠폰 목록 쪽 페이지 상태와는 별개다.\n  \n  그 상태를 `_local` 이 아니라 `_global` 에 두는 이유는 발급취소 확인 창이 겹쳐 뜰 때 그\n  창도 같은 값을 읽어야 하기 때문이다(창끼리는 서로의 `_local` 을 보지 못한다).",
+    "meta": {
+        "is_partial": true,
+        "description": "Coupon - Issue History Modal"
     },
-    {
-      "type": "composite",
-      "name": "DataGrid",
-      "props": {
-        "data": "{{couponIssues?.data?.data || []}}",
-        "loading": "{{couponIssues?.$loading}}",
-        "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty",
-        "columns": [
-          {
-            "field": "issued_at",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.issued_at",
-            "width": "180px"
-          },
-          {
-            "field": "user_info",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.user",
-            "width": "200px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "group flex-between"
-                },
-                "children": [
-                  {
+    "id": "modal_issue_history",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title",
+        "width": "920px"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between mb-4"
+            },
+            "children": [
+                {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                      "className": "flex flex-col"
+                        "className": "flex-center gap-2"
                     },
                     "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "flex items-center gap-1"
-                        },
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                              "name": "user",
-                              "className": "text-base text-gray-400 dark:text-gray-500"
-                            }
-                          },
-                          {
+                        {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                              "className": "font-medium text-gray-900 dark:text-white"
+                                "className": "text-label"
                             },
-                            "text": "{{row.user_name}}"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "composite",
-                    "name": "ActionMenu",
-                    "props": {
-                      "triggerLabel": "",
-                      "triggerIconName": "ellipsis-vertical",
-                      "position": "right",
-                      "className": "opacity-0 group-hover:opacity-100",
-                      "items": [
-                        {
-                          "id": "view_member",
-                          "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
-                          "iconName": "user"
+                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}"
                         },
                         {
-                          "id": "filter_by_user",
-                          "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user",
-                          "iconName": "filter"
+                            "type": "composite",
+                            "name": "Badge",
+                            "if": "{{_global.issueHistoryFilterUser}}",
+                            "props": {
+                                "color": "blue",
+                                "size": "sm",
+                                "className": "flex-center gap-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.issueHistoryFilterUser?.name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "회원 필터 해제. 필터를 지우면서 페이지도 1로 되돌린다 — 안 되돌리면 3쪽을 보던 상태에서 전체 목록의 3쪽으로 튄다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "issueHistoryFilterUser": null,
+                                                        "issueHistoryPage": 1
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "couponIssues"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded",
+                                        "aria-label": "$t:sirsoft-ecommerce.common.remove"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "x",
+                                                "className": "text-xs"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    },
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Select",
                     "actions": [
-                      {
-                        "event": "onItemClick",
-                        "handler": "switch",
-                        "value": "{{$args[0]}}",
-                        "cases": {
-                          "view_member": {
-                            "handler": "navigate",
-                            "params": {
-                              "path": "/admin/users/{{row.user_id}}"
-                            }
-                          },
-                          "filter_by_user": {
+                        {
+                            "comment": "페이지당 개수. 개수를 바꾸면 페이지도 1로 되돌린다(같은 이유).",
+                            "type": "change",
                             "handler": "sequence",
                             "actions": [
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "global",
-                                  "issueHistoryFilterUser": {
-                                    "uuid": "{{row.user_id}}",
-                                    "name": "{{row.user_name}}"
-                                  },
-                                  "issueHistoryPage": 1
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "issueHistoryPerPage": "{{parseInt($event.target.value)}}",
+                                        "issueHistoryPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "couponIssues"
+                                    }
                                 }
-                              },
-                              {
-                                "handler": "refetchDataSource",
-                                "params": {
-                                  "dataSourceId": "couponIssues"
-                                }
-                              }
                             ]
-                          }
                         }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "field": "status",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.status",
-            "width": "140px",
-            "cellChildren": [
-              {
-                "comment": "배지가 셀 전체 너비를 차지하지 않도록 items-start 로 콘텐츠 너비만 차지",
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex flex-col items-start gap-1"
-                },
-                "children": [
-                  {
-                    "type": "composite",
-                    "name": "Badge",
+                    ],
                     "props": {
-                      "color": "{{row.status_badge_color}}",
-                      "text": "{{row.status_label}}"
+                        "name": "issueHistoryPerPage",
+                        "className": "w-20",
+                        "value": "{{String(_global.issueHistoryPerPage || 10)}}",
+                        "options": [
+                            {
+                                "value": "10",
+                                "label": "10"
+                            },
+                            {
+                                "value": "20",
+                                "label": "20"
+                            },
+                            {
+                                "value": "50",
+                                "label": "50"
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{row.used_at}}",
-                    "props": {
-                      "className": "form-hint"
-                    },
-                    "text": "{{row.used_at}}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "comment": "사용처: 사용된 건은 주문번호 링크, 아니면 - 표시",
-            "field": "order_number",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.used_order",
-            "width": "160px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "A",
-                "if": "{{!!row.order_number}}",
-                "props": {
-                  "href": "/admin/ecommerce/orders/{{row.order_id}}",
-                  "className": "text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
-                },
-                "text": "{{row.order_number}}"
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{!row.order_number}}",
-                "props": {
-                  "className": "text-gray-400 dark:text-gray-500 text-sm"
-                },
-                "text": "-"
-              }
-            ]
-          },
-          {
-            "comment": "작업: 미사용(취소 가능) 건만 발급취소 버튼 노출",
-            "field": "actions",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.actions",
-            "width": "120px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Button",
-                "if": "{{row.is_cancellable}}",
-                "props": {
-                  "type": "button",
-                  "className": "px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
-                },
-                "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.cancel_issue",
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "cancelIssueTarget": {
-                            "id": "{{row.id}}",
-                            "user_name": "{{row.user_name}}"
-                          }
-                        }
-                      },
-                      {
-                        "handler": "openModal",
-                        "target": "modal_cancel_issue_confirm"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Span",
-                "if": "{{!row.is_cancellable}}",
-                "props": {
-                  "className": "text-gray-300 dark:text-gray-600 text-sm"
-                },
-                "text": "-"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mt-4 flex justify-center"
-      },
-      "children": [
-        {
-          "type": "composite",
-          "name": "Pagination",
-          "props": {
-            "currentPage": "{{couponIssues?.data?.pagination?.current_page || 1}}",
-            "totalPages": "{{couponIssues?.data?.pagination?.last_page ?? null}}",
-            "hasMorePages": "{{couponIssues?.data?.pagination?.has_more_pages ?? false}}",
-            "totalItems": "{{couponIssues?.data?.pagination?.total || 0}}",
-            "perPage": "{{couponIssues?.data?.pagination?.per_page || 10}}"
-          },
-          "actions": [
-            {
-              "event": "onPageChange",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "issueHistoryPage": "{{$args[0]}}"
-                  }
-                },
-                {
-                  "handler": "refetchDataSource",
-                  "params": {
-                    "dataSourceId": "couponIssues"
-                  }
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end mt-6"
-      },
-      "children": [
+            ]
+        },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
+            "type": "composite",
+            "name": "DataGrid",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "couponIssues"
+            },
+            "props": {
+                "data": "{{couponIssues?.data?.data || []}}",
+                "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty",
+                "columns": [
+                    {
+                        "field": "issued_at",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.issued_at",
+                        "width": "180px"
+                    },
+                    {
+                        "field": "user_info",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.user",
+                        "width": "200px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "group flex-between"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-col"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "user",
+                                                            "className": "text-base text-gray-400 dark:text-gray-500"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "{{row.user_name}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "ActionMenu",
+                                        "actions": [
+                                            {
+                                                "comment": "회원 이름을 눌렀을 때의 갈래. \"회원 보기\" 는 관리자 회원 화면으로 나가고, \"이 회원만\" 은 창을 벗어나지 않고 목록만 좁힌다 — 후자는 필터를 담고 페이지를 1로 되돌린 뒤 다시 부른다.",
+                                                "event": "onItemClick",
+                                                "handler": "switch",
+                                                "cases": {
+                                                    "view_member": {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/users/{{row.user_id}}"
+                                                        }
+                                                    },
+                                                    "filter_by_user": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "issueHistoryPage": 1,
+                                                                    "issueHistoryFilterUser": {
+                                                                        "uuid": "{{row.user_id}}",
+                                                                        "name": "{{row.user_name}}"
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "couponIssues"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "triggerLabel": "",
+                                            "triggerIconName": "ellipsis-vertical",
+                                            "position": "right",
+                                            "className": "opacity-0 group-hover:opacity-100",
+                                            "items": [
+                                                {
+                                                    "id": "view_member",
+                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
+                                                    "iconName": "user"
+                                                },
+                                                {
+                                                    "id": "filter_by_user",
+                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user",
+                                                    "iconName": "filter"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "status",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.status",
+                        "width": "140px",
+                        "cellChildren": [
+                            {
+                                "comment": "배지가 셀 전체 너비를 차지하지 않도록 items-start 로 콘텐츠 너비만 차지",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-col items-start gap-1"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "props": {
+                                            "color": "{{row.status_badge_color}}",
+                                            "text": "{{row.status_label}}"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.used_at}}",
+                                        "props": {
+                                            "className": "form-hint"
+                                        },
+                                        "text": "{{row.used_at}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "사용처: 사용된 건은 주문번호 링크, 아니면 - 표시",
+                        "field": "order_number",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.used_order",
+                        "width": "160px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "A",
+                                "if": "{{!!row.order_number}}",
+                                "props": {
+                                    "href": "/admin/ecommerce/orders/{{row.order_id}}",
+                                    "className": "text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                                },
+                                "text": "{{row.order_number}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.order_number}}",
+                                "props": {
+                                    "className": "text-gray-400 dark:text-gray-500 text-sm"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "작업: 미사용(취소 가능) 건만 발급취소 버튼 노출",
+                        "field": "actions",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.actions",
+                        "width": "120px",
+                        "cellChildren": [
+                            {
+                                "comment": "발급취소는 쿠폰 수정 권한(서버 promotion-coupon.update)의 일이다 — 그 쿠폰 행의 can_update 를 창을 열 때 담아 둔다.",
+                                "id": "issue_cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{row.is_cancellable}}",
+                                "actions": [
+                                    {
+                                        "comment": "발급취소 창 열기. 회수 가능한 건에만 버튼이 뜨고(그 판정은 서버가 준 값이다), 어느 발급분인지 담아 두고 연다 — 그 창은 발급내역을 따로 조회하지 않는다.",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "cancelIssueTarget": {
+                                                        "id": "{{row.id}}",
+                                                        "user_name": "{{row.user_name}}"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "modal_cancel_issue_confirm"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{_global.issueHistoryCoupon?.can_update !== true}}"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.cancel_issue"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.is_cancellable}}",
+                                "props": {
+                                    "className": "text-gray-300 dark:text-gray-600 text-sm"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    }
+                ]
             }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.close"
-            }
-          ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-4 flex justify-center"
+            },
+            "children": [
+                {
+                    "type": "composite",
+                    "name": "Pagination",
+                    "actions": [
+                        {
+                            "comment": "쪽 이동. 이 목록은 URL 을 쓰지 않는다 — 창 안의 목록이라 주소로 되돌아올 자리가 없다(바깥 목록은 URL 로 쪽을 옮긴다).",
+                            "event": "onPageChange",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "issueHistoryPage": "{{$args[0]}}"
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "couponIssues"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "currentPage": "{{couponIssues?.data?.pagination?.current_page || 1}}",
+                        "totalPages": "{{couponIssues?.data?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{couponIssues?.data?.pagination?.has_more_pages ?? false}}",
+                        "totalItems": "{{couponIssues?.data?.pagination?.total || 0}}",
+                        "perPage": "{{couponIssues?.data?.pagination?.per_page || 10}}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.close"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

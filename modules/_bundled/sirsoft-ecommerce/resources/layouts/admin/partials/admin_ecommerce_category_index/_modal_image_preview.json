@@ -1,51 +1,52 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Category Image Preview Modal"
-  },
-  "id": "modal_image_preview",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.title",
-    "width": "90vw"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-center w-full justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden"
-      },
-      "children": [
+    "comment": "분류 이미지 원본 보기 창. 보여줄 이미지를 스스로 고르지 않고 여는 쪽이 `_global.imagePreview` 에\n  담아 둔 주소·대체문구만 읽는다 — 그래서 이 창은 분류 전용이 아니고 같은 전역 키를 채우면\n  어디서든 열 수 있다.\n  창 폭을 `90vw` 로 열되 이미지는 화면 높이 70% 안에서 비율을 지킨다 — 세로로 긴 이미지가 창을\n  넘어 잘리는 것을 막는 자리다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Category Image Preview Modal"
+    },
+    "id": "modal_image_preview",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.title",
+        "width": "90vw",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "modal_image_preview"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.close"
+            }
+        ]
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Img",
-          "props": {
-            "src": "{{_global.imagePreview.imageUrl}}",
-            "alt": "{{_global.imagePreview.imageAlt}}",
-            "className": "max-w-full max-h-[70vh] object-contain"
-          }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center w-full justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Img",
+                    "props": {
+                        "src": "{{_global.imagePreview.imageUrl}}",
+                        "alt": "{{_global.imagePreview.imageAlt}}",
+                        "className": "max-w-full max-h-[70vh] object-contain"
+                    }
+                }
+            ]
         }
-      ]
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.close",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal",
-          "target": "modal_image_preview"
-        }
-      ]
-    }
-  ]
+    ]
 }

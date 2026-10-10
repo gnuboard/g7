@@ -1,60 +1,72 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "코어 라이선스 모달",
-    "editor_label": "$t:admin.modal_label.license_modal"
-  },
-  "id": "license_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.license.modal_title",
-    "size": "large"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex flex-col max-h-[70vh]"
-      },
-      "children": [
+    "comment": "바닥글의 저작권 표기를 누르면 뜨는 창. 코어 라이선스 전문을 손대지 않은 원문 그대로\n  싣는다(길어서 스크롤 영역 안에 둔다). 확장 하나하나의 라이선스를 보여 주는 창은 따로\n  있고, 이 창은 코어 것만 다룬다.",
+    "meta": {
+        "is_partial": true,
+        "description": "코어 라이선스 모달",
+        "editor_label": "$t:admin.modal_label.license_modal"
+    },
+    "id": "license_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.license.modal_title",
+        "size": "large"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1 overflow-y-auto min-h-0 px-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Pre",
-              "props": {
-                "className": "whitespace-pre-wrap text-body font-mono leading-relaxed"
-              },
-              "text": "{{_global.coreLicenseContent ?? ''}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              },
-              "actions": [{ "type": "click", "handler": "closeModal" }],
-              "children": [{ "type": "basic", "name": "Span", "text": "$t:common.close" }]
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col max-h-[70vh]"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 overflow-y-auto min-h-0 px-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Pre",
+                            "props": {
+                                "className": "whitespace-pre-wrap text-body font-mono leading-relaxed"
+                            },
+                            "text": "{{_global.coreLicenseContent ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

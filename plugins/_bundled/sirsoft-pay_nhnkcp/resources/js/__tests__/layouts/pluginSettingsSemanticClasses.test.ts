@@ -1,0 +1,112 @@
+// e2e:allow 클래스 이름 교정의 구조 검증 — 형제 플러그인(KG이니시스)과 같은 교정이며 브라우저 재실측은 7.1.0 T1 이력에 기록
+/**
+ * @file pluginSettingsSemanticClasses.test.ts
+ * @description NHN KCP 결제 환경설정 화면의 의미 클래스가 제자리에 붙어 있는지
+ *
+ * 회귀 배경: 관리자 템플릿 의미 클래스 도입(#408) 때 치환이 한 칸씩 밀렸다. 입력 줄에 섹션 제목 클래스(`section-heading-md`), 섹션 제목에 오류 강조 클래스(`text-error-strong`), 오류 제목에 옅은 오류 클래스가 붙어 라벨·입력이 3열로 놓이지 않고 섹션 제목이 붉은 14px 로 보였다.
+ * 원래 매핑: 입력 줄 = `grid-3col-responsive`, 섹션 제목 = `section-heading-md`, 오류 제목 = `text-error-strong`,
+ * 오류 목록 줄 = `text-error-soft` (7.1.0 전수 실측 #408 클래스 밀림 후속 — KG이니시스에서 먼저 고친 것과 같은 결함이 남아 있었다).
+ *
+ * @scenario-manifest tests/scenarios/plugin-settings-semantic-classes.yaml
+ */
+
+import { describe, it, expect } from 'vitest';
+import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
+
+type LayoutNode = {
+    id?: string;
+    name?: string;
+    text?: string;
+    props?: { className?: string };
+    children?: LayoutNode[];
+};
+
+/**
+ * 레이아웃 트리의 모든 노드를 펼친다.
+ *
+ * @param node 시작 노드(배열·객체 아무거나)
+ * @returns 노드 목록
+ */
+function flatten(node: unknown): LayoutNode[] {
+    const out: LayoutNode[] = [];
+    const stack: unknown[] = [node];
+    while (stack.length) {
+        const cur = stack.pop();
+        if (Array.isArray(cur)) {
+            stack.push(...cur);
+            continue;
+        }
+        if (!cur || typeof cur !== 'object') continue;
+        out.push(cur as LayoutNode);
+        stack.push(...Object.values(cur as Record<string, unknown>));
+    }
+    return out;
+}
+
+const nodes = flatten(pluginSettingsLayout);
+const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props.className : '');
+const HEADINGS = ['H2', 'H3', 'H4'];
+
+describe('NHN KCP 결제 환경설정 — 의미 클래스 위치', () => {
+    /**
+     * @scenario plugin=sirsoft-pay_nhnkcp, element=field_row
+     *
+     * @effects settings_rows_use_three_column_grid
+     */
+    it('라벨(1칸)·입력(2칸)으로 나뉜 입력 줄은 3열 그리드 클래스를 쓴다', () => {
+        const rows = nodes.filter((n) => {
+            const kids = Array.isArray(n.children) ? n.children : [];
+            return kids.some((k) => cls(k).includes('lg:col-span-1')) && kids.some((k) => cls(k).includes('lg:col-span-2'));
+        });
+        expect(rows.length).toBeGreaterThanOrEqual(2);
+        for (const row of rows) {
+            expect({ id: row.id, className: cls(row).split(' ')[0] }).toEqual({ id: row.id, className: 'grid-3col-responsive' });
+        }
+    });
+
+    /**
+     * @scenario plugin=sirsoft-pay_nhnkcp, element=section_title
+     *
+     * @effects section_titles_use_heading_class
+     */
+    it('섹션 제목은 섹션 제목 클래스를 쓰고 오류 강조색을 쓰지 않는다', () => {
+        // 색 머리띠가 있는 카드(가상계좌 입금통보·에스크로·에스크로 배송 통보)는 제목도 그 카드 색을 쓴다(#408 이전부터 같은 값) — 흰 패널 섹션 제목만 본다
+        const headings = nodes.filter(
+            (n) =>
+                n.name === 'H3' &&
+                typeof n.text === 'string' &&
+                /\.(settings\.)?section[._]/.test(n.text) &&
+                !/\.section_(vbank_notify|escrow|escrow_notify)$/.test(n.text),
+        );
+        expect(headings.length).toBeGreaterThanOrEqual(4);
+        for (const heading of headings) {
+            expect({ text: heading.text, className: cls(heading) }).toEqual({ text: heading.text, className: 'section-heading-md' });
+        }
+    });
+
+    /**
+     * @scenario plugin=sirsoft-pay_nhnkcp, element=error_box
+     *
+     * @effects error_box_uses_error_classes
+     */
+    it('저장 오류 상자는 제목에 강한 오류색, 목록 줄에 옅은 오류색을 쓴다', () => {
+        const title = nodes.find((n) => typeof n.text === 'string' && n.text.endsWith('.validation_error'));
+        expect(cls(title ?? {})).toBe('text-error-strong');
+
+        const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
+        expect(cls(item ?? {})).toBe('text-error-soft');
+    });
+
+    /**
+     * @scenario plugin=sirsoft-pay_nhnkcp, element=misplaced
+     *
+     * @effects semantic_classes_not_misplaced
+     */
+    it('섹션 제목 클래스는 제목에만, 3열 그리드 클래스는 목록 줄이 아닌 곳에만 쓴다', () => {
+        const headingMisuse = nodes.filter((n) => cls(n) === 'section-heading-md' && !HEADINGS.includes(n.name ?? ''));
+        expect(headingMisuse.map((n) => n.id ?? n.name)).toEqual([]);
+
+        const gridOnLi = nodes.filter((n) => n.name === 'Li' && cls(n).startsWith('grid-3col-responsive'));
+        expect(gridOnLi.map((n) => n.text)).toEqual([]);
+    });
+});

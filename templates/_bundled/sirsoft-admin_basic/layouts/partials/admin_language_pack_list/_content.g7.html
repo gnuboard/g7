@@ -1,0 +1,369 @@
+<!-- 언어팩 관리 화면의 본문이자 **정본 하나**다. 확장 상세에서 들어오는 화면은 이 조각을 그대로
+  두르고 되돌아가기 버튼과 안내 띠만 얹으므로, 목록·필터·카드를 고칠 자리는 여기 한 곳이다.
+
+  세 가지가 다른 목록 화면과 다르다.
+  · 조건이 로컬에 쌓이지 않고 **고르는 즉시 주소로 나간다** — 그래서 뒤로 가기로 이전 조건에 돌아간다.
+  · 「보호됨」으로 표시되는 팩은 코어·번들이 늘 켜 둔 것이라 끄지도 지우지도 못하고, 기본적으로
+    목록에서 빠져 있다(체크를 풀면 함께 보인다).
+  · 아직 안 깔린 번들 팩도 한 목록에 섞여 나온다 — 그쪽은 상태가 「미설치」이고 설치 버튼이 붙는다.
+    설치가 막힌 팩은 왜 막혔는지(대상 미설치·비활성·버전 낮음 등)를 카드 안에 적어 준다. -->
+<partial description="언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용.">
+  <div data-ref="lang_pack_content">
+    <page-header data-type="composite" data-ref="lp_page_header" title="$t:admin.language_packs.title" description="$t:admin.language_packs.description">
+      <button data-ref="lp_btn_check_updates" data-if="{{language_packs?.data?.abilities?.can_check_updates}}" type="button" disabled="{{_global.isLanguagePackCheckingUpdates}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <responsive on="portable" class="hidden"/>
+        <on type="click">
+          <!-- 등록된 팩들의 새 판본을 원격에서 확인해 표시만 갱신한다 — 받거나 깔지는 않는다.
+            누르는 동안 잠그는 값이 전역인 이유는 아래 좁은 화면용 버튼과 **같은 버튼 하나**로
+            보여야 하기 때문이다(두 버튼이 같은 값을 보고 함께 잠긴다). -->
+          <sequence>
+            <set-state target="global" :isLanguagePackCheckingUpdates="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
+              <success>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+              </success>
+              <fail>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{!_global.isLanguagePackCheckingUpdates}}" name="fas fa-sync-alt" size="sm"/>
+        <icon data-if="{{_global.isLanguagePackCheckingUpdates}}" name="fas fa-spinner" size="sm" class="animate-spin"/>
+        <span>$t:admin.language_packs.actions.check_updates</span>
+      </button>
+      <button data-ref="lp_btn_refresh_cache" data-if="{{language_packs?.data?.abilities?.can_refresh_cache}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <responsive on="portable" class="hidden"/>
+        <on type="click">
+          <open-modal target="language_pack_refresh_cache_modal"/>
+        </on>
+        <icon name="fas fa-broom" size="sm"/>
+        <span>$t:admin.language_packs.actions.refresh_cache</span>
+      </button>
+      <button data-ref="lp_btn_install" data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <responsive on="portable" class="hidden"/>
+        <on type="click">
+          <open-modal target="language_pack_install_modal"/>
+        </on>
+        <icon name="fas fa-plus" size="sm"/>
+        <span>$t:admin.language_packs.actions.install</span>
+      </button>
+    </page-header>
+    <div data-ref="lp_mobile_actions" class="hidden">
+      <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4 flex-wrap"/>
+      <button data-if="{{language_packs?.data?.abilities?.can_check_updates}}" type="button" disabled="{{_global.isLanguagePackCheckingUpdates}}" class="flex-center flex-1 justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 좁은 화면용 같은 버튼 — 위 것과 한 벌이라 동작이 같아야 한다. 한쪽만 고치면 화면 폭에 따라 다르게 동작한다. -->
+          <sequence>
+            <set-state target="global" :isLanguagePackCheckingUpdates="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
+              <success>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+              </success>
+              <fail>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{!_global.isLanguagePackCheckingUpdates}}" name="fas fa-sync-alt" size="sm"/>
+        <icon data-if="{{_global.isLanguagePackCheckingUpdates}}" name="fas fa-spinner" size="sm" class="animate-spin"/>
+        <span>$t:admin.language_packs.actions.check_updates</span>
+      </button>
+      <button data-if="{{language_packs?.data?.abilities?.can_refresh_cache}}" type="button" class="flex-center flex-1 justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <on type="click">
+          <open-modal target="language_pack_refresh_cache_modal"/>
+        </on>
+        <icon name="fas fa-broom" size="sm"/>
+        <span>$t:admin.language_packs.actions.refresh_cache</span>
+      </button>
+      <button data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" class="flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm">
+        <on type="click">
+          <open-modal target="language_pack_install_modal"/>
+        </on>
+        <icon name="fas fa-plus" size="sm"/>
+        <span>$t:admin.language_packs.actions.install</span>
+      </button>
+    </div>
+    <div data-ref="lp_filter_bar" class="flex-center justify-between gap-3 mb-6 flex-wrap">
+      <responsive on="portable" class="flex flex-col gap-3 mb-6"/>
+      <!-- 갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.
+           icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)
+           button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음). -->
+      <div data-ref="lp_view_mode_toggle" role="group" aria-label="$t:extensions.view_mode.toggle_label" class="inline-flex self-start shrink-0 w-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+        <button data-ref="lp_view_mode_gallery" type="button" aria-pressed="{{(_global.extensionViewMode ?? 'gallery') !== 'list'}}" title="$t:extensions.view_mode.gallery" class="px-3 h-10 transition-colors">
+          <class-map key="{{_global.extensionViewMode ?? 'gallery'}}" default="bg-gray-900 text-white dark:bg-white dark:text-gray-900"><variant when="list">bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700</variant></class-map>
+          <on type="click">
+            <!-- 리터럴 값을 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).
+                 GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이
+                 비면 이번 세션 동안만 보기가 유지되고 새로고침하면 기본값으로 돌아간다. -->
+            <sequence>
+              <set-state target="global" extensionViewMode="gallery"/>
+              <save-to-local-storage key="g7_view_mode_extensions" value="gallery"/>
+              <load-from-local-storage key="g7_view_mode_extensions" defaultValue="">
+                <field name="resultTo">
+                  <field name="target" value="_global"/>
+                  <field name="key" value="extensionViewModePersisted"/>
+                </field>
+              </load-from-local-storage>
+            </sequence>
+          </on>
+          <icon name="th-large" size="sm"/>
+          <span class="sr-only">$t:extensions.view_mode.gallery_aria</span>
+        </button>
+        <button data-ref="lp_view_mode_list" type="button" aria-pressed="{{(_global.extensionViewMode ?? 'gallery') === 'list'}}" title="$t:extensions.view_mode.list" class="px-3 h-10 transition-colors">
+          <class-map key="{{_global.extensionViewMode ?? 'gallery'}}" default="bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"><variant when="list">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant></class-map>
+          <on type="click">
+            <!-- 갤러리 버튼과 같은 순서 — 리터럴 `list` 를 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).
+                 GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이 비면 이번 세션 동안만
+                 목록 보기가 유지되고 새로고침하면 기본값(갤러리)으로 돌아간다. -->
+            <sequence>
+              <set-state target="global" extensionViewMode="list"/>
+              <save-to-local-storage key="g7_view_mode_extensions" value="list"/>
+              <load-from-local-storage key="g7_view_mode_extensions" defaultValue="">
+                <field name="resultTo">
+                  <field name="target" value="_global"/>
+                  <field name="key" value="extensionViewModePersisted"/>
+                </field>
+              </load-from-local-storage>
+            </sequence>
+          </on>
+          <icon name="list" size="sm"/>
+          <span class="sr-only">$t:extensions.view_mode.list_aria</span>
+        </button>
+      </div>
+      <div data-ref="lp_filter_group" class="flex-center gap-3 flex-wrap">
+      <select data-ref="lp_filter_scope" data-if="{{!_local.scopeLocked}}" value="{{query.scope ?? ''}}" class="w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
+        <options>
+          <option value="">$t:admin.language_packs.filter.all_scopes</option>
+          <option value="core">$t:admin.language_packs.scope.core</option>
+          <option value="module">$t:admin.language_packs.scope.module</option>
+          <option value="plugin">$t:admin.language_packs.scope.plugin</option>
+          <option value="template">$t:admin.language_packs.scope.template</option>
+        </options>
+        <on event="onChange">
+          <!-- 이 칸은 확장 상세에서 들어왔을 때 통째로 감춰진다 — 그때는 범위가 그 확장으로 이미 정해져 있어 고를 여지가 없다. -->
+          <set-state target="local" filterScope="{{$event.target.value}}"/>
+        </on>
+        <on event="onChange">
+          <!-- 화면 값과 주소를 **따로 두 번** 바꾼다 — 앞은 화면이 즉시 반응하도록, 뒤는 주소가 곧 조건이 되도록. 범위를 바꾸면 첫 쪽으로 돌아간다(이전 쪽이 새 조건에서는 없을 수 있다). -->
+          <navigate path="{{route.path}}" :mergeQuery="true">
+            <query scope="{{$event.target.value || undefined}}" :page="1"/>
+          </navigate>
+        </on>
+      </select>
+      <select data-ref="lp_filter_status" value="{{query.status ?? ''}}" class="w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
+        <options>
+          <option value="">$t:admin.language_packs.filter.all_statuses</option>
+          <option value="active">$t:admin.language_packs.status.active</option>
+          <option value="installed">$t:admin.language_packs.status.installed</option>
+          <option value="inactive">$t:admin.language_packs.status.inactive</option>
+          <option value="uninstalled">$t:admin.language_packs.status.uninstalled</option>
+          <option value="error">$t:admin.language_packs.status.error</option>
+        </options>
+        <on event="onChange">
+          <!-- 상태 다섯 중 「미설치」는 아직 깔지 않은 번들 팩이고, 「오류」는 파일이나 매니페스트가 깨져 읽히지 않는 팩이다. -->
+          <set-state target="local" filterStatus="{{$event.target.value}}"/>
+        </on>
+        <on event="onChange">
+          <!-- 범위 칸과 같은 두 걸음. 조건 둘은 서로 합쳐져 주소에 함께 실린다. -->
+          <navigate path="{{route.path}}" :mergeQuery="true">
+            <query status="{{$event.target.value || undefined}}" :page="1"/>
+          </navigate>
+        </on>
+      </select>
+      <button data-ref="lp_filter_reset" data-if="{{(query.search ?? '') !== '' || (query.scope ?? '') !== '' || (query.status ?? '') !== '' || (query.locale ?? '') !== '' || query.exclude_protected === '0' || query.exclude_protected === 0 || query.exclude_protected === false}}" type="button" title="$t:admin.language_packs.filter.reset" class="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200">
+        <on event="onClick">
+          <!-- 초기화가 범위만은 건드리지 않을 수 있다 — 확장 상세에서 들어온 화면에서 범위를 지우면 남의 확장 팩까지 보이게 되므로 그 자리는 그대로 둔다. -->
+          <set-state target="local" filterScope="{{_local.scopeLocked ? _local.filterScope : ''}}" filterStatus="" filterLocale="" filterSearch=""/>
+        </on>
+        <on event="onClick">
+          <!-- 주소에서도 조건을 걷어낸다. 보호된 팩 감추기까지 함께 풀리므로 이 버튼 한 번이면 기본 화면으로 돌아온다. -->
+          <navigate path="{{route.path}}" :mergeQuery="true">
+            <query :search="null" :scope="null" :status="null" :locale="null" :exclude_protected="null" :page="1"/>
+          </navigate>
+        </on>
+        <icon name="fas fa-rotate-left" size="sm"/>
+        <span>$t:admin.language_packs.filter.reset</span>
+      </button>
+      <label data-ref="lp_filter_exclude_protected" class="inline-clickable px-3 py-2 text-body select-none">
+        <input type="checkbox" checked="{{query.exclude_protected === undefined || query.exclude_protected === null || query.exclude_protected === '1' || query.exclude_protected === 1 || query.exclude_protected === true}}" class="h-4 w-4 text-indigo-600 rounded">
+          <on event="onChange">
+            <!-- 켜 두는 것이 기본이라 **끌 때만** 주소에 값을 남긴다 — 기본 상태의 주소를 깨끗하게 두려는 것이다(그래서 주소에 이 값이 없으면 켜진 것으로 읽는다). -->
+            <navigate path="{{route.path}}" :mergeQuery="true">
+              <query exclude_protected="{{$event.target.checked ? undefined : '0'}}" :page="1"/>
+            </navigate>
+          </on>
+        </input>
+        <span>$t:admin.language_packs.filter.exclude_protected</span>
+      </label>
+      <search-bar data-type="composite" data-ref="lp_search" name="search" placeholder="$t:admin.language_packs.search_placeholder" value="{{_local.filterSearch ?? query.search ?? ''}}" :showButton="true" class="w-72">
+        <responsive on="portable" class="w-full"/>
+        <on type="change">
+          <!-- 검색어만은 즉시 조회하지 않고 담아 둔다 — 글자를 칠 때마다 주소가 바뀌면 뒤로 가기 이력이 글자 수만큼 쌓인다. -->
+          <set-state target="local" filterSearch="{{$event.target.value}}"/>
+        </on>
+        <on type="submit">
+          <!-- 검색 버튼이나 Enter 에서 비로소 주소로 옮긴다. 빈 검색어는 조건에서 아예 빼 주소를 지저분하게 두지 않는다. -->
+          <navigate path="{{route.path}}" :mergeQuery="true">
+            <query search="{{_local.filterSearch || undefined}}" :page="1"/>
+          </navigate>
+        </on>
+      </search-bar>
+      </div>
+    </div>
+    <div data-ref="lp_content_area" class="admin-card">
+      <div data-ref="lp_empty" data-if="{{(language_packs?.data?.data?.length ?? 0) === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:admin.language_packs.messages.empty</div>
+      <!-- 언어팩 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.
+           보기 분기는 `viewMode` prop 으로 넘긴다: 카드 셀의 렌더 컨텍스트에는 `_global` 이
+           없어 카드 안쪽에서는 보기 상태를 볼 수 없기 때문이다.
+           언어팩은 대개 자기 그림이 없어 대상 확장·코어의 아이콘을 빌려 쓰므로, 무엇의 어떤
+           언어인지 아이콘 위 로케일 표식으로 구분한다(국기는 쓰지 않는다 — 언어는 나라가
+           아니다). 대상 식별자는 `identifier` 가 아니라 설치 행의 `id` 다. -->
+      <extension-card-grid data-type="composite" data-ref="lp_card_grid" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{language_packs?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{language_packs?.data?.pagination?.current_page ?? 1}}" totalPages="{{language_packs?.data?.pagination?.last_page ?? null}}" hasMorePages="{{language_packs?.data?.pagination?.has_more_pages ?? false}}" items="{{(language_packs?.data?.data ?? []).map(p => ({
+        id: String(p.id ?? p.bundled_identifier ?? p.identifier),
+        row: p,
+        name: p.name ?? p.identifier,
+        version: p.version,
+        description: p.description ?? '',
+        vendor: p.vendor,
+        iconUrl: p.icon_url,
+        fallbackIcon: 'language',
+        iconBadge: p.icon_source !== 'manifest' ? { text: p.locale, srLabel: p.locale_native_name ?? p.locale ?? '' } : null,
+        dependencies: [],
+        badges: [
+          ...(p.status === 'active' ? [{ label: '$t:admin.language_packs.status.active', tone: 'success' }] : []),
+          ...(p.status === 'inactive' ? [{ label: '$t:admin.language_packs.status.inactive', tone: 'neutral' }] : []),
+          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.language_packs.status.uninstalled', tone: 'info' }] : []),
+          ...(p.is_protected === true ? [{ label: '$t:admin.language_packs.messages.protected_badge', tone: 'accent' }] : []),
+          ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),
+          ...(p.has_update === true &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])
+        ],
+        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.is_protected === true || (p.abilities?.can_activate !== true &amp;&amp; p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,
+        secondaryAction: p.files_missing === true &amp;&amp; p.bundled_source_available === true &amp;&amp; p.abilities?.can_install === true
+          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh' }
+          : (p.has_update === true &amp;&amp; p.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh' } : null),
+        primaryAction: p.status === 'uninstalled'
+          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true }
+          : null,
+        actions: [
+          { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },
+          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }
+        ]
+      }))}}">
+        <on type="action" event="onItemClick">
+          <!-- 카드 본문 클릭 — 상세 창을 연다. 대상 id 를 지역에 담고 데이터소스를 다시 받는다
+               (다른 화면과 달리 창이 전역이 아니라 자기 데이터소스를 본다). -->
+          <sequence>
+            <set-state target="local" detailId="{{$args[0].id ?? $args[0].bundled_identifier ?? $args[0].identifier}}"/>
+            <refetch-data-source dataSourceId="language_pack_detail"/>
+            <open-modal target="language_pack_detail_modal"/>
+          </sequence>
+        </on>
+        <on type="action" event="onToggle">
+          <!-- 활성/비활성 토글 — 주소를 스위치 방향으로 가른다. 409(칸 충돌)는 같은 자리에
+               다른 언어팩이 이미 들어 있다는 뜻이라 어느 것을 둘지 고르는 창으로 넘긴다. -->
+          <api-call :auth_required="true" target="{{$args[0] ? '/api/admin/language-packs/' + $args[1].id + '/activate' : '/api/admin/language-packs/' + $args[1].id + '/deactivate'}}" method="POST">
+            <success>
+              <parallel>
+                <toast type="success" message="{{$args[0] ? '$t:admin.language_packs.messages.activate_success' : '$t:admin.language_packs.messages.deactivate_success'}}"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+              </parallel>
+            </success>
+            <fail>
+              <sequence>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"/>
+                <!-- 서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다(#703). -->
+                <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+              </sequence>
+            </fail>
+            <error-handling>
+              <on-code code="409">
+                <!-- 창에서 고르기 전까지 스위치는 서버 값에 둔다 — 창을 닫아도 뒤집힌 채 남지 않는다(#703). -->
+                <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
+                <set-state target="global" slotConflictCurrent="{{error.errors?.current ?? null}}" slotConflictTarget="{{error.errors?.target ?? null}}" slotConflictTargetId="{{$args[1].id}}"/>
+                <open-modal target="language_pack_slot_conflict_modal"/>
+              </on-code>
+            </error-handling>
+          </api-call>
+        </on>
+        <on type="action" event="onSecondaryAction">
+          <!-- 보조 버튼은 둘 중 하나로만 생긴다 — 파일이 비었으면 다시 심기, 아니면 업데이트.
+               다시 심기는 설치 창을 재설치 모드로 연다(같은 창을 쓴다). -->
+          <switch on="{{$args[0].files_missing === true ? 'reinstall' : 'update'}}">
+            <case when="reinstall">
+              <sequence>
+                <set-state target="global" selectedBundledLanguagePack="{{$args[0]}}" :languagePackReinstallMode="true"/>
+                <open-modal target="language_pack_install_bundled_modal"/>
+              </sequence>
+            </case>
+            <case when="update">
+              <sequence>
+                <!-- 창은 행을 다시 찾지 못하므로 아이콘 재료(주소·출처·로케일)도 여기서 함께 담는다. -->
+                <set-state target="local" updateId="{{$args[0].id}}" updateCurrent="{{$args[0].version}}" updateLatest="{{$args[0].latest_version}}" updateIconUrl="{{$args[0].icon_url}}" updateIconSource="{{$args[0].icon_source}}" updateLocale="{{$args[0].locale}}"/>
+                <open-modal target="language_pack_update_modal"/>
+              </sequence>
+            </case>
+          </switch>
+        </on>
+        <on type="action" event="onPrimaryAction">
+          <!-- 설치 — 동봉본을 심는 창을 연다(재설치가 아니므로 모드를 꺼 둔다). -->
+          <sequence>
+            <set-state target="global" selectedBundledLanguagePack="{{$args[0]}}" :languagePackReinstallMode="false"/>
+            <open-modal target="language_pack_install_bundled_modal"/>
+          </sequence>
+        </on>
+        <on type="action" event="onAction">
+          <!-- 카드 더보기 메뉴. 삭제는 무엇을 지우는지 창이 되보여 줄 수 있도록 범위·대상·언어를
+               함께 담아 둔다. -->
+          <switch>
+            <case when="view_detail">
+              <set-state target="local" detailId="{{$args[1].id ?? $args[1].bundled_identifier ?? $args[1].identifier}}"/>
+              <refetch-data-source dataSourceId="language_pack_detail"/>
+              <open-modal target="language_pack_detail_modal"/>
+            </case>
+            <case when="uninstall">
+              <!-- 위 update 와 같은 이유로 아이콘 재료를 함께 담는다. -->
+              <set-state target="local" uninstallId="{{$args[1].id}}" uninstallScope="{{$args[1].scope}}" uninstallTarget="{{$args[1].target_identifier}}" uninstallLocale="{{$args[1].locale}}" uninstallIconUrl="{{$args[1].icon_url}}" uninstallIconSource="{{$args[1].icon_source}}"/>
+              <open-modal target="language_pack_uninstall_modal"/>
+            </case>
+          </switch>
+        </on>
+        <on type="change" event="onPageChange">
+          <!-- 페이지 이동 — 이 조각은 세 호스트가 감싸므로 목적지를 박지 않고 지금 경로를 쓴다. -->
+          <navigate path="{{route.path}}" :replace="true" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </extension-card-grid>
+      <div data-ref="lp_pagination_info" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" class="mt-4 flex-between gap-4 text-label">
+        <responsive on="portable" class="mt-4 flex flex-col items-stretch gap-3 text-label"/>
+        <div class="flex-center gap-2">
+          <span>$t:admin.language_packs.pagination.per_page_label</span>
+          <select value="{{query.per_page || 10}}" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-2 py-1 text-sm">
+            <options>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </options>
+            <on event="onChange">
+              <!-- 한 쪽에 몇 개를 볼지. 개수가 바뀌면 지금 쪽 번호가 뜻을 잃으므로 첫 쪽으로 돌아간다. -->
+              <navigate path="{{route.path}}" :replace="true" :mergeQuery="true">
+                <query per_page="{{$event.target.value}}" page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+        <span>$t:admin.language_packs.pagination.summary|total={{language_packs?.data?.pagination?.total ?? 0}}|from={{language_packs?.data?.pagination?.from ?? 0}}|to={{language_packs?.data?.pagination?.to ?? 0}}</span>
+      </div>
+    </div>
+  </div>
+</partial>

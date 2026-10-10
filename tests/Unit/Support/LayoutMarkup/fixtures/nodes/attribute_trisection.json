@@ -1,0 +1,18 @@
+{
+  "id": "user_grid",
+  "type": "composite",
+  "name": "DataGrid",
+  "slot": "content",
+  "slotOrder": 2,
+  "dataKey": "userForm",
+  "trackChanges": true,
+  "debounce": 300,
+  "props": {
+    "className": "admin-card",
+    "data-testid": "grid",
+    "aria-label": "$t:admin.users.title",
+    "serverSidePagination": true,
+    "pageSize": 20,
+    "data": "{{users?.data?.data ?? []}}"
+  }
+}

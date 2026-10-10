@@ -1,0 +1,29 @@
+feature: 플러그인 비활성화·재활성화 시 관리자 메뉴 역할 보존
+
+description: |
+  번들 플러그인 4종의 deactivate() 가 자기 메뉴 행을 삭제하고 activate() 가 새로 만들어,
+  운영자가 붙인 메뉴 역할이 껐다 켤 때마다 사라지고 admin 만 남았다. 비활성 플러그인 메뉴는
+  이미 사이드바·관리 목록에서 자동으로 빠지므로 행 삭제는 가시성에 필요 없다.
+
+  수정:
+    - deactivate() 는 메뉴 행을 지우지 않는다(보존 → 재활성화 시 운영자 역할 그대로)
+    - uninstall() 은 메뉴를 직접 지운다(deactivate 경유에 기대지 않는다)
+    - 메뉴를 선언하지 않는 플러그인(totp·bizppurio)의 옛 판본 잔재 청소는 activate() 가 맡는다
+    - gdpr activate() 는 운영자가 privacy 역할을 붙였다 뗀 메뉴(user_overrides 에 기록)에 다시 붙이지 않는다
+
+axes:
+  plugin: [gdpr, ckeditor5, totp, bizppurio]
+  transition: [deactivate_activate, uninstall]
+
+effects:
+  - roles_preserved_across_reactivation
+  - menus_hidden_while_inactive
+  - menus_removed_on_uninstall
+  - privacy_role_not_regranted_after_operator_removal
+  - stale_menus_cleaned_on_activate
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/MenuRolePreservationTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/MenuRolePreservationTest.php
+  - plugins/_bundled/sirsoft-totp/tests/Feature/MenuRolePreservationTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/MenuRolePreservationTest.php

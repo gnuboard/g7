@@ -196,8 +196,10 @@ export async function initMenuFromUrlHandler(
   // 5. 단건 조회로 보강 (목록 응답에 없는 역할 등)
   const hydratedMenu = await hydrateMenuDetail(foundMenu);
 
-  // 6. 상태 업데이트
-  const panelMode = mode === 'edit' ? 'edit' : 'view';
+  // 6. 상태 업데이트 — 수정 권한(목록 응답 abilities.can_update)이 없으면 ?mode=edit 로 들어와도
+  // 보기 패널로 연다. 보기 패널의 [수정] 버튼과 같은 판정이며, 권한 값이 없으면 잠그는 쪽이다.
+  const canUpdate = getDataSource('menus')?.data?.abilities?.can_update === true;
+  const panelMode = mode === 'edit' && canUpdate ? 'edit' : 'view';
 
   // 전역 상태 업데이트 (G7Core.state.set 사용)
   g7Core.state.set({

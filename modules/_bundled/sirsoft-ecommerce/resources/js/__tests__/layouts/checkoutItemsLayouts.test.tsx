@@ -1,7 +1,7 @@
 /**
  * 체크아웃 상품 목록 레이아웃 테스트
  *
- * _checkout_items.json partial의 렌더링 및 동작을 테스트합니다.
+ * _checkout_items.g7.html partial의 렌더링 및 동작을 테스트합니다.
  * - 상품 목록 iteration 렌더링
  * - 상품별 쿠폰 드롭다운 (회원만 표시)
  * - 쿠폰 선택 시 API 호출
@@ -81,7 +81,7 @@ function setupTestRegistry(): ComponentRegistry {
     return registry;
 }
 
-// ========== _checkout_items.json 기반 레이아웃 (간소화) ==========
+// ========== _checkout_items.g7.html 기반 레이아웃 (간소화) ==========
 
 const checkoutItemsLayout = {
     version: '1.0.0',
@@ -463,7 +463,7 @@ const mockCheckoutDataWithItems = {
 
 // ========== 테스트 ==========
 
-describe('_checkout_items.json (상품 목록 Partial)', () => {
+describe('_checkout_items.g7.html (상품 목록 Partial)', () => {
     let testUtils: ReturnType<typeof createLayoutTest>;
     let registry: ComponentRegistry;
 

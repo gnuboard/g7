@@ -9,5 +9,25 @@
       "comment": "コメント通知",
       "reply_comment": "回答通知"
     }
+  },
+  "scraps": {
+    "tab_label": "スクラップ",
+    "title": "投稿のスクラップ",
+    "count": "スクラップ数",
+    "count_unit": "{{count}}個",
+    "latest_scrapped_at": "最近のスクラップ",
+    "none": "スクラップした投稿がありません。",
+    "view_list": "この会員のスクラップリストを表示"
+  },
+  "reactions": {
+    "tab_label": "リアクション",
+    "title": "掲示板リアクション",
+    "count": "合計リアクション",
+    "count_unit": "{{count}}件",
+    "breakdown": "投稿/コメント",
+    "breakdown_unit": "{{post}} / {{comment}}",
+    "latest_reacted_at": "最近のリアクション",
+    "none": "リアクションはありません。",
+    "view_list": "このユーザーのリアクション一覧を表示"
   }
 }

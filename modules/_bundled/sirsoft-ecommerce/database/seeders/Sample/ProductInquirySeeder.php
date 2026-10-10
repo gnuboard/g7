@@ -2,13 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
 
+use App\Extension\HookManager;
 use App\Models\User;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\Concerns\PurgesProductInquiries;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
@@ -16,12 +14,26 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 /**
  * 상품 1:1 문의 더미 데이터 시더
  *
- * 이커머스 설정에 inquiry.board_slug가 설정된 경우에만 실행됩니다.
- * 게시판 모듈이 설치되어 있어야 합니다.
+ * 문의 게시판은 설정(inquiry.board_slug)을 따르고, 비어 있으면 게시판 샘플의 product-inquiry 게시판을
+ * 설정에 연결합니다(시드 순서: 게시판 → 이커머스). 게시판이 없으면 건너뜁니다.
+ *
+ * 문의 글(질문·답변)은 게시판이 저장하므로 이 시더는 게시판 모델을 직접 만지지 않고,
+ * 이커머스가 정의한 훅에 게시판이 답하게 합니다(운영 경로와 같은 훅 전용 연동).
+ * - sirsoft-ecommerce.inquiry.get_settings       : 문의 게시판 존재 확인 (빈 배열 = 게시판 없음·응답 없음)
+ * - sirsoft-ecommerce.inquiry.purge_sample_posts : 상품 재생성 전 문의 글(+그 글의 답변) 정리 (PurgesProductInquiries)
+ * - sirsoft-ecommerce.inquiry.seed_sample_post   : 문의 글(+답변) 생성 → post_id·inquirable_type 반환
+ * 이 시더가 직접 다루는 것은 자기 피벗(ProductInquiry)뿐입니다. 이 시더만 따로 돌렸을 때 문의가 이미
+ * 있으면 실제 고객 문의일 수 있어 지우지도 만들지도 않습니다.
  */
 class ProductInquirySeeder extends Seeder
 {
     use HasSeederCounts;
+    use PurgesProductInquiries;
+
+    /**
+     * 게시판 샘플이 만드는 상품 문의 게시판 슬러그 (비밀글·답글 1단·댓글 끔)
+     */
+    public const SAMPLE_BOARD_SLUG = 'product-inquiry';
 
     /**
      * 문의 생성 비율 (상품 수 대비 %, 상품당 평균 생성 건수)
@@ -105,95 +117,89 @@ class ProductInquirySeeder extends Seeder
     /**
      * 시더 실행
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function run(): void
     {
         $this->command->info('상품 1:1 문의 더미 데이터 생성을 시작합니다.');
 
-        // 이커머스 설정에서 inquiry board_slug 확인
-        $boardSlug = $this->getInquiryBoardSlug();
+        $boardSlug = $this->resolveBoardSlug();
 
         if (! $boardSlug) {
-            $this->command->warn('이커머스 설정에 inquiry.board_slug가 설정되어 있지 않습니다. 시더를 건너뜁니다.');
-            $this->command->warn('관리자 > 이커머스 설정 > 기본 정보 > 1:1 문의게시판을 먼저 설정해 주세요.');
+            $this->command->warn('상품 문의 게시판이 없어 문의 샘플을 건너뜁니다.');
+            $this->command->warn('게시판 샘플을 먼저 만들거나(module:seed sirsoft-board --sample → product-inquiry 게시판), 관리자 > 이커머스 설정 > 기본 정보 > 1:1 문의게시판을 설정해 주세요.');
 
             return;
         }
 
-        // 문의 게시판 조회
-        $board = Board::where('slug', $boardSlug)->first();
-
-        if (! $board) {
-            $this->command->warn("board_slug '{$boardSlug}'에 해당하는 게시판이 존재하지 않습니다. 시더를 건너뜁니다.");
+        // 상품 재생성(ProductSeeder)이 먼저 돌면 기존 문의는 그때 스레드째 정리돼 0건이다.
+        // 이 시더만 따로 돌렸는데 문의가 남아 있으면 실제 고객 문의일 수 있어 지우지도, 더 만들지도 않는다.
+        $existing = ProductInquiry::withTrashed()->count();
+        if ($existing > 0) {
+            $this->command->warn("기존 상품 문의 {$existing}건이 있어 문의 샘플을 만들지 않습니다 (실제 문의 보호 — 기존 문의와 게시판 답변은 그대로 둡니다).");
+            $this->command->warn('문의 샘플을 새로 만들려면 상품 샘플과 함께 다시 시드하세요: module:seed sirsoft-ecommerce --sample');
 
             return;
         }
 
-        $this->deleteExistingInquiries($board);
-        $this->createInquiries($board);
+        $this->createInquiries($boardSlug);
 
         $count = ProductInquiry::count();
         $this->command->info("상품 1:1 문의 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
     }
 
     /**
-     * 이커머스 설정에서 inquiry board_slug를 반환합니다.
+     * 문의 게시판 슬러그를 정합니다.
      *
-     * @return string|null
+     * 설정(`inquiry.board_slug`)에 값이 있으면 그 값을 그대로 쓴다(운영자 선택은 덮어쓰지 않는다).
+     * 비어 있고 게시판 샘플이 만든 `product-inquiry` 게시판이 있으면 그 슬러그를 설정에 기록한다 —
+     * 그래야 상품 상세의 문의 탭과 관리자 문의 목록이 바로 동작한다. 어느 쪽 게시판도 게시판이
+     * 응답하지 않으면(게시판 없음·게시판 모듈 미설치) null.
+     *
+     * @return string|null 문의 게시판 슬러그
      */
-    private function getInquiryBoardSlug(): ?string
+    private function resolveBoardSlug(): ?string
     {
-        try {
-            /** @var EcommerceSettingsService $settingsService */
-            $settingsService = app(EcommerceSettingsService::class);
-            $inquirySettings = $settingsService->getSettings('inquiry');
+        $configured = $this->inquiryBoardSlug();
 
-            return $inquirySettings['board_slug'] ?? null;
-        } catch (\Throwable) {
+        if ($configured !== null) {
+            if ($this->boardExists($configured)) {
+                return $configured;
+            }
+
+            $this->command->warn("설정된 문의 게시판 '{$configured}'이(가) 없습니다.");
+
             return null;
         }
+
+        if (! $this->boardExists(self::SAMPLE_BOARD_SLUG)) {
+            return null;
+        }
+
+        app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', self::SAMPLE_BOARD_SLUG);
+        $this->command->line('  - 1:1 문의게시판 설정이 비어 있어 '.self::SAMPLE_BOARD_SLUG.' 게시판을 연결했습니다.');
+
+        return self::SAMPLE_BOARD_SLUG;
     }
 
     /**
-     * 기존 문의 데이터 삭제
+     * 게시판이 그 슬러그의 문의 게시판 설정을 돌려주는지(= 게시판이 있는지) 확인합니다.
      *
-     * @param  Board  $board
-     * @return void
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 게시판이 있으면 true
      */
-    private function deleteExistingInquiries(Board $board): void
+    private function boardExists(string $slug): bool
     {
-        // SoftDeletes 도입 여파: 소프트 삭제된 피벗 잔존물까지 포함해 전량 재시드한다
-        $existingCount = ProductInquiry::withTrashed()->count();
-
-        if ($existingCount > 0) {
-            // 연결된 게시판 Post도 함께 삭제
-            $inquirableIds = ProductInquiry::withTrashed()
-                ->where('inquirable_type', Post::class)
-                ->pluck('inquirable_id');
-
-            if ($inquirableIds->isNotEmpty()) {
-                Post::whereIn('id', $inquirableIds)->forceDelete();
-            }
-
-            // 답변 게시글(parent_id 기준) 삭제
-            Post::where('board_id', $board->id)
-                ->whereNotNull('parent_id')
-                ->forceDelete();
-
-            ProductInquiry::withTrashed()->forceDelete();
-
-            $this->command->warn("기존 문의 데이터 {$existingCount}건을 삭제했습니다.");
-        }
+        return ! empty(HookManager::applyFilters('sirsoft-ecommerce.inquiry.get_settings', [], $slug));
     }
 
     /**
      * 문의 더미 데이터 생성
      *
-     * @param  Board  $board
-     * @return void
+     * @param  string  $boardSlug  문의 게시판 슬러그
+     * @return void 반환값 없음
      */
-    private function createInquiries(Board $board): void
+    private function createInquiries(string $boardSlug): void
     {
         $products = Product::all();
 
@@ -223,48 +229,40 @@ class ProductInquirySeeder extends Seeder
 
                 $user = $isGuest ? null : $users->random();
 
-                // board_posts에 문의 게시글 생성
-                $post = Post::create([
-                    'board_id' => $board->id,
-                    'title' => $this->inquiryTitles[$titleIndex],
-                    'content' => $this->inquiryContents[$titleIndex],
-                    'content_mode' => 'text',
-                    'user_id' => $user?->id,
-                    'author_name' => $isGuest ? $this->guestNames[array_rand($this->guestNames)] : null,
-                    'password' => $isGuest ? Hash::make('1234') : null,
-                    'ip_address' => '127.0.0.1',
-                    'is_secret' => $isSecret,
-                    'status' => PostStatus::Published,
-                    'created_at' => now()->subDays(rand(1, 60))->subHours(rand(0, 23)),
-                ]);
-
+                $createdAt = now()->subDays(rand(1, 60))->subHours(rand(0, 23));
                 $hasReply = $admin && rand(1, 100) <= self::REPLY_RATE;
-                $answeredAt = null;
+                $answeredAt = $hasReply ? $createdAt->copy()->addHours(rand(2, 72))->min(now()) : null;
 
-                // 답변 게시글 생성
-                if ($hasReply) {
-                    $answeredAt = $post->created_at->addDays(rand(0, 3));
-
-                    Post::create([
-                        'board_id' => $board->id,
-                        'title' => 'Re: '.$post->title,
+                // 문의 글(+답변 글)은 게시판이 만든다 — 돌려받은 참조로 피벗을 잇는다
+                $postResult = HookManager::applyFilters(
+                    'sirsoft-ecommerce.inquiry.seed_sample_post',
+                    null,
+                    $boardSlug,
+                    [
+                        'title' => $this->inquiryTitles[$titleIndex],
+                        'content' => $this->inquiryContents[$titleIndex],
+                        'user_id' => $user?->id,
+                        'author_name' => $isGuest ? $this->guestNames[array_rand($this->guestNames)] : null,
+                        'password' => $isGuest ? '1234' : null,
+                        'is_secret' => $isSecret,
+                        'created_at' => $createdAt,
+                    ],
+                    $hasReply ? [
                         'content' => $this->replyContents[$titleIndex],
-                        'content_mode' => 'text',
                         'user_id' => $admin->id,
-                        'ip_address' => '127.0.0.1',
-                        'is_secret' => false,
-                        'status' => PostStatus::Published,
-                        'parent_id' => $post->id,
-                        'depth' => 1,
                         'created_at' => $answeredAt,
-                    ]);
+                    ] : null
+                );
+
+                if (! is_array($postResult) || empty($postResult['post_id']) || empty($postResult['inquirable_type'])) {
+                    continue;
                 }
 
                 // ecommerce_product_inquiries 피벗 생성
                 ProductInquiry::create([
                     'product_id' => $product->id,
-                    'inquirable_type' => Post::class,
-                    'inquirable_id' => $post->id,
+                    'inquirable_type' => $postResult['inquirable_type'],
+                    'inquirable_id' => (int) $postResult['post_id'],
                     'user_id' => $user?->id,
                     'is_answered' => $hasReply,
                     'answered_at' => $answeredAt,

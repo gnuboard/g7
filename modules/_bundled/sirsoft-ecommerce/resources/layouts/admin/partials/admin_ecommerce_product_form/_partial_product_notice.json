@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 상품정보제공고시 구획. 전자상거래법이 요구하는 항목 표라 상품마다 채워야 하고,\n  같은 항목 묶음을 되풀이하지 않도록 템플릿에서 불러 쓴다. 항목은 이름·내용 모두 다국어이며\n  줄 수가 정해져 있지 않아 추가·삭제·순서 바꾸기가 되는 목록 편집기로 다룬다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Product Information Notice Section"
@@ -13,6 +14,17 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.noticeExpanded": "{{!_local.ui.noticeExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -49,16 +61,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.noticeExpanded": "{{!_local.ui.noticeExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -82,15 +84,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "flex-between"
-                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
                                                 "className": "row-stack"
                                             }
                                         }
+                                    },
+                                    "props": {
+                                        "className": "flex-between"
                                     },
                                     "children": [
                                         {
@@ -116,7 +118,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "arrow-up-right-from-square",
-                                                        "className": "w-3 h-3 mr-1.5"
+                                                        "className": "text-xs mr-1.5"
                                                     }
                                                 },
                                                 {
@@ -131,13 +133,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Select",
-                                    "props": {
-                                        "className": "select w-full",
-                                        "value": "{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "템플릿을 고르면 곧바로 채우지 않고 확인 창을 거친다 — 이미 넣어 둔 고시 내용이 통째로 갈리기 때문이다. 고른 값은 확정될 때까지 전역에 대기한다",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.confirmSelectNoticeTemplate",
                                             "params": {
@@ -145,6 +143,11 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "select w-full",
+                                        "value": "{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -168,6 +171,31 @@
                                             "text": "{{$localized(template.name)}}"
                                         }
                                     ]
+                                },
+                                {
+                                    "comment": "고시 템플릿 조회 권한이 없어 선택지가 비었을 때의 안내 — 고시 항목은 아래에서 직접 채울 수 있다",
+                                    "id": "notice_template_forbidden_notice",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{notice_templates?.data?.unavailable === true}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2 mt-2 text-sm text-amber-700 dark:text-amber-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-exclamation",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.notice_templates"
+                                        }
+                                    ]
                                 }
                             ]
                         }
@@ -179,6 +207,7 @@
                     "name": "Div",
                     "onComponentEvent": [
                         {
+                            "comment": "일괄 변경 확인 창이 보낸 사건을 여기서 받는다 — 창은 별도 컨텍스트라 폼을 직접 고치지 못하고, 실제 채우기는 이 구획 몫이다",
                             "event": "notice:productBulkChangeConfirmed",
                             "handler": "sirsoft-ecommerce.fillNoticeItemsWithDetailReference",
                             "params": {
@@ -195,15 +224,15 @@
                                     "id": "notice_items_header",
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "flex-between"
-                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
                                                 "className": "row-stack"
                                             }
                                         }
+                                    },
+                                    "props": {
+                                        "className": "flex-between"
                                     },
                                     "children": [
                                         {
@@ -234,9 +263,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
-                                            "props": {
-                                                "className": "flex-center gap-2"
-                                            },
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
@@ -244,15 +270,13 @@
                                                     }
                                                 }
                                             },
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
                                                     "responsive": {
                                                         "portable": {
                                                             "props": {
@@ -262,6 +286,7 @@
                                                     },
                                                     "actions": [
                                                         {
+                                                            "comment": "「상세설명 참조」로 일괄 채우기 — 확인 창이 미리보기를 보여 줘야 해서 지금 폼을 통째로 전역에 옮겨 담고 연다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -279,6 +304,11 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.fill_detail_ref"
                                                 }
                                             ]
@@ -298,11 +328,29 @@
                                             "id": "notice_items_editor",
                                             "type": "composite",
                                             "name": "DynamicFieldList",
+                                            "actions": [
+                                                {
+                                                    "comment": "편집기가 줄 추가·삭제·순서까지 마친 목록을 통째로 돌려준다",
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.notice_items": "{{$args[0]}}"
+                                                    }
+                                                }
+                                            ],
                                             "props": {
                                                 "name": "notice_items",
                                                 "items": "{{_local.form.notice_items ?? []}}",
                                                 "itemIdKey": "key",
                                                 "errors": "{{_local.errors}}",
+                                                "enableDrag": true,
+                                                "showIndex": true,
+                                                "minItems": 0,
+                                                "addLabel": "$t:sirsoft-ecommerce.admin.product.notice.add_item",
+                                                "emptyMessage": "$t:sirsoft-ecommerce.admin.product.notice.empty_message",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "readOnly": "{{_computed.isReadOnly}}",
                                                 "columns": [
                                                     {
                                                         "key": "name",
@@ -315,24 +363,8 @@
                                                         "label": "$t:sirsoft-ecommerce.admin.product.notice.col_value",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.notice.input_placeholder"
                                                     }
-                                                ],
-                                                "enableDrag": true,
-                                                "showIndex": true,
-                                                "minItems": 0,
-                                                "addLabel": "$t:sirsoft-ecommerce.admin.product.notice.add_item",
-                                                "emptyMessage": "$t:sirsoft-ecommerce.admin.product.notice.empty_message",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
-                                            "actions": [
-                                                {
-                                                    "event": "onChange",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "form.notice_items": "{{$args[0]}}"
-                                                    }
-                                                }
-                                            ]
+                                                ]
+                                            }
                                         }
                                     ]
                                 }

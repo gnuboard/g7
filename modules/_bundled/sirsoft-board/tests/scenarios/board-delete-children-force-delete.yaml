@@ -44,6 +44,8 @@ effects:
   - other_board_files_not_affected
   # 신고 보존
   - reports_preserved_with_null_board_id
+  # 연동 통지 — 삭제될 글 ID 전량 + 글 모델 타입(셋째 인자)
+  - force_delete_hook_notifies_all_post_ids_with_post_type
 
 test_files:
   # 77 — 백엔드 삭제 정책 (DB force + 물리파일 + 신고 보존)

@@ -17,7 +17,10 @@
                         "PG 관리자 페이지에 로그인합니다.",
                         "가상계좌 입금통보 URL 설정 메뉴로 이동합니다.",
                         "위 URL 을 붙여넣고 저장합니다."
-                    ]
+                    ],
+                    "abilities": {
+                        "can_create_cbt_test_product": true
+                    }
                 }
             }
         }

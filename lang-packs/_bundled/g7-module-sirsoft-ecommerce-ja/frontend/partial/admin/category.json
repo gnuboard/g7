@@ -61,9 +61,9 @@
   },
   "delete_modal": {
     "title": "カテゴリ削除",
-    "message_can_delete": ":attributeカテゴリを本当に削除しますか?",
-    "message_cannot_delete": ":attributeカテゴリは削除できません。",
-    "message_suffix": ":attributeカテゴリを本当に削除しますか?",
+    "message_can_delete": " カテゴリを本当に削除しますか?",
+    "message_cannot_delete": " カテゴリは削除できません。",
+    "message_suffix": " カテゴリを本当に削除しますか?",
     "cannot_delete_title": "削除できません",
     "has_children_cannot_delete": "子カテゴリが{count}個あります。まず子カテゴリを削除してください。",
     "has_products_cannot_delete": "関連する商品が{count}個あります。まず商品のカテゴリを変更してください。",

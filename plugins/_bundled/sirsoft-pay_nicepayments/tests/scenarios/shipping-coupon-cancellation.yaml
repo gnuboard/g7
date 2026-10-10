@@ -1,0 +1,51 @@
+# e2e:allow 화면 변경 없음 — 관리자 취소 API → 코어 취소 → PG 환불 리스너의 백엔드 통합 경로만 검증한다.
+feature: 나이스페이먼츠 — 배송비·쿠폰 적용 주문의 관리자 취소와 PG 환불 통합 경로
+
+description: |
+  배송비가 붙은 주문과 쿠폰 할인이 적용된 주문을 관리자 취소 API 로 전체·부분 취소했을 때
+  코어 OrderCancellationService 의 환불 금액 계산(배송비·배송비 차액·쿠폰 차감 실결제액)과 환불 레코드 생성이
+  실제로 실행되고, 이 플러그인의 PaymentRefundListener 가 NicePaymentsApiService(mock)의 cancelPayment 를
+  올바른 인자(tid·cancelAmt·부분취소 코드)로 부르는지 확인한다. 쿠폰 복원은 가짜 리스너가 아니라
+  setUp 에서 직접 등록한 모듈의 실제 CouponRestoreListener 결과(AVAILABLE·used_at 비움)로 잰다.
+  접수만 한 취소(auto_advance_refund=false)는 PG 를 부르지 않고, PG 오류는 취소 전체를 롤백하며 refund_failed
+  훅을 남기고, 입금 완료 가상계좌는 환불 계좌 없이 일반 취소로 처리하지 않으며, 다른 PG 결제는 이 리스너가
+  손대지 않는다. 앞선 부분취소 뒤 남은 잔액 취소도 부분취소 코드를 유지하는지 검증한다.
+
+axes:
+  case:
+    - shipping_full
+    - shipping_full_args
+    - free_shipping_full
+    - shipping_partial
+    - remaining_partial_flag
+    - request_only
+    - coupon_full
+    - coupon_full_args
+    - coupon_partial_condition_met
+    - coupon_partial_condition_broken
+    - deposited_vbank_error
+    - pg_api_error
+    - refund_failed_hook
+    - other_pg_payment
+
+effects:
+  - order_cancelled_with_shipping_refunded # 배송비 포함 전액 환불 레코드 생성·주문 취소
+  - pg_cancel_called_once # 결제사 취소 API 정확히 1회 호출
+  - full_cancel_sends_partial_code_zero # 전액취소는 결제금액 전액·부분취소 코드 0 으로 보낸다
+  - free_shipping_refunds_product_only # 무료배송 주문은 상품 금액만 환불
+  - partial_cancel_refunds_shipping_difference # 부분취소 환불에 배송비 차액 포함
+  - partial_cancel_sends_partial_code_one # 부분취소는 부분취소 코드 1 로 보낸다
+  - remaining_cancel_keeps_partial_code # 앞선 부분취소 뒤 잔액 취소도 부분취소 코드 1 유지
+  - request_only_cancel_skips_pg # 접수만 한 취소는 PG 미호출·주문 미취소
+  - coupon_full_cancel_refunds_net_paid # 쿠폰 차감 후 실결제액 환불
+  - coupon_restored_by_real_listener # 실제 CouponRestoreListener 로 쿠폰 복원
+  - coupon_net_paid_sent_to_pg # 쿠폰 차감 후 실결제액이 취소 금액으로 전달
+  - coupon_kept_when_condition_met # 조건이 살아 있는 부분취소는 쿠폰 사용 유지
+  - partial_cancel_rejected_when_coupon_condition_broken # 쿠폰 조건 붕괴 부분취소 422 거부
+  - deposited_vbank_cancel_rejected # 입금 완료 가상계좌는 일반 취소 API 미호출·422 롤백
+  - pg_error_rolls_back_cancel # PG 오류 시 422·주문 상태 롤백
+  - refund_failed_hook_fired # PG 오류 시 refund_failed 훅 발동
+  - other_pg_payment_skipped # 다른 PG 결제는 이 리스너가 지나친다
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/ShippingAndCouponCancellationTest.php

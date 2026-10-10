@@ -1,0 +1,240 @@
+<!-- 쇼핑몰 설정 — 클레임 탭의 정책 카드들. 신청 조건·추가결제·첨부 값은 고객 신청 화면의 안내와 서버의 접수 판정이 같은 설정을 함께 읽고, 자동 승인 값은 서버 판정에만, 완료 처리 기본값은 관리자 완료 처리 창의 첫 선택값으로만 쓰인다.
+  카드 묶음이라 row-stack 을 쓰지 않는다 — row-stack 의 자식 py-2·첫 pt-0·끝 pb-0 이 같은 components 레이어의 admin-card p-4 를 덮어, 마지막 카드(완료 처리 기본값)의 하단 여백이 0 이 되어 문구가 테두리에 붙었다. 카드 사이 간격은 admin-card 의 mb-6 이 맡는다(다른 탭과 같은 구성). -->
+<partial description="쇼핑몰 설정 클레임 탭 - 클레임 정책 (신청 가능 조건 / 추가결제 / 자동 승인 / 첨부 / 완료 처리 기본값)">
+  <div data-ref="claim_policy_sections">
+    <div data-ref="claim_requestable_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.description</div>
+      <div class="row-stack">
+        <div data-ref="claim_exchange_requestable_statuses_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.exchange_label</span>
+          <tag-input data-type="composite" name="claim.exchange_requestable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.placeholder" value="{{_local.form?.claim?.exchange_requestable_statuses ?? ['delivered', 'confirmed']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+              <item value="delivered" label="$t:sirsoft-ecommerce.enums.order_status.delivered"/>
+              <item value="confirmed" label="$t:sirsoft-ecommerce.enums.order_status.confirmed"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.exchange_hint</p>
+          <span data-if="{{_local.errors?.['claim.exchange_requestable_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['claim.exchange_requestable_statuses']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="claim_return_requestable_statuses_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.return_label</span>
+          <tag-input data-type="composite" name="claim.return_requestable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.placeholder" value="{{_local.form?.claim?.return_requestable_statuses ?? ['delivered', 'confirmed']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+              <item value="delivered" label="$t:sirsoft-ecommerce.enums.order_status.delivered"/>
+              <item value="confirmed" label="$t:sirsoft-ecommerce.enums.order_status.confirmed"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.return_hint</p>
+          <span data-if="{{_local.errors?.['claim.return_requestable_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['claim.return_requestable_statuses']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="claim_instant_cancel_statuses_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.instant_cancel_label</span>
+          <tag-input data-type="composite" name="claim.instant_cancel_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.placeholder" value="{{_local.form?.claim?.instant_cancel_statuses ?? ['pending_order', 'pending_payment', 'payment_complete']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="pending_order" label="$t:sirsoft-ecommerce.enums.order_status.pending_order"/>
+              <item value="pending_payment" label="$t:sirsoft-ecommerce.enums.order_status.pending_payment"/>
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+              <item value="delivered" label="$t:sirsoft-ecommerce.enums.order_status.delivered"/>
+              <item value="confirmed" label="$t:sirsoft-ecommerce.enums.order_status.confirmed"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.instant_cancel_hint</p>
+          <span data-if="{{_local.errors?.['claim.instant_cancel_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['claim.instant_cancel_statuses']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="claim_refund_request_statuses_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.refund_request_label</span>
+          <tag-input data-type="composite" name="claim.refund_request_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.placeholder" value="{{_local.form?.claim?.refund_request_statuses ?? ['preparing', 'shipping_ready', 'shipping']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.refund_request_hint</p>
+          <span data-if="{{_local.errors?.['claim.refund_request_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['claim.refund_request_statuses']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="claim_request_period_days_field" class="flex-center gap-2 flex-wrap">
+          <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_label</span>
+          <!-- 교환·반품 신청 가능 기간(일) — 서버가 배송완료 시각(없으면 구매확정 시각)부터 이 일수가 지난 신청을 거절한다. 0 이면 기간 제한이 통째로 꺼지므로, 칸을 비워 0 이 담기면 저장 때 최소값 검증에서 막힌다. -->
+          <input type="number" min="{{_local?.form?._meta?.limits?.claim_request_period_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.claim_request_period_days_max ?? 365}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.request_period_days ?? 7}}">
+            <on type="change">
+              <set-state target="local" form.claim.request_period_days="{{Number($event.target.value)}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.claim.policy.days_unit</span>
+          <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_hint</p>
+          <span data-if="{{_local.errors?.['claim.request_period_days']}}" class="w-full form-error-xs">{{_local.errors?.['claim.request_period_days']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="claim_charge_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.description</div>
+      <div class="row-stack">
+        <div data-ref="claim_allowed_charge_methods_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.methods_label</span>
+          <tag-input data-type="composite" name="claim.allowed_charge_methods" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.methods_placeholder" value="{{_local.form?.claim?.allowed_charge_methods ?? ['pay_on_request', 'pay_on_approval', 'deduct_from_refund']}}" :isMulti="true" :isClearable="false" :isSearchable="false" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="pay_on_request" label="$t:sirsoft-ecommerce.enums.claim_charge_method.pay_on_request"/>
+              <item value="pay_on_approval" label="$t:sirsoft-ecommerce.enums.claim_charge_method.pay_on_approval"/>
+              <item value="deduct_from_refund" label="$t:sirsoft-ecommerce.enums.claim_charge_method.deduct_from_refund"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.methods_hint</p>
+          <span data-if="{{_local.errors?.['claim.allowed_charge_methods']}}" class="form-error-xs mt-1">{{_local.errors?.['claim.allowed_charge_methods']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="claim_charge_payment_methods_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.payment_methods_label</span>
+          <!-- 선택지는 환경설정 > 주문 탭의 결제수단 목록에서 파생한다 — 그 목록이 이 축의 서버 허용 어휘(PaymentMethodResolver::allValidIds())와 같은 출처이고, 주문 목록의 결제수단 필터(_computed.availablePaymentMethods)도 같은 것을 읽는다. 리터럴을 박으면 S5b 가 붙인 확장 결제수단(간편결제 등)을 서버는 받아들이는데 운영자는 고를 수 없고, 이미 저장돼 있던 확장 ID 도 이 탭을 한 번 저장하면 선택지 밖이라 사라진다. 공급이 끊긴 항목(_orphaned)은 앞으로 쓸 수단을 고르는 자리이므로 뺀다 — 과거 주문을 거르는 주문 목록 필터가 그것까지 보여 주는 것과는 목적이 다르다. 다만 is_active 로는 거르지 않는다 — 이 축은 주문 결제수단과 **다른 키**(claim.charge_payment_methods)이고 서버도 allValidIds() 로만 검증해 활성 여부를 보지 않는다. 화면만 거르면 ① 이미 저장된 비활성 수단이 모집단 밖이라 라벨을 못 찾아 원문 키로 찍히고(2026-09-22 실측: 기본값 point 가 「포인트결제」 대신 point) ② 그 태그를 한 번 지우면 선택지에도 없어 이 화면에서 다시 고를 수 없다 — 마일리지 추가결제 경로가 화면에서 사라지고 주문설정 탭을 먼저 켜라는 안내도 없다. 바로 아래 「환불 자동 승인 결제수단」이 is_active 로 거르지 않는 것과 같은 이유다. -->
+          <tag-input data-type="composite" name="claim.charge_payment_methods" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.payment_methods_placeholder" options="{{(_local.form?.order_settings?.payment_methods ?? []).filter(m => !m._orphaned).map(m => ({ value: m.id, label: $localized(m._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + (m.id ?? '') + '.name') || m.id }))}}" value="{{_local.form?.claim?.charge_payment_methods ?? ['card', 'point']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}"/>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.payment_methods_hint</p>
+          <span data-if="{{_local.errors?.['claim.charge_payment_methods']}}" class="form-error-xs mt-1">{{_local.errors?.['claim.charge_payment_methods']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <!-- 선교환 (D1) — 새 물건을 먼저 보내고 헌 물건은 기한 안에 받는 진행 방식. 켜야 교환 상세에 [선교환으로 전환] 이 선다. 기한은 발송일부터 센다 — 한계값은 설정 응답의 `_meta.limits` 가 나른다(서버 검증과 같은 출처). -->
+    <div data-ref="claim_advance_exchange_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.description</div>
+      <div class="row-stack">
+        <div data-ref="claim_advance_exchange_enabled_field" class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.enabled_label</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.enabled_hint</p>
+          </div>
+          <toggle data-type="composite" name="claim.advance_exchange_enabled" value="{{_local.form?.claim?.advance_exchange_enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="claim_advance_exchange_due_days_field" class="flex-center gap-2 flex-wrap">
+          <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label</span>
+          <input type="number" min="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_max ?? 90}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly || _local.form?.claim?.advance_exchange_enabled !== true}}" value="{{_local.form?.claim?.advance_exchange_collection_due_days ?? 14}}">
+            <on type="change">
+              <!-- 선교환 회수 기한(일)을 숫자로 저장하고 페이지 [저장] 을 켠다 -->
+              <set-state target="local" form.claim.advance_exchange_collection_due_days="{{Number($event.target.value)}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.claim.policy.days_unit</span>
+          <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_hint</p>
+          <span data-if="{{_local.errors?.['claim.advance_exchange_collection_due_days']}}" class="w-full form-error-xs">{{_local.errors?.['claim.advance_exchange_collection_due_days']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="claim_auto_approve_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.description</div>
+      <div class="row-stack">
+        <div data-ref="claim_auto_approve_zero_charge_field" class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.zero_charge_label</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.zero_charge_hint</p>
+          </div>
+          <toggle data-type="composite" name="claim.auto_approve_zero_charge" value="{{_local.form?.claim?.auto_approve_zero_charge ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="claim_auto_approve_after_payment_field" class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.after_payment_label</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.after_payment_hint</p>
+          </div>
+          <toggle data-type="composite" name="claim.auto_approve_after_payment" value="{{_local.form?.claim?.auto_approve_after_payment ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="claim_auto_approve_refund_request_field" class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_request_label</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_request_hint</p>
+          </div>
+          <toggle data-type="composite" name="claim.auto_approve_refund_request" value="{{_local.form?.claim?.auto_approve_refund_request ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <!-- 자동승인 대상 상태 (D8) — 토글이 꺼져 있으면 비활성. 토글만 있으면 '출고 전만 자동승인' 같은 운영을 표현할 수 없어, 전건 수동 승인과 배송중 건까지 자동승인의 양자택일이 된다. -->
+        <div data-ref="claim_auto_approve_refund_statuses_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_statuses_label</span>
+          <tag-input data-type="composite" name="claim.auto_approve_refund_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.placeholder" value="{{_local.form?.claim?.auto_approve_refund_statuses ?? ['payment_complete', 'preparing']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly || (_local.form?.claim?.auto_approve_refund_request ?? false) !== true}}">
+            <prop name="options">
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_statuses_hint</p>
+          <p data-if="{{_local.errors?.['claim.auto_approve_refund_statuses']}}" class="form-error">{{_local.errors?.['claim.auto_approve_refund_statuses']?.[0] ?? ''}}</p>
+        </div>
+        <!-- 환불 자동 승인 결제수단 (P16·P17) — 자동승인 토글과 달리 이 목록은 **토글과 무관하게 항상 적용**된다. 즉시취소 분기·자동승인 토글·관리자 [주문취소] 자동 전이 세 경로가 모두 이 목록을 읽으므로 토글이 꺼져 있어도 잠그지 않는다. 선택지는 charge_payment_methods 와 같은 출처(주문 설정 탭 카탈로그)에서 파생하되 is_active 로 거르지 않는다 — 이 축이 판정하는 것은 '앞으로 받을 주문' 이 아니라 '이미 그 수단으로 결제된 주문의 환불' 이라, 지금 꺼 둔 수단의 과거 주문이 목록 밖으로 새면 그 환불이 조용히 자동 완료된다. 공급이 끊긴 항목(_orphaned)만 뺀다. 플러그인이 auto_approve_refund 를 선언한 수단에는 'PG 즉시 환불' 을 라벨에 덧붙여, 운영자가 왜 그 수단이 기본 포함인지 알 수 있게 한다. -->
+        <div data-ref="claim_auto_approve_refund_payment_methods_field">
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_label</span>
+          <tag-input data-type="composite" name="claim.auto_approve_refund_payment_methods" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.payment_methods_placeholder" options="{{(_local.form?.order_settings?.payment_methods ?? []).filter(m => !m._orphaned).map(m => ({ value: m.id, label: ($localized(m._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + (m.id ?? '') + '.name') || m.id) + ((m.auto_approve_refund === true &amp;&amp; (m._cached_source ?? 'builtin') !== 'builtin') ? ' · ' + $t('sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_pg_badge') : '') }))}}" value="{{_local.form?.claim?.auto_approve_refund_payment_methods ?? ['card', 'point', 'free']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}"/>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_hint</p>
+          <p data-if="{{_local.errors?.['claim.auto_approve_refund_payment_methods']}}" class="form-error">{{_local.errors?.['claim.auto_approve_refund_payment_methods']?.[0] ?? ''}}</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="claim_attachment_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.description</div>
+      <div class="row-stack">
+        <div data-ref="claim_max_images_field" class="flex-center gap-2 flex-wrap">
+          <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_label</span>
+          <!-- 신청서 한 건에 붙일 수 있는 이미지 장수. 교환·반품·환불 신청과 수정, 업로드 단계의 서버 거절선이 모두 이 값을 읽고 고객 신청 화면의 안내도 같은 값을 받으므로 둘이 어긋나지 않는다. -->
+          <input type="number" min="{{_local?.form?._meta?.limits?.claim_max_images_min ?? 1}}" max="{{_local?.form?._meta?.limits?.claim_max_images_max ?? 20}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.max_images ?? 5}}">
+            <on type="change">
+              <set-state target="local" form.claim.max_images="{{Number($event.target.value)}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.claim.policy.images_unit</span>
+          <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_hint</p>
+          <span data-if="{{_local.errors?.['claim.max_images']}}" class="w-full form-error-xs">{{_local.errors?.['claim.max_images']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="claim_image_max_size_kb_field" class="flex-center gap-2 flex-wrap">
+          <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label</span>
+          <!-- 첨부 이미지 한 장의 용량 상한(KB). 고객·관리자 업로드 검증이 모두 이 값으로 거절하고 고객 신청 화면도 같은 값을 안내하므로, 여기만 바꾸면 화면과 서버가 함께 움직인다. -->
+          <input type="number" min="{{_local?.form?._meta?.limits?.claim_image_max_size_kb_min ?? 128}}" max="{{_local?.form?._meta?.limits?.claim_image_max_size_kb_max ?? 20480}}" step="1" class="input w-28" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.image_max_size_kb ?? 2048}}">
+            <on type="change">
+              <set-state target="local" form.claim.image_max_size_kb="{{Number($event.target.value)}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-body">KB</span>
+          <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_hint</p>
+          <span data-if="{{_local.errors?.['claim.image_max_size_kb']}}" class="w-full form-error-xs">{{_local.errors?.['claim.image_max_size_kb']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="claim_complete_defaults_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.description</div>
+      <div data-ref="claim_complete_defaults_notice" class="alert-info">
+        <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+        <span class="text-info-soft">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.notice</span>
+      </div>
+      <div class="row-stack">
+        <div data-ref="claim_complete_create_refund_request_field" class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.create_refund_request_label</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.create_refund_request_hint</p>
+          </div>
+          <toggle data-type="composite" name="claim.complete_defaults.create_refund_request" value="{{_local.form?.claim?.complete_defaults?.create_refund_request ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="claim_complete_restore_stock_field" class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.restore_stock_label</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.restore_stock_hint</p>
+          </div>
+          <toggle data-type="composite" name="claim.complete_defaults.restore_stock" value="{{_local.form?.claim?.complete_defaults?.restore_stock ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

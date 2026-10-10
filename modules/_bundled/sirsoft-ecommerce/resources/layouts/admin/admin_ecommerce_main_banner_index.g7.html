@@ -1,0 +1,74 @@
+<!-- 메인 배너 관리 (운영자) — 위쪽 미리보기 슬라이더 아래에 목록/상세·등록 폼을 나란히 둔다.
+  오른쪽 영역은 `viewMode` 하나로 상세·등록을 갈아 끼우고, 고른 배너가 없으면 안내만 남긴다. -->
+<layout name="admin_ecommerce_main_banner_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.main_banner.title" description="$t:sirsoft-ecommerce.admin.main_banner.description"/>
+  <init-local>
+    <field name="selectedBannerId" value="banner_1"/>
+    <field name="viewMode" value="detail"/>
+    <field name="activeTab" value="all"/>
+    <field name="activeLanguageTab" value="ko"/>
+    <field name="previewLanguage" value="en"/>
+    <field name="bannerStatus">
+      <field name="banner_1" :value="true"/>
+      <field name="banner_2" :value="false"/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.settings.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="main_banner_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.main_banner.title</h1>
+          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.main_banner.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-icon" aria-label="$t:common.reset">
+            <on type="click">
+              <!-- 쿼리를 떨어뜨린 처음 상태로 되돌린다 — 화면 상태가 전부 _local 이라 재진입이 곧 초기화다 -->
+              <navigate path="/admin/ecommerce/main-banners" :mergeQuery="false"/>
+            </on>
+            <icon name="arrows-rotate" class="text-base"/>
+          </button>
+          <button type="button" class="btn btn-outline">
+            <icon name="eye-slash" class="text-base mr-1"/>
+            <span>$t:sirsoft-ecommerce.admin.main_banner.actions.preview_close</span>
+          </button>
+          <button type="button" class="btn btn-primary">
+            <on type="click">
+              <!-- 오른쪽 영역을 등록 폼으로 바꾼다 — 선택을 비워야 상세 패널이 물러난다 -->
+              <set-state target="_local" :selectedBannerId="null" viewMode="add"/>
+            </on>
+            <icon name="plus" class="text-base mr-1"/>
+            <span>$t:sirsoft-ecommerce.admin.main_banner.actions.create</span>
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_main_banner_index/_partial_preview_slider.g7.html"/>
+      <div data-ref="panel_layout" class="grid-cols-1-lg-3">
+        <div data-ref="left_panel" class="col-span-1-lg">
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_list.g7.html"/>
+        </div>
+        <div data-ref="right_panel" class="col-span-2-lg">
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_detail.g7.html"/>
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_form.g7.html"/>
+          <div data-ref="empty_state" data-if="{{_local.viewMode === 'detail' &amp;&amp; _local.selectedBannerId === null}}" class="admin-card">
+            <div class="flex-center flex-col justify-center py-12">
+              <icon name="image" class="text-[4rem] text-gray-300 dark:text-gray-600 mb-4"/>
+              <p class="text-secondary text-sm">좌측에서 배너를 선택하세요</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 배너 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.g7.html"/>
+  <!-- 편집을 접을 때 저장하지 않은 입력을 버릴지 묻는다 -->
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.g7.html"/>
+  <!-- 노출/숨김 전환 확인 — 배너는 바꾸는 즉시 앞단에 반영된다 -->
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_status_change.g7.html"/>
+</layout>

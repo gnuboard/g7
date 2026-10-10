@@ -47,7 +47,8 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 성공 시 `R
 | --- | --- | --- | --- |
 | Content-Type | string | `image/jpeg` | 업로드 레코드의 `mime_type` 값. 허용 MIME: `image/jpeg`, `image/png`, `image/gif`, `image/webp` |
 | Cache-Control | string | `public, max-age=31536000` | 공개 콘텐츠 이미지의 장기 캐싱 (1년) |
-| Content-Disposition | string | `inline; filename="photo.jpg"` | 업로드 시 원본 파일명(`original_name`)을 파일명으로 사용 |
+| Content-Disposition | string | `inline; filename="photo.jpg"` | 원본 파일명(`original_name`). 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 `inline`, 그 밖(SVG 포함)은 `attachment` + CSP sandbox. 모든 응답에 `X-Content-Type-Options: nosniff` (KVE-2026-2366) |
+| X-Content-Type-Options | string | `nosniff` | 브라우저의 형식 추측 차단 |
 
 **응답 예시**
 
@@ -58,6 +59,7 @@ HTTP/1.1 200 OK
 Content-Type: image/jpeg
 Cache-Control: public, max-age=31536000
 Content-Disposition: inline; filename="photo.jpg"
+X-Content-Type-Options: nosniff
 
 <binary image data>
 ```

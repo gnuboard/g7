@@ -1,0 +1,203 @@
+<!-- 메뉴를 새로 만들거나 고치는 패널. 만들기와 고치기가 **같은 조각**이고 패널 모드 하나로 갈린다
+  — 제목·보낼 곳·방식·성공 문구가 모두 그 값을 본다.
+  값을 담는 자리(`formData`)가 전역인 것은 보기 패널이 편집으로 넘길 때 그 자리를 미리 채워 주기
+  때문이다. 그래서 이 조각은 열릴 때 서버를 부르지 않는다. -->
+<partial name="panel_form">
+  <div data-ref="form_panel" data-if="{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}">
+    <div data-ref="form_header" class="px-4 panel-header flex-between">
+      <h3 data-if="{{_global.panelMode === 'create'}}" class="text-heading">$t:admin.menus.new_menu_title</h3>
+      <h3 data-if="{{_global.panelMode === 'edit'}}" class="text-heading">$t:admin.menus.edit_menu_title</h3>
+      <div class="flex-center gap-2">
+        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <on type="click">
+            <!-- 편집 취소 — 판 상태를 먼저 「고른 것 없음」으로 되돌린 뒤 주소를 그 상태에 맞춘다. 상태와 주소가 함께 풀려야
+                 새로고침이 취소한 편집 폼을 되살리지 않는다. -->
+            <sequence>
+              <!-- 취소는 고른 항목까지 비워 보기 패널이 아니라 「고른 것 없음」 안내로 돌아간다 — 고치던 것이 왼쪽 목록에서도 풀린다. -->
+              <set-state target="global" panelMode="view" :selectedMenuId="null" :selectedMenu="null" :formErrors="null"/>
+              <!-- 고른 메뉴가 풀렸으니 주소의 menu·mode 도 지운다 — 남겨 두면 새로고침이 편집 폼을 다시 연다. 왼쪽 목록 조건은 그대로 둔다. -->
+              <replace-url :mergeQuery="true">
+                <query menu="" mode=""/>
+              </replace-url>
+            </sequence>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="submit" form="menu_form" disabled="{{_global.isSaving}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
+          <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
+          <span data-if="{{!_global.isSaving}}">$t:common.save</span>
+          <span data-if="{{_global.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+    <div data-ref="validation_error" data-if="{{_global.formErrors}}" class="alert-danger">
+      <div class="flex gap-3">
+        <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div>
+          <h3 class="text-error-strong">$t:admin.menus.form.validation_error</h3>
+          <p data-if="{{typeof _global.formErrors === 'string'}}" class="text-error-soft mt-2">{{_global.formErrors}}</p>
+          <ul data-if="{{typeof _global.formErrors === 'object' &amp;&amp; Object.keys(_global.formErrors).length > 0}}" data-each="message in Object.entries(_global.formErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+            <li class="text-error-soft">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <form data-ref="menu_form" data-key="_global.formData" data-track-changes id="menu_form" class="p-4 space-y-6">
+      <on type="submit">
+        <!-- 저장한 뒤 목록과 사이드바를 다시 받고, 응답으로 온 항목을 그대로 고른 상태로 삼아 보기 패널로 넘어간다 — 새로 만든 메뉴도 곧바로 그 자리에서 이어 볼 수 있다. -->
+        <sequence>
+          <set-state target="global" :isSaving="true" :formErrors="null"/>
+          <api-call :auth_required="true" target="{{_global.panelMode === 'create' ? '/api/admin/menus' : '/api/admin/menus/' + _global.selectedMenuId}}" method="{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}">
+            <success>
+              <sequence>
+                <toast type="success" message="{{_global.panelMode === 'create' ? $t:admin.menus.messages.created : $t:admin.menus.messages.updated}}"/>
+                <refetch-data-source dataSourceId="menus"/>
+                <refetch-data-source dataSourceId="admin_menu" :sync="true"/>
+                <set-state target="global" :isSaving="false" panelMode="view" selectedMenuId="{{result.data.id}}" selectedMenu="{{result.data}}" :formErrors="null"/>
+                <!-- 판이 보기 모드로 넘어갔으니 주소도 mode=view 로 맞춘다(슬러그를 바꿨거나 새로 만든 메뉴도 그 메뉴를 가리키게). 남은 mode=edit 는 새로고침 때 저장한 메뉴의 편집 폼을 다시 연다. -->
+                <replace-url :mergeQuery="true">
+                  <query menu="{{result.data.slug}}" mode="view"/>
+                </replace-url>
+              </sequence>
+            </success>
+            <fail>
+              <set-state target="global" :isSaving="false" formErrors="{{error.errors}}"/>
+            </fail>
+            <body name="{{_global.formData.name}}" slug="{{_global.formData.slug}}" url="{{_global.formData.url}}" icon="{{_global.formData.icon}}" parent_id="{{_global.formData.parent_id}}" extension_type="{{_global.formData.extension_type}}" extension_identifier="{{_global.formData.extension_identifier}}" is_active="{{_global.formData.is_active}}" roles="{{_global.formData.roles}}"/>
+          </api-call>
+        </sequence>
+      </on>
+      <div data-ref="form_basic_section">
+        <h4 data-ref="form_basic_title" class="text-table-header">$t:admin.menus.info.basic</h4>
+        <div data-ref="form_name_field">
+          <div>
+            <label data-ref="form_name_label" class="form-label">
+              <span>$t:admin.menus.form.name</span>
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs"/>
+            <span data-if="{{_global.formErrors?.name}}" class="text-red-500 text-xs">{{_global.formErrors?.name?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="form_slug_field">
+          <div>
+            <label data-ref="form_slug_label" class="form-label">
+              <span>$t:admin.menus.form.slug</span>
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <input data-ref="form_slug_input" type="text" name="slug" class="input font-mono"/>
+            <span data-if="{{_global.formErrors?.slug}}" class="text-red-500 text-xs">{{_global.formErrors?.slug?.[0] ?? ''}}</span>
+            <span data-ref="form_slug_hint" data-if="{{!_global.formErrors?.slug}}" class="text-tertiary">$t:admin.menus.form.slug_hint</span>
+          </div>
+        </div>
+        <div data-ref="form_url_field">
+          <div>
+            <label data-ref="form_url_label" class="form-label">
+              <span>$t:admin.menus.form.url</span>
+            </label>
+            <input data-ref="form_url_input" type="text" name="url" placeholder="$t:admin.menus.form.url_placeholder" class="input font-mono"/>
+            <span data-if="{{_global.formErrors?.url}}" class="text-red-500 text-xs">{{_global.formErrors?.url?.[0] ?? ''}}</span>
+            <span data-ref="form_url_hint" data-if="{{!_global.formErrors?.url}}" class="text-tertiary">$t:admin.menus.form.url_hint</span>
+          </div>
+        </div>
+        <div data-ref="form_icon_field">
+          <div>
+            <label data-ref="form_icon_label" class="form-label">$t:admin.menus.form.icon</label>
+            <icon-select data-type="composite" data-ref="form_icon_select" name="icon" placeholder="$t:admin.menus.form.icon_placeholder" searchPlaceholder="$t:admin.menus.form.icon_search_placeholder" noResultsText="$t:admin.menus.form.icon_no_results"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="form_hierarchy_section">
+        <div>
+          <h4 data-ref="form_hierarchy_title" class="text-table-header">$t:admin.menus.info.hierarchy</h4>
+          <div data-ref="form_parent_field">
+            <div>
+              <label data-ref="form_parent_label" class="form-label">$t:admin.menus.form.parent</label>
+              <select data-ref="form_parent_select" name="parent_id" class="select">
+                <option data-ref="form_parent_option_top" value="">$t:admin.menus.form.parent_top_level</option>
+                <option data-each="parentMenu in (menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId)" value="{{parentMenu.id}}">{{$localized(parentMenu.name)}}</option>
+              </select>
+              <span data-if="{{_global.formErrors?.parent_id}}" class="text-red-500 text-xs">{{_global.formErrors?.parent_id?.[0] ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="form_custom_menu_section" data-if="{{_global.panelMode === 'create'}}">
+        <div data-ref="form_custom_menu_field">
+          <div>
+            <label data-ref="form_custom_menu_label" class="form-label">$t:admin.menus.form.custom_menu</label>
+            <select data-ref="form_custom_menu_select" name="custom_menu_key" class="select">
+              <on type="change">
+                <!-- 확장이 내건 화면을 고르면 **주소 칸도 함께 채워 준다** — 고른 항목에 붙어 온 주소를 쓰고, 없으면 적어 둔 것을 그대로 둔다. 새 메뉴를 만들 때만 나오는 칸이다. -->
+                <set-state target="global" formData="{{Object.assign({}, _global.formData, {custom_menu_key: $event.target.value || null, url: $event.target.selectedOptions[0]?.dataset?.url || _global.formData.url})}}"/>
+              </on>
+              <option data-ref="form_custom_menu_option_none" value="">$t:admin.menus.form.custom_menu_none</option>
+              <optgroup data-each="moduleItem in Object.entries(modules?.data?.custom_menus ?? {}).map(([id, val]) => ({ id, name: val.module_name, custom_menus: val.menus ?? [] })).filter(m => m.custom_menus.length > 0)" label="{{moduleItem.name}}">
+                <option data-each="customMenu in {{moduleItem.custom_menus ?? []}}" value="{{customMenu.key}}" data-module-id="{{moduleItem.id}}" data-url="{{customMenu.url}}">{{customMenu.name}}</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div data-ref="form_affiliation_section" data-if="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedMenu?.extension_type != null &amp;&amp; _global.selectedMenu?.extension_type !== 'core'}}">
+        <div>
+          <h4 data-ref="form_affiliation_title" class="text-table-header">$t:admin.menus.info.affiliation</h4>
+          <div data-ref="form_module_field">
+            <div>
+              <label data-ref="form_module_label" class="form-label">$t:admin.menus.info.module</label>
+              <input data-ref="form_module_input" type="text" value="{{_global.selectedMenu?.module?.name}}" :disabled="true" class="input"/>
+            </div>
+          </div>
+          <span data-ref="form_module_hint" class="text-tertiary">$t:admin.menus.form.module_readonly_hint</span>
+        </div>
+      </div>
+      <div data-ref="form_roles_section">
+        <div>
+          <h4 data-ref="form_roles_title" class="text-table-header">$t:admin.menus.info.access_permission</h4>
+          <div data-ref="form_roles_field">
+            <div>
+              <label data-ref="form_roles_label" class="form-label">$t:admin.menus.form.roles</label>
+              <tag-input data-type="composite" data-ref="form_roles_input" name="roles" placeholder="$t:admin.menus.form.roles_placeholder" noOptionsMessage="$t:admin.menus.form.roles_no_options" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}"/>
+              <span data-ref="form_roles_hint" class="text-tertiary">$t:admin.menus.form.roles_hint</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="form_status_section">
+        <div>
+          <h4 data-ref="form_status_title" class="text-table-header">$t:admin.menus.info.status</h4>
+          <toggle data-type="composite" data-ref="form_toggle" label="$t:admin.menus.form.is_active" name="is_active"/>
+        </div>
+      </div>
+      <div data-ref="form_meta_section" data-if="{{_global.panelMode === 'edit'}}">
+        <div>
+          <h4 data-ref="form_meta_title" class="text-table-header">$t:admin.menus.info.meta</h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex-center gap-3">
+              <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.creator</span>
+              <div>
+                <span class="text-primary font-medium">{{_global.selectedMenu?.creator?.name ?? 'System'}}</span>
+                <span data-if="{{_global.selectedMenu?.creator?.email}}" class="block text-tertiary">{{_global.selectedMenu?.creator?.email}}</span>
+              </div>
+            </div>
+            <div class="flex-center gap-3">
+              <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.created_at</span>
+              <div class="flex-center text-primary gap-1.5">
+                <icon name="calendar" size="sm" class="text-gray-400 dark:text-gray-500"/>
+                <span>{{_global.selectedMenu?.created_at}}</span>
+              </div>
+            </div>
+            <div class="flex-center gap-3">
+              <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.updated_at</span>
+              <div class="flex-center text-primary gap-1.5">
+                <icon name="clock" size="sm" class="text-gray-400 dark:text-gray-500"/>
+                <span>{{_global.selectedMenu?.updated_at}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</partial>

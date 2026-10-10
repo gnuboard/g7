@@ -1,671 +1,708 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "회원가입 폼"
-  },
-  "type": "basic",
-  "name": "Form",
-  "dataKey": "registerForm",
-  "props": {
-    "id": "registerForm",
-    "className": "space-y-4 relative"
-  },
-  "children": [
-    {
-      "comment": "로딩 오버레이 (블러 처리)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_local?.isRegistering}}",
-      "props": {
-        "className": "absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex flex-col items-center gap-2"
-          },
-          "children": [
-            {
-              "comment": "로딩 스피너",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
-              },
-              "text": "$t:auth.register.processing"
-            }
-          ]
-        }
-      ]
+    "comment": "회원가입 폼 조각 — 입력값은 registerForm 한 덩어리로 모여 그대로 전송된다. 필드를 늘리는 것은 확장의 몫이라(아래 주입 앵커) 이 조각은 코어가 아는 필드만 안다.",
+    "meta": {
+        "is_partial": true,
+        "description": "회원가입 폼"
     },
-    {
-      "comment": "API 에러 메시지 표시 — 전체 응답 message + form field 외 errors (identity/verification_token 등 plugin 기여 에러)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_local?.registerError}}",
-      "props": {
-        "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-      },
-      "children": [
+    "type": "basic",
+    "name": "Form",
+    "dataKey": "registerForm",
+    "actions": [
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-sm font-medium text-red-600 dark:text-red-400"
-          },
-          "text": "{{_local.registerError}}"
-        },
-        {
-          "comment": "비-form-field 에러 메시지 (identity / verification_token 등 plugin 기여 에러)를 추가 안내",
-          "type": "basic",
-          "name": "Ul",
-          "if": "{{_local.errors && Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}",
-          "props": {
-            "className": "mt-2 list-disc list-inside space-y-1"
-          },
-          "iteration": {
-            "source": "Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })",
-            "item_var": "message"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Li",
-              "props": {
-                "className": "text-sm text-red-600 dark:text-red-400"
-              },
-              "text": "{{message}}"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "이메일 필드",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:auth.email"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-red-500 ml-1"
-              },
-              "text": "*"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "email",
-            "name": "email",
-            "placeholder": "$t:auth.email_placeholder",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "required": true,
-            "disabled": "{{_local?.isRegistering}}"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.email}}",
-          "props": {
-            "className": "text-red-500 text-xs mt-1"
-          },
-          "text": "{{_local.errors?.email?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "comment": "비밀번호 필드",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:auth.password"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-red-500 ml-1"
-              },
-              "text": "*"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "PasswordInput",
-          "props": {
-            "name": "password",
-            "placeholder": "$t:auth.register.password_placeholder|count=8",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "required": true,
-            "disabled": "{{_local?.isRegistering}}",
-            "showToggle": true,
-            "showValidation": true,
-            "enableRules": [
-              "minLength:8"
-            ],
-            "error": "{{_local.errors?.password?.[0] ?? ''}}"
-          }
-        }
-      ]
-    },
-    {
-      "comment": "비밀번호 확인 필드",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:auth.password_confirm"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-red-500 ml-1"
-              },
-              "text": "*"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "PasswordInput",
-          "props": {
-            "name": "password_confirmation",
-            "placeholder": "$t:auth.password_confirm_placeholder",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "required": true,
-            "disabled": "{{_local?.isRegistering}}",
-            "showToggle": true,
-            "isConfirmField": true,
-            "confirmTarget": "{{_local.registerForm?.password ?? ''}}",
-            "error": "{{_local.errors?.password_confirmation?.[0] ?? ''}}"
-          }
-        }
-      ]
-    },
-    {
-      "comment": "이름 필드 (필수)",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:auth.name"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-red-500 ml-1"
-              },
-              "text": "*"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "text",
-            "name": "name",
-            "placeholder": "$t:auth.name_placeholder",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "required": true,
-            "disabled": "{{_local?.isRegistering}}"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.name}}",
-          "props": {
-            "className": "text-red-500 text-xs mt-1"
-          },
-          "text": "{{_local.errors?.name?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "comment": "닉네임 필드 (선택)",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "text": "$t:auth.nickname"
-        },
-        {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "text",
-            "name": "nickname",
-            "placeholder": "$t:auth.nickname_placeholder",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "disabled": "{{_local?.isRegistering}}"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.nickname}}",
-          "props": {
-            "className": "text-red-500 text-xs mt-1"
-          },
-          "text": "{{_local.errors?.nickname?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "comment": "휴대폰번호 필드 (선택)",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "text": "$t:auth.mobile"
-        },
-        {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "tel",
-            "name": "mobile",
-            "placeholder": "$t:auth.mobile_placeholder",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "disabled": "{{_local?.isRegistering}}"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.mobile}}",
-          "props": {
-            "className": "text-red-500 text-xs mt-1"
-          },
-          "text": "{{_local.errors?.mobile?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "comment": "전화번호 필드 (선택)",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "text": "$t:auth.phone"
-        },
-        {
-          "type": "basic",
-          "name": "Input",
-          "props": {
-            "type": "tel",
-            "name": "phone",
-            "placeholder": "$t:auth.phone_placeholder",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "disabled": "{{_local?.isRegistering}}"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.phone}}",
-          "props": {
-            "className": "text-red-500 text-xs mt-1"
-          },
-          "text": "{{_local.errors?.phone?.[0] ?? ''}}"
-        }
-      ]
-    },
-    {
-      "comment": "언어 설정 필드",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          },
-          "text": "$t:auth.language"
-        },
-        {
-          "type": "basic",
-          "name": "Select",
-          "props": {
-            "name": "language",
-            "value": "{{_local?.registerForm?.language ?? $locale ?? 'ko'}}",
-            "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
-            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-            "disabled": "{{_local?.isRegistering}}"
-          }
-        }
-      ]
-    },
-    {
-      "id": "register_extension_fields",
-      "comment": "확장 주입 앵커 — 모듈이 layout_extensions 로 가입폼 추가 필드(결제 통화 등)를 주입한다. 미설치 시 빈 슬롯(렌더 영향 없음).",
-      "type": "basic",
-      "name": "Div"
-    },
-    {
-      "comment": "약관 동의",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-2 pt-2"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center gap-2"
-              },
-              "children": [
+            "comment": "가입 요청 — 본인인증을 거쳐 왔다면 URL 에 남은 인증 토큰을 폼 값에 얹어 함께 보낸다. 실패 응답의 오류는 필드별로 갈라 각 입력 아래에 붙고, 필드에 속하지 않는 것(플러그인이 낸 오류 등)은 위쪽 안내 상자에 목록으로 모인다.",
+            "type": "submit",
+            "handler": "sequence",
+            "actions": [
                 {
-                  "type": "basic",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "agree_terms",
-                    "value": "1",
-                    "required": true,
-                    "disabled": "{{_local?.isRegistering}}"
-                  }
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "isRegistering": true,
+                        "registerError": null,
+                        "errors": null
+                    }
                 },
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                      },
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "termsContent"
-                              }
-                            },
-                            {
-                              "handler": "openModal",
-                              "target": "termsModal"
-                            }
-                          ]
-                        }
-                      ],
-                      "text": "$t:auth.terms"
+                    "handler": "apiCall",
+                    "target": "/api/auth/register",
+                    "params": {
+                        "method": "POST",
+                        "body": "{{Object.assign({}, _local.registerForm, query.verification_token ? { verification_token: query.verification_token } : {})}}"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": " $t:auth.agree_required"
+                    "onSuccess": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "isRegistering": false
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "success",
+                                "message": "$t:auth.register_success"
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/login"
+                            }
+                        }
+                    ],
+                    "onError": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "isRegistering": false,
+                            "errors": "{{error.response?.errors ?? error.errors}}",
+                            "registerError": "{{error.response?.message ?? error.message}}"
+                        }
                     }
-                  ]
                 }
-              ]
+            ]
+        }
+    ],
+    "props": {
+        "id": "registerForm",
+        "className": "space-y-4 relative"
+    },
+    "children": [
+        {
+            "comment": "로딩 오버레이 (블러 처리)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local?.isRegistering}}",
+            "props": {
+                "className": "absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.agree_terms}}",
-              "props": {
-                "className": "text-red-500 text-xs mt-1 ml-6"
-              },
-              "text": "{{_local.errors?.agree_terms?.[0] ?? ''}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "로딩 스피너",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:auth.register.processing"
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "id": "register_privacy_agreement",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center gap-2"
-              },
-              "children": [
+            "comment": "API 에러 메시지 표시 — 전체 응답 message + form field 외 errors (identity/verification_token 등 plugin 기여 에러)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local?.registerError}}",
+            "props": {
+                "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Checkbox",
-                  "props": {
-                    "name": "agree_privacy",
-                    "value": "1",
-                    "required": true,
-                    "disabled": "{{_local?.isRegistering}}"
-                  }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm font-medium text-red-600 dark:text-red-400"
+                    },
+                    "text": "{{_local.registerError}}"
                 },
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                      },
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "privacyContent"
-                              }
-                            },
-                            {
-                              "handler": "openModal",
-                              "target": "privacyModal"
-                            }
-                          ]
-                        }
-                      ],
-                      "text": "$t:auth.privacy"
+                    "comment": "비-form-field 에러 메시지 (identity / verification_token 등 plugin 기여 에러)를 추가 안내",
+                    "type": "basic",
+                    "name": "Ul",
+                    "if": "{{_local.errors && Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}",
+                    "iteration": {
+                        "source": "Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })",
+                        "item_var": "message"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": " $t:auth.agree_required"
-                    }
-                  ]
+                    "props": {
+                        "className": "mt-2 list-disc list-inside space-y-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Li",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{message}}"
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.agree_privacy}}",
-              "props": {
-                "className": "text-red-500 text-xs mt-1 ml-6"
-              },
-              "text": "{{_local.errors?.agree_privacy?.[0] ?? ''}}"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "submit",
-        "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-        "disabled": "{{_local?.isRegistering}}"
-      },
-      "children": [
-        {
-          "comment": "버튼 내 스피너",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local?.isRegistering}}",
-          "props": {
-            "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-          }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{!_local?.isRegistering}}",
-          "text": "$t:auth.register.submit"
+            "comment": "이메일 필드",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:auth.email"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-red-500 ml-1"
+                            },
+                            "text": "*"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "props": {
+                        "type": "email",
+                        "name": "email",
+                        "placeholder": "$t:auth.email_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "required": true,
+                        "disabled": "{{_local?.isRegistering}}"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.email}}",
+                    "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.email?.[0] ?? ''}}"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local?.isRegistering}}",
-          "text": "$t:auth.register.processing"
-        }
-      ]
-    }
-  ],
-  "actions": [
-    {
-      "type": "submit",
-      "handler": "sequence",
-      "actions": [
-        {
-          "handler": "setState",
-          "params": {
-            "target": "local",
-            "isRegistering": true,
-            "registerError": null,
-            "errors": null
-          }
+            "comment": "비밀번호 필드",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:auth.password"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-red-500 ml-1"
+                            },
+                            "text": "*"
+                        }
+                    ]
+                },
+                {
+                    "comment": "규칙·자리표시 숫자는 보안 환경설정 값을 따른다(#736) — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다.",
+                    "type": "basic",
+                    "name": "PasswordInput",
+                    "props": {
+                        "name": "password",
+                        "placeholder": "$t:auth.register.password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "required": true,
+                        "disabled": "{{_local?.isRegistering}}",
+                        "showToggle": true,
+                        "showValidation": true,
+                        "enableRules": "{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}",
+                        "error": "{{_local.errors?.password?.[0] ?? ''}}"
+                    }
+                },
+                {
+                    "comment": "화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다(#736).",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}",
+                    "props": {
+                        "className": "mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:auth.password_rules.server_intro"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.settings?.security?.password_block_identifier}}",
+                            "text": "$t:auth.password_rules.identifier"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.settings?.security?.password_block_repeated_chars}}",
+                            "text": "$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.settings?.security?.password_block_sequential_chars}}",
+                            "text": "$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}"
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "handler": "apiCall",
-          "target": "/api/auth/register",
-          "params": {
-            "method": "POST",
-            "body": "{{Object.assign({}, _local.registerForm, query.verification_token ? { verification_token: query.verification_token } : {})}}"
-          },
-          "onSuccess": [
-            {
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "isRegistering": false
-              }
+            "comment": "비밀번호 확인 필드",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:auth.password_confirm"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-red-500 ml-1"
+                            },
+                            "text": "*"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "PasswordInput",
+                    "props": {
+                        "name": "password_confirmation",
+                        "placeholder": "$t:auth.password_confirm_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "required": true,
+                        "disabled": "{{_local?.isRegistering}}",
+                        "showToggle": true,
+                        "isConfirmField": true,
+                        "confirmTarget": "{{_local.registerForm?.password ?? ''}}",
+                        "error": "{{_local.errors?.password_confirmation?.[0] ?? ''}}"
+                    }
+                }
+            ]
+        },
+        {
+            "comment": "이름 필드 (필수)",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:auth.name"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-red-500 ml-1"
+                            },
+                            "text": "*"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "props": {
+                        "type": "text",
+                        "name": "name",
+                        "placeholder": "$t:auth.name_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "required": true,
+                        "disabled": "{{_local?.isRegistering}}"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.name}}",
+                    "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.name?.[0] ?? ''}}"
+                }
+            ]
+        },
+        {
+            "comment": "닉네임 필드 (선택)",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "text": "$t:auth.nickname"
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "props": {
+                        "type": "text",
+                        "name": "nickname",
+                        "placeholder": "$t:auth.nickname_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "disabled": "{{_local?.isRegistering}}"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.nickname}}",
+                    "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.nickname?.[0] ?? ''}}"
+                }
+            ]
+        },
+        {
+            "comment": "휴대폰번호 필드 (선택)",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "text": "$t:auth.mobile"
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "props": {
+                        "type": "tel",
+                        "name": "mobile",
+                        "placeholder": "$t:auth.mobile_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "disabled": "{{_local?.isRegistering}}"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.mobile}}",
+                    "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.mobile?.[0] ?? ''}}"
+                }
+            ]
+        },
+        {
+            "comment": "전화번호 필드 (선택)",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "text": "$t:auth.phone"
+                },
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "props": {
+                        "type": "tel",
+                        "name": "phone",
+                        "placeholder": "$t:auth.phone_placeholder",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "disabled": "{{_local?.isRegistering}}"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.phone}}",
+                    "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.phone?.[0] ?? ''}}"
+                }
+            ]
+        },
+        {
+            "comment": "언어 설정 필드",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "text": "$t:auth.language"
+                },
+                {
+                    "type": "basic",
+                    "name": "Select",
+                    "props": {
+                        "name": "language",
+                        "value": "{{_local?.registerForm?.language ?? $locale ?? 'ko'}}",
+                        "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        "disabled": "{{_local?.isRegistering}}"
+                    }
+                }
+            ]
+        },
+        {
+            "comment": "확장 주입 앵커 — 모듈이 layout_extensions 로 가입폼 추가 필드(결제 통화 등)를 주입한다. 미설치 시 빈 슬롯(렌더 영향 없음).",
+            "id": "register_extension_fields",
+            "type": "basic",
+            "name": "Div"
+        },
+        {
+            "comment": "약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면\n         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 N O-N6).",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-2 pt-2"
             },
-            {
-              "handler": "toast",
-              "params": {
-                "type": "success",
-                "message": "$t:auth.register_success"
-              }
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "props": {
+                                        "name": "agree_terms",
+                                        "value": "1",
+                                        "aria-label": "$t:auth.agree_terms_label",
+                                        "required": true,
+                                        "disabled": "{{_local?.isRegistering}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "약관 전문 보기 — 모달을 열기 전에 본문을 받아 온다(가입 화면 진입 때는 부르지 않는 데이터소스라 여기서 처음 채워진다).",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "termsContent"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "termsModal"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            },
+                                            "text": "$t:auth.terms"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": " $t:auth.agree_required"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.agree_terms}}",
+                            "props": {
+                                "className": "text-red-500 text-xs mt-1 ml-6"
+                            },
+                            "text": "{{_local.errors?.agree_terms?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "register_privacy_agreement",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "props": {
+                                        "name": "agree_privacy",
+                                        "value": "1",
+                                        "aria-label": "$t:auth.agree_privacy_label",
+                                        "required": true,
+                                        "disabled": "{{_local?.isRegistering}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "방침 전문 보기 — 약관 쪽과 같은 흐름이고 받아오는 문서만 다르다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "privacyContent"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "privacyModal"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            },
+                                            "text": "$t:auth.privacy"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": " $t:auth.agree_required"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.agree_privacy}}",
+                            "props": {
+                                "className": "text-red-500 text-xs mt-1 ml-6"
+                            },
+                            "text": "{{_local.errors?.agree_privacy?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "props": {
+                "type": "submit",
+                "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                "disabled": "{{_local?.isRegistering}}"
             },
-            {
-              "handler": "navigate",
-              "params": {
-                "path": "/login"
-              }
-            }
-          ],
-          "onError": [
-            {
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "isRegistering": false,
-                "errors": "{{error.response?.errors ?? error.errors}}",
-                "registerError": "{{error.response?.message ?? error.message}}"
-              }
-            }
-          ]
+            "children": [
+                {
+                    "comment": "버튼 내 스피너",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local?.isRegistering}}",
+                    "props": {
+                        "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{!_local?.isRegistering}}",
+                    "text": "$t:auth.register.submit"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local?.isRegistering}}",
+                    "text": "$t:auth.register.processing"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

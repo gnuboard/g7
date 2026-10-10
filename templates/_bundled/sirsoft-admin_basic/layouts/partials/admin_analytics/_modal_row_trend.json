@@ -1,0 +1,168 @@
+{
+    "comment": "한 항목 추이 창. 리포트 목록 행 끝의 추이 아이콘이 그 행의 리포트 이름·저장 라벨을 `_global.analyticsRowTrend` 에\n  담고 연다. 화면의 데이터소스 `analytics_row_trend` 가 그 값에 매여 따라 받는다(기간·제외는 지금 주소 그대로).\n  차원 집계는 일 단위뿐이라 92일까지는 일, 그 뒤는 주 단위로 온다. 다른 행을 열면 창 제목·요청 라벨이 그 행으로\n  바뀌고, 받는 동안은 옛 차트를 흐려 잔상이 새 행의 값으로 읽히지 않게 한다.\n  엔진은 실패한 요청에 오류 표식을 싣지 않고 마지막 성공 값(다른 행의 것일 수 있다)이나 fallback 을 성공처럼 준다 —\n  그래서 응답의 report·label 이 고른 행과 같을 때만 차트·빈 상태를 그리고, 아니면 오류 카드를 띄운다.",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 — 한 항목 추이 창",
+        "editor_label": "$t:admin.modal_label.analytics.row_trend_modal"
+    },
+    "id": "analytics_row_trend_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.analytics.row_trend.title|label={{_global.analyticsRowTrend?.label_display ?? ''}}",
+        "size": "xl"
+    },
+    "children": [
+        {
+            "id": "row_trend_body",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2 space-y-3"
+            },
+            "children": [
+                {
+                    "id": "row_trend_period",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report}}",
+                    "props": {
+                        "className": "flex-center gap-2 text-label-subtle"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.analytics.row_trend.period|from={{analytics_row_trend?.data?.from ?? ''}}|to={{analytics_row_trend?.data?.to ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "·"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{$t('admin.analytics.period.units.' + (analytics_row_trend?.data?.unit ?? 'day'))}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "row_trend_downgraded",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{analytics_row_trend?.data?.unit_downgraded === true}}",
+                    "props": {
+                        "className": "text-hint text-xs"
+                    },
+                    "text": "$t:admin.analytics.row_trend.unit_downgraded"
+                },
+                {
+                    "id": "row_trend_chart_wrap",
+                    "type": "basic",
+                    "name": "Div",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "analytics_row_trend"
+                    },
+                    "props": {
+                        "className": "relative h-64"
+                    },
+                    "children": [
+                        {
+                            "id": "row_trend_chart",
+                            "type": "composite",
+                            "name": "LineChart",
+                            "if": "{{analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report && (analytics_row_trend?.data?.points ?? []).length > 0}}",
+                            "props": {
+                                "labels": "{{(analytics_row_trend?.data?.points ?? []).map(p => String(p.ts ?? '').slice(5, 10))}}",
+                                "datasets": "{{[{label: $t('admin.analytics.common.visits'), data: (analytics_row_trend?.data?.points ?? []).map(p => p.visits ?? 0), color: '#0EA5E9', fill: true}, {label: $t('admin.analytics.common.hits'), data: (analytics_row_trend?.data?.points ?? []).map(p => p.hits ?? 0), color: '#F59E0B'}]}}",
+                                "height": "100%",
+                                "showLegend": true,
+                                "showYGrid": true,
+                                "showYAxis": true
+                            }
+                        },
+                        {
+                            "id": "row_trend_empty",
+                            "type": "composite",
+                            "name": "EmptyState",
+                            "if": "{{!analytics_row_trend?.loading && analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report && (analytics_row_trend?.data?.points ?? []).length === 0}}",
+                            "props": {
+                                "iconName": "chart-line",
+                                "title": "$t:admin.analytics.row_trend.empty",
+                                "className": "py-10"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "row_trend_error",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!analytics_row_trend?.loading && !(analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report)}}",
+                    "props": {
+                        "className": "alert-danger"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-error-soft flex-1"
+                                    },
+                                    "text": "$t:admin.analytics.row_trend.error"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.close"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

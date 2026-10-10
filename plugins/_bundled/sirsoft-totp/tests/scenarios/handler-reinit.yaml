@@ -1,0 +1,16 @@
+feature: TOTP 핸들러 재등록 진입점 — 로케일 전환 뒤에도 액션이 남는다 (#639 ④)
+
+description: |
+  로케일을 바꾸면 코어가 ActionDispatcher 를 새로 만들고 `window.__{Name}.initPlugin()` 으로 핸들러를 다시 꽂는다.
+  이 플러그인은 그 전역을 두지 않아 ko→en 전환 뒤 `sirsoft-totp.copyToClipboard` 가 디스패처에서 빠졌다(실측 2026-10-05).
+  `window.__SirsoftTotp = { identifier, initPlugin }` 을 두고, initPlugin 은 핸들러 등록만 다시 한다(QR 관측자 등 1회성
+  부팅은 넣지 않는다).
+
+axes:
+  case: [reinit]
+
+effects:
+  - handlers_survive_locale_reinit
+
+test_files:
+  - plugins/_bundled/sirsoft-totp/resources/js/__tests__/reinitEntry.test.ts

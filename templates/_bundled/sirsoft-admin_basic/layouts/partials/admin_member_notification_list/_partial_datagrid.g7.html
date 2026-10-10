@@ -1,0 +1,106 @@
+<!-- 회원 알림함 표. 줄 고르기는 **삭제 권한이 있을 때만 켜진다** — 권한이 없으면 체크칸 자체가
+  나오지 않아 지울 수 없는 버튼을 눌러 보는 일이 없다.
+  식별자가 uuid 문자열이라 `idField` 가 가리키는 값도 문자열이다(표는 문자열 식별자를 허용한다).
+  회원 칸은 회원이 남아 있을 때만 상세로 이어진다 — 다형 관계에 외래키가 없어 회원이 먼저 지워지면
+  알림 줄만 남는데, 그 줄을 감추면 정리할 대상을 찾지 못하므로 「삭제된 회원」으로 그려 둔다.
+  줄을 펼치면 본문 발췌와 연결 주소가 나온다(전문은 목록에 싣지 않는다 — 알림 수만큼 무거워진다). -->
+<partial description="Member Notification List DataGrid">
+  <data-grid data-type="composite" data-ref="member_notification_datagrid" data="{{memberNotifications?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{memberNotifications?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{memberNotifications?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{memberNotifications?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{memberNotifications?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_member_notifications || []}}" selectedCountText="" loading="{{memberNotifications?.loading}}" :expandable="true" emptyMessage="$t:admin.member_notification.empty_message" actionsColumnHeader="$t:common.actions">
+    <expand>
+      <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
+        <div>
+          <span class="form-label">$t:admin.member_notification.detail.body_label</span>
+          <p data-if="{{row.body_excerpt}}" class="text-body whitespace-pre-line">{{row.body_excerpt}}</p>
+          <span data-if="{{!row.body_excerpt}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:admin.member_notification.detail.no_body</span>
+        </div>
+        <div class="flex-center gap-2">
+          <span class="text-body font-medium shrink-0">$t:admin.member_notification.detail.type_label</span>
+          <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{row.type ?? '-'}}</span>
+        </div>
+        <div data-if="{{row.url}}" class="flex-center gap-2">
+          <span class="text-body font-medium shrink-0">$t:admin.member_notification.detail.url_label</span>
+          <span class="text-sm font-mono text-gray-600 dark:text-gray-400 break-all">{{row.url}}</span>
+        </div>
+      </div>
+    </expand>
+    <prop name="rowActions">
+      <item id="delete" label="$t:admin.member_notification.delete.button" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
+    </prop>
+    <column field="created_at" header="$t:admin.member_notification.col_created_at" :sortable="true" width="160px">
+      <cell>
+        <span class="text-label">{{row.created_at ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="member" header="$t:admin.member_notification.col_member" width="200px">
+      <cell>
+        <span data-if="{{!row.member}}" class="text-label-subtle italic">$t:admin.member_notification.deleted_member</span>
+        <action-menu data-type="composite" data-if="{{!!row.member}}" position="right">
+          <prop name="items">
+            <item id="view_member" label="$t:admin.member_notification.action.view_member" iconName="user"/>
+            <item id="filter_by_member" label="$t:admin.member_notification.action.filter_by_member" iconName="search"/>
+          </prop>
+          <on event="onItemClick">
+            <!-- 회원 상세는 새 창이라 보던 목록을 잃지 않는다. 「이 회원만」은 이름이 아니라 uuid 로 좁힌다 — 개명·동명이인에 흔들리지 않는다. -->
+            <switch>
+              <case when="view_member">
+                <open-window path="/admin/users/{{row.member.uuid}}"/>
+              </case>
+              <case when="filter_by_member">
+                <navigate path="/admin/member-notifications" :mergeQuery="true" :replace="true" transition_overlay_target="member_notification_datagrid__body">
+                  <query user_uuid="{{row.member.uuid}}" :page="1"/>
+                </navigate>
+              </case>
+            </switch>
+          </on>
+          <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+            <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <div class="min-w-0 flex-1">
+              <span class="font-medium text-gray-900 dark:text-gray-100 truncate block text-sm">{{row.member.name}}</span>
+              <span data-if="{{!!row.member.email}}" class="text-tertiary truncate block">({{row.member.email}})</span>
+            </div>
+          </div>
+        </action-menu>
+      </cell>
+    </column>
+    <column field="type_label" header="$t:admin.member_notification.col_type" width="140px">
+      <cell>
+        <badge data-type="composite" color="blue" text="{{row.type_label ?? '-'}}"/>
+      </cell>
+    </column>
+    <column field="subject" header="$t:admin.member_notification.col_subject" width="280px">
+      <cell>
+        <span class="text-body line-clamp-1">{{row.subject ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="read_at" header="$t:admin.member_notification.col_read_at" :sortable="true" width="160px">
+      <cell>
+        <div>
+          <span class="{{row.is_read ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'}}">{{row.is_read ? '$t:admin.member_notification.badge.read' : '$t:admin.member_notification.badge.unread'}}</span>
+          <span data-if="{{!!row.read_at}}" class="block text-tertiary mt-0.5">{{row.read_at}}</span>
+        </div>
+      </cell>
+    </column>
+    <on type="change" event="onPageChange">
+      <!-- 쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다. -->
+      <navigate path="/admin/member-notifications" :mergeQuery="true" :replace="true" transition_overlay_target="member_notification_datagrid__body">
+        <query page="{{$args[0]}}"/>
+      </navigate>
+    </on>
+    <on type="action" event="onSelectionChange">
+      <!-- 고른 줄은 전역에 둔다 — 일괄 삭제 버튼이 표 밖 화면 머리에 있어 표 안쪽 상태로는 닿지 않는다. -->
+      <set-state target="global" selectedIds_admin_member_notifications="{{$args[0]}}"/>
+    </on>
+    <on type="action" event="onRowAction">
+      <!-- 한 줄 삭제도 바로 지우지 않는다 — 누른 줄을 전역에 실어 둔 뒤 확인 창을 열고, 창이 그 값을 읽어 무엇을 지우는지 보여 준다. -->
+      <switch>
+        <case when="delete">
+          <set-state target="global" modal_data="{{$args[1]}}">
+            <success>
+              <open-modal target="delete_confirm_modal"/>
+            </success>
+          </set-state>
+        </case>
+      </switch>
+    </on>
+  </data-grid>
+</partial>

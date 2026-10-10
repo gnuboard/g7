@@ -34,6 +34,10 @@
 `api` 정책의 `base_fee` 는 외부 API 호출이 실패했을 때 사용할 폴백 배송비입니다. 0 을 허용하면
 외부 API 장애가 그대로 무료배송이 되므로 0 을 거부합니다.
 
+배송방법이 `custom`(직접 배송)인 국가 설정은 `custom_shipping_name` 의 **사이트 기본 언어**(`app.site_locale`) 이름이
+필수입니다(422 키 `country_settings.{i}.custom_shipping_name.{사이트 기본 언어}`). 요청 언어와 무관합니다 — 다른 언어로
+보는 관리자도 같은 칸을 채웁니다.
+
 **구간(`ranges.tiers[]`) 규칙**
 
 구간의 종료값(`max`)은 **포함**입니다 — `max: 5` 인 구간은 값 5까지 그 구간입니다.
@@ -369,7 +373,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 배송정책을 생성합니다. `sirsoft-ecommerce.shipping-policies.create` 권한이 필요하며, `ShippingPolicyService::create()` 가 다국어 정책명(`name`), 활성여부, 기본여부, 정렬순서, 국가별 설정(`country_settings`, 최소 1개)을 저장하고 201 로 생성된 정책 리소스를 반환합니다. 국가별로 배송방식·배송비 부과정책을 담은 배송정책을 새로 등록할 때 사용합니다.
+**설명** 관리자가 새 배송정책을 생성합니다. `sirsoft-ecommerce.shipping-policies.create` 권한이 필요하며, `ShippingPolicyService::create()` 가 다국어 정책명(`name`), 활성여부, 기본여부, 정렬순서, 국가별 설정(`country_settings`, 최소 1개)을 저장하고 201 로 생성된 정책 리소스를 반환합니다. 국가별로 배송방식·배송비 부과정책을 담은 배송정책을 새로 등록할 때 사용합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「배송정책명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Shipping Policy Name field is required.").
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/shipping-policies/active
@@ -566,14 +570,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 배송정책이 삭제되었습니다.",
+    "message": "2개 배송정책이 삭제되었습니다.",
     "data": {
         "deleted_count": 2
     }
 }
 ```
 
-> 컨트롤러가 `messageParams` 를 넘기지 않으므로 `message` 의 `:count` 자리표시자는 치환되지 않은 채로 내려옵니다.
+> 응답 `message` 의 `:count` 는 `deleted_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -639,14 +643,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 배송정책의 사용여부가 변경되었습니다.",
+    "message": "2개 배송정책의 사용여부가 변경되었습니다.",
     "data": {
         "updated_count": 2
     }
 }
 ```
 
-> 컨트롤러가 `messageParams` 를 넘기지 않으므로 `message` 의 `:count` 자리표시자는 치환되지 않은 채로 내려옵니다.
+> 응답 `message` 의 `:count` 는 `updated_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -1034,7 +1038,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 기존 배송정책을 수정합니다. `sirsoft-ecommerce.shipping-policies.update` 권한이 필요하며, 컨트롤러가 `getDetail()` 로 정책을 조회해 없으면 404 를 반환한 뒤 `ShippingPolicyService::update()` 가 다국어 정책명·활성여부·기본여부·정렬순서·국가별 설정(`country_settings`, 최소 1개)을 갱신하고 수정된 리소스를 반환합니다. 배송정책의 국가별 배송비/방식을 변경할 때 사용합니다.
+**설명** 관리자가 기존 배송정책을 수정합니다. `sirsoft-ecommerce.shipping-policies.update` 권한이 필요하며, 컨트롤러가 `getDetail()` 로 정책을 조회해 없으면 404 를 반환한 뒤 `ShippingPolicyService::update()` 가 다국어 정책명·활성여부·기본여부·정렬순서·국가별 설정(`country_settings`, 최소 1개)을 갱신하고 수정된 리소스를 반환합니다. 배송정책의 국가별 배송비/방식을 변경할 때 사용합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「배송정책명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Shipping Policy Name field is required.").
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/set-default
@@ -1211,3 +1215,213 @@ HTTP/1.1 200
 **설명** 관리자가 배송정책 1건의 활성 상태를 토글합니다. `sirsoft-ecommerce.shipping-policies.update` 권한이 필요하며, 컨트롤러가 `getDetail()` 로 정책을 조회해 없으면 404 를 반환한 뒤 `ShippingPolicyService::toggleActive()` 가 현재 활성 여부를 반전시키고 갱신된 리소스를 반환합니다. 목록 화면에서 개별 정책의 사용여부 스위치를 켜고 끌 때 사용합니다.
 
 
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.shipping-policies.claim-settings.show -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.shipping-policies.claim-settings.show`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ShippingPolicyController@claimSettings`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.shipping-policies.read`
+
+배송정책의 클레임 설정을 조회합니다 — 클레임 유형(교환/반품)별 **회수지** 1건씩과, 국가별
+설정의 **클레임 배송비 축**(`claim_fee_mode`/`return_fixed_fee`/`exchange_fixed_fee`)입니다.
+회수지는 신청 시점에 클레임 헤더의 `return_address_snapshot` 으로 복사되므로, 이후 여기서
+바꿔도 이미 접수된 건의 회수지는 흔들리지 않습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 대상 배송정책의 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/shipping-policies/12/claim-settings HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| addresses.exchange | object\|null | 교환 회수지 (`{id, claim_type, recipient_name, phone, zipcode, address1, address2, country_code}`) — 미등록이면 null |
+| addresses.return | object\|null | 반품 회수지 — 미등록이면 null |
+| country_settings[] | array | 국가별 설정 전체 표현(`ShippingPolicyCountrySettingResource`) — 클레임 축 `claim_fee_mode`(`fixed` 고정액 / `original_policy` 원 정책 재계산), `claim_fee_mode_label`, `return_fixed_fee`(편도), `exchange_fixed_fee`(왕복) 포함 |
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "클레임 배송 설정을 조회했습니다.",
+  "data": {
+    "addresses": {
+      "exchange": null,
+      "return": {
+        "id": 3,
+        "claim_type": "return",
+        "recipient_name": "반품 담당자",
+        "phone": "02-1234-5678",
+        "zipcode": "06236",
+        "address1": "서울시 강남구 테헤란로 1",
+        "address2": "3층",
+        "country_code": "KR"
+      }
+    },
+    "country_settings": [
+      {
+        "id": 11,
+        "country_code": "KR",
+        "claim_fee_mode": "fixed",
+        "claim_fee_mode_label": "고정액",
+        "return_fixed_fee": 3000,
+        "exchange_fixed_fee": 6000
+      }
+    ]
+  }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.read`)이 없는 경우 |
+| 404 | Not Found | 배송정책이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 배송정책 편집 화면의 클레임 탭이 진입 시 기존 값을 불러오는 데 사용합니다. 회수지는
+정책 × 유형당 최대 1건이라 미등록 유형은 키를 유지한 채 `null` 로 내려갑니다(키 자체가 빠지지
+않으므로 화면이 분기 없이 빈 폼을 그릴 수 있습니다). 국가별 설정은 상세 표현이라 클레임 축이
+포함되며, 목록 표현(`toListArray`)에는 실리지 않습니다.
+
+---
+
+### PUT /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.shipping-policies.claim-settings.update -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.shipping-policies.claim-settings.update`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ShippingPolicyController@updateClaimSettings`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.shipping-policies.update`
+
+배송정책의 클레임 설정을 수정합니다. **부분 수정 계약**입니다 — 보낸 축만 반영합니다:
+
+- `addresses.{exchange|return}`: 키가 있으면 upsert, 값이 `null` 이면 삭제, 키가 없으면 불변.
+- `country_settings`: 나열된 국가만 갱신합니다. 국가 코드는 **이 정책의 국가별 설정에 실재**해야
+  합니다 — 미등록 국가·다른 정책의 국가는 요청 검증 422(`errors` 동반)입니다. 본 폼 저장
+  (`PUT /{id}`)과 달리 국가별 설정 행을 지우거나 만들지 않습니다.
+- 국가 항목 안의 고정액 2종도 **값이 실린 축만 반영**합니다 — 키가 없거나 `null` 이면 기존 값이
+  그대로 남습니다. 고정액 입력란이 비활성인 모드(`original_policy`)로 바꾸면서 두 키를 빼고
+  보내도 저장해 둔 고정액이 사라지지 않습니다. `0` 은 유효값이라 그대로 반영됩니다
+  (본 폼 저장의 승계 판정과 같은 기준).
+
+본 폼 저장(`PUT /{id}`)은 국가별 설정을 삭제 후 재생성하지만, 클레임 축 3종을 보내지 않은
+항목은 기존 값(동일 `country_code`)을 **승계**합니다 — 클레임 탭에서 저장한 값이 본 폼 저장
+한 번에 초기화되지 않습니다. 본 폼이 클레임 축을 명시로 실으면 그 값이 쓰입니다
+(`country_settings.*.claim_fee_mode` 등 — 검증 규칙은 두 경로가 동일).
+
+승계 판정은 키 부재와 명시 `null` 을 모두 "값 없음" 으로 봅니다(`0` 은 유효값). 승계할 기존
+행이 없는 경우 — 정책 **생성**(`POST /`)이나 본 폼에서 **새 국가를 추가**할 때 — 는 컬럼
+기본값(`fixed` / `0` / `0`)이 적용됩니다. 세 컬럼 모두 NOT NULL 이므로 `null` 이 저장되는
+경로는 없습니다.
+
+**본문 파라미터**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| addresses | object | 아니오 | 회수지 묶음 (`exchange`/`return` 키 — 부분 수정) |
+| addresses.{type}.recipient_name | string | 조건부 | 회수지 수취인명 (해당 유형 객체를 보내면 필수, max 100) |
+| addresses.{type}.address1 | string | 조건부 | 회수지 기본주소 (해당 유형 객체를 보내면 필수, max 255) |
+| addresses.{type}.phone | string | 아니오 | 회수지 연락처 (max 20) |
+| addresses.{type}.zipcode | string | 아니오 | 회수지 우편번호 (max 10) |
+| addresses.{type}.address2 | string | 아니오 | 회수지 상세주소 (max 255) |
+| addresses.{type}.country_code | string | 아니오 | 회수지 국가코드 (기본 KR) |
+| country_settings | array | 아니오 | 갱신할 국가 목록 |
+| country_settings.*.country_code | string | 예 | 국가 코드 — 이 정책의 국가별 설정에 실재해야 한다 (distinct, 상위 스코프 exists) |
+| country_settings.*.claim_fee_mode | string | 예 | 클레임 배송비 산정 모드 (`fixed`/`original_policy`) |
+| country_settings.*.return_fixed_fee | number | 아니오 | 반품 클레임 배송비 고정액 — 편도 (min 0, 생략·null 이면 기존 값 유지) |
+| country_settings.*.exchange_fixed_fee | number | 아니오 | 교환 클레임 배송비 고정액 — 왕복 (min 0, 생략·null 이면 기존 값 유지) |
+
+**요청 예시**
+
+```json
+{
+  "addresses": {
+    "return": {
+      "recipient_name": "반품 담당자",
+      "phone": "02-1234-5678",
+      "zipcode": "06236",
+      "address1": "서울시 강남구 테헤란로 1",
+      "address2": "3층",
+      "country_code": "KR"
+    }
+  },
+  "country_settings": [
+    {"country_code": "KR", "claim_fee_mode": "fixed", "return_fixed_fee": 3000, "exchange_fixed_fee": 6000}
+  ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+GET 과 같은 형태(`addresses` + `country_settings`)를 수정 반영 상태로 반환합니다 — 두 경로가
+같은 조립기(`claimSettingsPayload`)를 쓰므로 필드 구성이 갈리지 않습니다.
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "클레임 배송 설정이 저장되었습니다.",
+  "data": {
+    "addresses": {
+      "exchange": null,
+      "return": {
+        "id": 3,
+        "claim_type": "return",
+        "recipient_name": "반품 담당자",
+        "phone": "02-1234-5678",
+        "zipcode": "06236",
+        "address1": "서울시 강남구 테헤란로 1",
+        "address2": "3층",
+        "country_code": "KR"
+      }
+    },
+    "country_settings": [
+      {
+        "id": 11,
+        "country_code": "KR",
+        "claim_fee_mode": "fixed",
+        "claim_fee_mode_label": "고정액",
+        "return_fixed_fee": 3000,
+        "exchange_fixed_fee": 6000
+      }
+    ]
+  }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.update`)이 없는 경우 |
+| 404 | Not Found | 배송정책이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 검증 실패 (`errors` 동반) — 이 정책에 없는 국가 코드, 잘못된 산정 모드, 음수 배송비, 회수지 필수 항목 누락 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외는 4xx 로 뭉개지 않고 500 으로 구분한다 |
+
+<!-- @generated:end -->
+
+**설명** 배송정책 편집 화면의 클레임 탭(교환/반품 회수지 + 국가별 클레임 배송비)이 쓰는
+전용 저장 경로입니다. 회수지는 정책 × 유형당 1건이며, 클레임 신청 시점에 스냅샷으로 동결됩니다.
+
+본 폼 저장의 승계 판정은 "키 부재" 가 아니라 **"값 없음"**(키 부재 + 명시 `null`)입니다. 클레임
+축 3종은 모두 NOT NULL 이라 `null` 은 저장 가능한 값이 아니므로, 폼이 빈 필드를 `null` 로 실어
+보내도 기존 값이 살아남습니다. `0` 은 유효값이라 그대로 반영됩니다(무료로 내리는 조작이
+승계에 먹히지 않습니다).

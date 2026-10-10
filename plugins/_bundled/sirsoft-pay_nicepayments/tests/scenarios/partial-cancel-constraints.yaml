@@ -1,0 +1,18 @@
+# e2e:allow 화면 문구는 이커머스가 그린다 — 플러그인은 부분취소 지원 여부와 환불 거래 ID 만 바꾼다.
+feature: 부분취소 제약 사전 판정 (P-D7) · 부분취소 회차 번호 (P-D11) — #747 C8
+
+description: |
+  나이스페이가 부분취소를 거절하는 결제(에스크로 2052, 지난달 휴대폰)는 접수 단계에서 「전액취소만 가능」 으로 먼저 알린다.
+  부분취소 응답의 취소번호(CancelNum)를 환불 거래 ID 에 붙여 회차를 구분한다.
+
+axes:
+  method: [card, escrow, phone]
+
+effects:
+  - escrow_payment_declares_no_partial_cancel
+  - phone_payment_from_earlier_month_declares_no_partial_cancel
+  - other_provider_partial_cancel_is_untouched
+  - partial_cancel_transaction_id_carries_cancel_number
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/PartialCancelConstraintsTest.php

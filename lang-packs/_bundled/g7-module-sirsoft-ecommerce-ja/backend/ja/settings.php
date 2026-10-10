@@ -56,8 +56,8 @@ return [
             'description' => 'クレジットカードで安全に決済',
         ],
         'vbank' => [
-            'name' => 'バーチャル口座',
-            'description' => 'バーチャル口座に入金',
+            'name' => '仮想口座',
+            'description' => '仮想口座に入金',
         ],
         'dbank' => [
             'name' => '銀行振込',

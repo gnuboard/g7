@@ -20,6 +20,7 @@ import basicInfoPartial from '../../../layouts/admin/partials/admin_ecommerce_pr
 import benefitSettingsPartial from '../../../layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_benefit_settings.json';
 import issueSettingsPartial from '../../../layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_issue_settings.json';
 import usageConditionsPartial from '../../../layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_usage_conditions.json';
+import { asArray, callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ===== 유틸리티 =====
 
@@ -117,7 +118,7 @@ describe('couponFormLayouts', () => {
         });
 
         it('state에 폼 기본값 존재', () => {
-            const { state } = mainLayout;
+            const state = initStateOf(mainLayout);
             expect(state).toBeDefined();
             expect(state.form).toBeDefined();
 
@@ -153,7 +154,7 @@ describe('couponFormLayouts', () => {
         });
 
         it('state에 UI 전용 상태 기본값', () => {
-            const { state } = mainLayout;
+            const state = initStateOf(mainLayout);
             expect(state.isSaving).toBe(false);
             expect(state.errors).toBeNull();
 
@@ -288,9 +289,9 @@ describe('couponFormLayouts', () => {
             const field = findById(basicInfoPartial, 'field_issue_method');
             const radioGroup = findByName(field, 'RadioGroup');
             expect(radioGroup.actions).toBeDefined();
-            expect(radioGroup.actions.length).toBeGreaterThan(0);
+            expect(asArray(radioGroup?.actions).length).toBeGreaterThan(0);
 
-            const action = radioGroup.actions[0];
+            const action = asArray(radioGroup?.actions)[0];
             expect(action.handler).toBe('setState');
             expect(action.params['form.issue_condition']).toContain('auto');
         });
@@ -398,7 +399,7 @@ describe('couponFormLayouts', () => {
             expect(select.actions).toBeDefined();
             expect(select.actions).toHaveLength(1);
 
-            const action = select.actions[0];
+            const action = asArray(select?.actions)[0];
             expect(action.type).toBe('change');
             expect(action.handler).toBe('setState');
             expect(action.params['form.discount_value']).toBeNull();
@@ -484,7 +485,7 @@ describe('couponFormLayouts', () => {
             expect(actions).toBeDefined();
             expect(actions[0].handler).toBe('sequence');
 
-            const sequenceActions = actions[0].params.actions;
+            const sequenceActions = callbacksOf(actions[0], 'actions');
             expect(sequenceActions).toHaveLength(2);
 
             // UI 상태 변경
@@ -620,7 +621,7 @@ describe('couponFormLayouts', () => {
             const dataGrids = findAllByName(usageConditionsPartial, 'DataGrid');
             dataGrids.forEach(dg => {
                 if (dg.actions) {
-                    dg.actions.forEach((action: any) => {
+                    asArray(dg?.actions).forEach((action: any) => {
                         if (action.event === 'onSelectionChange' || action.handler === 'setState') {
                             // selectionChange를 type으로 사용하면 안됨
                             expect(action).not.toHaveProperty('type', 'selectionChange');
@@ -636,11 +637,11 @@ describe('couponFormLayouts', () => {
             const panel = findById(usageConditionsPartial, 'product_search_panel');
             const buttons = findAllByName(panel, 'Button');
             const searchButton = buttons.find((b: any) =>
-                JSON.stringify(b.actions ?? []).includes('apiCall')
+                JSON.stringify(asArray(b?.actions)).includes('apiCall')
             );
             expect(searchButton).toBeDefined();
 
-            const apiAction = searchButton.actions.find((a: any) => a.handler === 'apiCall');
+            const apiAction = asArray(searchButton?.actions).find((a: any) => a.handler === 'apiCall');
             expect(apiAction.auth_mode).toBe('required');
             expect(apiAction.params.method).toBe('GET');
             expect(apiAction.params.query).toBeDefined();
@@ -680,7 +681,7 @@ describe('couponFormLayouts', () => {
 
         it('무한스크롤: type scroll 이벤트 + debounce 설정', () => {
             const scrollContainer = findById(usageConditionsPartial, 'product_search_results_scroll');
-            const scrollAction = scrollContainer.actions.find((a: any) => a.type === 'scroll');
+            const scrollAction = asArray(scrollContainer?.actions).find((a: any) => a.type === 'scroll');
             expect(scrollAction).toBeDefined();
             expect(scrollAction.debounce).toBe(200);
             expect(scrollAction.handler).toBe('sequence');
@@ -688,8 +689,8 @@ describe('couponFormLayouts', () => {
 
         it('무한스크롤: switch 핸들러로 스크롤 위치 + hasMore + !isLoading 체크', () => {
             const scrollContainer = findById(usageConditionsPartial, 'product_search_results_scroll');
-            const scrollAction = scrollContainer.actions.find((a: any) => a.type === 'scroll');
-            const switchAction = scrollAction.actions[0];
+            const scrollAction = asArray(scrollContainer?.actions).find((a: any) => a.type === 'scroll');
+            const switchAction = asArray(scrollAction?.actions)[0];
             expect(switchAction.handler).toBe('switch');
 
             const switchValue = switchAction.params.value;
@@ -706,51 +707,51 @@ describe('couponFormLayouts', () => {
 
         it('무한스크롤: true 케이스에 sequence(setState → scrollIntoView → apiCall)', () => {
             const scrollContainer = findById(usageConditionsPartial, 'product_search_results_scroll');
-            const scrollAction = scrollContainer.actions.find((a: any) => a.type === 'scroll');
-            const switchAction = scrollAction.actions[0];
+            const scrollAction = asArray(scrollContainer?.actions).find((a: any) => a.type === 'scroll');
+            const switchAction = asArray(scrollAction?.actions)[0];
             const trueCase = switchAction.cases['true'];
 
             expect(trueCase.handler).toBe('sequence');
             expect(trueCase.actions).toHaveLength(3);
 
             // 1. setState: isLoadingMore = true
-            expect(trueCase.actions[0].handler).toBe('setState');
-            expect(trueCase.actions[0].params.productSearchIsLoadingMore).toBe(true);
+            expect(asArray(trueCase?.actions)[0].handler).toBe('setState');
+            expect(asArray(trueCase?.actions)[0].params.productSearchIsLoadingMore).toBe(true);
 
             // 2. scrollIntoView — 로딩 인디케이터를 컨테이너 안에서 보이게 스크롤 (의도된 UX)
-            expect(trueCase.actions[1].handler).toBe('scrollIntoView');
-            expect(trueCase.actions[1].params.selector).toBe('#product_search_loading');
-            expect(trueCase.actions[1].params.scrollContainer).toBe('#product_search_results_scroll');
+            expect(asArray(trueCase?.actions)[1].handler).toBe('scrollIntoView');
+            expect(asArray(trueCase?.actions)[1].params.selector).toBe('#product_search_loading');
+            expect(asArray(trueCase?.actions)[1].params.scrollContainer).toBe('#product_search_results_scroll');
 
             // 3. apiCall with onSuccess + onError
-            expect(trueCase.actions[2].handler).toBe('apiCall');
-            expect(trueCase.actions[2].onSuccess).toBeDefined();
-            expect(trueCase.actions[2].onError).toBeDefined();
+            expect(asArray(trueCase?.actions)[2].handler).toBe('apiCall');
+            expect(asArray(trueCase?.actions)[2].onSuccess).toBeDefined();
+            expect(asArray(trueCase?.actions)[2].onError).toBeDefined();
         });
 
         it('무한스크롤 apiCall: 다음 페이지 요청 + 데이터 병합(spread)', () => {
             const scrollContainer = findById(usageConditionsPartial, 'product_search_results_scroll');
-            const scrollAction = scrollContainer.actions.find((a: any) => a.type === 'scroll');
-            const trueCase = scrollAction.actions[0].cases['true'];
-            const apiCallAction = trueCase.actions[2];
+            const scrollAction = asArray(scrollContainer?.actions).find((a: any) => a.type === 'scroll');
+            const trueCase = asArray(scrollAction?.actions)[0].cases['true'];
+            const apiCallAction = asArray(trueCase?.actions)[2];
 
             // 다음 페이지 요청
             expect(apiCallAction.params.query.page).toContain('productSearchPage');
             expect(apiCallAction.params.query.page).toContain('+ 1');
 
             // onSuccess: 스프레드 연산자로 데이터 병합
-            const successParams = apiCallAction.onSuccess[0].params;
+            const successParams = asArray(apiCallAction?.onSuccess)[0].params;
             expect(successParams.productSearchResults).toContain('...');
             expect(successParams.productSearchIsLoadingMore).toBe(false);
         });
 
         it('무한스크롤 onError: isLoadingMore false로 리셋', () => {
             const scrollContainer = findById(usageConditionsPartial, 'product_search_results_scroll');
-            const scrollAction = scrollContainer.actions.find((a: any) => a.type === 'scroll');
-            const trueCase = scrollAction.actions[0].cases['true'];
-            const apiCallAction = trueCase.actions[2];
+            const scrollAction = asArray(scrollContainer?.actions).find((a: any) => a.type === 'scroll');
+            const trueCase = asArray(scrollAction?.actions)[0].cases['true'];
+            const apiCallAction = asArray(trueCase?.actions)[2];
 
-            const errorParams = apiCallAction.onError[0].params;
+            const errorParams = asArray(apiCallAction?.onError)[0].params;
             expect(errorParams.productSearchIsLoadingMore).toBe(false);
         });
 
@@ -782,7 +783,7 @@ describe('couponFormLayouts', () => {
             const addBtn = findById(usageConditionsPartial, 'add_selected_categories');
             expect(addBtn).toBeDefined();
 
-            const setStateAction = addBtn.actions.find((a: any) => a.handler === 'setState');
+            const setStateAction = asArray(addBtn?.actions).find((a: any) => a.handler === 'setState');
             expect(setStateAction).toBeDefined();
 
             const expr = setStateAction.params['form.categories'];
@@ -803,17 +804,17 @@ describe('couponFormLayouts', () => {
             expect(tree.props.selectable).toBe(true);
 
             // 이벤트 필드 검증
-            const toggleAction = tree.actions.find((a: any) => a.event === 'onToggle');
+            const toggleAction = asArray(tree?.actions).find((a: any) => a.event === 'onToggle');
             expect(toggleAction).toBeDefined();
 
-            const selectionAction = tree.actions.find((a: any) => a.event === 'onSelectionChange');
+            const selectionAction = asArray(tree?.actions).find((a: any) => a.event === 'onSelectionChange');
             expect(selectionAction).toBeDefined();
         });
 
         it('CategoryTree: $args[0] 패턴 사용 ($event 미사용)', () => {
             const tree = findByName(usageConditionsPartial, 'CategoryTree');
-            const toggleAction = tree.actions.find((a: any) => a.event === 'onToggle');
-            const selectionAction = tree.actions.find((a: any) => a.event === 'onSelectionChange');
+            const toggleAction = asArray(tree?.actions).find((a: any) => a.event === 'onToggle');
+            const selectionAction = asArray(tree?.actions).find((a: any) => a.event === 'onSelectionChange');
 
             // 커스텀 이벤트는 $args[0]으로 콜백 인자 접근
             expect(JSON.stringify(toggleAction.params)).toContain('$args[0]');
@@ -843,7 +844,7 @@ describe('couponFormLayouts', () => {
             const dataGrids = findAllByName(usageConditionsPartial, 'DataGrid');
             dataGrids.forEach(dg => {
                 if (dg.actions) {
-                    const selectionActions = dg.actions.filter(
+                    const selectionActions = asArray(dg?.actions).filter(
                         (a: any) => a.event === 'onSelectionChange'
                     );
                     selectionActions.forEach((action: any) => {
@@ -946,7 +947,7 @@ describe('couponFormLayouts', () => {
 
     describe('백엔드 필드명 매칭', () => {
         it('state.form의 필드명이 StoreCouponRequest와 일치', () => {
-            const formKeys = Object.keys(mainLayout.state.form);
+            const formKeys = Object.keys(initStateOf(mainLayout).form);
             // StoreCouponRequest에 정의된 필수 필드
             const expectedFields = [
                 'target_type', 'issue_method', 'issue_condition',

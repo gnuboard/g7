@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage:test-files reason: |
+# audit:allow test-scenario-coverage[cross_product,effects,test_files] reason: |
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
 #   유저별 영속 통화 axis 는 PHPUnit(EcommerceUserProfile/Repository/통화 저장 컨트롤러)·
 #   Vitest(설정 UI)·Playwright(설치 게이트)가 커버하며 green 이다.
@@ -53,6 +53,6 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/EcommerceUserProfileTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserCurrencyControllerTest.php
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminUserCurrencyControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserPreferenceCoreSaveTest.php
   - templates/_bundled/sirsoft-basic/__tests__/layouts/mypageCurrencySettings.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/mp08-install-gate.spec.ts

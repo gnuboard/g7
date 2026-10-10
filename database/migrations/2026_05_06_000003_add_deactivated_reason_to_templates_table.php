@@ -37,9 +37,11 @@ return new class extends Migration
             }
         });
 
-        Schema::table('templates', function (Blueprint $table) {
-            $table->index('deactivated_reason', 'templates_deactivated_reason_index');
-        });
+        if (! Schema::hasIndex('templates', 'templates_deactivated_reason_index')) {
+            Schema::table('templates', function (Blueprint $table) {
+                $table->index('deactivated_reason', 'templates_deactivated_reason_index');
+            });
+        }
     }
 
     /**

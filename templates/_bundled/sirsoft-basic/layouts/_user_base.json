@@ -1,4 +1,5 @@
 {
+    "comment": "공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.",
     "version": "1.0.0",
     "layout_name": "_user_base",
     "meta": {
@@ -7,7 +8,9 @@
         "is_base": true,
         "seo": {
             "enabled": false,
-            "data_sources": ["boards"],
+            "data_sources": [
+                "boards"
+            ],
             "vars": {
                 "site_name": "$core_settings:general.site_name"
             },
@@ -16,6 +19,171 @@
             }
         }
     },
+    "data_sources": [
+        {
+            "id": "boards",
+            "label_key": "$t:editor.data_source.boards",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/boards/board-menu",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            },
+            "comment": "헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다."
+        },
+        {
+            "id": "current_user",
+            "label_key": "$t:editor.data_source.current_user",
+            "type": "api",
+            "endpoint": "/api/auth/user",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initGlobal": "currentUser",
+            "fallback": {
+                "data": []
+            },
+            "onSuccess": [
+                {
+                    "comment": "로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유.",
+                    "handler": "sirsoft-ecommerce.initPreferredCurrency",
+                    "params": {
+                        "accountCurrency": "{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}",
+                        "defaultCurrency": "{{_global.defaultCurrency}}"
+                    }
+                },
+                {
+                    "comment": "로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다.",
+                    "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
+                    "params": {
+                        "accountCountry": "{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}",
+                        "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+                    }
+                }
+            ],
+            "errorHandling": {
+                "401": {
+                    "comment": "비회원의 /api/auth/user 401은 정상 — fallback 사용, 레이아웃 에러 핸들링으로 전파 방지",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "로그인 사용자 — initGlobal 로 _global.currentUser 에 올라가 헤더·드로어·본문의 로그인 분기가 전부 이 값을 본다. 비회원도 매 페이지 호출하며 401 은 아래에서 정상 흐름으로 삼킨다."
+        },
+        {
+            "id": "cart",
+            "label_key": "$t:editor.data_source.cart",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/cart/count",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "headers": {
+                "X-Cart-Key": "{{_global.cartKey}}"
+            },
+            "initGlobal": {
+                "key": "cartCount",
+                "path": "count"
+            },
+            "fallback": {
+                "data": {
+                    "count": 0
+                }
+            },
+            "comment": "헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다."
+        },
+        {
+            "id": "notification_unread_count",
+            "label_key": "$t:editor.data_source.notification_unread_count",
+            "type": "api",
+            "endpoint": "/api/user/notifications/unread-count",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initGlobal": {
+                "key": "notificationCount",
+                "path": "unread_count"
+            },
+            "fallback": {
+                "data": {
+                    "unread_count": 0
+                }
+            },
+            "errorHandling": {
+                "401": {
+                    "handler": "suppress"
+                },
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "알림 배지 숫자만 따로 받는다 — 목록(notifications)은 드롭다운을 열 때 쓰는 무거운 응답이라 배지 갱신마다 그것을 다시 부르지 않기 위해 분리했다. 읽음 처리·삭제·웹소켓 수신이 이것만 refetch 한다."
+        },
+        {
+            "id": "notifications",
+            "label_key": "$t:editor.data_source.notifications",
+            "type": "api",
+            "endpoint": "/api/user/notifications",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 15,
+                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "errorHandling": {
+                "401": {
+                    "handler": "suppress"
+                },
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "알림 목록 — 드롭다운 NotificationCenter 에서 사용. unreadOnly 토글에 따라 read 필터 동적 적용"
+        },
+        {
+            "id": "user_notification_ws",
+            "label_key": "$t:editor.data_source.user_notification_ws",
+            "type": "websocket",
+            "channel": "core.user.notifications.{{_global.currentUser?.uuid}}",
+            "event": "notification.received",
+            "channel_type": "private",
+            "target_source": "notification_unread_count",
+            "onReceive": [
+                {
+                    "handler": "refetchDataSource",
+                    "params": {
+                        "dataSourceId": "notification_unread_count"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "params": {
+                        "dataSourceId": "notifications"
+                    }
+                },
+                {
+                    "handler": "toast",
+                    "params": {
+                        "type": "info",
+                        "message": "{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}",
+                        "duration": 5000
+                    }
+                }
+            ],
+            "comment": "알림 실시간 수신 — 서버가 밀어주는 순간 배지와 목록을 다시 받고 토스트를 띄운다. 자기 채널(uuid)이라 로그인 상태에서만 붙는다."
+        }
+    ],
     "globalHeaders": [
         {
             "pattern": "/api/modules/sirsoft-ecommerce/*",
@@ -32,14 +200,14 @@
             }
         },
         {
-            "_comment": "비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.json, guest_order_show.json).",
+            "comment": "비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.g7.html, guest_order_show.g7.html).",
             "pattern": "/api/modules/sirsoft-ecommerce/guest/orders/*",
             "headers": {
                 "X-Guest-Order-Token": "{{_global.guestOrderToken}}"
             }
         },
         {
-            "_comment": "비밀글 열람 확인 토큰 — 비밀번호로 원문을 연 사실을 다음 요청(댓글·답글·신고)으로 넘긴다. 서버가 토큰을 게시글에 결속시키므로 다른 글에는 통하지 않고, 비밀글이 아닌 요청에서는 아예 평가되지 않는다. 결제 취소 기록(orders/{n}/cancel-payment) 처럼 헤더 없이는 정당 사용자가 막히는 경로라 globalHeaders 로 단일 배선한다.",
+            "comment": "비밀글 열람 확인 토큰 — 비밀번호로 원문을 연 사실을 다음 요청(댓글·답글·신고)으로 넘긴다. 서버가 토큰을 게시글에 결속시키므로 다른 글에는 통하지 않고, 비밀글이 아닌 요청에서는 아예 평가되지 않는다. 결제 취소 기록(orders/{n}/cancel-payment) 처럼 헤더 없이는 정당 사용자가 막히는 경로라 globalHeaders 로 단일 배선한다.",
             "pattern": "/api/modules/sirsoft-board/*",
             "headers": {
                 "X-Board-Secret-View-Token": "{{_global.secretViewToken}}"
@@ -62,7 +230,7 @@
             "handler": "initCartKey"
         },
         {
-            "_comment": "기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값.",
+            "comment": "기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값.",
             "handler": "setState",
             "params": {
                 "target": "global",
@@ -70,14 +238,14 @@
             }
         },
         {
-            "_comment": "선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값).",
+            "comment": "선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값).",
             "handler": "sirsoft-ecommerce.initPreferredCurrency",
             "params": {
                 "defaultCurrency": "{{_global.defaultCurrency}}"
             }
         },
         {
-            "_comment": "셀렉터 통화 목록 주입 (A1-①). is_default 또는 환율>0 인 통화만 (U11-B 미설정 통화 숨김, 백엔드 buildMultiCurrencyPrices 규칙과 1:1 일치).",
+            "comment": "셀렉터 통화 목록 주입 (A1-①). is_default 또는 환율>0 인 통화만 (U11-B 미설정 통화 숨김, 백엔드 buildMultiCurrencyPrices 규칙과 1:1 일치).",
             "handler": "setState",
             "params": {
                 "target": "global",
@@ -85,14 +253,14 @@
             }
         },
         {
-            "_comment": "선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작.",
+            "comment": "선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작.",
             "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
             "params": {
                 "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
             }
         },
         {
-            "_comment": "헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트). 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선.",
+            "comment": "헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트). 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선.",
             "handler": "setState",
             "params": {
                 "target": "global",
@@ -100,7 +268,7 @@
             }
         },
         {
-            "_comment": "비회원 주문 조회 토큰 (30분 유효) — 커스텀 핸들러가 localStorage 의 g7_guest_order_token 을 G7Core.state.set 으로 _global.guestOrderToken 에 직접 저장. 표준 loadFromLocalStorage 는 context.setState 를 통해 _local 에만 영향을 주므로 _global 에 토큰이 안 들어가는 문제 회피. initCartKey 패턴 동일.",
+            "comment": "비회원 주문 조회 토큰 (30분 유효) — 커스텀 핸들러가 localStorage 의 g7_guest_order_token 을 G7Core.state.set 으로 _global.guestOrderToken 에 직접 저장. 표준 loadFromLocalStorage 는 context.setState 를 통해 _local 에만 영향을 주므로 _global 에 토큰이 안 들어가는 문제 회피. initCartKey 패턴 동일.",
             "handler": "initGuestOrderToken"
         },
         {
@@ -109,138 +277,6 @@
                 "target": "global",
                 "shopBase": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))}}"
             }
-        }
-    ],
-    "data_sources": [
-        {
-            "id": "boards",
-            "label_key": "$t:editor.data_source.boards",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-board/boards/board-menu",
-            "method": "GET",
-            "auto_fetch": true,
-            "loading_strategy": "progressive",
-            "fallback": { "data": [] }
-        },
-        {
-            "id": "current_user",
-            "label_key": "$t:editor.data_source.current_user",
-            "type": "api",
-            "endpoint": "/api/auth/user",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "initGlobal": "currentUser",
-            "fallback": { "data": [] },
-            "onSuccess": [
-                {
-                    "_comment": "로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유.",
-                    "handler": "sirsoft-ecommerce.initPreferredCurrency",
-                    "params": {
-                        "accountCurrency": "{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}",
-                        "defaultCurrency": "{{_global.defaultCurrency}}"
-                    }
-                },
-                {
-                    "_comment": "로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다.",
-                    "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
-                    "params": {
-                        "accountCountry": "{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}",
-                        "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
-                    }
-                }
-            ],
-            "errorHandling": {
-                "401": {
-                    "comment": "비회원의 /api/auth/user 401은 정상 — fallback 사용, 레이아웃 에러 핸들링으로 전파 방지",
-                    "handler": "suppress"
-                }
-            }
-        },
-        {
-            "id": "cart",
-            "label_key": "$t:editor.data_source.cart",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/cart/count",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "optional",
-            "loading_strategy": "progressive",
-            "headers": {
-                "X-Cart-Key": "{{_global.cartKey}}"
-            },
-            "initGlobal": {
-                "key": "cartCount",
-                "path": "count"
-            },
-            "fallback": { "data": { "count": 0 } }
-        },
-        {
-            "id": "notification_unread_count",
-            "label_key": "$t:editor.data_source.notification_unread_count",
-            "type": "api",
-            "endpoint": "/api/user/notifications/unread-count",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "initGlobal": {
-                "key": "notificationCount",
-                "path": "unread_count"
-            },
-            "fallback": { "data": { "unread_count": 0 } },
-            "errorHandling": {
-                "401": { "handler": "suppress" },
-                "403": { "handler": "suppress" }
-            }
-        },
-        {
-            "comment": "알림 목록 — 드롭다운 NotificationCenter 에서 사용. unreadOnly 토글에 따라 read 필터 동적 적용",
-            "id": "notifications",
-            "label_key": "$t:editor.data_source.notifications",
-            "type": "api",
-            "endpoint": "/api/user/notifications",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "params": {
-                "per_page": 15,
-                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
-            },
-            "fallback": { "data": { "data": [] } },
-            "errorHandling": {
-                "401": { "handler": "suppress" },
-                "403": { "handler": "suppress" }
-            }
-        },
-        {
-            "id": "user_notification_ws",
-            "label_key": "$t:editor.data_source.user_notification_ws",
-            "type": "websocket",
-            "channel": "core.user.notifications.{{_global.currentUser?.uuid}}",
-            "event": "notification.received",
-            "channel_type": "private",
-            "target_source": "notification_unread_count",
-            "onReceive": [
-                {
-                    "handler": "refetchDataSource",
-                    "params": { "dataSourceId": "notification_unread_count" }
-                },
-                {
-                    "handler": "refetchDataSource",
-                    "params": { "dataSourceId": "notifications" }
-                },
-                {
-                    "handler": "toast",
-                    "params": {
-                        "type": "info",
-                        "message": "{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}",
-                        "duration": 5000
-                    }
-                }
-            ]
         }
     ],
     "components": [
@@ -269,6 +305,26 @@
             "id": "user_layout_root",
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.\n           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 N O-N6.",
+                    "type": "keydown",
+                    "key": "Escape",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{_global.mobileMenuOpen}}",
+                            "then": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
             "props": {
                 "className": "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900"
             },
@@ -286,9 +342,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{false}}",
-                    "props": {
-                        "className": "fixed inset-0 z-40 bg-black/50"
-                    },
                     "responsive": {
                         "portable": {
                             "if": "{{_global.mobileMenuOpen}}"
@@ -303,16 +356,16 @@
                                 "mobileMenuOpen": false
                             }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "className": "fixed inset-0 z-40 bg-black/50"
+                    }
                 },
                 {
                     "comment": "=== 모바일 헤더 (툴바) - 데스크톱에서 숨김 ===",
                     "id": "mobile_header",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "hidden"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
@@ -320,15 +373,15 @@
                             }
                         }
                     },
+                    "props": {
+                        "className": "hidden"
+                    },
                     "children": [
                         {
                             "comment": "모바일 헤더 좌측 - 로고",
                             "id": "mobile_header_left",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "flex items-center cursor-pointer"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -338,6 +391,9 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "flex items-center cursor-pointer"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -392,162 +448,162 @@
                                     "type": "composite",
                                     "name": "NotificationCenter",
                                     "if": "{{_global.currentUser?.uuid}}",
-                                    "props": {
-                                        "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
-                                        "unreadCount": "{{_global.notificationCount ?? 0}}",
-                                        "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
-                                        "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
-                                        "titleText": "$t:mypage.notifications.title",
-                                        "emptyText": "$t:mypage.notifications.empty",
-                                        "markAllReadText": "$t:mypage.notifications.mark_all_read",
-                                        "deleteAllText": "$t:mypage.notifications.delete_all",
-                                        "unreadOnlyText": "$t:mypage.notifications.unread_only",
-                                        "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
-                                        "dropdownAlign": "right"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "드로어 알림 드롭다운을 닫을 때 그 사이 노출된 알림들을 일괄 읽음 처리한다 — 항목을 누르지 않고 훑어본 것도 읽은 것으로 본다. 배지만 다시 받고 목록은 그대로 둔다.",
                                             "event": "onClose",
                                             "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications/read-batch",
-                                                        "params": {
-                                                            "method": "POST",
-                                                            "body": { "ids": "{{$args[0]}}" }
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notification_unread_count" }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "event": "onNotificationClick",
-                                            "handler": "parallel",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "navigate",
-                                                        "params": { "path": "{{$args[0].url ?? '/mypage/notifications'}}" }
-                                                    },
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications/{{$args[0].id}}/read",
-                                                        "params": { "method": "PATCH" },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notification_unread_count" }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "event": "onMarkAllRead",
-                                            "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications/read-all",
-                                                        "params": { "method": "POST" },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "notificationsCurrentPage": 1,
-                                                                    "notificationsHasMore": null,
-                                                                    "notificationsLoadingMore": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notifications" }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notification_unread_count" }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "notificationsLoadingMore": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "event": "onUnreadOnlyToggle",
-                                            "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "notificationsUnreadOnly": "{{$args[0]}}",
-                                                            "notificationsCurrentPage": 1,
-                                                            "notificationsHasMore": null,
-                                                            "notificationsLoadingMore": false
+                                            "actions": [
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications/read-batch",
+                                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "ids": "{{$args[0]}}"
                                                         }
                                                     },
-                                                    {
+                                                    "onSuccess": {
                                                         "handler": "refetchDataSource",
-                                                        "params": { "dataSourceId": "notifications" }
+                                                        "params": {
+                                                            "dataSourceId": "notification_unread_count"
+                                                        }
+                                                    },
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
                                                     }
-                                                ]
-                                            }
+                                                }
+                                            ]
                                         },
                                         {
+                                            "comment": "모바일 알림 클릭 — 이동과 읽음 처리를 병렬로 낸다(데스크톱 헤더는 읽음을 끝낸 뒤 이동하는 순차). url 이 없는 알림은 알림함으로 보낸다.",
+                                            "event": "onNotificationClick",
+                                            "handler": "parallel",
+                                            "actions": [
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "PATCH"
+                                                    },
+                                                    "onSuccess": {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "notification_unread_count"
+                                                        }
+                                                    },
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "모바일 전체 읽음 — 목록이 미읽음 필터로 걸려 있으면 비워져야 하므로 배지만이 아니라 목록도 페이지 상태를 되돌린 뒤 다시 받는다.",
+                                            "event": "onMarkAllRead",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications/read-all",
+                                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notificationsCurrentPage": 1,
+                                                                "notificationsHasMore": null,
+                                                                "notificationsLoadingMore": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notifications"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notification_unread_count"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notificationsLoadingMore": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "미읽음만 보기 토글 — 필터가 바뀌면 그때까지 이어 붙인 페이지가 뜻을 잃으므로 페이지 상태를 초기화하고 처음부터 다시 받는다(필터 값 자체는 notifications 의 params 가 _global 에서 읽는다).",
+                                            "event": "onUnreadOnlyToggle",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notificationsUnreadOnly": "{{$args[0]}}",
+                                                        "notificationsCurrentPage": 1,
+                                                        "notificationsHasMore": null,
+                                                        "notificationsLoadingMore": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "notifications"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다.",
                                             "event": "onDelete",
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/user/notifications/{{$args[0].id}}",
-                                            "params": { "method": "DELETE" },
+                                            "if": "{{notifications?.data?.abilities?.can_delete === true}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
                                             "onSuccess": [
                                                 {
                                                     "handler": "setState",
@@ -559,93 +615,106 @@
                                                 },
                                                 {
                                                     "handler": "refetchDataSource",
-                                                    "params": { "dataSourceId": "notifications" }
+                                                    "params": {
+                                                        "dataSourceId": "notifications"
+                                                    }
                                                 },
                                                 {
                                                     "handler": "refetchDataSource",
-                                                    "params": { "dataSourceId": "notification_unread_count" }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "toast",
                                                     "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
+                                                        "dataSourceId": "notification_unread_count"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
                                         },
                                         {
+                                            "comment": "「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부)",
                                             "event": "onDeleteAll",
                                             "handler": "openModal",
-                                            "target": "notification_delete_all_confirm_modal"
+                                            "target": "notification_delete_all_confirm_modal",
+                                            "if": "{{notifications?.data?.abilities?.can_delete === true}}"
                                         },
                                         {
+                                            "comment": "더 보기 — 다음 페이지를 받아 기존 목록 뒤에 이어 붙인다(refetch 로 받으면 앞 페이지가 날아간다). 실패해도 로딩 표시는 반드시 내린다.",
                                             "event": "onLoadMore",
                                             "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notificationsLoadingMore": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "GET",
+                                                        "query": {
+                                                            "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                                            "per_page": 15
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "appendDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notifications",
+                                                                "dataPath": "data.data",
+                                                                "newData": "{{response.data.data ?? []}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                                                "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                                                "notificationsLoadingMore": false
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "notificationsLoadingMore": true
+                                                            "notificationsLoadingMore": false
                                                         }
-                                                    },
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications",
-                                                        "params": {
-                                                            "method": "GET",
-                                                            "query": {
-                                                                "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
-                                                                "per_page": 15
-                                                            }
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "appendDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "notifications",
-                                                                    "dataPath": "data.data",
-                                                                    "newData": "{{response.data.data ?? []}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
-                                                                    "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
-                                                                    "notificationsLoadingMore": false
-                                                                }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "notificationsLoadingMore": false
-                                                                }
-                                                            }
-                                                        ]
                                                     }
-                                                ]
-                                            }
+                                                }
+                                            ]
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
+                                        "unreadCount": "{{_global.notificationCount ?? 0}}",
+                                        "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
+                                        "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                                        "titleText": "$t:mypage.notifications.title",
+                                        "emptyText": "$t:mypage.notifications.empty",
+                                        "markAllReadText": "$t:mypage.notifications.mark_all_read",
+                                        "deleteAllText": "$t:mypage.notifications.delete_all",
+                                        "unreadOnlyText": "$t:mypage.notifications.unread_only",
+                                        "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
+                                        "canUpdate": "{{notifications?.data?.abilities?.can_update === true}}",
+                                        "canDelete": "{{notifications?.data?.abilities?.can_delete === true}}",
+                                        "dropdownAlign": "right"
+                                    }
                                 },
                                 {
                                     "comment": "장바구니 — PC와 동일 순서 (알림 → 장바구니)",
                                     "id": "mobile_cart_btn",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -655,6 +724,11 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}",
+                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -665,24 +739,22 @@
                                             }
                                         },
                                         {
+                                            "comment": "수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝).",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_global.cartCount > 0}}",
                                             "props": {
-                                                "className": "absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                                                "className": "absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
                                             },
                                             "text": "{{_global.cartCount > 99 ? '99+' : _global.cartCount}}"
                                         }
                                     ]
                                 },
                                 {
-                                    "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼",
+                                    "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다.",
                                     "id": "mobile_user_btn",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -692,6 +764,11 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-label": "{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}",
+                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -708,9 +785,6 @@
                                     "id": "mobile_menu_toggle",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -721,6 +795,12 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:user.menu",
+                                        "aria-expanded": "{{!!_global.mobileMenuOpen}}",
+                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -737,19 +817,19 @@
                     ]
                 },
                 {
-                    "comment": "=== 모바일 사이드 메뉴 (MobileNav 드로어) ===",
+                    "comment": "=== 모바일 사이드 메뉴 (MobileNav 드로어) ===\n         닫힌 서랍은 화면 밖으로 밀기만 하면 Tab·화면 읽기가 그 안으로 들어간다 — invisible 로 숨기고,\n         밀려 나가는 움직임이 끝난 뒤 숨도록 visibility 도 전환에 넣는다(transition-all).",
                     "id": "mobile_nav_drawer",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "hidden"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "{{_global.mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-transform duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
+                                "className": "{{_global.mobileMenuOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-all duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "hidden"
                     },
                     "children": [
                         {
@@ -769,13 +849,12 @@
                                     "text": "$t:user.menu"
                                 },
                                 {
+                                    "id": "mobile_drawer_close_btn",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "드로어 닫기 — 열림 여부는 전역이라 오버레이 클릭·메뉴 이동도 같은 값을 내린다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -784,6 +863,11 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:nav.close_menu",
+                                        "className": "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -824,29 +908,38 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "text",
-                                                "name": "q",
-                                                "placeholder": "$t:user.search_placeholder",
-                                                "className": "w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "드로어 검색 — 엔터에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다.",
                                                     "type": "keydown",
                                                     "key": "Enter",
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
                                                             "handler": "setState",
-                                                            "params": { "target": "global", "mobileMenuOpen": false }
+                                                            "params": {
+                                                                "target": "global",
+                                                                "mobileMenuOpen": false
+                                                            }
                                                         },
                                                         {
                                                             "handler": "navigate",
-                                                            "params": { "path": "/search", "query": { "q": "{{$event.target.value}}" } }
+                                                            "params": {
+                                                                "path": "/search",
+                                                                "query": {
+                                                                    "q": "{{$event.target.value}}"
+                                                                }
+                                                            }
                                                         }
                                                     ]
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "name": "q",
+                                                "placeholder": "$t:user.search_placeholder",
+                                                "className": "w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                                            }
                                         }
                                     ]
                                 }
@@ -873,11 +966,6 @@
                                             "id": "mobile_drawer_language_toggle",
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "type": "button",
-                                                "className": "w-full flex items-center justify-between py-1 cursor-pointer",
-                                                "aria-expanded": "{{_global.mobileLanguageOpen ?? false}}"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -888,6 +976,11 @@
                                                     }
                                                 }
                                             ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "w-full flex items-center justify-between py-1 cursor-pointer",
+                                                "aria-expanded": "{{_global.mobileLanguageOpen ?? false}}"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -908,7 +1001,9 @@
                                                             "comment": "접힘 상태 요약 = 현재 언어명",
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "props": { "className": "font-medium" },
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
                                                             "text": "{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}"
                                                         },
                                                         {
@@ -931,34 +1026,54 @@
                                                 "className": "overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileLanguageOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}"
                                             },
                                             "children": [
-                                        {
-                                            "comment": "가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다.",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "flex flex-wrap gap-2"
-                                            },
-                                            "children": [
                                                 {
+                                                    "comment": "가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다.",
                                                     "type": "basic",
-                                                    "name": "Button",
-                                                    "iteration": { "source": "{{$locales}}", "item_var": "loc" },
+                                                    "name": "Div",
                                                     "props": {
-                                                        "type": "button",
-                                                        "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap",
-                                                        "role": "option",
-                                                        "aria-selected": "{{loc === $locale}}"
+                                                        "className": "flex flex-wrap gap-2",
+                                                        "role": "listbox",
+                                                        "aria-label": "$t:common.language"
                                                     },
-                                                    "actions": [
-                                                        { "type": "click", "handler": "setLocale", "target": "{{loc}}" }
-                                                    ],
                                                     "children": [
-                                                        { "type": "basic", "name": "Icon", "props": { "name": "globe", "size": "sm" } },
-                                                        { "type": "basic", "name": "Span", "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}" }
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "iteration": {
+                                                                "source": "{{$locales}}",
+                                                                "item_var": "loc"
+                                                            },
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "setLocale",
+                                                                    "target": "{{loc}}"
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap",
+                                                                "role": "option",
+                                                                "aria-selected": "{{loc === $locale}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "globe",
+                                                                        "size": "sm"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
+                                                                }
+                                                            ]
+                                                        }
                                                     ]
                                                 }
-                                            ]
-                                        }
                                             ]
                                         }
                                     ]
@@ -988,9 +1103,6 @@
                                     "comment": "사용자 프로필 버튼 (아코디언 토글)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -1001,6 +1113,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "composite",
@@ -1092,9 +1207,6 @@
                                                     "comment": "마이페이지",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1117,6 +1229,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1137,9 +1252,6 @@
                                                     "comment": "주문 내역",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1162,6 +1274,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1182,9 +1297,6 @@
                                                     "comment": "위시리스트",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1207,6 +1319,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1227,31 +1342,29 @@
                                                     "comment": "로그아웃 버튼",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
                                                             "handler": "logout",
-                                                            "onSuccess": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "mobileMenuOpen": false,
-                                                                        "mobileUserMenuOpen": false
-                                                                    }
+                                                            "onSuccess": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "mobileMenuOpen": false,
+                                                                    "mobileUserMenuOpen": false
                                                                 }
-                                                            ]
+                                                            }
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Icon",
                                                             "props": {
-                                                                "name": "log-out",
+                                                                "name": "right-from-bracket",
                                                                 "size": "sm"
                                                             }
                                                         },
@@ -1287,11 +1400,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "className": "flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "로그인으로 — 드로어는 라우트가 바뀌어도 살아 있으므로 이동 전에 직접 닫는다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1311,16 +1422,17 @@
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer"
+                                            },
                                             "text": "$t:auth.login"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "className": "flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "회원가입으로 — 드로어를 닫고 이동한다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1340,6 +1452,9 @@
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer"
+                                            },
                                             "text": "$t:auth.register_link"
                                         }
                                     ]
@@ -1348,19 +1463,31 @@
                                     "comment": "비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
-                                                { "handler": "setState", "params": { "target": "global", "mobileMenuOpen": false } },
-                                                { "comment": "주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름.", "handler": "navigate", "params": { "path": "/login?redirect=/mypage/orders" } }
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "mobileMenuOpen": false
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름.",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/login?redirect=/mypage/orders"
+                                                    }
+                                                }
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                                    },
                                     "text": "$t:shop.guest_order_form.nav_link"
                                 }
                             ]
@@ -1376,11 +1503,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "홈으로 — 드로어를 닫고 이동한다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1400,6 +1525,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1419,11 +1547,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1443,6 +1569,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1489,11 +1618,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록).",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1513,6 +1640,9 @@
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -1553,11 +1683,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1577,6 +1705,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1596,11 +1727,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "장바구니로 — 옆 배지 수량은 cart 데이터소스가 채우므로 비회원도 담은 것이 보인다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1620,6 +1749,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1686,11 +1818,9 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1710,16 +1840,17 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.about"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "자주 묻는 질문 문서로.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1739,16 +1870,17 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.faq"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "문의 안내 문서로 — 문의 폼이 아니라 페이지 모듈 문서다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1768,6 +1900,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.contact"
                                                 }
                                             ]
@@ -1787,11 +1922,9 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각).",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1811,16 +1944,17 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.terms"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "개인정보처리방침 문서로.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1840,16 +1974,17 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.privacy"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "환불·교환 정책 문서로 — 주문 화면의 실제 취소/환불 흐름과는 무관한 안내 문서다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1869,6 +2004,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.refund"
                                                 }
                                             ]
@@ -1884,6 +2022,287 @@
                     "id": "desktop_header",
                     "type": "composite",
                     "name": "Header",
+                    "responsive": {
+                        "desktop": {
+                            "props": {
+                                "className": "block"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "comment": "데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다.",
+                            "event": "onNotificationClose",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications/read-batch",
+                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "ids": "{{$args[0]}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsCurrentPage": 1,
+                                                "notificationsHasMore": null,
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notification_unread_count"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "데스크톱 알림 클릭 — 읽음 처리를 먼저 내고 url 이 있을 때만 이동한다. url 없는 알림은 그 자리에 머문다(모바일은 알림함으로 보내는 병렬 흐름).",
+                            "event": "onNotificationClick",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PATCH"
+                                    },
+                                    "onSuccess": {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "notification_unread_count"
+                                        }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "if": "{{$args[0].url}}",
+                                    "params": {
+                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "데스크톱 전체 읽음 — 미읽음 필터가 걸려 있으면 목록이 비워져야 하므로 페이지 상태를 되돌린 뒤 목록·배지를 다시 받는다.",
+                            "event": "onNotificationMarkAllRead",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications/read-all",
+                                    "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsCurrentPage": 1,
+                                                "notificationsHasMore": null,
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notification_unread_count"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "데스크톱 미읽음만 보기 토글 — 누적된 페이지를 버리고 새 필터로 처음부터 다시 받는다.",
+                            "event": "onNotificationUnreadOnlyToggle",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notificationsUnreadOnly": "{{$args[0]}}",
+                                        "notificationsCurrentPage": 1,
+                                        "notificationsHasMore": null,
+                                        "notificationsLoadingMore": false
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "notifications"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "데스크톱 알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다.",
+                            "event": "onNotificationDelete",
+                            "handler": "apiCall",
+                            "target": "/api/user/notifications/{{$args[0].id}}",
+                            "if": "{{notifications?.data?.abilities?.can_delete === true}}",
+                            "auth_required": true,
+                            "params": {
+                                "method": "DELETE"
+                            },
+                            "onSuccess": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notificationsCurrentPage": 1,
+                                        "notificationsHasMore": null
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "notifications"
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "notification_unread_count"
+                                    }
+                                }
+                            ],
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        },
+                        {
+                            "comment": "「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부)",
+                            "event": "onNotificationDeleteAll",
+                            "handler": "openModal",
+                            "target": "notification_delete_all_confirm_modal",
+                            "if": "{{notifications?.data?.abilities?.can_delete === true}}"
+                        },
+                        {
+                            "comment": "데스크톱 더 보기 — 다음 페이지를 이어 붙인다. 모바일과 달리 현재 미읽음 필터를 질의에 함께 실어 필터가 걸린 목록에서도 같은 조건으로 이어진다.",
+                            "event": "onNotificationLoadMore",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notificationsLoadingMore": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "GET",
+                                        "query": {
+                                            "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                            "per_page": 15,
+                                            "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "appendDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications",
+                                                "dataPath": "data.data",
+                                                "newData": "{{response.data.data ?? []}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                                "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                                "notificationsLoadingMore": false
+                                            }
+                                        }
+                                    ],
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "notificationsLoadingMore": false
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
                     "props": {
                         "logo": "{{_global.settings?.general?.site_logo_url}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? 'Site'}}",
@@ -1901,267 +2320,10 @@
                         "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                         "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
                         "notificationLoading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
-                        "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}"
-                    },
-                    "responsive": {
-                        "desktop": {
-                            "props": { "className": "block" }
-                        }
-                    },
-                    "actions": [
-                        {
-                            "event": "onNotificationClose",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications/read-batch",
-                                        "params": {
-                                            "method": "POST",
-                                            "body": { "ids": "{{$args[0]}}" }
-                                        },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsCurrentPage": 1,
-                                                    "notificationsHasMore": null,
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notifications" }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notification_unread_count" }
-                                            }
-                                        ],
-                                        "onError": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationClick",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications/{{$args[0].id}}/read",
-                                        "params": { "method": "PATCH" },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notification_unread_count" }
-                                            }
-                                        ],
-                                        "onError": [
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "handler": "navigate",
-                                        "if": "{{$args[0].url}}",
-                                        "params": { "path": "{{$args[0].url ?? '/mypage/notifications'}}" }
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationMarkAllRead",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications/read-all",
-                                        "params": { "method": "POST" },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsCurrentPage": 1,
-                                                    "notificationsHasMore": null,
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notifications" }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notification_unread_count" }
-                                            }
-                                        ],
-                                        "onError": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationUnreadOnlyToggle",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "notificationsUnreadOnly": "{{$args[0]}}",
-                                            "notificationsCurrentPage": 1,
-                                            "notificationsHasMore": null,
-                                            "notificationsLoadingMore": false
-                                        }
-                                    },
-                                    {
-                                        "handler": "refetchDataSource",
-                                        "params": { "dataSourceId": "notifications" }
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationDelete",
-                            "handler": "apiCall",
-                            "auth_required": true,
-                            "target": "/api/user/notifications/{{$args[0].id}}",
-                            "params": { "method": "DELETE" },
-                            "onSuccess": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "notificationsCurrentPage": 1,
-                                        "notificationsHasMore": null
-                                    }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": { "dataSourceId": "notifications" }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": { "dataSourceId": "notification_unread_count" }
-                                }
-                            ],
-                            "onError": [
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "error",
-                                        "message": "{{error.message}}"
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "event": "onNotificationDeleteAll",
-                            "handler": "openModal",
-                            "target": "notification_delete_all_confirm_modal"
-                        },
-                        {
-                            "event": "onNotificationLoadMore",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "notificationsLoadingMore": true
-                                        }
-                                    },
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications",
-                                        "params": {
-                                            "method": "GET",
-                                            "query": {
-                                                "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
-                                                "per_page": 15,
-                                                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
-                                            }
-                                        },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "appendDataSource",
-                                                "params": {
-                                                    "dataSourceId": "notifications",
-                                                    "dataPath": "data.data",
-                                                    "newData": "{{response.data.data ?? []}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
-                                                    "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            }
-                                        ],
-                                        "onError": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    ]
+                        "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
+                        "notificationCanUpdate": "{{notifications?.data?.abilities?.can_update === true}}",
+                        "notificationCanDelete": "{{notifications?.data?.abilities?.can_delete === true}}"
+                    }
                 },
                 {
                     "comment": "=== 메인 콘텐츠 영역 ===",
@@ -2177,9 +2339,6 @@
                             "type": "layout",
                             "name": "Container",
                             "slot": "content",
-                            "props": {
-                                "className": "min-h-fit px-4"
-                            },
                             "responsive": {
                                 "desktop": {
                                     "props": {
@@ -2187,7 +2346,9 @@
                                     }
                                 }
                             },
-                            "children": []
+                            "props": {
+                                "className": "min-h-fit px-4"
+                            }
                         }
                     ]
                 },
@@ -2219,9 +2380,11 @@
     ],
     "modals": [
         {
+            "comment": "본인인증 요구 창 — 코어 인터셉터가 428 응답을 받으면 어느 화면에서든 띄우므로 상속원에 둔다.",
             "partial": "partials/_identity_challenge_modal.json"
         },
         {
+            "comment": "알림 전체 삭제 확인 창 — 헤더와 모바일 드로어의 알림센터가 공유한다(둘 다 onDeleteAll 에서 이 이름을 연다).",
             "partial": "partials/_modal_notification_delete_all_confirm.json"
         }
     ]

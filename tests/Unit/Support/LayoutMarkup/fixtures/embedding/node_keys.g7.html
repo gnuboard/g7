@@ -1,0 +1,33 @@
+<div class="options">
+  <div data-if="{{(_local.form.options ?? []).length > 0}}">
+    <sortable source="{{_local.form.options ?? []}}" item-key="id" strategy="verticalList" handle="[data-drag-handle]" item-var="opt" index-var="i"/>
+    <item-template>
+      <div class="option-row">
+        <span text="{{opt.name}}"/>
+      </div>
+    </item-template>
+  </div>
+  <rich-select data-type="composite" value="{{_local.selected}}" placeholder="$t:admin.select_file">
+    <template slot="item">
+      <div class="flex-col">
+        <span class="font-medium" text="{{item.name}}"/>
+        <span data-if="{{item.has_update}}" text="$t:admin.update_available"/>
+      </div>
+    </template>
+    <template slot="selected">
+      <span class="truncate" text="{{item.name}}"/>
+    </template>
+  </rich-select>
+  <card-grid data-type="composite" data="{{items}}">
+    <card id="board_card">
+      <div class="card-body">
+        <span text="{{row.title}}"/>
+      </div>
+    </card>
+  </card-grid>
+  <modal data-type="composite" data-ref="delete_modal">
+    <title-prefix>
+      <icon name="fa-solid fa-triangle-exclamation" class="text-red-500"/>
+    </title-prefix>
+  </modal>
+</div>

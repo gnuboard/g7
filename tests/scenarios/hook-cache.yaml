@@ -11,6 +11,9 @@ description: |
     - 바이트 동일 게이트: HookListenerRegistrar::registerFromCache 가 register 와 동일한
       applySubscribedHooks 에 위임 → 훅 매핑(이름·우선순위·콜백 수) 완전 일치, 발화 누락 0
     - 안전 폴백: 캐시 부재/손상/구조 불일치/테스트 환경에서 기존 스캔 경로로 폴백
+    - 형식 표지: 캐시는 형식 번호(format)와 만든 코어 버전(core_version)을 싣고, 표지가 없거나(7.0.x 가 만든 파일)
+      코어 버전이 다르면 스캔으로 폴백 — 코어 업데이트가 옛 프로세스에서 구운 캐시가 새 코어에 쓰이지 않게 한다.
+      표지가 없거나 다른 캐시는 cache_state=corrupted_broken_structure(쓸 수 없는 캐시) 칸으로 잰다
     - 동적 훅(알림)은 캐시 대상 아님 — dynamic 플래그만 저장하여 boot 후반부 지연 실행 순서 유지.
       getAllActive() 는 이미 ['notification'] 태그 캐시라 캐시 히트 시 DB 조회 0
     - 재생성(무효화=재생성): 확장 install/update → updateComposerAutoload,
@@ -43,6 +46,10 @@ effects:
   - absent_cache_falls_back_to_scan_registration
   - corrupted_cache_returns_null_and_falls_back_to_scan
   - testing_env_always_scans_ignoring_cache_file
+  # 형식 표지 (7.1.0 출시 점검 U1-1 — 7.0.x 가 옛 리스너로 구운 캐시 자동 무효화)
+  - unmarked_legacy_cache_falls_back_to_scan
+  - cache_from_other_core_version_falls_back_to_scan
+  - generate_records_format_and_core_version_markers
   # 동적 훅
   - dynamic_listener_flagged_in_core_cache
   - dynamic_flagged_listener_deferred_to_boot_tail_like_scan_path
@@ -58,10 +65,13 @@ effects:
   - hooks_clear_command_removes_cache_file
   - hooks_clear_is_safe_when_cache_absent
   - removed_core_listener_dropped_from_cache_after_regeneration
+  # 별도 프로세스 복구 수단 (extension:update-autoload)
+  - update_autoload_command_regenerates_hook_cache_after_reregistering_autoload
+  - update_autoload_command_runs_without_required_arguments
 
 test_files:
   - tests/Unit/Extension/HookCacheManagerTest.php
   - tests/Unit/Extension/HookListenerRegistrarTest.php
   - tests/Feature/Console/HooksCacheCommandTest.php
   - tests/Unit/Services/NotificationDefinitionServiceTest.php
-  - tests/Unit/Extension/InstallerCompletedGuardTest.php
+  - tests/Feature/Extension/ExtensionUpdateAutoloadHookCacheTest.php

@@ -28,6 +28,12 @@
 
 ### 구조
 
+```html
+<json key="init_actions">[{"handler":"initTheme"},{"handler":"customInit","target":"some_value","params":{"key":"value"}},{"handler":"apiCall","if":"{{!!query.user_id}}","target":"/api/admin/users/search","params":{"method":"GET","query":{"id":"{{query.user_id}}"}},"onSuccess":[{"handler":"setState","params":{"target":"local","userData":"{{response.data}}"}}]}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -107,6 +113,18 @@ export const handlerMap = {
 
 ### 실제 사용 예시
 
+```html
+<layout name="admin_login" version="1.0.0">
+  <meta title="$t:auth.login.title" :auth_required="false"/>
+  <init>
+    <action handler="initTheme"/>
+  </init>
+  …
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -128,6 +146,12 @@ export const handlerMap = {
 ### 데이터 바인딩 지원
 
 init_actions는 정적 바인딩을 지원합니다. route params, query, _global, blocking 데이터 등에 접근할 수 있습니다.
+
+```html
+<json key="init_actions">[{"handler":"initWithPage","target":"{{query.page}}","params":{"userId":"{{route.id}}","mode":"{{_global.mode}}"}}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -196,6 +220,21 @@ init_actions는 정적 바인딩을 지원합니다. route params, query, _globa
 
 init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실행할 수 있습니다.
 
+```html
+<init>
+  <conditions>
+    <when if="{{!!query.error}}">
+      <sequence>
+        <set-state target="local" errorMessage="{{query.error === 'not_found' ? '$t:common.not_found' : '$t:common.generic_error'}}"/>
+        <toast type="error" message="{{query.error}}"/>
+      </sequence>
+    </when>
+  </conditions>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -246,6 +285,19 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 
 ### 구조
 
+```html
+<action name="searchProducts">
+  <navigate path="/admin/products" :replace="true" :mergeQuery="true">
+    <query :page="1" search_keyword="{{$computed.keyword || null}}"/>
+  </navigate>
+</action>
+<action name="resetFilters">
+  <set-state target="_local" key="filters" :value="[]"/>
+</action>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "named_actions": {
@@ -268,12 +320,32 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 
 ### actionRef로 참조
 
+```html
+<button>
+  <on type="click">
+    <action-ref name="searchProducts"/>
+  </on>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "name": "Button",
   "actions": [{ "type": "click", "actionRef": "searchProducts" }]
 }
 ```
+
+```html
+<input>
+  <on type="keypress" key="Enter">
+    <action-ref name="searchProducts"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -318,6 +390,14 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 
 ### 구조
 
+```html
+<modal>
+  <modal data-ref="confirm_modal" title="$t:modals.confirm_title" width="400px"/>
+</modal>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "modals": [
@@ -358,6 +438,14 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 
 모달을 제어하려면 `openModal`과 `closeModal` 핸들러를 사용합니다:
 
+```html
+<on type="click">
+  <open-modal target="confirm_modal"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "actions": [
@@ -369,6 +457,14 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
   ]
 }
 ```
+
+```html
+<on type="click">
+  <close-modal/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -382,6 +478,38 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 ```
 
 ### 실제 사용 예시
+
+```html
+<layout name="admin_user_list" version="1.0.0">
+  <button data-ref="activate_button">
+    <on type="click">
+      <open-modal target="bulk_activate_confirm_modal"/>
+    </on>
+    $t:admin.users.activate
+  </button>
+  <modal>
+    <modal data-ref="bulk_activate_confirm_modal" title="$t:admin.users.modals.bulk_activate_title" width="400px">
+      <p data-ref="activate_message">$t:admin.users.modals.bulk_activate_confirm</p>
+      <container data-ref="activate_actions" layout="flex" justify="end" gap="2">
+        <button data-ref="cancel_btn" variant="secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button data-ref="confirm_btn" variant="primary">
+          <on type="click">
+            <action handler="bulkUpdateStatus" status="active"/>
+          </on>
+          $t:common.confirm
+        </button>
+      </container>
+    </modal>
+  </modal>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -522,6 +650,16 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
 
 ### 구조
 
+```html
+<div data-ref="logo_preview">
+  <on listen="upload:site_logo">
+    <refetch-data-source dataSourceId="site_settings"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "logo_preview",
@@ -531,7 +669,7 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
     {
       "event": "upload:site_logo",
       "handler": "refetchDataSource",
-      "params": { "id": "site_settings" }
+      "params": { "dataSourceId": "site_settings" }
     }
   ],
   "children": [...]
@@ -551,6 +689,21 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
 ### 이벤트 데이터 접근
 
 이벤트 발생 시 전달된 데이터는 `{{_eventData}}`로 접근할 수 있습니다:
+
+```html
+<div>
+  <on listen="item:selected">
+    <set-state target="_local">
+      <field name="value">
+        <field name="selectedItem" value="{{_eventData.item}}"/>
+      </field>
+    </set-state>
+  </on>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -587,6 +740,17 @@ const handleUploadComplete = async (result) => {
 
 레이아웃 JSON에서 해당 이벤트를 구독하여 데이터를 새로고침합니다:
 
+```html
+<div data-ref="logo_preview_container">
+  <on listen="upload:site_logo">
+    <refetch-data-source dataSourceId="site_settings"/>
+  </on>
+  <img data-ref="logo_image" src="{{site_settings?.data?.logo_url ?? ''}}"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "logo_preview_container",
@@ -596,16 +760,16 @@ const handleUploadComplete = async (result) => {
     {
       "event": "upload:site_logo",
       "handler": "refetchDataSource",
-      "params": { "id": "site_settings" }
+      "params": { "dataSourceId": "site_settings" }
     }
   ],
   "children": [
     {
       "id": "logo_image",
       "type": "basic",
-      "name": "Image",
+      "name": "Img",
       "props": {
-        "src": "{{site_settings.data.logo_url}}"
+        "src": "{{site_settings?.data?.logo_url ?? ''}}"
       }
     }
   ]
@@ -613,6 +777,21 @@ const handleUploadComplete = async (result) => {
 ```
 
 **폼 제출 후 UI 업데이트**:
+
+```html
+<div data-ref="form_container">
+  <on listen="form:submitted">
+    <set-state target="_local">
+      <field name="value">
+        <field name="showSuccess" :value="true"/>
+        <field name="formData" value="{{_eventData.data}}"/>
+      </field>
+    </set-state>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -636,6 +815,26 @@ const handleUploadComplete = async (result) => {
 ### emitEvent와 함께 사용
 
 `emitEvent` 핸들러로 이벤트를 발생시키고 `onComponentEvent`로 구독합니다:
+
+```html
+<button data-ref="submit_button">
+  <on type="click">
+    <emit-event event="data:saved">
+      <field name="data">
+        <field name="timestamp" value="{{Date.now()}}"/>
+      </field>
+    </emit-event>
+  </on>
+  저장
+</button>
+<div data-ref="status_display">
+  <on listen="data:saved">
+    <toast type="success" message="$t:common.saved_successfully"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -739,6 +938,14 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 
 `keydown`/`keyup`/`keypress` 이벤트에서 특정 키만 반응하도록 `key` 필드를 사용합니다:
 
+```html
+<on type="keydown" key="Enter">
+  <navigate path="/search?q={{_global.searchQuery}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "actions": [
@@ -759,6 +966,19 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 - `a` ~ `z`, `0` ~ `9` 등
 
 ### 실전 예시: 검색 입력 필드
+
+```html
+<input data-ref="search_input" type="text" placeholder="검색어 입력...">
+  <on type="change">
+    <set-state target="global" searchQuery="{{$event.target.value}}"/>
+  </on>
+  <on type="keydown" key="Enter">
+    <navigate path="/search?q={{_global.searchQuery}}"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -814,6 +1034,12 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 
 ### 구조
 
+```html
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extends": "_admin_form",
@@ -834,6 +1060,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 |------|------|------|------|
 | `src` | string | ✅ | 스크립트 URL (프로토콜 없이 `//`로 시작 권장) |
 | `id` | string | ✅ | 스크립트 요소 ID (중복 로드 방지용) |
+| `label` | string | ❌ | 로드 실패 안내에 쓸 사람이 읽는 이름 (`$t:키` 허용, engine-v1.79.0+). 없으면 「화면 기능 스크립트」로 안내하며 `id` 는 안내에 쓰지 않습니다 |
 | `if` | string | ❌ | 조건부 로드 표현식 (예: `{{_global.pluginActive}}`) |
 | `async` | boolean | ❌ | 비동기 로드 여부 (기본값: true) |
 
@@ -852,6 +1079,12 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 
 **플러그인 활성화 상태 체크**:
 
+```html
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "scripts": [
@@ -866,13 +1099,19 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 
 **전역 상태 체크**:
 
+```html
+<script src="/plugins/vendor-sample/vendor/editor.js" id="editor_script" data-if="{{_global.settings?.editor?.use_rich_editor}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "scripts": [
     {
-      "src": "https://cdn.example.com/analytics.js",
-      "id": "analytics_script",
-      "if": "{{_global.settings?.analytics?.enabled}}"
+      "src": "/plugins/vendor-sample/vendor/editor.js",
+      "id": "editor_script",
+      "if": "{{_global.settings?.editor?.use_rich_editor}}"
     }
   ]
 }
@@ -881,6 +1120,28 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 ### callExternal과 함께 사용
 
 scripts로 로드된 외부 라이브러리는 `callExternal` 핸들러로 호출합니다:
+
+```html
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+<button data-ref="btn_search_address">
+  <on type="click">
+    <call-external constructor="daum.Postcode" method="open">
+      <field name="args">
+        <field name="oncomplete" :value="true"/>
+      </field>
+      <field name="callbackSetState">
+        <field name="basic_info">
+          <field name="zipcode" value="zonecode"/>
+          <field name="base_address" value="roadAddress"/>
+        </field>
+      </field>
+    </call-external>
+  </on>
+  주소 검색
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

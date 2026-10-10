@@ -1,1375 +1,1715 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_user_detail",
-  "permissions": [
-    "core.users.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:admin.users.detail.page_title",
-    "description": "$t:admin.users.detail.page_description"
-  },
-  "data_sources": [
-    {
-      "id": "user",
-      "label_key": "$t:editor.data_source.user",
-      "type": "api",
-      "endpoint": "/api/admin/users/{{route?.id}}",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true
-    }
-  ],
-  "errorHandling": {
-    "403": {
-      "handler": "showErrorPage",
-      "params": {
-        "target": "content"
-      }
+    "comment": "회원 상세 — 읽기 전용 화면이다. 수정은 별도 폼(`admin_user_form`)이 맡으므로 여기에는 저장 배선이\n  없고, 탭 구성도 폼과 다르다(동의 이력 탭이 여기에만 있다).\n  오류를 두 겹으로 다룬다 — 회원 조회의 403·404 는 화면을 통째로 에러로 갈아끼우고, 그 밖의 실패는 본문 위쪽\n  경고 상자로만 알린다(탭 뼈대는 남겨 둔다).",
+    "version": "1.0.0",
+    "layout_name": "admin_user_detail",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.users.detail.page_title",
+        "description": "$t:admin.users.detail.page_description"
     },
-    "404": {
-      "handler": "showErrorPage",
-      "params": {
-        "target": "content"
-      }
-    }
-  },
-  "state": {
-    "activeTab": "basic_info"
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "user_detail_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content"
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "page-header-fullbleed"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-between"
+    "data_sources": [
+        {
+            "id": "user",
+            "label_key": "$t:editor.data_source.user",
+            "type": "api",
+            "endpoint": "/api/admin/users/{{route?.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
                 },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "H1",
-                        "props": {
-                          "className": "page-title"
-                        },
-                        "text": "$t:admin.users.detail.page_title"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "P",
-                        "props": {
-                          "className": "page-description"
-                        },
-                        "text": "$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "flex-center gap-2"
-                    },
-                    "children": [
-                      {
-                        "id": "header_back_button",
-                        "type": "basic",
-                        "name": "Button",
-                        "props": {
-                          "className": "flex-center gap-2 btn btn-secondary"
-                        },
-                        "actions": [
-                          {
-                            "type": "click",
-                            "handler": "navigateBack"
-                          }
-                        ],
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                              "name": "arrow-left",
-                              "className": "text-base"
-                            }
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.back"
-                          }
-                        ]
-                      },
-                      {
-                        "id": "header_edit_button",
-                        "type": "basic",
-                        "name": "Button",
-                        "props": {
-                          "disabled": "{{user?.data?.abilities?.can_update !== true}}",
-                          "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        },
-                        "actions": [
-                          {
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                              "path": "/admin/users/{{route?.id}}/edit",
-                              "mergeQuery": true,
-                              "query": {}
-                            }
-                          }
-                        ],
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                              "name": "pencil",
-                              "className": "text-base"
-                            }
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.users.detail.edit"
-                          }
-                        ]
-                      },
-                      {
-                        "id": "header_unlock_button",
-                        "type": "basic",
-                        "name": "Button",
-                        "if": "{{user?.data?.is_locked === true}}",
-                        "props": {
-                          "disabled": "{{user?.data?.abilities?.can_update !== true}}",
-                          "className": "flex-center gap-2 btn btn-warning"
-                        },
-                        "actions": [
-                          {
-                            "type": "click",
-                            "handler": "apiCall",
-                            "auth_required": true,
-                            "target": "/api/admin/users/{{route?.id}}/unlock",
-                            "params": {
-                              "method": "POST"
-                            },
-                            "onSuccess": [
-                              {
-                                "handler": "refetchDataSource",
-                                "params": {
-                                  "dataSourceId": "user"
-                                }
-                              },
-                              {
-                                "handler": "toast",
-                                "params": {
-                                  "type": "success",
-                                  "message": "$t:admin.users.detail.unlock_success"
-                                }
-                              }
-                            ],
-                            "onError": [
-                              {
-                                "handler": "toast",
-                                "params": {
-                                  "type": "error",
-                                  "message": "{{error.message}}"
-                                }
-                              }
-                            ]
-                          }
-                        ],
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                              "name": "unlock",
-                              "className": "text-base"
-                            }
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.users.detail.unlock"
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "user_detail_tabs",
-            "type": "composite",
-            "name": "TabNavigationScroll",
-            "props": {
-              "className": "sticky-tab-nav tab-nav-default",
-              "activeTabId": "{{_local.activeTab ?? 'basic_info'}}",
-              "enableScrollSpy": true,
-              "scrollSpyOffset": 56,
-              "sectionIdPrefix": "",
-              "tabs": [
-                {
-                  "id": "basic_info",
-                  "label": "$t:admin.users.detail.tabs.basic_info"
-                },
-                {
-                  "id": "contact_info",
-                  "label": "$t:admin.users.detail.tabs.contact_info"
-                },
-                {
-                  "id": "location_info",
-                  "label": "$t:admin.users.detail.tabs.location_info"
-                },
-                {
-                  "id": "profile_memo",
-                  "label": "$t:admin.users.detail.tabs.profile_memo"
-                },
-                {
-                  "id": "activity_info",
-                  "label": "$t:admin.users.detail.tabs.activity_info"
-                },
-                {
-                  "id": "consent_info",
-                  "label": "$t:admin.users.detail.tabs.consent_info"
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
                 }
-              ]
             },
-            "actions": [
-              {
-                "type": "change",
-                "handler": "setState",
-                "params": {
-                  "target": "local",
-                  "activeTab": "{{$event.value}}"
-                }
-              }
-            ]
-          },
-          {
-            "id": "user_api_error",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{_dataSourceErrors?.user}}",
-            "props": {
-              "className": "alert-danger"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-3"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "triangle-exclamation",
-                      "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "H3",
-                        "props": {
-                          "className": "text-error-strong"
-                        },
-                        "text": "$t:admin.users.detail.error_loading_user"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "P",
-                        "props": {
-                          "className": "text-error-soft mt-1"
-                        },
-                        "text": "{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "section_basic_info",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "id": "basic_info",
-              "className": "admin-card"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-2 mb-4"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user",
-                      "className": "text-secondary text-xl"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H3",
-                    "props": {
-                      "className": "section-heading"
-                    },
-                    "text": "$t:admin.users.form.sections.basic_info"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "row-stack"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "grid-2col-responsive"
-                        },
-                        "children": [
-                          {
-                            "id": "field_uuid",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "UUID"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm font-mono"
-                                },
-                                "text": "{{user?.data?.uuid ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_name",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.name"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.name ?? '-'}}"
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "grid-2col-responsive"
-                        },
-                        "children": [
-                          {
-                            "id": "field_nickname",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.nickname"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.nickname ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_roles",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.role"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "flex flex-wrap gap-1"
-                                },
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "iteration": {
-                                      "source": "user?.data?.roles ?? []",
-                                      "item_var": "role"
-                                    },
-                                    "props": {
-                                      "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                    },
-                                    "text": "{{role.name}}"
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "grid-2col-responsive"
-                        },
-                        "children": [
-                          {
-                            "id": "field_status",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.status"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                  "className": "{{user?.data?.status_variant === 'success' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : user?.data?.status_variant === 'secondary' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : user?.data?.status_variant === 'danger' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}}"
-                                },
-                                "text": "{{user?.data?.status_label ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_email_verified",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.detail.email_verification"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "flex-center gap-1"
-                                },
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "condition": "{{user?.data?.email_verified_at}}",
-                                    "props": {
-                                      "name": "check-circle",
-                                      "className": "text-base text-green-500"
-                                    }
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                      "className": "text-primary text-sm"
-                                    },
-                                    "text": "{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}"
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "section_contact_info",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "id": "contact_info",
-              "className": "admin-card"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-2 mb-4"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "envelope",
-                      "className": "text-secondary text-xl"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H3",
-                    "props": {
-                      "className": "section-heading"
-                    },
-                    "text": "$t:admin.users.form.sections.contact_info"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "row-stack"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "grid-2col-responsive"
-                        },
-                        "children": [
-                          {
-                            "id": "field_email",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.email"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.email ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_homepage",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.homepage"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.homepage ?? '-'}}"
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "grid-2col-responsive"
-                        },
-                        "children": [
-                          {
-                            "id": "field_mobile",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.mobile"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.mobile ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_phone",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.phone"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.phone ?? '-'}}"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "section_location_info",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "id": "location_info",
-              "className": "admin-card"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-2 mb-4"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "map-pin",
-                      "className": "text-secondary text-xl"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H3",
-                    "props": {
-                      "className": "section-heading"
-                    },
-                    "text": "$t:admin.users.form.sections.location_info"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "row-stack"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                              "className": "grid-2col-responsive"
-                            },
-                            "children": [
-                              {
-                                "id": "field_country",
-                                "if": false,
-                                "type": "basic",
-                                "name": "Div",
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                      "className": "text-label-subtle block font-medium mb-1"
-                                    },
-                                    "text": "$t:admin.users.form.fields.country"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                      "className": "text-primary text-sm"
-                                    },
-                                    "text": "{{user?.data?.country_name ?? user?.data?.country ?? '-'}}"
-                                  }
-                                ]
-                              },
-                              {
-                                "id": "field_language",
-                                "type": "basic",
-                                "name": "Div",
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                      "className": "text-label-subtle block font-medium mb-1"
-                                    },
-                                    "text": "$t:admin.users.form.fields.language"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{user?.data?.language}}",
-                                    "props": {
-                                      "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
-                                    },
-                                    "text": "{{user?.data?.language_label ?? user?.data?.language ?? '-'}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!user?.data?.language}}",
-                                    "props": {
-                                      "className": "text-primary text-sm"
-                                    },
-                                    "text": "-"
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "id": "field_timezone",
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Label",
-                        "props": {
-                          "className": "text-label-subtle block font-medium mb-1"
-                        },
-                        "text": "$t:admin.users.form.fields.timezone"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "text-primary text-sm"
-                        },
-                        "text": "{{user?.data?.timezone ?? '-'}}"
-                      }
-                    ]
-                  },
-                  {
-                    "id": "field_address",
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Label",
-                        "props": {
-                          "className": "text-label-subtle block font-medium mb-1"
-                        },
-                        "text": "$t:admin.users.form.fields.address"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "text-primary text-sm"
-                        },
-                        "text": "{{user?.data?.zipcode || user?.data?.address || user?.data?.address_detail ? ((user?.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user?.data?.address ?? '') + (user?.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "section_profile_memo",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "id": "profile_memo",
-              "className": "admin-card"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-2 mb-4"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user-circle",
-                      "className": "text-secondary text-xl"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H3",
-                    "props": {
-                      "className": "section-heading"
-                    },
-                    "text": "$t:admin.users.form.sections.profile_memo"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "row-stack"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                              "className": "grid-2col-responsive"
-                            },
-                            "children": [
-                              {
-                                "id": "field_signature",
-                                "type": "basic",
-                                "name": "Div",
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                      "className": "text-label-subtle block font-medium mb-1"
-                                    },
-                                    "text": "$t:admin.users.form.fields.signature"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                      "className": "text-primary text-sm"
-                                    },
-                                    "text": "{{user?.data?.signature ?? '-'}}"
-                                  }
-                                ]
-                              },
-                              {
-                                "id": "field_bio",
-                                "type": "basic",
-                                "name": "Div",
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                      "className": "text-label-subtle block font-medium mb-1"
-                                    },
-                                    "text": "$t:admin.users.form.fields.bio"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                      "className": "text-primary text-sm whitespace-pre-line"
-                                    },
-                                    "text": "{{user?.data?.bio ?? '-'}}"
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "id": "field_admin_memo",
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Label",
-                        "props": {
-                          "className": "text-label-subtle block font-medium mb-1"
-                        },
-                        "text": "$t:admin.users.form.fields.admin_memo"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "text-primary text-sm whitespace-pre-line"
-                        },
-                        "text": "{{user?.data?.admin_memo ?? '-'}}"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "section_activity_info",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "id": "activity_info",
-              "className": "admin-card"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-2 mb-4"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "clock",
-                      "className": "text-secondary text-xl"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H3",
-                    "props": {
-                      "className": "section-heading"
-                    },
-                    "text": "$t:admin.users.form.sections.activity_info"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "row-stack"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "grid-2col-responsive"
-                        },
-                        "children": [
-                          {
-                            "id": "field_created_at",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.created_at"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.created_at ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_last_login_at",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.last_login_at"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.last_login_at ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_lock_status",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.lock_status"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "if": "{{user?.data?.locked_permanently === true}}",
-                                "props": {
-                                  "className": "text-error-soft text-sm"
-                                },
-                                "text": "$t:admin.users.detail.locked_permanently_value"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "if": "{{user?.data?.locked_permanently !== true && user?.data?.is_locked === true}}",
-                                "props": {
-                                  "className": "text-error-soft text-sm"
-                                },
-                                "text": "$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "if": "{{user?.data?.is_locked !== true}}",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "$t:admin.users.detail.not_locked_value"
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "grid-2col-responsive"
-                        },
-                        "children": [
-                          {
-                            "id": "field_ip_address",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.form.fields.ip_address"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.ip_address ?? '-'}}"
-                              }
-                            ]
-                          },
-                          {
-                            "id": "field_withdrawn_at",
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Label",
-                                "props": {
-                                  "className": "text-label-subtle block font-medium mb-1"
-                                },
-                                "text": "$t:admin.users.detail.withdrawn_at"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "text-primary text-sm"
-                                },
-                                "text": "{{user?.data?.withdrawn_at ?? '-'}}"
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "id": "field_blocked_at",
-                        "type": "basic",
-                        "name": "Div",
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                              "className": "text-label-subtle block font-medium mb-1"
-                            },
-                            "text": "$t:admin.users.detail.blocked_at"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                              "className": "text-primary text-sm"
-                            },
-                            "text": "{{user?.data?.blocked_at ?? '-'}}"
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "section_consent_info",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "id": "consent_info",
-              "className": "admin-card"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-2 mb-4"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "file-contract",
-                      "className": "text-secondary text-xl"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H3",
-                    "props": {
-                      "className": "section-heading"
-                    },
-                    "text": "$t:admin.users.detail.consent_history"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "grid-2col-responsive"
-                    },
-                    "children": [
-                      {
-                        "id": "field_terms_consent",
-                        "type": "basic",
-                        "name": "Div",
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                              "className": "text-label-subtle block font-medium mb-1"
-                            },
-                            "text": "$t:admin.users.detail.consent_type.terms"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-primary text-sm"
-                            },
-                            "text": "{{user?.data?.terms_consent?.agreed_at ?? '-'}}"
-                          }
-                        ]
-                      },
-                      {
-                        "id": "field_privacy_consent",
-                        "type": "basic",
-                        "name": "Div",
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                              "className": "text-label-subtle block font-medium mb-1"
-                            },
-                            "text": "$t:admin.users.detail.consent_type.privacy"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-primary text-sm"
-                            },
-                            "text": "{{user?.data?.privacy_consent?.agreed_at ?? '-'}}"
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "extension_tab_content",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "tab-content mt-6"
-            },
-            "comment": "확장(모듈/플러그인)이 inject_props로 탭을 추가하고 append_child로 섹션 콘텐츠를 주입하는 영역"
-          }
+            "comment": "볼 회원 한 건. 폼과 달리 `initLocal` 이 없다 — 응답을 그대로 읽어 표시하므로 옮겨 담을 이유가 없다.\n       403·404 화면 전환은 이 조회에만 건다 — 레이아웃 단위로 걸면 화면 틀의 알림·메뉴 조회 403 에도 반응해, 회원 읽기\n       권한만 있는 관리자가 볼 수 있는 상세가 통째로 403 화면이 됐다(#736 S2)."
+        }
+    ],
+    "initLocal": {
+        "activeTab": "basic_info"
+    },
+    "permissions": [
+        "core.users.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "user"
         ]
-      }
-    ]
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "user"
-    ]
-  }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "user_detail_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "page-header-fullbleed"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.users.detail.page_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "page-description"
+                                        },
+                                        "text": "$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "header_back_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigateBack"
+                                            }
+                                        ],
+                                        "props": {
+                                            "className": "flex-center gap-2 btn btn-secondary"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrow-left",
+                                                    "className": "text-base"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.back"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "header_edit_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "이 회원 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 목록까지 되짚어 나가도 자리가 남는다",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users/{{route?.id}}/edit",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "disabled": "{{user?.data?.abilities?.can_update !== true}}",
+                                            "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "pencil",
+                                                    "className": "text-base"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.detail.edit"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "header_unlock_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{user?.data?.is_locked === true}}",
+                                        "actions": [
+                                            {
+                                                "comment": "계정 잠금 해제. 로그인 실패가 쌓여 잠긴 계정을 운영자가 푸는 자리이며, 성공하면 회원 정보를 다시 받아 잠금 표시를 내린다",
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/users/{{route?.id}}/unlock",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "POST"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "user"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.users.detail.unlock_success"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "disabled": "{{user?.data?.abilities?.can_update !== true}}",
+                                            "className": "flex-center gap-2 btn btn-warning"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "unlock",
+                                                    "className": "text-base"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.detail.unlock"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "user_detail_tabs",
+                        "type": "composite",
+                        "name": "TabNavigationScroll",
+                        "actions": [
+                            {
+                                "comment": "탭 전환 — 내용은 이미 받아 둔 한 응답에서 갈라 보이므로 탭마다 다시 부르지 않는다.",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "activeTab": "{{$event.value}}"
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "sticky-tab-nav tab-nav-default",
+                            "activeTabId": "{{_local.activeTab ?? 'basic_info'}}",
+                            "enableScrollSpy": true,
+                            "scrollSpyOffset": 56,
+                            "sectionIdPrefix": "",
+                            "tabs": [
+                                {
+                                    "id": "basic_info",
+                                    "label": "$t:admin.users.detail.tabs.basic_info"
+                                },
+                                {
+                                    "id": "contact_info",
+                                    "label": "$t:admin.users.detail.tabs.contact_info"
+                                },
+                                {
+                                    "id": "location_info",
+                                    "label": "$t:admin.users.detail.tabs.location_info"
+                                },
+                                {
+                                    "id": "profile_memo",
+                                    "label": "$t:admin.users.detail.tabs.profile_memo"
+                                },
+                                {
+                                    "id": "activity_info",
+                                    "label": "$t:admin.users.detail.tabs.activity_info"
+                                },
+                                {
+                                    "id": "consent_info",
+                                    "label": "$t:admin.users.detail.tabs.consent_info"
+                                },
+                                {
+                                    "id": "notifications_info",
+                                    "label": "$t:admin.users.detail.tabs.notifications_info"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "user_api_error",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_dataSourceErrors?.user}}",
+                        "props": {
+                            "className": "alert-danger"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-error-strong"
+                                                },
+                                                "text": "$t:admin.users.detail.error_loading_user"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-error-soft mt-1"
+                                                },
+                                                "text": "{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_basic_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "basic_info",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.form.sections.basic_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_uuid",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "UUID"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm font-mono"
+                                                                },
+                                                                "text": "{{user?.data?.uuid ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_name",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.name"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.name ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_nickname",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.nickname"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.nickname ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_roles",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.role"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex flex-wrap gap-1"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "iteration": {
+                                                                            "source": "user?.data?.roles ?? []",
+                                                                            "item_var": "role"
+                                                                        },
+                                                                        "props": {
+                                                                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                                                        },
+                                                                        "text": "{{role.name}}"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_status",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.status"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[user?.data?.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                                                },
+                                                                "text": "{{user?.data?.status_label ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_email_verified",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.detail.email_verification"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex-center gap-1"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "if": "{{user?.data?.email_verified_at}}",
+                                                                        "props": {
+                                                                            "name": "check-circle",
+                                                                            "className": "text-base text-green-500"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-primary text-sm"
+                                                                        },
+                                                                        "text": "{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_contact_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "contact_info",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "envelope",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.form.sections.contact_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_email",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.email"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.email ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_homepage",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.homepage"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.homepage ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_mobile",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.mobile"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.mobile ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_phone",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.phone"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.phone ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_location_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "location_info",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "map-pin",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.form.sections.location_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "row-stack"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "grid-2col-responsive"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "field_country",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                                        },
+                                                                        "text": "$t:admin.users.form.fields.country"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-primary text-sm"
+                                                                        },
+                                                                        "text": "{{user?.data?.country_name ?? user?.data?.country ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "field_language",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                                        },
+                                                                        "text": "$t:admin.users.form.fields.language"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{user?.data?.language}}",
+                                                                        "props": {
+                                                                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                                                                        },
+                                                                        "text": "{{user?.data?.language_label ?? user?.data?.language ?? '-'}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{!user?.data?.language}}",
+                                                                        "props": {
+                                                                            "className": "text-primary text-sm"
+                                                                        },
+                                                                        "text": "-"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_timezone",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.timezone"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "{{user?.data?.timezone ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_address",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.address"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "{{user?.data?.zipcode || user?.data?.address || user?.data?.address_detail ? ((user?.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user?.data?.address ?? '') + (user?.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_profile_memo",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "profile_memo",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user-circle",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.form.sections.profile_memo"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "row-stack"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "grid-2col-responsive"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "field_signature",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                                        },
+                                                                        "text": "$t:admin.users.form.fields.signature"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-primary text-sm"
+                                                                        },
+                                                                        "text": "{{user?.data?.signature ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "field_bio",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                                        },
+                                                                        "text": "$t:admin.users.form.fields.bio"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-primary text-sm whitespace-pre-line"
+                                                                        },
+                                                                        "text": "{{user?.data?.bio ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_admin_memo",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.admin_memo"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-primary text-sm whitespace-pre-line"
+                                                },
+                                                "text": "{{user?.data?.admin_memo ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_activity_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "activity_info",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "clock",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.form.sections.activity_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_created_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.created_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.created_at ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_last_login_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.last_login_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.last_login_at ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_lock_status",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.lock_status"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.locked_permanently === true}}",
+                                                                "props": {
+                                                                    "className": "text-error-soft text-sm"
+                                                                },
+                                                                "text": "$t:admin.users.detail.locked_permanently_value"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.locked_permanently !== true && user?.data?.is_locked === true}}",
+                                                                "props": {
+                                                                    "className": "text-error-soft text-sm"
+                                                                },
+                                                                "text": "$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.is_locked !== true}}",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "$t:admin.users.detail.not_locked_value"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_ip_address",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.ip_address"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.ip_address ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_withdrawn_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.detail.withdrawn_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.withdrawn_at ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_blocked_at",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                        },
+                                                        "text": "$t:admin.users.detail.blocked_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.blocked_at ?? '-'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "휴면 전환 시각 — 해제되면 서버가 NULL 로 되돌리므로 값이 있으면 \"지금 휴면\" 이라는 뜻이다. 자동 탈퇴는 이 시각 + 설정 기간으로 판정하므로 운영자가 남은 기간을 셀 수 있어야 한다.",
+                                                "id": "field_dormant_at",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                        },
+                                                        "text": "$t:admin.users.detail.dormant_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.dormant_at ?? '-'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "비밀번호(#736) — 마지막 변경·만료 예정(또는 만료됨/적용 안 됨)·다음 로그인 때 변경 필요·연기 종료·개별 설정.\n           값은 상세 응답에만 실리는 `password_status`(목록에는 없다 — 회원마다 역할 판정을 하면 목록이 무거워진다).\n           날짜는 서버가 보는 사람의 시간대로 이미 맞춰 보낸다. 탭에는 따로 두지 않고 활동 정보 바로 뒤에 둔다.",
+                        "id": "section_password_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "password_info",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "key",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.detail.password.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid-2col-responsive"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_password_changed_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.password.changed_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "{{user?.data?.password_status?.changed_at ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_password_expires_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.password.expires_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!user?.data?.password_status?.applies}}",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "$t:admin.users.detail.password.not_applies"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{user?.data?.password_status?.applies && user?.data?.password_status?.expired}}",
+                                                "props": {
+                                                    "className": "text-error-soft text-sm"
+                                                },
+                                                "text": "$t:admin.users.detail.password.expired|date={{user?.data?.password_status?.expires_at ?? ''}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{user?.data?.password_status?.applies && !user?.data?.password_status?.expired}}",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "$t:admin.users.detail.password.expires_value|date={{user?.data?.password_status?.expires_at ?? '-'}}|days={{user?.data?.password_status?.days_left ?? 0}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_password_change_required",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.password.change_required"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "{{user?.data?.password_status?.change_required ? '$t:admin.users.detail.password.yes' : '$t:admin.users.detail.password.no'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_password_postponed_until",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{user?.data?.password_status?.postponed_until}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.password.postponed_until"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "{{user?.data?.password_status?.postponed_until ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_password_expiry_policy",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.password.policy"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-primary text-sm"
+                                                },
+                                                "text": "{{$t('admin.users.form.password_policy.expiry_' + (user?.data?.password_status?.policy ?? 'inherit'))}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_consent_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "consent_info",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "file-contract",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.detail.consent_history"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "grid-2col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "field_terms_consent",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                        },
+                                                        "text": "$t:admin.users.detail.consent_type.terms"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.terms_consent?.agreed_at ?? '-'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_privacy_consent",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                        },
+                                                        "text": "$t:admin.users.detail.consent_type.privacy"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.privacy_consent?.agreed_at ?? '-'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "회원 알림함 요약 — 수신함 자체는 화면이 아니라 전용 목록에 있고, 여기서는 \"몇 건이 남아\n           있고 몇 건을 안 읽었나\" 만 보여 준 뒤 그 회원으로 좁힌 목록으로 넘긴다. 상세 응답이 이미\n           들고 오는 값이라 탭을 눌러도 다시 부르지 않는다.",
+                        "id": "section_notifications_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "notifications_info",
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "inbox",
+                                            "className": "text-secondary text-xl"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.users.detail.tabs.notifications_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "grid-2col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "field_notifications_total",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                        },
+                                                        "text": "$t:admin.users.detail.notifications.total"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.notifications_summary?.total ?? 0}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_notifications_unread",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "text-label-subtle block font-medium mb-1"
+                                                        },
+                                                        "text": "$t:admin.users.detail.notifications.unread"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-primary text-sm"
+                                                        },
+                                                        "text": "{{user?.data?.notifications_summary?.unread ?? 0}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.\n               회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다.",
+                                        "id": "notifications_inbox_link",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.member-notifications.read'))}}",
+                                        "props": {
+                                            "className": "mt-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "회원 한정으로 알림함을 연다 — 그쪽 화면이 배너로 \"이 회원만 보는 중\" 임을 알린다.",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/member-notifications",
+                                                            "query": {
+                                                                "user_uuid": "{{user?.data?.uuid}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-secondary"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.users.detail.notifications.view_inbox"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "확장(모듈/플러그인)이 inject_props로 탭을 추가하고 append_child로 섹션 콘텐츠를 주입하는 영역",
+                        "id": "extension_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content mt-6"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
 }

@@ -1,0 +1,69 @@
+<!-- 상품 폼 — 라벨 등록·수정 창. 라벨 관리 화면으로 나가지 않고 상품을 편집하던 자리에서 바로 만든다.
+  등록/수정 구분은 편집 대상 id(`_global.editingLabelId`)의 유무이고, 입력값은 전역에 둔다
+  (창은 별도 컨텍스트라 폼의 _local 을 못 쓴다). -->
+<partial description="Product Form - Label Registration/Edit Modal" editor_label="$t:sirsoft-ecommerce.admin.product.labels.modal_title_create">
+  <modal data-type="composite" data-ref="modal_label_form" title="{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}" size="md">
+    <div data-ref="label_form_content">
+      <div data-ref="label_preview_section">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.preview</label>
+          <div class="flex-center justify-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <span class="px-3 py-1.5 rounded-full text-sm font-medium" style="background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}">{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="label_name_section">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.name</label>
+          <multilingual-input data-type="composite" name="label_name" value="{{_global.labelFormData?.name ?? { ko: '', en: '' }}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.name" layout="tabs">
+            <on type="change">
+              <!-- 라벨 이름(다국어 한 덩어리) — 한국어가 비면 저장 버튼이 잠긴다 -->
+              <set-state target="global" labelFormData.name="{{$event.target.value}}"/>
+            </on>
+          </multilingual-input>
+        </div>
+      </div>
+      <div data-ref="label_color_section">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.color</label>
+          <div class="flex-center gap-3">
+            <input type="color" aria-label="$t:sirsoft-ecommerce.admin.product.labels.color" value="{{_global.labelFormData?.color ?? '#6B7280'}}" class="w-12 h-10 p-1 rounded cursor-pointer">
+              <on type="change">
+                <!-- 색 고르개 — 옆 글자 입력칸과 같은 값을 나눠 쓴다(어느 쪽으로 넣어도 미리보기가 따라간다) -->
+                <set-state target="global" labelFormData.color="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <input name="label_color_text" value="{{_global.labelFormData?.color ?? ''}}" placeholder="#FF0000" class="flex-1">
+              <on type="change">
+                <!-- 색 코드 직접 입력 — 비우면 null 로 떨어뜨려 「색 없음」이 되게 한다(빈 문자열은 색으로 해석돼 미리보기가 깨진다) -->
+                <set-state target="global" labelFormData.color="{{$event.target.value || null}}"/>
+              </on>
+            </input>
+            <!-- 색 지우기 — 색이 없으면 기본 회색으로 그려진다 -->
+            <button data-if="{{_global.labelFormData?.color}}" type="button" class="btn btn-ghost btn-sm text-gray-500 dark:text-gray-400">
+              <on type="click">
+                <set-state target="global" :labelFormData.color="null"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.labels.color_reset
+            </button>
+          </div>
+        </div>
+      </div>
+      <div data-ref="modal_footer" class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" class="btn btn-outline" disabled="{{_global.isSavingLabel}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:sirsoft-ecommerce.common.cancel
+        </button>
+        <button data-ref="label_form_save" type="button" class="btn btn-primary" disabled="{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.saveLabelSettings"/>
+          </on>
+          <icon data-if="{{_global.isSavingLabel}}" name="spinner" class="spinner-sm mr-2"/>
+          <span>{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

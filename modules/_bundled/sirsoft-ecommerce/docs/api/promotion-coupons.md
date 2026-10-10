@@ -422,7 +422,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 프로모션 쿠폰(정의)을 생성합니다. `permission:sirsoft-ecommerce.promotion-coupon.create` 권한이 필요하며, 다국어 쿠폰명(`name`), 적용대상·혜택유형·혜택값, 발급방법/조건/상태, 유효기간·발급기간, 회원당 한도, 적용 범위(`target_scope`: all·products·categories)와 그에 따른 상품/카테고리 배열을 받아 `CouponService::createCoupon()`이 저장하고 생성된 쿠폰을 201로 반환합니다. `target_scope` 가 products/categories 일 때만 각 배열이 의미를 가지며, 확장은 `sirsoft-ecommerce.coupon.create_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다.
+**설명** 관리자가 새 프로모션 쿠폰(정의)을 생성합니다. `permission:sirsoft-ecommerce.promotion-coupon.create` 권한이 필요하며, 다국어 쿠폰명(`name`), 적용대상·혜택유형·혜택값, 발급방법/조건/상태, 유효기간·발급기간, 회원당 한도, 적용 범위(`target_scope`: all·products·categories)와 그에 따른 상품/카테고리 배열을 받아 `CouponService::createCoupon()`이 저장하고 생성된 쿠폰을 201로 반환합니다. `target_scope` 가 products/categories 일 때만 각 배열이 의미를 가지며, 확장은 `sirsoft-ecommerce.coupon.create_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required.").
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/promotion-coupons/bulk-status
@@ -855,7 +855,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 기존 프로모션 쿠폰(정의)의 내용을 수정합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하며, 생성과 동일한 필드 집합(쿠폰명·혜택·발급 조건·유효/발급 기간·적용 범위 등)을 받아 `CouponService::updateCoupon()`이 전체 갱신합니다. `target_scope` 변경 시 그에 맞는 상품/카테고리 배열을 함께 보내야 하며, 대상 쿠폰이 없으면 404, 갱신 실패 시 400 을 반환합니다. 확장은 `sirsoft-ecommerce.coupon.update_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다.
+**설명** 관리자가 기존 프로모션 쿠폰(정의)의 내용을 수정합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하며, 생성과 동일한 필드 집합(쿠폰명·혜택·발급 조건·유효/발급 기간·적용 범위 등)을 받아 `CouponService::updateCoupon()`이 전체 갱신합니다. `target_scope` 변경 시 그에 맞는 상품/카테고리 배열을 함께 보내야 하며, 대상 쿠폰이 없으면 404, 갱신 실패 시 400 을 반환합니다. 확장은 `sirsoft-ecommerce.coupon.update_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required.").
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/promotion-coupons/{id}/issue-direct
@@ -981,7 +981,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 (`CouponIssueResource`) + 
 | expired_at | string\|null | `2026-07-31 23:59:59` | 만료 일시 (사용자 타임존 포맷, 없으면 null) |
 | used_at | string\|null | `null` | 사용 일시 (미사용 시 null) |
 | order_id | integer\|null | `null` | 쿠폰이 사용된 주문 ID (미사용 시 null) |
-| order_number | string\|null | `20260708-0001` | 사용된 주문의 주문번호 (order 관계 로드 시) |
+| order_number | string\|null | `20260708-1017395602` | 사용된 주문의 주문번호 (order 관계 로드 시) |
 | discount_amount | number\|null | `null` | 실제 적용된 할인 금액 (기본 통화 자릿수로 반올림, 미사용 시 null) |
 | is_used | boolean | `false` | 사용 완료 여부 (`status === 'used'`) |
 | is_expired | boolean | `false` | 만료 여부 |

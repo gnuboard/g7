@@ -1,21 +1,11 @@
 {
+    "comment": "관리자 글 상세. 원글·답글·댓글 셋을 한 화면에서 다루고, 삭제/신고/블라인드/복구 네 모달은 «어느 대상인가」를 `_global.*_modal_data.type` 으로 받아 하나의 모달이 세 종류를 겸한다 — 대상마다 모달을 따로 두면 같은 문구·같은 흐름이 세 벌이 되기 때문이다",
     "version": "1.0.0",
     "layout_name": "admin_board_post_detail",
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title",
         "description": "{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
-    },
-    "computed": {
-        "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "post"
-        ]
     },
     "data_sources": [
         {
@@ -50,9 +40,21 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "글 본문·답글·댓글을 한 번에 받는다. 오류 갈래를 둘로 나눈 이유가 있다 — 권한 없음(403)은 토스트로 알리고 왔던 곳으로 돌려보내지만, 없는 글(404)은 돌아갈 자리가 마땅치 않아 화면 자리에 오류 페이지를 세운다"
         }
     ],
+    "computed": {
+        "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
+    },
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "post"
+        ]
+    },
     "slots": {
         "content": [
             {
@@ -60,15 +62,15 @@
                 "type": "basic",
                 "name": "Div",
                 "blur_until_loaded": true,
-                "props": {
-                    "className": "admin-page-content-fluid"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
                             "className": "admin-page-content-fluid-compact"
                         }
                     }
+                },
+                "props": {
+                    "className": "admin-page-content-fluid"
                 },
                 "children": [
                     {
@@ -93,7 +95,7 @@
                                 },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "external-link",
@@ -111,11 +113,9 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "같은 글로 다시 진입해 본문·댓글을 새로 읽는다 — `mergeQuery=true` 라 목록에서 달고 온 query(돌아갈 목록의 페이지·검색 조건)를 그대로 유지한다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -125,13 +125,19 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh",
+                                    "className": "btn-icon"
+                                },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -140,11 +146,9 @@
                                 "id": "back_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "flex-center gap-2 btn btn-secondary"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "글 목록으로. 보던 검색·필터·페이지를 이고 간다 — 글 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -154,13 +158,16 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 btn btn-secondary"
+                                },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrow-left",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -215,11 +222,11 @@
                                 },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "comments",
-                                            "className": "w-5 h-5 text-blue-600 dark:text-blue-400"
+                                            "className": "text-xl text-blue-600 dark:text-blue-400"
                                         }
                                     },
                                     {
@@ -233,12 +240,13 @@
                                 ]
                             },
                             {
-                                "id": "replies_list",
+                                "id": "replies_list_{{itemIdx}}",
                                 "type": "basic",
                                 "name": "Div",
                                 "iteration": {
                                     "source": "post?.data?.replies ?? []",
-                                    "item_var": "item"
+                                    "item_var": "item",
+                                    "index_var": "itemIdx"
                                 },
                                 "children": [
                                     {
@@ -272,10 +280,7 @@
     },
     "modals": [
         {
-            "meta": {
-                "description": "Universal Delete Modal (Post/Reply/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.delete_editor_label"
-            },
+            "comment": "삭제 확인 — 글·답글·댓글 셋을 겸한다. 제목·문구·경고는 대상 종류로 갈리고, 댓글은 지운 뒤 이 화면에 머물지만 글은 목록으로 답글은 원글로 빠져나간다(지운 자리에 남을 수 없으므로)",
             "id": "delete_modal",
             "type": "composite",
             "name": "Modal",
@@ -302,11 +307,11 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "if": "{{_global.modal_data?.type !== 'post'}}",
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}",
-                            "if": "{{_global.modal_data?.type !== 'post'}}"
+                            "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}"
                         }
                     ]
                 },
@@ -320,15 +325,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -340,14 +345,10 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.deleteModalLoading}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다",
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {
@@ -359,8 +360,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.modal_data?.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.modal_data?.id}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE"
                                             },
@@ -374,20 +375,20 @@
                                                 },
                                                 {
                                                     "handler": "refetchDataSource",
+                                                    "if": "{{_global.modal_data?.type === 'comment'}}",
                                                     "params": {
                                                         "dataSourceId": "post"
-                                                    },
-                                                    "if": "{{_global.modal_data?.type === 'comment'}}"
+                                                    }
                                                 },
                                                 {
                                                     "comment": "삭제 후 복귀 — 게시글이면 목록으로, 답변이면 원글 상세로 돌아간다. 어느 쪽이든 목록 클러스터 안이므로 목록 상태를 유지한다. 종전에는 mergeQuery 가 분기 표현식이라 답변 삭제 경로에서만 페이지/검색이 조용히 사라졌다 (#75).",
                                                     "handler": "navigate",
+                                                    "if": "{{_global.modal_data?.type !== 'comment'}}",
                                                     "params": {
                                                         "path": "{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}",
                                                         "mergeQuery": true,
                                                         "query": {}
-                                                    },
-                                                    "if": "{{_global.modal_data?.type !== 'comment'}}"
+                                                    }
                                                 },
                                                 {
                                                     "handler": "toast",
@@ -420,6 +421,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.deleteModalLoading}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -430,13 +435,14 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Universal Delete Modal (Post/Reply/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.delete_editor_label"
+            }
         },
         {
-            "meta": {
-                "description": "Universal Report Modal (Post/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.report_editor_label"
-            },
+            "comment": "신고 접수 — 관리자가 대신 신고를 올리는 자리라, 이 동작이 사용자 신고와 같은 파이프라인을 탄다는 것을 상단 경고로 먼저 알린다. 사유 종류는 그 게시판이 정의한 목록에서만 고른다",
             "id": "report_modal",
             "type": "composite",
             "name": "Modal",
@@ -519,11 +525,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Select",
-                                    "props": {
-                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "고른 사유 종류를 지역 상태에 둔다 — 아래 제출 버튼이 «비었는가」를 이 값으로 판단하므로 폼 자동 바인딩에 맡기지 않고 명시로 잡는다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -532,6 +536,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -576,13 +583,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Textarea",
-                                    "props": {
-                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
-                                        "rows": 4,
-                                        "placeholder": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "상세 사유는 타이핑마다(`input`) 담는다 — `change` 로 두면 입력만 하고 포커스를 옮기지 않은 채 제출할 때 빈 값으로 걸린다",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -590,7 +593,12 @@
                                                 "report_reason": "{{$event.target.value}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                        "rows": 4,
+                                        "placeholder": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder"
+                                    }
                                 }
                             ]
                         }
@@ -606,15 +614,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -626,12 +634,9 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.reportSubmitting}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -661,9 +666,9 @@
                                         },
                                         {
                                             "handler": "apiCall",
+                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}",
                                             "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
                                             "auth_required": true,
-                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}",
                                             "params": {
                                                 "method": "POST",
                                                 "body": {
@@ -724,6 +729,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.reportSubmitting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -743,13 +752,14 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Universal Report Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.report_editor_label"
+            }
         },
         {
-            "meta": {
-                "description": "Blind Modal (Post/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.blind_editor_label"
-            },
+            "comment": "블라인드 처리 — 지우는 것이 아니라 가리는 것이라 사유는 선택 입력이다. 대상(글·댓글)은 삭제 모달과 달리 `_global.blind_modal_data` 라는 자기 키를 쓴다 — 삭제 모달과 열린 채로 겹칠 수 있어 같은 키를 나눠 쓰면 대상이 섞인다",
             "id": "blind_modal",
             "type": "composite",
             "name": "Modal",
@@ -798,14 +808,9 @@
                         {
                             "type": "basic",
                             "name": "Textarea",
-                            "props": {
-                                "id": "blind_reason",
-                                "rows": 3,
-                                "placeholder": "$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder",
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                            },
                             "actions": [
                                 {
+                                    "comment": "블라인드 사유를 전역에 둔다 — 아래 실행 버튼이 이 값을 요청 본문에 실어 보내고, 모달은 별도 컨텍스트라 지역 상태로는 건너오지 않는다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -813,7 +818,13 @@
                                         "blindReason": "{{$event.target.value}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "id": "blind_reason",
+                                "rows": 3,
+                                "placeholder": "$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder",
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            }
                         }
                     ]
                 },
@@ -827,15 +838,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -847,14 +858,10 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.blindModalLoading}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다)",
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {
@@ -866,8 +873,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "{{_global.blind_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.blind_modal_data?.id + '/blind' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.blind_modal_data?.id + '/blind'}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH",
                                                 "body": {
@@ -919,6 +926,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.blindModalLoading}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -929,13 +940,14 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Blind Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.blind_editor_label"
+            }
         },
         {
-            "meta": {
-                "description": "Restore Modal (Post/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.restore_editor_label"
-            },
+            "comment": "블라인드 해제 — 되돌리는 동작이라 사유 입력이 없고 확인 한 줄로 끝난다. 대상 키(`_global.restore_modal_data`)를 따로 두는 이유는 블라인드 모달과 같다",
             "id": "restore_modal",
             "type": "composite",
             "name": "Modal",
@@ -971,15 +983,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -991,14 +1003,10 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.restoreModalLoading}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다)",
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {
@@ -1010,8 +1018,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "{{_global.restore_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.restore_modal_data?.id + '/restore' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.restore_modal_data?.id + '/restore'}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH"
                                             },
@@ -1060,6 +1068,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.restoreModalLoading}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1070,7 +1082,11 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Restore Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.restore_editor_label"
+            }
         }
     ]
 }

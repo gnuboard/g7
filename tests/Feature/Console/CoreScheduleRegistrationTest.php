@@ -38,6 +38,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1: 코어 GC 스케줄 전수가 등록되어 있고 주기/onOneServer 가 의도대로다.
+     *
+     * @effects all_gc_commands_are_registered_in_schedule, gc_commands_run_on_one_server_only
+     *
+     * @return void 반환값 없음
      */
     public function test_core_gc_schedules_are_registered(): void
     {
@@ -57,6 +61,11 @@ class CoreScheduleRegistrationTest extends TestCase
             'notification-log:prune' => '50 4 * * *',
             'attachments:prune-orphans' => '55 4 * * *',
             'storage:prune-leftovers' => '0 5 * * *',
+            // 같은 블록의 개인정보·통계 정리도 주기를 고정한다(이 표에서 빠져 있던 행 — #736 에서 함께 채움)
+            'privacy:process-retention' => '5 5 * * *',
+            'privacy:process-dormant' => '10 5 * * *',
+            'analytics:prune' => '10 5 * * *',
+            'auth:process-password-expiry' => '15 5 * * *',
             'identity:expire-challenges' => '0 * * * *',
         ];
 
@@ -71,6 +80,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1: sanctum 정리는 --hours=24 로 실행된다.
+     *
+     * @effects sanctum_prune_uses_hours_option
+     *
+     * @return void 반환값 없음
      */
     public function test_sanctum_prune_uses_expected_hours_option(): void
     {
@@ -83,6 +96,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1-t: 예약 시각 기준은 사이트 설정 시간대(general.timezone)를 따른다.
+     *
+     * @effects schedule_timezone_follows_site_general_timezone
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_timezone_follows_site_general_timezone(): void
     {
@@ -107,6 +124,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1-t: 사이트 설정에 시간대가 없으면 파생 키 자체를 만들지 않는다.
+     *
+     * @effects schedule_timezone_falls_back_to_app_timezone_when_unset
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_timezone_is_not_derived_when_setting_is_empty(): void
     {
@@ -125,6 +146,10 @@ class CoreScheduleRegistrationTest extends TestCase
      *
      * 허용목록에 없으면 운영자가 주기를 바꾸거나 임시로 다시 걸 수 없고, 그 사실이
      * 등록 시점의 거부로만 드러난다.
+     *
+     * @effects new_commands_are_in_schedule_security_allowlist
+     *
+     * @return void 반환값 없음
      */
     public function test_gc_commands_are_registerable_through_the_admin_allowlist(): void
     {
@@ -148,6 +173,10 @@ class CoreScheduleRegistrationTest extends TestCase
      * 배치가 실패한 날 운영자가 손으로 돌릴 통로가 없으면 다음 배치까지 방치된다.
      * 프레임워크·벤더 커맨드(`sanctum:prune-expired` 등)는 대시보드 노출 대상이 아니므로
      * 소유 커맨드(`app/Console/Commands`)로 한정한다 — 노출 정합 검사와 같은 범위다.
+     *
+     * @effects new_commands_are_exposed_in_dev_dashboard
+     *
+     * @return void 반환값 없음
      */
     public function test_owned_gc_commands_are_exposed_in_the_dev_dashboard(): void
     {
@@ -226,6 +255,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1-t: 등록된 예약 이벤트 전부가 같은 시각 기준을 공유한다.
+     *
+     * @effects schedule_timezone_follows_site_general_timezone
+     *
+     * @return void 반환값 없음
      */
     public function test_every_scheduled_event_shares_the_same_timezone(): void
     {
@@ -248,6 +281,7 @@ class CoreScheduleRegistrationTest extends TestCase
      * 사이트 general 설정을 주고 Provider 의 파생 로직을 실행합니다.
      *
      * @param  array<string, mixed>  $general  general 카테고리 설정값
+     * @return void 반환값 없음
      */
     private function applyGeneralSettings(array $general): void
     {
@@ -263,6 +297,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1-t: 사이트 설정 시간대가 비어 있으면 종전대로 app.timezone 으로 폴백한다.
+     *
+     * @effects schedule_timezone_falls_back_to_app_timezone_when_unset, app_timezone_stays_utc
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_timezone_falls_back_to_app_timezone(): void
     {
@@ -281,6 +319,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1-a: 관리자 등록 예약의 다음 실행 시각도 같은 기준으로 계산된다.
+     *
+     * @effects admin_registered_schedule_next_run_uses_same_basis
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_registered_schedule_next_run_uses_site_timezone(): void
     {
@@ -302,6 +344,8 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * 테스트 시간대 고정 — 사이트 설정 시간대를 Asia/Seoul 로 두고 앱을 부팅한다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {

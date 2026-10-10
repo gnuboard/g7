@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 32개 (정의: `src/handlers/index.ts`).
+핸들러 34개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -23,6 +23,8 @@
 | `initTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `redirectToLoginWithReturn` | (템플릿 전용 — 네임스페이스 없음) |
 | `downloadAttachment` | (템플릿 전용 — 네임스페이스 없음) |
+| `markLocalOnce` | `sirsoft-basic.markLocalOnce` |
+| `rememberIdentityClaim` | `sirsoft-basic.rememberIdentityClaim` |
 | `toggleCartItemSelection` | (템플릿 전용 — 네임스페이스 없음) |
 | `selectAllCartItems` | (템플릿 전용 — 네임스페이스 없음) |
 | `setCartOption` | (템플릿 전용 — 네임스페이스 없음) |
@@ -44,7 +46,7 @@
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-32개가 **두 종류로 갈립니다** — 네임스페이스를 붙여 등록한 10개(`sirsoft-basic.*`)와 붙이지
+33개가 **두 종류로 갈립니다** — 네임스페이스를 붙여 등록한 11개(`sirsoft-basic.*`)와 붙이지
 않은 22개. 레이아웃에서 부를 때 전자는 전체 이름을 그대로 써야 하고, 후자는 이름만 씁니다.
 
 | 무리 | 예 | 무엇을 하는가 |
@@ -56,6 +58,14 @@
 | 저장소 6 | `initCartKey` · `getCartKey` · `saveToStorage` 등 | 비회원 장바구니 키 관리(localStorage + API 발급) |
 | 비회원 주문 4 | `initGuestOrderToken` · `saveGuestOrderToken` · `clearGuestOrderToken` · `clearGuestTokenOnEntry` | 비회원 주문 조회 토큰 보관·폐기 |
 | 기타 2 | `redirectToLoginWithReturn` · `downloadAttachment` | 로그인 후 원래 자리 복귀, 첨부 내려받기 |
+| 가드 (`sirsoft-basic.*` 1) | `markLocalOnce` | 데이터소스 onSuccess 를 화면 진입마다 한 번만 돌게 한다 |
+
+**`sirsoft-basic.markLocalOnce` 는 데이터소스 onSuccess 전용 가드입니다.** onSuccess 컨텍스트에는
+`response` 만 실리고 `_local` 이 없어, 레이아웃 표현식으로는 「이미 했는가」 를 판정할 수 없습니다.
+이 핸들러가 **현재** 로컬 상태를 읽어 `params.key` 플래그가 참이 아니면 참으로 세우고 `true` 를,
+이미 참이면 `false` 를 돌려주므로 같은 sequence 의 다음 액션에서 `{{$prev === true}}` 로 받습니다.
+주문서의 기본 배송지 채움이 이 가드를 씁니다 — 배송지 관리 창이 목록을 다시 받을 때마다 채움이 돌면
+구매자가 고른 배송지를 기본 배송지로 덮습니다. 플래그는 레이아웃 initLocal 이 진입마다 `false` 로 세웁니다.
 
 **비회원 토큰 4종이 이 템플릿에서 가장 조심스러운 자리입니다.** 그 토큰이 곧 신원이므로
 (서버측 `VerifyGuestOrderToken` 이 그것만 보고 주문을 엽니다), 브라우저에 남아 있으면 다음
@@ -91,10 +101,10 @@
 | 항목 | 값 |
 |---|---|
 | 엔트리 파일 | `src/index.ts` |
-| 전역 객체 | **미노출** |
+| 전역 객체 | `window.G7TemplateHandlers` |
 | 재등록 진입점 | `initTemplate()` |
 
-재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).
+템플릿 핸들러는 `window.G7TemplateHandlers` 맵으로 노출되어, 로케일 전환 시 코어가 그 맵을 다시 등록합니다.
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
@@ -108,6 +118,14 @@
    맵을 순회하므로, 핸들러를 추가할 때 등록 코드를 함께 고칠 필요가 없습니다.
 2. **IDV launcher 등록** — `window.G7Core.identity.setLauncher()` 로 본인인증 화면을 여는
    방법을 코어에 알립니다. 이것이 없으면 428 응답을 받은 화면이 인증 창을 띄우지 못합니다.
+   모달을 쓸 수 없어 `/identity/challenge` 화면으로 폴백할 때는 `return_url` 에 현재 경로+쿼리만
+   넘깁니다(절대 주소·해시 제외) — 챌린지 레이아웃이 읽는 이름이 `return_url` 입니다.
+   challenge 요청에는 428 이 알려 준 `policy_key` 를 함께 실어 서버가 운영자의 정책별 문구를 고르게 합니다.
+   **링크 방식**(비밀번호 재설정 목적)은 확인을 메일 링크가 하므로(다른 기기일 수 있음), 시작 응답의 일회용
+   `claim_secret` 으로 3초마다 `POST /api/identity/challenges/{id}/claim` 을 물어 토큰을 받으면 원래 요청을
+   이어 갑니다. 비밀값은 처리기 모듈 안에만 두고 전역 상태에 쓰지 않습니다 — 인증 창의 [다시 보내기]가 받은 새 건의
+   비밀값은 `sirsoft-basic.rememberIdentityClaim` 핸들러로 넘깁니다. 메일 링크(`/identity/verify?challenge=…&token=…`)는 `auth/identity_verify` 착지 화면이 받아
+   확인만 하고 결과를 알립니다.
 3. **iOS 판정 보정** — 서버 UA 판정이 놓치는 iPadOS(데스크탑 UA)를 클라이언트 신호로 바로잡아
    `appConfig.isIos` 에 반영합니다. 체크아웃의 애플페이 노출이 이 값을 봅니다.
 
@@ -172,6 +190,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 테마 값은 액션 **top-level `target`** 으로 넘깁니다. 핸들러는 `params` 를 읽지 않으므로
 `params.theme` 으로 넘기면 콘솔 경고 한 줄만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 
+```html
+<on type="click">
+  <action handler="setTheme" target="dark"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -188,6 +214,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 앱 시작 시 `init_actions`에서 호출합니다. `target` 은 선택이며, 유효한 테마 값이면 그 값을,
 없거나 유효하지 않으면 localStorage 저장값(없으면 `auto`)을 적용합니다.
+
+```html
+<init>
+  <action handler="initTheme"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -209,6 +243,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 장바구니 아이템 선택/해제를 토글합니다.
 
+```html
+<on type="click">
+  <action handler="toggleCartItemSelection" itemId="{{item.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "toggleCartItemSelection",
@@ -222,6 +264,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 모든 장바구니 아이템을 선택/해제합니다.
 
+```html
+<on type="click">
+  <action handler="selectAllCartItems" :selected="true"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "selectAllCartItems",
@@ -234,6 +284,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### setCartOption
 
 장바구니 아이템의 옵션을 변경합니다.
+
+```html
+<on type="click">
+  <action handler="setCartOption" itemId="{{item.id}}" optionId="{{selectedOption.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -249,6 +307,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 장바구니 삭제 확인 모달을 엽니다.
 
+```html
+<on type="click">
+  <action handler="openCartDeleteModal" itemId="{{item.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "openCartDeleteModal",
@@ -262,6 +328,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 장바구니 옵션 변경 모달을 엽니다.
 
+```html
+<on type="click">
+  <action handler="openCartOptionModal" itemId="{{item.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "openCartOptionModal",
@@ -274,6 +348,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### recalculateCart
 
 장바구니 합계를 재계산합니다.
+
+```html
+<on type="click">
+  <action handler="recalculateCart"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -304,6 +386,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 선택한 옵션 값들로 매칭되는 상품 옵션을 찾습니다.
 
+```html
+<on type="click">
+  <action handler="findMatchingOption" options="{{_local.options}}" selection="{{_local.optionSelection}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "findMatchingOption",
@@ -317,6 +407,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### initCartOptionSelection
 
 옵션 변경 모달 초기화 시 현재 선택된 옵션을 설정합니다.
+
+```html
+<on type="click">
+  <action handler="initCartOptionSelection" currentOption="{{item.option}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -339,6 +437,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 모든 옵션 그룹 선택 완료 시 선택 아이템 목록에 자동 추가합니다.
 
+```html
+<on type="click">
+  <action handler="sirsoft-basic.addSelectedItemIfComplete" newGroupName="{{groupName}}" newValue="{{selectedValue}}" optionGroups="{{product?.data?.option_groups}}" options="{{product?.data?.options}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "sirsoft-basic.addSelectedItemIfComplete",
@@ -354,6 +460,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### updateSelectedItemQuantity (sirsoft-basic.updateSelectedItemQuantity)
 
 선택된 아이템의 수량을 변경합니다.
+
+```html
+<on type="click">
+  <action handler="sirsoft-basic.updateSelectedItemQuantity" optionId="{{option.id}}" quantity="{{newQuantity}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -374,6 +488,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 **소스**: `src/handlers/getDisplayPrice.ts`
 
 사용자 선호 통화에 맞는 가격을 반환합니다.
+
+```html
+<on type="click">
+  <action handler="sirsoft-basic.getDisplayPrice" product="{{product.data}}" priceField="selling_price"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -397,6 +519,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 숫자 값을 통화 형식 문자열로 변환합니다.
 
+```html
+<on type="click">
+  <action handler="sirsoft-basic.formatCurrency" :value="10000" currencyCode="KRW"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "sirsoft-basic.formatCurrency",
@@ -413,6 +543,11 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 | `currencyCode` | string | ❌ | 통화 코드 (미지정 시 표시 통화 → 기본 통화 순) |
 | `locale` | string | ❌ | 로케일 (미지정 시 브라우저 로케일) |
 
+원화(KRW·₩)는 보는 언어의 접두·접미를 이커머스 번역 키 `sirsoft-ecommerce.currency.krw_prefix`·`krw_suffix` 에서 읽어
+붙인다 — ko 「10,000원」·en 「₩10,000」·ja 「10,000ウォン」. 서버 금액 표기(`*_formatted`)와 같은 규칙이라 한 화면에서
+섞이지 않는다. 번역을 읽지 못하면 종전 표기(금액 뒤 「원」)로 돌아간다. 레이아웃 표현식에서 원화 금액을 직접 이어 붙일
+때도 `$t('sirsoft-ecommerce.currency.krw_prefix') + 금액 + $t('sirsoft-ecommerce.currency.krw_suffix')` 로 적고 고정 「원」을 쓰지 않는다.
+
 통화 표기는 **쇼핑몰 설정**(`language_currency.currencies`)의 기호와 소수 자릿수를 따릅니다.
 고정 통화표를 두지 않으므로 운영자가 추가한 통화도 그대로 표기됩니다.
 
@@ -425,6 +560,14 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 **소스**: `src/handlers/loadPreferredCurrency.ts`
 
 localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferredCurrency`)에 설정합니다.
+
+```html
+<init>
+  <action handler="sirsoft-basic.loadPreferredCurrency" defaultCurrency="KRW"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -440,6 +583,14 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 #### savePreferredCurrency (sirsoft-basic.savePreferredCurrency)
 
 선호 통화를 localStorage에 저장합니다.
+
+```html
+<on type="click">
+  <action handler="sirsoft-basic.savePreferredCurrency" currencyCode="{{selectedCurrency}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -458,9 +609,22 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 
 비로그인 사용자의 장바구니 키 등 클라이언트 스토리지를 관리합니다.
 
+**인증 경계 정리**(`src/handlers/authBoundaryStorage.ts`, 핸들러가 아니라 템플릿 초기화가 설치): 로그아웃(인증 → 비인증)이면
+장바구니 키와 비회원 주문 조회 토큰을 지우고, 실제 로그인(코어 `login` 이벤트 — 로그인 폼·2단계 인증 완료)이면 비회원 토큰을
+지우고 장바구니 키를 새로 발급합니다. 부팅 시 인증 복원(새로고침)은 로그인이 아니므로 키를 다시 받지 않습니다 — 템플릿
+초기화가 부팅 인증 확인보다 먼저 설치될 수 있어 `authStateChange` 에 재발급을 걸면 새로고침마다 키가 바뀝니다.
+
 #### initCartKey
 
 장바구니 키를 초기화합니다. localStorage에 있으면 로드, 없으면 API를 통해 발급합니다.
+
+```html
+<init>
+  <action handler="initCartKey"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -472,6 +636,20 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 
 #### getCartKey / clearCartKey / regenerateCartKey
 
+```html
+<on type="click">
+  <action handler="getCartKey"/>
+</on>
+<on type="click">
+  <action handler="clearCartKey"/>
+</on>
+<on type="click">
+  <action handler="regenerateCartKey"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 { "handler": "getCartKey" }
 { "handler": "clearCartKey" }
@@ -482,6 +660,14 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 
 범용 localStorage 저장/로드 핸들러입니다.
 
+```html
+<on type="click">
+  <action handler="saveToStorage" key="g7_some_setting" value="{{_local.settingValue}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "saveToStorage",
@@ -491,6 +677,14 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
   }
 }
 ```
+
+```html
+<on type="click">
+  <action handler="loadFromStorage" key="g7_some_setting" stateKey="savedSetting"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

@@ -201,7 +201,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 로그인한 회원이 마이페이지에서 자신의 마일리지 적립/사용 내역을 페이지네이션으로 조회합니다. `category`(earn·use·expire·adjust) 4분류 필터와 `currency`·`per_page`(최대 100)를 지원하며, `UserMileageService::paginateUserHistory()`가 필터를 적용해 조회한 뒤 `MileageTransactionCollection`으로 직렬화해 `transactions` 에 담습니다. `category` 는 원장의 원시 type 이 아니라 사용자 표시용 4분류로 매핑된 값입니다.
+**설명** 로그인한 회원이 마이페이지에서 자신의 마일리지 적립/사용 내역을 페이지네이션으로 조회합니다. `category`(earn·use·expire·adjust) 4분류 필터와 `currency`·`per_page`(최대 100)를 지원하며, `UserMileageService::paginateUserHistory()`가 필터를 적용해 조회한 뒤 `MileageTransactionCollection`으로 직렬화해 `transactions` 에 담습니다. `category` 는 원장의 원시 type 이 아니라 사용자 표시용 4분류로 매핑된 값입니다. 관리자 전용 값인 처리 메모(`memo`)와 처리 관리자(`granted_by`·`granted_by_name`·`granted_by_uuid`)는 키만 두고 값은 항상 `null` 로 내보내며, 회원에게 보여 줄 사유는 `description` 을 씁니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/mileage/max-usable

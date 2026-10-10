@@ -1,0 +1,22 @@
+feature: 쿠폰 삭제 확인 창 문구
+
+description: |
+  관리자 쿠폰 삭제 확인 창 안내문 회귀
+  
+  확인 창이 「쿠폰과 모든 게시글이 영구적으로 삭제됩니다」라고 안내했다 — 게시판 삭제 창 문구를 옮겨 온 것으로,
+  쿠폰에는 게시글이 없다. 실제 삭제는 쿠폰과 그 쿠폰의 적용 상품·카테고리 지정을 지운다
+  (CouponService::deleteCoupon). 세 언어(ko·en·ja 언어팩) 안내문이 게시글을 말하지 않고
+  적용 상품·카테고리 지정을 말하는지 확인한다.
+
+  수정 이력: 이커머스 전수 실측 S5-D9 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02]
+  # c01: 삭제 확인 창 문구가 있다
+  # c02: 게시글을 말하지 않고 적용 상품·카테고리 지정이 함께 지워짐을 알린다
+
+effects:
+  - coupon_delete_wording_matches_effect
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponDeleteConfirmWording.test.ts

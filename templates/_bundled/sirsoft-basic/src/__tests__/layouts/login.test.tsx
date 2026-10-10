@@ -133,7 +133,7 @@ const TestFragment: React.FC<{ children?: React.ReactNode }> =
 
 /**
  * 로그인 폼 레이아웃 (partial을 해결한 형태)
- * _login_form.json 기반 — 오버레이 제거 후 상태
+ * _login_form.g7.html 기반 — 오버레이 제거 후 상태
  */
 const loginFormFixture = {
   version: '1.0.0',

@@ -1,0 +1,506 @@
+<!-- 엑셀 내려받기 관리 (운영자) — 각 목록 화면에서 걸어 둔 엑셀 추출 요청이 여기에 쌓인다. 추출은
+  건수가 많아 즉시 끝나지 않으므로 요청 → 생성중 → 완료 → 만료의 흐름을 갖고, 만들어진 파일은
+  누가 언제 받아 갔는지까지 남긴다. 아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계다. -->
+<layout name="admin_ecommerce_excel_download_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.excel_download.title" description="$t:sirsoft-ecommerce.admin.excel_download.description"/>
+  <init-local>
+    <field name="statusFilter" value=""/>
+    <field name="categoryFilter" value=""/>
+    <field name="dateType" value="request_date"/>
+    <field name="startDate" value=""/>
+    <field name="endDate" value=""/>
+    <field name="searchField" value="file_content"/>
+    <field name="searchKeyword" value=""/>
+    <field name="sortBy" value="request_date_desc"/>
+    <field name="perPage" :value="10"/>
+    <field name="selectedItem" :value="null"/>
+    <field name="showCreatorDropdown" :value="null"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="excel_download_content" class="admin-page-content">
+      <div data-ref="page_header" class="mb-6">
+        <div class="flex-center gap-3 mb-1">
+          <icon name="file-excel" class="text-xl icon-muted"/>
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.excel_download.title</h1>
+        </div>
+        <p class="page-description">$t:sirsoft-ecommerce.admin.excel_download.description</p>
+      </div>
+      <div data-ref="filter_card" class="admin-card mb-6">
+        <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-6">
+          <div data-ref="search_field_select" class="select-custom w-32">
+            <button type="button" class="select-trigger">
+              <span>$t:sirsoft-ecommerce.admin.excel_download.search.file_content</span>
+              <icon name="chevron-down" class="select-trigger-icon"/>
+            </button>
+          </div>
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.excel_download.search.placeholder" class="input flex-1 min-w-64" value="{{_local.searchKeyword}}">
+            <on type="change">
+              <!-- 입력을 마칠 때 담는다 — 검색 대상은 왼쪽 선택칸이 따로 정한다 -->
+              <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <button data-ref="reset_button" type="button" class="btn btn-outline">
+            <on type="click">
+              <!-- 검색 초기화 — 아래 상태·구분·기간 필터까지 함께 되돌린다(검색어만 비우면 걸린 필터가 남는다) -->
+              <set-state target="_local" statusFilter="" categoryFilter="" dateType="request_date" startDate="" endDate="" searchKeyword=""/>
+            </on>
+            <icon name="arrows-rotate" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.search.reset</span>
+          </button>
+        </div>
+        <div data-ref="status_filter_row" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.status</span>
+          <!-- 처리 상태를 가리지 않고 모두 -->
+          <div class="{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
+            <on type="click">
+              <set-state target="_local" statusFilter=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.excel_download.filter.all
+          </div>
+          <div class="{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
+            <on type="click">
+              <!-- 완료 — 파일이 만들어져 아직 보관기한 안에 있는 건 -->
+              <set-state target="_local" statusFilter="completed"/>
+            </on>
+            <icon name="check-circle" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+          </div>
+          <div class="{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
+            <on type="click">
+              <!-- 생성중 — 아직 파일이 없어 내려받기를 걸 수 없는 건 -->
+              <set-state target="_local" statusFilter="processing"/>
+            </on>
+            <icon name="spinner" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
+          </div>
+          <div class="{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
+            <on type="click">
+              <!-- 실패 — 생성 도중 끊긴 건. 다시 요청해야 한다 -->
+              <set-state target="_local" statusFilter="failed"/>
+            </on>
+            <icon name="circle-exclamation" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
+          </div>
+          <div class="{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}">
+            <on type="click">
+              <!-- 만료 — 보관기한이 지나 파일이 지워진 건. 이력은 남지만 내려받을 수 없다 -->
+              <set-state target="_local" statusFilter="expired"/>
+            </on>
+            <icon name="file-text" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+          </div>
+        </div>
+        <div data-ref="category_filter_row" class="flex-center flex-wrap gap-3 mb-4">
+          <span class="text-label w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.category</span>
+          <select name="categoryFilter" class="w-40" value="{{_local.categoryFilter}}">
+            <options>
+              <option value="">$t:sirsoft-ecommerce.admin.excel_download.category_options.all</option>
+              <option value="product">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</option>
+              <option value="order">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</option>
+              <option value="visit">$t:sirsoft-ecommerce.admin.excel_download.category_options.visit</option>
+              <option value="member">$t:sirsoft-ecommerce.admin.excel_download.category_options.member</option>
+            </options>
+            <on type="change">
+              <!-- 어느 화면에서 뽑은 파일인지로 좁힌다(상품·주문·방문·회원) -->
+              <set-state target="_local" categoryFilter="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+        <div data-ref="date_filter_row" class="flex-center flex-wrap gap-3">
+          <span class="text-label w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.date_search</span>
+          <select name="dateType" class="w-32" value="{{_local.dateType}}">
+            <options>
+              <option value="request_date">$t:sirsoft-ecommerce.admin.excel_download.filter.request_date</option>
+            </options>
+          </select>
+          <!-- 부모(date_filter_row)는 flex-wrap 이지만 이 행 자신은 nowrap 이라, 시작일~종료일(각 input w-36 = 144px)이 좁은 뷰포트에서 콘텐츠 영역을 11px 넘긴다. 자식에도 flex-wrap 을 준다. -->
+          <div class="flex-center flex-wrap gap-2">
+            <div class="flex-center gap-2">
+              <icon name="calendar" class="text-base icon-muted"/>
+              <input type="date" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.start_date" class="input w-36" value="{{_local.startDate}}">
+                <on type="change">
+                  <!-- 기간 시작일 — 무엇을 기준으로 한 날짜인지는 왼쪽 선택칸(요청일)이 정한다 -->
+                  <set-state target="_local" startDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <span class="text-muted">~</span>
+            <div class="flex-center gap-2">
+              <icon name="calendar" class="text-base icon-muted"/>
+              <input type="date" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.end_date" class="input w-36" value="{{_local.endDate}}">
+                <on type="change">
+                  <!-- 기간 종료일 -->
+                  <set-state target="_local" endDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="table_card" class="admin-card">
+        <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.excel_download.table.total_count|count=11</span>
+          <div class="flex-center gap-3">
+            <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
+              <options>
+                <option value="request_date_desc">$t:sirsoft-ecommerce.admin.excel_download.table.sort_by</option>
+              </options>
+            </select>
+            <select name="perPage" class="w-24" value="{{_local.perPage}}">
+              <options>
+                <option :value="10">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=10</option>
+                <option :value="20">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=20</option>
+                <option :value="50">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=50</option>
+              </options>
+              <on type="change">
+                <!-- 선택값은 문자열로 오므로 수로 바꿔 담는다 — 아래 표가 이 값을 수로 견주기 때문이다 -->
+                <set-state target="_local" perPage="{{parseInt($event.target.value)}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div data-ref="table_container" class="overflow-x-auto">
+          <responsive on="portable">
+            <div data-ref="mobile_cards_container">
+              <div class="admin-card">
+                <div class="flex items-start justify-between mb-3">
+                  <span class="text-primary font-medium">현재 검색 조건</span>
+                  <span class="badge-status badge-status-success">
+                    <icon name="check-circle" class="text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+                  </span>
+                </div>
+                <div class="text-sm text-secondary mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="text-primary">2025-10-27 14:20:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="text-primary">2025-10-27 14:30:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="text-primary">3회</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="text-primary">2025-11-03 14:30:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="text-primary">관리자</span>
+                  </div>
+                </div>
+                <div class="mt-4 flex justify-center">
+                  <button type="button" class="btn btn-primary w-full">$t:sirsoft-ecommerce.admin.excel_download.actions.download</button>
+                </div>
+              </div>
+              <div class="admin-card">
+                <div class="flex items-start justify-between mb-3">
+                  <span class="text-primary font-medium">현재 검색 조건</span>
+                  <span class="badge-status badge-status-processing">
+                    <icon name="spinner" class="text-xs animate-spin"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
+                  </span>
+                </div>
+                <div class="text-sm text-secondary mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.visit</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="text-primary">2025-10-27 12:00:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="text-primary">-</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="text-primary">-</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="text-primary">2025-11-03 12:00:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="text-primary">이영희</span>
+                  </div>
+                </div>
+              </div>
+              <div class="admin-card">
+                <div class="flex items-start justify-between mb-3">
+                  <span class="text-primary font-medium">현재 검색 조건</span>
+                  <span class="badge-status badge-status-error">
+                    <icon name="circle-exclamation" class="text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
+                  </span>
+                </div>
+                <div class="text-sm text-secondary mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="text-primary">2025-10-25 11:30:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="text-primary">-</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="text-primary">-</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="text-primary">2025-11-01 11:30:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="text-primary">김철수</span>
+                  </div>
+                </div>
+              </div>
+              <div class="admin-card">
+                <div class="flex items-start justify-between mb-3">
+                  <span class="text-primary font-medium">선택한 상품</span>
+                  <span class="badge-status badge-status-expired">
+                    <icon name="file-text" class="text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                  </span>
+                </div>
+                <div class="text-sm text-secondary mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="text-primary">2025-10-20 09:45:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="text-primary">2025-10-20 10:00:00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="text-primary">-</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="text-secondary">$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="text-primary">이영희</span>
+                  </div>
+                </div>
+                <div class="mt-4 text-center">
+                  <span class="text-secondary">$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                </div>
+              </div>
+            </div>
+          </responsive>
+          <table data-ref="data_table" class="w-full">
+            <thead>
+              <tr class="border-b border-gray-200 dark:border-gray-700">
+                <th class="text-table-header py-3 px-4 text-left w-16">$t:sirsoft-ecommerce.admin.excel_download.table.columns.no</th>
+                <th class="text-table-header py-3 px-4 text-left w-24">$t:sirsoft-ecommerce.admin.excel_download.table.columns.category</th>
+                <th class="text-table-header py-3 px-4 text-left">$t:sirsoft-ecommerce.admin.excel_download.table.columns.file_content</th>
+                <th class="text-table-header py-3 px-4 text-center w-24">$t:sirsoft-ecommerce.admin.excel_download.table.columns.status</th>
+                <th class="text-table-header py-3 px-4 text-center w-36">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</th>
+                <th class="text-table-header py-3 px-4 text-center w-36">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</th>
+                <th class="text-table-header py-3 px-4 text-center w-28">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</th>
+                <th class="text-table-header py-3 px-4 text-center w-24">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download</th>
+                <th class="text-table-header py-3 px-4 text-center w-28">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</th>
+                <th class="text-table-header py-3 px-4 text-center w-36">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+                <td class="py-4 px-4 text-sm text-primary">1</td>
+                <td class="py-4 px-4 text-sm text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</td>
+                <td class="py-4 px-4 text-sm text-primary">현재 검색 조건</td>
+                <td class="empty-state-cell">
+                  <span class="badge-status badge-status-success">
+                    <icon name="check-circle" class="text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+                  </span>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-27
+14:20:00</td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-27
+14:30:00</td>
+                <td class="empty-state-cell">
+                  <div class="relative inline-block">
+                    <div class="text-sm">
+                      <span class="text-primary font-medium">관리자</span>
+                      <div class="text-tertiary">(admin)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell">
+                  <button type="button" class="btn btn-primary btn-sm">$t:sirsoft-ecommerce.admin.excel_download.actions.download</button>
+                </td>
+                <td class="empty-state-cell">
+                  <button type="button" class="btn btn-outline btn-sm">
+                    <on type="click">
+                      <!-- 내려받기 이력 창을 연다 — 창은 별도 컨텍스트라 행 데이터를 못 보므로, 보여 줄 값 전부를 미리 한 곳(selectedItem)에 옮겨 담은 뒤 연다 -->
+                      <sequence>
+                        <set-state target="_local">
+                          <field name="selectedItem">
+                            <field name="file_content" value="현재 검색 조건"/>
+                            <field name="category_name" value="상품관리"/>
+                            <field name="status" value="completed"/>
+                            <field name="created_date" value="2025-10-27 14:30:00"/>
+                            <field name="expire_date" value="2025-11-12 14:30:00"/>
+                            <field name="download_count" :value="3"/>
+                            <field name="download_history">
+                              <item user_name="이영희" user_id="leeyh" downloaded_at="2025-10-29 11:45:00" :sequence="3"/>
+                              <item user_name="김철수" user_id="kimcs" downloaded_at="2025-10-28 09:20:00" :sequence="2"/>
+                              <item user_name="관리자" user_id="admin" downloaded_at="2025-10-27 14:35:00" :sequence="1"/>
+                            </field>
+                          </field>
+                        </set-state>
+                        <open-modal target="download_history_modal"/>
+                      </sequence>
+                    </on>
+                    3회
+                  </button>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">2025-11-03
+14:30:00</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+                <td class="py-4 px-4 text-sm text-primary">2</td>
+                <td class="py-4 px-4 text-sm text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</td>
+                <td class="py-4 px-4 text-sm text-primary">선택한 주문서</td>
+                <td class="empty-state-cell">
+                  <span class="badge-status badge-status-success">
+                    <icon name="check-circle" class="text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+                  </span>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-27
+13:00:00</td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-27
+13:15:00</td>
+                <td class="empty-state-cell">
+                  <div class="relative inline-block">
+                    <div class="text-sm">
+                      <span class="text-primary font-medium">김철수</span>
+                      <div class="text-tertiary">(kimcs)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell">
+                  <button type="button" class="btn btn-primary btn-sm">$t:sirsoft-ecommerce.admin.excel_download.actions.download</button>
+                </td>
+                <td class="empty-state-cell">
+                  <button type="button" class="btn btn-outline btn-sm">5회</button>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">2025-11-03
+13:15:00</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+                <td class="py-4 px-4 text-sm text-primary">3</td>
+                <td class="py-4 px-4 text-sm text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.visit</td>
+                <td class="py-4 px-4 text-sm text-primary">현재 검색 조건</td>
+                <td class="empty-state-cell">
+                  <span class="badge-status badge-status-processing">
+                    <icon name="spinner" class="text-xs animate-spin"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
+                  </span>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-27
+12:00:00</td>
+                <td class="empty-state-cell text-sm text-secondary">-</td>
+                <td class="empty-state-cell">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">이영희</span>
+                    <div class="text-tertiary">(leeyh)</div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-secondary">-</td>
+                <td class="empty-state-cell text-secondary">-</td>
+                <td class="empty-state-cell text-sm text-secondary">2025-11-03
+12:00:00</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+                <td class="py-4 px-4 text-sm text-primary">4</td>
+                <td class="py-4 px-4 text-sm text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</td>
+                <td class="py-4 px-4 text-sm text-primary">현재 검색 조건</td>
+                <td class="empty-state-cell">
+                  <span class="badge-status badge-status-error">
+                    <icon name="circle-exclamation" class="text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
+                  </span>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-25
+11:30:00</td>
+                <td class="empty-state-cell text-sm text-secondary">-</td>
+                <td class="empty-state-cell">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">김철수</span>
+                    <div class="text-tertiary">(kimcs)</div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-secondary">-</td>
+                <td class="empty-state-cell text-secondary">-</td>
+                <td class="empty-state-cell text-sm text-secondary">2025-11-01
+11:30:00</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+                <td class="py-4 px-4 text-sm text-primary">5</td>
+                <td class="py-4 px-4 text-sm text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</td>
+                <td class="py-4 px-4 text-sm text-primary">선택한 상품</td>
+                <td class="empty-state-cell">
+                  <span class="badge-status badge-status-expired">
+                    <icon name="file-text" class="text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                  </span>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-20
+09:45:00</td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-20
+10:00:00</td>
+                <td class="empty-state-cell">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">이영희</span>
+                    <div class="text-tertiary">(leeyh)</div>
+                  </div>
+                </td>
+                <td class="empty-state-cell">
+                  <span class="text-secondary">$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                </td>
+                <td class="empty-state-cell text-secondary">-</td>
+                <td class="empty-state-cell text-sm text-secondary">2025-10-27
+10:00:00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="pagination_container" class="flex justify-center mt-6">
+          <div class="pagination">
+            <button aria-label="$t:common.first_page" type="button" class="pagination-btn" :disabled="true">
+              <icon name="angles-left" class="text-base"/>
+            </button>
+            <button aria-label="$t:common.prev_page" type="button" class="pagination-btn" :disabled="true">
+              <icon name="chevron-left" class="text-base"/>
+            </button>
+            <button type="button" class="pagination-btn active">1</button>
+            <button type="button" class="pagination-btn">2</button>
+            <button aria-label="$t:common.next_page" type="button" class="pagination-btn">
+              <icon name="chevron-right" class="text-base"/>
+            </button>
+            <button aria-label="$t:common.last_page" type="button" class="pagination-btn">
+              <icon name="angles-right" class="text-base"/>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 내려받기 이력 — 이 파일을 누가 몇 번째로 언제 받아 갔는지 -->
+  <modal src="partials/admin_ecommerce_excel_download_index/_modal_download_history.g7.html"/>
+</layout>

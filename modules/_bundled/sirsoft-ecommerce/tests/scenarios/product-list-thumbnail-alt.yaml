@@ -1,0 +1,21 @@
+feature: 상품 목록 그림 대체 글
+
+description: |
+  관리자 상품목록 썸네일 대체 텍스트 회귀
+  
+  목록 행의 `name` 은 언어별 객체(`{ko, en}`)라 `alt="{{row.name}}"` 로 두면 브라우저가
+  `[object Object]` 를 읽는다(스크린 리더가 상품 이름 대신 이 문자열을 읽는다).
+  행에는 관리자 언어로 고른 `name_localized` 가 함께 내려오므로 그것을 쓴다.
+
+  수정 이력: 이커머스 전수 실측 S5 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02]
+  # c01: 썸네일 이미지가 있다
+  # c02: alt 는 언어별 객체가 아니라 관리자 언어 이름을 쓴다
+
+effects:
+  - product_list_thumbnail_alt
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productListThumbnailAlt.test.ts

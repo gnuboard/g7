@@ -5,7 +5,7 @@
  * 배경:
  * - BaseOrderItemResource 공통 베이스에 정가(list_price/multi_currency_list_price/discount_rate)가 실리며,
  *   장바구니·주문서 파셜이 정가 취소선 + 할인율 칩 + (보조통화 정가)을 표시한다.
- * - 표시 참조 패턴은 상품상세 detail/_price_mobile.json 과 동일(취소선 + 할인율 칩 + if discount_rate>0).
+ * - 표시 참조 패턴은 상품상세 detail/_price_mobile.g7.html 과 동일(취소선 + 할인율 칩 + if discount_rate>0).
  *
  * 회귀 차단(두 파셜 공통):
  * - 정가 취소선 + 할인율 블록이 if=(discount_rate>0) 게이트로 존재한다(할인 없을 때 미렌더).

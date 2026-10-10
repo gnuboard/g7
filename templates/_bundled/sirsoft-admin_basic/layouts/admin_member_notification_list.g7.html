@@ -1,0 +1,241 @@
+<!-- 회원 알림함. 발송 이력(`admin_notification_log_list`)과 **다른 축**이다 — 그쪽은 "무엇을 보냈나"
+  를 남기고 이쪽은 "회원 화면에 지금 무엇이 남아 있나" 를 다룬다. 여기서 지우면 그 회원의 수신함에서
+  사라지므로 삭제의 무게가 다르고, 그래서 채널 탭도 재발송도 없다.
+  조건은 `_local.filter` 에 모았다가 검색할 때 주소로 옮기고, 이동은 `replace` 로 이력에 쌓지 않으며
+  표 본문만 대기 표시로 덮는다. 회원 상세 「알림함」 탭에서 건너오면 `user_uuid` 가 붙고 그때만
+  위쪽에 필터 배너가 선다. 본체는 조각 둘에 있고 여기에는 뼈대와 삭제 창 둘만 둔다. -->
+<layout name="admin_member_notification_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.member_notification.page_title" description="$t:admin.member_notification.page_description"/>
+  <!-- 전 회원 수신함. 조건은 전부 `query.*` 에서 읽는다. 403 은 빈 표 대신 에러 화면으로 갈아끼운다. -->
+  <data-source id="memberNotifications" label_key="$t:editor.data_source.memberNotifications" type="api" endpoint="/api/admin/member-notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" read="{{query.read}}" user_id="{{query.user_id}}" user_uuid="{{query.user_uuid}}" created_from="{{query.created_from}}" created_to="{{query.created_to}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="searchType" value="all"/>
+      <field name="search" value=""/>
+      <field name="read" value="all"/>
+      <field name="createdFrom" value=""/>
+      <field name="createdTo" value=""/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>core.member-notifications.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>memberNotifications</wait-for>
+  </transition-overlay>
+  <!-- 검색 실행 — 필터 조각이 공유한다. 회원 한정(`user_id`·`user_uuid`)은 건드리지 않는다:
+       「이 회원의 알림함 안에서 검색」이 자연스럽고, 해제는 배너의 전용 버튼이 한다.
+       빈 값은 `undefined` 로 보내 조건에서 아예 빠지게 한다. 페이지는 1로 되돌린다. -->
+  <action name="searchMemberNotifications">
+    <navigate path="/admin/member-notifications" :mergeQuery="true" :replace="true" transition_overlay_target="member_notification_datagrid__body">
+      <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}" read="{{_local.filter.read !== 'all' ? _local.filter.read : undefined}}" created_from="{{_local.filter.createdFrom || undefined}}" created_to="{{_local.filter.createdTo || undefined}}"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="searchType" value="{{query.search_type || 'all'}}"/>
+          <field name="search" value="{{query.search || ''}}"/>
+          <field name="read" value="{{query.read || 'all'}}"/>
+          <field name="createdFrom" value="{{query.created_from || ''}}"/>
+          <field name="createdTo" value="{{query.created_to || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="member_notification_list_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-between mb-6">
+        <div>
+          <h1 class="page-title">$t:admin.member_notification.page_title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.member_notification.page_description</p>
+        </div>
+        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
+          <on type="click">
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부른다 — 조건·페이지를 유지한다. -->
+            <navigate path="/admin/member-notifications" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="refresh" class="text-xl"/>
+        </button>
+      </div>
+      <!-- 회원 필터 배너 — 회원 상세에서 건너온 상태라는 것을 화면이 말해 주지 않으면, 운영자는
+           전체 목록을 보고 있다고 믿고 건수를 읽는다(스크랩 관리 화면과 같은 짜임). -->
+      <div data-ref="member_filter_banner" data-if="{{!!(query.user_id || query.user_uuid)}}" class="admin-card flex-center gap-2 mb-4">
+        <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+        <span class="text-body flex-1">$t:admin.member_notification.filter.member_filter_notice</span>
+        <button data-ref="member_filter_clear" type="button" class="px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+          <on type="click">
+            <!-- 회원 한정만 떼고 검색어·기간은 유지한다 — 배너가 말하는 것이 그것뿐이다.
+                 쪽수를 건드리는 이동이므로 목록을 다시 세우는 셈이다 — 표 본문만 대기 표시로
+                 덮고 이력에는 쌓지 않는다(다른 목록 이동과 같은 규칙). -->
+            <navigate path="/admin/member-notifications" :mergeQuery="true" :replace="true" transition_overlay_target="member_notification_datagrid__body">
+              <query user_id="" user_uuid="" page=""/>
+            </navigate>
+          </on>
+          <span>$t:admin.member_notification.filter.member_filter_clear</span>
+        </button>
+      </div>
+      <include src="partials/admin_member_notification_list/_partial_filter.g7.html"/>
+      <div data-ref="data_table_section" class="mt-6">
+        <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+          <div class="flex-center gap-3">
+            <!-- 총 건수를 끝까지 센 경우 -->
+            <span data-if="{{memberNotifications?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.member_notification.total_count|count={{memberNotifications?.data?.pagination?.total || 0}}</span>
+            <!-- 총 건수가 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다 -->
+            <span data-if="{{memberNotifications?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.member_notification.total_at_least|count={{memberNotifications?.data?.pagination?.total || 0}}</span>
+          </div>
+          <div class="flex-center gap-3">
+            <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+              <options>
+                <option value="created_at_desc">$t:admin.member_notification.sort.created_at_desc</option>
+                <option value="created_at_asc">$t:admin.member_notification.sort.created_at_asc</option>
+                <option value="read_at_desc">$t:admin.member_notification.sort.read_at_desc</option>
+              </options>
+              <on type="change">
+                <!-- 정렬 — 옵션 값의 마지막 조각이 방향, 나머지가 기준이다(기준명에 `_` 가 들어 있다). -->
+                <navigate path="/admin/member-notifications" :mergeQuery="true" :replace="true" transition_overlay_target="member_notification_datagrid__body">
+                  <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <select name="perPage" class="w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+              <options>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </options>
+              <on type="change">
+                <!-- 페이지당 항목 수 — 정렬과 같은 이유로 페이지를 1로 되돌린다. -->
+                <navigate path="/admin/member-notifications" :mergeQuery="true" :replace="true" transition_overlay_target="member_notification_datagrid__body">
+                  <query per_page="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+          <span class="text-body font-medium whitespace-nowrap">$t:admin.member_notification.delete.selected_count|count={{(_global.selectedIds_admin_member_notifications ?? []).length}}</span>
+          <div class="flex-1"/>
+          <button data-ref="bulk_delete_button" type="button" class="alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled="{{(_global.selectedIds_admin_member_notifications ?? []).length === 0 || memberNotifications?.data?.abilities?.can_delete !== true}}">
+            <on type="click">
+              <open-modal target="bulk_delete_confirm_modal"/>
+            </on>
+            $t:admin.member_notification.delete.bulk_button
+          </button>
+        </div>
+        <include src="partials/admin_member_notification_list/_partial_datagrid.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <!-- 알림 한 건 삭제 확인 창. 대상은 표 조각의 행 메뉴가 전역 `modal_data` 에 담아 준 행이다. -->
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:admin.member_notification.delete.confirm_title" size="sm">
+      <meta editor_label="$t:admin.modal_label.member_notification_list.delete_confirm_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.member_notification.delete.confirm_message</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <!-- 삭제 실행. 조건이 주소에 있고 여기서는 주소가 바뀌지 않으므로 목록을 직접 다시 부른다. -->
+            <sequence>
+              <set-state target="global" :isDeleting="true"/>
+              <api-call :auth_required="true" target="/api/admin/member-notifications/{{_global.modal_data.id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :isDeleting="false"/>
+                  <refetch-data-source dataSourceId="memberNotifications"/>
+                  <toast type="success" message="$t:admin.member_notification.delete.success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeleting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <error-handling>
+                  <on-code code="403">
+                    <sequence>
+                      <set-state target="global" :isDeleting="false"/>
+                      <toast type="error" message="$t:auth.permission_denied"/>
+                    </sequence>
+                  </on-code>
+                </error-handling>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 알림을 한꺼번에 지우는 확인 창. 위 한 건 삭제와 읽는 값이 다르다(그쪽은 `modal_data`). -->
+    <modal data-type="composite" data-ref="bulk_delete_confirm_modal" title="$t:admin.member_notification.delete.bulk_confirm_title" size="sm">
+      <meta editor_label="$t:admin.modal_label.member_notification_list.bulk_delete_confirm_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.member_notification.delete.bulk_confirm_message</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <!-- 일괄 삭제 실행. 성공하면 선택을 비운다 — 지운 id 가 남아 있으면 다음 일괄이 없는 것을
+                 다시 보낸다. -->
+            <sequence>
+              <set-state target="global" :isDeleting="true"/>
+              <api-call :auth_required="true" target="/api/admin/member-notifications/bulk-delete" method="POST">
+                <success>
+                  <set-state target="global" :isDeleting="false" :selectedIds_admin_member_notifications="[]"/>
+                  <refetch-data-source dataSourceId="memberNotifications"/>
+                  <toast type="success" message="$t:admin.member_notification.delete.bulk_success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeleting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <error-handling>
+                  <on-code code="403">
+                    <sequence>
+                      <set-state target="global" :isDeleting="false"/>
+                      <toast type="error" message="$t:auth.permission_denied"/>
+                    </sequence>
+                  </on-code>
+                </error-handling>
+                <body ids="{{_global.selectedIds_admin_member_notifications ?? []}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

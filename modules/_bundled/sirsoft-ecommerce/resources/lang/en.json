@@ -1,211 +1,533 @@
 {
-  "editor": {
-    "action": {
-      "request_pg_payment": {
-        "label": "Enter payment",
-        "param_handler": "Payment handler",
-        "param_data": "Payment data"
-      }
+    "editor": {
+        "action": {
+            "request_pg_payment": {
+                "label": "Enter payment",
+                "param_handler": "Payment handler",
+                "param_data": "Payment data"
+            }
+        },
+        "action_chip": {
+            "response_pg_handler": "Payment handler (response)",
+            "response_pg_data": "Payment data (response)"
+        },
+        "data_source": {
+            "active_carriers": "Active Carriers",
+            "activity_logs": "Activity Logs",
+            "availableChannels": "Available Channels",
+            "brands": "Brands",
+            "carriers": "Carriers",
+            "categories": "Categories",
+            "commonInfos": "Common Infos",
+            "common_infos": "Common Infos",
+            "copy_source": "Copy Source",
+            "coupon": "Coupon",
+            "coupon_abilities": "Coupon permissions",
+            "couponIssues": "Coupon Issues",
+            "coupons": "Coupons",
+            "ecommerceIdentityPolicies": "Ecommerce Identity Policies",
+            "ecommerceIdentityPurposes": "Ecommerce Identity Purposes",
+            "ecommerceNotificationDefinitions": "Ecommerce Notification Definitions",
+            "ecommercePrivacyRetentionPreview": "E-commerce Privacy Retention Targets",
+            "ecommerce_settings": "Ecommerce Settings",
+            "extra_fee_templates": "Extra Fee Templates",
+            "policy_abilities": "Shipping policy permissions",
+            "product_abilities": "Product permissions",
+            "identityProviders": "Identity Providers",
+            "notice_templates": "Notice Templates",
+            "order": "Order",
+            "order_logs": "Order Logs",
+            "orders": "Orders",
+            "paymentSettings": "Payment Settings",
+            "policy": "Shipping Policy",
+            "presets": "Presets",
+            "product": "Product",
+            "product_labels": "Product Labels",
+            "products": "Products",
+            "refundReasons": "Refund Reasons",
+            "reviews": "Reviews",
+            "roles": "Roles",
+            "seoStats": "SEO Stats",
+            "settings": "Settings",
+            "shipping_policies": "Shipping Policies",
+            "templates": "Templates",
+            "wishlists": "Wishlists",
+            "carts": "Carts",
+            "addresses": "Member addresses",
+            "inquiries": "Product inquiries",
+            "privacyTargets": "Orders due for retention processing",
+            "privacyManualRuns": "Privacy action manual run status",
+            "claim_detail": "Claim Detail",
+            "claim_logs": "Claim Activity Logs",
+            "claim_reasons": "Claim Reasons",
+            "claim_settings": "Shipping policy claim settings",
+            "claims": "Claims",
+            "orderClaims": "Order Claim History",
+            "claimRequestContext": "Claim request context"
+        }
     },
-    "action_chip": {
-      "response_pg_handler": "Payment handler (response)",
-      "response_pg_data": "Payment data (response)"
+    "common": {
+        "$partial": "partial/en/common.json"
     },
-    "data_source": {
-      "active_carriers": "Active Carriers",
-      "activity_logs": "Activity Logs",
-      "availableChannels": "Available Channels",
-      "brands": "Brands",
-      "carriers": "Carriers",
-      "categories": "Categories",
-      "commonInfos": "Common Infos",
-      "common_infos": "Common Infos",
-      "copy_source": "Copy Source",
-      "coupon": "Coupon",
-      "couponIssues": "Coupon Issues",
-      "coupons": "Coupons",
-      "ecommerceIdentityPolicies": "Ecommerce Identity Policies",
-      "ecommerceIdentityPurposes": "Ecommerce Identity Purposes",
-      "ecommerceNotificationDefinitions": "Ecommerce Notification Definitions",
-      "ecommerce_settings": "Ecommerce Settings",
-      "extra_fee_templates": "Extra Fee Templates",
-      "identityProviders": "Identity Providers",
-      "notice_templates": "Notice Templates",
-      "order": "Order",
-      "order_logs": "Order Logs",
-      "orders": "Orders",
-      "paymentSettings": "Payment Settings",
-      "policy": "Shipping Policy",
-      "presets": "Presets",
-      "product": "Product",
-      "product_labels": "Product Labels",
-      "products": "Products",
-      "refundReasons": "Refund Reasons",
-      "reviews": "Reviews",
-      "roles": "Roles",
-      "seoStats": "SEO Stats",
-      "settings": "Settings",
-      "shipping_policies": "Shipping Policies",
-      "templates": "Templates"
-    }
-  },
-  "common": {
-    "$partial": "partial/en/common.json"
-  },
-  "currency": {
-    "$partial": "partial/en/currency.json"
-  },
-  "admin": {
-    "dashboard": {
-      "$partial": "partial/en/admin/dashboard.json"
+    "currency": {
+        "$partial": "partial/en/currency.json"
     },
-    "locale": {
-      "$partial": "partial/en/admin/locale.json"
+    "admin": {
+        "dashboard": {
+            "$partial": "partial/en/admin/dashboard.json"
+        },
+        "locale": {
+            "$partial": "partial/en/admin/locale.json"
+        },
+        "settings": {
+            "$partial": "partial/en/admin/settings.json"
+        },
+        "order_settings": {
+            "$partial": "partial/en/admin/order_settings.json"
+        },
+        "product": {
+            "$partial": "partial/en/admin/product.json"
+        },
+        "brand": {
+            "$partial": "partial/en/admin/brand.json"
+        },
+        "category": {
+            "$partial": "partial/en/admin/category.json"
+        },
+        "promotion_coupon": {
+            "$partial": "partial/en/admin/promotion_coupon.json"
+        },
+        "order": {
+            "$partial": "partial/en/admin/order.json"
+        },
+        "main_banner": {
+            "$partial": "partial/en/admin/main_banner.json"
+        },
+        "product_review": {
+            "$partial": "partial/en/admin/product_review.json"
+        },
+        "payment_failure_history": {
+            "$partial": "partial/en/admin/payment_failure_history.json"
+        },
+        "excel_download": {
+            "$partial": "partial/en/admin/excel_download.json"
+        },
+        "personal_payment": {
+            "$partial": "partial/en/admin/personal_payment.json"
+        },
+        "personal_payment_create": {
+            "$partial": "partial/en/admin/personal_payment_create.json"
+        },
+        "personal_payment_detail": {
+            "$partial": "partial/en/admin/personal_payment_detail.json"
+        },
+        "mileage_settings": {
+            "$partial": "partial/en/admin/mileage_settings.json"
+        },
+        "mileage_transactions": {
+            "$partial": "partial/en/admin/mileage_transactions.json"
+        },
+        "user_mileage": {
+            "tab_label": "Mileage",
+            "title": "Mileage",
+            "available": "Available",
+            "pending": "Pending",
+            "total_earned": "Total Earned",
+            "expiring_soon": "Expiring Soon",
+            "view_history": "View this member's history",
+            "disabled_notice": "Mileage is disabled. You can enable it in settings."
+        },
+        "user_currency": {
+            "title": "Payment Currency",
+            "description": "Set the currency used for this member's orders and payments.",
+            "save_button": "Save",
+            "saved": "Member payment currency updated.",
+            "save_failed": "Failed to update member payment currency."
+        },
+        "user_shipping_country": {
+            "title": "Shipping Country",
+            "description": "Set this member's default shipping country.",
+            "save_button": "Save",
+            "saved": "Member shipping country updated.",
+            "save_failed": "Failed to update member shipping country."
+        },
+        "user_filter": {
+            "title": "Shop conditions",
+            "mileage": "Mileage balance",
+            "mileage_min": "Min",
+            "mileage_max": "Max",
+            "shipping_country": "Shipping country",
+            "shipping_country_all": "Any country",
+            "has_address": "Shipping address",
+            "has_address_yes": "Registered",
+            "has_address_no": "None"
+        },
+        "product_notice_template": {
+            "$partial": "partial/en/admin/product_notice_template.json"
+        },
+        "deposit": {
+            "$partial": "partial/en/admin/deposit.json"
+        },
+        "promotion_discount_code": {
+            "$partial": "partial/en/admin/promotion_discount_code.json"
+        },
+        "common_info": {
+            "$partial": "partial/en/admin/common_info.json"
+        },
+        "shipping_policy": {
+            "$partial": "partial/en/admin/shipping_policy.json"
+        },
+        "wishlists": {
+            "title": "Wishlist Management",
+            "description": "Browse and clean up wishlists across all members.",
+            "search_fields": {
+                "member": "Member",
+                "member_id": "Member ID",
+                "email": "Email",
+                "product": "Product"
+            },
+            "filters": {
+                "search_label": "Search in",
+                "keyword_label": "Keyword",
+                "keyword_placeholder": "Enter a keyword",
+                "date_label": "Added on",
+                "search": "Search",
+                "reset": "Reset",
+                "member_filter_notice": "Showing wishlists for one member only",
+                "member_filter_clear": "Clear member filter"
+            },
+            "columns": {
+                "created_at": "Added on",
+                "member": "Member",
+                "product": "Product"
+            },
+            "badges": {
+                "withdrawn": "Withdrawn",
+                "guest": "Guest"
+            },
+            "actions": {
+                "delete": "Delete",
+                "view_member": "Member details"
+            },
+            "bulk": {
+                "selected_count": "{{count}} selected",
+                "delete": "Delete selected"
+            },
+            "sort": {
+                "created_at_desc": "Newest",
+                "created_at_asc": "Oldest"
+            },
+            "table": {
+                "total_count": "{{count}} total",
+                "empty": "No wishlist items."
+            },
+            "modal": {
+                "delete": {
+                    "title": "Delete this wishlist item?",
+                    "message": "It disappears from the member's wishlist. The product itself is not deleted."
+                },
+                "bulk_delete": {
+                    "title": "Delete the selected wishlist items?",
+                    "message": "Delete {{count}} selected items?",
+                    "message_one": "Delete {{count}} selected item?",
+                    "deleting": "Deleting..."
+                }
+            }
+        },
+        "carts": {
+            "title": "Cart Management",
+            "description": "Browse and clean up carts across members and guest sessions.",
+            "search_fields": {
+                "member": "Member",
+                "member_id": "Member ID",
+                "email": "Email",
+                "product": "Product"
+            },
+            "filters": {
+                "search_label": "Search in",
+                "keyword_label": "Keyword",
+                "keyword_placeholder": "Enter a keyword",
+                "date_label": "Added on",
+                "search": "Search",
+                "reset": "Reset",
+                "owner_label": "Owner",
+                "owner_all": "All",
+                "owner_member": "Member",
+                "owner_guest": "Guest",
+                "member_filter_notice": "Showing carts for one member only",
+                "member_filter_clear": "Clear member filter"
+            },
+            "columns": {
+                "created_at": "Added on",
+                "member": "Member",
+                "product": "Product",
+                "option": "Option",
+                "quantity": "Qty"
+            },
+            "badges": {
+                "withdrawn": "Withdrawn",
+                "guest": "Guest"
+            },
+            "actions": {
+                "delete": "Delete",
+                "view_member": "Member details"
+            },
+            "bulk": {
+                "selected_count": "{{count}} selected",
+                "delete": "Delete selected"
+            },
+            "sort": {
+                "created_at_desc": "Newest",
+                "created_at_asc": "Oldest"
+            },
+            "table": {
+                "total_count": "{{count}} total",
+                "empty": "No cart items."
+            },
+            "modal": {
+                "delete": {
+                    "title": "Delete this cart item?",
+                    "message": "It disappears from the member's cart. The product itself is not deleted."
+                },
+                "bulk_delete": {
+                    "title": "Delete the selected cart items?",
+                    "message": "Delete {{count}} selected items?",
+                    "message_one": "Delete {{count}} selected item?",
+                    "deleting": "Deleting..."
+                }
+            }
+        },
+        "user_addresses": {
+            "title": "Member addresses",
+            "description": "Browse and tidy up the shipping addresses members have saved.",
+            "search_fields": {
+                "member": "Member",
+                "member_id": "Member ID",
+                "email": "Email",
+                "recipient": "Recipient",
+                "address": "Address"
+            },
+            "search": {
+                "placeholder": "Search by recipient or address",
+                "column_select": "Columns"
+            },
+            "filter": {
+                "member": "Member",
+                "member_select": "Select members",
+                "member_selected_count": "{count} selected",
+                "member_search_placeholder": "Search by name or email",
+                "member_search_initial": "Type a name or email",
+                "created_at": "Added on",
+                "is_default": "Default",
+                "is_default_only": "Default only",
+                "is_default_except": "Non-default",
+                "search": "Search",
+                "reset": "Reset"
+            },
+            "columns": {
+                "created_at": "Added on",
+                "member": "Member",
+                "recipient": "Recipient",
+                "contact": "Phone",
+                "address": "Address"
+            },
+            "badges": {
+                "withdrawn": "Withdrawn",
+                "guest": "Guest",
+                "is_default": "Default"
+            },
+            "actions": {
+                "delete": "Delete",
+                "view_member": "Member details",
+                "search_member": "Search by this member"
+            },
+            "bulk": {
+                "delete": "Delete selected"
+            },
+            "sort": {
+                "created_at_desc": "Newest first",
+                "created_at_asc": "Oldest first"
+            },
+            "table": {
+                "total_count": "{{count}} total",
+                "selected_count": "{{count}} selected",
+                "empty": "No addresses."
+            },
+            "modal": {
+                "delete": {
+                    "title": "Delete this address?",
+                    "message": "Deletes {{member}}'s address (recipient {{recipient}}).",
+                    "warning": "It disappears from the member's address book. Addresses on existing orders are unaffected."
+                },
+                "bulk_delete": {
+                    "title": "Delete the selected addresses?",
+                    "message": "Deletes the {{count}} selected addresses.",
+                    "message_one": "Deletes the {{count}} selected address."
+                }
+            }
+        },
+        "inquiries": {
+            "title": "Inquiry Management",
+            "description": "Browse and clean up product inquiries across all members.",
+            "search_fields": {
+                "member": "Member",
+                "member_id": "Member ID",
+                "email": "Email",
+                "product": "Product",
+                "content": "Content"
+            },
+            "filters": {
+                "search_label": "Search in",
+                "keyword_label": "Keyword",
+                "keyword_placeholder": "Enter a keyword",
+                "date_label": "Asked on",
+                "search": "Search",
+                "reset": "Reset",
+                "is_answered_label": "Answer status",
+                "is_answered_all": "All",
+                "is_answered_yes": "Answered",
+                "is_answered_no": "Pending",
+                "member_filter_notice": "Showing inquiries for one member only",
+                "member_filter_clear": "Clear member filter"
+            },
+            "columns": {
+                "created_at": "Asked on",
+                "member": "Member",
+                "product": "Product",
+                "content": "Content",
+                "status": "Answer status"
+            },
+            "badges": {
+                "withdrawn": "Withdrawn",
+                "guest": "Guest"
+            },
+            "status": {
+                "answered": "Answered",
+                "pending": "Pending"
+            },
+            "content_unavailable": "Content unavailable",
+            "actions": {
+                "reply": "Reply",
+                "delete": "Delete",
+                "view_member": "Member details"
+            },
+            "bulk": {
+                "selected_count": "{{count}} selected",
+                "delete": "Delete selected"
+            },
+            "sort": {
+                "created_at_desc": "Newest",
+                "created_at_asc": "Oldest"
+            },
+            "table": {
+                "total_count": "{{count}} total",
+                "empty": "No inquiries."
+            },
+            "modal": {
+                "delete": {
+                    "title": "Delete this inquiry?",
+                    "message": "The inquiry and its reply are removed together."
+                },
+                "bulk_delete": {
+                    "title": "Delete the selected inquiries?",
+                    "message": "Delete {{count}} selected inquiries?",
+                    "message_one": "Delete {{count}} selected inquiry?",
+                    "deleting": "Deleting..."
+                },
+                "reply": {
+                    "title": "Reply to inquiry",
+                    "content_label": "Reply",
+                    "content_placeholder": "Write the reply the member will see (up to 5000 characters)",
+                    "submit": "Post reply",
+                    "already_answered": "This inquiry already has a reply. Posting adds another one."
+                }
+            }
+        },
+        "user_ecommerce_data": {
+            "tab_label": "Shopping Data",
+            "title": "Member shopping data",
+            "count_unit": "{{count}}",
+            "wishlist": "Wishlist",
+            "cart": "Cart",
+            "address": "Addresses",
+            "inquiry": "Inquiries",
+            "inquiry_pending": "{{count}} awaiting reply",
+            "view_wishlists": "Wishlists",
+            "view_carts": "Carts",
+            "view_addresses": "Addresses",
+            "view_inquiries": "Inquiries",
+            "saved_addresses": "Saved addresses",
+            "address_empty": "No saved addresses.",
+            "address_default": "Default",
+            "address_more": "{{count}} more in address management."
+        },
+        "claim": {
+            "$partial": "partial/en/admin/claim.json"
+        }
     },
-    "settings": {
-      "$partial": "partial/en/admin/settings.json"
+    "user": {
+        "$partial": "partial/en/user.json"
     },
-    "order_settings": {
-      "$partial": "partial/en/admin/order_settings.json"
-    },
-    "product": {
-      "$partial": "partial/en/admin/product.json"
-    },
-    "brand": {
-      "$partial": "partial/en/admin/brand.json"
-    },
-    "category": {
-      "$partial": "partial/en/admin/category.json"
-    },
-    "promotion_coupon": {
-      "$partial": "partial/en/admin/promotion_coupon.json"
-    },
-    "order": {
-      "$partial": "partial/en/admin/order.json"
-    },
-    "main_banner": {
-      "$partial": "partial/en/admin/main_banner.json"
-    },
-    "product_review": {
-      "$partial": "partial/en/admin/product_review.json"
-    },
-    "payment_failure_history": {
-      "$partial": "partial/en/admin/payment_failure_history.json"
-    },
-    "excel_download": {
-      "$partial": "partial/en/admin/excel_download.json"
-    },
-    "personal_payment": {
-      "$partial": "partial/en/admin/personal_payment.json"
-    },
-    "personal_payment_create": {
-      "$partial": "partial/en/admin/personal_payment_create.json"
-    },
-    "personal_payment_detail": {
-      "$partial": "partial/en/admin/personal_payment_detail.json"
-    },
-    "mileage_settings": {
-      "$partial": "partial/en/admin/mileage_settings.json"
-    },
-    "mileage_transactions": {
-      "$partial": "partial/en/admin/mileage_transactions.json"
+    "auth": {
+        "register_currency": {
+            "label": "Payment currency",
+            "hint": "Currency used for orders and payments. You can change it later in your profile."
+        },
+        "register_shipping_country": {
+            "label": "Shipping country",
+            "hint": "Your default shipping country. You can change it later in your profile."
+        }
     },
     "user_mileage": {
-      "tab_label": "Mileage",
-      "title": "Mileage",
-      "available": "Available",
-      "pending": "Pending",
-      "total_earned": "Total Earned",
-      "expiring_soon": "Expiring Soon",
-      "view_history": "View this member's history",
-      "disabled_notice": "Mileage is disabled. You can enable it in settings."
+        "title": "My Mileage",
+        "available": "Available",
+        "expiring_soon": "Expiring {{amount}} P",
+        "view_history": "Mileage History",
+        "disabled_notice": "Mileage is disabled.",
+        "withdraw_refund_credit_warning": "The {{amount}} P of mileage you received as a refund will also be forfeited and cannot be restored. Use it before withdrawing or contact customer service."
     },
-    "user_currency": {
-      "title": "Payment Currency",
-      "description": "Set the currency used for this member's orders and payments.",
-      "save_button": "Save",
-      "saved": "Member payment currency updated.",
-      "save_failed": "Failed to update member payment currency."
+    "user_address_card": {
+        "title": "Default shipping address",
+        "manage": "Manage addresses",
+        "default_badge": "Default",
+        "empty_notice": "No shipping address yet. Once you add one, checkout fills it in for you."
     },
-    "user_shipping_country": {
-      "title": "Shipping Country",
-      "description": "Set this member's default shipping country.",
-      "save_button": "Save",
-      "saved": "Member shipping country updated.",
-      "save_failed": "Failed to update member shipping country."
+    "product": {
+        "$partial": "partial/en/product.json"
     },
-    "product_notice_template": {
-      "$partial": "partial/en/admin/product_notice_template.json"
+    "order": {
+        "$partial": "partial/en/order.json"
     },
-    "deposit": {
-      "$partial": "partial/en/admin/deposit.json"
+    "category": {
+        "$partial": "partial/en/category.json"
     },
-    "promotion_discount_code": {
-      "$partial": "partial/en/admin/promotion_discount_code.json"
+    "enums": {
+        "$partial": "partial/en/enums.json"
     },
-    "common_info": {
-      "$partial": "partial/en/admin/common_info.json"
+    "messages": {
+        "$partial": "partial/en/messages.json"
     },
-    "shipping_policy": {
-      "$partial": "partial/en/admin/shipping_policy.json"
+    "exceptions": {
+        "$partial": "partial/en/exceptions.json"
+    },
+    "validation": {
+        "$partial": "partial/en/validation.json"
+    },
+    "shop": {
+        "$partial": "partial/en/shop.json"
+    },
+    "checkout": {
+        "cash_receipt": {
+            "request": "Request a cash receipt",
+            "purpose": "Purpose",
+            "purpose_income": "Income deduction",
+            "purpose_expense": "Proof of expenditure",
+            "identifier_phone": "Mobile number",
+            "identifier_card": "Cash receipt card number",
+            "identifier_business": "Business registration number",
+            "identifier_placeholder": "Digits only, no hyphens",
+            "purpose_help": "Income deduction is used for year-end tax settlement; proof of expenditure is used for business input VAT deduction.",
+            "immutable_help": "The purpose cannot be changed after the receipt is issued."
+        }
     }
-  },
-  "user": {
-    "$partial": "partial/en/user.json"
-  },
-  "auth": {
-    "register_currency": {
-      "label": "Payment currency",
-      "hint": "Currency used for orders and payments. You can change it later in your profile."
-    },
-    "register_shipping_country": {
-      "label": "Shipping country",
-      "hint": "Your default shipping country. You can change it later in your profile."
-    }
-  },
-  "user_mileage": {
-    "title": "My Mileage",
-    "available": "Available",
-    "expiring_soon": "Expiring {{amount}} P",
-    "view_history": "Mileage History",
-    "disabled_notice": "Mileage is disabled."
-  },
-  "product": {
-    "$partial": "partial/en/product.json"
-  },
-  "order": {
-    "$partial": "partial/en/order.json"
-  },
-  "category": {
-    "$partial": "partial/en/category.json"
-  },
-  "enums": {
-    "$partial": "partial/en/enums.json"
-  },
-  "messages": {
-    "$partial": "partial/en/messages.json"
-  },
-  "exceptions": {
-    "$partial": "partial/en/exceptions.json"
-  },
-  "validation": {
-    "$partial": "partial/en/validation.json"
-  },
-  "shop": {
-    "$partial": "partial/en/shop.json"
-  },
-  "checkout": {
-    "cash_receipt": {
-      "request": "Request a cash receipt",
-      "purpose": "Purpose",
-      "purpose_income": "Income deduction",
-      "purpose_expense": "Proof of expenditure",
-      "identifier_phone": "Mobile number",
-      "identifier_card": "Cash receipt card number",
-      "identifier_business": "Business registration number",
-      "identifier_placeholder": "Digits only, no hyphens",
-      "purpose_help": "Income deduction is used for year-end tax settlement; proof of expenditure is used for business input VAT deduction.",
-      "immutable_help": "The purpose cannot be changed after the receipt is issued."
-    }
-  }
 }

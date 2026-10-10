@@ -1,0 +1,37 @@
+feature: 마이페이지 재주문 (POST /user/orders/{id}/reorder)
+
+description: |
+  지난 주문의 옵션을 장바구니에 다시 담는다. 담을 수 있는 행만 담고, 담지 못한 행은
+  `skipped` 에 사유와 함께 돌려준다 — 조용히 사라지면 회원은 무엇이 빠졌는지 알 수 없다.
+
+  담기는 단위는 주문 옵션 행이다. 부분취소가 행을 분할하면 분할 가족의 머리 행은
+  `parent_option_id` 에 자기 id 를 담으므로, 최상위 판정을 `parent_option_id === null`
+  로만 하면 분할을 겪은 상품이 통째로 빠진다(#599 세션1 실측).
+
+  같은 옵션이 이미 장바구니에 있으면 행을 늘리지 않고 기존 행의 수량에 누적한다.
+  남의 주문·없는 주문은 422, 비로그인은 401 로 막는다.
+
+axes:
+  basis_case:
+    - plain_row                  # 분할을 겪지 않은 일반 주문 옵션 → 장바구니 추가
+    - split_row_self_parent      # 분할 가족의 머리 행(parent_option_id = 자기 id)도 담긴다
+    - out_of_stock_row           # 재고 0 행은 skip, 나머지만 담긴다
+    - skip_reason_is_specific    # skip 사유가 일반 폴백 문구로 뭉개지지 않는다
+    - skip_name_uses_fallback_locale # skip 행 상품명은 보는 언어 → app.fallback_locale 순(ko·en 고정 아님)
+    - existing_cart_row          # 같은 옵션이 이미 장바구니에 있으면 수량 누적
+    - other_users_order          # 남의 주문 → 422
+    - nonexistent_order          # 없는 주문 id → 422
+    - unauthenticated            # 비로그인 → 401
+
+effects:
+  - order_options_added_to_cart_with_added_count   # 담긴 행 수가 added_count 로 온다
+  - split_head_row_included_in_reorder             # 분할 머리 행도 담긴다
+  - unavailable_rows_reported_in_skipped           # 담지 못한 행이 skipped 에 남는다
+  - reorder_skip_reason_uses_user_message          # skip 사유가 구체 문구다
+  - reorder_skip_name_follows_app_fallback_locale  # skip 행 상품명이 앱 폴백 언어를 따른다
+  - existing_cart_row_quantity_accumulated         # 기존 장바구니 행의 수량에 누적
+  - foreign_or_missing_order_rejected_422          # 남의 주문·없는 주문은 422
+  - reorder_requires_authentication                # 비로그인은 401
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/OrderReorderTest.php

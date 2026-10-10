@@ -20,12 +20,31 @@ require_once __DIR__.'/../includes/config.php';
 require_once __DIR__.'/../includes/functions.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
 require_once __DIR__.'/../includes/installer-state.php';
+// 설치 소유 세션 판정용 — session.php 는 installer-state.php 를 require 하므로 그 뒤에 둔다.
+require_once __DIR__.'/../includes/session.php';
+require_once __DIR__.'/../includes/installer-ownership.php';
 require_once __DIR__.'/_guard.php';
 // finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
 // 일반 인스톨러 엔드포인트의 `installer_guard_or_410()` 은 `g7_installed` 락 파일도
 // 차단 사유로 삼는데, 그 락 파일은 finalize 호출 직전 단계의 complete_flag task 가
 // 먼저 생성하므로 자가 차단 회귀가 발생한다 (이슈 #371).
 installer_guard_finalize_or_410();
+
+// 설치 완료(complete_flag 가 만든 g7_installed) 이후에만 머지한다. 진행 중에 호출되면
+// .env 에 INSTALLER_COMPLETED=true 가 기록돼 모든 인스톨러 엔드포인트가 410 이 되고 설치가 봉쇄된다.
+if (! is_file(BASE_PATH.'/storage/app/g7_installed')) {
+    installer_json_error(409, 'installation_not_completed', installer_ownership_lang(
+        'error_finalize_not_ready',
+        'Installation has not completed yet.'
+    ));
+}
+
+// state 가 남아 있으면(아직 finalize 전) 설치 소유 세션만 머지를 요청할 수 있다.
+$finalizeState = installerReadStateFile();
+if ($finalizeState !== null && installer_state_is_claimed($finalizeState)) {
+    installer_require_owner($finalizeState);
+    installer_require_csrf();
+}
 
 // ---------------------------------------------------------------------------
 // 1. 응답을 즉시 송출하여 브라우저가 완료 UI 를 유지할 수 있게 한다.
@@ -166,6 +185,12 @@ try {
             addLog('[finalize-env] state.json redact 재저장 FAILED — 수동 삭제 권장: '.$stateFilePath);
         }
     }
+
+    // 설치 소유권 부속 파일 정리 — state 쓰기 직렬화 락, 복구 토큰 실패 집계
+    if ($stateDeleted) {
+        @unlink($stateFilePath.'.lock');
+    }
+    installer_reclaim_reset_throttle();
 } catch (Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
     addLog('[finalize-env] unexpected exception: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());

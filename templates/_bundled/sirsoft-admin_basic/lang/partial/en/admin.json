@@ -1,4 +1,10 @@
 {
+  "extension_integrations": {
+    "title": "Works together with",
+    "hint": "When these extensions are installed, their features connect with this one. This extension works without them.",
+    "not_installed": "Not installed",
+    "inactive": "Inactive"
+  },
   "sidebar": {
     "no_accessible_menus": "No accessible menus",
     "view_site": "View site"
@@ -16,6 +22,7 @@
   "notifications_delete_all_failed": "Failed to delete all notifications.",
   "notifications_unread_only": "Unread only",
   "new_notification_received": "New notification received",
+  "base_layout_title": "Gnuboard7 Admin",
   "base_layout_description": "Gnuboard7 Admin",
   "mobile_menu": "Mobile Menu",
   "close_menu": "Close Menu",
@@ -88,6 +95,10 @@
       "sample_plugin_1": "SEO Optimization",
       "sample_template_1": "Main Page"
     },
+    "activities": {
+      "user_registered": "{{name}} signed up"
+    },
+    "refreshed": "Dashboard refreshed.",
     "extension_status": {
       "more": "More"
     },
@@ -138,7 +149,8 @@
     },
     "asset_url_mode_drift_title": "Asset file serving mode does not match this server",
     "asset_url_mode_drift_description": "With the saved style, some URLs may be intercepted by the server and pages may not load. Visitors are corrected automatically in the browser, but search engine bots are not, so please save the detected style in Settings.",
-    "asset_url_mode_drift_action": "Review in Settings > General"
+    "asset_url_mode_drift_action": "Review in Settings > General",
+    "alert_action_no_permission": "You do not have permission to handle this alert. Ask an administrator who has the permission."
   },
   "users": {
     "page_title": "User Management",
@@ -152,7 +164,10 @@
       "all": "All",
       "name": "Name",
       "email": "Email",
-      "nickname": "Nickname"
+      "nickname": "Nickname",
+      "contact": "Mobile/Phone",
+      "identifier": "Member No./UUID",
+      "admin_memo": "Admin memo"
     },
     "columns": {
       "id": "ID",
@@ -163,16 +178,24 @@
       "language": "Language",
       "status": "Status",
       "created_at": "Created At",
-      "last_login_at": "Last Login"
+      "last_login_at": "Last Login",
+      "nickname": "Nickname",
+      "email_verified_at": "Email verified",
+      "identity_verified_at": "Identity verified"
     },
     "status": {
       "active": "Active",
-      "inactive": "Inactive"
+      "inactive": "Inactive",
+      "blocked": "Blocked",
+      "withdrawn": "Withdrawn",
+      "pending_verification": "Pending verification",
+      "dormant": "Dormant"
     },
     "actions": {
       "view": "View",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "delete_disabled_reason": "Your own or a super admin account, or no delete permission. Withdraw from My Page."
     },
     "selected_count": "{count} selected",
     "bulk_activate": "Activate",
@@ -181,33 +204,77 @@
     "bulk_withdraw": "Withdraw",
     "bulk_action_select": "Select Bulk Action",
     "bulk_status_change": "Status Change",
-    "pagination_info": "Showing {{from}}-{{to}} of {{total}} users",
+    "bulk_roles": {
+      "add_button": "Add roles",
+      "remove_button": "Remove roles",
+      "add_title": "Add Roles in Bulk",
+      "remove_title": "Remove Roles in Bulk",
+      "add_desc": "Add roles to the {{count}} selected members.",
+      "add_desc_one": "Add roles to the {{count}} selected member.",
+      "remove_desc": "Remove roles from the {{count}} selected members.",
+      "remove_desc_one": "Remove roles from the {{count}} selected member.",
+      "roles_label": "Roles",
+      "roles_placeholder": "Select roles...",
+      "hint": "Members outside your management scope and super administrators are skipped automatically. If any selected role carries permissions you cannot grant, the whole request is rejected and nothing changes.",
+      "apply": "Apply",
+      "result_title": "Result",
+      "result_summary": "{{updated}} changed, {{skipped}} skipped",
+      "reason_grade": "Super administrator",
+      "reason_scope": "Outside your scope",
+      "reason_last_admin": "Last administrator (you)",
+      "reason_last_role": "Would be left with no role",
+      "remove_hint": "Members who would be left with no role, and your own administrator role if you are the last administrator, are skipped (every member must keep at least one role).",
+      "result_unchanged": "{{unchanged}} already up to date (no change)",
+      "reason_already_assigned": "Already has the role",
+      "reason_not_assigned": "Does not have the role",
+      "close": "Close"
+    },
+    "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
     "total_count": "Total {{count}}",
+    "total_at_least": "Total {{count}}+",
     "per_page": "{{count}}",
     "sort": {
       "created_at_desc": "Recently Joined",
       "created_at_asc": "Oldest Joined",
       "last_login_at_desc": "Recent Login",
-      "last_login_at_asc": "Oldest Login"
+      "last_login_at_asc": "Oldest Login",
+      "name_asc": "Name A→Z",
+      "name_desc": "Name Z→A",
+      "email_asc": "Email A→Z",
+      "email_desc": "Email Z→A",
+      "country_asc": "Country A→Z",
+      "country_desc": "Country Z→A",
+      "language_asc": "Language A→Z",
+      "language_desc": "Language Z→A",
+      "status_asc": "Status A→Z",
+      "status_desc": "Status Z→A"
     },
     "modals": {
       "delete_title": "Delete User",
       "delete_confirm": "Are you sure you want to delete this user? This action cannot be undone.",
       "delete_success": "User has been successfully deleted.",
       "bulk_activate_title": "Activate Users",
-      "bulk_activate_confirm": "Activate {{count}} user(s).",
+      "bulk_activate_confirm": "Activate {{count}} users.",
+      "bulk_activate_confirm_one": "Activate {{count}} user.",
       "bulk_activate_success": "Users have been activated.",
       "bulk_deactivate_title": "Deactivate Users",
-      "bulk_deactivate_confirm": "Deactivate {{count}} user(s).",
+      "bulk_deactivate_confirm": "Deactivate {{count}} users.",
+      "bulk_deactivate_confirm_one": "Deactivate {{count}} user.",
       "bulk_deactivate_success": "Users have been deactivated.",
       "bulk_block_title": "Block Users",
-      "bulk_block_confirm": "Block {{count}} user(s). Blocked users will not be able to log in.",
+      "bulk_block_confirm": "Block {{count}} users. Blocked users will not be able to log in.",
+      "bulk_block_confirm_one": "Block {{count}} user. Blocked users will not be able to log in.",
       "bulk_block_success": "Users have been blocked.",
       "bulk_withdraw_title": "Withdraw Users",
-      "bulk_withdraw_confirm": "Withdraw {{count}} user(s). This action may be difficult to reverse.",
+      "bulk_withdraw_confirm": "Withdraw {{count}} users. This action may be difficult to reverse.",
+      "bulk_withdraw_confirm_one": "Withdraw {{count}} user. This action may be difficult to reverse.",
       "bulk_withdraw_success": "Users have been withdrawn.",
-      "bulk_withdraw_partial": "{updated} user(s) withdrawn. {failed} could not be processed — {reason}",
+      "bulk_withdraw_partial": "{updated} users withdrawn. {failed} could not be processed — {reason}",
+      "bulk_withdraw_partial_one": "{updated} user withdrawn. {failed} could not be processed — {reason}",
       "bulk_withdraw_all_failed": "No users were withdrawn — {reason}",
+      "bulk_status_partial": "Changed the status of {updated} users. {failed} could not be changed — {reason}",
+      "bulk_status_partial_one": "Changed the status of {updated} user. {failed} could not be changed — {reason}",
+      "bulk_status_all_failed": "No user status was changed — {reason}",
       "withdraw_confirm_title": "Confirm Withdrawal",
       "withdraw_confirm_lead": "Saving the status as 'Withdrawn' will actually withdraw this user. This cannot be undone.",
       "withdraw_confirm_effects_title": "What happens as well",
@@ -238,6 +305,7 @@
         "role": "Role",
         "role_placeholder": "Select roles",
         "role_no_options": "No roles available",
+        "role_default_hint": "If no role is selected, the user is registered with the default role (User).",
         "status": "Status",
         "current_status": "Current Status",
         "email": "Email",
@@ -293,7 +361,9 @@
         "active": "Active",
         "inactive": "Inactive",
         "blocked": "Blocked",
-        "withdrawn": "Withdrawn"
+        "withdrawn": "Withdrawn",
+        "dormant": "Dormant",
+        "pending_verification": "Pending Verification"
       },
       "timezone_options": {
         "Asia/Seoul": "Asia/Seoul (UTC+9)",
@@ -309,7 +379,21 @@
       "validation_error": "Please check the input information.",
       "error_loading_user": "An error occurred while loading user information.",
       "no_edit_permission": "You do not have permission to edit this user.",
-      "go_to_detail": "Go to Details"
+      "go_to_detail": "Go to Details",
+      "password_policy": {
+        "admin_assigned_notice": "After saving, this member must change the password at the next login. Passwords set by an administrator are not checked for reuse.",
+        "create_notice": "The new member must change the password at the first login.",
+        "current_password": "Current password",
+        "current_password_hint": "Enter your current password to change your own account's password.",
+        "expiry": "Password expiry",
+        "expiry_inherit": "Follow role and site settings",
+        "expiry_apply": "Apply",
+        "expiry_exempt": "Exempt",
+        "expiry_hint": "The member's own setting takes precedence over role and site settings.",
+        "status_applies": "Current: applies · expires {{date}} (D-{{days}})",
+        "status_expired": "Current: applies · expired",
+        "status_not_applies": "Current: does not apply"
+      }
     },
     "detail": {
       "page_title": "User Details",
@@ -334,6 +418,7 @@
       "disabled": "Disabled",
       "withdrawn_at": "Withdrawn At",
       "blocked_at": "Blocked At",
+      "dormant_at": "Dormant Since",
       "consent_type": {
         "terms": "Terms of Service",
         "privacy": "Privacy Policy"
@@ -344,14 +429,83 @@
         "location_info": "Location",
         "profile_memo": "Profile/Memo",
         "activity_info": "Activity",
-        "consent_info": "Consent"
+        "consent_info": "Consent",
+        "notifications_info": "Inbox"
       },
       "unlock": "Unlock",
       "unlock_success": "The account lock has been released.",
       "lock_status": "Account lock status",
       "locked_permanently_value": "Locked (indefinitely — administrator unlock required)",
       "locked_until_value": "Locked (until {{until}})",
-      "not_locked_value": "Not locked"
+      "not_locked_value": "Not locked",
+      "notifications": {
+        "total": "Total notifications",
+        "unread": "Unread",
+        "view_inbox": "View inbox"
+      },
+      "password": {
+        "title": "Password",
+        "changed_at": "Last changed",
+        "expires_at": "Expires",
+        "not_applies": "Does not apply",
+        "expired": "Expired ({{date}})",
+        "expires_value": "{{date}} (D-{{days}})",
+        "change_required": "Must change at next login",
+        "yes": "Yes",
+        "no": "No",
+        "postponed_until": "Postponed until",
+        "policy": "Expiry setting"
+      }
+    },
+    "filter": {
+      "show_in_basic": "Show {{label}} in basic search",
+      "status": "Account status",
+      "role": "Role",
+      "created_at": "Joined",
+      "last_login": "Last login",
+      "admin_scope": "Administrator",
+      "lock_state": "Account lock",
+      "dormant_at": "Dormant since",
+      "status_changed": "Status changed",
+      "language": "Language",
+      "country": "Country",
+      "email_verified": "Email verification",
+      "identity_verified": "Identity verification",
+      "detail_search": "Advanced search",
+      "detail_title": "Advanced search conditions",
+      "role_placeholder": "Search roles — leave empty for all",
+      "role_no_options": "No matching roles",
+      "never_logged_in": "Never logged in",
+      "country_select": "Select country",
+      "country_search": "Search country",
+      "admin_scope_options": {
+        "admin": "Administrators only",
+        "member": "Members only"
+      },
+      "lock_state_options": {
+        "locked": "Locked",
+        "unlocked": "Not locked"
+      },
+      "status_changed_options": {
+        "withdrawn": "Withdrawn on",
+        "blocked": "Blocked on"
+      },
+      "verified_options": {
+        "verified": "Verified",
+        "unverified": "Not verified"
+      },
+      "date_quick": {
+        "today": "Today",
+        "week": "1 week",
+        "month": "1 month",
+        "3months": "3 months",
+        "6months": "6 months",
+        "1year": "1 year"
+      }
+    },
+    "action": {
+      "reset": "Reset",
+      "edit_search": "Edit filters"
     }
   },
   "language_packs": {
@@ -531,14 +685,15 @@
       "update_success": "Language pack updated.",
       "update_failed": "Failed to update language pack.",
       "refresh_cache_done": "Language pack cache refreshed.",
-      "refresh_cache_failed": "Failed to refresh cache."
+      "refresh_cache_failed": "Failed to refresh cache.",
+      "preview_failed": "Failed to preview the language pack."
     },
     "modals": {
       "install_bundled_title": "Install Language Pack",
       "install_bundled_confirm": "Install bundled language pack \"{{identifier}}\"?",
       "install_bundled_core_required": "The core language pack (locale={{locale}}) must be activated first.",
       "install_blocked_target_not_installed": "Target {{scope}} \"{{target}}\" is not installed.",
-      "install_blocked_target_inactive": "Target {{scope}} \"{{target}}\" is inactive. Activate it first.",
+      "install_notice_target_inactive": "Target {{scope}} \"{{target}}\" is turned off, so this language pack will be installed turned off. You can turn it on from the list after activating that extension.",
       "install_blocked_target_version_too_old": "Target {{scope}} \"{{target}}\" version does not satisfy the required constraint."
     },
     "slot_conflict_modal": {
@@ -572,7 +727,7 @@
     "dependencies_label": "Dependencies:",
     "no_dependencies": "Dependencies: None",
     "no_modules": "No modules installed.",
-    "pagination_info": "Showing {{from}}-{{to}} of {{total}} modules",
+    "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
     "update_available": "Update Available",
     "version_available": "(v{{version}} available)",
     "installing": "Installing...",
@@ -588,7 +743,8 @@
     "updating": "Updating...",
     "update_success": "Module has been successfully updated.",
     "update_failed": "Module update failed.",
-    "check_updates_success": "Update check complete ({{count}} update(s) available)",
+    "check_updates_success": "Update check complete ({{count}} updates available)",
+    "check_updates_success_one": "Update check complete ({{count}} update available)",
     "check_updates_no_updates": "All modules are up to date.",
     "status": {
       "active": "Active",
@@ -632,7 +788,8 @@
       "field_status": "Status",
       "field_license": "License",
       "admin_menus": "Admin Menus",
-      "admin_menus_count": "{{count}} menu(s) will be registered.",
+      "admin_menus_count": "{{count}} menus will be registered.",
+      "admin_menus_count_one": "{{count}} menu will be registered.",
       "no_admin_menus": "No admin menus to register.",
       "dependencies": "Dependencies",
       "required_core_version": "Required core version",
@@ -647,13 +804,16 @@
       "dependency_unmet_version": "Version mismatch",
       "dependency_inactive": "Inactive",
       "permissions": "Permissions",
-      "permissions_count": "{{count}} permission(s) will be registered.",
+      "permissions_count": "{{count}} permissions will be registered.",
+      "permissions_count_one": "{{count}} permission will be registered.",
       "no_permissions": "No permissions to register.",
       "roles": "Roles",
-      "roles_count": "{{count}} role(s) will be registered.",
+      "roles_count": "{{count}} roles will be registered.",
+      "roles_count_one": "{{count}} role will be registered.",
       "no_roles": "No roles to register.",
       "layouts": "Layouts",
-      "layouts_count": "{{count}} layout(s) will be registered.",
+      "layouts_count": "{{count}} layouts will be registered.",
+      "layouts_count_one": "{{count}} layout will be registered.",
       "no_layouts": "No layouts to register.",
       "supported_languages": "Supported Languages",
       "no_supported_languages": "No supported language information.",
@@ -663,7 +823,7 @@
       "cascade_language_packs_hint": "Bundled language pack candidates. Only checked items will be installed together with this extension.",
       "cascade_lp_depends_on": "Depends on: {{target}}",
       "install_title": "Install Module",
-      "install_confirm": "Do you want to install {{name}} module?",
+      "install_confirm": "Do you want to install \"{{name}}\"?",
       "install_description": "After installation, you can activate the module to use its features.",
       "vendor_mode_label": "Vendor install mode",
       "vendor_mode_hint": "Use 'Bundled' on shared hosting where Composer is unavailable.",
@@ -672,7 +832,7 @@
       "vendor_mode_bundled": "Bundled vendor",
       "uninstall_title": "Uninstall Module",
       "uninstall_done_title": "Module removed",
-      "uninstall_confirm": "Are you sure you want to uninstall {{name}} module?",
+      "uninstall_confirm": "Are you sure you want to uninstall \"{{name}}\"?",
       "uninstall_warning": "This action cannot be undone.",
       "delete_data_option": "Also delete module data",
       "delete_data_warning": "All data created by this module (posts, settings, etc.) will be deleted and cannot be recovered.",
@@ -688,12 +848,12 @@
       "preserved_desc": "A copy of the custom/ directory was archived at the path below before removal. Move it back into custom/ after reinstalling the extension to reuse it as is.",
       "shared_records_section": "Shared Table Data",
       "shared_records_count": "{{count}} records",
+      "shared_records_count_one": "{{count}} record",
       "shared": {
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies",
-        "identity_message_definitions": "Identity Message Definitions"
+        "identity_policies": "Identity Policies"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -701,7 +861,7 @@
       "manual_install_title": "Manual Module Installation",
       "manual_install_description": "Install a module from file upload or GitHub repository.",
       "refresh_layouts_title": "Refresh Layouts",
-      "refresh_layouts_confirm": "Do you want to refresh layouts for {{name}} module?",
+      "refresh_layouts_confirm": "Do you want to refresh the layouts of \"{{name}}\"?",
       "refresh_layouts_warning": "Existing layouts will be deleted and re-registered from files.",
       "refresh_layouts_description": "Database layouts will be replaced with layouts from module files. All previously modified layout content will be deleted.",
       "deactivate_warning_title": "Module Deactivation Warning",
@@ -719,7 +879,7 @@
       "force_activate_description": "Force activating may cause the module to malfunction.",
       "confirm_activate": "Activate Anyway",
       "update_title": "Update Module",
-      "update_confirm": "Do you want to update {{name}} module?",
+      "update_confirm": "Do you want to update \"{{name}}\"?",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "Download from GitHub",
       "update_source_pending": "Install from pending package",
@@ -732,12 +892,19 @@
       "layout_strategy_overwrite": "Overwrite All",
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modifications",
-      "layout_strategy_keep_desc": "Preserve user-modified layouts.",
-      "modified_layouts_warning": "{{count}} modified layout(s) exist. Choosing 'Overwrite All' will discard the modifications.",
+      "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
+      "modified_layouts_warning": "{{count}} modified layouts exist. Choosing 'Overwrite All' will discard the modifications.",
+      "modified_layouts_warning_one": "{{count}} modified layout exists. Choosing 'Overwrite All' will discard the modification.",
       "no_modified_layouts": "No modified layouts.",
       "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
-      "modified_layouts_list_title": "Modified layouts to keep ({{count}})",
-      "modified_layouts_keep_notice": "These layouts will retain their current content after the update."
+      "modified_layouts_list_title": "Modified layouts ({{count}})",
+      "modified_layouts_keep_notice": "Your changes in these layouts are kept, and the parts you did not change receive the new version. See the update notification and the activity log for the result.",
+      "reactivate_language_packs_title": "Reactivate Language Packs",
+      "reactivate_language_packs_message": "These language packs were deactivated along with this module. Reactivate them?",
+      "reactivate_language_packs_success": "Language packs have been reactivated.",
+      "reactivate_language_packs_failed": "Failed to reactivate language packs.",
+      "cascade_no_permission": "No permission",
+      "cascade_no_permission_hint": "Items you lack permission for cannot be installed together. Ask an administrator who has the permission if needed."
     },
     "tabs": {
       "file_upload": "File Upload",
@@ -790,7 +957,8 @@
     "updating": "Updating...",
     "update_success": "Plugin has been successfully updated.",
     "update_failed": "Plugin update failed.",
-    "check_updates_success": "Update check complete ({{count}} update(s) available)",
+    "check_updates_success": "Update check complete ({{count}} updates available)",
+    "check_updates_success_one": "Update check complete ({{count}} update available)",
     "check_updates_no_updates": "All plugins are up to date.",
     "status": {
       "active": "Active",
@@ -860,11 +1028,11 @@
       "roles_description": "List of roles registered by this plugin.",
       "no_roles": "No roles registered.",
       "hooks": "Hooks",
-      "hooks_description": "List of hooks referenced by this plugin.",
-      "no_hooks": "No hooks referenced.",
+      "hooks_description": "Action hooks this plugin provides to other extensions. Hooks this plugin subscribes to are not listed.",
+      "no_hooks": "No hooks provided.",
       "filters": "Filters",
-      "filters_description": "List of filters used by this plugin.",
-      "no_filters": "No filters used.",
+      "filters_description": "Filter hooks this plugin provides to other extensions. Filters this plugin subscribes to are not listed.",
+      "no_filters": "No filters provided.",
       "supported_languages": "Supported Languages",
       "no_supported_languages": "No supported language information.",
       "cascade_dependencies_title": "Dependencies to install together",
@@ -873,7 +1041,7 @@
       "cascade_language_packs_hint": "Bundled language pack candidates. Only checked items will be installed together with this extension.",
       "cascade_lp_depends_on": "Depends on: {{target}}",
       "install_title": "Install Plugin",
-      "install_confirm": "Do you want to install {{name}} plugin?",
+      "install_confirm": "Do you want to install \"{{name}}\"?",
       "install_description": "After installation, you can activate the plugin to use its features.",
       "vendor_mode_label": "Vendor install mode",
       "vendor_mode_hint": "Use 'Bundled' on shared hosting where Composer is unavailable.",
@@ -882,7 +1050,7 @@
       "vendor_mode_bundled": "Bundled vendor",
       "uninstall_title": "Confirm Plugin Removal",
       "uninstall_done_title": "Plugin removed",
-      "uninstall_confirm": "Are you sure you want to remove {{name}} plugin?",
+      "uninstall_confirm": "Are you sure you want to remove \"{{name}}\"?",
       "uninstall_warning": "This action cannot be undone.",
       "delete_data_option": "Also delete plugin data",
       "delete_data_warning": "All data created by the plugin (settings, logs, etc.) will be deleted and cannot be recovered.",
@@ -898,12 +1066,12 @@
       "preserved_desc": "A copy of the custom/ directory was archived at the path below before removal. Move it back into custom/ after reinstalling the extension to reuse it as is.",
       "shared_records_section": "Shared Table Data",
       "shared_records_count": "{{count}} records",
+      "shared_records_count_one": "{{count}} record",
       "shared": {
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies",
-        "identity_message_definitions": "Identity Message Definitions"
+        "identity_policies": "Identity Policies"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -911,7 +1079,7 @@
       "manual_install_title": "Manual Plugin Installation",
       "manual_install_description": "Install plugins from file upload or GitHub repository.",
       "refresh_layouts_title": "Confirm Layout Refresh",
-      "refresh_layouts_confirm": "Do you want to refresh the layouts for {{name}} plugin?",
+      "refresh_layouts_confirm": "Do you want to refresh the layouts of \"{{name}}\"?",
       "refresh_layouts_description": "Re-reads the plugin's layout files and syncs them to the database.",
       "refresh_layouts_warning": "Changed layouts will be updated, and deleted layouts will be removed from the database.",
       "deactivate_warning_title": "Plugin Deactivation Warning",
@@ -928,7 +1096,7 @@
       "force_activate_description": "Force activating may cause the plugin to malfunction.",
       "confirm_activate": "Activate Anyway",
       "update_title": "Update Plugin",
-      "update_confirm": "Do you want to update {{name}} plugin?",
+      "update_confirm": "Do you want to update \"{{name}}\"?",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "GitHub (Latest Release)",
       "update_source_pending": "Pending Update Package",
@@ -941,12 +1109,19 @@
       "layout_strategy_overwrite": "Overwrite All",
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modifications",
-      "layout_strategy_keep_desc": "Preserve user-modified layouts.",
-      "modified_layouts_warning": "{{count}} modified layout(s) exist. Choosing 'Overwrite All' will discard the modifications.",
+      "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
+      "modified_layouts_warning": "{{count}} modified layouts exist. Choosing 'Overwrite All' will discard the modifications.",
+      "modified_layouts_warning_one": "{{count}} modified layout exists. Choosing 'Overwrite All' will discard the modification.",
       "no_modified_layouts": "No modified layouts.",
       "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
-      "modified_layouts_list_title": "Modified layouts to keep ({{count}})",
-      "modified_layouts_keep_notice": "These layouts will retain their current content after the update."
+      "modified_layouts_list_title": "Modified layouts ({{count}})",
+      "modified_layouts_keep_notice": "Your changes in these layouts are kept, and the parts you did not change receive the new version. See the update notification and the activity log for the result.",
+      "reactivate_language_packs_title": "Reactivate Language Packs",
+      "reactivate_language_packs_message": "These language packs were deactivated along with this plugin. Reactivate them?",
+      "reactivate_language_packs_success": "Language packs have been reactivated.",
+      "reactivate_language_packs_failed": "Failed to reactivate language packs.",
+      "cascade_no_permission": "No permission",
+      "cascade_no_permission_hint": "Items you lack permission for cannot be installed together. Ask an administrator who has the permission if needed."
     },
     "tabs": {
       "file_upload": "File Upload",
@@ -975,6 +1150,9 @@
     "description": "Manage admin sidebar menu structure and change order.",
     "add_menu": "Add Menu",
     "select_menu_hint": "Select a menu from the left",
+    "list_roles_label": "Assigned roles",
+    "list_roles_more": "+{{count}} more",
+    "list_roles_none": "No roles",
     "menu_list_title": "Admin Menu List",
     "menu_info_title": "Menu Information",
     "new_menu_title": "Add New Menu",
@@ -1003,7 +1181,7 @@
       "access_permission": "Access Permission",
       "permission": "Access Permission",
       "admin_only": "Admin",
-      "all_roles": "All Roles",
+      "no_roles": "No roles assigned — only administrators can restore",
       "creator": "Creator",
       "creator_info": "Creator Information",
       "created_by": "Created By",
@@ -1035,7 +1213,7 @@
       "roles": "Access Roles",
       "roles_placeholder": "Select roles...",
       "roles_no_options": "No roles available",
-      "roles_hint": "Select roles that can access this menu. If none selected, all roles can access."
+      "roles_hint": "Choose the roles that can access this menu. The administrator role is always included."
     },
     "modals": {
       "delete_title": "Delete Menu",
@@ -1050,6 +1228,32 @@
       "updated": "Menu has been updated.",
       "deleted": "Menu has been deleted.",
       "status_changed": "Menu status has been changed."
+    },
+    "bulk": {
+      "enter": "Select multiple",
+      "exit": "Exit selection",
+      "panel_title": "Apply roles to selected menus",
+      "selected_count": "{{count}} menus selected",
+      "selected_count_one": "{{count}} menu selected",
+      "more_count": "+{{count}} more",
+      "empty_selection": "Check the menus to apply roles to in the list on the left.",
+      "roles_label": "Roles",
+      "roles_placeholder": "Select roles...",
+      "action_label": "Action",
+      "action_add": "Add roles",
+      "action_remove": "Remove roles",
+      "rule_hint": "Choosing a submenu also adds the role to its parent. Removing from a parent also removes it from its submenus. The administrator role cannot be removed.",
+      "apply": "Apply",
+      "clear": "Clear selection",
+      "confirm_title": "Apply Menu Roles",
+      "confirm_add": "Add roles {{roles}} to {{count}} menus.",
+      "confirm_add_one": "Add roles {{roles}} to {{count}} menu.",
+      "confirm_remove": "Remove roles {{roles}} from {{count}} menus.",
+      "confirm_remove_one": "Remove roles {{roles}} from {{count}} menu.",
+      "confirm_auto_parent": "They will also be added to {{count}} parent menus whose submenus you chose.",
+      "confirm_auto_parent_one": "They will also be added to {{count}} parent menu whose submenus you chose.",
+      "confirm_auto_child": "They will also be removed from {{count}} submenus of the parent menus you chose.",
+      "confirm_auto_child_one": "They will also be removed from {{count}} submenu of the parent menus you chose."
     }
   },
   "roles": {
@@ -1060,6 +1264,7 @@
     "refresh": "Refresh",
     "add_role": "Add Role",
     "search_placeholder": "Search roles...",
+    "protected_roles_hint": "Roles created by the core or an extension (shown with a badge) cannot be deleted, and only a super administrator can edit them or change whether they are in use.",
     "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
     "columns": {
       "name": "Role Name",
@@ -1100,11 +1305,24 @@
       "description": "Description",
       "description_placeholder": "Enter a description for this role",
       "is_active": "Role Activation",
-      "is_active_hint": "Inactive roles cannot be assigned to new users",
+      "is_active_hint": "Turning this off immediately revokes the permissions granted by this role, and it cannot be assigned to new users.",
       "permissions_section": "Permission Settings",
       "permissions_selected_suffix": " selected",
       "permissions_hint": "Select permissions to grant to this role. Click a group to expand or collapse.",
-      "no_permissions_in_type": "No permissions registered."
+      "no_permissions_in_type": "No permissions registered.",
+      "menus_section": "Accessible Menus",
+      "menus_hint": "Checked menus appear in the admin menu for this role. Choosing a submenu also selects its parent; unchecking a parent also clears its submenus.",
+      "menus_readonly_hint": "You can only view this because you do not have permission to update menus.",
+      "menus_admin_locked_hint": "The administrator role always has access to every menu.",
+      "menus_select_all": "Select all",
+      "menus_clear_all": "Clear all",
+      "menus_inactive_badge": "Inactive",
+      "password_expiry": "Password expiry",
+      "password_expiry_inherit": "Follow site settings",
+      "password_expiry_apply": "Apply",
+      "password_expiry_exempt": "Exempt",
+      "password_expiry_hint": "Whether expiry applies to members with this role. A member's own setting takes precedence, and when a member's roles disagree between \"Apply\" and \"Exempt\", \"Apply\" wins.",
+      "is_active_locked_hint": "The administrator role cannot be turned off. Turning it off would revoke the admin permissions of every operator."
     },
     "modals": {
       "delete_title": "Delete Role",
@@ -1320,7 +1538,8 @@
       "notification_definitions": "Notifications",
       "language_packs": "Language Packs",
       "identity": "Identity",
-      "info": "Info"
+      "info": "Info",
+      "privacy": "Privacy"
     },
     "general": {
       "site_info": "Site Information",
@@ -1362,6 +1581,7 @@
       "static_cache_never": "Never",
       "static_cache_process_user": "Process user",
       "static_cache_failure": "{{count}} consecutive failures recently —",
+      "static_cache_failure_one": "{{count}} consecutive failure recently —",
       "static_cache_failure_parent_not_writable": "The target folder is not writable. Check the folder owner and permissions on the server.",
       "static_cache_failure_write_failed": "Writing files failed. Check available disk space.",
       "static_cache_failure_lock_unavailable": "Could not acquire the cache lock. Check the cache store.",
@@ -1545,90 +1765,158 @@
       "require_password_special_char_hint": "When enabled, newly set passwords must contain at least one special character.",
       "two_factor_auth": "Two-factor authentication",
       "two_factor_auth_label": "Require a verification code at sign-in",
-      "two_factor_auth_hint": "When enabled, a verification code is emailed after the password check and must be entered to finish signing in.",
-      "ip_throttle_floor_hint": "The per-IP request limit is six times this value, with a guaranteed floor of 30 requests per minute."
+      "two_factor_auth_hint": "When enabled, one more verification step follows the password check. Codes are emailed by default; installing the authenticator app plugin also allows app codes.",
+      "two_factor_scope": "Applies to",
+      "two_factor_scope_all": "All members",
+      "two_factor_scope_admin": "Administrators only",
+      "two_factor_scope_hint": "With administrators only, ordinary members keep signing in with just their password.",
+      "ip_throttle_floor_hint": "The per-IP request limit is six times this value, with a guaranteed floor of 30 requests per minute.",
+      "ip_restriction": {
+        "title": "Access restriction",
+        "desc": "Only allow the admin area from the IP addresses you permit.",
+        "proxy_warning": "Forwarding headers such as X-Forwarded-For are arriving while no trusted proxy is configured. Every visitor then appears as the single proxy address and the IP restriction misbehaves — configure trusted proxies first.",
+        "enabled": "Enable IP access restriction",
+        "enabled_desc": "When off, the lists and rules below are saved but not applied.",
+        "admin_allowed_ips": "Admin area allowed IPs",
+        "current_ip": "Your current IP {{ip}}",
+        "add_current_ip": "Add current IP",
+        "ip_placeholder": "Type an IP or CIDR and press Enter (e.g. 203.0.113.24, 10.0.0.0/8)",
+        "admin_allowed_ips_hint": "Applies to the admin screens, admin APIs (including extension admin screens) and admin login. Leave empty to not apply this item. A list that leaves out your current IP cannot be saved.",
+        "rules": "Route rules",
+        "add_rule": "Add rule",
+        "rules_empty": "No rules yet.",
+        "rules_hint": "Only the first matching rule from the top applies. A * in a pattern matches anything, including /.",
+        "rules_callback_warning": "Rules on paths outside the admin area can also cut off requests from external servers, such as payment approvals and deposit notifications. Known payment, webhook and identity verification callbacks are excluded automatically, but requests an extension receives on other paths may be blocked.",
+        "emergency_hint": "If you get locked out, disable it on the server: php artisan security:ip-restriction --disable",
+        "col_pattern": "URI pattern",
+        "col_ips": "Allowed IPs",
+        "col_memo": "Memo",
+        "col_enabled": "On",
+        "modal": {
+          "create_title": "Add rule",
+          "edit_title": "Edit rule",
+          "pattern": "URI pattern",
+          "pattern_hint": "A leading / makes no difference. A * matches anything, including /.",
+          "pattern_placeholder": "e.g. /api/admin/users*",
+          "ips": "Allowed IPs",
+          "memo": "Memo",
+          "memo_placeholder": "e.g. Member management from HQ network only",
+          "enabled": "Use this rule",
+          "pattern_required": "Please enter a URI pattern.",
+          "ips_required": "Please enter at least one allowed IP.",
+          "apply": "Apply",
+          "apply_hint": "Applied rules are stored only after you press Save at the bottom of the screen."
+        }
+      },
+      "password_policy": {
+        "title": "Password policy",
+        "desc": "Rules that new passwords must follow, and limits on reusing old ones.",
+        "char_types": "Character mix",
+        "char_types_label": "Require at least 2 of letters, numbers and special characters",
+        "char_types_hint": "e.g. abcd1234 (letters + numbers) passes, abcdefgh (letters only) is rejected.",
+        "block_identifier": "Block user ID",
+        "block_identifier_label": "Reject passwords that contain the email's local part (user ID)",
+        "block_identifier_hint": "Checked only when the part before @ is 3 characters or longer, case-insensitive.",
+        "block_repeated": "Block repeated characters",
+        "block_repeated_label": "Reject passwords with the same character repeated in a row",
+        "block_repeated_hint": "e.g. with 4, passwords containing aaaa or 1111 are rejected. (3-6)",
+        "repeated_length_aria": "Repeated characters limit",
+        "block_sequential": "Block sequences",
+        "block_sequential_label": "Reject passwords containing sequences like 1234, abcd or qwer",
+        "block_sequential_hint": "Reversed sequences of digits, letters or keyboard rows (4321, dcba) are blocked too. (3-6)",
+        "sequential_length_aria": "Sequence length limit",
+        "length_suffix": "characters or more",
+        "reuse": "Prevent reuse",
+        "reuse_desc": "Members cannot set a password they used recently.",
+        "reuse_count": "Recent passwords that cannot be reused",
+        "reuse_count_hint": "Includes the current password (1-10). Passwords set by an administrator on the member create/edit screen are not checked, and that member must change the password at the next login."
+      },
+      "password_expiry": {
+        "title": "Password expiry",
+        "desc": "Require members to change passwords older than the set period, with a notice before they expire.",
+        "enabled": "Use password expiry",
+        "enabled_desc": "The period is counted from the day you turn this on. Turning it off and on again restarts the count from that day.",
+        "started_at": "Start date",
+        "started_at_pending": "Counting starts when you save.",
+        "started_at_hint": "Passwords set before this feature was turned on are treated as last changed on this date.",
+        "days": "Expiry period (days)",
+        "days_hint": "30-730 days. A password expires this long after it was last changed.",
+        "notice_days": "Advance notice (days before expiry)",
+        "notice_days_hint": "1-30 days, shorter than the expiry period. One email and site notification is sent on that day.",
+        "scope": "Applies to",
+        "scope_all": "All members",
+        "scope_admin": "Administrators only",
+        "scope_selected": "Selected roles and members only",
+        "scope_hint": "The \"Password expiry\" setting on the role edit and member create/edit screens takes precedence over this.",
+        "scope_selected_hint": "Applies only to roles and members set to \"Apply\" on the role edit and member create/edit screens.",
+        "action": "When a password expires",
+        "action_force": "Must change to log in",
+        "action_remind": "Allow changing later",
+        "action_force_hint": "On the expiry date all of that member's logins are ended, and a new password must be set at the next login.",
+        "action_remind_hint": "Members are asked to change at login; choosing \"Change later\" asks again after the set period. Login is not blocked.",
+        "remind_days": "Ask again after (days)",
+        "remind_days_hint": "1-90 days. Members who chose \"Change later\" are asked again after this period.",
+        "batch_size": "Limit per run (members)",
+        "batch_size_hint": "Applies to advance notices and expiry processing separately. Members closest to expiry go first; the rest are handled in the next run. Enter 0 for no limit.",
+        "schedule_notice": "The scheduler sends notice emails and site notifications every day at 05:15. Mail settings and the \"Password expiry notice\" / \"Password expired\" notifications must be on. Tell members about the password change cycle in your privacy policy in advance.",
+        "rows": {
+          "notice": "Expiry notice",
+          "expire": "Expiry processing"
+        },
+        "target_count": "{{count}} members",
+        "target_count_one": "{{count}} member",
+        "targets_title": {
+          "notice": "Password expiry notice targets",
+          "expire": "Password expiry processing targets"
+        },
+        "run_disabled_hint": "Turn on password expiry and save to use \"Run now\".",
+        "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} members processed",
+        "last_completed_one": "Last manual run: {{at}} · {{by}} · {{count}} member processed",
+        "run": {
+          "editor_label": "Password expiry manual run confirmation",
+          "modal_title": {
+            "notice": "Password expiry notice — run now",
+            "expire": "Password expiry processing — run now"
+          },
+          "confirm_desc": {
+            "notice": "Sends the notices once now without waiting for the scheduler.",
+            "expire": "Sends the expiry notification and, when \"Must change to log in\" is set, ends all of those members' logins."
+          },
+          "count_label": "To be processed",
+          "count_value": "Members in this run: {{count}} of {{total}}",
+          "batch_label": "Limit per run",
+          "batch_value": "{{count}} members",
+          "batch_value_one": "{{count}} member",
+          "remaining_label": "Remaining",
+          "remaining_value": "{{count}} members in the next run",
+          "remaining_value_one": "{{count}} member in the next run",
+          "expire_mode": "Expiry notification + end logins (when \"Must change to log in\")",
+          "disabled_notice": "Password expiry is off, so this cannot run. Turn it on and save first.",
+          "expire_warning": "Members whose logins were ended must set a new password at their next login.",
+          "queue_hint": "The run is queued and its result appears on this card when it finishes. You cannot run the same target again until its queued job finishes."
+        }
+      },
+      "activity_log_retention": {
+        "title": "Activity log (access record) retention",
+        "desc": "How long to keep the activity log — the record of admin and member access and actions. Records older than this are deleted automatically every day at 04:45.",
+        "days": "Retention period",
+        "days_suffix": "days",
+        "days_hint": "{{min}}–{{max}} days. It cannot be shorter than the legal minimum.",
+        "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value."
+      }
     },
     "identity": {
       "sub_tabs": {
         "basic": "Basic",
         "providers": "Providers",
         "policies": "Policies",
-        "messages": "Message Templates"
+        "messages": "Messages"
       },
       "messages": {
-        "title": "Identity Verification Message Templates",
-        "intro": "Edit the subject and body used for identity verification emails. Both Korean and English can be entered, and you can restore the default at any time. Admin-created policies can be paired with their own messages.",
-        "empty": "No message definitions registered.",
-        "edit": "Edit",
-        "btn_add_definition": "Add Definition",
-        "btn_reset": "Reset to Default",
-        "btn_delete": "Delete",
-        "status_active": "Active",
-        "status_inactive": "Inactive",
-        "default_badge": "Default",
-        "body_preview": "Body Preview",
-        "total_count": "Total {count}",
-        "per_page_label": "Per page",
-        "channels": {
-          "mail": "Mail"
-        },
-        "toggle_success": "Message definition active state has been changed.",
-        "toggle_failed": "Failed to update active state.",
-        "badges": {
-          "default": "Default",
-          "customized": "Customized"
-        },
-        "add_modal": {
-          "title": "Add Message Definition",
-          "errors_title": "Input errors",
-          "provider": "Provider",
-          "scope_type": "Scope type",
-          "policy_key": "Policy key",
-          "policy_key_placeholder": "Select an admin policy",
-          "policy_empty": "No admin policies registered. Please add a policy in the Policies tab first.",
-          "name": "Name",
-          "subject": "Subject",
-          "body": "Body",
-          "variables_title": "Available variables",
-          "save_success": "Message definition added successfully.",
-          "save_failed": "Failed to add message definition."
-        },
-        "delete_modal": {
-          "title": "Delete Message Definition",
-          "target_label": "Target",
-          "confirm_message": "Are you sure you want to delete this message definition?",
-          "warning_message": "All linked channel templates will be removed. This action cannot be undone.",
-          "btn_confirm": "Delete",
-          "btn_confirming": "Deleting...",
-          "delete_success": "Message definition deleted successfully.",
-          "delete_failed": "Failed to delete message definition."
-        },
-        "reset_modal": {
-          "title": "Reset to Default",
-          "target_label": "Target",
-          "confirm_message": "Reset all channel templates of this definition to seed defaults?",
-          "warning_message": "All admin edits will be lost. This action cannot be undone.",
-          "btn_confirm": "Reset",
-          "btn_confirming": "Resetting...",
-          "reset_success": "Message definition restored to defaults.",
-          "reset_failed": "Failed to reset to defaults."
-        },
-        "modal": {
-          "title": "Edit Message Template",
-          "errors_title": "Input errors",
-          "variables_title": "Available Variables",
-          "subject": "Subject",
-          "body": "Body",
-          "reset": "Restore Default",
-          "reset_confirm": "All operator edits will be replaced with the seeded default. Continue?",
-          "reset_success": "Restored to seeded default.",
-          "reset_failed": "Failed to restore default.",
-          "save_success": "Message template saved.",
-          "save_failed": "Failed to save.",
-          "preview": "Preview",
-          "preview_failed": "Failed to load preview.",
-          "subject_label": "Subject",
-          "body_label": "Body"
+        "title": "Identity Verification Messages",
+        "moved_notice": {
+          "body": "Identity verification mail messages are now edited under Settings > Notifications, category \"Identity Verification\". The mail channel switch and delivery logs are managed there too.",
+          "link": "Edit in Notification Settings"
         }
       },
       "basic": {
@@ -1889,6 +2177,7 @@
       "search_type_subject": "Subject",
       "search_type_body": "Body",
       "total_count": "Total {{count}} items",
+      "total_count_one": "Total {{count}} item",
       "per_page_label": "Per page",
       "empty_message": "No notification settings found.",
       "empty_no_results": "No results found.",
@@ -1912,7 +2201,17 @@
         "reset_password": "Password Reset",
         "password_changed": "Password Changed",
         "sitemap_regenerated": "Sitemap Regeneration Complete",
-        "sitemap_regenerate_failed": "Sitemap Regeneration Failed"
+        "sitemap_regenerate_failed": "Sitemap Regeneration Failed",
+        "analytics_archive_failed": "Analytics Archiving Failed",
+        "analytics_ledger_limit_exceeded": "Analytics Ledger Threshold Exceeded",
+        "analytics_visit_limit_exceeded": "Visit Action Limit Exceeded",
+        "analytics_weekly_report": "Weekly Analytics Report",
+        "analytics_monthly_report": "Monthly Analytics Report",
+        "dormant_pre_notice": "Dormancy Advance Notice",
+        "dormant_converted": "Dormancy Applied",
+        "dormant_withdraw_notice": "Dormant Account Withdrawal Notice",
+        "password_expiry_notice": "Password Expiry Advance Notice",
+        "password_expired": "Password Expired"
       },
       "channels_label": "Channels:",
       "edit_modal": {
@@ -1929,6 +2228,52 @@
         "validation_error": "Please check the input fields."
       },
       "recipients_label": "Recipients:",
+      "category": {
+        "label": "Category",
+        "all": "All",
+        "general": "General",
+        "identity": "Identity Verification"
+      },
+      "identity_scope": {
+        "default": "Common Default",
+        "purpose": "Purpose",
+        "policy": "Policy"
+      },
+      "identity_recipient_fixed": "Recipient: sent only to the person who requested verification (recipient rules are not used).",
+      "identity_empty": "No identity verification messages found.",
+      "btn_add_identity": "Add Policy Message",
+      "btn_delete": "Delete",
+      "identity_add": {
+        "title": "Add Policy Message",
+        "help": "Attach a dedicated mail message to an identity policy registered by an administrator. Policies without one use the purpose message, then the common default message.",
+        "errors_title": "Input Errors",
+        "policy_key": "Policy",
+        "policy_key_placeholder": "Select an administrator policy",
+        "policy_empty": "There are no administrator policies. Register one first under Identity Verification > Policies.",
+        "policy_all_defined": "Every administrator policy already has a dedicated message. Edit the existing message from the list.",
+        "variables_title": "Available Variables",
+        "name": "Name",
+        "subject": "Subject",
+        "body": "Body",
+        "save_success": "The policy message has been added.",
+        "save_failed": "Failed to add the policy message."
+      },
+      "identity_delete": {
+        "title": "Delete Policy Message",
+        "target_label": "Target",
+        "confirm_message": "Delete this policy message?",
+        "warning_message": "After deletion, verification mail for this policy is sent with the purpose message or the common default message. This cannot be undone.",
+        "btn_confirm": "Delete",
+        "btn_confirming": "Deleting...",
+        "delete_success": "The policy message has been deleted.",
+        "delete_failed": "Failed to delete the policy message."
+      },
+      "channel_off_confirm": {
+        "title": "Turn off the mail channel?",
+        "message": "Turning off the mail channel also stops identity verification mail (sign-up, password reset and profile change codes) and administrator two-factor mail. Administrators without an authenticator app will no longer be able to sign in.",
+        "btn_cancel": "Cancel",
+        "btn_confirm": "Turn Off Mail"
+      },
       "recipients": {
         "title": "Recipient Settings",
         "add_rule": "+ Add Recipient Rule",
@@ -1954,7 +2299,16 @@
         "no_recipients": "No recipients configured",
         "role_search_placeholder": "Search roles",
         "users_placeholder": "Search users",
-        "users_no_options": "No results found"
+        "users_no_options": "No results found",
+        "role_no_options": "No matching role",
+        "relation_placeholder": "Select a relation",
+        "relation_undeclared": "This notification does not support the '{{relation}}' relation. Choose one from the list — it cannot be saved as is.",
+        "roles_selected_count": "{count} roles selected",
+        "roles_selected_count_one": "{count} role selected",
+        "users_selected_count": "{count} users selected",
+        "users_selected_count_one": "{count} user selected",
+        "remove_selected": "Remove {{name}}",
+        "remove_rule": "Remove recipient rule {{index}}"
       },
       "preview_modal": {
         "title": "Notification Preview",
@@ -2048,9 +2402,112 @@
     "save_success": "Settings saved successfully.",
     "save_error": "Failed to save settings.",
     "unsaved_changes": "You have unsaved changes.",
+    "unsaved_tab_modal": {
+      "title": "Unsaved changes",
+      "message": "You have unsaved changes on this tab. If you switch tabs, your changes will be discarded and the saved values will be restored.",
+      "btn_stay": "Stay on this tab",
+      "btn_leave": "Leave without saving"
+    },
     "validation_error": "Please check your input",
     "app_key_regenerated": "Application key has been regenerated.",
-    "cache_cleared": "All cache has been cleared."
+    "cache_cleared": "All cache has been cleared.",
+    "privacy": {
+      "consent_provider": {
+        "title": "Consent provider",
+        "desc": "Choose the extension that decides visitors' cookie and tracking consent. Other extensions and visitor analytics follow the provider chosen here.",
+        "label": "Provider",
+        "auto": "Automatic",
+        "auto_current": "Automatic (current: {{provider}})",
+        "ambiguous": "More than one consent provider is installed. Until you choose one, every visitor's consent is treated as \"unknown\", so external scripts and analytics stop.",
+        "missing": "The selected provider has been deactivated. Choose another provider.",
+        "none_no_provider": "No consent management extension is installed. Visitor analytics are collected anonymously.",
+        "none_unavailable": "The selected provider is not collecting consent (for example, the GDPR banner is turned off). The site runs without consent management and visitor analytics are collected anonymously."
+      },
+      "policy_notice_title": "Update your privacy policy before turning these on",
+      "policy_notice_desc": "The settings below irreversibly erase members’ personal data or change account status. The law requires advance notice, so document the retention and dormancy policy and announce it before enabling.",
+      "target_count": "{{count}} members affected",
+      "target_count_one": "{{count}} member affected",
+      "withdrawn": {
+        "title": "Erasing residual data of withdrawn members",
+        "desc": "On withdrawal the original name and email are kept with a suffix so disputes can still be handled. Once the retention period passes, that residual data is actually erased.",
+        "enabled": "Erase automatically after the retention period",
+        "enabled_desc": "Off by default. When on, the nightly batch processes matching members.",
+        "days": "Retention period after withdrawal (days)",
+        "days_hint": "Members whose withdrawal is older than this are affected. Default 365 days.",
+        "irreversible_warning": "Contact details, address, bio and identity-verification identifiers are erased and cannot be recovered. The name becomes a fixed placeholder and the email an unidentifiable form."
+      },
+      "dormant": {
+        "title": "Dormant accounts",
+        "desc": "Long-inactive members become dormant after an advance notice. When a dormant member signs in, that sign-in counts as identity confirmation and the account is restored immediately.",
+        "enabled": "Move long-inactive members to dormant",
+        "enabled_desc": "Off by default. When on, an advance notice is sent first, then the transition follows.",
+        "days": "Inactivity before dormancy (days)",
+        "days_hint": "Counted from the last activity — sign-in or app/token use. Default 730 days.",
+        "notice_days": "Advance notice period (days)",
+        "notice_days_hint": "How many days before the transition the notice goes out. It must be shorter than the dormancy period, and the transition only happens after this period has passed since the notice.",
+        "withdraw_enabled": "Withdraw accounts that stay dormant",
+        "withdraw_enabled_desc": "Off by default. When on, long-dormant accounts are withdrawn.",
+        "withdraw_days": "Days from dormancy to withdrawal",
+        "withdraw_days_hint": "After this period a withdrawal notice is sent, and the account is withdrawn once the notice period has passed. Default 365 days.",
+        "withdraw_warning": "A withdrawn account cannot be restored. Administrator accounts are excluded from automatic withdrawal.",
+        "restore_hint": "Dormancy is lifted automatically when the member signs in — no application is required."
+      },
+      "targets": {
+        "view": "View targets",
+        "title": {
+          "withdrawn": "Withdrawn members to be purged",
+          "pre_notice": "Members to receive the dormancy notice",
+          "convert": "Members to be converted to dormant",
+          "withdraw_notice": "Dormant members to receive the withdrawal notice",
+          "withdraw": "Dormant members to be withdrawn"
+        },
+        "rows": {
+          "withdrawn": "Withdrawn members' residual data",
+          "pre_notice": "Advance notice before dormancy",
+          "convert": "Convert to dormant",
+          "withdraw_notice": "Notice before withdrawing dormant accounts",
+          "withdraw": "Withdraw dormant accounts"
+        },
+        "hint": "Counts and lists follow the saved settings. Even while a feature is off, they show what would be processed once it is turned on.",
+        "total": "{{count}} in total",
+        "empty": "There are no targets.",
+        "loading": "Loading...",
+        "close": "Close",
+        "editor_label": "Privacy action targets"
+      },
+      "manual_run": {
+        "section_desc": "Run once now without waiting for the scheduler. It processes with the saved settings even when automatic runs are off.",
+        "run": "Run now",
+        "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+        "status_active": "{{status}} — queued {{at}} · {{by}}",
+        "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
+        "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
+        "unknown_requester": "Unknown",
+        "modal_title": "{{target}} — manual run",
+        "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on the card when it finishes.",
+        "count_label": "To be processed",
+        "count_value": "{{count}}",
+        "loading": "Counting...",
+        "mode_label": "Method",
+        "modes": {
+          "anonymize": "Anonymize",
+          "delete": "Delete",
+          "erase_ip": "Erase author IP"
+        },
+        "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved retention period.",
+        "skip_waiting": "Skip waiting period",
+        "skip_waiting_desc": "Also processes members who were not notified, or whose notice period has not passed, as long as the period has elapsed. This skips the advance notice the law requires, so use it only under your own responsibility.",
+        "irreversible": "This cannot be undone. Check the count and the target list before running.",
+        "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+        "cancel": "Cancel",
+        "execute": "Run",
+        "executing": "Queuing...",
+        "queued_toast": "The run has been queued. The result will appear on the card when it finishes.",
+        "queue_failed": "Could not queue the run.",
+        "preview_failed": "Could not load the target count.",
+        "editor_label": "Run privacy action now"
+      }
+    }
   },
   "templates": {
     "page_title": "Template Management",
@@ -2068,7 +2525,7 @@
     "no_dependencies": "Dependencies: None",
     "available": "available",
     "no_templates": "No templates installed.",
-    "pagination_info": "Showing {{from}}-{{to}} of {{total}} templates",
+    "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
     "update_available": "Update Available",
     "version_available": "(v{{version}} available)",
     "installing": "Installing...",
@@ -2082,7 +2539,8 @@
     "update_success": "Template has been updated.",
     "update_failed": "Template update failed.",
     "updating": "Updating...",
-    "check_updates_success": "Update check completed ({{count}} update(s) available)",
+    "check_updates_success": "Update check completed ({{count}} updates available)",
+    "check_updates_success_one": "Update check completed ({{count}} update available)",
     "check_updates_no_updates": "All templates are up to date.",
     "refresh_layouts_success": "Template layouts have been refreshed.",
     "refreshing_layouts": "Refreshing layouts...",
@@ -2172,11 +2630,11 @@
       "cascade_language_packs_hint": "Bundled language pack candidates. Only checked items will be installed together with this extension.",
       "cascade_lp_depends_on": "Depends on: {{target}}",
       "install_title": "Install Template",
-      "install_confirm": "Do you want to install {{name}} template?",
+      "install_confirm": "Do you want to install \"{{name}}\"?",
       "install_description": "After installation, you can activate the template to change the admin interface design.",
       "uninstall_title": "Uninstall Template",
       "uninstall_done_title": "Template removed",
-      "uninstall_confirm": "Are you sure you want to uninstall {{name}} template?",
+      "uninstall_confirm": "Are you sure you want to uninstall \"{{name}}\"?",
       "uninstall_warning": "This action cannot be undone.",
       "delete_data_option": "Also delete template data",
       "delete_data_warning": "All data created by this template (custom styles, settings, etc.) will be deleted and cannot be recovered.",
@@ -2186,18 +2644,18 @@
       "preserved_desc": "A copy of the custom/ directory was archived at the path below before removal. Move it back into custom/ after reinstalling the extension to reuse it as is.",
       "tables_total": "Total {{size}}",
       "activate_title": "Change Template",
-      "activate_confirm": "Do you want to activate {{name}} template?",
+      "activate_confirm": "Do you want to activate \"{{name}}\"?",
       "activate_description": "Your current template settings will be automatically saved. When you reactivate it later, the saved settings will be restored.",
       "deactivate_title": "Deactivate Template",
-      "deactivate_confirm": "Do you want to deactivate {{name}} template?",
+      "deactivate_confirm": "Do you want to deactivate \"{{name}}\"?",
       "manual_install_title": "Manual Template Installation",
       "manual_install_description": "Install a template from file upload or GitHub repository.",
       "refresh_layouts_title": "Refresh Layouts",
-      "refresh_layouts_confirm": "Do you want to refresh layouts for {{name}} template?",
+      "refresh_layouts_confirm": "Do you want to refresh the layouts of \"{{name}}\"?",
       "refresh_layouts_warning": "Existing layouts will be deleted and re-registered from files.",
       "refresh_layouts_description": "Database layouts will be replaced with layouts from template files. All previously modified layout content will be deleted.",
       "update_title": "Update Template",
-      "update_confirm": "Do you want to update {{name}} template?",
+      "update_confirm": "Do you want to update \"{{name}}\"?",
       "update_version_info": "{{from}} → {{to}}",
       "update_source_github": "Download from GitHub",
       "update_source_pending": "Install from pending package",
@@ -2210,12 +2668,13 @@
       "layout_strategy_overwrite": "Overwrite All",
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modified",
-      "layout_strategy_keep_desc": "Keep user-modified layouts.",
-      "modified_layouts_warning": "{{count}} layout(s) have been modified. Selecting 'Overwrite All' will discard modifications.",
+      "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
+      "modified_layouts_warning": "{{count}} layouts have been modified. Selecting 'Overwrite All' will discard modifications.",
+      "modified_layouts_warning_one": "{{count}} layout has been modified. Selecting 'Overwrite All' will discard the modification.",
       "no_modified_layouts": "No modified layouts found.",
       "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
-      "modified_layouts_list_title": "Modified layouts to be preserved ({{count}})",
-      "modified_layouts_keep_notice": "These layouts will retain their current content after the update.",
+      "modified_layouts_list_title": "Modified layouts ({{count}})",
+      "modified_layouts_keep_notice": "Your changes in these layouts are kept, and the parts you did not change receive the new version. See the update notification and the activity log for the result.",
       "activate_warning_title": "Template Activation Warning",
       "activate_warning_message": "Required dependencies must be met to activate this template.",
       "missing_modules": "Required Modules",
@@ -2264,7 +2723,13 @@
       "wysiwyg_select_layout_title": "WYSIWYG Edit - Select Layout",
       "wysiwyg_select_layout_description": "Select a layout to edit. The selected layout will open in WYSIWYG edit mode in a new tab.",
       "wysiwyg_no_layouts": "No layouts registered.",
-      "wysiwyg_note": "In WYSIWYG edit mode, editing tools will be displayed over the actual screen. Changes will only be applied when you click the save button."
+      "wysiwyg_note": "In WYSIWYG edit mode, editing tools will be displayed over the actual screen. Changes will only be applied when you click the save button.",
+      "reactivate_language_packs_title": "Reactivate Language Packs",
+      "reactivate_language_packs_message": "These language packs were deactivated along with this template. Reactivate them?",
+      "reactivate_language_packs_success": "Language packs have been reactivated.",
+      "reactivate_language_packs_failed": "Failed to reactivate language packs.",
+      "cascade_no_permission": "No permission",
+      "cascade_no_permission_hint": "Items you lack permission for cannot be installed together. Ask an administrator who has the permission if needed."
     },
     "tabs_install": {
       "file_upload": "File Upload",
@@ -2301,9 +2766,9 @@
     },
     "layout_edit": {
       "title": "Layout Edit",
-      "description": "Edit JSON files to configure page layouts",
+      "description": "Edit layout markup (.g7.html) to configure page layouts",
       "page_title": "Layout Edit",
-      "page_description": "Edit JSON files to configure page layouts",
+      "page_description": "Edit layout markup (.g7.html) to configure page layouts",
       "preview": "Preview",
       "save": "Save",
       "saving": "Saving...",
@@ -2331,7 +2796,127 @@
       "preview_layout_select_title": "Select Preview Layout",
       "preview_layout_select_description": "This extension point is used by multiple layouts. Select a layout to preview.",
       "preview_layout_select_placeholder": "Select a layout",
-      "preview_layout_confirm": "Preview"
+      "preview_layout_confirm": "Preview",
+      "tab_markup": "HTML",
+      "tab_json": "JSON (read-only)",
+      "json_readonly_hint": "JSON is generated from the HTML (read-only). It refreshes 1 second after you stop typing.",
+      "json_stale": "Showing last successful build — compile error",
+      "markup_error_title": "Compile error — saving is blocked",
+      "markup_warning_title": "{{count}} warnings — saving still works",
+      "markup_warning_title_one": "{{count}} warning — saving still works",
+      "go_to_line": "Go to line {{line}}",
+      "info_toggle_show": "Show file info",
+      "info_toggle_hide": "Hide file info",
+      "inlined_notice": "You are editing the installed layout — fragments (<include>, <modal src>) are inlined and may differ from repository files. On save the body is replaced with the server canonical form.",
+      "download_markup": "Download .g7.html",
+      "copy_markup": "Copy",
+      "copy_success": "Markup copied to clipboard.",
+      "copy_failed": "Could not copy to clipboard.",
+      "fragment_key_label": "Fragment {{key}}",
+      "tree": {
+        "aria_label": "Layout files",
+        "unsaved": "Unsaved",
+        "unsaved_count": "{{count}} unsaved files",
+        "unsaved_count_one": "{{count}} unsaved file",
+        "pending_folder": "Empty folder",
+        "empty": "No editable layouts yet",
+        "resize": "Resize file list"
+      },
+      "tabs": {
+        "aria_label": "Open files",
+        "close": "Close {{name}}"
+      },
+      "search": {
+        "placeholder": "Search files and contents",
+        "result_summary": "Matches: {{matches}} · Files: {{files}}",
+        "empty": "No file or content matches '{{keyword}}'",
+        "clear": "Clear search",
+        "goto_line": "Go to line {{line}}"
+      },
+      "file": {
+        "new_file": "New file",
+        "new_folder": "New folder",
+        "new_file_title": "Create a file",
+        "new_folder_title": "Create a folder",
+        "rename": "Rename",
+        "rename_title": "Rename file",
+        "delete": "Delete",
+        "delete_title": "Delete this file?",
+        "delete_description": "Deleted files can be restored, but any screen using this file stops working immediately.",
+        "create": "Create",
+        "name_label": "Name",
+        "name_placeholder": "e.g. partials/admin_user_list/_modal_form",
+        "name_hint": "Use letters, digits, underscore (_) and hyphen (-); separate folders with a slash (/). No file extension.",
+        "created": "File created.",
+        "renamed": "File renamed.",
+        "deleted": "File deleted.",
+        "folder_created": "Folder added. It becomes permanent once a file is saved inside it.",
+        "reference_line": "line {{line}}",
+        "delete_anyway": "Delete anyway",
+        "missing_title": "This file no longer exists",
+        "missing_reloading": "This file could not be found. Refreshing the list.",
+        "missing_draft_notice": "This file no longer exists. The restored edit below cannot be saved — save it under a new name or discard it.",
+        "save_as": "Save as new file",
+        "discard_draft": "Discard",
+        "missing_badge": "missing"
+      },
+      "draft": {
+        "found": "{{count}} unsaved edits found",
+        "found_one": "{{count}} unsaved edit found",
+        "restore": "Restore",
+        "discard": "Discard",
+        "leave_warning": "You have unsaved edits.",
+        "leave_confirm": "You have {{count}} unsaved edits. Leaving this screen discards them. Continue?",
+        "leave_confirm_one": "You have {{count}} unsaved edit. Leaving this screen discards it. Continue?",
+        "close_confirm": "{{name}} has unsaved edits. Closing the tab discards them. Continue?",
+        "close_title": "{{name}} has unsaved edits",
+        "close_question": "What would you like to do before closing the tab?",
+        "close_save": "Save and close",
+        "close_discard": "Close without saving",
+        "close_cancel": "Cancel",
+        "close_saving": "Saving… the tab closes once the save finishes. If it fails, this dialog stays.",
+        "close_failed": "Could not save. Your edits are kept — fix the error and save again, or close without saving.",
+        "restore_warning": "You have {{count}} unsaved edits. Restoring a version will raise a conflict notice above the editor.",
+        "restore_warning_one": "You have {{count}} unsaved edit. Restoring a version will raise a conflict notice above the editor."
+      },
+      "conflict": {
+        "title": "The server has a newer version",
+        "description": "This file was saved elsewhere (yours v{{mine}} → server v{{server}})",
+        "keep_mine": "Keep mine",
+        "take_server": "Take server",
+        "view_diff": "View diff",
+        "diff_title": "Difference between the server copy and your edits",
+        "diff_legend": "Left: server v{{server}} · Right: your edits (based on v{{mine}})",
+        "diff_close": "Close"
+      },
+      "wordwrap": {
+        "label": "Wrap",
+        "toggle": "Toggle word wrap (Alt+Z)"
+      },
+      "shortcuts": {
+        "title": "Keyboard shortcuts",
+        "save": "Save",
+        "save_all": "Save all",
+        "preview": "Preview",
+        "version_history": "Version history",
+        "exit": "Exit",
+        "new_file": "New file",
+        "quick_open": "Quick open file",
+        "search_content": "Search contents",
+        "prev_tab": "Previous tab",
+        "next_tab": "Next tab",
+        "close_tab": "Close tab",
+        "toggle_view": "Toggle HTML / JSON",
+        "toggle_word_wrap": "Word wrap",
+        "font_size_up": "Larger text",
+        "font_size_down": "Smaller text",
+        "find_in_file": "Find in file",
+        "help": "Shortcut help",
+        "group_document": "Document",
+        "group_file": "File",
+        "group_view": "View",
+        "group_editor": "Editor"
+      }
     }
   },
   "activity_log": {
@@ -2394,6 +2979,7 @@
     },
     "pagination": {
       "total": "Total {{count}} items",
+      "total_one": "Total {{count}} item",
       "total_at_least": "Total {{count}}+ items"
     },
     "empty": {
@@ -2404,7 +2990,8 @@
       "reset_filter": "Reset Filters"
     },
     "delete": {
-      "selected_count": "{{count}} item(s) selected",
+      "selected_count": "{{count}} items selected",
+      "selected_count_one": "{{count}} item selected",
       "button": "Delete",
       "bulk_button": "Delete Selected",
       "confirm_title": "Delete Activity Log",
@@ -2471,7 +3058,8 @@
       "skipped": "Skipped"
     },
     "pagination": {
-      "total": "Total {{count}} items"
+      "total": "Total {{count}} items",
+      "total_one": "Total {{count}} item"
     },
     "empty": {
       "title": "No send logs found",
@@ -2481,7 +3069,8 @@
       "reset_filter": "Reset Filters"
     },
     "delete": {
-      "selected_count": "{{count}} item(s) selected",
+      "selected_count": "{{count}} items selected",
+      "selected_count_one": "{{count}} item selected",
       "button": "Delete",
       "bulk_button": "Delete Selected",
       "confirm_title": "Delete Mail Send Log",
@@ -2497,6 +3086,65 @@
     "license_text": "License",
     "view_license": "View License"
   },
+  "member_notification": {
+    "page_title": "Member Notifications",
+    "page_description": "View and delete notifications members have received.",
+    "search_placeholder": "Enter a search term",
+    "total_count": "{{count}} total",
+    "total_at_least": "{{count}}+ total",
+    "col_created_at": "Received",
+    "col_member": "Member",
+    "col_type": "Type",
+    "col_subject": "Subject",
+    "col_read_at": "Read",
+    "deleted_member": "Deleted member",
+    "empty_message": "No notifications found.",
+    "badge": {
+      "read": "Read",
+      "unread": "Unread"
+    },
+    "filter": {
+      "search_type_all": "All",
+      "search_type_recipient": "Recipient",
+      "search_type_subject": "Subject",
+      "search_type_body": "Body",
+      "read_label": "Read state",
+      "read_all": "All",
+      "read_unread": "Unread",
+      "read_read": "Read",
+      "created_label": "Received between",
+      "member_filter_notice": "Showing notifications for a single member only.",
+      "member_filter_clear": "Clear member filter",
+      "search_button": "Search",
+      "reset_button": "Reset"
+    },
+    "sort": {
+      "created_at_desc": "Newest first",
+      "created_at_asc": "Oldest first",
+      "read_at_desc": "Recently read"
+    },
+    "detail": {
+      "body_label": "Body",
+      "no_body": "No body content.",
+      "type_label": "Notification type:",
+      "url_label": "Link:"
+    },
+    "action": {
+      "view_member": "View member",
+      "filter_by_member": "Show only this member"
+    },
+    "delete": {
+      "button": "Delete",
+      "selected_count": "{{count}} selected",
+      "bulk_button": "Delete selected",
+      "confirm_title": "Delete notification",
+      "confirm_message": "Delete the selected notification? It also disappears from the member inbox and cannot be undone.",
+      "success": "Notification deleted.",
+      "bulk_confirm_title": "Delete notifications",
+      "bulk_confirm_message": "Delete all selected notifications? They also disappear from member inboxes and cannot be undone.",
+      "bulk_success": "Selected notifications deleted."
+    }
+  },
   "notification_log": {
     "page_title": "Notification Logs",
     "page_description": "View the history of notifications sent by the system.",
@@ -2509,6 +3157,8 @@
     "status_skipped": "Skipped",
     "search_placeholder": "Search recipient, subject",
     "total_count": "Total {{count}} items",
+    "total_count_one": "Total {{count}} item",
+    "total_at_least": "Total {{count}}+ items",
     "col_channel": "Channel",
     "col_recipient": "Recipient",
     "col_sender": "Sender",
@@ -2693,6 +3343,7 @@
       "tab_all": "All Methods",
       "refresh": "Refresh",
       "total_count": "Total: {{count}}",
+      "total_at_least": "Total: {{count}}+",
       "search_type": {
         "auto": "Auto",
         "user_id": "User ID",
@@ -2766,6 +3417,726 @@
       }
     }
   },
+  "analytics": {
+    "common": {
+      "refresh": "Refresh",
+      "csv_download": "Download CSV (for Excel)",
+      "more": "More",
+      "empty_title": "No records in the selected period",
+      "empty_description": "Check collection status on the Diagnostics screen.",
+      "visits": "Visits",
+      "visitors": "Visitors",
+      "pageviews": "Pageviews",
+      "hits": "Hits",
+      "bounce_rate": "Bounce rate",
+      "avg_time": "Avg. time",
+      "pages_per_visit": "Pages / visit",
+      "label": "Label",
+      "extra": "Extra",
+      "search_placeholder": "Search labels (Enter)",
+      "sort_label": "Sort",
+      "per_page": "Per page",
+      "empty_diagnostics_link": "Open collection diagnostics",
+      "toggle_list": "Expand or collapse list",
+      "site_timezone_badge": "Times shown in site timezone ({timezone})",
+      "queue_backlog_badge": "{count} jobs queued",
+      "queue_backlog_badge_one": "{count} job queued",
+      "ip_not_masked": "Recorded before masking"
+    },
+    "period": {
+      "presets": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days",
+        "this_month": "This month",
+        "last_month": "Last month",
+        "this_year": "This year"
+      },
+      "from": "From",
+      "to": "To",
+      "unit_label": "Unit",
+      "units": {
+        "auto": "Auto",
+        "hour": "Hour",
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "year": "Year"
+      },
+      "exclude_admin": "Exclude admins",
+      "exclude_member": "Exclude members",
+      "range_too_long": "You can view up to {{days}} days at a time — change the start or end date."
+    },
+    "alerts": {
+      "collection_disabled": "Visitor statistics collection is off — numbers will not grow.",
+      "collection_disabled_link": "Turn on in settings",
+      "consent_fallback": "Consent mode is on but no plugin can ask for consent, so visits are collected anonymously.",
+      "consent_cookie_fallback": "The consent plugin is active: visitors who accepted both analytics and functional cookies are recorded in IP mode, and all others anonymously (no IP, no visitor cookie).",
+      "queue_backlog": "{{count}} jobs waiting in the queue — check that a worker is running.",
+      "queue_backlog_one": "{{count}} job waiting in the queue — check that a worker is running.",
+      "queue_backlog_link": "Open diagnostics",
+      "geoip_off": "GeoIP is off: countries are estimated from the browser language and regions/cities are not collected.",
+      "geoip_off_link": "Open advanced settings",
+      "anonymous_mode": "In anonymous mode the visitor key changes daily, so one person's visits are only grouped within a day.",
+      "unit_downgraded": "Hourly aggregates are outside their retention window, so the series is shown per day.",
+      "load_failed": "Could not load the statistics. Please try again in a moment.",
+      "load_failed_retry": "Try again",
+      "site_timezone": "Times on this screen follow the site timezone ({timezone}), which differs from the timezone set in your account.",
+      "scheduler_missing": "The scheduler (cron) has not run for over 2 hours. Archiving on view keeps the numbers current, but finalizing yesterday, pruning old data and weekly report mails have stopped.",
+      "scheduler_missing_link": "Open diagnostics",
+      "archive_stale": "Archiving has been stalled for {{hours}} hours (last {{at}}). Check the scheduler (cron) or archive now.",
+      "archive_stale_one": "Archiving has been stalled for {{hours}} hour (last {{at}}). Check the scheduler (cron) or archive now.",
+      "archive_never": "Visits have piled up but nothing has been archived yet. Check the scheduler (cron) or archive now.",
+      "on_view_too_many": "Today has more than {{max}} visits, so archiving on view was skipped. Numbers are as of {{at}} — register the scheduler (cron).",
+      "archive_now": "Archive now"
+    },
+    "overview": {
+      "title": "Analytics overview",
+      "description": "Today, yesterday, peak and total visitors, the trend, and top pages, referrers and countries.",
+      "realtime_now": "{{count}} visitors right now",
+      "realtime_now_one": "{{count}} visitor right now",
+      "realtime_link": "View realtime",
+      "kpi": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "max": "Peak",
+        "total": "Total",
+        "change_label": "vs yesterday"
+      },
+      "trend_title": "Trend",
+      "quality": {
+        "bounce_rate": "Bounce rate",
+        "avg_time": "Avg. time on site",
+        "pages_per_visit": "Pages per visit",
+        "new_returning": "New / returning"
+      },
+      "top": {
+        "pages": "Top pages",
+        "referrers": "Top referrers",
+        "countries": "Top countries"
+      },
+      "visitors_daily_sum_note": "Visitors is the sum of daily unique visitors — the visitor key rotates daily, so unique visitors across days cannot be counted.",
+      "new_visitors": "New",
+      "returning_visitors": "Returning",
+      "new_returning_unavailable": "New and returning visitors cannot be told apart in anonymous mode"
+    },
+    "pages": {
+      "title": "Pages",
+      "description": "Which pages are read, where visitors enter and where they leave.",
+      "tabs": {
+        "popular": "Popular",
+        "entry": "Entry pages",
+        "exit": "Exit pages",
+        "titles": "Page titles",
+        "durations": "Visit duration",
+        "depths": "Pages per visit"
+      }
+    },
+    "referrers": {
+      "keywords_https_hint": "Most search engines moved to HTTPS and no longer put the search term in the referring address. A mostly empty table here does not mean collection is broken.",
+      "title": "Referrers",
+      "description": "Where visitors come from — direct, search, other sites, campaigns.",
+      "tabs": {
+        "types": "Types",
+        "sites": "Sites",
+        "keywords": "Keywords",
+        "campaigns": "Campaigns",
+        "mediums": "Campaign mediums"
+      },
+      "type_share_title": "Referrer type share",
+      "urls_title": "Referrer URLs for {{host}}",
+      "urls_back": "Back to referring sites",
+      "urls_column": "Referrer URL",
+      "urls_hint": "The actual URLs visitors came from on this domain. Visits recorded while referrer URL anonymization was on kept only the domain, so they collapse into a single row.",
+      "urls_empty_description": "No visits from this domain in the selected period.",
+      "mediums_empty": "No visits carried utm_medium."
+    },
+    "environment": {
+      "title": "Environment",
+      "description": "Browser, OS, device, resolution, language and locale breakdown.",
+      "tabs": {
+        "browsers": "Browsers",
+        "os": "OS",
+        "devices": "Devices",
+        "resolutions": "Resolutions",
+        "languages": "Browser languages",
+        "locales": "Site locales"
+      },
+      "device_share_title": "Device share"
+    },
+    "regions": {
+      "title": "Regions",
+      "description": "Visits by country, region and city. Regions and cities need GeoIP.",
+      "tabs": {
+        "countries": "Countries",
+        "regions": "Regions",
+        "cities": "Cities"
+      }
+    },
+    "patterns": {
+      "title": "Weekday & hour",
+      "description": "Average visit pattern by weekday and hour of day.",
+      "weekday_title": "By weekday",
+      "hour_title": "By hour",
+      "metric_label": "Metric",
+      "weekdays": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      },
+      "hourly_from": "Hourly patterns are available from {{date}} — earlier hourly aggregates were pruned.",
+      "average_note": "Values are averages over the same weekday/hour in the period, not sums."
+    },
+    "actions": {
+      "title": "Search, downloads & goals",
+      "description": "Site search keywords, downloaded files, outbound links and goals recorded by extensions.",
+      "tabs": {
+        "search": "Search keywords",
+        "downloads": "Downloads",
+        "outlinks": "Outbound links",
+        "goals": "Goals",
+        "dimensions": "Extension breakdowns",
+        "search_tabs": "Search tabs",
+        "events": "Events"
+      },
+      "no_result": "No results",
+      "revenue": "Revenue",
+      "dimension_label": "Breakdown",
+      "dimension_placeholder": "Choose a breakdown",
+      "dimensions_hint": "Breakdowns provided by installed extensions (e.g. by board) split visits here. If an extension is turned off or removed with its data kept, it is marked \"inactive extension\" and its stats remain viewable.",
+      "dimensions_empty_title": "Choose a breakdown",
+      "dimensions_empty_description": "Choose a breakdown above to see its top list.",
+      "dimensions_none_title": "No breakdowns from extensions",
+      "dimensions_none_description": "None of the active extensions provides a breakdown. When an extension declares one, you can choose it here.",
+      "dimension_pii_suffix": "personal data — no stats table",
+      "dimension_pii_title": "Personal-data breakdowns are not turned into stats tables",
+      "dimension_pii_description": "The extension marked the values of this breakdown as personal data. To keep them out of the permanent daily stats, no table is built; the values stay only in visit records and are removed when the retention period ends or on a data subject deletion request.",
+      "events_empty": "No events yet. Names that extensions send with G7Core.analytics.trackEvent() appear here."
+    },
+    "realtime": {
+      "title": "Realtime",
+      "description": "Who is on the site right now and what they are viewing.",
+      "count_label": "in the last {{minutes}} min",
+      "window_label": "Window (min)",
+      "badge_ws": "Live connection",
+      "badge_polling": "Refreshes every {{seconds}}s",
+      "pages_title": "Pages being viewed",
+      "visitors_title": "Recent visitors",
+      "empty": "No visitors in the recent window",
+      "columns": {
+        "time": "Time",
+        "page": "Page",
+        "country": "Country",
+        "device": "Device",
+        "type": "Type",
+        "visitor": "Visitor"
+      }
+    },
+    "visitors": {
+      "title": "Visitors",
+      "description": "Visit records grouped per person. Pick one to see the action timeline.",
+      "search_placeholder": "Visitor key, IP or member ID (#123 for that member only) (Enter)",
+      "type_label": "Type",
+      "types": {
+        "all": "All",
+        "guest": "Guest",
+        "member": "Member",
+        "admin": "Admin",
+        "bot": "Bot"
+      },
+      "columns": {
+        "key": "Visitor key",
+        "member": "Member",
+        "type": "Type",
+        "visits": "Visits",
+        "pageviews": "Pageviews",
+        "last_visit": "Last visit",
+        "country": "Country",
+        "device": "Device"
+      },
+      "timeline_button": "Timeline",
+      "action": {
+        "view_member": "View member",
+        "search_by_member": "Search by this member"
+      }
+    },
+    "visitor_detail": {
+      "title": "Visitor detail",
+      "back": "Back to list",
+      "delete_button": "Delete this visitor's data",
+      "card": {
+        "title": "Visitor",
+        "type": "Type",
+        "visits": "Visits",
+        "country": "Country",
+        "device": "Device",
+        "browser": "Browser / OS",
+        "ip": "IP",
+        "first_visit": "First visit",
+        "last_visit": "Last visit",
+        "member": "Member",
+        "returning": "Returning",
+        "returning_yes": "Returning",
+        "returning_no": "First visit",
+        "ip_masked": "Masked {octets} octets",
+        "ip_masked_one": "Masked {octets} octet",
+        "region": "Region",
+        "resolution": "Resolution",
+        "browser_language": "Browser language",
+        "locale": "Site language"
+      },
+      "visit_info": {
+        "source": "Recorded by",
+        "source_beacon": "Browser",
+        "source_server": "Server (no script)",
+        "referrer": "Referrer",
+        "keyword": "Search keyword",
+        "campaign": "Campaign",
+        "bounce": "Bounce",
+        "bounce_yes": "Left after one page",
+        "bounce_no": "Viewed several pages",
+        "last_action": "Last activity"
+      },
+      "visits_title": "Visit history",
+      "referrer_label": "Referrer",
+      "visit_summary": "{{pages}} pages · {{minutes}}m {{seconds}}s",
+      "visit_summary_one": "{{pages}} page · {{minutes}}m {{seconds}}s",
+      "conversions_badge": "{{count}}",
+      "conversions_badge_label": "Conversions",
+      "conversions_title": "Conversions",
+      "timeline": {
+        "pageview": "Pageview",
+        "download": "Download",
+        "outlink": "Outbound link",
+        "event": "Event",
+        "goal": "Goal",
+        "site_search": "Search",
+        "search_result_count": "{{count}} results",
+        "search_result_count_one": "{{count}} result"
+      }
+    },
+    "bots": {
+      "title": "Bots & crawlers",
+      "description": "How much search engines and crawlers fetch, and which URLs.",
+      "seo_cache_link": "SEO cache settings",
+      "kpi": {
+        "hits": "Bot requests",
+        "names": "Bot names"
+      },
+      "tabs": {
+        "bots": "Bots",
+        "pages": "Fetched pages"
+      },
+      "names_title": "By bot",
+      "recent_title": "Recent requests",
+      "recent_hint": "Shows up to 50 of the most recent requests within the selected period.",
+      "columns": {
+        "bot": "Bot",
+        "hits": "Requests",
+        "url": "URL",
+        "cache_status": "Cache",
+        "time": "Time"
+      },
+      "cache_statuses": {
+        "hit": "Served from cache",
+        "miss": "Freshly rendered",
+        "bypass": "Cache bypassed",
+        "none": "No cache"
+      }
+    },
+    "diagnostics": {
+      "declaration_warnings_title": "Some extension declarations were dropped",
+      "declaration_warnings_description": "Conversions or breakdowns an extension declared that were left out because they are malformed, with the reason. Pass this on to the extension developer.",
+      "title": "Diagnostics",
+      "description": "Find out why numbers stop growing — collection, queue, archive and storage.",
+      "cards": {
+        "collection": "Collection",
+        "queue": "Queue",
+        "archive": "Archive",
+        "storage": "Storage"
+      },
+      "fields": {
+        "enabled_on": "On",
+        "enabled_off": "Off",
+        "anonymous_fallback": "Anonymous fallback",
+        "anonymous_for_unconsented": "Anonymous until consent",
+        "tracked_today": "{{count}} visitors today",
+        "tracked_today_one": "{{count}} visitor today",
+        "last_tracked": "Last tracked {{at}}",
+        "queue_not_countable": "Queue not countable",
+        "pending_jobs": "{{count}} pending",
+        "failed_jobs": "{{count}} failed",
+        "backlogged": "Backlogged",
+        "worker_hint": "Jobs are waiting — archiving and anonymization need a running worker (queue:work). Visit collection is recorded without one.",
+        "last_hour_run": "Hourly {{at}}",
+        "last_day_run": "Daily {{at}}",
+        "lag_hours": "{{hours}}h behind",
+        "running": "Running #{{id}}",
+        "visits_rows": "{{count}} visit rows",
+        "visits_rows_one": "{{count}} visit row",
+        "actions_rows": "{{count}} action rows",
+        "actions_rows_one": "{{count}} action row",
+        "storage_mb": "{{mb}} MB",
+        "over_limit": "Over warning limit",
+        "on": "on",
+        "off": "off",
+        "cloud_ranges": "Cloud ranges",
+        "trusted_proxy_warning": "warning",
+        "scheduler_last_run": "Scheduler last ran {{at}}",
+        "scheduler_missing": "Scheduler not running"
+      },
+      "progress_source": {
+        "ws": "Progress: live",
+        "polling": "Progress: polling"
+      },
+      "exclusions_title": "Today's exclusions",
+      "exclusion_note": "Lives in cache — clears when the cache is flushed",
+      "exclusion_columns": {
+        "reason": "Reason",
+        "count": "Count"
+      },
+      "exclusions_empty": "No requests were excluded today",
+      "exclusion_reasons": {
+        "disabled": "Collection off",
+        "prefetch": "Prefetch",
+        "dnt": "DNT",
+        "opt_out": "Opted out",
+        "url_pattern": "URL pattern",
+        "ip_rule": "IP rule",
+        "ua_rule": "UA rule",
+        "headless": "Headless",
+        "cloud_ip": "Cloud IP",
+        "country": "Country filter",
+        "bot": "Bot",
+        "consent": "No consent",
+        "consent_revoked": "Consent revoked"
+      },
+      "runs_title": "Archive runs",
+      "run_columns": {
+        "type": "Type",
+        "period": "Period",
+        "status": "Status",
+        "progress": "Progress",
+        "processed": "Visits",
+        "trigger": "Trigger",
+        "started": "Started"
+      },
+      "run_types": {
+        "hour": "Hourly",
+        "day": "Daily",
+        "reaggregate": "Re-aggregate",
+        "anonymize": "Anonymize",
+        "purge": "Purge",
+        "extension_purge": "Extension cleanup"
+      },
+      "run_triggers": {
+        "scheduled": "Automatic (scheduled)",
+        "manual": "Manual",
+        "on_view": "On view"
+      },
+      "queue_connections": {
+        "sync": "Immediate (no queue)",
+        "database": "Database queue",
+        "redis": "Redis queue",
+        "sqs": "Amazon SQS queue",
+        "beanstalkd": "Beanstalkd queue"
+      },
+      "run_status": {
+        "running": "Running",
+        "success": "Success",
+        "failed": "Failed",
+        "skipped": "Skipped"
+      },
+      "buttons": {
+        "archive_hour": "Archive now (hour)",
+        "finalize_yesterday": "Finalize yesterday",
+        "reaggregate": "Re-aggregate range…"
+      },
+      "queued_toast": "Re-aggregation queued. Watch the progress in the run history.",
+      "started_toast": "Archive run started.",
+      "skipped_toast": "Skipped — another aggregation is already running.",
+      "failures_title": "Recent collection failures",
+      "failures_24h": "{{count}} in the last 24h",
+      "failures_empty": "No collection failures",
+      "failure_columns": {
+        "time": "Time",
+        "reason": "Reason",
+        "message": "Message",
+        "url": "URL",
+        "ip": "IP",
+        "ip_masked": "IP (masked)"
+      },
+      "failure_reasons": {
+        "all": "All reasons",
+        "validation": "Validation",
+        "max_actions": "Action limit",
+        "db_error": "DB error",
+        "listener_exception": "Listener exception",
+        "unknown_goal": "Unknown goal",
+        "unknown_dimension": "Unknown breakdown"
+      }
+    },
+    "privacy_requests": {
+      "title": "Data subject requests",
+      "description": "Find, export or delete the records of a person who filed an access or erasure request.",
+      "anonymous_notice": "For periods collected in anonymous mode only the last two days can be looked up by IP.",
+      "search": {
+        "subject_label": "Look up by",
+        "subject_ip": "IP address",
+        "subject_user": "Member ID",
+        "subject_key": "Visitor key",
+        "value_label": "Value",
+        "placeholder_ip": "203.0.113.9",
+        "placeholder_user": "Member ID",
+        "placeholder_key": "Visitor key",
+        "period_label": "Period",
+        "button": "Search"
+      },
+      "results_title": "Matching records",
+      "results_summary": "Visits {{visits}} · Actions {{actions}}",
+      "export_button": "Export JSON",
+      "delete_button": "Delete",
+      "no_results": "No records match",
+      "prompt_title": "Choose whose records to find",
+      "prompt_description": "Pick IP address, member ID or visitor key, enter a value and press Search to list that person's visits here. The period is optional.",
+      "columns": {
+        "visit_at": "Visited at",
+        "visitor_key": "Visitor key",
+        "ip": "IP",
+        "actions": "Actions",
+        "ip_masked": "IP (masked)"
+      }
+    },
+    "settings": {
+      "title": "Analytics settings",
+      "description": "Collection, privacy, bots, retention and reports. Saving applies every value you changed, on any tab.",
+      "tabs": {
+        "collection": "Collection",
+        "privacy": "Privacy",
+        "bots": "Bots & exclusions",
+        "retention": "Retention & storage",
+        "reports": "Reports"
+      },
+      "saved": "Settings saved.",
+      "save_error": "Failed to save settings.",
+      "validation_error": "Please check the values",
+      "units": {
+        "minutes": "min",
+        "days": "days"
+      },
+      "collection": {
+        "enabled": "Collect visitor statistics",
+        "enabled_hint": "When off, beacons still get 204 but nothing is recorded.",
+        "visit_timeout": "Visit timeout",
+        "max_actions": "Max actions per visit",
+        "excluded_url_patterns": "Excluded URL patterns",
+        "excluded_url_patterns_placeholder": "/admin*",
+        "excluded_url_patterns_hint": "Paths never counted, such as admin screens. The tracker filters with the same rules.",
+        "site_search": "Record site search keywords",
+        "site_search_hint": "The search API hook records keywords and result counts.",
+        "track_downloads": "Track downloads",
+        "track_outlinks": "Track outbound link clicks",
+        "download_extensions": "Extensions counted as downloads",
+        "public_summary": "Visitor counter on the site",
+        "public_summary_hint": "Enables the public summary API read by the home page counter."
+      },
+      "opt_out": {
+        "title": "Don't count my visits",
+        "hint": "Excludes this browser from statistics — so your own visits don't top the page list while you work on the site.",
+        "badge_on": "Counting",
+        "badge_off": "Excluded",
+        "enable": "Exclude me",
+        "disable": "Count me again"
+      },
+      "privacy": {
+        "consent_source_label": "Consent source",
+        "consent_source_none": "None",
+        "consent_source_needs_selection": "Choose a provider",
+        "consent_source_choose": "Choose in the Privacy tab",
+        "mode_label": "Privacy level",
+        "modes": {
+          "full": {
+            "title": "Full",
+            "description": "Recognises returning visitors with a cookie and stores masked IPs.",
+            "traits": "Returning ✅ · Cookie ✅ · Masked IP stored"
+          },
+          "consent": {
+            "title": "Consent",
+            "description": "Only visitors allowed by the consent plugin get a cookie and IP storage.",
+            "traits": "Returning ✅ (consented) · Cookie on consent · IP on consent"
+          },
+          "anonymous": {
+            "title": "Anonymous",
+            "description": "No cookie: visits are grouped by a daily hash and IPs are never stored.",
+            "traits": "Returning ❌ · Cookie ❌ · No IP"
+          }
+        },
+        "respect_dnt": "Respect Do Not Track",
+        "respect_dnt_hint": "Visitors sending the DNT signal are not counted.",
+        "ip_mask_octets": "IP masking",
+        "ip_mask": {
+          "0": "No masking",
+          "1": "Last octet (10.20.30.0)",
+          "2": "Last 2 octets (10.20.0.0)",
+          "3": "Last 3 octets (10.0.0.0)"
+        },
+        "ip_mask_hint": "With no masking the city stays accurate, and at 1 octet the city usually survives. From 2 octets only the country is reliable; 3 octets makes even the country inaccurate.",
+        "anonymize_referrer": "Anonymize referrer URL",
+        "referrer_modes": {
+          "none": "Keep",
+          "domain_only": "Domain only"
+        },
+        "visitor_cookie_days": "Visitor cookie lifetime",
+        "geo_before_mask": "Geolocate before masking",
+        "geo_before_mask_hint": "Uses the original IP for geolocation to keep accuracy.",
+        "pseudonymize_user_id": "Pseudonymize member ID",
+        "pseudonymize_user_id_hint": "Stores a hash instead of the member ID.",
+        "consent_source_unknown": "no read permission"
+      },
+      "bots": {
+        "bot_detector_enabled": "Use SEO bot detection",
+        "bot_detector_enabled_hint": "Shares the bot verdict of SEO settings. Even when off, the built-in classifier filters bots.",
+        "bot_tracking_enabled": "Record bot requests",
+        "bot_tracking_enabled_hint": "Counts bot visits separately and shows them on the Bots screen.",
+        "block_headless": "Exclude automated browsers",
+        "exclude_prefetch": "Exclude prefetch",
+        "exclude_prefetch_hint": "Requests prefetched by the browser are not real views.",
+        "excluded_ips": "Excluded IPs / ranges",
+        "excluded_ips_hint": "CIDR notation accepted.",
+        "ip_allowlist": "Allowed IPs",
+        "ip_allowlist_hint": "These addresses are counted even if another exclusion rule matches.",
+        "excluded_user_agents": "Excluded UA strings",
+        "block_cloud_ip_ranges": "Block cloud IP ranges",
+        "cloud_ranges_updated": "List updated: {{at}}",
+        "cloud_ranges_refresh": "Refresh list",
+        "country_filter_mode": "Country filter",
+        "country_filter_modes": {
+          "none": "Off",
+          "include": "Only listed countries",
+          "exclude": "Exclude listed countries"
+        },
+        "country_filter_geoip_hint": "GeoIP must be on to use the country filter.",
+        "country_filter_codes": "Country codes"
+      },
+      "retention": {
+        "retention_days": "Ledger retention",
+        "retention_days_hint": "When visit/action ledgers are pruned. Daily and monthly aggregates are kept forever.",
+        "hourly_retention_days": "Hourly aggregate retention",
+        "bot_hits_retention_days": "Bot log retention (days)",
+        "failure_log_retention_days": "Failure log retention (days)",
+        "ledger_warning_actions": "Action row warning",
+        "ledger_warning_visits": "Visit row warning",
+        "archive_chunk_size": "Archive chunk (visits)",
+        "realtime_poll_seconds": "Realtime polling (s)",
+        "realtime_window_minutes": "Realtime window (min)",
+        "top_n": "Top list sizes",
+        "top_n_overview": "Overview",
+        "top_n_dashboard": "Dashboard",
+        "top_n_detail": "Detail",
+        "top_n_hint": "Overview · dashboard · detail, in that order.",
+        "storage_title": "Storage",
+        "storage_unsupported": "This database driver does not report table sizes.",
+        "storage_permission_required": "Storage usage requires the analytics view permission.",
+        "storage_columns": {
+          "table": "Table",
+          "rows": "Rows",
+          "size": "Size"
+        },
+        "purge_all": "Delete all analytics data",
+        "archive_section": "Archiving",
+        "archive_on_view_enabled": "Archive on view",
+        "archive_on_view_enabled_hint": "Re-archive stats older than a minute when a screen is opened or refreshed. Busy sites should register the scheduler (cron).",
+        "archive_on_view_max_visits": "Daily visit limit",
+        "archive_on_view_max_visits_hint": "When today has more visits than this, screens do not archive on view.",
+        "duration_bucket_bounds": "Visit duration bucket bounds (seconds)",
+        "duration_bucket_bounds_hint": "Comma-separated bounds in seconds (default 10,30,60,180,600,1800). Changes apply to later archives; recompute past periods with range re-archiving in diagnostics.",
+        "pages_bucket_bounds": "Pages per visit bucket bounds",
+        "pages_bucket_bounds_hint": "Comma-separated page counts (default 1,2,3,4,5,7,10,14,20). Changes apply to later archives; recompute past periods with range re-archiving in diagnostics."
+      },
+      "reports": {
+        "weekly": "Weekly report mail",
+        "weekly_hint": "Sent to the admin role every Monday at 08:00.",
+        "monthly": "Monthly report mail",
+        "monthly_hint": "Sent to the admin role on the 1st at 08:00.",
+        "definitions_title": "Notification definitions",
+        "definitions_description": "Whether report and alert notifications are active and their channels. Edit templates in Settings › Notification definitions.",
+        "definition_inactive_alert": "Report mail is on but its notification definition is off, so no mail will be sent — enable the definition below.",
+        "definitions_empty": "No analytics notification definitions.",
+        "definitions_permission_required": "Notification definitions require the notification settings permission to view or change.",
+        "definition_active": "Active",
+        "definition_inactive": "Inactive",
+        "edit_templates": "Edit templates",
+        "reset_button": "Reset",
+        "reset_confirm": "Reset this notification's templates to the defaults?",
+        "reset_success": "Templates reset."
+      }
+    },
+    "modals": {
+      "retro": {
+        "title": "Apply to existing data as well?",
+        "body": "IPs, referrer URLs and member IDs in the stored records (visits {{visits}} · actions {{actions}}) will be rewritten to the new setting. This cannot be undone.",
+        "hint": "Aggregates are untouched — they contain nothing that identifies a person.",
+        "confirm_label": "I understand this cannot be undone",
+        "apply": "Apply retroactively",
+        "skip": "Skip",
+        "queued": "Retroactive anonymization started. Watch the progress in the Diagnostics run history."
+      },
+      "purge": {
+        "title": "Delete all analytics data",
+        "body": "Deletes visit/action ledgers, aggregates, bot logs, failure logs, run history and salts. This cannot be undone.",
+        "rows": "Current rows — visits {{visits}} · actions {{actions}}",
+        "confirm_label": "I understand everything will be deleted and cannot be restored",
+        "button": "Delete everything",
+        "success": "All analytics data deleted."
+      },
+      "reaggregate": {
+        "title": "Re-aggregate a range",
+        "hint": "Days past the ledger retention are skipped (their aggregates stay). Several months can take minutes.",
+        "from": "From",
+        "to": "To",
+        "force": "Re-aggregate finalized days too",
+        "button": "Start"
+      },
+      "subject_delete": {
+        "title": "Delete data subject records",
+        "body": "Actions and conversions of the matching visits are deleted first, then the visits. Aggregates stay. This cannot be undone.",
+        "confirm_label": "I understand this cannot be undone",
+        "button": "Delete",
+        "success": "Deleted — visits {{visits}} · actions {{actions}}."
+      }
+    },
+    "dashboard_widget": {
+      "title": "Visitors",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "max": "Peak",
+      "total": "Total",
+      "now": "{{count}} online",
+      "detail": "Details",
+      "collection_off": "Collection off",
+      "trend": "Visitors, last 7 days"
+    },
+    "freshness": {
+      "scheduled": "Last archived {{time}} · archived automatically at 5 past every hour",
+      "on_view": "Last archived {{time}} · re-archived at most once a minute when you open or refresh a screen",
+      "plain_time": "Last archived {{time}}",
+      "plain_date": "Last archived {{month}}/{{day}} {{time}}"
+    },
+    "row_trend": {
+      "open": "Show the trend of this item",
+      "title": "Trend of {{label}}",
+      "period": "{{from}} – {{to}}",
+      "unit_downgraded": "Per-item stats are daily, so this shows days instead of hours.",
+      "empty": "No records in this period.",
+      "error": "Could not load the trend. Try opening it again shortly."
+    }
+  },
   "modal_label": {
     "activity_log_list": {
       "delete_confirm_modal": "Delete Activity Log",
@@ -2799,15 +4170,13 @@
       "plugin_manifest_preview_drawer": "Plugin Manifest Preview"
     },
     "admin_settings": {
-      "modal_identity_message_definition_add": "Add Identity Verification Message",
-      "modal_identity_message_definition_delete": "Delete Identity Verification Message",
-      "modal_identity_message_definition_reset": "Reset Identity Verification Message",
-      "modal_identity_message_template_form": "Edit Identity Verification Message Template",
-      "modal_identity_message_template_preview": "Preview Identity Verification Message Template",
       "identity_policy_delete_modal": "Delete Identity Verification Policy",
       "identity_policy_form_modal": "Edit Identity Verification Policy",
-      "modal_mail_template_form": "Edit Mail Template",
+      "ip_restriction_rule_form_modal": "Edit IP Access Restriction Rule",
+      "modal_notification_channel_off_confirm": "Confirm Turning Off Mail Channel",
       "modal_notification_definition_reset": "Reset Notification Definition",
+      "modal_notification_identity_definition_add": "Add Identity Policy Message",
+      "modal_notification_identity_definition_delete": "Delete Identity Policy Message",
       "modal_notification_template_form": "Edit Notification Template",
       "modal_notification_template_preview": "Preview Notification Template",
       "settings_cache_delete_modal": "Clear Cache",
@@ -2831,6 +4200,10 @@
       "template_update_modal": "Update Template",
       "template_manifest_preview_drawer": "Template Manifest Preview"
     },
+    "member_notification_list": {
+      "delete_confirm_modal": "Member notification delete confirm",
+      "bulk_delete_confirm_modal": "Member notification bulk delete confirm"
+    },
     "notification_log_list": {
       "delete_confirm_modal": "Delete Notification Log",
       "bulk_delete_confirm_modal": "Bulk Delete Notification Logs"
@@ -2841,7 +4214,8 @@
       "delete_confirm_modal": "Delete Member",
       "error_modal": "Error",
       "bulk_block_confirm_modal": "Bulk Block Members",
-      "bulk_withdraw_confirm_modal": "Bulk Withdraw Members"
+      "bulk_withdraw_confirm_modal": "Bulk Withdraw Members",
+      "bulk_roles_modal": "Bulk Member Roles"
     },
     "admin_identity_logs": {
       "identity_log_detail_modal": "Identity Verification Log Details",
@@ -2872,15 +4246,25 @@
     },
     "identity_challenge_modal": "Identity Verification",
     "admin_menu_list": {
-      "delete_confirm_modal": "Delete Menu"
+      "delete_confirm_modal": "Delete Menu",
+      "bulk_roles_confirm_modal": "Confirm Bulk Menu Roles"
     },
     "admin_template_layout_edit": {
       "extension_preview_layout_modal": "Select Preview Layout",
       "extension_version_history_modal": "Extension Version History",
-      "version_history_modal": "Layout Version History"
+      "version_history_modal": "Layout Version History",
+      "file_form_modal": "File name dialog",
+      "file_delete_modal": "File delete confirmation"
     },
     "changelog_modal": "Core Changelog",
     "license_modal": "Core License",
-    "notification_delete_all_confirm_modal": "Delete All Notifications"
+    "notification_delete_all_confirm_modal": "Delete All Notifications",
+    "analytics": {
+      "retro_anonymize_modal": "Retroactive anonymization confirm",
+      "purge_all_modal": "Delete all analytics data confirm",
+      "reaggregate_modal": "Re-aggregate range",
+      "subject_delete_modal": "Delete data subject records confirm",
+      "row_trend_modal": "Item trend"
+    }
   }
 }

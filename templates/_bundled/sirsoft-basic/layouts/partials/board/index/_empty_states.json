@@ -1,4 +1,5 @@
 {
+    "comment": "목록이 비었을 때의 안내 셋 — «글이 없다»와 «찾은 것이 없다»와 «이 페이지에 없다»는 사용자에게 다른 상황이라 문구도 빠져나갈 길도 다르다. 셋의 조건은 서로 겹치지 않게 갈라 두었다.",
     "meta": {
         "is_partial": true,
         "description": "게시판 목록 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음)"
@@ -34,10 +35,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4"
-                    },
-                    "text": "$t:board.go_to_first_page",
                     "actions": [
                         {
                             "comment": "페이지만 되돌린다 — 검색어/분류/필터는 그대로 유지 (#75). page: \"\" 는 파라미터 제거 = 1페이지.",
@@ -51,7 +48,11 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4"
+                    },
+                    "text": "$t:board.go_to_first_page"
                 }
             ]
         },
@@ -111,10 +112,6 @@
                     "comment": "검색 초기화 버튼",
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"
-                    },
-                    "text": "$t:board.clear_search",
                     "actions": [
                         {
                             "comment": "audit:allow layout-list-context-navigate-merge-query 검색 초기화 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
@@ -125,7 +122,11 @@
                                 "mergeQuery": false
                             }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"
+                    },
+                    "text": "$t:board.clear_search"
                 }
             ]
         }

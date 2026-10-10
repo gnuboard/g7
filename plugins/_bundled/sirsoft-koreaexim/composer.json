@@ -1,0 +1,20 @@
+{
+    "name": "sirsoft/koreaexim",
+    "description": "Korea Eximbank exchange rate provider for G7",
+    "type": "g7-plugin",
+    "license": "MIT",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\Koreaexim\\": [
+                "src/",
+                "./"
+            ]
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\Koreaexim\\Tests\\": "tests/"
+        }
+    }
+}

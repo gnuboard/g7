@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\MessageBizppurio\Services;
 
+use Illuminate\Support\Collection;
 use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioDispatch;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioDispatchRepositoryInterface;
 
@@ -58,10 +59,10 @@ class DispatchResultService
     /**
      * dispatch 맵을 log id 키의 결과 표시 배열 맵으로 변환합니다.
      *
-     * @param  \Illuminate\Support\Collection<int, BizppurioDispatch>  $dispatchMap  log id 키 dispatch 맵
+     * @param  Collection<int, BizppurioDispatch>  $dispatchMap  log id 키 dispatch 맵
      * @return array<int, array<string, mixed>> notification_log_id → 결과 표시 데이터
      */
-    private function buildResultMap(\Illuminate\Support\Collection $dispatchMap): array
+    private function buildResultMap(Collection $dispatchMap): array
     {
         $results = [];
 

@@ -1,94 +1,11 @@
 {
+    "comment": "주문서 작성 — 장바구니에서 넘어온 선택분과 바로구매가 같은 화면을 쓴다. 금액은 화면에서 더하지\n     않고 서버가 계산한 것을 그대로 보여 준다(쿠폰·적립금·배송비가 서로 물려 있어 한쪽만 바꿔도 전부\n     달라지기 때문). 회원·비회원 모두 진입하므로 auth_mode 는 optional 이다.\n     e2e:allow S4-D14 — 고객 선택 가능 결제수단 계산값을 더하고 기본 선택식의 거르기를 같은 기준으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다.",
     "version": "1.0.0",
     "layout_name": "shop/checkout",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "title": "주문서 작성",
         "description": "주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"
-    },
-    "_comment_initLocal": "정적 기본값 설정 (데이터소스 initLocal 병합 전 기본값). country_code 는 init_actions 가 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가가 수렴한 값)로 시드한다 — 정적 KR 하드코딩 금지(헤더가 US 여도 KR 로 계산되는 회귀 방지).",
-    "initLocal": {
-        "checkout": {
-            "item_coupons": {},
-            "order_coupon_issue_id": null,
-            "shipping_coupon_issue_id": null,
-            "use_points": 0,
-            "discount_code": null,
-            "zipcode": null
-        },
-        "downloadableCoupons": null,
-        "downloadableCouponsLoading": false,
-        "downloadableCouponsPage": 1,
-        "isSubmittingOrder": false,
-        "errors": null,
-        "orderError": null,
-        "selectedDbank": null,
-        "addressModalMode": "list",
-        "selectedAddressId": null,
-        "selectedAddressObj": null,
-        "saveShippingAddress": false,
-        "editingAddress": null,
-        "unavailableModal": {
-            "visible": false,
-            "items": [],
-            "hasStockIssue": false
-        }
-    },
-    "init_actions": [
-        {
-            "comment": "배송국가 시드 — 주문서 진입 시 _local.checkout.country_code 를 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)로 채운다. 이 값이 checkoutData GET 쿼리(country_code)로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가 Select 를 바꾸면 그 시점 값이 SSoT 로 덮어쓴다(주문서 기준).",
-            "handler": "setState",
-            "params": {
-                "target": "local",
-                "checkout.country_code": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
-            }
-        },
-        {
-            "comment": "결제 콜백 에러 쿼리 파라미터 감지 — PG 결제 실패 후 리다이렉트 시 에러 코드 저장 + toast + URL 정리",
-            "handler": "conditions",
-            "conditions": [
-                {
-                    "if": "{{!!query.error}}",
-                    "then": {
-                        "handler": "sequence",
-                        "params": {
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "orderError": "{{query.error}}",
-                                        "orderErrorMessage": "{{query.message ?? ''}}"
-                                    }
-                                },
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "error",
-                                        "message": "$t:shop.checkout.payment_generic_error"
-                                    }
-                                },
-                                {
-                                    "handler": "replaceUrl",
-                                    "params": {
-                                        "path": "/shop/checkout"
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            ]
-        }
-    ],
-    "computed": {
-        "_comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결)",
-        "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
-        "_comment_payment": "선택된 결제수단 - _local에 없으면 첫 번째 활성 결제수단을 기본값으로 사용",
-        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}",
-        "_comment_core_payment": "서버 전송용 코어 결제수단 - 플러그인 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 선택 결제수단의 core_payment_method(모듈이 병합 시 보존)로 번역해 전송한다. 미선언(dbank/KG 등)은 raw id 그대로. IIFE/타 computed 참조를 피하려 선택 id 해석을 인라인 반복한다.",
-        "selectedCorePaymentMethod": "{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === (_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'))?.core_payment_method ?? _local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'}}"
     },
     "data_sources": [
         {
@@ -100,9 +17,9 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관.",
             "params": {
-                "country_code": "{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+                "country_code": "{{_local.checkout?.country_code ?? ((_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR')}}",
+                "zipcode": "{{_local.checkout?.zipcode ?? ''}}"
             },
             "initLocal": {
                 "_merge": "deep",
@@ -117,20 +34,20 @@
                     "hasStockIssue": "has_stock_issue"
                 }
             },
-            "onSuccess": {
-                "comment": "구매불가 상품이 있으면 setState로 데이터 설정 후 모달 표시 (initLocal 머지는 모달 표현식 캐시를 갱신하지 않으므로 setState 필수)",
-                "handler": "conditions",
-                "conditions": [
-                    {
-                        "if": "{{(response.data.data.unavailable_items?.length ?? 0) > 0}}",
-                        "then": {
-                            "handler": "sequence",
-                            "params": {
+            "onSuccess": [
+                {
+                    "comment": "구매불가 상품이 있으면 setState로 데이터 설정 후 모달 표시 (initLocal 머지는 모달 표현식 캐시를 갱신하지 않으므로 setState 필수)",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{(response.data.data.unavailable_items?.length ?? 0) > 0}}",
+                            "then": {
+                                "handler": "sequence",
                                 "actions": [
                                     {
                                         "handler": "setState",
-                                        "target": "local",
                                         "params": {
+                                            "target": "local",
                                             "unavailableModal": {
                                                 "visible": true,
                                                 "items": "{{response.data.data.unavailable_items ?? []}}",
@@ -145,15 +62,16 @@
                                 ]
                             }
                         }
-                    }
-                ]
-            },
+                    ]
+                }
+            ],
             "errorHandling": {
                 "404": {
                     "handler": "openModal",
                     "target": "tempOrderNotFoundModal"
                 }
-            }
+            },
+            "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관."
         },
         {
             "id": "userAddresses",
@@ -163,12 +81,89 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_mode": "required",
-            "comment": "사용자 저장 배송지 목록 (회원 전용). 비회원/토큰만료 시 401 코어 DEFAULT 핸들러가 navigate({{auth.loginPath}}) 를 발동해 'Failed to execute action: navigate' 가 보고됨 — suppress 로 조용히 무시",
-            "fallback": { "data": { "addresses": { "data": [] } } },
+            "onSuccess": [
+                {
+                    "comment": "기본 배송지로 배송지 칸을 채워 연다(2026-09-21 요구사항) — 주문할 때마다 같은 주소를 다시\n           고르게 두지 않는다. 목록은 기본 배송지가 맨 앞이라 첫 줄을 집는다.\n           칩을 누른 경로와 **같은 모양**으로 옮겨 담는다(저장 형식 UserAddress → 주문서 형식):\n           해외 주소는 도시·주·우편번호가 `intl_*` 로 갈리므로 한 칸씩 옮겨야 한다.\n           마지막에 주문서를 다시 받는 것은 배송비 때문이다 — 우편번호·국가가 정해졌으니 그 값으로\n           계산된 금액이어야 주문 확정 때의 재계산과 미리보기가 갈라지지 않는다. refetch 는 «현재»\n           로컬 상태를 읽으므로 setState 가 같은 sequence 앞에 있어야 한다.\n           채움은 **화면 진입마다 한 번**이다 — 배송지 관리 창이 주소를 추가·수정하고 목록을 다시 받을 때마다\n           이 onSuccess 가 다시 돈다. 그때 또 채우면 구매자가 고른 배송지를 기본 배송지로 덮어 다른 주소로\n           배송될 수 있다. onSuccess 컨텍스트에는 _local 이 없어 표현식으로 판정할 수 없으므로 핸들러\n           (markLocalOnce)가 현재 로컬 상태로 첫 회만 참을 돌려준다(플래그는 아래 initLocal 이 진입마다 거짓으로 세운다).",
+                    "handler": "sequence",
+                    "if": "{{(response.data.data.addresses?.data ?? []).length > 0}}",
+                    "actions": [
+                        {
+                            "handler": "sirsoft-basic.markLocalOnce",
+                            "params": {
+                                "key": "checkoutDefaultAddressPrefilled"
+                            }
+                        },
+                        {
+                            "handler": "conditions",
+                            "conditions": [
+                                {
+                                    "if": "{{$prev === true}}",
+                                    "then": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "selectedAddressId": "{{(response.data.data.addresses.data)[0].id}}",
+                                                "selectedAddressObj": "{{(response.data.data.addresses.data)[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "shipping": {
+                                                    "recipient_name": "{{(response.data.data.addresses.data)[0].recipient_name}}",
+                                                    "recipient_phone": "{{(response.data.data.addresses.data)[0].recipient_phone}}",
+                                                    "country_code": "{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}",
+                                                    "zipcode": "{{(response.data.data.addresses.data)[0].zipcode ?? ''}}",
+                                                    "address": "{{(response.data.data.addresses.data)[0].address ?? ''}}",
+                                                    "address_detail": "{{(response.data.data.addresses.data)[0].address_detail ?? ''}}",
+                                                    "region": "{{(response.data.data.addresses.data)[0].region ?? ''}}",
+                                                    "address_line_1": "{{(response.data.data.addresses.data)[0].address_line_1 ?? ''}}",
+                                                    "address_line_2": "{{(response.data.data.addresses.data)[0].address_line_2 ?? ''}}",
+                                                    "intl_city": "{{(response.data.data.addresses.data)[0].city ?? ''}}",
+                                                    "intl_state": "{{(response.data.data.addresses.data)[0].state ?? ''}}",
+                                                    "intl_postal_code": "{{(response.data.data.addresses.data)[0].postal_code ?? ''}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "checkout.zipcode": "{{(response.data.data.addresses.data)[0].zipcode ?? ''}}",
+                                                "checkout.country_code": "{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "checkoutData"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "fallback": {
+                "data": {
+                    "addresses": {
+                        "data": []
+                    }
+                }
+            },
             "errorHandling": {
-                "401": { "handler": "suppress" },
-                "403": { "handler": "suppress" }
-            }
+                "401": {
+                    "handler": "suppress"
+                },
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "사용자 저장 배송지 목록 (회원 전용). 비회원/토큰만료 시 401 코어 DEFAULT 핸들러가 navigate({{auth.loginPath}}) 를 발동해 'Failed to execute action: navigate' 가 보고됨 — suppress 로 조용히 무시"
         },
         {
             "id": "paymentSettings",
@@ -191,15 +186,96 @@
             "comment": "배송 설정 (국내/해외 배송 가능 여부 등)"
         }
     ],
+    "initLocal": {
+        "checkout": {
+            "item_coupons": {},
+            "order_coupon_issue_id": null,
+            "shipping_coupon_issue_id": null,
+            "use_points": 0,
+            "discount_code": null,
+            "zipcode": null
+        },
+        "downloadableCoupons": null,
+        "downloadableCouponsLoading": false,
+        "downloadableCouponsPage": 1,
+        "isSubmittingOrder": false,
+        "errors": null,
+        "orderError": null,
+        "selectedDbank": null,
+        "addressModalMode": "list",
+        "selectedAddressId": null,
+        "checkoutDefaultAddressPrefilled": false,
+        "selectedAddressObj": null,
+        "saveShippingAddress": false,
+        "updateSelectedAddress": true,
+        "editingAddress": null,
+        "unavailableModal": {
+            "visible": false,
+            "items": [],
+            "hasStockIssue": false
+        }
+    },
+    "computed": {
+        "comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결) / 결제 통화에서 고를 수 없는 수단(체크아웃 응답 allowed_payment_methods 밖, #639 D17)은 고객 선택 가능 목록(selectablePaymentMethods)에서 빠지고, 고른 값이어도 버리고 그 목록의 첫 수단으로 돌린다 — 서버가 같은 판정으로 422 를 낸다 / 서버로 보낼 코어 결제수단(selectedCorePaymentMethod) — 플러그인이 더한 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 고른 결제수단의 core_payment_method(모듈이 병합 때 보존한다)로 옮겨 보낸다. 선언이 없는 것(dbank·KG 등)은 원래 id 를 그대로 쓴다.",
+        "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
+        "shippingAddressDirty": "{{!!_local.selectedAddressId && [['recipient_name', 'recipient_name'], ['recipient_phone', 'recipient_phone'], ['zipcode', 'zipcode'], ['address', 'address'], ['address_detail', 'address_detail'], ['address_line_1', 'address_line_1'], ['address_line_2', 'address_line_2'], ['intl_city', 'city'], ['intl_state', 'state'], ['intl_postal_code', 'postal_code']].some(pair => ((_local.shipping ?? {})[pair[0]] ?? '') !== ((_local.selectedAddressObj ?? {})[pair[1]] ?? ''))}}",
+        "selectablePaymentMethods": "{{(paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active && m.customer_selectable !== false && (!m.requires_ios || _global.appConfig?.isIos) && (!Array.isArray(checkoutData?.data?.allowed_payment_methods) || checkoutData.data.allowed_payment_methods.includes(m.id)))}}",
+        "selectedPaymentMethod": "{{(_local.paymentMethod && (!Array.isArray(checkoutData?.data?.allowed_payment_methods) || checkoutData.data.allowed_payment_methods.includes(_local.paymentMethod))) ? _local.paymentMethod : ((_computed.selectablePaymentMethods ?? [])[0]?.id ?? 'dbank')}}",
+        "selectedCorePaymentMethod": "{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === _computed.selectedPaymentMethod)?.core_payment_method ?? _computed.selectedPaymentMethod}}"
+    },
+    "permissions": [],
+    "init_actions": [
+        {
+            "comment": "배송국가 시드 — 주문서 진입 시 배송비 계산용 _local.checkout.country_code 와 배송지 폼·주문 제출용 _local.shipping.country_code 를\n         **같은 값**으로 채운다. 값은 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)이되, 해외배송이 켜져 있고\n         그 나라가 활성 배송국가일 때만 쓰고 아니면 KR 이다(선택 칸 옵션에 없는 나라가 고른 값처럼 보이지 않도록).\n         둘 중 하나만 시드하면 선택 칸은 「미국」인데 주소 폼은 국내형이고 주문은 KR 로 저장되는 어긋남이 생긴다(#703).\n         checkout.country_code 는 checkoutData GET 쿼리로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가\n         Select 를 바꾸면 그 시점 값이 두 자리 모두를 덮어쓴다(주문서 기준).",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "checkout.country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}",
+                "shipping.country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"
+            }
+        },
+        {
+            "comment": "결제 콜백 에러 쿼리 파라미터 감지 — PG 결제 실패 후 리다이렉트 시 에러 코드 저장 + toast + URL 정리",
+            "handler": "conditions",
+            "conditions": [
+                {
+                    "if": "{{!!query.error}}",
+                    "then": {
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "orderError": "{{query.error}}",
+                                    "orderErrorMessage": "{{query.message ?? ''}}"
+                                }
+                            },
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:shop.checkout.payment_generic_error"
+                                }
+                            },
+                            {
+                                "handler": "replaceUrl",
+                                "params": {
+                                    "path": "/shop/checkout"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
     "slots": {
         "content": [
             {
                 "type": "layout",
                 "name": "Container",
                 "blur_until_loaded": "{{_local.isSubmittingOrder}}",
-                "props": {
-                    "className": "py-8"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
@@ -207,15 +283,15 @@
                         }
                     }
                 },
+                "props": {
+                    "className": "py-8"
+                },
                 "children": [
                     {
                         "comment": "에러 요약 (페이지 상단)",
                         "type": "basic",
                         "name": "Div",
                         "if": "{{_local.orderError}}",
-                        "props": {
-                            "className": "mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -223,16 +299,24 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                        },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex items-start gap-3" },
+                                "props": {
+                                    "className": "flex items-start gap-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
-                                        "props": { "name": "exclamation-circle", "className": "text-xl text-red-500 flex-shrink-0 mt-0.5" }
+                                        "props": {
+                                            "name": "exclamation-circle",
+                                            "className": "text-xl text-red-500 flex-shrink-0 mt-0.5"
+                                        }
                                     },
                                     {
                                         "type": "basic",
@@ -241,14 +325,18 @@
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "text-sm font-medium text-red-800 dark:text-red-200" },
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                },
                                                 "text": "{{_local.orderError === 'confirm_failed' ? '$t:shop.checkout.payment_confirm_failed' : _local.orderError === 'amount_mismatch' ? '$t:shop.checkout.payment_amount_mismatch' : _local.orderError === 'order_not_found' ? '$t:shop.checkout.payment_order_not_found' : '$t:shop.checkout.payment_generic_error'}}"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
                                                 "if": "{{_local.orderErrorMessage}}",
-                                                "props": { "className": "text-xs text-red-600 dark:text-red-400 mt-1" },
+                                                "props": {
+                                                    "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                                                },
                                                 "text": "{{_local.orderErrorMessage}}"
                                             }
                                         ]
@@ -261,9 +349,6 @@
                         "comment": "뒤로가기 + 페이지 제목",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "mb-6"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -271,19 +356,31 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "mb-6"
+                        },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 text-sm cursor-pointer"
                                         }
                                     }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{_global.shopBase}}/cart"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer"
                                 },
                                 "children": [
                                     {
@@ -299,29 +396,20 @@
                                         "name": "Span",
                                         "text": "$t:shop.checkout.back"
                                     }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "{{_global.shopBase}}/cart"
-                                        }
-                                    }
                                 ]
                             },
                             {
                                 "type": "basic",
                                 "name": "H1",
-                                "props": {
-                                    "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "text-xl font-bold text-gray-900 dark:text-white"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white"
                                 },
                                 "text": "$t:shop.checkout.title"
                             }
@@ -331,10 +419,6 @@
                         "comment": "PC: 3컬럼 그리드 (좌측 폼 2칸, 우측 결제금액 1칸)",
                         "type": "layout",
                         "name": "Grid",
-                        "props": {
-                            "cols": 3,
-                            "gap": 6
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -343,20 +427,24 @@
                                 }
                             }
                         },
+                        "props": {
+                            "cols": 3,
+                            "gap": 6
+                        },
                         "children": [
                             {
                                 "comment": "좌측 영역 - 폼 섹션들",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "col-span-2 space-y-6"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "col-span-1 space-y-4"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "col-span-2 space-y-6"
                                 },
                                 "children": [
                                     {
@@ -404,22 +492,29 @@
         ]
     },
     "modals": [
-        { "partial": "partials/shop/_modal_temp_order_not_found.json" },
-        { "partial": "partials/shop/_modal_exclusive_coupon_confirm.json" },
-        { "partial": "partials/shop/_modal_address_manage.json" },
-        { "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json" },
-        { "partial": "partials/shop/_modal_cart_unavailable.json" },
-        { "partial": "partials/shop/_modal_coupon_download.json" }
-    ],
-    "actions": [
         {
-            "id": "selectDbank",
-            "comment": "무통장입금 계좌 선택",
-            "handler": "setState",
-            "params": {
-                "target": "_local.selectedDbank",
-                "value": "{{$params.bank}}"
-            }
+            "comment": "결제 도중 이탈했다가 되돌아왔는데 임시 주문이 이미 만료·정리된 경우 — 장바구니로 되돌린다",
+            "partial": "partials/shop/_modal_temp_order_not_found.json"
+        },
+        {
+            "comment": "중복 사용 불가 쿠폰을 고를 때 — 먼저 걸린 쿠폰이 해제된다는 것을 알리고 확인을 받는다",
+            "partial": "partials/shop/_modal_exclusive_coupon_confirm.json"
+        },
+        {
+            "comment": "저장된 배송지 목록에서 고르기(마이페이지로 나가지 않고 주문서 안에서 처리한다)",
+            "partial": "partials/shop/_modal_address_manage.json"
+        },
+        {
+            "comment": "배송지 저장 자리가 꽉 찼을 때 어느 것을 덮어쓸지 묻는다. 마이페이지 배송지 화면과 같은 창을 쓴다",
+            "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
+        },
+        {
+            "comment": "주문서를 여는 동안 품절·판매중지로 바뀐 항목이 있으면 알린다(장바구니와 같은 창)",
+            "partial": "partials/shop/_modal_cart_unavailable.json"
+        },
+        {
+            "comment": "주문서에서 곧바로 쿠폰을 더 받아 적용할 수 있게 여는 창",
+            "partial": "partials/shop/_modal_coupon_download.json"
         }
     ]
 }

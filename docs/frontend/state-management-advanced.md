@@ -30,6 +30,7 @@
 | `activeModal` | `string \| null` | 현재 최상위 모달 ID | 모달 시스템 (하위 호환) |
 | `sidebarOpen` | `boolean` | 사이드바 열림 상태 | 반응형 레이아웃 |
 | `errorMessage` | `string \| null` | 에러 메시지 (에러 모달용) | 에러 처리 |
+| `consent` | `{contractVersion, status, categories, needsRenewal, policyVersion}` | 방문자 동의 스냅샷 — 사용자 템플릿에서만 코어 동의 런타임이 쓴다 (engine-v1.78.0). 확장은 읽기만 하고 `refreshConsent`·`G7Core.consent` 로 갱신을 요청한다 | 동의 제공자 계약 (`docs/extension/consent-provider.md`) |
 
 ### toasts (토스트 시스템)
 
@@ -56,7 +57,13 @@ interface ToastItem {
 
 #### 레이아웃 JSON 설정 예시
 
-`_admin_base.json`에서 Toast 컴포넌트 바인딩:
+`_admin_base.g7.html`에서 Toast 컴포넌트 바인딩:
+
+```html
+<toast data-ref="global_toast" toasts="{{_global.toasts}}" position="top-right" :duration="5000"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -131,6 +138,16 @@ G7Core.toast.show('메시지', { type: 'info', icon: 'bell', duration: 3000 });
 
 #### 사용 예시
 
+```html
+<button data-ref="activate_button" children="활성화">
+  <on type="click">
+    <open-modal modalId="activate_confirm_modal"/>
+  </on>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "activate_button",
@@ -154,6 +171,14 @@ G7Core.toast.show('메시지', { type: 'info', icon: 'bell', duration: 3000 });
 #### 모달 정의와의 연동
 
 레이아웃 JSON의 `modals` 배열에 정의된 모달은 `activeModal` 값에 따라 자동으로 표시됩니다:
+
+```html
+<modal>
+  <modal data-ref="activate_confirm_modal" title="확인" width="400px"/>
+</modal>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -316,10 +341,10 @@ console.log(window.__g7PendingLocalState);
 {
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "activeModal": "my_modal_id"
       }
     }
@@ -335,6 +360,16 @@ console.log(window.__g7PendingLocalState);
 
 ### 1. 모바일 사이드바 토글
 
+```html
+<button data-ref="mobile_menu_button" class="p-2 hover:bg-gray-100 rounded-lg">
+  <on type="click">
+    <set-state target="global" sidebarOpen="{{!_global.sidebarOpen}}"/>
+  </on>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "mobile_menu_button",
@@ -345,10 +380,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": "{{!_global.sidebarOpen}}"
       }
     }
@@ -357,6 +392,16 @@ console.log(window.__g7PendingLocalState);
 ```
 
 ### 2. 오버레이 닫기
+
+```html
+<div data-ref="overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40">
+  <on type="click">
+    <set-state target="global" :sidebarOpen="false"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -369,10 +414,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": false
       }
     }
@@ -381,6 +426,16 @@ console.log(window.__g7PendingLocalState);
 ```
 
 ### 3. 다크모드 토글
+
+```html
+<button data-ref="theme_toggle" class="p-2 rounded-lg">
+  <on type="click">
+    <set-state target="global" theme="{{_global.theme == 'dark' ? 'light' : 'dark'}}"/>
+  </on>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -392,10 +447,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "theme": "{{_global.theme == 'dark' ? 'light' : 'dark'}}"
       }
     }
@@ -418,6 +473,16 @@ console.log(window.__g7PendingLocalState);
 
 전역 상태와 `if` 조건을 조합하여 동적 UI를 구현할 수 있습니다.
 
+```html
+<div data-ref="mobile_overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40">
+  <on type="click">
+    <set-state target="global" :sidebarOpen="false"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "mobile_overlay",
@@ -429,10 +494,10 @@ console.log(window.__g7PendingLocalState);
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": false
       }
     }
@@ -659,6 +724,22 @@ const unsubscribe = G7Core.state.subscribe((state) => {
 unsubscribe();
 ```
 
+컴포넌트에서 구독하면 언마운트 때 반드시 해제합니다. effect 가 해제 함수를 그대로 돌려주면 됩니다.
+
+```tsx
+useEffect(() => {
+  const unsubscribe = G7Core.state.subscribe((state) => {
+    setSidebarOpen(state.sidebarOpen === true);
+  });
+
+  return unsubscribe;
+}, []);
+```
+
+해제하지 않으면 화면을 떠난 뒤에도 리스너가 남고, 화면을 오갈 때마다 하나씩 쌓입니다.
+
+> engine-v1.78.0 이전에는 `subscribe()` 가 해제 함수 대신 `undefined` 를 돌려줘 위 패턴으로 해제되지 않았습니다. engine-v1.78.0 부터 실제 해제 함수를 돌려줍니다.
+
 ### G7Core.state.getDataSource(dataSourceId)
 
 > **버전**: engine-v1.3.0+
@@ -771,9 +852,8 @@ G7Core.toast.show('메시지', { type: 'info', duration: 5000 });
 ```typescript
 // 모달 열기/닫기
 G7Core.modal.open('confirm_modal');
-G7Core.modal.close();  // 최상위 모달 닫기
-G7Core.modal.close('confirm_modal');  // 특정 모달 닫기
-G7Core.modal.closeAll();  // 모든 모달 닫기
+G7Core.modal.close();  // 최상위 모달 닫기 (ID 인자는 무시된다)
+// closeAll() 은 동작하지 않는다 — g7core-api.md 「알려진 제약」
 
 // 상태 확인
 G7Core.modal.isOpen('confirm_modal');  // boolean

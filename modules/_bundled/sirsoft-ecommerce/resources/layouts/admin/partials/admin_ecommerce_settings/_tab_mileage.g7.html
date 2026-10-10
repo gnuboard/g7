@@ -1,0 +1,38 @@
+<!-- 쇼핑몰 설정 — 마일리지 탭. 기본·소멸·알림 카드와 통화별 적립 설정을 담는 껍데기이고,
+  각 항목의 입력은 그 조각들이 맡는다. -->
+<partial description="쇼핑몰 설정 마일리지 탭 콘텐츠">
+  <div data-ref="tab_content_mileage" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'mileage'}}" class="mt-6 space-y-6">
+    <include src="_tab_mileage_basic_card.g7.html"/>
+    <div data-ref="mileage_currency_card" class="admin-card">
+      <div class="flex-between mb-4 gap-2 flex-wrap">
+        <h3 class="section-heading">$t:sirsoft-ecommerce.admin.mileage_settings.currency.title</h3>
+        <button data-ref="add_currency_rule_button" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _local.isAddingMileageCurrency === true}}">
+          <on type="click">
+            <!-- 통화별 적립 설정 추가 시작. 빈 줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다. -->
+            <set-state target="local" :isAddingMileageCurrency="true">
+              <field name="form.newMileageCurrency">
+                <field name="currency_code" value=""/>
+                <field name="point_value" :value="1"/>
+                <field name="min_use_amount" :value="0"/>
+                <field name="use_unit" :value="1"/>
+                <field name="max_use_type" value="percent"/>
+                <field name="max_use_percent" :value="30"/>
+                <field name="max_use_value" :value="0"/>
+              </field>
+            </set-state>
+          </on>
+          <icon name="plus" size="sm"/>
+          <span>$t:sirsoft-ecommerce.admin.mileage_settings.currency.add</span>
+        </button>
+      </div>
+      <div data-ref="currency_rules_view" class="w-full">
+        <responsive on="portable">
+          <include src="_tab_mileage_currency_cards.g7.html"/>
+        </responsive>
+        <include src="_tab_mileage_currency_table.g7.html"/>
+      </div>
+    </div>
+    <include src="_tab_mileage_expiry_card.g7.html"/>
+    <include src="_tab_mileage_notification_card.g7.html"/>
+  </div>
+</partial>

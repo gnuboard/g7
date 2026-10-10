@@ -40,6 +40,13 @@ class BoardFactory extends Factory
             'comment_order' => 'ASC',
             'show_view_count' => false,
             'use_report' => false,
+            // 반응·스크랩·답글 삭제 정책 — 관리자 폼으로 만든 게시판과 같은 모듈 기본값(SB-3).
+            // 빠뜨리면 active_reaction_types 가 NULL 이라 반응이 꺼진 게시판이 만들어진다.
+            'use_scrap' => true,
+            'use_reaction' => true,
+            'use_comment_reaction' => true,
+            'active_reaction_types' => ['like'],
+            'reply_delete_policy' => 'cascade',
             'use_file_upload' => false,
             'max_file_size' => 10, // 10MB
             'max_file_count' => 5,

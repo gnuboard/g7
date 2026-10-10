@@ -1,0 +1,598 @@
+{
+    "comment": "유입 경로 리포트 — 유형·사이트·검색어·캠페인 네 탭. 유형 탭은 종류가 다섯 안팎이라 표 위에 도넛으로\n  비율을 함께 그린다(같은 응답을 두 번 쓴다). 나머지는 페이지 리포트와 같은 공통 조각이다.\n  사이트 탭은 한 단계 더 있다 — 도메인 행을 누르면 주소에 `host` 가 실리고, 그 도메인에서 들어온 실제\n  주소 목록(`analytics_referrer_urls`)이 공통 표 자리를 대신한다. 집계표는 호스트까지만 쌓여 이 목록만\n  원장을 직접 읽는다. 그 자리에서는 CSV 를 감춘다 — 받아지는 것은 사이트 목록이라 화면과 다른 것을 준다\n  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). #682 라운드 4, 검수 지적 ⑥.",
+    "version": "1.0.0",
+    "layout_name": "admin_analytics_referrers",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.analytics.referrers.title"
+    },
+    "data_sources": [
+        {
+            "id": "analytics_report",
+            "label_key": "$t:editor.data_source.analytics_report",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page}}",
+                "sort": "{{query.sort}}",
+                "q": "{{query.q}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "has_more": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "탭 → 리포트 이름. 공통 표와 유형 탭의 도넛이 읽는다. 사이트 탭에서 한 도메인의 주소 목록을 보는 동안에는 표 자리를\n       아래 소스가 대신하지만, 이 소스는 조건 없이 사이트 집계를 계속 받는다."
+        },
+        {
+            "id": "analytics_referrer_urls",
+            "label_key": "$t:editor.data_source.analytics_referrer_urls",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/referrer-urls",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "if": "{{(query.tab || 'types') === 'sites' && !!query.host}}",
+            "params": {
+                "host": "{{query.host}}",
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "has_more": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "한 유입처의 전체 주소. 집계표에는 호스트까지만 쌓여 이 소스만 원장을 직접 읽는다 —\n       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다(#682 라운드 4, 검수 지적 ⑥)."
+        },
+        {
+            "id": "analytics_status",
+            "label_key": "$t:editor.data_source.analytics_status",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "collection": {
+                        "enabled": true
+                    },
+                    "queue": {
+                        "backlogged": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를\n         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을\n         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2).",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "상단 경고용 진단 상태(background). 큐가 밀리면 방금 들어온 유입이 아직 원장에 없다 — 표 숫자가 모자라 보이는 까닭을\n       공통 경고가 이 값으로 알린다."
+        },
+        {
+            "id": "analytics_row_trend",
+            "label_key": "$t:editor.data_source.analytics_row_trend",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "params": {
+                "label": "{{_global.analyticsRowTrend?.label ?? ''}}",
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}"
+            },
+            "fallback": {
+                "data": {
+                    "unit": "day",
+                    "unit_downgraded": false,
+                    "points": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                },
+                "404": {
+                    "handler": "suppress"
+                },
+                "422": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를\n       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다."
+        }
+    ],
+    "initLocal": {
+        "periodPath": "/admin/analytics/referrers",
+        "periodSource": "analytics_report",
+        "showUnit": false,
+        "labelDrilldownKey": ""
+    },
+    "computed": {
+        "reportEmptyHint": "{{(query.tab || 'types') === 'mediums' ? $t('admin.analytics.referrers.mediums_empty') : null}}",
+        "reportName": "{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}",
+        "csvUrl": "{{((query.tab || 'types') === 'sites' && !!query.host) ? '' : '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
+        "csvFilename": "{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
+        "periodFrom": "{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}",
+        "periodTo": "{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_report?.data?.freshness ?? null}}"
+    },
+    "permissions": [
+        "core.analytics.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "analytics_report",
+            "analytics_referrer_urls"
+        ]
+    },
+    "init_actions": [
+        {
+            "comment": "`labelDrilldownKey` 는 공통 표의 라벨을 눌러 들어가는 링크로 만든다 — 사이트 탭의 목록에서만 켠다\n      (그 도메인의 전체 유입 주소로 간다). 이미 주소 목록을 보고 있으면(`host` 가 있으면) 더 들어갈 곳이\n      없으므로 끈다. 다른 탭은 종전대로 글자다.",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "labelDrilldownKey": "{{(query.tab || 'types') === 'sites' && !query.host ? 'host' : ''}}"
+            }
+        },
+        {
+            "handler": "setAnalyticsPeriod",
+            "params": {
+                "preset": "{{query.preset || '7d'}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "periodComputed"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "analytics_referrers_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.analytics.referrers.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:admin.analytics.referrers.description"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_status_alerts.json"
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_period_bar.json"
+                    },
+                    {
+                        "id": "report_tabs",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "comment": "탭 전환 — 라벨 링크 여부를 새 탭에 맞춘 뒤 이동한다. 사이트 탭에서 열어 둔 도메인(`host`)은 새 탭에 의미가 없어 지운다.",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "comment": "탭 전환은 `replace` 라 `<init>` 이 다시 돌지 않는다 — 링크 여부를 여기서 새 탭에 맞춰 둬야\n              「유형 → 사이트」로 옮긴 표가 글자로만 남거나, 「사이트 → 검색어」로 옮긴 표가 갈 곳 없는 링크로\n              남지 않는다(#682 S3 라운드 14). 새 탭에는 `host` 가 없으므로 사이트 탭이면 켠다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "labelDrilldownKey": "{{$args[0] === 'sites' ? 'host' : ''}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다.",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/analytics/referrers",
+                                            "replace": true,
+                                            "query": {
+                                                "tab": "{{$args[0]}}",
+                                                "preset": "{{query.preset}}",
+                                                "from": "{{query.from}}",
+                                                "to": "{{query.to}}",
+                                                "unit": "{{query.unit}}",
+                                                "exclude": "{{query.exclude}}",
+                                                "per_page": "{{query.per_page}}",
+                                                "host": "{{undefined}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "className": "mb-4",
+                            "activeTabId": "{{query.tab || 'types'}}",
+                            "variant": "underline",
+                            "tabs": [
+                                {
+                                    "id": "types",
+                                    "label": "$t:admin.analytics.referrers.tabs.types"
+                                },
+                                {
+                                    "id": "sites",
+                                    "label": "$t:admin.analytics.referrers.tabs.sites"
+                                },
+                                {
+                                    "id": "keywords",
+                                    "label": "$t:admin.analytics.referrers.tabs.keywords"
+                                },
+                                {
+                                    "id": "campaigns",
+                                    "label": "$t:admin.analytics.referrers.tabs.campaigns"
+                                },
+                                {
+                                    "id": "mediums",
+                                    "label": "$t:admin.analytics.referrers.tabs.mediums"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "comment": "검색어가 거의 비는 것은 판정 실패가 아니다 — 검색엔진이 HTTPS 로 옮기며 유입 주소에 검색어를 싣지 않는다.\n        빈 표를 본 운영자가 수집이 고장 났다고 읽지 않게 그 탭에서 먼저 알린다.",
+                        "id": "keywords_https_hint",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{query.tab === 'keywords'}}",
+                        "props": {
+                            "className": "text-sm text-label mb-3"
+                        },
+                        "text": "$t:admin.analytics.referrers.keywords_https_hint"
+                    },
+                    {
+                        "id": "referrer_type_chart_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(query.tab || 'types') === 'types' && (analytics_report?.data?.data ?? []).length > 0}}",
+                        "props": {
+                            "className": "admin-card mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H2",
+                                "props": {
+                                    "className": "section-heading mb-3"
+                                },
+                                "text": "$t:admin.analytics.referrers.type_share_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex justify-center"
+                                },
+                                "children": [
+                                    {
+                                        "id": "referrer_type_chart",
+                                        "type": "composite",
+                                        "name": "DonutChart",
+                                        "props": {
+                                            "data": "{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981', '#EF4444', '#6366F1'][i % 6] }))}}",
+                                            "size": 220,
+                                            "showLegend": true
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "report_grid_wrap",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!((query.tab || 'types') === 'sites' && !!query.host)}}",
+                        "children": [
+                            {
+                                "partial": "partials/admin_analytics/_partial_report_grid.json"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "한 유입처의 전체 주소. 집계표는 호스트까지만 쌓아 「google.com 에서 340」까지만 말하는데,\n        운영자가 알고 싶은 것은 어느 검색 결과·어느 글에서 왔는지다. 이 카드만 원장을 직접 읽는다.\n        돌아가기는 `host` 만 지워 기간·쪽 크기는 그대로 두고 사이트 목록으로 되돌린다.",
+                        "id": "referrer_urls_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(query.tab || 'types') === 'sites' && !!query.host}}",
+                        "props": {
+                            "className": "admin-card"
+                        },
+                        "children": [
+                            {
+                                "id": "referrer_urls_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3 mb-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "referrer_urls_back",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "사이트 목록으로 — 라벨 링크를 다시 켜고 `host` 만 지워 1쪽으로 돌아간다. 기간·쪽 크기는 병합으로 남는다.",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "comment": "사이트 목록으로 돌아오는 것도 `replace` 라 `<init>` 이 다시 돌지 않는다 — 링크를 다시 켠다.",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "labelDrilldownKey": "host"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/referrers",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "referrer_urls_grid__body",
+                                                            "query": {
+                                                                "host": "{{undefined}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "aria-label": "$t:admin.analytics.referrers.urls_back"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrow-left",
+                                                    "className": "text-xl"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "section-heading break-all"
+                                                },
+                                                "text": "$t:admin.analytics.referrers.urls_title|host={{query.host ?? ''}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-hint mt-1"
+                                                },
+                                                "text": "$t:admin.analytics.referrers.urls_hint"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "analytics_referrer_urls"
+                                },
+                                "props": {
+                                    "className": "overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "id": "referrer_urls_grid",
+                                        "type": "composite",
+                                        "name": "DataGrid",
+                                        "if": "{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length > 0}}",
+                                        "actions": [
+                                            {
+                                                "comment": "유입 주소 목록의 쪽 이동. 이 목록은 원장을 직접 읽어 총 건수를 세지 않으므로 다음 쪽 여부는 응답의 `has_more` 로만 안다.",
+                                                "type": "action",
+                                                "event": "onPageChange",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/analytics/referrers",
+                                                    "mergeQuery": true,
+                                                    "replace": true,
+                                                    "transition_overlay_target": "referrer_urls_grid__body",
+                                                    "query": {
+                                                        "page": "{{$args[0]}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "data": "{{analytics_referrer_urls?.data?.data ?? []}}",
+                                            "pagination": true,
+                                            "serverSidePagination": true,
+                                            "serverCurrentPage": "{{+(query.page || 1)}}",
+                                            "serverTotalPages": null,
+                                            "serverHasMorePages": "{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}",
+                                            "pageSize": "{{+(query.per_page || 25)}}",
+                                            "alwaysShowPagination": true,
+                                            "idField": "url",
+                                            "selectable": false,
+                                            "sortable": false,
+                                            "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                            "columns": [
+                                                {
+                                                    "field": "url",
+                                                    "header": "$t:admin.analytics.referrers.urls_column",
+                                                    "cellChildren": [
+                                                        {
+                                                            "comment": "바깥 주소라 `noopener noreferrer nofollow` 로 새 창에 연다.",
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "props": {
+                                                                "href": "{{row.url}}",
+                                                                "target": "_blank",
+                                                                "rel": "noopener noreferrer nofollow",
+                                                                "className": "text-link whitespace-normal break-all",
+                                                                "title": "{{row.url ?? ''}}"
+                                                            },
+                                                            "text": "{{row.url ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "visits",
+                                                    "header": "$t:admin.analytics.common.visits",
+                                                    "width": "90px",
+                                                    "align": "right",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-body"
+                                                            },
+                                                            "text": "{{(row.visits ?? 0) | number}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "field": "hits",
+                                                    "header": "$t:admin.analytics.common.hits",
+                                                    "width": "90px",
+                                                    "align": "right",
+                                                    "cellChildren": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-body"
+                                                            },
+                                                            "text": "{{(row.hits ?? 0) | number}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "referrer_urls_empty",
+                                "type": "composite",
+                                "name": "EmptyState",
+                                "if": "{{!analytics_referrer_urls?.loading && (analytics_referrer_urls?.data?.data ?? []).length === 0}}",
+                                "props": {
+                                    "iconName": "link",
+                                    "title": "$t:admin.analytics.common.empty_title",
+                                    "description": "$t:admin.analytics.referrers.urls_empty_description",
+                                    "className": "py-10"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_referrers_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "한 항목 추이 창.",
+            "partial": "partials/admin_analytics/_modal_row_trend.json"
+        }
+    ]
+}

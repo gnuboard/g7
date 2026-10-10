@@ -64,6 +64,7 @@
         "hidden": "Hidden",
         "redirect": "Redirect",
         "shared_layout": "Shared by {count} routes",
+        "shared_layout_one": "Shared by {count} route",
         "modified": "Modified",
         "version_tooltip": "Current saved version v{version}",
         "extension_point": "Extension point",
@@ -96,6 +97,10 @@
       "title": "Reset this screen",
       "message": "Discard changes on this screen and revert to the last saved state."
     }
+  },
+  "dialog": {
+    "confirm": "OK",
+    "cancel": "Cancel"
   },
   "preview": {
     "empty": "Select a route on the left to start editing",
@@ -130,8 +135,16 @@
     "upload": "Upload file",
     "delete": "Delete",
     "delete_confirm": "This file will be deleted. This cannot be undone.",
-    "binary_hint": "This file type (:extension) cannot be edited directly. Upload a replacement with the same name.",
-    "apply_hint": "Saved changes apply from the next page load."
+    "binary_hint": "This file type ({extension}) cannot be edited directly. Upload a replacement with the same name.",
+    "apply_hint": "Saved changes apply from the next page load.",
+    "discard_confirm": "You have {count} unsaved edits. Discard them and continue?",
+    "discard_confirm_one": "You have {count} unsaved edit. Discard it and continue?",
+    "rename": "Rename",
+    "rename_prompt": "Enter the new path. The file extension cannot change.",
+    "search_placeholder": "Search files and contents",
+    "no_match": "No file or content matches '{keyword}'",
+    "unsaved": "Unsaved",
+    "word_wrap": "Wrap"
   },
   "version_history": {
     "title": "Version history",
@@ -144,8 +157,11 @@
     "restore_not_found": "That version could not be found. Please refresh the list.",
     "latest": "Latest",
     "added": "+{count} lines",
+    "added_one": "+{count} line",
     "removed": "-{count} lines",
+    "removed_one": "-{count} line",
     "chars": "({diff} chars)",
+    "chars_one": "({diff} char)",
     "saved_by": "Saved by {name}",
     "unknown_author": "Unknown",
     "compare": "Compare",
@@ -321,7 +337,8 @@
     "network_error_title": "Network error while saving",
     "guard_no_document": "No layout document loaded — nothing to save",
     "guard_extension_reassembly_title": "Not saved — extension content could not be mapped back",
-    "guard_extension_reassembly": "{count} element(s) injected by this extension could not be traced to their original slot. Saving would drop them, so the save was blocked. Reload the page and try again.",
+    "guard_extension_reassembly": "{count} elements injected by this extension could not be traced to their original slots. Saving would drop them, so the save was blocked. Reload the page and try again.",
+    "guard_extension_reassembly_one": "{count} element injected by this extension could not be traced to its original slot. Saving would drop it, so the save was blocked. Reload the page and try again.",
     "concurrent": {
       "title": "Another user saved first",
       "message": "This layout was saved by another administrator. Load the latest version?",
@@ -379,6 +396,8 @@
   },
   "action": {
     "no_events": "This element has no configurable actions",
+    "mixed_debounce_warning": "This event mixes delayed (debounced) actions with immediate ones. Every time an immediate action runs, the waiting delayed actions run right away too, so they also run on every input. To keep the delay, make every action in this event delayed.",
+    "raw_value_hint": "This event passes the new value itself, not an event. In action values, read the new value as {{$args[{index}]}} ($event.target.value is empty here).",
     "no_recipes": "This template provides no available actions",
     "add_action": "+ Add action",
     "remove": "Remove action",
@@ -388,6 +407,7 @@
       "onClick": "When clicked",
       "onHover": "When hovered",
       "onChange": "When value changes",
+      "onSearch": "When a search term is typed",
       "onSubmit": "When submitted",
       "onClose": "When closed",
       "onFilesChange": "When files change",
@@ -411,7 +431,10 @@
       "onSelect": "When selected",
       "onSelectionChange": "When the selection changes",
       "onToggle": "When toggled",
-      "onComponentEvent": "On a specific event"
+      "onComponentEvent": "On a specific event",
+      "onPrimaryAction": "When the primary button is clicked",
+      "onSecondaryAction": "When the secondary button is clicked",
+      "onAction": "When a menu action is selected"
     },
     "advanced": "Advanced",
     "view_code": "View code",
@@ -485,7 +508,8 @@
     "settings_group": "Group {index}",
     "advanced_badge": "This element contains advanced settings authored in the code editor",
     "branch_badge": "This element belongs to the {device}-only layout — other devices show a different layout.",
-    "advanced_preserved_title": "{count} advanced setting(s) authored in code (preserved)",
+    "advanced_preserved_title": "{count} advanced settings authored in code (preserved)",
+    "advanced_preserved_title_one": "{count} advanced setting authored in code (preserved)",
     "advanced_kind_developer": "Developer property",
     "advanced_kind_expression": "Complex expression",
     "tab": {
@@ -634,12 +658,14 @@
     "unmerge": "Unmerge",
     "select_all": "Select all",
     "border_apply_count": "Apply to {count} cells",
+    "border_apply_count_one": "Apply to {count} cell",
     "merge_right": "Merge with right",
     "merge_down": "Merge with below",
     "border_apply_all": "Apply to whole table",
     "select_cell_hint": "Click a cell on the canvas to show merge/border tools.",
     "merge_range": "Merge range",
     "range_selected": "{count} cells selected",
+    "range_selected_one": "{count} cell selected",
     "custom_color": "Custom color"
   },
   "attachment_manager": {
@@ -666,7 +692,8 @@
     "select_aria": "Select {key}",
     "delete_selected": "Delete selected ({count})",
     "purge_orphaned": "Delete all unused ({count})",
-    "delete_confirm": "Delete {count} selected translation key(s)? This cannot be undone.",
+    "delete_confirm": "Delete {count} selected translation keys? This cannot be undone.",
+    "delete_confirm_one": "Delete {count} selected translation key? This cannot be undone.",
     "conflict": "It was modified elsewhere first. Refresh and try again.",
     "save": "Save",
     "saving": "Saving…",
@@ -1069,7 +1096,8 @@
   "page_settings": {
     "title": "{name} settings",
     "close": "Close",
-    "advanced_summary": "{count} setting(s) are edited in code and shown here as read-only.",
+    "advanced_summary": "{count} settings are edited in code and shown here as read-only.",
+    "advanced_summary_one": "{count} setting is edited in code and shown here as read-only.",
     "tab": {
       "meta": "Page",
       "seo": "SEO",
@@ -1243,7 +1271,8 @@
       "param_merge_query": "Keep existing query",
       "param_scroll": "Scroll position",
       "param_replace": "Replace history",
-      "param_overlay_target": "Loading overlay area"
+      "param_overlay_target": "Loading overlay area",
+      "param_refetch_data_sources": "Data sources to refetch (comma-separated)"
     },
     "open_window": {
       "label": "Open in a new window",
@@ -1319,6 +1348,14 @@
       "label": "Resend code",
       "param_body": "Challenge info"
     },
+    "login_password_change": {
+      "label": "Finish login with new password",
+      "param_body": "Change request info"
+    },
+    "login_password_change_postpone": {
+      "label": "Postpone password change",
+      "param_body": "Change request info"
+    },
     "logout": {
       "label": "Handle logout",
       "param_target": "Destination"
@@ -1326,6 +1363,9 @@
     "set_locale": {
       "label": "Change language",
       "param_target": "Language"
+    },
+    "refresh_consent": {
+      "label": "Reload visitor consent"
     },
     "emit_event": {
       "label": "Send a component event",

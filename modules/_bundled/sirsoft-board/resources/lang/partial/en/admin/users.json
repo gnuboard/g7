@@ -9,5 +9,25 @@
       "comment": "Comment Notification",
       "reply_comment": "Reply Comment Notification"
     }
+  },
+  "scraps": {
+    "tab_label": "Scraps",
+    "title": "Post scraps",
+    "count": "Scrap count",
+    "count_unit": "{{count}}",
+    "latest_scrapped_at": "Latest scrap",
+    "none": "This member has not scrapped any post.",
+    "view_list": "View this member's scraps"
+  },
+  "reactions": {
+    "tab_label": "Reactions",
+    "title": "Board reactions",
+    "count": "Total reactions",
+    "count_unit": "{{count}}",
+    "breakdown": "Posts / Comments",
+    "breakdown_unit": "{{post}} / {{comment}}",
+    "latest_reacted_at": "Latest reaction",
+    "none": "No reactions yet.",
+    "view_list": "View this member's reactions"
   }
 }

@@ -3,7 +3,7 @@
  * @description 환경설정 메일 탭 테스트 메일 기능 레이아웃 테스트
  *
  * 테스트 대상:
- * - templates/.../partials/admin_settings/_tab_mail.json
+ * - templates/.../partials/admin_settings/_tab_mail.g7.html
  *
  * 검증 항목:
  * - apiCall body에 to_email 파라미터 사용 (email 아닌)
@@ -157,7 +157,7 @@ function setupTestRegistry(): ComponentRegistry {
 }
 
 // ==============================
-// _tab_mail.json에서 핵심 부분 추출한 테스트용 레이아웃
+// _tab_mail.g7.html에서 핵심 부분 추출한 테스트용 레이아웃
 // ==============================
 
 const testMailLayout = {

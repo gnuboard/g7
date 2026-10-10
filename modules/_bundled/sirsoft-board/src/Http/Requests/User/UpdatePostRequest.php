@@ -7,7 +7,9 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 
@@ -21,7 +23,9 @@ use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
  */
 class UpdatePostRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
     use ValidatesAttachmentCount;
+    use ValidatesTempKey;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -38,6 +42,8 @@ class UpdatePostRequest extends FormRequest
      *
      * 비밀글 여부를 문자열 "true"/"false" 로 보내는 클라이언트도 수용하도록
      * boolean 으로 정규화합니다. (해석 불가값은 유지 → boolean 규칙이 422 처리)
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -101,8 +107,8 @@ class UpdatePostRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::in($allowedStatuses)],
             'attachment_ids' => ['nullable', 'array'],
             'attachment_ids.*' => ['integer', 'min:1'],
-            // temp_key는 게시판 존재 여부와 무관하게 항상 허용
-            'temp_key' => ['nullable', 'string', 'max:64'],
+            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
+            'temp_key' => $this->tempKeyRules(),
             // 비회원 소유권 확인용 — 판정은 컨트롤러(canModifyPost), 여기서는 형식만 닫는다 (배열 주입 422)
             'password' => ['nullable', 'string', 'min:4'],
             'verification_token' => ['nullable', 'string', 'max:255'],
@@ -155,6 +161,7 @@ class UpdatePostRequest extends FormRequest
      * 수정은 이미 연결된 첨부와 합산해 판정합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {

@@ -1,26 +1,11 @@
 {
+    "comment": "위지윅 에디터가 본문에 끼워 넣은 이미지를 운영자가 한자리에서 보고 지우는 화면. 에디터는 업로드 시점에 파일을 남기지만 그 글이 지워져도 파일은 남으므로, 어느 파일이 아직 본문에 인용되고 있는지(참조 여부)가 이 목록의 존재 이유다",
     "version": "1.0.0",
     "layout_name": "ckeditor5_uploads",
-    "permissions": [
-        "sirsoft-ckeditor5.uploads.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ckeditor5.admin.uploads.title",
         "description": "$t:sirsoft-ckeditor5.admin.uploads.description"
-    },
-    "state": {
-        "filter": {
-            "search": "",
-            "referenced": "all",
-            "dateFrom": "",
-            "dateTo": ""
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "ckeditor5Uploads"
-        ]
     },
     "data_sources": [
         {
@@ -66,9 +51,72 @@
                         "scan_window": 500
                     }
                 }
-            }
+            },
+            "comment": "업로드 목록. 필터·정렬·페이지를 전부 URL 쿼리에서 읽으므로 새로고침·뒤로가기로도 같은 목록이 복원된다. 참조 여부는 본문을 훑어야 알 수 있어 서버가 훑는 범위에 상한이 있고, 그 상한에 걸리면 meta.scan_limited 로 알려 온다"
         }
     ],
+    "initLocal": {
+        "filter": {
+            "search": "",
+            "referenced": "all",
+            "dateFrom": "",
+            "dateTo": ""
+        }
+    },
+    "permissions": [
+        "sirsoft-ckeditor5.uploads.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "ckeditor5Uploads"
+        ]
+    },
+    "named_actions": {
+        "searchUploads": {
+            "comment": "필터 입력을 URL 로 밀어 넣어 목록을 다시 부른다. page 를 빈 값으로 덮는 것이 핵심이다 — 3페이지를 보던 중 검색하면 결과가 3페이지에 못 미쳐 빈 화면이 열린다",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "ckeditor5_uploads_datagrid__body",
+                "query": {
+                    "page": "",
+                    "search": "{{_local.filter.search || ''}}",
+                    "referenced": "{{_local.filter.referenced || 'all'}}",
+                    "date_from": "{{_local.filter.dateFrom || ''}}",
+                    "date_to": "{{_local.filter.dateTo || ''}}"
+                }
+            }
+        },
+        "clearFilters": {
+            "comment": "초기화는 두 곳을 함께 비운다 — 폼 상태를 비우지 않으면 URL 만 깨끗해지고 입력칸에는 지운 값이 남아 다음 검색에 되살아난다",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "filter": {
+                            "search": "",
+                            "referenced": "all",
+                            "dateFrom": "",
+                            "dateTo": ""
+                        }
+                    }
+                },
+                {
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색·참조상태·기간과 페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                        "replace": true,
+                        "query": {}
+                    }
+                }
+            ]
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -83,52 +131,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchUploads": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": "",
-                    "search": "{{_local.filter.search || ''}}",
-                    "referenced": "{{_local.filter.referenced || 'all'}}",
-                    "date_from": "{{_local.filter.dateFrom || ''}}",
-                    "date_to": "{{_local.filter.dateTo || ''}}"
-                },
-                "transition_overlay_target": "ckeditor5_uploads_datagrid__body"
-            }
-        },
-        "clearFilters": {
-            "handler": "sequence",
-            "params": {
-                "actions": [
-                    {
-                        "handler": "setState",
-                        "params": {
-                            "target": "local",
-                            "filter": {
-                                "search": "",
-                                "referenced": "all",
-                                "dateFrom": "",
-                                "dateTo": ""
-                            }
-                        }
-                    },
-                    {
-                        "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색·참조상태·기간과 페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
-                        "handler": "navigate",
-                        "params": {
-                            "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
-                            "replace": true,
-                            "query": {}
-                        }
-                    }
-                ]
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -180,10 +182,6 @@
                                         "id": "open_settings_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary"
-                                        },
                                         "actions": [
                                             {
                                                 "comment": "audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 나가는 이동 — 목록 클러스터 밖이라 목록 상태를 승계하지 않는다",
@@ -194,6 +192,11 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{ckeditor5Uploads?.data?.abilities?.can_open_settings !== true}}"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -206,11 +209,6 @@
                                         "id": "refresh_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn-icon",
-                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.refresh"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -220,6 +218,11 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.refresh"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -306,15 +309,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
-                                                "props": {
-                                                    "name": "search",
-                                                    "type": "text",
-                                                    "placeholder": "$t:sirsoft-ckeditor5.admin.uploads.filter.search_placeholder",
-                                                    "className": "input pl-10",
-                                                    "value": "{{_local.filter.search || ''}}"
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "타이핑은 폼 상태에만 담아 둔다. 여기서 목록을 부르지 않는 것은 의도다 — 검색 실행은 Enter 또는 검색 버튼이 맡는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -327,13 +324,39 @@
                                                         "key": "Enter",
                                                         "actionRef": "searchUploads"
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "name": "search",
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-ckeditor5.admin.uploads.filter.search_placeholder",
+                                                    "className": "input pl-10",
+                                                    "value": "{{_local.filter.search || ''}}"
+                                                }
                                             }
                                         ]
                                     },
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "참조 여부는 고르는 즉시 목록을 다시 부른다 — 값이 세 가지뿐이라 따로 실행 버튼을 누르게 할 이유가 없다. 폼 상태를 먼저 채워야 뒤이은 검색 액션이 그 값을 URL 로 나른다",
+                                                "type": "change",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter.referenced": "{{$event.target.value}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "actionRef": "searchUploads"
+                                                    }
+                                                ]
+                                            }
+                                        ],
                                         "props": {
                                             "name": "referenced",
                                             "value": "{{_local.filter.referenced || 'all'}}",
@@ -351,40 +374,14 @@
                                                     "label": "$t:sirsoft-ckeditor5.admin.uploads.filter.unreferenced_only"
                                                 }
                                             ]
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "change",
-                                                "handler": "sequence",
-                                                "params": {
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "filter.referenced": "{{$event.target.value}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "actionRef": "searchUploads"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Input",
-                                        "props": {
-                                            "name": "date_from",
-                                            "type": "date",
-                                            "className": "input w-40",
-                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_from",
-                                            "value": "{{_local.filter.dateFrom || ''}}"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "기간 시작일도 담아만 둔다 — 시작·종료를 따로 고르는 동안 매번 목록을 부르면 반쪽짜리 기간으로 조회가 나간다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -392,20 +389,21 @@
                                                     "filter.dateFrom": "{{$event.target.value}}"
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "name": "date_from",
+                                            "type": "date",
+                                            "className": "input w-40",
+                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_from",
+                                            "value": "{{_local.filter.dateFrom || ''}}"
+                                        }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Input",
-                                        "props": {
-                                            "name": "date_to",
-                                            "type": "date",
-                                            "className": "input w-40",
-                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_to",
-                                            "value": "{{_local.filter.dateTo || ''}}"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "종료일도 마찬가지다. 두 날짜가 다 정해진 뒤 검색 버튼이 한 번에 URL 로 싣는다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -413,21 +411,28 @@
                                                     "filter.dateTo": "{{$event.target.value}}"
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "name": "date_to",
+                                            "type": "date",
+                                            "className": "input w-40",
+                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_to",
+                                            "value": "{{_local.filter.dateTo || ''}}"
+                                        }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-primary"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "actionRef": "searchUploads"
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -450,17 +455,17 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"
-                                        },
-                                        "text": "$t:sirsoft-ckeditor5.admin.uploads.filter.clear",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "actionRef": "clearFilters"
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"
+                                        },
+                                        "text": "$t:sirsoft-ckeditor5.admin.uploads.filter.clear"
                                     }
                                 ]
                             }
@@ -470,7 +475,7 @@
                         "id": "bulk_action_bar",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{(_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}",
+                        "if": "{{ckeditor5Uploads?.data?.abilities?.can_delete === true && (_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}",
                         "props": {
                             "className": "flex-between mb-4 p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
                         },
@@ -486,10 +491,6 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -497,6 +498,10 @@
                                         "target": "bulk_delete_confirm_modal"
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -511,6 +516,73 @@
                         "id": "ckeditor5_uploads_datagrid",
                         "type": "composite",
                         "name": "DataGrid",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "ckeditor5Uploads"
+                        },
+                        "actions": [
+                            {
+                                "comment": "페이지 이동은 걸려 있던 검색·필터를 그대로 이고 간다(mergeQuery). 표 몸통만 전환 오버레이로 덮어 헤더·필터가 깜빡이지 않는다",
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "transition_overlay_target": "ckeditor5_uploads_datagrid__body",
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "comment": "정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다",
+                                "type": "change",
+                                "event": "onSortChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "transition_overlay_target": "ckeditor5_uploads_datagrid__body",
+                                    "query": {
+                                        "page": "",
+                                        "sort_by": "{{$args[0]}}",
+                                        "sort_order": "{{$args[1]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "comment": "선택은 전역에 둔다 — 일괄 삭제 바와 확인 모달이 표 밖에 있어 같은 목록을 공유해야 하기 때문이다. 표가 selectionScope=\"page\" 라 화면을 벗어난 행은 선택이 따라오지 않는다",
+                                "type": "action",
+                                "event": "onSelectionChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds_ckeditor5_uploads": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "comment": "행 삭제 버튼. 대상 행을 전역에 담은 뒤에야 모달을 연다 — 순서가 뒤집히면 모달이 직전 대상을 그린 채 뜬다",
+                                "type": "action",
+                                "event": "onRowAction",
+                                "handler": "switch",
+                                "cases": {
+                                    "delete": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "modal_data": "{{$args[1]}}"
+                                        },
+                                        "onSuccess": {
+                                            "handler": "openModal",
+                                            "target": "delete_confirm_modal"
+                                        }
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
                             "data": "{{ckeditor5Uploads?.data?.data ?? []}}",
                             "pagination": true,
@@ -523,18 +595,18 @@
                             "sortField": "{{query.sort_by || 'created_at'}}",
                             "sortDirection": "{{query.sort_order || 'desc'}}",
                             "idField": "id",
-                            "selectable": true,
+                            "selectable": "{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}",
                             "selectionScope": "page",
                             "selectedIds": "{{_global.selectedIds_ckeditor5_uploads || []}}",
-                            "loading": "{{ckeditor5Uploads?.loading}}",
-                            "emptyText": "$t:sirsoft-ckeditor5.admin.uploads.empty",
+                            "emptyMessage": "$t:sirsoft-ckeditor5.admin.uploads.empty",
                             "actionsColumnHeader": "$t:common.actions",
                             "rowActions": [
                                 {
                                     "id": "delete",
                                     "label": "$t:sirsoft-ckeditor5.admin.uploads.delete.button",
                                     "iconName": "trash",
-                                    "variant": "danger"
+                                    "variant": "danger",
+                                    "disabled": "{{ckeditor5Uploads?.data?.abilities?.can_delete !== true}}"
                                 }
                             ],
                             "columns": [
@@ -658,68 +730,7 @@
                                     ]
                                 }
                             ]
-                        },
-                        "actions": [
-                            {
-                                "event": "onPageChange",
-                                "type": "change",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
-                                    "replace": true,
-                                    "mergeQuery": true,
-                                    "query": {
-                                        "page": "{{$args[0]}}"
-                                    },
-                                    "transition_overlay_target": "ckeditor5_uploads_datagrid__body"
-                                }
-                            },
-                            {
-                                "event": "onSortChange",
-                                "type": "change",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
-                                    "replace": true,
-                                    "mergeQuery": true,
-                                    "query": {
-                                        "page": "",
-                                        "sort_by": "{{$args[0]}}",
-                                        "sort_order": "{{$args[1]}}"
-                                    },
-                                    "transition_overlay_target": "ckeditor5_uploads_datagrid__body"
-                                }
-                            },
-                            {
-                                "event": "onSelectionChange",
-                                "type": "action",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "selectedIds_ckeditor5_uploads": "{{$args[0]}}"
-                                }
-                            },
-                            {
-                                "event": "onRowAction",
-                                "type": "action",
-                                "handler": "switch",
-                                "cases": {
-                                    "delete": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "modal_data": "{{$args[1]}}"
-                                        },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "openModal",
-                                                "target": "delete_confirm_modal"
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        ]
+                        }
                     }
                 ]
             }
@@ -727,9 +738,7 @@
     },
     "modals": [
         {
-            "meta": {
-                "editor_label": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title"
-            },
+            "comment": "행의 삭제 버튼으로 열린다. 아직 본문에 인용 중인 이미지도 지울 수 있으므로(목록이 참조 배지로 알려 줄 뿐 막지는 않는다) 확인을 한 단계 둔다",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -765,17 +774,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeletingUpload}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeletingUpload}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -787,100 +796,97 @@
                         {
                             "type": "basic",
                             "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "진행 플래그를 먼저 세워 두 버튼을 잠근다 — 삭제는 되돌릴 수 없어 연타로 같은 요청이 두 번 나가는 것을 막아야 한다. 성공·실패·403 세 갈래 모두에서 플래그를 반드시 되돌린다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeletingUpload": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/{{_global.modal_data.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeletingUpload": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "ckeditor5Uploads"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-ckeditor5.admin.uploads.delete.success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeletingUpload": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
+                                                    }
+                                                }
+                                            ],
+                                            "errorHandling": {
+                                                "403": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeletingUpload": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeletingUpload}}"
                             },
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isDeletingUpload": true
-                                                }
-                                            },
-                                            {
-                                                "handler": "apiCall",
-                                                "auth_required": true,
-                                                "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/{{_global.modal_data.id}}",
-                                                "params": {
-                                                    "method": "DELETE"
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeletingUpload": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "ckeditor5Uploads"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "success",
-                                                            "message": "$t:sirsoft-ckeditor5.admin.uploads.delete.success"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "closeModal"
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeletingUpload": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
-                                                        }
-                                                    }
-                                                ],
-                                                "errorHandling": {
-                                                    "403": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isDeletingUpload": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:auth.permission_denied"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            ],
                             "children": [
                                 {
                                     "type": "basic",
@@ -891,12 +897,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title"
-            },
+            "comment": "체크한 행이 하나라도 있을 때만 뜨는 일괄 삭제 바에서 열린다. 대상은 지금 화면에 보이는 선택분이며, 확인 문구가 그 건수를 그대로 되읽어 준다",
             "id": "bulk_delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -932,17 +939,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeletingUpload}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeletingUpload}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -954,104 +961,101 @@
                         {
                             "type": "basic",
                             "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "성공하면 선택 목록도 함께 비운다 — 지워진 행의 id 가 선택에 남아 있으면 다음 일괄 처리가 이미 없는 대상을 싣는다. 서버가 건별 결과를 요약해 주므로 안내 문구는 응답 것을 그대로 쓴다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeletingUpload": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/bulk-delete",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_ckeditor5_uploads ?? []}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeletingUpload": false,
+                                                        "selectedIds_ckeditor5_uploads": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "ckeditor5Uploads"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{response.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeletingUpload": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
+                                                    }
+                                                }
+                                            ],
+                                            "errorHandling": {
+                                                "403": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeletingUpload": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeletingUpload}}"
                             },
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isDeletingUpload": true
-                                                }
-                                            },
-                                            {
-                                                "handler": "apiCall",
-                                                "auth_required": true,
-                                                "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/bulk-delete",
-                                                "params": {
-                                                    "method": "POST",
-                                                    "body": {
-                                                        "ids": "{{_global.selectedIds_ckeditor5_uploads ?? []}}"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeletingUpload": false,
-                                                            "selectedIds_ckeditor5_uploads": []
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "ckeditor5Uploads"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "success",
-                                                            "message": "{{response.message}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "closeModal"
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeletingUpload": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
-                                                        }
-                                                    }
-                                                ],
-                                                "errorHandling": {
-                                                    "403": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isDeletingUpload": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:auth.permission_denied"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            ],
                             "children": [
                                 {
                                     "type": "basic",
@@ -1062,7 +1066,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title"
+            }
         }
     ]
 }

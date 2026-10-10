@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다",
     "target_layout": "admin_ecommerce_order_detail",
     "data_sources": [
         {
@@ -8,7 +9,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/transaction-status",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "이 주문의 KG이니시스 결제 상태 — 테스트 결제 배너와 결제수단 칸의 간편결제 이름의 근거이기도 하다"
         },
         {
             "id": "kginicis_cbt_reconciliation",
@@ -17,7 +19,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "CBT 정산 대사 결과 — 재시도 버튼을 띄울지 여기서 정한다"
         },
         {
             "id": "kginicis_cbt_cvs",
@@ -25,7 +28,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "CBT 편의점 입금 상태 — 재확인·입금통보 모의·만료 처리 버튼의 노출 근거"
         },
         {
             "id": "kginicis_escrow_delivery",
@@ -34,7 +38,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "에스크로 배송 등록 상태 — 등록·수취거부 확정 버튼의 노출 근거"
         }
     ],
     "injections": [
@@ -47,14 +52,14 @@
                     "name": "Div",
                     "if": "{{kginicis_status.data?._is_test_mode === true}}",
                     "props": {
-                        "className": "mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2"
+                        "className": "mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex items-center gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                                "name": "flask-conical",
+                                "name": "flask",
                                 "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0"
                             }
                         },
@@ -88,14 +93,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "flex items-center flex-wrap gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "alert-triangle",
+                                        "name": "triangle-exclamation",
                                         "className": "text-base text-red-600 dark:text-red-400 flex-shrink-0"
                                     }
                                 },
@@ -112,7 +117,7 @@
                                     "name": "Span",
                                     "if": "{{kginicis_cbt_reconciliation.data?.status === 'manual_refund_required'}}",
                                     "props": {
-                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40text-danger-soft"
+                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40 pay-kginicis-tone-danger-strong"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_manual_badge"
                                 },
@@ -121,7 +126,7 @@
                                     "name": "Span",
                                     "if": "{{kginicis_cbt_reconciliation.data?.status === 'auto_refunded'}}",
                                     "props": {
-                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/40 text-success-soft"
+                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/40 pay-kginicis-tone-success-strong"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refunded_badge"
                                 }
@@ -132,7 +137,7 @@
                             "name": "P",
                             "if": "{{kginicis_cbt_reconciliation.data?.status === 'manual_refund_required'}}",
                             "props": {
-                                "className": "text-info-soft leading-relaxed"
+                                "className": "text-xs text-blue-700 dark:text-blue-300 leading-relaxed"
                             },
                             "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_manual_hint"
                         },
@@ -141,7 +146,7 @@
                             "name": "P",
                             "if": "{{kginicis_cbt_reconciliation.data?.status === 'auto_refunded'}}",
                             "props": {
-                                "className": "text-info-soft leading-relaxed"
+                                "className": "text-xs text-blue-700 dark:text-blue-300 leading-relaxed"
                             },
                             "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refunded_hint"
                         },
@@ -156,7 +161,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-semibold text-info-soft"
+                                        "className": "font-semibold text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_tid"
                                 },
@@ -172,7 +177,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-semibold text-info-soft"
+                                        "className": "font-semibold text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_amount"
                                 },
@@ -188,7 +193,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-semibold text-info-soft"
+                                        "className": "font-semibold text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_reason"
                                 },
@@ -205,7 +210,7 @@
                                     "name": "Span",
                                     "if": "{{kginicis_cbt_reconciliation.data?.refund_error}}",
                                     "props": {
-                                        "className": "font-semibold text-info-soft"
+                                        "className": "font-semibold text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refund_error"
                                 },
@@ -222,7 +227,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-semibold text-info-soft"
+                                        "className": "font-semibold text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_updated_at"
                                 },
@@ -238,7 +243,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-semibold text-info-soft"
+                                        "className": "font-semibold text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_count"
                                 },
@@ -257,19 +262,15 @@
                             "name": "Div",
                             "if": "{{kginicis_cbt_reconciliation.data?.can_retry}}",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "flex items-center flex-wrap gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCbtRetrying}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "CBT(국경간 거래) 환불 재시도. 성공·실패 어느 쪽이든 대사 결과를 다시 받는다 — 실패해도 PG 쪽 상태는 움직였을 수 있어 화면을 그대로 두면 다음 판단이 옛 상태 위에서 이뤄진다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -283,8 +284,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation/refund-retry",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -338,6 +339,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{order?.data?.abilities?.can_execute_refund !== true || (_local._kginicisCbtRetrying)}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -353,7 +359,7 @@
                                             "name": "Icon",
                                             "if": "{{!_local._kginicisCbtRetrying}}",
                                             "props": {
-                                                "name": "refresh-cw",
+                                                "name": "arrows-rotate",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -376,7 +382,7 @@
                                     "name": "Span",
                                     "if": "{{_local._kginicisCbtRetryError}}",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "{{_local._kginicisCbtRetryError}}"
                                 }
@@ -397,7 +403,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "flex items-center flex-wrap gap-2"
                             },
                             "children": [
                                 {
@@ -431,7 +437,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-danger-soft leading-relaxed"
+                                "className": "text-xs pay-kginicis-tone-info-strong leading-relaxed"
                             },
                             "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_ops_description"
                         },
@@ -446,7 +452,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_payment_status"
                                 },
@@ -462,7 +468,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_cvs_status"
                                 },
@@ -478,7 +484,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_amount"
                                 },
@@ -494,7 +500,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_due_at"
                                 },
@@ -510,7 +516,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_last_notify"
                                 },
@@ -526,7 +532,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_last_recheck"
                                 },
@@ -542,7 +548,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs text-blue-700 dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_notify_url"
                                 },
@@ -576,7 +582,7 @@
                                     "name": "Div",
                                     "if": "{{(kginicis_cbt_cvs.data?.notify_history ?? []).length === 0}}",
                                     "props": {
-                                        "className": "text-danger-soft"
+                                        "className": "text-xs pay-kginicis-tone-info"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_history_empty"
                                 },
@@ -584,13 +590,13 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{(kginicis_cbt_cvs.data?.notify_history ?? []).length > 0}}",
-                                    "props": {
-                                        "className": "space-y-1"
-                                    },
                                     "iteration": {
                                         "source": "{{kginicis_cbt_cvs.data?.notify_history ?? []}}",
                                         "item_var": "notify",
                                         "index_var": "notifyIdx"
+                                    },
+                                    "props": {
+                                        "className": "space-y-1"
                                     },
                                     "children": [
                                         {
@@ -612,7 +618,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-danger-soft"
+                                                        "className": "font-semibold pay-kginicis-tone-info-strong"
                                                     },
                                                     "text": "{{notify.result ?? '-'}}"
                                                 },
@@ -642,20 +648,16 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "flex items-center flex-wrap gap-2"
                             },
                             "children": [
                                 {
                                     "id": "kginicis_cbt_cvs_recheck_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCvsRechecking}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "편의점 입금을 PG 에 다시 물어 온다. 입금은 구매자가 오프라인에서 하므로 통보가 유실되면 주문만 미결제로 남는데, 이 버튼이 그 간극을 운영자가 직접 메우는 수단이다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -668,8 +670,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/recheck",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -721,6 +723,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsRechecking)}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -736,7 +743,7 @@
                                             "name": "Icon",
                                             "if": "{{!_local._kginicisCvsRechecking}}",
                                             "props": {
-                                                "name": "refresh-cw",
+                                                "name": "arrows-rotate",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -759,13 +766,9 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCvsSimulating}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "입금통보 모의 발송. 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다. 성공 시 주문과 결제 상태까지 다시 받는 것은 통보가 그 둘을 함께 바꾸기 때문이다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -778,8 +781,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/simulate-notify",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -843,6 +846,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsSimulating)}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -858,7 +866,7 @@
                                             "name": "Icon",
                                             "if": "{{!_local._kginicisCvsSimulating}}",
                                             "props": {
-                                                "name": "check-circle-2",
+                                                "name": "circle-check",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -881,13 +889,9 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{kginicis_cbt_cvs.data?.can_mark_expired === true}}",
-                                    "props": {
-                                        "type": "button",
-                                        "disabled": "{{_local._kginicisCvsExpiring}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "기한이 지난 편의점 입금 건을 수동으로 닫는다. 주문 상태도 함께 다시 받는다 — 만료 처리는 결제 대기 주문을 종료시키므로 결제 영역만 갱신하면 주문 머리말이 어긋난 채 남는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -900,8 +904,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/expire",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST"
                                                     },
@@ -959,6 +963,11 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsExpiring)}}",
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1016,7 +1025,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 mb-4"
+                                "className": "flex items-center gap-2 mb-4"
                             },
                             "children": [
                                 {
@@ -1038,7 +1047,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-hint hidden sm:inline"
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.order_verify_description"
                                 }
@@ -1048,13 +1057,13 @@
                             "id": "kginicis_payments_list_{{pIdx}}",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "space-y-3"
-                            },
                             "iteration": {
                                 "source": "{{order.data?.payments?.filter(p => p.transaction_id && p.pg_provider === 'kginicis') ?? []}}",
                                 "item_var": "payment",
                                 "index_var": "pIdx"
+                            },
+                            "props": {
+                                "className": "space-y-3"
                             },
                             "children": [
                                 {
@@ -1068,7 +1077,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center flex-wrap gap-3"
+                                                "className": "flex items-center flex-wrap gap-3"
                                             },
                                             "children": [
                                                 {
@@ -1082,7 +1091,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-tertiary block mb-0.5"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400 block mb-0.5"
                                                             },
                                                             "text": "TID"
                                                         },
@@ -1099,12 +1108,9 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "disabled": "{{_local._kginicisQuerying && _local._kginicisActiveTid === payment.transaction_id}}",
-                                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1120,38 +1126,38 @@
                                                                 },
                                                                 {
                                                                     "handler": "apiCall",
-                                                                    "auth_required": true,
                                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/transaction/query",
+                                                                    "auth_required": true,
                                                                     "params": {
                                                                         "method": "POST",
                                                                         "body": {
                                                                             "tid": "{{_local._kginicisActiveTid}}"
                                                                         }
                                                                     },
-                                                                    "onSuccess": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "local",
-                                                                                "_kginicisQuerying": false,
-                                                                                "_kginicisResult": "{{response.data}}"
-                                                                            }
+                                                                    "onSuccess": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "_kginicisQuerying": false,
+                                                                            "_kginicisResult": "{{response.data}}"
                                                                         }
-                                                                    ],
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "local",
-                                                                                "_kginicisQuerying": false,
-                                                                                "_kginicisError": "$t:sirsoft-pay_kginicis.admin.order_verify_error"
-                                                                            }
+                                                                    },
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "_kginicisQuerying": false,
+                                                                            "_kginicisError": "$t:sirsoft-pay_kginicis.admin.order_verify_error"
                                                                         }
-                                                                    ]
+                                                                    }
                                                                 }
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "disabled": "{{_local._kginicisQuerying && _local._kginicisActiveTid === payment.transaction_id}}",
+                                                        "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1193,7 +1199,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center flex-wrap gap-2 mb-3"
+                                                        "className": "flex items-center flex-wrap gap-2 mb-3"
                                                     },
                                                     "children": [
                                                         {
@@ -1235,7 +1241,7 @@
                                                                     "type": "basic",
                                                                     "name": "Icon",
                                                                     "props": {
-                                                                        "name": "shield-check",
+                                                                        "name": "shield-halved",
                                                                         "className": "text-xs"
                                                                     }
                                                                 },
@@ -1481,7 +1487,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 mb-2"
+                                                                "className": "flex items-center gap-2 mb-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -1833,7 +1839,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-danger-soft font-mono font-semibold"
+                                                                        "className": "pay-kginicis-tone-danger font-mono font-semibold"
                                                                     },
                                                                     "text": "{{(_local._kginicisResult ?? kginicis_status.data)?._cancel_price ?? '-'}}"
                                                                 },
@@ -1962,7 +1968,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Td",
                                                                                             "props": {
-                                                                                                "className": "px-2 py-1.5text-danger-soft font-mono"
+                                                                                                "className": "px-2 py-1.5 pay-kginicis-tone-danger font-mono"
                                                                                             },
                                                                                             "text": "{{pcItem.price ?? '-'}}"
                                                                                         },
@@ -2002,11 +2008,9 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Button",
-                                                            "props": {
-                                                                "className": "flex-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-                                                            },
                                                             "actions": [
                                                                 {
+                                                                    "comment": "거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다",
                                                                     "type": "click",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -2015,6 +2019,9 @@
                                                                     }
                                                                 }
                                                             ],
+                                                            "props": {
+                                                                "className": "flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                                                            },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
@@ -2073,7 +2080,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 mb-4"
+                                "className": "flex items-center gap-2 mb-4"
                             },
                             "children": [
                                 {
@@ -2095,7 +2102,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-hint hidden sm:inline"
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_description"
                                 }
@@ -2113,7 +2120,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2 mb-2"
+                                        "className": "flex items-center gap-2 mb-2"
                                     },
                                     "children": [
                                         {
@@ -2220,27 +2227,23 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "flex items-center gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-tertiary w-16 flex-shrink-0"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 w-16 flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_label"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "text",
-                                                "placeholder": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder",
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -2248,7 +2251,13 @@
                                                         "_ed_invoice": "{{$event.target.value}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "placeholder": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder",
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
+                                            }
                                         }
                                     ]
                                 },
@@ -2256,25 +2265,23 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "flex items-center gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-tertiary w-16 flex-shrink-0"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 w-16 flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_label"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "택배사 — 이니시스가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -2283,6 +2290,10 @@
                                                     }
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -2402,7 +2413,7 @@
                                                     "props": {
                                                         "value": "etc"
                                                     },
-                                                    "text": "기타"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_etc"
                                                 }
                                             ]
                                         }
@@ -2418,12 +2429,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "disabled": "{{_local._ed_registering}}",
-                                                "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다. 둘 다 서버 필수값이라 비어 있으면 버튼이 잠긴다. 실패 문맥의 변수는 error 다(response 가 아니다) — 서버가 준 검증·PG 문구를 그대로 보인다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -2437,8 +2445,8 @@
                                                         },
                                                         {
                                                             "handler": "apiCall",
-                                                            "auth_required": true,
                                                             "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery",
+                                                            "auth_required": true,
                                                             "params": {
                                                                 "method": "POST",
                                                                 "body": {
@@ -2469,20 +2477,22 @@
                                                                     }
                                                                 }
                                                             ],
-                                                            "onError": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "_ed_registering": false,
-                                                                        "_ed_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"
-                                                                    }
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "_ed_registering": false,
+                                                                    "_ed_error": "{{Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"
                                                                 }
-                                                            ]
+                                                            }
                                                         }
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === '')}}",
+                                                "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -2541,7 +2551,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 mb-4"
+                                "className": "flex items-center gap-2 mb-4"
                             },
                             "children": [
                                 {
@@ -2563,7 +2573,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-hint hidden sm:inline"
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description"
                                 }
@@ -2580,14 +2590,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2 mb-2"
+                                        "className": "flex items-center gap-2 mb-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "x-circle",
+                                                "name": "circle-xmark",
                                                 "className": "text-sm text-red-600 dark:text-red-400 flex-shrink-0"
                                             }
                                         },
@@ -2614,7 +2624,7 @@
                                             "props": {
                                                 "className": "text-gray-500 dark:text-gray-400"
                                             },
-                                            "text": "일시"
+                                            "text": "$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied_at"
                                         },
                                         {
                                             "type": "basic",
@@ -2633,7 +2643,7 @@
                             "name": "Div",
                             "if": "{{kginicis_escrow_delivery.data?.deny_confirmed === true}}",
                             "props": {
-                                "className": "flex-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-xs"
+                                "className": "flex items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-xs"
                             },
                             "children": [
                                 {
@@ -2665,12 +2675,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "disabled": "{{_local._dncf_processing}}",
-                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "수취거부 확정 — 되돌릴 수 없는 처리라 버튼을 잠근 뒤 보내고 결과를 다시 받는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -2684,8 +2691,8 @@
                                                 },
                                                 {
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-deny-confirm",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "POST",
                                                         "body": {}
@@ -2712,20 +2719,22 @@
                                                             }
                                                         }
                                                     ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "_dncf_processing": false,
-                                                                "_dncf_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"
-                                                            }
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "_dncf_processing": false,
+                                                            "_dncf_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"
                                                         }
-                                                    ]
+                                                    }
                                                 }
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._dncf_processing)}}",
+                                        "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -2762,6 +2771,23 @@
                             "text": "{{_local._dncf_error}}"
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "target_id": "payment_method_block_{{payIdx}}",
+            "position": "append_child",
+            "components": [
+                {
+                    "comment": "결제 정보 카드의 결제수단 칸에 간편결제 이름을 한 줄 덧붙인다. 칸은 이커머스가 약속한 id(payment_method_block_{결제 순번})로만 찾는다 — 칸이 결제 건 반복 안에 있어 저작 id 가 순번 표현식 그대로다. 칸 값(결제수단 이름)은 이커머스 소유라 바꾸지 않는다. 결제 상태 응답(kginicis_status)이 이 주문의 이니시스 결제 하나를 조회하므로 이니시스 결제 칸에만 붙인다. 예전에는 주입 스크립트(adminOrderPaymentDisplayInjector)가 칸 글자를 덮어썼다(#639 에서 이 조각으로 옮김)",
+                    "id": "kginicis_easy_pay_provider_{{payIdx}}",
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{payment.pg_provider === 'kginicis' && !!kginicis_status.data?._embedded_pg_provider_label}}",
+                    "props": {
+                        "className": "text-tertiary block"
+                    },
+                    "text": "$t:sirsoft-pay_kginicis.admin.easy_pay_provider|provider={{kginicis_status.data?._embedded_pg_provider_label}}"
                 }
             ]
         }

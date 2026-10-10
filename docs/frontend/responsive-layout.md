@@ -91,6 +91,56 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 경계값 자체도 상수로 두고 SSoT(`ResponsiveManager` 의 `portable` 정의)를 주석에 밝힌다 —
 프리셋 범위가 바뀌면 확장도 함께 고쳐야 한다는 신호가 코드에 남는다.
 
+이 판정은 **실제 기기에서 일어나는 동작**(팝업 대신 페이지 이동, 결제창 형태 등)에 쓴다. 컴포넌트가 화면에
+그릴 모양을 폭으로 고를 때는 아래 「레이아웃 편집기 미리보기에서의 화면 폭」을 따른다.
+
+### 레이아웃 편집기 미리보기에서의 화면 폭
+
+레이아웃 편집기의 미리보기는 iframe 이 아니라 관리자 화면 안의 영역이다. 브라우저 창은 하나뿐이라,
+창 폭(`window.innerWidth`)과 미리보기 기기 폭(모바일 390·태블릿 820·데스크톱 1280·사용자 지정)이 다르다.
+미리보기가 기기 폭대로 보이려면 컴포넌트가 다음을 지킨다.
+
+```text
+✅ 컴포넌트 코드의 폭 분기: G7Core.useResponsive() 의 width·isMobile 등 사용 (미리보기에서는 기기 폭)
+❌ 컴포넌트 코드의 폭 분기: window.innerWidth · window.matchMedia (언제나 브라우저 창 폭)
+✅ 자식을 직접 그리는 컴포넌트: 받은 __componentContext 를 넘기거나 { renderEnv: __componentContext?.renderEnvRef?.current } 를 넘긴다
+❌ 자식을 직접 그리면서 아무것도 넘기지 않음 (셀의 responsive 분기가 창 폭으로, 문구가 관리자 언어로 그려진다)
+```
+
+```tsx
+// 폭으로 형태를 고르는 컴포넌트
+const responsive = G7Core?.useResponsive?.();
+const isNarrow = (responsive?.width ?? window.innerWidth) < 768; // 훅이 없을 때만 창 폭으로 폴백
+
+// 셀을 직접 그리는 컴포넌트 (G7Core.renderItemChildren·renderComponentLayout·renderExpandContent)
+G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, {
+  renderEnv: __componentContext?.renderEnvRef?.current,
+});
+```
+
+렌더 환경(`renderEnv`)에는 폭·콘텐츠 언어·액션 처리기·컴포넌트 목록·편집 모드가 들어 있다. 편집 모드에서는
+셀 안 버튼의 동작이 실행되지 않는다. 일반 화면에서는 이 값이 곧 화면의 값이라 결과가 같다.
+
+다른 컴포넌트가 직접 그린 셀 안에 들어간 컴포넌트는 `__componentContext` 를 받지 못한다. 그런 컴포넌트도 폭은
+`G7Core.useResponsive()` 로 미리보기 기기 폭을 따르지만, 그 안에서 다시 자식을 그릴 때의 콘텐츠 언어·액션 처리기는
+관리자 화면 값으로 돌아간다.
+
+**CSS 는 자동으로 맞춰진다.** 편집기가 떠 있는 동안 화면 폭 조건 `@media`(`min-width`·`max-width`·`width`
+범위식, rem/em 포함)와 화면 폭 단위 `vw` 는 미리보기 영역 폭으로 판정되도록 바뀌고, 편집기를 벗어나면
+원래대로 돌아온다. 선택자 이름이 아니라 조건식만 보므로 일반 CSS·Bootstrap·Tailwind·CSS-in-JS 모두 같다.
+설정할 것은 없다. 다음은 바뀌지 않는다.
+
+| 바뀌지 않는 것 | 이유 · 대안 |
+|---|---|
+| `document.body` 로 띄우는 드롭다운·라이트박스 | 미리보기 영역 밖에 그려진다 — 창 기준 |
+| `:root`·`html` 선택자의 폭 `@media`(루트 글꼴 크기 등) | 미리보기 영역의 자손이 아니다 |
+| 높이·`aspect-ratio`·`orientation` 조건, `vh` | 폭 판정이 아니다 |
+| `<picture media>`·`sizes`, JS `matchMedia`·`window.innerWidth` | 브라우저가 창 기준으로 판정한다 — JS 는 `G7Core.useResponsive()` 사용 |
+| 다른 사이트에서 불러온 스타일시트, `<link media>`·`<style media>` 로 시트 전체에 조건이 걸린 경우 | 규칙을 읽거나 나눌 수 없다 |
+| 이름 없는 `@container` 쿼리 | 미리보기에서는 미리보기 영역에 반응할 수 있다 — 컨테이너를 직접 지정해 쓴다 |
+
+특정 스타일시트를 이 처리에서 빼려면 그 `<style>`·`<link>` 에 `data-g7le-no-media-isolation` 속성을 단다.
+
 ### portable 프리셋 사용 규칙
 
 `portable` 프리셋은 `mobile`과 `tablet`을 합친 범위입니다. 다음 규칙을 준수하세요:
@@ -101,6 +151,15 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 ```
 
 **올바른 사용 예시:**
+
+```html
+<div>
+  <responsive on="portable" class="flex-col"/>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -125,6 +184,16 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 **mobile과 tablet을 구분해야 하는 경우:**
 
+```html
+<div>
+  <responsive on="mobile" class="grid-cols-1"/>
+  <responsive on="tablet" class="grid-cols-2"/>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "responsive": {
@@ -143,6 +212,16 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 | `-max` | 최대값 이하 | `-599` (599px 이하) |
 
 ### 기본 사용법
+
+```html
+<button data-ref="responsive_button" class="px-4 py-2" variant="primary" size="large">
+  <responsive on="mobile" class="px-2 py-1" size="small">모바일 버튼</responsive>
+  <responsive on="tablet" size="medium">태블릿 버튼</responsive>
+  데스크톱 버튼
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -177,6 +256,15 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 **얕은 머지 (Shallow Merge)**: 지정한 props만 대체, 미지정 props는 유지
 
+```html
+<div class="base-class" variant="primary" size="large">
+  <responsive on="mobile" class="mobile-class"/>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -202,6 +290,18 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 ### children 완전 교체
 
+```html
+<card data-ref="card">
+  <responsive on="mobile">
+    <div data-ref="mobile-content">모바일 요약</div>
+  </responsive>
+  <div data-ref="desktop-content">데스크톱 전용</div>
+  <div data-ref="desktop-details">상세 정보</div>
+</card>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "card",
@@ -223,6 +323,14 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 ### if 조건 오버라이드
 
+```html
+<div data-ref="sidebar" data-if="{{true}}">
+  <responsive on="mobile" data-if="{{_global.sidebarOpen}}"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "sidebar",
@@ -238,6 +346,17 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 ```
 
 ### 커스텀 범위 사용
+
+```html
+<div data-ref="grid" class="grid grid-cols-4">
+  <responsive on="0-599" class="grid grid-cols-1"/>
+  <responsive on="600-899" class="grid grid-cols-2"/>
+  <responsive on="900-1199" class="grid grid-cols-3"/>
+  <responsive on="1200-" class="grid grid-cols-4"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -269,6 +388,16 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 1. **커스텀 범위 > 프리셋**: 커스텀 범위가 프리셋보다 우선 적용
 2. **좁은 범위 > 넓은 범위**: 여러 범위에 매칭되면 좁은 범위가 우선
 
+```html
+<div>
+  <responsive on="mobile">모바일 프리셋</responsive>
+  <responsive on="0-480">작은 모바일</responsive>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "responsive": {
@@ -297,6 +426,12 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 ### 사용 예시
 
+```html
+<div data-ref="mobile_header" class="flex items-center h-16 border-b px-4 md:hidden"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "mobile_header",
@@ -312,6 +447,12 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 ### 다중 breakpoint
 
+```html
+<div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -325,6 +466,12 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 ## 3. 전역 상태 기반 동적 스타일
 
 ### 모바일 사이드바 예시
+
+```html
+<div data-ref="sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 lg:relative lg:translate-x-0 bg-white"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -351,6 +498,16 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 ### 오버레이 예시
 
+```html
+<div data-ref="overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden">
+  <on type="click">
+    <set-state target="global" :sidebarOpen="false"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "overlay",
@@ -362,10 +519,10 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": false
       }
     }
@@ -404,6 +561,28 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 
 모바일 사이드바 토글이 있는 관리자 레이아웃:
 
+```html
+<div data-ref="admin_layout_root" class="flex h-screen overflow-hidden">
+  <div data-ref="mobile_header" class="flex items-center justify-between h-16 border-b px-4 md:hidden">
+    <button data-ref="mobile_menu_button" class="p-2 hover:bg-gray-100 rounded-lg">
+      <on type="click">
+        <set-state target="global" sidebarOpen="{{!_global.sidebarOpen}}"/>
+      </on>
+      <icon name="bars"/>
+    </button>
+  </div>
+  <div data-ref="mobile_overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+    <on type="click">
+      <set-state target="global" :sidebarOpen="false"/>
+    </on>
+  </div>
+  <div data-ref="sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 md:relative md:translate-x-0 flex flex-col border-r bg-white"/>
+  <div data-ref="content" class="flex-1 overflow-auto"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "components": [
@@ -432,10 +611,10 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
               },
               "actions": [
                 {
-                  "event": "onClick",
-                  "type": "setState",
-                  "target": "global",
-                  "payload": {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
                     "sidebarOpen": "{{!_global.sidebarOpen}}"
                   }
                 }
@@ -462,10 +641,10 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
           },
           "actions": [
             {
-              "event": "onClick",
-              "type": "setState",
-              "target": "global",
-              "payload": {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "global",
                 "sidebarOpen": false
               }
             }
@@ -500,6 +679,12 @@ const isPortable = window.matchMedia('(max-width: 1023px)').matches;
 ## 7. 임의의 breakpoint 사용
 
 Tailwind v3부터는 임의의 값을 직접 지정할 수 있습니다:
+
+```html
+<div class="hidden min-[900px]:flex max-[1200px]:grid">본문</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

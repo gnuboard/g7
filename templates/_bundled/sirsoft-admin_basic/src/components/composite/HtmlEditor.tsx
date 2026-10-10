@@ -8,6 +8,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { HtmlContent } from './HtmlContent';
 import type { EditorAttrs } from '../../types';
+import { getSiteLocale } from '../../support/siteLocale';
 
 // G7Core 참조
 const G7Core = () => (window as any).G7Core;
@@ -19,11 +20,6 @@ const t = (key: string, params?: Record<string, string | number>) =>
 // G7Core에서 지원 언어 목록 가져오기
 const getSupportedLocales = (): string[] => {
   return G7Core()?.locale?.supported?.() ?? ['ko', 'en'];
-};
-
-// G7Core에서 현재 언어 가져오기
-const getCurrentLocale = (): string => {
-  return G7Core()?.locale?.current?.() ?? 'ko';
 };
 
 // 언어 코드로 언어명 가져오기 (다국어 키 사용)
@@ -139,6 +135,12 @@ export interface HtmlEditorProps {
   readOnly?: boolean;
 
   /**
+   * 비활성 — readOnly 와 같이 다룬다. 레이아웃의 읽기 전용 게이트는 입력 컴포넌트에 `disabled` 를
+   * 넘기므로, 이 값을 무시하면 권한 없는 운영자에게 본문 편집이 열린다.
+   */
+  disabled?: boolean;
+
+  /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */
   id?: string;
@@ -194,13 +196,17 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
   className = '',
   name = 'content',
   htmlFieldName = 'content_mode',
-  readOnly = false,
+  readOnly: readOnlyProp = false,
+  disabled = false,
   id,
   editorAttrs,
 }) => {
+  // disabled 도 읽기 전용으로 다룬다(레이아웃 읽기 전용 게이트 계약)
+  const readOnly = readOnlyProp || disabled;
   // 지원 언어 목록
   const supportedLocales = useMemo(() => getSupportedLocales(), []);
-  const defaultLocale = useMemo(() => getCurrentLocale(), []);
+  // 필수(*) 언어 탭 — 보는 언어가 아니라 사이트 기본 언어(서버 필수 규칙과 같은 값)
+  const defaultLocale = useMemo(() => getSiteLocale(), []);
 
   // 현재 선택된 언어 탭 (다국어 모드)
   const [currentLocale, setCurrentLocale] = useState(defaultLocale);

@@ -166,7 +166,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
         $service->getToken();
     }
 
-    public function test_verifyCredentials는_캐시를_거치지_않고_재발급한다(): void
+    public function test_verify_credentials는_캐시를_거치지_않고_재발급한다(): void
     {
         Http::fake([
             '*/v1/token' => Http::response(['accesstoken' => 'FRESH_TOKEN', 'type' => 'Bearer'], 200),
@@ -183,7 +183,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
         $this->assertSame('FRESH_TOKEN', $store['bizppurio:token']);
     }
 
-    public function test_verifyCredentials_실패시_예외를_전파하고_캐시를_건드리지_않는다(): void
+    public function test_verify_credentials_실패시_예외를_전파하고_캐시를_건드리지_않는다(): void
     {
         Http::fake(['*/v1/token' => Http::response([], 500)]);
 

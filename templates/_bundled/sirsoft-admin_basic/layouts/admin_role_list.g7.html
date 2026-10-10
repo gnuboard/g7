@@ -1,0 +1,181 @@
+<!-- 역할 목록. 회원 목록과 같은 방식으로 검색·페이지를 URL 에 두지만 정렬은 없다(서버 순서 고정).
+  행마다 할 수 있는 일은 서버가 실어 준 `abilities` 로 잠근다 — 이름으로 특별 취급하지 않는다.
+  상태 토글만 URL 을 거치지 않고 목록을 직접 다시 부른다(조건이 바뀐 게 아니라 값이 바뀐 것이라). -->
+<layout name="admin_role_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.roles.page_title" description="$t:admin.roles.page_description"/>
+  <!-- 역할 목록. 어떤 실패든 화면을 에러로 갈아끼운다 — 역할이 안 보이는 상태에서 "역할 없음" 으로
+       읽히면 새로 만들려 들기 때문이다. -->
+  <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles" method="GET" :auto_fetch="true" auth_mode="required">
+    <params search="{{query.search}}" page="{{query.page ?? 1}}" :per_page="20"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchQuery" value=""/>
+  </init-local>
+  <permissions>
+    <permission>core.permissions.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>roles</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchQuery" value="{{query.search || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="role_list_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.roles.title" description="$t:admin.roles.description">
+        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.roles.refresh">
+          <on type="click">
+            <refetch-data-source dataSourceId="roles"/>
+          </on>
+          <icon data-ref="refresh_icon" name="refresh" size="md"/>
+        </button>
+        <button data-ref="add_role_button" disabled="{{roles?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 새 역할 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
+            <navigate path="/admin/roles/create" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="plus" size="md"/>
+          <span>$t:admin.roles.add_role</span>
+        </button>
+      </page-header>
+      <!-- 보호 역할 안내 — 행 메뉴의 삭제·수정과 사용 여부 스위치가 왜 잠겨 있는지 알려 준다.
+           잠금 자체는 서버가 행마다 실어 준 `abilities` 가 정한다(코어·확장 역할 삭제 불가,
+           수정·토글은 슈퍼 관리자만 — 서버 가드와 같은 판정). -->
+      <p data-ref="protected_roles_hint" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:admin.roles.protected_roles_hint</p>
+      <div data-ref="search_bar_wrapper" class="flex justify-end mb-6">
+        <responsive on="portable" class="mb-6"/>
+        <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.roles.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
+          <responsive on="portable" class="w-full"/>
+          <on type="change">
+            <set-state searchQuery="{{$event.target.value}}"/>
+          </on>
+          <on type="submit">
+            <!-- 검색 실행. 검색어가 비면 `undefined` 로 쿼리에서 빼고(빈 문자열 검색 방지),
+                 페이지는 1로 되돌린다. 대기 표시는 표 본문에만 걸어 검색창이 가려지지 않게 한다. -->
+            <navigate path="/admin/roles" :mergeQuery="true" :replace="true" transition_overlay_target="roles_data_grid__body">
+              <query search="{{_local.searchQuery || undefined}}" :page="1"/>
+            </navigate>
+          </on>
+        </search-bar>
+      </div>
+      <data-grid data-type="composite" data-ref="roles_data_grid" :data-blur-until-loaded="true" data="{{roles?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{roles?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{roles?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{roles?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+        <column field="name" header="$t:admin.roles.columns.name" :sortable="false">
+          <cell>
+            <div class="flex-center gap-2">
+              <span class="font-medium text-gray-900 dark:text-white">{{row.name}}</span>
+              <div data-if="{{row.extension_type === 'core'}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                <icon name="shield" size="sm"/>
+                <span>$t:admin.roles.badges.core</span>
+              </div>
+              <div data-if="{{row.extension_type === 'module'}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                <icon name="cube" size="sm"/>
+                <span>{{row.extension_name ?? '$t:admin.roles.badges.module'}}</span>
+              </div>
+              <div data-if="{{row.extension_type === 'plugin'}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                <icon name="plug" size="sm"/>
+                <span>{{row.extension_name ?? '$t:admin.roles.badges.plugin'}}</span>
+              </div>
+            </div>
+          </cell>
+        </column>
+        <column field="description" header="$t:admin.roles.columns.description" :sortable="false">
+          <cell>
+            <span class="text-gray-600 dark:text-gray-400 text-sm line-clamp-1">{{row.description ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="users_count" header="$t:admin.roles.columns.users_count" :sortable="false">
+          <cell>
+            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <icon name="users" size="sm"/>
+              <span>{{row.users_count ?? 0}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="permissions_count" header="$t:admin.roles.columns.permissions_count" :sortable="false">
+          <cell>
+            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <icon name="key" size="sm"/>
+              <span>{{row.permissions_count ?? 0}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="is_active" header="$t:admin.roles.columns.status" :sortable="false">
+          <cell>
+            <toggle data-type="composite" checked="{{row.is_active}}" disabled="{{row.abilities?.can_toggle_status !== true}}" size="sm">
+              <on type="change">
+                <!-- 사용 여부 토글. 성공 문구는 **누른 뒤의 상태**(`$event.target.checked`)로 고르고,
+                     목록을 다시 받아 서버가 실제로 저장한 값으로 스위치를 되맞춘다.
+                     실패하면 목록을 다시 부르지 않으므로 스위치가 눌린 채로 남는다 — 다시 부르는 쪽이
+                     맞지만 지금은 그렇게 돼 있다(수정은 이 단락 범위 밖). -->
+                <api-call :auth_required="true" target="/api/admin/roles/{{row.id}}/toggle-status" method="PATCH">
+                  <success>
+                    <parallel>
+                      <toast type="success" message="{{$event.target.checked ? '$t:admin.roles.activate_success' : '$t:admin.roles.deactivate_success'}}"/>
+                      <refetch-data-source dataSourceId="roles"/>
+                    </parallel>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message ?? '$t:admin.roles.toggle_status_failed'}}"/>
+                  </fail>
+                </api-call>
+              </on>
+            </toggle>
+          </cell>
+        </column>
+        <column field="created_at" header="$t:admin.roles.columns.created_at" :sortable="false"/>
+        <prop name="rowActions">
+          <item id="edit" label="$t:common.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item id="clone" label="$t:admin.roles.actions.clone" iconName="copy" disabledField="abilities.can_create"/>
+          <item id="delete" label="$t:common.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
+        </prop>
+        <on type="change" event="onPageChange">
+          <!-- 페이지 이동. `replace` 라 뒤로가기 이력에 페이지마다 쌓이지 않는다(검색은 이력에 남긴다). -->
+          <navigate path="/admin/roles" :mergeQuery="true" :replace="true" transition_overlay_target="roles_data_grid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+        <on type="action" event="onRowAction">
+          <!-- 행 메뉴. 복제는 등록 화면에 원본 id 를 쿼리로 넘겨 그쪽이 값을 끌어오게 한다
+               (여기서 복사본을 만들지 않는다). 삭제는 대상 id·이름을 전역에 담고 확인 창을 연다 —
+               이름까지 담는 것은 창이 무엇을 지우는지 되보여 주기 위해서다. -->
+          <switch>
+            <case when="edit">
+              <navigate path="/admin/roles/{{$args[1].id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </case>
+            <case when="clone">
+              <navigate path="/admin/roles/create" :mergeQuery="true">
+                <query clone_from="{{$args[1].id}}"/>
+              </navigate>
+            </case>
+            <case when="delete">
+              <set-state target="global" deleteTargetId="{{$args[1].id}}" deleteTargetName="{{$args[1].name}}"/>
+              <open-modal target="delete_confirm_modal"/>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+  <!-- 역할 삭제 확인 창 — 대상은 위 행 메뉴가 전역에 담아 준 id·이름이다. -->
+  <modal src="partials/admin_role_list/_modal_delete.g7.html"/>
+</layout>

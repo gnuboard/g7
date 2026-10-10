@@ -1,0 +1,21 @@
+feature: 코어 활동 로그 샘플 시더 (ActivityLogSampleSeeder)
+
+description: |
+  관리자 활동 로그 화면을 채우는 코어 샘플 시더의 범위 계약.
+
+  종전 결함(2026-09-28 전수조사 A16·A17): 확장 로그를 지우지 않으려고 코어 시더가 특정 확장
+  식별자 세 개를 적어 두었고, 확장 설치·설정 로그의 대상도 식별자 다섯 개(존재하지 않는 플러그인
+  포함)를 적어 두었다 — 코어가 특정 확장을 아는 자리였고, 목록에 없는 확장의 로그는 지워졌다.
+
+  이제 확장 로그는 설명 키의 `{확장}::` 네임스페이스로 가려 보존하고, 확장 설치·설정 같은 코어
+  로그의 대상은 실제로 설치된 모듈·플러그인·템플릿에서 고른다.
+
+axes:
+  log_origin: [core, extension]
+
+effects:
+  - extension_namespaced_logs_survive_core_reseed
+  - extension_lifecycle_logs_target_installed_extensions_only
+
+test_files:
+  - tests/Feature/Seeders/ActivityLogSampleSeederTest.php

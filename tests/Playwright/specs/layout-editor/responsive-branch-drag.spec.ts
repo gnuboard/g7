@@ -16,38 +16,19 @@
  *  단위(`responsiveBranchPath.test.ts` moveNode 분기 정렬)와 실브라우저(Chrome MCP
  *    검수)로 검증한다(feedback_chrome_mcp_dnd_kit_incompatible).
  *
- * @scenario responsive_branch_edit drag_drop
  * 효과 요약(마커 아님 — 평문): branch_drop_slots_render, branch_node_has_drag_handle.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+import { selectRouteTreeLayout } from '../../fixtures/route-tree';
 
 /** 편집기 admin_user_list 진입 + 모바일 보기 전환 + 분기 핸들 렌더까지 대기. */
 async function openAdminUserListMobile(page: Page): Promise<void> {
   await page.goto('/admin/layout-editor/sirsoft-admin_basic');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // 라우트 트리에서 admin_user_list 선택 — 직접 URL nav 는 route 미선택(트리 클릭 필요).
-  // 라우트 항목은 `<div role="button">` 안에 `.g7le-route-tree__layout-path` 스팬으로
-  // `layouts/admin_user_list.json` 을 표시한다. 모달도 같은 json 을 참조하므로 첫 라우트
-  // 항목(트리상 라우트 본체가 모달보다 앞)을 클릭한다.
-  await page.waitForFunction(
-    () =>
-      Array.from(document.querySelectorAll('.g7le-route-tree__layout-path')).some((s) =>
-        /admin_user_list\.json$/.test((s.textContent || '').trim()),
-      ),
-    undefined,
-    { timeout: 30_000 },
-  );
-  await page.evaluate(() => {
-    const span = Array.from(document.querySelectorAll('.g7le-route-tree__layout-path')).find((s) =>
-      /admin_user_list\.json$/.test((s.textContent || '').trim()),
-    );
-    let el: Element | null = span ?? null;
-    while (el && el.getAttribute('role') !== 'button' && el.tagName !== 'BUTTON') {
-      el = el.parentElement;
-    }
-    el?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-  });
+  // 경로 줄 표기(소스 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
+  await selectRouteTreeLayout(page, 'admin_user_list');
   // 라우트 캔버스 준비 신호 = 드래그 핸들 렌더.
   await page.waitForSelector('[data-dnd-handle-path]', { timeout: 30_000 });
   // 모바일 보기 전환 — 분기(responsive.portable) children 렌더 활성.

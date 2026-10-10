@@ -1,118 +1,119 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "마일리지 설정 - 유효기간 카드"
-  },
-  "id": "mileage_expiry_card",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "H3",
-      "props": {
-        "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.title"
+    "comment": "쇼핑몰 설정 — 마일리지 소멸 설정 카드. 기본 카드와 같이 폼 자동 바인딩만 쓴다.\n  실제 소멸 처리는 서버 스케줄이 하고 이 화면은 그 기준만 정한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마일리지 설정 - 유효기간 카드"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex items-center justify-between py-3"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "block text-sm font-medium text-gray-900 dark:text-white"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled_hint"
-            }
-          ]
-        },
-        {
-          "type": "composite",
-          "name": "Toggle",
-          "props": {
-            "name": "mileage.expiry_enabled",
-            "value": "{{_local.form?.mileage?.expiry_enabled ?? true}}",
-            "disabled": "{{_computed.isReadOnly}}"
-          }
-        }
-      ]
+    "id": "mileage_expiry_card",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_local.form?.mileage?.expiry_enabled ?? true}}",
-      "props": {
-        "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-900 dark:text-white mb-2"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex items-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "number",
-                "name": "mileage.expiry_days",
-                "value": "{{_local.form?.mileage?.expiry_days ?? 365}}",
-                "min": "{{_local?.form?._meta?.limits?.expiry_days_min ?? 1}}",
-                "className": "input w-28 text-center",
-                "disabled": "{{_computed.isReadOnly}}"
-              }
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days_suffix"
-            }
-          ]
+            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.title"
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "if": "{{_local.errors?.['mileage.expiry_days']}}",
-          "props": {
-            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
-          },
-          "text": "{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-center justify-between py-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.enabled_hint"
+                        }
+                    ]
+                },
+                {
+                    "type": "composite",
+                    "name": "Toggle",
+                    "props": {
+                        "name": "mileage.expiry_enabled",
+                        "value": "{{_local.form?.mileage?.expiry_enabled ?? true}}",
+                        "disabled": "{{_computed.isReadOnly}}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.form?.mileage?.expiry_enabled ?? true}}",
+            "props": {
+                "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-900 dark:text-white mb-2"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "number",
+                                "name": "mileage.expiry_days",
+                                "value": "{{_local.form?.mileage?.expiry_days ?? 365}}",
+                                "min": "{{_local?.form?._meta?.limits?.expiry_days_min ?? 1}}",
+                                "className": "input w-28 text-center",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days_suffix|count={{_local.form?.mileage?.expiry_days ?? 365}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.['mileage.expiry_days']}}",
+                    "props": {
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    },
+                    "text": "{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

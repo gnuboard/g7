@@ -1,0 +1,18 @@
+feature: Hello 모듈 프론트엔드 라우트 파일 구조
+
+description: |
+  공개 메모 목록(*/memos → user_memo_list)이 레거시 단일 파일 resources/routes.json 에 있어, 코어가 그 파일을
+  관리자 템플릿에만 병합하는 탓에 사용자 화면의 /memos 가 404 였다(7.1.0 전수 실측 M3). 관리자 라우트를 읽을 때마다
+  「레거시 위치」 경고 로그도 남았다. 문서화된 분할 구조(resources/routes/admin.json, resources/routes/user.json)로 둔다.
+  축 file 은 라우트 파일(레거시 단일, 관리자용, 사용자용)이다.
+
+axes:
+  file: [legacy_single, admin, user]
+
+effects:
+  - legacy_routes_json_absent
+  - public_memo_list_route_in_user_routes
+  - admin_memo_routes_in_admin_routes
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/tests/Unit/Routes/FrontendRoutesFileTest.php

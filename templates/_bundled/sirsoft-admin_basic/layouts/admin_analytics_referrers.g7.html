@@ -1,0 +1,226 @@
+<!-- 유입 경로 리포트 — 유형·사이트·검색어·캠페인 네 탭. 유형 탭은 종류가 다섯 안팎이라 표 위에 도넛으로
+  비율을 함께 그린다(같은 응답을 두 번 쓴다). 나머지는 페이지 리포트와 같은 공통 조각이다.
+  사이트 탭은 한 단계 더 있다 — 도메인 행을 누르면 주소에 `host` 가 실리고, 그 도메인에서 들어온 실제
+  주소 목록(`analytics_referrer_urls`)이 공통 표 자리를 대신한다. 집계표는 호스트까지만 쌓여 이 목록만
+  원장을 직접 읽는다. 그 자리에서는 CSV 를 감춘다 — 받아지는 것은 사이트 목록이라 화면과 다른 것을 준다
+  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). #682 라운드 4, 검수 지적 ⑥. -->
+<layout name="admin_analytics_referrers" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.referrers.title"/>
+  <!-- 탭 → 리포트 이름. 공통 표와 유형 탭의 도넛이 읽는다. 사이트 탭에서 한 도메인의 주소 목록을 보는 동안에는 표 자리를
+       아래 소스가 대신하지만, 이 소스는 조건 없이 사이트 집계를 계속 받는다. -->
+  <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="has_more" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 한 유입처의 전체 주소. 집계표에는 호스트까지만 쌓여 이 소스만 원장을 직접 읽는다 —
+       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다(#682 라운드 4, 검수 지적 ⑥). -->
+  <data-source id="analytics_referrer_urls" label_key="$t:editor.data_source.analytics_referrer_urls" type="api" endpoint="/api/admin/analytics/referrer-urls" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'types') === 'sites' &amp;&amp; !!query.host}}">
+    <params host="{{query.host}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="has_more" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 상단 경고용 진단 상태(background). 큐가 밀리면 방금 들어온 유입이 아직 원장에 없다 — 표 숫자가 모자라 보이는 까닭을
+       공통 경고가 이 값으로 알린다. -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를
+       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다. -->
+  <data-source id="analytics_row_trend" label_key="$t:editor.data_source.analytics_row_trend" type="api" endpoint="/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series" method="GET" :auto_fetch="false" :auth_required="true">
+    <params label="{{_global.analyticsRowTrend?.label ?? ''}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
+    <fallback>
+      <field name="data">
+        <field name="unit" value="day"/>
+        <field name="unit_downgraded" :value="false"/>
+        <field name="points" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <on-code code="422">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="periodPath" value="/admin/analytics/referrers"/>
+    <field name="periodSource" value="analytics_report"/>
+    <field name="showUnit" :value="false"/>
+    <field name="labelDrilldownKey" value=""/>
+  </init-local>
+  <computed name="reportEmptyHint">{{(query.tab || 'types') === 'mediums' ? $t('admin.analytics.referrers.mediums_empty') : null}}</computed>
+  <computed name="reportName">{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}</computed>
+  <computed name="csvUrl">{{((query.tab || 'types') === 'sites' &amp;&amp; !!query.host) ? '' : '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
+  <computed name="csvFilename">{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
+  <computed name="periodFrom">{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}</computed>
+  <computed name="periodTo">{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}</computed>
+  <computed name="archiveFreshness">{{analytics_report?.data?.freshness ?? null}}</computed>
+  <permissions>
+    <permission>core.analytics.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_report</wait-for>
+    <wait-for>analytics_referrer_urls</wait-for>
+  </transition-overlay>
+  <init>
+    <!-- `labelDrilldownKey` 는 공통 표의 라벨을 눌러 들어가는 링크로 만든다 — 사이트 탭의 목록에서만 켠다
+      (그 도메인의 전체 유입 주소로 간다). 이미 주소 목록을 보고 있으면(`host` 가 있으면) 더 들어갈 곳이
+      없으므로 끈다. 다른 탭은 종전대로 글자다. -->
+    <set-state target="local" labelDrilldownKey="{{(query.tab || 'types') === 'sites' &amp;&amp; !query.host ? 'host' : ''}}"/>
+    <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="periodComputed"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="analytics_referrers_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.referrers.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.referrers.description</p>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'types'}}" variant="underline">
+        <prop name="tabs">
+          <item id="types" label="$t:admin.analytics.referrers.tabs.types"/>
+          <item id="sites" label="$t:admin.analytics.referrers.tabs.sites"/>
+          <item id="keywords" label="$t:admin.analytics.referrers.tabs.keywords"/>
+          <item id="campaigns" label="$t:admin.analytics.referrers.tabs.campaigns"/>
+          <item id="mediums" label="$t:admin.analytics.referrers.tabs.mediums"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <!-- 탭 전환 — 라벨 링크 여부를 새 탭에 맞춘 뒤 이동한다. 사이트 탭에서 열어 둔 도메인(`host`)은 새 탭에 의미가 없어 지운다. -->
+          <sequence>
+            <!-- 탭 전환은 `replace` 라 `<init>` 이 다시 돌지 않는다 — 링크 여부를 여기서 새 탭에 맞춰 둬야
+              「유형 → 사이트」로 옮긴 표가 글자로만 남거나, 「사이트 → 검색어」로 옮긴 표가 갈 곳 없는 링크로
+              남지 않는다(#682 S3 라운드 14). 새 탭에는 `host` 가 없으므로 사이트 탭이면 켠다. -->
+            <set-state target="local" labelDrilldownKey="{{$args[0] === 'sites' ? 'host' : ''}}"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->
+            <navigate path="/admin/analytics/referrers" :replace="true">
+              <query tab="{{$args[0]}}" preset="{{query.preset}}" from="{{query.from}}" to="{{query.to}}" unit="{{query.unit}}" exclude="{{query.exclude}}" per_page="{{query.per_page}}" host="{{undefined}}"/>
+            </navigate>
+          </sequence>
+        </on>
+      </tab-navigation>
+      <!-- 검색어가 거의 비는 것은 판정 실패가 아니다 — 검색엔진이 HTTPS 로 옮기며 유입 주소에 검색어를 싣지 않는다.
+        빈 표를 본 운영자가 수집이 고장 났다고 읽지 않게 그 탭에서 먼저 알린다. -->
+      <p data-ref="keywords_https_hint" data-if="{{query.tab === 'keywords'}}" class="text-sm text-label mb-3">$t:admin.analytics.referrers.keywords_https_hint</p>
+      <div data-ref="referrer_type_chart_card" data-if="{{(query.tab || 'types') === 'types' &amp;&amp; (analytics_report?.data?.data ?? []).length > 0}}" class="admin-card mb-4">
+        <h2 class="section-heading mb-3">$t:admin.analytics.referrers.type_share_title</h2>
+        <div class="flex justify-center">
+          <donut-chart data-type="composite" data-ref="referrer_type_chart" data="{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981', '#EF4444', '#6366F1'][i % 6] }))}}" :size="220" :showLegend="true"/>
+        </div>
+      </div>
+      <div data-ref="report_grid_wrap" data-if="{{!((query.tab || 'types') === 'sites' &amp;&amp; !!query.host)}}">
+        <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
+      </div>
+      <!-- 한 유입처의 전체 주소. 집계표는 호스트까지만 쌓아 「google.com 에서 340」까지만 말하는데,
+        운영자가 알고 싶은 것은 어느 검색 결과·어느 글에서 왔는지다. 이 카드만 원장을 직접 읽는다.
+        돌아가기는 `host` 만 지워 기간·쪽 크기는 그대로 두고 사이트 목록으로 되돌린다. -->
+      <div data-ref="referrer_urls_card" data-if="{{(query.tab || 'types') === 'sites' &amp;&amp; !!query.host}}" class="admin-card">
+        <div data-ref="referrer_urls_header" class="flex-center gap-3 mb-3">
+          <button data-ref="referrer_urls_back" type="button" class="btn-icon" aria-label="$t:admin.analytics.referrers.urls_back">
+            <on type="click">
+              <!-- 사이트 목록으로 — 라벨 링크를 다시 켜고 `host` 만 지워 1쪽으로 돌아간다. 기간·쪽 크기는 병합으로 남는다. -->
+              <sequence>
+                <!-- 사이트 목록으로 돌아오는 것도 `replace` 라 `<init>` 이 다시 돌지 않는다 — 링크를 다시 켠다. -->
+                <set-state target="local" labelDrilldownKey="host"/>
+                <navigate path="/admin/analytics/referrers" :mergeQuery="true" :replace="true" transition_overlay_target="referrer_urls_grid__body">
+                  <query host="{{undefined}}" :page="1"/>
+                </navigate>
+              </sequence>
+            </on>
+            <icon name="arrow-left" class="text-xl"/>
+          </button>
+          <div class="min-w-0">
+            <h2 class="section-heading break-all">$t:admin.analytics.referrers.urls_title|host={{query.host ?? ''}}</h2>
+            <p class="text-hint mt-1">$t:admin.analytics.referrers.urls_hint</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <blur-until-loaded sources="analytics_referrer_urls"/>
+          <data-grid data-type="composite" data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <on type="action" event="onPageChange">
+              <!-- 유입 주소 목록의 쪽 이동. 이 목록은 원장을 직접 읽어 총 건수를 세지 않으므로 다음 쪽 여부는 응답의 `has_more` 로만 안다. -->
+              <navigate path="/admin/analytics/referrers" :mergeQuery="true" :replace="true" transition_overlay_target="referrer_urls_grid__body">
+                <query page="{{$args[0]}}"/>
+              </navigate>
+            </on>
+            <column field="url" header="$t:admin.analytics.referrers.urls_column">
+              <cell>
+                <!-- 바깥 주소라 `noopener noreferrer nofollow` 로 새 창에 연다. -->
+                <a href="{{row.url}}" target="_blank" rel="noopener noreferrer nofollow" class="text-link whitespace-normal break-all" title="{{row.url ?? ''}}">{{row.url ?? '-'}}</a>
+              </cell>
+            </column>
+            <column field="visits" header="$t:admin.analytics.common.visits" width="90px" align="right">
+              <cell>
+                <span class="text-body">{{(row.visits ?? 0) | number}}</span>
+              </cell>
+            </column>
+            <column field="hits" header="$t:admin.analytics.common.hits" width="90px" align="right">
+              <cell>
+                <span class="text-body">{{(row.hits ?? 0) | number}}</span>
+              </cell>
+            </column>
+          </data-grid>
+        </div>
+        <empty-state data-type="composite" data-ref="referrer_urls_empty" data-if="{{!analytics_referrer_urls?.loading &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
+      </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_referrers_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
+    </div>
+  </slot>
+  <!-- 한 항목 추이 창. -->
+  <modal src="partials/admin_analytics/_modal_row_trend.g7.html"/>
+</layout>

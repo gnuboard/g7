@@ -1,26 +1,10 @@
 {
+    "comment": "알림 발송 이력. 활동 로그·인증 이력과 같은 뼈대다 — 조건은 `_local.filter` 에 모았다가 검색할 때\n  URL 로 옮기고, 이동은 `replace` 로 이력에 쌓지 않으며, 표 본문만 대기 표시로 덮는다.\n  탭은 **채널별**(메일·SMS 등)이고 목록을 서버가 준다 — 플러그인이 채널을 들이면 탭이 저절로 늘어난다.\n  본체는 조각 둘(`_partial_filter`·`_partial_datagrid`)에 있고 여기에는 뼈대와 삭제 창 둘만 있다.",
     "version": "1.0.0",
     "layout_name": "admin_notification_log_list",
-    "permissions": [
-        "core.notification-logs.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.notification_log.page_title"
-    },
-    "state": {
-        "filter": {
-            "searchType": "all",
-            "search": "",
-            "extensionTypes": [],
-            "statuses": []
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "notificationChannels",
-            "notificationLogs"
-        ]
     },
     "data_sources": [
         {
@@ -36,7 +20,8 @@
                 "data": {
                     "channels": []
                 }
-            }
+            },
+            "comment": "알림 채널 목록 — 위쪽 탭을 만든다. 코어가 아닌 채널은 라벨 뒤에 어느 확장이 들였는지 붙인다."
         },
         {
             "id": "notificationLogs",
@@ -72,9 +57,46 @@
                     "data": [],
                     "pagination": []
                 }
-            }
+            },
+            "comment": "발송 이력. 조건은 전부 `query.*` 에서 읽는다. 403 은 빈 표 대신 에러 화면으로 갈아끼운다."
         }
     ],
+    "initLocal": {
+        "filter": {
+            "searchType": "all",
+            "search": "",
+            "extensionTypes": [],
+            "statuses": []
+        }
+    },
+    "permissions": [
+        "core.notification-logs.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "notificationChannels",
+            "notificationLogs"
+        ]
+    },
+    "named_actions": {
+        "searchNotificationLogs": {
+            "comment": "검색 실행 — 필터 조각이 공유한다. 확장 종류·상태는 화면에서 여러 개를 고를 수 있게 담아 두지만\n       **서버가 받는 것은 하나뿐**이라 첫 값만 보낸다(비었으면 조건에서 뺀다). 페이지는 1로 되돌린다.",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/notification-logs",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "notification_log_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
+                    "extension_type": "{{_local.filter.extensionTypes?.length > 0 ? _local.filter.extensionTypes[0] : undefined}}",
+                    "status": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses[0] : undefined}}"
+                }
+            }
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -91,24 +113,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchNotificationLogs": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/notification-logs",
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "search": "{{_local.filter.search || undefined}}",
-                    "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
-                    "extension_type": "{{_local.filter.extensionTypes?.length > 0 ? _local.filter.extensionTypes[0] : undefined}}",
-                    "status": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses[0] : undefined}}"
-                },
-                "replace": true,
-                "transition_overlay_target": "notification_log_datagrid__body"
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -153,12 +157,9 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn-icon"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "새로고침 겸 조건 초기화 — 채널 탭까지 포함해 걸어 둔 조건이 전부 떨어진다.",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -168,13 +169,19 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -185,17 +192,11 @@
                         "id": "channel_tabs",
                         "type": "composite",
                         "name": "TabNavigation",
-                        "props": {
-                            "tabs": "{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source && ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}",
-                            "activeTabId": "{{query.channel ?? ''}}",
-                            "variant": "default",
-                            "className": "sticky-tab-nav mb-6"
-                        },
                         "actions": [
                             {
                                 "comment": "audit:allow layout-list-context-navigate-merge-query 채널 탭 전환 — 탭마다 다루는 대상이 다르고 '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 채널의 조건이 남는다.",
-                                "event": "onTabChange",
                                 "type": "change",
+                                "event": "onTabChange",
                                 "handler": "navigate",
                                 "params": {
                                     "path": "/admin/notification-logs",
@@ -204,7 +205,13 @@
                                     "transition_overlay_target": "notification_log_datagrid__body"
                                 }
                             }
-                        ]
+                        ],
+                        "props": {
+                            "tabs": "{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source && ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}",
+                            "activeTabId": "{{query.channel ?? ''}}",
+                            "variant": "default",
+                            "className": "sticky-tab-nav mb-6"
+                        }
                     },
                     {
                         "partial": "partials/admin_notification_log_list/_partial_filter.json"
@@ -233,12 +240,24 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "총 건수를 끝까지 센 경우",
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{notificationLogs?.data?.pagination?.total_is_exact !== false}}",
                                                 "props": {
                                                     "className": "text-label"
                                                 },
                                                 "text": "$t:admin.notification_log.total_count|count={{notificationLogs?.data?.pagination?.total || 0}}"
+                                            },
+                                            {
+                                                "comment": "총 건수가 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{notificationLogs?.data?.pagination?.total_is_exact === false}}",
+                                                "props": {
+                                                    "className": "text-label"
+                                                },
+                                                "text": "$t:admin.notification_log.total_at_least|count={{notificationLogs?.data?.pagination?.total || 0}}"
                                             }
                                         ]
                                     },
@@ -250,8 +269,26 @@
                                         },
                                         "children": [
                                             {
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "정렬 — 옵션 값의 마지막 조각이 방향, 나머지가 기준이다(기준명에 `_` 가 들어 있다).\n                     페이지는 1로 되돌리고 나머지 조건은 유지한다.",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/notification-logs",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "notification_log_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "sortBy",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -274,28 +311,28 @@
                                                             "label": "$t:admin.notification_log.sort.subject_asc"
                                                         }
                                                     ]
-                                                },
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "페이지당 항목 수 — 정렬과 같은 이유로 페이지를 1로 되돌린다.",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/notification-logs",
                                                             "mergeQuery": true,
-                                                            "query": {
-                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                                "page": 1
-                                                            },
                                                             "replace": true,
-                                                            "transition_overlay_target": "notification_log_datagrid__body"
+                                                            "transition_overlay_target": "notification_log_datagrid__body",
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
                                                         }
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "composite",
-                                                "name": "Select",
+                                                ],
                                                 "props": {
                                                     "name": "perPage",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -318,23 +355,7 @@
                                                             "label": "100"
                                                         }
                                                     ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/notification-logs",
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "per_page": "{{$event.target.value}}",
-                                                                "page": 1
-                                                            },
-                                                            "replace": true,
-                                                            "transition_overlay_target": "notification_log_datagrid__body"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             }
                                         ]
                                     }
@@ -367,19 +388,19 @@
                                         "id": "bulk_delete_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                                            "disabled": "{{(_global.selectedIds_admin_notification_logs ?? []).length === 0 || notificationLogs?.data?.abilities?.can_delete !== true}}"
-                                        },
-                                        "text": "$t:admin.notification_log.delete.bulk_button",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "openModal",
                                                 "target": "bulk_delete_confirm_modal"
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                                            "disabled": "{{(_global.selectedIds_admin_notification_logs ?? []).length === 0 || notificationLogs?.data?.abilities?.can_delete !== true}}"
+                                        },
+                                        "text": "$t:admin.notification_log.delete.bulk_button"
                                     }
                                 ]
                             },
@@ -394,9 +415,7 @@
     },
     "modals": [
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.notification_log_list.delete_confirm_modal"
-            },
+            "comment": "이력 한 건 삭제 확인 창. 대상은 표 조각의 행 메뉴가 전역 `modal_data` 에 담아 준 행이다.",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -432,17 +451,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -454,100 +473,97 @@
                         {
                             "type": "basic",
                             "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "삭제 실행. 조건이 URL 에 있고 여기서는 URL 이 바뀌지 않으므로 목록을 직접 다시 부른다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/notification-logs/{{_global.modal_data.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "notificationLogs"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.notification_log.delete.success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "errorHandling": {
+                                                "403": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeleting": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isDeleting": true
-                                                }
-                                            },
-                                            {
-                                                "handler": "apiCall",
-                                                "auth_required": true,
-                                                "target": "/api/admin/notification-logs/{{_global.modal_data.id}}",
-                                                "params": {
-                                                    "method": "DELETE"
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeleting": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "notificationLogs"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "success",
-                                                            "message": "$t:admin.notification_log.delete.success"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "closeModal"
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeleting": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message}}"
-                                                        }
-                                                    }
-                                                ],
-                                                "errorHandling": {
-                                                    "403": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isDeleting": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:auth.permission_denied"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            ],
                             "children": [
                                 {
                                     "type": "basic",
@@ -558,12 +574,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.notification_log_list.delete_confirm_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.notification_log_list.bulk_delete_confirm_modal"
-            },
+            "comment": "선택한 이력을 한꺼번에 지우는 확인 창. 위 한 건 삭제와 읽는 값이 다르다(그쪽은 `modal_data`).",
             "id": "bulk_delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -599,17 +616,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -621,104 +638,101 @@
                         {
                             "type": "basic",
                             "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "일괄 삭제 실행. 성공하면 선택을 비운다 — 지운 id 가 남아 있으면 다음 일괄이 없는 것을\n                 다시 보낸다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/notification-logs/bulk-delete",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_admin_notification_logs ?? []}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false,
+                                                        "selectedIds_admin_notification_logs": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "notificationLogs"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.notification_log.delete.bulk_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "errorHandling": {
+                                                "403": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeleting": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isDeleting": true
-                                                }
-                                            },
-                                            {
-                                                "handler": "apiCall",
-                                                "auth_required": true,
-                                                "target": "/api/admin/notification-logs/bulk-delete",
-                                                "params": {
-                                                    "method": "POST",
-                                                    "body": {
-                                                        "ids": "{{_global.selectedIds_admin_notification_logs ?? []}}"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeleting": false,
-                                                            "selectedIds_admin_notification_logs": []
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "notificationLogs"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "success",
-                                                            "message": "$t:admin.notification_log.delete.bulk_success"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "closeModal"
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isDeleting": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message}}"
-                                                        }
-                                                    }
-                                                ],
-                                                "errorHandling": {
-                                                    "403": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isDeleting": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:auth.permission_denied"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            ],
                             "children": [
                                 {
                                     "type": "basic",
@@ -729,7 +743,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.notification_log_list.bulk_delete_confirm_modal"
+            }
         }
     ]
 }

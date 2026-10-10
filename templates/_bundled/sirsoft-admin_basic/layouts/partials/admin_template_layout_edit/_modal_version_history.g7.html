@@ -1,0 +1,85 @@
+<!-- 화면 정의 편집기에서 지금 고친 화면의 지난 판본을 보고 되돌리는 창. 맨 위가 지금 쓰는 판본이라
+  되돌리기 버튼이 붙지 않는다.
+  각 판본은 몇 줄이 늘고 줄었는지, 글자 수가 얼마나 달라졌는지, 누가 저장했는지를 함께 보여 준다
+  — 판본 이름이 없으므로 그 수치가 어느 시점인지 가려내는 단서다. -->
+<partial name="modal_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.version_history_modal">
+  <modal data-type="composite" data-ref="version_history_modal" size="medium" title="$t:admin.templates.modals.version_history.title">
+    <!-- 되돌리기 전 경고(D6). 지금 편집 중인 미저장분이 있으면, 되돌린 판본이 서버에 실리는 순간
+         내 버퍼와 서버가 어긋난다. 그 자체는 `<code-workspace>` 가 충돌 바로 잡아 주지만 — 자동
+         덮어쓰기는 일어나지 않는다 — **누르기 전에 알고 있는 편이 낫다**. 되돌리기는 새 판본을 만드는
+         일이라 취소해도 흔적이 남기 때문이다. -->
+    <div data-ref="version_restore_dirty_warning" data-if="{{(_global.dirtyFileKeys?.length ?? 0) > 0}}" role="alert" class="mb-3 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm">
+      <div class="flex-center gap-2">
+        <icon name="fa-solid fa-triangle-exclamation" class="text-base"/>
+        <span>$t:admin.templates.layout_edit.draft.restore_warning|count={{_global.dirtyFileKeys?.length ?? 0}}</span>
+      </div>
+    </div>
+    <p class="text-label mb-4">$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}</p>
+    <div class="space-y-3 max-h-96 overflow-y-auto" data-testid="layout-version-history-list">
+      <div data-each="version, idx in {{layout_versions?.data ?? []}}" data-blur-until-loaded="{{_global.isRestoring}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4" data-testid="layout-version-row-{{version.version ?? idx}}">
+        <div class="flex-between">
+          <div class="flex-center gap-2">
+            <span class="text-primary font-medium">{{version.created_at}}</span>
+            <span data-if="{{idx === 0}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:admin.templates.modals.version_history.latest</span>
+          </div>
+          <button data-if="{{idx !== 0}}" class="flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoring || current_layout?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <!-- 되돌린 뒤 **편집기 내용까지 갈아 끼운다** — 서버만 바꾸고 두면 화면의 편집기에는 되돌리기 전 글이 남아, 다음 저장이 방금 되돌린 것을 도로 덮는다. 판본 목록도 다시 받는다(되돌리기 자체가 새 판본을 만든다). -->
+              <sequence>
+                <set-state target="global" :isRestoring="true"/>
+                <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}/versions/{{version.id}}/restore" method="POST">
+                  <success>
+                    <set-state target="global" :isRestoring="false"/>
+                    <toast type="success" message="$t:admin.templates.modals.version_history.restore_success"/>
+                    <!-- 되돌린 뒤 편집기 본문은 **재조회 응답이 `serverValue` 로 흘러 들어가** 갈아 끼워진다.
+                         그 파일의 버퍼가 clean 이면 그대로 반영되고, 미저장분이 있으면 덮어쓰지 않고 충돌 바가 선다(D6).
+                         여기서 `current_layout?.data?.content` 를 다시 읽어 set-state 하면 그 시점 컨텍스트가 재조회 전
+                         값이라 되돌리기 전 본문을 도로 덮어쓴다(브라우저 실측 2026-09-11 — 복구 뒤 편집기에 옛 글이 남았다). -->
+                    <set-state target="global" :markupCompileError="null" :jsonViewStale="false"/>
+                    <refetch-data-source dataSourceId="current_layout"/>
+                    <refetch-data-source dataSourceId="layout_versions"/>
+                    <close-modal/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :isRestoring="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{!_global.isRestoring}}" name="fa-solid fa-arrows-rotate" class="text-base"/>
+            <icon data-if="{{_global.isRestoring}}" name="fa-solid fa-spinner" class="spinner-sm"/>
+            <span>{{_global.isRestoring ? '$t:admin.templates.modals.version_history.restoring' : '$t:admin.templates.modals.version_history.restore'}}</span>
+          </button>
+        </div>
+        <div class="flex-center gap-4 mt-2 text-sm">
+          <span class="text-green-600 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
+          <span class="text-red-600 dark:text-red-400">- {{version.changes_summary?.removed_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
+          <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.version_history.chars)</span>
+        </div>
+        <div class="mt-2 text-label-subtle">$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name ?? 'admin'}}</div>
+      </div>
+    </div>
+    <!-- 받은 묶음이 상한만큼 꽉 찼으면 더 오래된 버전이 남아 있다는 뜻이라 '더 보기' 를 노출한다. 서버 상한(500)에 도달하면 감춘다 — 더 넓히면 목록 전체가 422 가 되어 보고 있던 이력까지 사라진다. -->
+    <div data-if="{{(layout_versions?.data?.length ?? 0) >= (_global.layoutVersionLimit ?? 100) &amp;&amp; (_global.layoutVersionLimit ?? 100) < 500}}" class="flex-center justify-center mt-3">
+      <button type="button" class="btn btn-secondary w-full" data-testid="layout-version-history-load-more">
+        <on type="click">
+          <!-- 이 버전으로 되돌린다. 되돌리기도 새 버전으로 쌓이므로 이력이 끊기지 않는다 -->
+          <sequence>
+            <set-state target="global" layoutVersionLimit="{{Math.min((_global.layoutVersionLimit ?? 100) + 100, 500)}}"/>
+            <refetch-data-source dataSourceId="layout_versions"/>
+          </sequence>
+        </on>
+        <span>$t:admin.templates.modals.version_history.load_more</span>
+      </button>
+    </div>
+    <!-- 서버 상한까지 넓혔는데도 묶음이 꽉 차 있으면 더 오래된 버전이 남아 있지만 이 화면에서는 도달할 수 없다. '더 보기' 만 조용히 사라지면 목록이 끝난 것으로 읽히므로 도달 한계를 명시한다. -->
+    <div data-if="{{(layout_versions?.data?.length ?? 0) >= (_global.layoutVersionLimit ?? 100) &amp;&amp; (_global.layoutVersionLimit ?? 100) >= 500}}" class="text-xs text-secondary text-center mt-3" data-testid="layout-version-history-limit-reached">$t:admin.templates.modals.version_history.limit_reached</div>
+    <div class="alert-info">
+      <div class="flex-center gap-2">
+        <icon name="info-circle" class="text-base text-blue-600 dark:text-blue-400"/>
+        <span class="text-info-soft">$t:admin.templates.modals.version_history.restore_note</span>
+      </div>
+    </div>
+  </modal>
+</partial>

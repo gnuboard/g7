@@ -1,0 +1,38 @@
+feature: 회원관리 목록 확장 필터 예제 — 마일리지 잔액·배송지 (#705 D5)
+
+description: |
+  코어 회원관리 목록이 연 확장 필터 규약(상세검색 아래 확장점 → ext_filters[] 값 채널 →
+  core.user.list_validation_rules/_attributes 검증 훅 → core.user.list_query_extensions 쿼리 훅)을
+  이커머스가 실제로 써서 목록을 거르는 예제 두 가지다.
+
+  - mileage: 사용 가능 잔액 범위(기본 통화 한 가지). 잔액 행이 없는 회원은 0 으로 본다.
+  - address: 배송지 국가(그 나라 배송지를 하나라도) · 배송지 등록 여부(0 이 국가보다 우선).
+
+  값 조립은 이 모듈이 등록한 핸들러(`sirsoft-ecommerce.setUserFilterExt`)가 한다 — 조각은 어느 관리자
+  템플릿에 주입되든 같은 동작을 해야 하므로 템플릿 핸들러에 기대지 않는다.
+
+  결과 축:
+  - narrows: 조건이 목록을 실제로 좁힌다(코어 조건·다른 예제와 AND)
+  - rejected: 확장이 건 규칙(ext.sirsoft-ecommerce.*)이 422 로 거절한다
+  - ignored_without_permission: 조회 권한(마일리지·배송지)이 없으면 조건을 무시한다(추정 차단)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Listeners/UserListFilterExtensionTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminUserListFilterExtensions.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/userListFilterExtHandlers.test.ts
+
+axes:
+  example:
+    - mileage
+    - address
+  outcome:
+    - narrows
+    - rejected
+    - ignored_without_permission
+
+effects:
+  - ecommerce_mileage_filter_narrows_user_list
+  - ecommerce_address_filter_narrows_user_list
+  - ecommerce_user_filters_reject_invalid_values
+  - ecommerce_user_filters_require_permission
+  - ecommerce_user_filter_values_assembled_by_module_handler

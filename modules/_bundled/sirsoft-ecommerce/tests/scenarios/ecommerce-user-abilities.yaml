@@ -1,0 +1,36 @@
+feature: 이커머스 사용자 응답의 abilities 메타 (주문 목록·상세·컬렉션·배송지) 와 주문 취소 권한
+
+description: |
+  사용자 화면은 버튼을 켤지 끌지를 응답의 `abilities` 로 정한다. 주문 목록·상세의 `can_cancel` 은 권한만이 아니라
+  주문 상태와 설정을 함께 본 복합 판정이고, 컬렉션 `can_create`·배송지 `can_delete`/`can_update`/`can_set_default` 는
+  권한과 대상 상태로 정해진다. 판정이 어긋나면 화면에는 눌리는 버튼이 서지만 요청은 403·422 로 막힌다.
+  취소 요청 자체도 같은 권한·상태 게이트를 지나는지 재고, 취소는 주문 상품 행을 대상으로 하므로 상품 행이 있는 주문으로 잰다.
+
+# axis 의미:
+#   subject — abilities 를 싣는 응답(또는 그 판정을 소비하는 취소 요청)의 종류.
+axes:
+  subject: [order_list, order_detail, order_collection, address, cancel]
+
+effects:
+  - order_list_returns_can_cancel_true_for_cancellable_order
+  - order_list_returns_can_cancel_false_for_shipped_order
+  - order_list_returns_can_cancel_false_without_cancel_permission
+  - order_detail_returns_can_cancel_true_for_cancellable_order
+  - order_detail_returns_can_cancel_false_for_shipped_order
+  - order_detail_returns_can_cancel_false_without_cancel_permission
+  - order_collection_returns_can_create_true_for_permitted_user
+  - order_collection_returns_can_create_false_for_blocked_user
+  - address_list_returns_can_delete_false_for_default_address
+  - address_list_returns_can_delete_true_for_non_default_address
+  - address_resource_returns_can_update_true
+  - address_resource_returns_can_set_default_true_for_non_default
+  - address_resource_returns_can_set_default_false_for_default
+  - permitted_user_can_cancel_cancellable_order
+  - blocked_user_cannot_cancel_order
+  - cancel_fails_for_non_cancellable_status
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/EcommerceUserAbilitiesTest.php
+
+notes: |
+  2026-09-26 — 기존 테스트에 소유 매니페스트가 없어 새로 만들었다(3차 validate-plan 에서 주문 상품 행 없는 취소 테스트를 고치며 파일을 건드림).

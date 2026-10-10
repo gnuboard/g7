@@ -1,0 +1,57 @@
+# 시나리오 매니페스트 — KG 이니시스 클레임 결제 경로의 #599 validate P2 결함 (07-core-plugins)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: kginicis_validate_p2_claim_payment_hardening
+
+description: |
+  #599 `/validate branch` 07-core-plugins 가 찾은 결제 플러그인 결함 중 KG 이니시스 몫.
+
+  - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
+    `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(PC 망취소 · 모바일 취소 · CBT 환불)은
+    서버 콜백 컨트롤러의 클로저에만 있었다. 리스너가 승인 응답의 금액·주문번호를 청구액·결제 건과
+    대조하고, 어긋나면 리스너가 되돌린 뒤 거절한다 — 어느 경로로 들어와도 같다. 청구액 기준
+    (PC·모바일 KRW / CBT JPY)을 세울 수 없으면 승인을 부르지 않는다.
+  - PC 승인액은 응답 `TotPrice` 만 쓴다(콜백 TotPrice 폴백 제거 — 브라우저 값이 청구액과 대조되면
+    항등식이다). 응답에 없으면 망취소 + 거절.
+  - CBT 편의점(CVS) 판정은 응답 기준이다 — 응답 결제수단이 CVS 이거나, 비어 있어도 CVS 발급에만
+    실리는 필드(confNo·receiptNo·convenience·paymentTerm)가 있으면 CVS 다. 콜백 paymethod 는 거절
+    쪽으로만 쓴다.
+  - CBT 승인액은 응답 금액 → 해시 발급 때 기록한 인증요청 금액(`CbtClaimAuthAmount`) → 결제 예정액
+    순으로 정한다(모듈이 `paid_amount` 부재를 불일치로 거절한다). 청구액과 다르면 환불 + 거절이다 —
+    결제창을 연 뒤 청구액이 바뀐 건을 잡는다.
+  - CP 분기의 콜백 락 획득이 try 밖이라 대기 초과가 500 이었다(PC·모바일·CBT 세 콜백). 이제 신청서
+    상세 복귀(이미 결제됐으면 성공, 아니면 `callback_locked`)다.
+  - 클레임 결제 공용 트레이트의 `app()` Repository 로케이터를 호스트 컨트롤러 7종의 생성자 주입으로 바꿨다.
+  - 모듈이 승인 **뒤**에 따로 거절한 건(승인 금액 대조 실패·승인액 미보고)은 모듈의
+    `claim_payment.void_approval` 필터로 되돌린다 — 승인 리스너가 그 필터도 구현하고, 콜백 컨트롤러는
+    보상 클로저를 넘기지 않아 서버 콜백·API 승인 두 경로의 보상이 한 구현이다.
+  - 같은 규칙을 **주문** 경로에도 적용한다(변경 파일 안 선행 결함): PC 콜백은 승인 응답 `TotPrice` 만,
+    모바일 콜백은 응답 `P_AMT` 만 승인액으로 쓰고(응답에 없으면 취소 + 실패), 주문 CBT 의 CVS 판정은
+    응답 기준(`Support/CbtCvsResponse` — 클레임 경로와 공용)이다.
+
+axes:
+  concern:
+    - approve_path_independence
+    - response_amount_source
+    - cbt_cvs_judgement
+    - callback_serialization
+    - repository_injection
+    - void_approval
+    - cbt_auth_amount
+    - order_path_response_authority
+
+effects:
+  - inicis_claim_approval_is_reverted_on_either_path_when_the_response_disagrees  # PC 망취소·모바일 취소·CBT 환불 후 거절 (API 경로 포함)
+  - inicis_claim_pc_amount_comes_only_from_the_response                           # 응답 TotPrice 부재 시 콜백 값으로 채우지 않는다
+  - inicis_claim_cbt_cvs_is_judged_by_the_response                                # CVS 전용 응답 필드로 판정
+  - inicis_claim_callback_lock_timeout_redirects_instead_of_500                   # 락 대기 초과는 정상 리다이렉트
+  - inicis_repositories_are_constructor_injected                                  # Repository 생성자 주입
+  - inicis_claim_void_approval_reverts_the_approval                               # void_approval 필터 → 취소 API / CBT 환불
+  - inicis_order_pc_amount_comes_only_from_the_response                           # 주문 PC: 콜백 TotPrice 를 쓰지 않는다
+  - inicis_order_mobile_amount_comes_only_from_the_response                       # 주문 모바일: 콜백 P_AMT 폴백 제거
+  - inicis_order_cbt_cvs_is_judged_by_the_response                                # 주문 CBT: CVS 는 응답 기준
+  - inicis_claim_cbt_reports_the_auth_request_amount                              # CBT 승인액 = 응답 → 해시 발급 기록 → 결제 예정액
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/ValidateP2ClaimPaymentHardeningTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/ValidateP2OrderCallbackResponseAuthorityTest.php

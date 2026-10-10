@@ -1,0 +1,18 @@
+feature: 1.3.0 업그레이드 — 취소 가능 상태 실제 판정값 고정
+
+description: |
+  런타임은 claim.instant_cancel_statuses 를 order_settings.cancellable_statuses 의 별칭으로 읽는다.
+  03 스텝이 claim 쪽 사본만 적으면, 저장본 order_settings.json 에 그 키가 없는 사이트의 취소 가능 상태가 1.3.0 기본값
+  (미결제 2종 포함)으로 조용히 넓어진다(7.1.0 출시 점검 EU-3). 키가 없을 때만 1.2.x 값을 판정 키에도 적는다.
+
+axes:
+  saved_key: [missing, operator_saved]
+
+effects:
+  - order_cancellable_statuses_pinned_to_legacy
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/MergeClaimSettingsCancellableStatusesTest.php
+
+validation:
+  browser_check: 1.2.1 에서 주문 설정을 한 번도 저장하지 않은 사이트를 7.1.0 으로 올린 뒤 환경설정 > 주문 > 취소 가능 상태가 「결제완료」만 체크돼 있다

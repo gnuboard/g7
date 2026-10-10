@@ -22,12 +22,14 @@ return [
     'attachment' => [
         'not_found' => '添付ファイルが見つかりません。',
         'file_not_found' => '添付ファイルがストレージに存在しません。',
+        'preview_not_supported' => 'プレビューに対応していないファイル形式です。',
         'upload_success' => '添付ファイルがアップロードされました。',
         'upload_failed' => '添付ファイルのアップロードに失敗しました。',
         'delete_success' => '添付ファイルが削除されました。',
         'delete_failed' => '添付ファイルの削除に失敗しました。',
         'reorder_success' => '添付ファイルの順序が変更されました。',
         'reorder_failed' => '添付ファイルの順序の変更に失敗しました。',
+        'settings_success' => '添付ファイル設定を閲覧しました。',
     ],
     'errors' => [
         'not_found' => 'ページが見つかりません。',

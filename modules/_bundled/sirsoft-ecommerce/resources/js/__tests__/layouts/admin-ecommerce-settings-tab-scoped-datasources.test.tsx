@@ -15,6 +15,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const layout = require('../../../layouts/admin/admin_ecommerce_settings.json');
 
@@ -77,20 +78,20 @@ describe('admin_ecommerce_settings — 데이터소스 탭 스코프 게이팅',
     const walk = (n: any) => {
       if (!n || typeof n !== 'object') return;
       if (Array.isArray(n)) { n.forEach(walk); return; }
-      if (n.handler === 'sequence' && Array.isArray(n.params?.actions)) seqs.push(n);
+      if (n.handler === 'sequence' && callbacksOf(n, 'actions').length > 0) seqs.push(n);
       Object.values(n).forEach(walk);
     };
     walk(layout);
 
     const tabSwitches = seqs.filter(s =>
-      (s.params.actions as AnyJson[]).some(
+      (callbacksOf(s, 'actions') as AnyJson[]).some(
         a => a?.handler === 'setState' && 'activeEcommerceSettingsTab' in (a.params ?? {})
       )
     );
     expect(tabSwitches.length).toBeGreaterThan(0);
 
     for (const seq of tabSwitches) {
-      const acts = seq.params.actions as AnyJson[];
+      const acts = callbacksOf(seq, 'actions') as AnyJson[];
       expect(acts.some(a => a.handler === 'replaceUrl')).toBe(false);
       const nav = acts.find(a => a.handler === 'navigate');
       expect(nav).toBeTruthy();

@@ -1,0 +1,42 @@
+feature: 주문 상태 이름이 화면마다 갈리지 않는다
+
+description: |
+  주문 상태의 사람이 읽는 이름은 `enums.json` 이 소유한다. 그런데 관리자 주문 화면은
+  같은 상태를 **자기 사본**으로 그리는 자리가 둘 더 있다.
+
+    enums.json                                     ← 정본 (주문상세 상태 Select)
+    admin/order.json  status.*                     ← 목록 일괄 변경 바 · 확인 모달 (레이아웃 4개)
+    admin/order.json  filter.order_status_options  ← 목록 필터 칩
+
+  사본이 갈리면 **같은 상태가 화면마다 다른 이름으로 보인다.** 오류도 나지 않고 기능도
+  정상이라, 운영자가 「이게 다른 상태인가?」 하고 멈추는 것 말고는 드러나는 신호가 없다.
+
+  실측(#599 통합실측 세션1 · 1-O): 같은 운영자에게 같은 상태가 이렇게 보였다.
+
+    주문상세 상태 Select : 결제대기 · 배송보류
+    주문목록 일괄 Select : 입금대기 · 발송보류
+
+  10개 중 8개는 일치하고 2개만 갈렸다 — 그래서 눈에 잘 띄지 않는다.
+
+  **사본은 셋이고, 로케일도 축이다.** 첫 사본만 맞추면 같은 화면의 필터와 일괄 바가 서로
+  다른 이름을 말한다(실측 중 `status.*` 를 고친 뒤에도 필터 칩은 「입금대기」로 남아 있었다).
+  ko 만 보면 en 의 `Payment Pending`·`Waiting` 두 건을 놓친다. 그래서 두 축을 곱해 잠근다.
+
+  검사 방식은 **소스 텍스트 스캔**이다 — 라벨이 런타임 코드가 아니라 JSON 에 있어, 화면을
+  띄우는 테스트로는 사본이 갈렸다는 사실 자체를 관측할 수 없다.
+
+  계약: `modules/_bundled/sirsoft-ecommerce/resources/lang/partial/{ko,en}/admin/order.json` 의 두 사본은 `enums.json` 의 주문 상태 라벨과 글자 그대로 같다.
+
+axes:
+  label_copy:
+    - bulk_bar      # admin/order.json status.* — 일괄 변경 바·확인 모달
+    - filter_chip   # admin/order.json filter.order_status_options — 목록 필터 칩
+  locale:
+    - ko
+    - en
+
+effects:
+  - order_status_labels_match_the_enum_vocabulary   # 두 사본이 로케일마다 정본과 글자 그대로 일치
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderStatusLabelSingleSource.test.ts

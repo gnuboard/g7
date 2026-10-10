@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 배송 구획. 배송비는 상품이 아니라 배송정책이 정하므로 여기서는 어느 정책을 붙일지만\n  고른다. 기본 정책을 쓰는 상품이 대부분이라 그 상태를 기본으로 두고, 끌 때만 정책 목록이 열린다.\n  고른 정책의 국가별 조건은 아래 접이식 카드에서 읽기 전용으로 펼쳐 보여 준다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Shipping Section"
@@ -13,6 +14,17 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.shippingExpanded": "{{!_local.ui.shippingExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -41,16 +53,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.shippingExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.shippingExpanded": "{{!_local.ui.shippingExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -66,15 +68,15 @@
                     "id": "shipping_policy_header",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "flex-between"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
                                 "className": "row-stack"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "flex-between"
                     },
                     "children": [
                         {
@@ -100,7 +102,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "arrow-up-right-from-square",
-                                        "className": "w-3 h-3 mr-1.5"
+                                        "className": "text-xs mr-1.5"
                                     }
                                 },
                                 {
@@ -123,20 +125,21 @@
                         {
                             "type": "composite",
                             "name": "Toggle",
-                            "props": {
-                                "name": "use_default_shipping",
-                                "checked": "{{_local.ui.useDefaultShippingPolicy ?? true}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "기본 정책 쓰기 전환 — 켜면 기본 정책 id 를 폼에 다시 심어야 하므로 화면 상태만 바꾸지 않고 핸들러에 맡긴다",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.toggleDefaultShippingPolicy",
                                     "params": {
                                         "checked": "{{$event.target.checked}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "name": "use_default_shipping",
+                                "checked": "{{_local.ui.useDefaultShippingPolicy ?? true}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
                         },
                         {
                             "type": "basic",
@@ -152,13 +155,13 @@
                     "id": "shipping_policy_buttons_pc",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "{{_local.errors?.shipping_policy_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}"
-                    },
                     "responsive": {
                         "portable": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "{{_local.errors?.shipping_policy_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}"
                     },
                     "children": [
                         {
@@ -169,10 +172,21 @@
                                 "item_var": "policy",
                                 "index_var": "policyIdx"
                             },
+                            "actions": [
+                                {
+                                    "comment": "넓은 화면용 정책 고르기",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.shipping_policy_id": "{{policy.id}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium flex-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{(_local.ui.useDefaultShippingPolicy ?? true) || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                "disabled": "{{(_local.ui.useDefaultShippingPolicy ?? true) || _computed.isReadOnly}}"
                             },
                             "children": [
                                 {
@@ -189,16 +203,6 @@
                                     "name": "Span",
                                     "text": "{{$localized(policy.name)}}"
                                 }
-                            ],
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "form.shipping_policy_id": "{{policy.id}}"
-                                    }
-                                }
                             ]
                         }
                     ]
@@ -207,13 +211,13 @@
                     "id": "shipping_policy_buttons_mobile",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "{{_local.errors?.shipping_policy_id ? 'grid grid-cols-2 gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'grid grid-cols-2 gap-2'}}"
-                    },
                     "responsive": {
                         "desktop": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "{{_local.errors?.shipping_policy_id ? 'grid grid-cols-2 gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'grid grid-cols-2 gap-2'}}"
                     },
                     "children": [
                         {
@@ -224,10 +228,21 @@
                                 "item_var": "policy",
                                 "index_var": "policyIdx"
                             },
+                            "actions": [
+                                {
+                                    "comment": "좁은 화면용 정책 고르기 — 위 목록과 같은 값을 다른 배치로 세운 것이다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.shipping_policy_id": "{{policy.id}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}} px-3 py-2.5 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{(_local.ui.useDefaultShippingPolicy ?? true) || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                "disabled": "{{(_local.ui.useDefaultShippingPolicy ?? true) || _computed.isReadOnly}}"
                             },
                             "children": [
                                 {
@@ -246,16 +261,6 @@
                                         "className": "truncate"
                                     },
                                     "text": "{{$localized(policy.name)}}"
-                                }
-                            ],
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "form.shipping_policy_id": "{{policy.id}}"
-                                    }
                                 }
                             ]
                         }
@@ -311,11 +316,9 @@
                             "id": "shipping_detail_header",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "p-4 flex-between bg-gray-50 dark:bg-gray-800 cursor-pointer"
-                            },
                             "actions": [
                                 {
+                                    "comment": "고른 정책의 국가별 조건 상세를 접고 편다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -324,6 +327,9 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "p-4 flex-between bg-gray-50 dark:bg-gray-800 cursor-pointer"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -355,7 +361,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "chevron-down",
-                                        "className": "w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.shippingDetailExpanded ? 'rotate-180' : ''}}"
+                                        "className": "text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.shippingDetailExpanded ? 'rotate-180' : ''}}"
                                     }
                                 }
                             ]
@@ -554,10 +560,35 @@
                     ]
                 },
                 {
+                    "comment": "배송정책 조회 권한이 없어 선택지가 비었을 때의 안내. 정책을 비운 채 저장해도 거절되지 않고 주문 계산이 기본 배송정책으로 폴백하므로 안내도 그렇게 말한다. 여기서는 「정책 만들기」 를 권하지 않는다(만들 권한도 없을 가능성이 크고 정책은 실재한다)",
+                    "id": "shipping_policy_forbidden_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{shipping_policies?.data?.unavailable === true}}",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.shipping_policies"
+                        }
+                    ]
+                },
+                {
                     "id": "shipping_empty_state",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!_local.form.shipping_policy_id && (_computed.shippingPolicyOptions ?? []).length === 0}}",
+                    "if": "{{shipping_policies?.data?.unavailable !== true && !_local.form.shipping_policy_id && (_computed.shippingPolicyOptions ?? []).length === 0}}",
                     "props": {
                         "className": "text-center py-8"
                     },
@@ -567,7 +598,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "truck",
-                                "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"
                             }
                         },
                         {
@@ -581,11 +612,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "mt-3 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.buttons.create_shipping_policy",
                             "actions": [
                                 {
                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 배송정책 목록 클러스터로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
@@ -595,7 +621,12 @@
                                         "path": "/admin/ecommerce/shipping-policies/create"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "mt-3 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.buttons.create_shipping_policy"
                         }
                     ]
                 }

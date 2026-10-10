@@ -1,0 +1,38 @@
+feature: 환경설정 SEO·고급 탭 저장 검증 — 봇·캐시·사이트맵 설정값
+
+description: |
+  관리자 환경설정의 SEO 탭과 고급 탭이 보내는 SEO 관련 값(봇 User-Agent, 캐시 사용·유효시간,
+  사이트맵 주기·시각·캐시·분할·압축·hreflang)을 SaveSettingsRequest 가 받아들이거나 422 로 막는 규칙.
+
+  - 사이트맵 생성 시각은 형식(HH:MM)만이 아니라 실제 시각이어야 한다. 99:99 가 저장되면 스케줄러가
+    잘못된 크론 식을 만들어 예약 작업 목록 전체가 깨졌다(7.1.0 실측 O-J1).
+  - 고급 탭의 사이트맵 캐시 기준값은 SEO 탭의 캐시 유효시간과 한도가 달라 안내 문구도 탭마다 다르다.
+  - 비운 캐시 오버라이드 칸은 null(미설정)로 정규화한다.
+
+axes:
+  tab: [seo, advanced]
+
+effects:
+  - seo_bot_user_agents_must_be_a_list_of_short_strings
+  - seo_cache_settings_are_validated_within_bounds
+  - sitemap_schedule_accepts_only_known_periods
+  - sitemap_schedule_time_requires_a_real_clock_time
+  - sitemap_cache_ttl_is_validated_within_bounds
+  - seo_feature_toggles_accept_boolean
+  - sitemap_generation_settings_are_saved
+  - sitemap_urls_per_file_is_bounded_by_the_protocol
+  - sitemap_contributor_limit_allows_zero_and_rejects_negative
+  - sitemap_flags_reject_non_boolean
+  - advanced_sitemap_cache_ttl_is_saved_and_bounded
+  - seo_cache_ttl_messages_state_each_tabs_own_limit
+  - emptied_cache_override_fields_are_normalized_to_null
+  # SEO 탭 「사이트맵 마지막 생성」 칸은 ISO 원문이 아니라 읽는 날짜로, 값이 없으면 - 로 보인다(7.1.0 잔여 관측 R-12 재실측)
+  - seo_sitemap_last_generated_is_readable
+  # 생성기 메타 태그 검증 3종은 seo-meta-generator-tag.yaml 이 소유한다(같은 테스트 파일을 함께 소유)
+  - validation_accepts_boolean_for_generator_enabled
+  - validation_accepts_content_within_200_chars
+  - validation_rejects_content_exceeding_200_chars
+
+test_files:
+  - tests/Feature/Seo/SaveSettingsRequestSeoTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-seo-sitemap-last-generated.test.ts

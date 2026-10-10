@@ -49,7 +49,12 @@ class PublicPageController extends PublicBaseController
             $page = $this->pageService->getPublishedPageBySlug($slug, $canPreview);
 
             if (! $page) {
-                return $this->notFound('sirsoft-page::messages.page.not_found');
+                // 없는 페이지 화면의 [페이지 만들기] 를 등록 권한자에게만 열도록 그 판정을 함께 싣는다
+                return $this->error('sirsoft-page::messages.page.not_found', 404, [
+                    'abilities' => [
+                        'can_create' => (bool) $user?->hasPermission('sirsoft-page.pages.create', PermissionType::Admin),
+                    ],
+                ]);
             }
 
             $page->load('attachments');

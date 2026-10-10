@@ -86,7 +86,7 @@
     "delete": {
       "title": "商品グループを削除",
       "message": "以下の商品グループを削除しますか?",
-      "message_suffix": ":attribute商品グループを本当に削除しますか?",
+      "message_suffix": " 商品グループを本当に削除しますか?",
       "warning": "この操作は戻すことができません。"
     },
     "editing": {

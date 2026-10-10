@@ -1,0 +1,36 @@
+<partial description="서버 페이지네이션과 통화별 상세 실행 이력" _e2e_allow="e2e:allow 단일 행 소스를 태그 경계로 접고 S21 주석만 더함 — 굽기 JSON 은 comment 키 외 동일(2026-09-17)">
+<!-- 실행 이력 그리드 — 데이터소스 koreaeximRuns 를 서버 페이지네이션으로 그리고, 행을 펼치면 그 실행의 통화별 상세를 따로 받아 보여준다 -->
+<div class="admin-card overflow-x-auto">
+  <data-grid data-type="composite" data-ref="koreaexim_runs" data="{{(query.date_from &amp;&amp; query.date_to &amp;&amp; query.date_to &lt; query.date_from) ? [] : (koreaeximRuns?.data?.data ?? [])}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{koreaeximRuns?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{koreaeximRuns?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{koreaeximRuns?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="$t:sirsoft-koreaexim.empty">
+    <column field="search_date" header="$t:sirsoft-koreaexim.date"/>
+    <column field="trigger_label" header="$t:sirsoft-koreaexim.trigger"/>
+    <column field="status_label" header="$t:sirsoft-koreaexim.result">
+      <cell><span class="{{['success','partial','dry_run'].includes(row.status) ? 'text-green-700 dark:text-green-300' : ['no_data','skipped'].includes(row.status) ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}" title="{{row.message}}">{{row.status_label}}</span></cell>
+    </column>
+    <column field="applied_count" header="$t:sirsoft-koreaexim.applied"/>
+    <column field="request_count" header="$t:sirsoft-koreaexim.calls"/>
+    <expand>
+      <div class="p-3">
+        <p>{{row.message}}</p>
+        <div data-each="item in {{_global.koreaeximRunItems?.[row.id] ?? []}}" class="flex flex-wrap gap-3 py-2 border-b border-gray-200 dark:border-gray-700">
+          <span>{{item.currency_code}}</span>
+          <span>{{item.previous_rate ?? '-'}} → {{item.new_rate ?? '-'}}</span>
+          <span>{{item.status_label}}</span>
+          <span>{{item.api_currency_unit}} {{item.source_rate}}</span>
+        </div>
+      </div>
+    </expand>
+    <on type="change" event="onExpandChange">
+      <!-- 행을 펼칠 때 그 실행의 통화별 상세를 한 번만 받아 전역 캐시(koreaeximRunItems)에 실행 ID 로 쌓는다 — 이미 받은 행은 다시 부르지 않는다 -->
+      <api-call if="{{($args[0] ?? []).length > 0 &amp;&amp; !_global.koreaeximRunItems?.[$args[0][$args[0].length - 1]]}}" target="/api/plugins/sirsoft-koreaexim/admin/runs/{{$args[0][$args[0].length - 1]}}" method="GET" :auth_required="true">
+        <success><set-state target="global" koreaeximRunItems="{{Object.assign({}, _global.koreaeximRunItems ?? {}, {[$args[0][$args[0].length - 1]]: response.data.items})}}"/></success>
+        <fail><toast type="error" message="{{error.message}}"/></fail>
+      </api-call>
+    </on>
+    <on type="change" event="onPageChange">
+      <!-- 서버 페이지네이션 — 이력 탭을 유지한 채 page 쿼리만 바꿔 다시 연다(데이터소스가 쿼리에서 페이지를 읽는다) -->
+      <navigate path="/admin/plugins/sirsoft-koreaexim/settings" :mergeQuery="true"><query tab="history" page="{{$args[0]}}"/></navigate>
+    </on>
+  </data-grid>
+</div>
+</partial>

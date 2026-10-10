@@ -14,13 +14,13 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
+import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS, requestPaymentHandler, resolveSelectedMethodId } from '../../handlers/requestPayment';
 
 const CLIENT_CONFIG_DATA = {
     data: {
         client_key: 'test_key',
         sdk_url: 'https://example.com/sdk.js',
-        callback_urls: { success: '/success', fail: '/fail' },
+        callback_urls: { success: 'https://shop.example.test/success', fail: 'https://shop.example.test/fail' },
     },
 };
 
@@ -144,6 +144,75 @@ describe('requestPaymentHandler', () => {
             consoleErrorSpy.mockRestore();
         });
 
+        /**
+         * 클레임 추가결제의 취소는 주문 취소 경로를 타면 안 된다. (S3-D8)
+         *
+         * 두 경우의 `order_number` 가 가리키는 것이 다르다 — 주문은 주문번호지만 클레임은
+         * **결제번호(CP…)** 다. 종전에는 구분 없이 `orders/{order_number}/cancel-payment`
+         * 를 불러 `orders/CP…/cancel-payment` 가 되었고, 서버는 404 를 돌려주는데 catch 가
+         * console.warn 으로 삼켜 **화면에는 아무 신호도 남지 않았다**(실측
+         * EX20260915-1145077892 · CP20260915-1145087969).
+         */
+        it('클레임 추가결제 취소는 주문 취소 API 를 부르지 않는다', async () => {
+            const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            setupUserCancel();
+            await requestPaymentHandler({
+                params: {
+                    pgPaymentData: {
+                        order_number: 'CP20260915-1145087969',
+                        order_name: '교환 추가결제 (EX-1)',
+                        amount: 6000,
+                        claim_payment_number: 'CP20260915-1145087969',
+                        claim_cancel_return_url: '/mypage/claims/EX-1?claim_payment=cancelled&claim_number=EX-1',
+                    },
+                },
+            });
+
+            expect(mockG7Core.api.post).not.toHaveBeenCalled();
+
+            consoleInfoSpy.mockRestore();
+            consoleErrorSpy.mockRestore();
+        });
+
+        /**
+         * 대신 서버가 실어 준 복귀 주소로 돌아간다. (S3-D8)
+         *
+         * 의도된 중단은 실패가 아니므로 `?claim_payment=cancelled` 이고, 그 주소는
+         * `ClaimPaymentRedirect` 가 만든다 — 프런트가 조립하지 않는다. 체크아웃 전용
+         * 취소 모달도 띄우지 않는다(신청서 화면에는 그 모달이 없다).
+         */
+        it('클레임 추가결제 취소는 서버가 준 복귀 주소로 이동한다', async () => {
+            const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            const returnUrl = '/mypage/claims/EX-1?claim_payment=cancelled&claim_number=EX-1';
+            const original = window.location;
+            delete (window as any).location;
+            (window as any).location = { ...original, href: 'https://g7.dev/mypage' };
+
+            setupUserCancel();
+            await requestPaymentHandler({
+                params: {
+                    pgPaymentData: {
+                        order_number: 'CP20260915-1145087969',
+                        order_name: '교환 추가결제 (EX-1)',
+                        amount: 6000,
+                        claim_payment_number: 'CP20260915-1145087969',
+                        claim_cancel_return_url: returnUrl,
+                    },
+                },
+            });
+
+            expect(window.location.href).toBe(returnUrl);
+            expect(mockG7Core.modal.open).not.toHaveBeenCalledWith('tosspayments_payment_cancel_modal');
+
+            (window as any).location = original;
+            consoleInfoSpy.mockRestore();
+            consoleErrorSpy.mockRestore();
+        });
+
         it('비회원 컨텍스트에서는 취소 기록에 X-Guest-Order-Token 헤더를 첨부한다', async () => {
             // 이 엔드포인트는 회원/비회원 공유라 서버가 소유권을 대조한다. 토큰이 빠지면
             // 서버가 404 로 거부하는데 화면은 console.warn 만 남기고 평소대로 취소 안내를
@@ -244,7 +313,7 @@ describe('requestPaymentHandler', () => {
         const baseConfig = (overrides: any = {}) => ({
             client_key: 'ck',
             sdk_url: 'https://example.com/sdk.js',
-            callback_urls: { success: '/success', fail: '/fail' },
+            callback_urls: { success: 'https://shop.example.test/success', fail: 'https://shop.example.test/fail' },
             order_sheet_mode: true,
             enabled_methods: [
                 { id: 'toss_card', method: 'CARD', easy_pay_provider: null, core_payment_method: 'card' },
@@ -306,6 +375,82 @@ describe('requestPaymentHandler', () => {
             expect(capturedPayload.card.flowMode).toBe('DEFAULT');
             expect('easyPay' in capturedPayload.card).toBe(false);
             expect(capturedPayload.easyPay).toBeUndefined();
+        });
+
+        it('코어 결제수단 id(vbank)로도 VIRTUAL_ACCOUNT 로 해석한다 (S1-D1)', async () => {
+            // 코어 카탈로그의 가상계좌(id='vbank')를 고른 주문은 _local.paymentMethod 에
+            // toss_* 가 아니라 코어 id 가 담긴다. enabled_methods 의 core_payment_method 로도
+            // 찾지 않으면 CARD 로 강하해 가상계좌 주문에 카드 결제창이 열린다.
+            setupSdk(baseConfig());
+
+            await requestPaymentHandler({ params: { pgPaymentData: pgData(), paymentMethod: 'vbank' } });
+
+            expect(capturedPayload.method).toBe('VIRTUAL_ACCOUNT');
+            expect(capturedPayload.virtualAccount).toBeDefined();
+        });
+
+        it('코어 결제수단 id(card)로도 CARD 로 해석한다 (S1-D1)', async () => {
+            setupSdk(baseConfig());
+
+            await requestPaymentHandler({ params: { pgPaymentData: pgData(), paymentMethod: 'card' } });
+
+            expect(capturedPayload.method).toBe('CARD');
+            expect(capturedPayload.card.flowMode).toBe('DEFAULT');
+        });
+
+        it('toss_* id 가 코어 id 보다 우선한다 (간편결제 자체창 보존 · S1-D1)', async () => {
+            // toss_kakaopay 의 core 는 card 다. 코어 매칭을 먼저 하면 easyPay 가 사라진다.
+            setupSdk(baseConfig());
+
+            await requestPaymentHandler({ params: { pgPaymentData: pgData(), paymentMethod: 'toss_kakaopay' } });
+
+            expect(capturedPayload.card.easyPay).toBe('카카오페이');
+            expect(capturedPayload.card.flowMode).toBe('DIRECT');
+        });
+
+        it('면세 금액이 있으면 승인 요청에 taxFreeAmount 를 싣는다 (S1-D12)', async () => {
+            // 복합 과세 상점은 결제·결제취소에 면세 금액을 **함께** 보내야 한다(토스 「세금 처리」).
+            // 승인에서 빼면 PG 가 전액 과세로 등록해 두고, 면세분이 실린 취소를
+            // 「취소 할 수 없는 금액 입니다」 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 막힌다.
+            setupSdk(baseConfig());
+
+            await requestPaymentHandler({
+                params: {
+                    pgPaymentData: pgData({ tax_free_amount: 40000 }),
+                    paymentMethod: 'toss_card',
+                },
+            });
+
+            expect(capturedPayload.taxFreeAmount).toBe(40000);
+        });
+
+        it('면세 금액이 0/없으면 taxFreeAmount 키를 싣지 않는다 (S1-D12)', async () => {
+            // 과세 전용 상점에서 0 을 보내면 불필요한 계약 분기를 탄다.
+            setupSdk(baseConfig());
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: pgData({ tax_free_amount: 0 }), paymentMethod: 'toss_card' },
+            });
+            expect('taxFreeAmount' in capturedPayload).toBe(false);
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: pgData(), paymentMethod: 'toss_card' },
+            });
+            expect('taxFreeAmount' in capturedPayload).toBe(false);
+        });
+
+        it('가상계좌도 면세 금액을 싣는다 (S1-D12)', async () => {
+            setupSdk(baseConfig());
+
+            await requestPaymentHandler({
+                params: {
+                    pgPaymentData: pgData({ tax_free_amount: 15000 }),
+                    paymentMethod: 'toss_virtual_account',
+                },
+            });
+
+            expect(capturedPayload.method).toBe('VIRTUAL_ACCOUNT');
+            expect(capturedPayload.taxFreeAmount).toBe(15000);
         });
 
         it('에스크로 on 이면 가상계좌 useEscrow=true', async () => {
@@ -452,6 +597,25 @@ describe('requestPaymentHandler', () => {
  * manifest `trusted_script_hosts` 와 코드 상수가 어긋나면 그 차집합이 그대로
  * 사각이 되므로 두 목록의 일치도 함께 고정한다.
  */
+/**
+ * 결제수단 id 결정 순서 — 액션 인자, 서버가 저장한 payment_method. 화면 상태는 보지 않는다.
+ *
+ * 화면 상태는 주문서가 아닌 화면(클레임 추가결제 등)에서 비거나 서버와 다른 값일 수 있다 — 서버가 저장한 값이 단일 출처다.
+ */
+describe('resolveSelectedMethodId', () => {
+    it('액션 인자가 있으면 그 값을 쓴다', () => {
+        expect(resolveSelectedMethodId('toss_kakaopay', 'vbank')).toBe('toss_kakaopay');
+    });
+
+    it('액션 인자가 없으면 서버가 저장한 결제수단을 쓴다', () => {
+        expect(resolveSelectedMethodId(undefined, 'vbank')).toBe('vbank');
+    });
+
+    it('둘 다 없으면 정하지 않는다(화면 상태로 채우지 않는다)', () => {
+        expect(resolveSelectedMethodId(undefined, null)).toBeUndefined();
+    });
+});
+
 describe('SDK URL 신뢰 호스트 게이트', () => {
     const TRUSTED_SDK_URL = 'https://js.tosspayments.com/v2/standard';
 

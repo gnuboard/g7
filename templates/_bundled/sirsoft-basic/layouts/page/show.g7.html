@@ -1,0 +1,115 @@
+<!-- 페이지 문서 보기 — 관리자가 만든 정적 문서(이용약관·소개·FAQ 등)를 슬러그로 찾아 보여 준다. 푸터와 드로어의 정보·정책 링크가 모두 이 한 화면으로 온다. -->
+<layout name="page/show" version="1.0.0" extends="_user_base">
+  <meta title="{{page?.data?.seo_meta?.title ?? page?.data?.title ?? '$t:user.page.page_title'}}" description="{{page?.data?.seo_meta?.description ?? ''}}" keywords="{{page?.data?.seo_meta?.keywords ?? ''}}">
+    <seo :enabled="true" :priority="0.5" changefreq="monthly">
+      <data-sources>
+        <item>page</item>
+      </data-sources>
+      <og type="website" title="{{page.data.title ?? ''}}" description="{{page.data.seo_meta?.description ?? ''}}" image="{{page.data.content_thumbnail_url ?? ''}}"/>
+      <structured-data @type="WebPage" name="{{page.data.title ?? ''}}" description="{{page.data.seo_meta?.description ?? ''}}" image="{{page.data.content_thumbnail_url ?? ''}}" datePublished="{{page.data.created_at ?? ''}}" dateModified="{{page.data.updated_at ?? ''}}"/>
+    </seo>
+  </meta>
+  <!-- 문서 본문 — blocking 이라 이 응답 전에는 아무것도 그리지 않는다(문서 자체가 화면의 전부라 부분 노출이 뜻이 없다). 비로그인도 읽히지만 문서마다 공개 범위가 다를 수 있어 인증은 선택으로 보낸다. -->
+  <data-source id="page" label_key="$t:editor.data_source.page" type="api" endpoint="/api/modules/sirsoft-page/pages/{{route?.slug}}" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="blocking">
+    <fallback :data="null"/>
+    <!-- 없는 페이지 — 서버가 등록 권한을 errors.abilities.can_create 로 알려 [페이지 만들기] 를 그 권한자에게만 연다 -->
+    <error-handling>
+      <on-code code="404">
+        <set-state target="local" pageCanCreate="{{error?.errors?.abilities?.can_create === true}}"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <container data-type="layout" class="py-12">
+      <responsive on="portable" class="py-6 px-4"/>
+      <div class="max-w-3xl mx-auto">
+        <div data-ref="page_content_card" data-if="{{page?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10">
+          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow p-5"/>
+          <div data-ref="page_preview_banner" data-if="{{page?.data?.is_preview}}" class="flex items-center gap-2 mb-4 px-4 py-3 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-sm">
+            <icon name="eye" class="text-amber-600 dark:text-amber-400 text-sm"/>
+            <span>$t:user.page.preview_banner</span>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <responsive on="portable" class="flex flex-wrap items-center justify-between gap-2 mb-3"/>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+                {{page?.data?.title ?? ''}}
+              </h1>
+              <span data-if="{{page?.data?.abilities?.can_update === true}}" class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">v{{page?.data?.current_version ?? 1}}</span>
+            </div>
+            <a data-ref="page_admin_edit_button" data-if="{{page?.data?.abilities?.can_update === true}}" href="/admin/pages/{{page?.data?.id}}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+              <icon name="pencil" class="text-xs"/>
+              <span>$t:user.page.admin_edit</span>
+            </a>
+          </div>
+          <p data-if="{{page?.data?.published_at}}" class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400 mb-4"/>
+            $t:user.page.published_at: {{page?.data?.published_at | date}}
+          </p>
+          <extension-point name="html_content" data-ref="page_html_content" content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300">
+            <default>
+              <html-content data-type="composite" content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300"/>
+            </default>
+          </extension-point>
+          <div data-ref="page_attachments_section" data-if="{{(page?.data?.attachments ?? []).length > 0}}" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2 mb-3">
+              <icon name="paperclip" class="text-gray-500 dark:text-gray-400 text-sm"/>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:user.page.attachments</span>
+            </div>
+            <div data-each="att_item, att_index in page?.data?.attachments ?? []" class="space-y-2">
+              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div class="flex items-center gap-3 min-w-0">
+                  <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 공개 서빙 -->
+                  <div data-if="{{att_item.is_image}}" class="flex-shrink-0 w-10 h-10 rounded overflow-hidden bg-gray-100 dark:bg-gray-800">
+                    <img src="{{att_item.preview_url}}" alt="{{att_item.original_filename}}" class="w-full h-full object-cover"/>
+                  </div>
+                  <!-- 파일 아이콘 (일반 파일인 경우) -->
+                  <icon data-if="{{!att_item.is_image}}" name="file" class="text-gray-400 dark:text-gray-500 text-sm flex-shrink-0"/>
+                  <span class="text-sm text-gray-900 dark:text-white truncate">{{att_item.original_filename}}</span>
+                </div>
+                <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 bg-transparent border-0 cursor-pointer">
+                  <on type="click">
+                    <!-- 첨부 내려받기 — 링크로 열지 않고 핸들러를 거치는 것은 원래 파일명을 되살려 저장하기 위해서다(서버 저장명은 사람이 읽을 수 없다). -->
+                    <action handler="downloadAttachment" url="{{att_item.download_url}}" filename="{{att_item.original_filename}}"/>
+                  </on>
+                  <icon name="download" class="text-xs"/>
+                  <span>$t:user.page.download</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="page_not_found" data-if="{{!page?.data &amp;&amp; !page?.loading}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10 text-center">
+          <icon name="circle-exclamation" class="text-4xl text-gray-400 dark:text-gray-500 mb-4"/>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">$t:user.page.not_found_title</h2>
+          <p class="text-gray-500 dark:text-gray-400 mb-6">$t:user.page.not_found_description</p>
+          <div class="flex items-center justify-center gap-3">
+            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              <on type="click">
+                <navigate path="/"/>
+              </on>
+              <icon name="house" class="text-sm"/>
+              <span>$t:user.page.back_to_home</span>
+            </button>
+            <a data-ref="page_create_button" data-if="{{_local.pageCanCreate === true}}" href="/admin/pages/create?slug={{route?.slug ?? ''}}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline">
+              <icon name="plus" class="text-sm"/>
+              <span>$t:user.page.create_page</span>
+            </a>
+          </div>
+        </div>
+        <div data-ref="page_back_button" data-if="{{page?.data}}" class="mt-8 text-center">
+          <responsive on="portable" class="mt-6 text-center"/>
+          <button type="button" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+            <on type="click">
+              <navigate path="/"/>
+            </on>
+            <icon name="arrow-left" class="text-sm"/>
+            <span>$t:user.page.back_to_home</span>
+          </button>
+        </div>
+      </div>
+    </container>
+  </slot>
+</layout>

@@ -12,6 +12,9 @@ class PaymentCloseReportRequest extends FormRequest
     /**
      * 결제창 닫힘 보고 요청을 허용합니다.
      *
+     * 로그인을 강제하지 않는다 — 비회원도 결제창을 닫을 수 있기 때문이다. 소유자 확인은 컨트롤러가
+     * 회원 본인 로그인 / 비회원 조회 토큰(X-Guest-Order-Token)으로 한다.
+     *
      * @return bool 요청 허용 여부
      */
     public function authorize(): bool
@@ -29,8 +32,6 @@ class PaymentCloseReportRequest extends FormRequest
         return [
             'oid' => ['required', 'string', 'max:40'],
             'price' => ['required', 'integer', 'min:'.PaymentLimits::MIN_PRICE],
-            'buyer_email' => ['nullable', 'string', 'max:255'],
-            'buyer_phone' => ['nullable', 'string', 'max:30'],
             'payment_method' => ['nullable', 'string', 'max:50'],
             // 내부 텔레메트리 필드 (PG 미전송 실측) — 형제 플러그인(nhnkcp/nicepayments)과 160 으로 통일
             'reason' => ['nullable', 'string', 'max:160'],

@@ -1,0 +1,70 @@
+<!-- 쿠폰 등록·수정 폼의 기본 정보 구역 — 이름·기간·발급 방식이 여기 있다.
+  발급 방식(다운로드/자동)이 **뒤따르는 화면을 좌우한다** — 자동을 고르면 발급 조건 칸이 나타나고,
+  그 초깃값도 여기서 함께 정해 준다. 폼 전체가 이 조각의 선택에 따라 자란다는 뜻이다.
+  값은 이 조각의 지역 상태가 아니라 **부모 폼의 `_local.form`** 에 쌓인다 — 저장은 화면 하단
+  한 곳에서 한 번에 하고, 조각들은 같은 그릇을 나눠 쓴다. -->
+<partial>
+  <div data-ref="basic_info_section" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.basic_info</h2>
+    <div class="space-y-5">
+      <!-- 적용대상 RadioGroup -->
+      <form-field data-type="composite" data-ref="field_target_type" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.target_type" :required="true" error="{{_local.errors?.target_type?.[0] ?? ''}}">
+        <radio-group data-type="composite" name="target_type" :inline="true">
+          <responsive on="mobile" :inline="false"/>
+          <prop name="options">
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_type_product_amount" value="product_amount"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_type_order_amount" value="order_amount"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_type_shipping_fee" value="shipping_fee"/>
+          </prop>
+        </radio-group>
+      </form-field>
+      <!-- 발급방법 RadioGroup -->
+      <form-field data-type="composite" data-ref="field_issue_method" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_method" :required="true" error="{{_local.errors?.issue_method?.[0] ?? ''}}">
+        <radio-group data-type="composite" name="issue_method" :inline="true">
+          <responsive on="mobile" :inline="false"/>
+          <prop name="options">
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_method_direct" value="direct"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_method_download" value="download"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_method_auto" value="auto"/>
+          </prop>
+          <on type="change">
+            <!-- 발급 방식 선택. 고른 값 자체는 라디오가 폼에 담고, 이 액션은 **딸린 발급 조건의 초깃값**을 함께 맞춘다 — 자동이면 가입 시, 아니면 수동. 이것이 없으면 자동으로 바꾼 직후 조건 칸이 빈 채로 뜬다. -->
+            <set-state target="_local" form.issue_condition="{{$event.target.value === 'auto' ? 'signup' : 'manual'}}"/>
+          </on>
+        </radio-group>
+      </form-field>
+      <!-- 발급조건 - 자동발급 선택 시: RadioGroup -->
+      <form-field data-type="composite" data-ref="field_issue_condition_auto" data-if="{{_local.form?.issue_method === 'auto'}}" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_condition" :required="true" error="{{_local.errors?.issue_condition?.[0] ?? ''}}">
+        <radio-group data-type="composite" name="issue_condition" :inline="true">
+          <responsive on="mobile" :inline="false"/>
+          <prop name="options">
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_signup" value="signup"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_first_purchase" value="first_purchase"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_birthday" value="birthday"/>
+          </prop>
+        </radio-group>
+      </form-field>
+      <!-- 발급조건 - 직접발급/다운로드 시: 수동발급 RadioGroup -->
+      <form-field data-type="composite" data-ref="field_issue_condition_manual" data-if="{{_local.form?.issue_method !== 'auto'}}" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_condition" error="{{_local.errors?.issue_condition?.[0] ?? ''}}">
+        <radio-group data-type="composite" name="issue_condition" :inline="true">
+          <prop name="options">
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_manual" value="manual"/>
+          </prop>
+        </radio-group>
+      </form-field>
+      <!-- 직접발급 선택 시: 발급 위치 안내 (쿠폰 목록의 직접발급 버튼) -->
+      <div data-ref="direct_issue_guide" data-if="{{_local.form?.issue_method === 'direct'}}" class="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+        <icon name="info" size="sm" class="text-blue-500 dark:text-blue-400 flex-shrink-0"/>
+        <span class="text-sm text-blue-700 dark:text-blue-300">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.direct_issue_guide</span>
+      </div>
+      <!-- 쿠폰명 -->
+      <form-field data-type="composite" data-ref="field_coupon_name" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_name" :required="true" error="{{_local.errors?.name?.[0] ?? ''}}">
+        <multilingual-input data-type="composite" name="name" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholder.coupon_name" layout="tabs"/>
+      </form-field>
+      <!-- 쿠폰설명 -->
+      <form-field data-type="composite" data-ref="field_coupon_description" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_description" error="{{_local.errors?.description?.[0] ?? ''}}">
+        <multilingual-input data-type="composite" name="description" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholder.coupon_description" inputType="textarea" :rows="3" layout="tabs"/>
+      </form-field>
+    </div>
+  </div>
+</partial>

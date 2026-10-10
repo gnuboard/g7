@@ -595,7 +595,13 @@ export function createLayoutTest(
     // G7Core 글로벌 객체 모킹
     (window as any).G7Core = {
       state: {
-        get: () => ({ _global: state._global, _local: state._local }),
+        // 운영과 같은 모양으로 돌려준다 — `G7Core.state.get()` 의 반환값이 **곧 `_global` 의 내용물**이고
+        // (`TemplateApp.getGlobalState()` → `{...globalState}`), `_local` 은 그 안의 한 키다.
+        // 종전 `{ _global, _local }` 모양은 engine-v1.70.0 이 `._global` 접미를 떼기 전의 계약이라,
+        // ActionDispatcher 의 stale-closure 방어가 `_global` 자리에 `{_global,_local}` 을 통째로
+        // 꽂아 액션 params 안의 `{{_global.*}}` 가 전부 undefined 로 평가됐다.
+        // 정본: `resources/js/core/devtools/DiagnosticEngine.ts:65` 「반환값이 곧 _global 이다 — ._global 을 덧붙이지 말 것」.
+        get: () => ({ ...state._global, _local: state._local }),
         set: (updates: any) => { state._global = { ...state._global, ...updates }; },
         getLocal: () => state._local,
         setLocal: (updates: any) => { state._local = { ...state._local, ...updates }; },

@@ -33,6 +33,9 @@ class LayoutExtensionFactory extends Factory
             'template_id' => Template::factory(),
             'extension_type' => fake()->randomElement(LayoutExtensionType::cases()),
             'target_name' => fake()->randomElement(['sidebar-top', 'sidebar-bottom', 'header-actions', 'admin/dashboard', 'admin/settings']),
+            // 조각 식별자 — 실제 설치는 소스 파일 이름을 쓰고, 마이그레이션 백필은 target_name 을 쓴다.
+            // 같은 대상에 여러 행을 만드는 테스트가 있으므로 고유 키가 충돌하지 않게 접미어를 붙인다.
+            'fragment_key' => fn (array $attributes): string => $attributes['target_name'].'-'.fake()->unique()->numerify('####'),
             'source_type' => fake()->randomElement(LayoutSourceType::cases()),
             'source_identifier' => $vendor.'-'.fake()->slug(1),
             'content' => $this->generateExtensionData(),
@@ -91,33 +94,33 @@ class LayoutExtensionFactory extends Factory
     /**
      * 모듈 출처 상태
      */
-    public function fromModule(string $identifier = null): static
+    public function fromModule(?string $identifier = null): static
     {
         return $this->state(fn (array $attributes) => [
             'source_type' => LayoutSourceType::Module,
-            'source_identifier' => $identifier ?? 'sirsoft-ecommerce',
+            'source_identifier' => $identifier ?? 'sample-module',
         ]);
     }
 
     /**
      * 플러그인 출처 상태
      */
-    public function fromPlugin(string $identifier = null): static
+    public function fromPlugin(?string $identifier = null): static
     {
         return $this->state(fn (array $attributes) => [
             'source_type' => LayoutSourceType::Plugin,
-            'source_identifier' => $identifier ?? 'sirsoft-analytics',
+            'source_identifier' => $identifier ?? 'sample-plugin',
         ]);
     }
 
     /**
      * 템플릿 출처 상태 (오버라이드용)
      */
-    public function fromTemplate(string $identifier = null): static
+    public function fromTemplate(?string $identifier = null): static
     {
         return $this->state(fn (array $attributes) => [
             'source_type' => LayoutSourceType::Template,
-            'source_identifier' => $identifier ?? 'sirsoft-admin_basic',
+            'source_identifier' => $identifier ?? 'sample-template',
         ]);
     }
 

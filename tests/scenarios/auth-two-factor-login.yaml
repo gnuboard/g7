@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 7축 cross product 는 조건부 축(actor 는 controller=admin 에서만,
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 7축 cross product 는 조건부 축(actor 는 controller=admin 에서만,
 # lock_state 는 세션을 여는 단계에서만, delivery 는 비밀번호 단계에서만 의미가 있다)을 곱해 낸 명목상 조합이라
 # 개별 케이스에 docblock 을 매핑할 실체가 없다. 실제 회귀 가드는 effects 22건이며 전부 test_files 의
 # PHPUnit·Playwright 테스트에 @effects 로 귀속되어 있다(미검증 0건).
@@ -66,6 +66,8 @@ effects:
   - challenge_response_has_no_token
   - challenge_response_has_no_user
   - delivery_failure_503_with_reason
+  - mail_channel_off_blocks_two_factor_503
+  - login_code_uses_login_definition
   - admin_login_returns_challenge_not_500
   - admin_two_factor_issues_token_for_admin
   - non_admin_two_factor_revokes_token
@@ -85,10 +87,21 @@ effects:
   - invalid_code_retries_until_success
   - session_state_cleared_after_two_factor_success
   - double_submit_sends_single_verify_request
+  - enter_key_on_code_step_sends_verify_only # 인증번호 단계의 Enter 는 확인만 보내고 비밀번호 단계를 다시 부르지 않는다
+  - code_step_intact_on_mobile_width_and_ja_locale # 375px 폭과 일본어 로케일에서 키 원문 없이 버튼이 화면 안에 놓인다
+  - public_verify_throttle_isolated_from_other_guest_routes
+  - layout_handler_exposes_challenge_fields
+  - layout_handler_keeps_user_contract_on_normal_login
+  - layout_handler_completes_two_factor_with_challenge_and_code
+  - layout_handler_skips_request_without_required_input
+  - layout_handler_surfaces_server_message
+  - layout_handler_resend_returns_new_challenge
 
 test_files:
   - tests/Feature/Auth/TwoFactorAuthTest.php
   - tests/Feature/Auth/TwoFactorAccountLockTest.php
   - tests/Feature/Auth/LoginThrottleTest.php
   - tests/Feature/Identity/IdentityLoginPurposeGateTest.php
+  - tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php
   - tests/Playwright/specs/auth/two-factor-login.spec.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.loginTwoFactor.test.ts

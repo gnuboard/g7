@@ -1,0 +1,35 @@
+feature: 게시글 목록 — 필터 변경 시 페이지 초기화
+
+description: |
+  결과 집합을 좁히는 조작은 반드시 1페이지로 돌아가야 한다. 그런데 상태 필터와 엔터 검색만
+  `mergeQuery=true` 로 기존 page 를 이어받으면서 1 로 되돌리지 않았다.
+
+  76차 g7.dev 실측 — `?page=2&per_page=15` 에서 상태를 「블라인드」로 고르면
+  `?page=2&...&status=blinded` 가 되어 결과 0건이 되고, 그때는 **페이지네이션까지 사라져**
+  1페이지로 돌아갈 수단이 없었다. 같은 필터의 `?page=1` 은 10건을 반환했다 — 데이터가 아니라
+  page 파라미터만이 원인이다.
+
+  초기화 기전이 둘이라 검사도 둘로 갈린다:
+    - `mergeQuery=true`  → 기존 query 를 이어받으므로 `page:1` 을 명시해야 한다
+    - `mergeQuery=false` → URL 을 새로 짜므로 page 가 구조적으로 떨어져 나간다 (검색 버튼)
+  페이지 이동 자신(`page: {{$args[0]}}`)은 page 를 정하는 주체이므로 이 규칙의 예외다.
+
+axes:
+  filter: [category, status, sort, per_page, enter_search, search_button]
+
+cross_product: |
+  좁히는 여섯 갈래 전부가 뒷페이지에서 1페이지로 돌아온다.
+  갈래마다 초기화 기전(mergeQuery 참/거짓)이 다르므로 기전별로 다른 것을 단언한다.
+
+effects:
+  - narrowing_filter_resets_page_when_merging_query
+  - rebuilt_url_drops_page_by_construction
+  - pager_navigation_keeps_its_own_page
+  - narrowing_filter_overlays_grid_body_only
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-posts-filter-page-reset.test.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-route-param-and-filter-reset.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

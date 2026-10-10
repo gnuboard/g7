@@ -7,8 +7,8 @@
  *
  * 실제 Resource shape 대조:
  *  - page     : PageResource::toArray (다국어 객체 title/content, creator, attachments[], seo_meta 다국어,
- *               current_version) — admin_page_detail.json (page?.data?.title?.[locale]) 소비
- *  - pageData : 동일 PageResource (admin_page_form.json — 첨부 initialFiles + 읽기전용 표시)
+ *               current_version) — admin_page_detail.g7.html (page?.data?.title?.[locale]) 소비
+ *  - pageData : 동일 PageResource (admin_page_form.g7.html — 첨부 initialFiles + 읽기전용 표시)
  *  - versions : PageVersionResource (id/version/creator.name/created_at/changes_summary) — detail 버전 탭
  *  - pages    : PageResource::toListArray (data.data[] + meta + abilities) — admin_page_list DataGrid
  *

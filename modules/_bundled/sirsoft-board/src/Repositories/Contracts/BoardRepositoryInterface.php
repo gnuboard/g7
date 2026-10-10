@@ -267,4 +267,12 @@ interface BoardRepositoryInterface
      * @return int 갱신된 카운트 값
      */
     public function recalculateCommentsCount(int $boardId): int;
+
+    /**
+     * 삭제된 반응 유형 code 를 게시판의 활성 반응 유형 목록에서 제거합니다.
+     *
+     * @param  array<int, string>  $codes  제거할 유형 code 목록
+     * @return int 갱신된 게시판 수
+     */
+    public function stripReactionCodes(array $codes): int;
 }

@@ -1,0 +1,70 @@
+<!-- 인기글 — 게시판을 가리지 않고 조회·반응이 많은 글을 모은다. 기간 버튼은 상태가 아니라 URL 질의(period)를 바꾸는 이동이라, 고른 기간이 주소에 남고 뒤로가기로 되돌아간다. -->
+<layout name="board/popular" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="boards" :priority="0.6" changefreq="daily">
+      <data-sources>
+        <item>popularPosts</item>
+      </data-sources>
+      <extensions>
+        <item type="module" id="sirsoft-board"/>
+      </extensions>
+      <vars site_name="$core_settings:general.site_name"/>
+      <og type="website" title="$t:user.board.popular_title"/>
+    </seo>
+  </meta>
+  <!-- 인기글 상위 20건 — 기간은 URL 질의에서 오고 기본은 최근 일주일이다. 누구나 보는 화면이라 로그인을 요구하지 않는다. -->
+  <data-source id="popularPosts" label_key="$t:editor.data_source.popularPosts" type="api" endpoint="/api/modules/sirsoft-board/boards/popular" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
+    <params period="{{query.period ?? 'week'}}" :limit="20"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <container data-type="layout" class="py-8">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <icon name="flame" size="lg" class="text-orange-500"/>
+          <span>$t:board.popular.title</span>
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-1">$t:board.popular.description</p>
+      </div>
+      <div class="flex gap-2 mb-6">
+        <button class="{{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+          <on type="click">
+            <navigate path="/boards/popular?period=today"/>
+          </on>
+          <icon name="clock" size="sm" class="mr-1.5 inline"/>
+          <span>$t:board.popular.today</span>
+        </button>
+        <button class="{{(query.period ?? 'week') === 'week' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+          <on type="click">
+            <navigate path="/boards/popular?period=week"/>
+          </on>
+          <icon name="calendar" size="sm" class="mr-1.5 inline"/>
+          <span>$t:board.popular.this_week</span>
+        </button>
+        <button class="{{(query.period ?? 'week') === 'month' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+          <on type="click">
+            <navigate path="/boards/popular?period=month"/>
+          </on>
+          <icon name="calendar" size="sm" class="mr-1.5 inline"/>
+          <span>$t:board.popular.this_month</span>
+        </button>
+        <button class="{{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+          <on type="click">
+            <navigate path="/boards/popular?period=year"/>
+          </on>
+          <icon name="calendar-alt" size="sm" class="mr-1.5 inline"/>
+          <span>$t:board.popular.year</span>
+        </button>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow divide-y divide-gray-200 dark:divide-gray-700">
+        <blur-until-loaded sources="popularPosts"/>
+        <include src="partials/board/popular/_popular_list.g7.html"/>
+      </div>
+    </container>
+  </slot>
+</layout>

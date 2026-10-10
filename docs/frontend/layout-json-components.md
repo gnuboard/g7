@@ -9,7 +9,7 @@
 
 ```text
 1. if: 조건부 렌더링 (type: "conditional" 사용 금지!)
-2. iteration: 배열 반복 (source, item_var, index_var)
+2. iteration: 배열 반복 (source, item_var, index_var) — type: "iterator" 는 사용하지 않고 실제 컴포넌트에 iteration 속성을 붙인다
 2-1. sortable: 드래그앤드롭 정렬 (source, itemKey, strategy, itemTemplate)
 3. blur_until_loaded: 데이터 로딩 중 blur 효과
 4. lifecycle: onMount, onUnmount 핸들러
@@ -52,6 +52,12 @@
 
 ### if - 조건부 렌더링
 
+```html
+<div data-ref="warning_message" data-if="{{_local.showWarning}}">경고 메시지입니다.</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "warning_message",
@@ -70,6 +76,14 @@
 → [상세 문서](layout-json-components-rendering.md#조건부-렌더링-if)
 
 ### iteration - 반복 렌더링
+
+```html
+<ul data-ref="item_list" data-each="item, idx in items.data">
+  <li>{{item.name}}</li>
+</ul>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -91,6 +105,20 @@
 
 ### blur_until_loaded - 데이터 로딩 중 Blur
 
+```html
+<!-- Boolean (기본) -->
+<div :data-blur-until-loaded="true">본문</div>
+<!-- 표현식 (engine-v1.5.0+) -->
+<div data-blur-until-loaded="{{_global.isSaving}}">본문</div>
+<!-- 객체 (engine-v1.6.0+) -->
+<div>
+  <blur-until-loaded sources="users"/>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // Boolean (기본)
 { "blur_until_loaded": true }
@@ -106,14 +134,28 @@
 
 ### lifecycle - 컴포넌트 생명주기
 
+```html
+<div>
+  <on event="mount">
+    <action handler="loadSavedData"/>
+  </on>
+  <on event="unmount">
+    <action handler="cleanup"/>
+  </on>
+  본문
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "lifecycle": {
     "onMount": [
-      { "type": "click", "handler": "loadSavedData" }
+      { "handler": "loadSavedData" }
     ],
     "onUnmount": [
-      { "type": "click", "handler": "cleanup" }
+      { "handler": "cleanup" }
     ]
   }
 }
@@ -122,6 +164,15 @@
 → [상세 문서](layout-json-components-loading.md#컴포넌트-생명주기-lifecycle)
 
 ### slot/SlotContainer - 동적 슬롯
+
+```html
+<!-- 슬롯 등록 -->
+<div data-ref="filter_row" data-slot="{{condition ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1">본문</div>
+<!-- 슬롯 렌더링 -->
+<slot-container slotId="basic_filters"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 슬롯 등록
@@ -142,6 +193,16 @@
 → [상세 문서](layout-json-components-slots.md#동적-슬롯-시스템-slot-slotcontainer)
 
 ### component_layout - 커스텀 렌더링
+
+```html
+<rich-select options="{{files?.data?.map(f => ({ value: f.name, label: f.name, size: f.size }))}}">
+  <template slot="item">
+    <span>{{item.name}} ({{item.size}})</span>
+  </template>
+</rich-select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 관리자 대시보드 이커머스 layout extension JSON 구조 검증 테스트
  *
@@ -13,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 
 import quickMenuExt from '../../../extensions/admin_dashboard_quick_menu.json';
 import commerceExt from '../../../extensions/admin_dashboard_commerce.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 function findById(node: any, id: string): any | null {
     if (!node) return null;
@@ -73,12 +75,16 @@ function extractTKeys(node: any): string[] {
 }
 
 describe('admin_dashboard_quick_menu.json - 이커머스 quick_menu 슬롯 주입', () => {
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects quick_menu_extension_appends_before_board_with_priority_40
     it('extension_point / mode / priority 가 올바르다 (priority 40 = 게시판 50보다 앞)', () => {
         expect(quickMenuExt.extension_point).toBe('admin_dashboard_quick_menu');
         expect(quickMenuExt.mode).toBe('append');
         expect(quickMenuExt.priority).toBe(40);
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects quick_menu_product_button_visible_when_module_active, quick_menu_order_button_visible_when_module_active, quick_menu_review_button_visible_when_module_active, quick_menu_coupon_button_visible_when_module_active, quick_menu_shipping_button_visible_when_module_active
     it('상품/주문/리뷰/쿠폰/배송 버튼 5개를 주입한다', () => {
         expect(quickMenuExt.components).toHaveLength(5);
         const ids = quickMenuExt.components.map((c: any) => c.id);
@@ -91,6 +97,8 @@ describe('admin_dashboard_quick_menu.json - 이커머스 quick_menu 슬롯 주�
         ]);
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects quick_menu_buttons_link_to_ecommerce_admin_routes
     it('각 버튼은 올바른 href 를 가진다', () => {
         expect(findById(quickMenuExt as any, 'qm_ecommerce_products').props.href).toBe('/admin/ecommerce/products');
         expect(findById(quickMenuExt as any, 'qm_ecommerce_orders').props.href).toBe('/admin/ecommerce/orders');
@@ -99,6 +107,8 @@ describe('admin_dashboard_quick_menu.json - 이커머스 quick_menu 슬롯 주�
         expect(findById(quickMenuExt as any, 'qm_ecommerce_shipping').props.href).toBe('/admin/ecommerce/shipping-policies');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects quick_menu_buttons_render_icon_and_label
     it('각 버튼은 Icon + Span 자식을 가진다', () => {
         for (const btnId of ['qm_ecommerce_products', 'qm_ecommerce_orders', 'qm_ecommerce_reviews', 'qm_ecommerce_coupons', 'qm_ecommerce_shipping']) {
             const btn = findById(quickMenuExt as any, btnId);
@@ -107,6 +117,8 @@ describe('admin_dashboard_quick_menu.json - 이커머스 quick_menu 슬롯 주�
         }
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects dashboard_extension_lang_keys_use_ecommerce_namespace
     it('다국어 키는 sirsoft-ecommerce 네임스페이스를 사용한다', () => {
         const tKeys = extractTKeys(quickMenuExt);
         expect(tKeys).toContain('sirsoft-ecommerce.admin.dashboard.quick_menu.products');
@@ -115,12 +127,16 @@ describe('admin_dashboard_quick_menu.json - 이커머스 quick_menu 슬롯 주�
 });
 
 describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects commerce_section_visible_when_module_active
     it('extension_point / mode / priority 가 올바르다', () => {
         expect(commerceExt.extension_point).toBe('admin_dashboard_commerce');
         expect(commerceExt.mode).toBe('append');
         expect(commerceExt.priority).toBe(100);
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects commerce_extension_declares_four_dashboard_data_sources
     it('data_sources 4개(overview/sales-graph/recent-reviews/pending-inquiries)를 정의한다', () => {
         expect(commerceExt.data_sources).toHaveLength(4);
         const ids = commerceExt.data_sources.map((d: any) => d.id);
@@ -132,6 +148,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         ]);
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects commerce_data_sources_call_module_dashboard_endpoints
     it('각 data_source 는 모듈 API 엔드포인트를 호출한다', () => {
         const endpoints = commerceExt.data_sources.map((d: any) => d.endpoint);
         expect(endpoints).toEqual([
@@ -142,6 +160,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         ]);
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects commerce_data_sources_require_auth_and_declare_fallback
     it('각 data_source 는 auth_required=true 와 fallback 을 가진다', () => {
         for (const ds of commerceExt.data_sources) {
             expect(ds.auth_required).toBe(true);
@@ -150,6 +170,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         }
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects extension_badge_visible_when_module_active
     it('commerce_section_wrapper 안에 ExtensionBadge 를 주입한다', () => {
         const wrapper = findById(commerceExt as any, 'commerce_section_wrapper');
         expect(wrapper).not.toBeNull();
@@ -159,6 +181,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(badges[0].props.identifier).toBe('sirsoft-ecommerce');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects commerce_section_renders_four_cards
     it('카드(오늘 배지/판매 차트/최신 리뷰/미답변 문의) 가 존재한다', () => {
         expect(findById(commerceExt as any, 'commerce_today_summary')).not.toBeNull();
         expect(findById(commerceExt as any, 'sales_graph_card')).not.toBeNull();
@@ -166,6 +190,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(findById(commerceExt as any, 'pending_inquiries_card')).not.toBeNull();
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects today_order_status_badges_reflect_overview_api
     it('오늘 주문 배지 7종이 commerce_overview 응답을 바인딩한다', () => {
         const statuses = ['pending_payment', 'payment_complete', 'preparing', 'shipping_ready', 'shipping', 'cancellations', 'returns'];
         for (const s of statuses) {
@@ -175,6 +201,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         }
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects today_order_status_badge_click_navigates_to_filtered_order_list
     it('오늘 주문 배지는 클릭 시 상태 + 오늘 날짜로 필터된 주문 목록으로 이동한다', () => {
         // 배지는 "오늘" 기준이므로 상태 필터뿐 아니라 ordered_at 날짜 필터(오늘)도 포함해야 한다.
         // 날짜는 하드코딩이 아니라 클릭 시점의 오늘로 동적 평가되어야 한다 (엔진 Date 표현식).
@@ -185,7 +213,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
             today_shipping_ready_badge: 'order_status[]=shipping_ready',
             today_shipping_badge: 'order_status[]=shipping',
             today_cancellations_badge: 'order_status[]=cancelled',
-            today_returns_badge: 'date_type=ordered_at',
+            // 반품 배지는 반품 완료 신청서가 있는 주문 수 — 링크도 같은 조건으로 연다(배지 = 목록 건수, 7.1.0 결정)
+            today_returns_badge: 'claim_return_statuses[]=completed',
         };
         // 하드코딩 날짜(YYYY-MM-DD 리터럴) 금지 — 동적 표현식만 허용
         const HARDCODED_DATE = /start_date=\d{4}-\d{2}-\d{2}/;
@@ -198,19 +227,25 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
             expect(path).toContain(filter);
             // 오늘 날짜 필터(동적 표현식) 포함
             expect(path).toContain('date_type=ordered_at');
-            expect(path).toContain('start_date={{new Date().toISOString().slice(0, 10)}}');
-            expect(path).toContain('end_date={{new Date().toISOString().slice(0, 10)}}');
+            // 「오늘」은 배지가 센 하루와 같은 사이트 표준시 날짜 — 값 자체는 admin-dashboard-commerce-today-link.test.ts 가 평가해 잠근다
+            const siteToday = "{{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}";
+            expect(path).toContain(`start_date=${siteToday}`);
+            expect(path).toContain(`end_date=${siteToday}`);
             // 하드코딩 날짜 금지
             expect(path).not.toMatch(HARDCODED_DATE);
             expect(badge.props.className).toContain('cursor-pointer');
         }
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_previous_week
+    // @effects total_quantity_displays_sum_of_7_days, total_sales_displays_sum_of_7_days
     it('총 판매수량/매출 값은 commerce_sales_graph 응답을 바인딩한다', () => {
         expect(findById(commerceExt as any, 'total_quantity_value').text).toContain('commerce_sales_graph?.data?.total_quantity');
         expect(findById(commerceExt as any, 'total_sales_value').text).toContain('commerce_sales_graph?.data?.total_sales');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=no_previous_week
+    // @effects sales_change_rate_dash_when_previous_week_empty
     it('변화율은 데이터 부족 시 — 폴백을 가진다', () => {
         const qtyChange = findById(commerceExt as any, 'total_quantity_change');
         expect(qtyChange.text).toContain("'—'");
@@ -220,6 +255,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(salesChange.text).toContain('sales_change');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects sales_graph_chart_renders_7_days_from_sales_graph_api
     it('BarChart 는 commerce_sales_graph.days 를 변환하여 labels/datasets 을 생성한다', () => {
         const chart = findById(commerceExt as any, 'sales_graph_chart');
         expect(chart.name).toBe('BarChart');
@@ -228,6 +265,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(chart.props.datasets).toContain('sales_amount');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_reviews
+    // @effects latest_reviews_card_renders_recent_reviews_api_items
     it('최신 리뷰 항목(latest_review_item)에 iteration 이 정의된다', () => {
         // iteration 은 리스트 컨테이너가 아니라 반복 항목 노드에 있고, 항목 id 는
         // index_var 를 붙인 형태(latest_review_item_{{i}})다.
@@ -240,6 +279,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(item.iteration.index_var).toBe('i');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_inquiries
+    // @effects pending_inquiries_card_renders_pending_inquiries_api_items
     it('미답변 문의 항목(pending_inquiry_item)에 iteration 이 정의된다', () => {
         const list = findById(commerceExt as any, 'pending_inquiries_list');
         expect(list.iteration).toBeUndefined();
@@ -250,15 +291,21 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(item.iteration.index_var).toBe('i');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=no_reviews
+    // @effects latest_reviews_card_empty_state_when_no_reviews, pending_inquiries_card_empty_state_when_no_inquiries
     it('빈 상태 메시지는 length === 0 조건으로 노출된다', () => {
         expect(findById(commerceExt as any, 'latest_reviews_empty').if).toBe('{{(commerce_recent_reviews?.data ?? []).length === 0}}');
         expect(findById(commerceExt as any, 'pending_inquiries_empty').if).toBe('{{(commerce_pending_inquiries?.data?.items ?? []).length === 0}}');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_reviews
+    // @effects latest_reviews_view_all_links_to_review_admin
     it('리뷰 "전체 보기" 링크가 실제 라우트를 사용한다', () => {
         expect(findById(commerceExt as any, 'latest_reviews_view_all').props.href).toBe('/admin/ecommerce/reviews');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_inquiries
+    // @effects pending_inquiries_link_to_board_post_via_board_slug
     it('미답변 문의는 게시판 모듈 Post 로 관리되므로 board_slug 기반 게시판 경로로 연결된다', () => {
         // 상품 문의는 게시판 Post(inquirable). 관리자 화면은 지정 게시판의 글 상세에서 본다.
         const viewAll = findById(commerceExt as any, 'pending_inquiries_view_all');
@@ -267,10 +314,12 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(viewAll.if).toBe('{{!!commerce_pending_inquiries?.data?.board_slug}}');
 
         const item = findById(commerceExt as any, 'pending_inquiry_item_{{i}}');
-        const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
+        const click = actionsOf(item).find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click.params.path).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects sales_graph_chart_plots_amount_on_secondary_axis
     it('판매 차트는 매출액 데이터셋을 보조 Y축(y1)으로 지정해 수량과 분리 표시한다', () => {
         // 판매수량(0~수십)과 매출액(수백만)을 단일 축에 그리면 수량 막대가 묻힌다.
         const chart = findById(commerceExt as any, 'sales_graph_chart');
@@ -278,6 +327,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(chart.props.datasets).toContain("yAxisID: 'y1'");
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects dashboard_cards_share_equal_height
     it('3 카드(sales_graph_card / latest_reviews_card / pending_inquiries_card) 가 h-full 로 동일 높이를 보장한다', () => {
         for (const id of ['sales_graph_card', 'latest_reviews_card', 'pending_inquiries_card']) {
             const card = findById(commerceExt as any, id);
@@ -285,6 +336,8 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         }
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects dashboard_cards_use_slate_tone
     it('카드는 회색톤(bg-slate-100 dark:bg-slate-800) 스타일을 사용한다', () => {
         for (const id of ['sales_graph_card', 'latest_reviews_card', 'pending_inquiries_card']) {
             const card = findById(commerceExt as any, id);
@@ -293,12 +346,16 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         }
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=no_orders
+    // @effects sales_graph_updated_at_caption_hidden_when_no_aggregated_rows
     it('갱신 시각 캡션은 updated_at_display 가 있을 때만 노출된다', () => {
         const caption = findById(commerceExt as any, 'sales_graph_updated_at_caption');
         expect(caption).not.toBeNull();
         expect(caption.if).toBe('{{!!commerce_sales_graph?.data?.updated_at_display}}');
     });
 
+    // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
+    // @effects dashboard_extension_lang_keys_use_ecommerce_namespace
     it('모든 다국어 키는 sirsoft-ecommerce 네임스페이스 또는 코어 공용 키를 사용한다', () => {
         const tKeys = extractTKeys(commerceExt);
         for (const key of tKeys) {

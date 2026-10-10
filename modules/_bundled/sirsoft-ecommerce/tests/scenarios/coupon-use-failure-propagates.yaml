@@ -1,0 +1,15 @@
+# e2e:allow 화면 변경 없음 — 쿠폰 차감 실패가 주문 생성 실패로 이어지는 서버 동작만 바뀐다.
+feature: 주문 생성 때 쿠폰 사용 차감 실패를 삼키지 않는다 (F3) — #747 C9
+
+description: |
+  CouponUseListener 가 \Exception 을 삼켜, 차감 쓰기가 실패해도 주문은 할인된 금액으로 만들어지고 쿠폰은 사용 가능으로
+  남았다. catch 를 없애 예외가 동기 리스너를 거쳐 주문 생성 트랜잭션을 되돌리게 한다(마일리지 차감과 같은 동작).
+
+axes:
+  failure: [repository_error]
+
+effects:
+  - coupon_use_failure_aborts_order_creation
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/CouponUseFailurePropagatesTest.php

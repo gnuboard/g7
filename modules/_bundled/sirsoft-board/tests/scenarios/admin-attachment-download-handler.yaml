@@ -1,0 +1,37 @@
+feature: 관리자 게시글 상세 — 첨부 내려받기 핸들러를 모듈이 소유
+
+description: |
+  관리자 게시글 상세의 게시글 카드·답변 카드 첨부는 로그인 토큰을 실어 받아야 한다(내려받기 주소는
+  비회원도 열 수 있는 라우트라 `<a href>` 로 열면 비회원으로 처리된다 — board-attachment-download-actor.yaml).
+  종전에는 두 카드가 접두어 없는 `downloadAttachment` 를 불렀는데, 그 이름은 관리자 템플릿
+  (sirsoft-admin_basic)이 등록한 템플릿 핸들러라 다른 관리자 템플릿으로 그리면 카드를 눌러도 아무 일도
+  일어나지 않았다(레이아웃 검사 「미등록 핸들러」 경고). 코어에는 내려받기 핸들러가 없다.
+
+  계약: 모듈이 `sirsoft-board.downloadAttachment` 를 등록하고(window.__SirsoftBoard.initModule 재등록 진입점 포함)
+  두 카드는 그 이름으로 부른다. 핸들러는 코어 ApiClient(G7Core.api.get, blob)로 받아 원본 파일명으로 저장하고,
+  실패하면 예외를 던져 레이아웃의 onError 가 「첨부파일을 내려받지 못했습니다」를 띄운다.
+
+# axis 의미:
+#   내려받기 결과 — 성공(파일 저장) / 실패(요청 거부·ApiClient 없음 → 오류 안내) / 주소 없음(요청하지 않음).
+axes:
+  outcome: [success, failure, missing_url]
+
+effects:
+  - admin_card_calls_module_owned_download_handler   # 게시글·답변 카드가 sirsoft-board.downloadAttachment 를 부르고 그 핸들러가 모듈 맵에 있다
+  - handler_fetches_blob_with_token_and_saves_original_filename
+  - handler_skips_request_without_url
+  - handler_throws_on_failure
+  - download_failure_shows_error_toast               # 레이아웃 onError 가 실패 안내를 띄운다
+  - reply_card_lists_its_own_attachments             # 원글 상세의 답변 항목이 자기 첨부 목록을 싣는다 (#703 실측 — 종전 attachments: null)
+  - admin_detail_downloads_post_and_reply_attachments_in_browser  # 실제 화면에서 원글·답변 첨부가 토큰 동반 요청으로 원본 파일명 저장
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/handlers/downloadAttachment.test.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-attachment-download-handler.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-admin-reply-attachment-download.spec.ts
+
+validation:
+  browser_check: Chrome MCP
+  note: |
+    관리자 템플릿을 바꿔 가며 보는 실브라우저 확인은 Chrome MCP 로 한다. 회원·비회원 행위자 기록(토큰 동반 여부)은
+    board-attachment-download-actor.yaml 이 담당한다.

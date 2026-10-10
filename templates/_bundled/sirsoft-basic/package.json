@@ -1,6 +1,6 @@
 {
     "name": "sirsoft-basic",
-    "version": "1.1.4",
+    "version": "1.2.0",
     "description": "Gnuboard7 Basic User Template Components - Nexibase Style",
     "type": "module",
     "main": "dist/components.js",
@@ -36,6 +36,7 @@
         "react-dom": "^19.0.0"
     },
     "devDependencies": {
+        "@tailwindcss/typography": "^0.5.20",
         "@tailwindcss/vite": "^4.0.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",

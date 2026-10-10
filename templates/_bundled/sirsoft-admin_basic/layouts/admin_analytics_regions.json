@@ -1,0 +1,322 @@
+{
+    "comment": "지역 리포트 — 국가·지역·도시 세 탭. GeoIP 가 꺼진 사이트에서는 국가가 브라우저 언어 추정이고 지역·도시는\n  아예 없으므로, 그 사실을 표 위 안내로 알리고 고급 설정으로 가는 길을 둔다. 라벨은 서버가 번역한\n  `label_display` 를 쓰고 원값(`label`)은 title 로 남긴다.",
+    "version": "1.0.0",
+    "layout_name": "admin_analytics_regions",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.analytics.regions.title"
+    },
+    "data_sources": [
+        {
+            "id": "analytics_report",
+            "label_key": "$t:editor.data_source.analytics_report",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{({countries: 'country', regions: 'region', cities: 'city'})[query.tab || 'countries'] || 'country'}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page}}",
+                "sort": "{{query.sort}}",
+                "q": "{{query.q}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "has_more": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "탭 → 리포트 이름(국가·지역·도시). GeoIP 가 꺼진 사이트에서 국가는 브라우저 언어 추정값이고 지역·도시는 비어 온다 —\n       그 안내 여부는 아래 진단 상태가 가른다."
+        },
+        {
+            "id": "analytics_status",
+            "label_key": "$t:editor.data_source.analytics_status",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "collection": {
+                        "enabled": true
+                    },
+                    "queue": {
+                        "backlogged": false
+                    },
+                    "geoip": {
+                        "enabled": true,
+                        "db_present": true
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를\n         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을\n         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2).",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "GeoIP 사용 여부·수집 상태. 지역 화면은 이 값으로 안내를 가른다.\n       fallback 은 GeoIP 를 「켜짐」으로 둔다 — 진단 요청이 실패해 사실을 모를 때 「꺼짐」 경고를 띄우면\n       켜 둔 사이트에 거짓 안내가 된다(모르면 알리지 않는다). 설정 화면이 같은 필드를 「꺼짐」으로 두는 것은\n       거기서는 그 값이 국가 필터 입력을 잠그는 쪽이라서다(모르면 집행할 수 없는 필터를 받지 않는다)."
+        },
+        {
+            "id": "analytics_row_trend",
+            "label_key": "$t:editor.data_source.analytics_row_trend",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "params": {
+                "label": "{{_global.analyticsRowTrend?.label ?? ''}}",
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}"
+            },
+            "fallback": {
+                "data": {
+                    "unit": "day",
+                    "unit_downgraded": false,
+                    "points": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                },
+                "404": {
+                    "handler": "suppress"
+                },
+                "422": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를\n       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다."
+        }
+    ],
+    "initLocal": {
+        "periodPath": "/admin/analytics/regions",
+        "periodSource": "analytics_report",
+        "showUnit": false
+    },
+    "computed": {
+        "reportName": "{{({countries: 'country', regions: 'region', cities: 'city'})[query.tab || 'countries'] || 'country'}}",
+        "csvUrl": "{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
+        "csvFilename": "{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
+        "periodFrom": "{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}",
+        "periodTo": "{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_report?.data?.freshness ?? null}}"
+    },
+    "permissions": [
+        "core.analytics.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "analytics_report"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setAnalyticsPeriod",
+            "params": {
+                "preset": "{{query.preset || '7d'}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "periodComputed"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "analytics_regions_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.analytics.regions.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:admin.analytics.regions.description"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_status_alerts.json"
+                    },
+                    {
+                        "id": "geoip_off_alert",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{analytics_status?.data?.geoip?.enabled === false || analytics_status?.data?.geoip?.db_present === false}}",
+                        "props": {
+                            "className": "alert-warning mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-warning-soft flex-1"
+                                        },
+                                        "text": "$t:admin.analytics.alerts.geoip_off"
+                                    },
+                                    {
+                                        "id": "geoip_settings_link",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
+                                        "actions": [
+                                            {
+                                                "comment": "GeoIP 설정으로 — 환경설정 고급 탭을 연다. 환경설정 읽기 권한이 있을 때만 버튼이 보인다(안내 문구는 권한과 무관하게 남는다).",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/settings",
+                                                    "query": {
+                                                        "tab": "advanced"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "text-sm font-medium underline text-yellow-800 dark:text-yellow-200"
+                                        },
+                                        "text": "$t:admin.analytics.alerts.geoip_off_link"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_period_bar.json"
+                    },
+                    {
+                        "id": "report_tabs",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "comment": "audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다.",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/analytics/regions",
+                                    "replace": true,
+                                    "query": {
+                                        "tab": "{{$args[0]}}",
+                                        "preset": "{{query.preset}}",
+                                        "from": "{{query.from}}",
+                                        "to": "{{query.to}}",
+                                        "unit": "{{query.unit}}",
+                                        "exclude": "{{query.exclude}}",
+                                        "per_page": "{{query.per_page}}"
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "mb-4",
+                            "activeTabId": "{{query.tab || 'countries'}}",
+                            "variant": "underline",
+                            "tabs": [
+                                {
+                                    "id": "countries",
+                                    "label": "$t:admin.analytics.regions.tabs.countries"
+                                },
+                                {
+                                    "id": "regions",
+                                    "label": "$t:admin.analytics.regions.tabs.regions"
+                                },
+                                {
+                                    "id": "cities",
+                                    "label": "$t:admin.analytics.regions.tabs.cities"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_report_grid.json"
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_regions_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "한 항목 추이 창.",
+            "partial": "partials/admin_analytics/_modal_row_trend.json"
+        }
+    ]
+}

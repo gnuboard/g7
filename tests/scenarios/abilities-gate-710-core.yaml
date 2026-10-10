@@ -1,0 +1,118 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 7.1.0 abilities 게이트 최종 점검 결함(코어·관리자 화면) 수정의 회귀 묶음. 축은 결함마다 독립(화면·권한 보유 여부)이라 전수 곱이 아니라 결함별 고침/거부 경로를 잠근다.
+
+feature: 7.1.0 abilities 게이트 수정 — 코어 서버 권한 · 관리자 화면 게이트
+
+description: |
+  2026-10-09 abilities 게이트 최종 점검에서 남은 코어·관리자 템플릿 결함을 고친 회귀 묶음이다.
+  화면은 응답의 abilities 로 쓰기 UI 를 잠그고, 서버는 같은 권한 식별자로 403/422 를 낸다.
+
+  - R2: 확장 설치 창 동반 설치 항목마다 대상 종류의 설치·활성화 권한(미리보기 can_select + 설치 API 403)
+  - S8: 사용 여부를 끈 역할의 권한은 판정에서 제외, 최고관리자 역할은 끌 수 없다
+  - S4: 관리자 화면에서 운영자 본인 계정 삭제 거부
+  - G22: 스케줄 목록 컬렉션 abilities
+  - G23: 대시보드 경고 [복구]·[닫기]는 경고가 실어 온 엔드포인트의 라우트 권한으로 판정
+  - G20·G24·#7·#8·#15: 확장 목록·상세·복구 경로 권한 정렬
+  - 화면 게이트는 굽힌 레이아웃 JSON 으로 단언한다(AdminAbilitiesGateLayoutTest)
+
+axes:
+  area: [cascade_install, role_state, self_delete, schedule_list, dashboard_alert, extension_list, layout_gate, stats, resources, activities, alerts, core_update.check, core_update.changelog, compatibility_listener, compatibility_dismiss, dashboard]
+  permission: [granted, missing]
+
+effects:
+  # R2 — 동반 설치
+  - cascade_dependency_without_permission_returns_403_and_installs_nothing
+  - cascade_activation_without_permission_returns_403
+  - cascade_language_pack_without_permission_returns_403
+  - cascade_dependency_without_permission_returns_403_on_every_install_endpoint
+  - can_select_matches_required_permissions
+  # S8 — 꺼진 역할
+  - inactive_role_permissions_are_excluded
+  - inactive_role_permissions_are_excluded_on_eager_path
+  - inactive_role_permissions_rejected_by_middleware
+  - inactive_guest_role_permissions_are_excluded
+  - admin_role_active_state_is_locked
+  # S4 — 본인 삭제
+  - self_delete_is_rejected_and_account_remains
+  - self_row_can_delete_is_false
+  # G22 — 스케줄 컬렉션
+  - schedule_collection_abilities_false_for_read_only
+  - schedule_collection_abilities_follow_route_permissions
+  # G23 — 대시보드 경고
+  - dashboard_alert_actions_locked_without_target_permission
+  - dashboard_alert_actions_follow_endpoint_route_permission
+  - dashboard_alerts_route_requires_alerts_permission
+  # G20·G24·#7·#8·#15 — 확장 목록·상세·복구
+  - module_list_abilities_present_when_empty
+  - extension_list_carries_language_pack_ability
+  - plugin_row_can_update_follows_plugins_update
+  - extension_recovery_requires_type_activate_permission
+  - extension_detail_carries_abilities
+  # 화면 게이트(굽힌 레이아웃 JSON)
+  - cascade_install_checkboxes_locked_by_can_select
+  - schedule_list_write_controls_gated
+  - admin_notification_center_write_actions_gated
+  - dashboard_alert_actions_gated_with_hint
+  - settings_seo_inputs_follow_read_only
+  - settings_read_only_fail_closed_before_response
+  - privacy_run_now_disabled_without_can_run
+  - extension_list_and_editor_gates_fail_closed
+  - user_form_and_activity_log_gated
+  - role_form_locks_admin_role_active_state
+
+  # 이동한 회귀 테스트(레거시 파일을 건드리지 않게 새 파일로 분리)
+  - guest_multiple_permissions_follow_require_all
+  - admin_notification_list_carries_write_abilities
+  - provider_can_update_follows_settings_update
+  - preview_filters_component_permissions_like_serving
+  # 대시보드 API·확장 호환 알림·코어 업데이트 확인 — 라우트 권한 변경(시스템 알림·리소스·업데이트 확인)으로 함께 손댄 기존 테스트
+  - stats_returns_401_without_authentication
+  - stats_returns_403_without_permission
+  - resources_returns_401_without_authentication
+  - activities_returns_401_without_authentication
+  - activities_returns_403_without_permission
+  - alerts_returns_401_without_authentication
+  - stats_returns_correct_structure
+  - stats_returns_correct_user_count
+  - stats_user_trend_is_up_when_increased
+  - resources_returns_200_when_probe_fails
+  - resources_returns_correct_structure
+  - resources_returns_valid_percentage_values
+  - resources_returns_valid_color_values
+  - activities_returns_correct_structure
+  - activities_returns_activity_log_data
+  - activities_returns_array
+  - activities_returns_empty_array_when_no_logs
+  - activities_item_has_required_fields
+  - activities_scope_self_returns_only_own_activities
+  - activities_scope_null_returns_all_activities
+  - alerts_returns_correct_structure
+  - alerts_returns_array
+  - alerts_item_has_required_fields
+  - dashboard_alerts_endpoint_returns_array_payload
+  - listener_subscribed_hook_registered_with_filter_type
+  - listener_addCompatibilityAlerts_returns_array_unchanged_when_no_records
+  - dismiss_alert_persists_for_user
+  - check_for_updates_returns_version_info
+  - check_for_updates_returns_error_when_github_check_fails
+  - check_for_updates_requires_authentication
+  - check_for_updates_allows_settings_read_only
+  - check_for_updates_requires_permission
+  - changelog_returns_parsed_data
+  - changelog_with_version_range
+  - changelog_requires_authentication
+
+test_files:
+  - tests/Feature/Api/Admin/CascadeInstallPermissionTest.php
+  - tests/Feature/Auth/InactiveRolePermissionTest.php
+  - tests/Feature/Api/Admin/UserSelfDeleteGuardTest.php
+  - tests/Feature/Api/Admin/ScheduleCollectionAbilitiesTest.php
+  - tests/Feature/Dashboard/DashboardAlertAbilitiesTest.php
+  - tests/Feature/Api/Admin/ExtensionListAbilitiesTest.php
+  - tests/Unit/Layouts/AdminAbilitiesGateLayoutTest.php
+  - tests/Feature/Middleware/GuestPermissionRequireAllTest.php
+  - tests/Feature/Notifications/AdminNotificationAbilitiesTest.php
+  - tests/Feature/Api/Admin/Identity/ProviderAbilitiesTest.php
+  - tests/Feature/Api/Public/LayoutPreviewPermissionFilterTest.php
+  - tests/Feature/Api/Admin/DashboardControllerTest.php
+  - tests/Feature/Dashboard/ExtensionCompatibilityAlertTest.php
+  - tests/Feature/Api/Admin/CoreUpdateControllerTest.php

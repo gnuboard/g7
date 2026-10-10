@@ -55,6 +55,14 @@ effects:
   - resolve_overrides_drops_module_plugin_extension_when_template_overrides_it
   - resolved_by_template_id_returns_all_when_no_override
   - index_groups_override_rows_under_override_target_source
+  # 조각이 붙을 자리가 실재하는가 — 없으면 등록해도 화면에 닿지 않고, 남은 행은 고아가 된다.
+  - overlay_is_applicable_when_target_layout_exists
+  - overlay_is_not_applicable_when_target_layout_is_missing
+  - extension_point_is_applicable_when_the_layout_defines_it
+  - extension_point_is_not_applicable_when_undefined
+  - inapplicable_extension_row_is_soft_deleted
+  - inapplicable_removal_is_skipped_when_every_template_is_stale
+  - inapplicable_removal_reports_false_when_there_is_no_row
   - index_marks_override_rows_with_is_override_flag
   - mobile_selector_includes_both_layouts_and_extensions
   - mobile_selector_change_branches_layout_vs_extension_by_value_prefix
@@ -68,6 +76,12 @@ effects:
   - layout_version_repository_behavior_unchanged_after_trait_extraction
   - invalidate_extension_cache_overlay_clears_dependent_layouts
   - invalidate_extension_cache_bumps_ext_cache_version
+  # #476 C13 — 같은 대상에 조각이 둘일 수 있어 고유 키가 `fragment_key` 로 바뀌었다.
+  # `registerExtension` 의 키 인자는 nullable 이라 확장이 직접 부르는 옛 호출도 그대로 돈다.
+  - register_extension_keeps_two_rows_for_two_fragments_of_the_same_target
+  - register_extension_without_key_reuses_the_single_existing_row
+  - register_extension_without_key_is_skipped_when_target_is_ambiguous
+  - register_extension_without_key_falls_back_to_target_name
 
 test_files:
   - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php

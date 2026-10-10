@@ -1,0 +1,65 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 결함 회귀 묶음이라 화면과 결함 종류가 서로 독립이다. 교차 조합(예: 주문서 × 적립 표기)에는 뜻이 없고, 효과마다 그 효과를 여는 조합을 테스트 docblock 이 직접 적는다.
+feature: "#599 validate P7 — 사용자 화면(sirsoft-basic) 결함 회귀"
+
+description: |
+  브랜치 검증(2026-09-23)이 주문상세·주문서·클레임 신청/상세 화면에서 찾은 결함을 잠근다.
+
+  - 주문상세: 선택 핸들러에 claimable 판정을 넘긴다(전체선택이 잠긴 칸까지 고르던 결함) · 행 체크박스 id/for ·
+    철회 뒤 claimable 재조회 · 어디서도 읽지 않던 refundReasons 데이터소스 제거.
+  - 주문서: 기본 배송지 채움이 배송지 관리 창의 목록 재조회마다 선택을 덮던 결함 — onSuccess 컨텍스트에는
+    `_local` 이 없어 `sirsoft-basic.markLocalOnce` 가 첫 회만 참을 돌려준다.
+  - 클레임 화면: 반복 노드의 간격 클래스를 부모로 · 상세 첨부 격자 · 수정 화면의 계좌 미입력 안내 ·
+    결제 버튼 라벨의 금액을 번역 파라미터로 · 라디오 다크 짝 · 적립 마일리지를 서버 포맷으로 ·
+    첨부 accept/maxSize 를 서버 설정으로.
+  - 주문 목록: 추가옵션 「외 N건」 번역 키.
+  - 첨부 컴포지트: 용량·형식 거절 문구를 `attachment.*` 키로.
+  - (P7-B) 환불 계좌 세 칸은 `setClaimRefundAccountField` 를 거쳐 가린 프리필을 「전부 그대로 / 전부 새로」 로 다루고,
+    가린 값이 채워진 동안 안내를 띄운다.
+
+axes:
+  screen: [order_detail, checkout, claim_detail, claim_apply, claim_edit, order_list]
+  fault:
+    - select_all_claimable
+    - checkbox_label
+    - prefill_once
+    - iteration_spacing
+    - account_notice
+    - submit_label
+    - dark_pair
+    - points_format
+    - uploader_limits
+    - uploader_reject_text
+    - withdraw_refresh
+    - dead_datasource
+    - hardcoded_text
+  prefill: [masked]
+  edit: [untouched, account_partial]
+
+effects:
+  - order_detail_selection_passes_claimable_to_handler
+  - claim_item_checkbox_has_label_for
+  - checkout_default_address_prefills_once
+  - claim_detail_images_iterate_inside_one_grid
+  - iteration_spacing_lives_on_parent
+  - claim_edit_hides_refund_account_required_notice
+  - claim_submit_label_passes_amount_as_param
+  - claim_apply_blue_text_has_dark_pair
+  - claim_earned_points_reads_server_formatted
+  - claim_uploader_limits_follow_server_settings
+  - withdraw_refreshes_claimable_on_order_detail
+  - order_detail_has_no_dead_refund_reasons_source
+  - order_list_additional_option_more_is_translated
+  - file_uploader_reject_messages_are_translated
+  - claim_refund_account_fields_route_through_mask_guard
+  - claim_refund_account_masked_notice_shown
+  - guest_claim_show_marks_seller_filed_claims  # 비회원 상세 판매자 접수 라벨·안내(D8) — request_source 로만 선다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/validateP7UserClaimScreens.test.tsx
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/markLocalOnce.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/components/fileUploaderRejectI18n.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/validateP7RefundAccountMask.test.tsx
+
+notes: |
+  적립 마일리지의 서버 포맷 키(`total_earned_points_amount_formatted`)를 미리보기 스냅샷과 신청서 비교 블록에
+  싣는 일은 백엔드 몫이다. 화면은 그 키를 우선하고, 없는 응답에서만 종전 표기로 떨어진다.

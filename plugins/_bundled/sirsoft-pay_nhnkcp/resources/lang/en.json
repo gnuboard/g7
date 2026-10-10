@@ -6,11 +6,10 @@
             "kcp_status": "Payment Status",
             "nhnkcp_test_mode_status": "Test Mode Status",
             "nhnkcp_easy_pay_config": "Easy Pay Config",
-            "nhnkcp_easy_pay_display_map": "Easy Pay Display Map",
             "nhnkcp_test_map": "Test Payment Map",
-            "nicepay_test_map": "Test Payment Map",
             "settings": "Payment Settings",
-            "vbank_info": "Virtual Account Info"
+            "vbank_info": "Virtual Account Info",
+            "nhnkcp_mock_deposit": "Mock Deposit Info"
         }
     },
     "messages": {
@@ -45,7 +44,16 @@
         "supply_amount": "Supply Amount",
         "vat_amount": "VAT",
         "tax_free_amount": "Tax-Free Amount",
-        "escrow_badge": "Escrow"
+        "escrow_badge": "Escrow",
+        "loading": "Loading...",
+        "vbank_amount": "Deposit Amount",
+        "mock_title": "Mock Deposit",
+        "mock_trade_no": "KCP Transaction No.",
+        "mock_deposit_no": "Deposit Account",
+        "mock_depositor": "Depositor Name",
+        "mock_notify_url": "Deposit Notification URL",
+        "mock_submit": "Test Deposit Notification",
+        "mock_admin_notice": "Shown to administrators only"
     },
     "admin": {
         "test_mode_badge": "Test Payment",
@@ -66,6 +74,7 @@
         "result_app_no": "Original Approval No.",
         "result_app_time": "Original Approval Time",
         "result_pay_method": "Pay Method",
+        "result_easy_pay": "Easy Pay",
         "result_res_cd": "Original Approval Result Code",
         "result_cancelled_amount": "Cancelled Amount",
         "result_cancelled_at": "Cancelled At",
@@ -78,6 +87,7 @@
         "escrow_delivery_invoice_placeholder": "Enter tracking number",
         "escrow_delivery_courier_label": "Courier",
         "escrow_delivery_courier_placeholder": "Select courier",
+        "escrow_delivery_courier_etc": "Other",
         "escrow_delivery_already_registered": "Delivery Registered",
         "escrow_delivery_registered_at": "Registered At",
         "escrow_delivery_invoice_info": "Tracking No.",
@@ -131,11 +141,11 @@
         "redirect_success_url": "Payment Success Redirect URL",
         "redirect_success_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL (https://...). {orderId} will be replaced with the actual order number.",
         "redirect_fail_url": "Payment Failure Redirect URL",
-        "redirect_fail_url_hint": "Supports relative paths or full URLs. Error details are appended as query parameters.",
+        "redirect_fail_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL. Error details are appended as query parameters.",
         "section_vbank": "Virtual Account Settings",
         "section_vbank_hint": "Settings for virtual account payment.",
-        "vbank_expire_days": "Deposit Validity Period",
-        "vbank_expire_days_hint": "Number of days the virtual account remains valid for deposit (1–7 days).",
+        "vbank_expire_days": "Deposit Validity Period (not used)",
+        "vbank_expire_days_hint": "The virtual account deadline follows Shop Settings › Order Settings › \"Auto Cancel Order\". This value is only a fallback (1–7 days) when an order has no deposit deadline.",
         "vbank_expire_days_unit": "days",
         "section_vbank_notify": "Virtual Account Deposit Notification URL",
         "vbank_notify_hint": "Register this URL as the deposit notification URL in the NHN KCP merchant admin to enable automatic virtual account payment processing.",
@@ -150,14 +160,43 @@
         "escrow_test_site_cd_hint": "KCP escrow test site_cd (default: T0007)",
         "section_escrow_notify": "Escrow Common Notification URL",
         "escrow_common_notify_hint": "Register this URL as the common notification URL in the NHN KCP merchant admin to enable automatic escrow purchase confirmation/cancellation processing.",
-        "escrow_common_notify_copied": "URL copied to clipboard."
+        "escrow_common_notify_copied": "URL copied to clipboard.",
+        "health": {
+            "title": "System check",
+            "error_count": "{{count}} errors",
+            "error_count_one": "{{count}} error",
+            "warning_count": "{{count}} warnings",
+            "warning_count_one": "{{count}} warning",
+            "fixed_count": "{{count}} auto-fixed",
+            "all_ok": "All good",
+            "recheck": "Check again",
+            "ready": "Ready",
+            "not_ready": "Not ready",
+            "pc_payment": "PC payment (Standard Pay)",
+            "pc_payment_requires": "Requires the CLI binary",
+            "mobile_payment": "Mobile card/general payment",
+            "mobile_payment_requires": "Requires both SmartPhone Pay (SOAP) and the CLI binary",
+            "mobile_vbank": "Mobile virtual account",
+            "mobile_vbank_requires": "Requires SmartPhone Pay (SOAP) only (plain-text callback)",
+            "category_pc": "PC",
+            "category_mobile": "Mobile",
+            "auto_fixed": "Auto-fixed",
+            "action_required": "↓ Action required",
+            "forbidden": "You do not have permission to view the system check. It requires the e-commerce settings view or plugin settings update permission."
+        }
     },
     "easy_pay": {
         "section_title": "Easy Pay"
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator.",
+            "krw_only": "NHN KCP supports KRW payments only. ({{currency}})",
+            "mobile_approval_key_failed": "Failed to get the KCP mobile approval key",
+            "pg_error": "KCP error [{{code}}]: {{message}}",
+            "applepay_ios_only": "Apple Pay is available only for mobile payments on iOS devices.",
+            "method_missing": "The payment method is missing, so the payment cannot continue. Please reopen the order form."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

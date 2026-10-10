@@ -1,327 +1,331 @@
 {
-  "data_sources": [
-    {
-      "id": "board_list_for_inquiry",
-      "label_key": "$t:sirsoft-board.editor.data_source.board_list_for_inquiry",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/admin/boards",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'basic_info'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "per_page": "200"
-      },
-      "fallback": null
-    }
-  ],
-  "extension_point": "inquiry_board_setting",
-  "mode": "replace",
-  "components": [
-    {
-      "id": "inquiry_board_setting_active",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
-      "children": [
+    "comment": "이커머스 설정의 「문의 게시판」 자리를 게시판 모듈이 통째로 대체한다(mode=replace) — 게시판이 설치돼 있을 때만 실제 게시판 목록에서 고르게 하고, 고른 게시판으로 바로 넘어가는 경로까지 함께 준다",
+    "extension_point": "inquiry_board_setting",
+    "mode": "replace",
+    "priority": 100,
+    "data_sources": [
         {
-          "id": "inquiry_board_setting_description",
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-body"
-          },
-          "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.description"
-        },
+            "id": "board_list_for_inquiry",
+            "label_key": "$t:sirsoft-board.editor.data_source.board_list_for_inquiry",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/boards",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'basic_info'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "per_page": "200"
+            },
+            "fallback": null,
+            "comment": "문의로 쓸 수 있는 게시판 후보 — 셀렉트 하나를 채우는 용도라 200건까지만 받고, 이 확장이 붙는 기본정보 탭이 열렸을 때만 읽는다"
+        }
+    ],
+    "components": [
         {
-          "id": "inquiry_board_field",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "id": "inquiry_board_setting_active",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
                 {
-                  "id": "inquiry_board_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label"
+                    "id": "inquiry_board_setting_description",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.description"
                 },
                 {
-                  "id": "inquiry_board_select",
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "inquiry.board_slug",
-                    "value": "{{_local.form?.inquiry?.board_slug ?? ''}}",
-                    "options": "{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}",
-                    "className": "{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "inquiry_board_select_error",
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.['inquiry.board_slug']}}",
-              "props": {
-                "className": "form-error"
-              },
-              "text": "{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "inquiry_board_hints",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-3"
-          },
-          "children": [
-            {
-              "id": "inquiry_board_hint_secret",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary"
-              },
-              "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret"
-            },
-            {
-              "id": "inquiry_board_hint_category",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary"
-              },
-              "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category"
-            },
-            {
-              "id": "inquiry_board_actions",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}",
-              "props": {
-                "className": "flex flex-col gap-2 md:flex-row"
-              },
-              "children": [
-                {
-                  "id": "inquiry_board_go_edit_card",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "flex-start gap-1.5 text-tertiary"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "gear",
-                            "className": "w-3 h-3 shrink-0 mt-0.5"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit_desc"
-                        }
-                      ]
+                    "id": "inquiry_board_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col gap-2"
                     },
-                    {
-                      "id": "inquiry_board_go_edit",
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "self-start inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "pen-to-square",
-                            "className": "w-3 h-3"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit"
-                        }
-                      ],
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "id": "inquiry_board_go_posts_card",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "flex-start gap-1.5 text-tertiary"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "clipboard-list",
-                            "className": "w-3 h-3 shrink-0 mt-0.5"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts_desc"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex gap-2"
-                      },
-                      "children": [
-                        {
-                          "id": "inquiry_board_go_posts",
-                          "type": "basic",
-                          "name": "Button",
-                          "props": {
-                            "type": "button",
-                            "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": {
-                                "name": "list",
-                                "className": "w-3 h-3"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts"
-                            }
-                          ],
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "navigate",
-                              "params": {
-                                "path": "/admin/board/{{settings?.data?.inquiry?.board_slug}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "id": "inquiry_board_add_menu",
-                          "type": "basic",
-                          "name": "Button",
-                          "props": {
-                            "type": "button",
-                            "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border border-blue-500 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": {
-                                "name": "plus",
-                                "className": "w-3 h-3"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.add_to_admin_menu"
-                            }
-                          ],
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "apiCall",
-                              "target": "/api/modules/sirsoft-board/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/add-to-menu",
-                              "params": {
-                                "method": "POST"
-                              },
-                              "auth_required": true,
-                              "onSuccess": [
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
                                 {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "success",
-                                    "message": "{{result.message}}"
-                                  }
+                                    "id": "inquiry_board_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-900 mb-1 dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label"
                                 },
                                 {
-                                  "handler": "refetchDataSource",
-                                  "params": {
-                                    "dataSourceId": "admin_menu",
-                                    "sync": true
-                                  }
+                                    "id": "inquiry_board_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "inquiry.board_slug",
+                                        "value": "{{_local.form?.inquiry?.board_slug ?? ''}}",
+                                        "options": "{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}",
+                                        "className": "{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 }
-                              ],
-                              "onError": [
-                                {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "error",
-                                    "message": "{{error.message}}"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
+                            ]
+                        },
+                        {
+                            "id": "inquiry_board_select_error",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['inquiry.board_slug']}}",
+                            "props": {
+                                "className": "block text-xs text-red-500 mt-1 dark:text-red-400"
+                            },
+                            "text": "{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}"
                         }
-                      ]
-                    }
-                  ]
+                    ]
+                },
+                {
+                    "id": "inquiry_board_hints",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "id": "inquiry_board_hint_secret",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret"
+                        },
+                        {
+                            "id": "inquiry_board_hint_category",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category"
+                        },
+                        {
+                            "id": "inquiry_board_actions",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}",
+                            "props": {
+                                "className": "flex flex-col gap-2 md:flex-row"
+                            },
+                            "children": [
+                                {
+                                    "id": "inquiry_board_go_edit_card",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "gear",
+                                                        "className": "text-xs shrink-0 mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit_desc"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "inquiry_board_go_edit",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "self-start inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "pen-to-square",
+                                                        "className": "text-xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "inquiry_board_go_posts_card",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "clipboard-list",
+                                                        "className": "text-xs shrink-0 mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts_desc"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "inquiry_board_go_posts",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "/admin/board/{{settings?.data?.inquiry?.board_slug}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "list",
+                                                                "className": "text-xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "메뉴 추가 API 는 그 게시판의 수정 권한(boards.update)을 요구한다 — 고른 게시판 행의 abilities.can_update 가 true 일 때만 연다(행이 아직 없으면 잠금)",
+                                                    "id": "inquiry_board_add_menu",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "문의 게시판을 관리자 메뉴에 등록한다 — 성공하면 메뉴 데이터소스를 동기로 다시 읽어 사이드바에 즉시 나타나게 한다",
+                                                            "type": "click",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/modules/sirsoft-board/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/add-to-menu",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "POST"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{result.message}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "admin_menu",
+                                                                        "sync": true
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border border-blue-500 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "title": "{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update === true ? '' : '$t:sirsoft-board.admin.ecommerce_settings.inquiry.add_to_admin_menu_no_permission'}}",
+                                                        "disabled": "{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update !== true}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "plus",
+                                                                "className": "text-xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.add_to_admin_menu"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ],
-  "priority": 100
+    ]
 }

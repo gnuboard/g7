@@ -1,0 +1,42 @@
+feature: 클레임 첨부의 수명주기 (선택 → 대기열 → 제출 직전 업로드 → 삭제)
+
+description: |
+  첨부는 신청서보다 먼저 만들어진다. 그래서 **주문에 임시로 묶어(pending) 올려 두고**
+  신청 시 `image_ids` 로 넘겨 신청서에 귀속시킨다(2단계 업로드).
+
+  업로드 시점이 **제출 직전**인 것이 이 설계의 핵심이다. 파일을 고를 때마다 올리면
+  `FileUploader` 가 change 마다 선택 전체를 다시 넘기므로 **같은 파일이 거듭 올라가고**,
+  그 중복이 운영자 설정 장수 상한을 소진해 정작 제출이 거절된다.
+
+  그래서 상태를 둘로 나눠 든다:
+    - `_local.claimImages`     — 이미 올라간(귀속 대기) 첨부
+    - `_local.claimImageFiles` — 아직 올리지 않은 파일
+
+  제출이 실패해도 **올라간 것은 그대로 남긴다** — 재시도가 다시 올리면 같은 중복이 난다.
+
+  비회원 분기는 셸이 준 값으로만 이뤄진다. 핸들러가 로그인 여부를 스스로 판단하지 않고,
+  셸이 비회원이라고 선언했을 때만 `X-Guest-Order-Token` 헤더를 붙인다 —
+  ApiClient 인터셉터가 globalHeaders 를 적용하지 않기 때문에 명시적으로 실어야 한다.
+
+  계약: 이 매니페스트는 **수명주기**를 잠근다. 장수·용량 상한 판정은
+  `claim-attachment-limit-feedback.yaml` 이 따로 잠근다(그쪽은 S2-D10 의 결정 대기 건).
+
+axes:
+  attachment_lifecycle:
+    - queue_on_select
+    - upload_before_submit
+    - guest_token_header
+    - delete
+
+effects:
+  - claim_attachment_selection_only_queues
+  - claim_attachment_upload_happens_once_before_submit
+  # T2-D4 (#599 3차 실측 L-3) — 일부만 실패하면 몇 장 중 몇 장인지 한 번에 말한다
+  - claim_attachment_partial_failure_reports_the_count
+  - claim_attachment_guest_requests_carry_the_order_token
+  - claim_attachment_delete_updates_the_list_only_on_success
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimImageHandlers.test.ts
+  # 브라우저 — 첨부는 리액트 제어 입력이라 jsdom 으로는 거절·복원 경계를 재현할 수 없다
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/claim-quantity-input-clamp.spec.ts

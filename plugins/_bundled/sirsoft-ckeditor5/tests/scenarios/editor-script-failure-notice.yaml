@@ -1,0 +1,18 @@
+feature: 편집기 본체 실패 안내는 플러그인 문구 한 건으로 나온다
+
+description: |
+  편집기 본체는 조각의 `<script id="ckeditor5_script">` 로 실리므로 끝내 못 불러오면 코어 레이아웃 스크립트 로더가
+  `layout-script:ckeditor5_script` 로 실패를 따로 알린다. 플러그인도 임시 입력창으로 내려가며 `ckeditor5-editor:{컨테이너}`
+  로 알리므로 두 건이 겹치면 배너가 「2개 항목을 불러오지 못했습니다. 편집기, 편집기」 묶음 문구가 되고 임시 입력창 전환
+  안내 문장이 사라진다. 플러그인 안내의 재시도가 같은 본체를 다시 확보하므로, 편집기 안내가 떠 있는 동안 코어의 같은
+  자산 안내를 걷는다 — 먼저 와 있든 나중에 오든. 편집기 스타일(CSS) 실패 안내는 다른 자산이라 걷지 않는다
+  (코어 안내가 먼저 와 있는 경우로 확인한다).
+
+axes:
+  core_notice_order: [before, after]
+
+effects:
+  - editor_script_failure_shows_single_plugin_notice
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/editorFailureNotice.test.ts

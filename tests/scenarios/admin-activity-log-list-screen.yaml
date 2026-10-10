@@ -1,0 +1,22 @@
+feature: 관리자 활동 로그 목록 화면
+
+description: |
+  관리자 > 활동 로그 목록 화면의 필터·목록·일괄 삭제·행위자 칸 렌더링.
+  행위자 칸은 회원이 없는 로그(시스템·CLI)에 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 그리지 않고
+  행위자 라벨("시스템" / "시스템(CLI)")만 보인다(#138 — 종전 /admin/users/undefined 이동 결함).
+
+axes:
+  actor_kind: [member, system_cli]
+
+effects:
+  - filter_controls_render
+  - datagrid_renders_log_rows
+  - datagrid_shows_empty_state
+  - bulk_delete_enabled_with_ability
+  - bulk_delete_disabled_without_ability
+  - datagrid_always_selectable
+  - member_log_actor_has_member_menu
+  - system_log_actor_has_no_member_menu
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-activity-log-list.test.tsx

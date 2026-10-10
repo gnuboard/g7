@@ -1,0 +1,20 @@
+feature: 관리자 주문 상세 현금영수증 카드의 발급사 표시명 (S3-D17)
+
+description: |
+  카드 제목 옆 발급사 칸이 프로바이더 id 를 그대로 그려 「현금영수증 tosspayments」가 찍혔다(실측: 주문 20261007-0258571183).
+  응답에 표시명(`cash_receipt_provider_label`)을 싣고 카드가 그것을 그린다.
+
+axes:
+  label_source:
+    - name
+    - translation_key
+    - layout
+
+effects:
+  - cash_receipt_provider_shows_display_name # 등록 항목의 이름을 표시명으로 낸다
+  - cash_receipt_provider_name_follows_translation # 다국어 키가 있으면 현재 언어 번역을 쓴다
+  - admin_card_renders_provider_label # 카드가 표시명을 그리고 id 를 글자로 그리지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/CashReceiptProviderLabelTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminCashReceiptProviderLabel.test.ts

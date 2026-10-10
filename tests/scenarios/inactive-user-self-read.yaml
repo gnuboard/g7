@@ -1,0 +1,26 @@
+feature: 비활성 상태 회원의 본인 정보 조회 — 역할 권한으로 판단 (7.1.0 관측 N O-N3, 결정 2026-10-07)
+
+description: |
+  비활성·차단·탈퇴·가입대기·휴면 회원이 이미 가진 토큰으로 본인 정보를 **읽는** 두 경로
+  (`GET /api/me`·`GET /api/auth/user`)만 그 회원 역할의 `core.profile.read` 로 허용한다(`check.user_status:core.profile.read`)
+  — 마이페이지 계정 상태 배지·안내를 그리기 위함. 쓰기(`/api/me` PUT·DELETE·비밀번호·아바타·비밀번호 확인)와
+  `/api/user/*` 묶음, 로그인의 상태 거부는 그대로다. 활성 회원의 조회는 권한을 요구하지 않는다(종전 그대로).
+
+axes:
+  status: [inactive, blocked, withdrawn, pending_verification, dormant]
+  read_permission: [granted, missing]
+  request: [self_read, write_or_other]
+
+exclusions:
+  - { read_permission: missing, request: write_or_other, reason: "권한이 없으면 읽기부터 종전처럼 막히고, 쓰기는 권한과 무관하게 상태로 막히므로 granted 쪽 쓰기 검증이 같은 경계를 덮는다" }
+
+effects:
+  - inactive_self_read_allowed_by_role_permission
+  - self_read_response_carries_status_badge_fields
+  - inactive_self_read_denied_without_permission
+  - inactive_writes_and_other_features_still_blocked
+  - login_rejection_by_status_unchanged
+  - active_self_read_unchanged
+
+test_files:
+  - tests/Feature/Auth/InactiveUserSelfReadTest.php

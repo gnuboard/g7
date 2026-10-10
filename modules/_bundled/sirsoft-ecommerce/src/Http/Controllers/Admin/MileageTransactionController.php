@@ -150,7 +150,10 @@ class MileageTransactionController extends AdminBaseController
     public function extendExpiry(ExtendMileageExpiryRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $userId = (int) $this->mileageService->resolveUserIdByUuid($data['user_id']);
+        // 회원 미지정이면 회원 제한 없이 고른 적립건 전부를 연장한다
+        $userId = ! empty($data['user_id'])
+            ? (int) $this->mileageService->resolveUserIdByUuid($data['user_id'])
+            : null;
 
         $count = $this->mileageService->extendLotExpiry(
             $userId,

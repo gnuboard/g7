@@ -1,0 +1,67 @@
+feature: 코어 활동 로그 리스너 (훅 구독 → activity 채널 기록)
+
+description: |
+  `CoreActivityLogListener` 는 코어가 발행하는 도메인 훅(사용자·인증·역할·메뉴·설정·스케줄·
+  첨부파일·모듈·플러그인·템플릿·레이아웃·확장 설정)을 구독해 `Log::channel('activity')` 로
+  활동 로그를 남긴다. 이 매니페스트는 그 **구독 계약**과 **핸들러별 기록 형태**를 소유한다.
+
+  핵심 계약:
+    - 구독 훅 수는 docs/backend/activity-log-hooks.md 「코어 훅」 표의 행 수(현재 70)와 같다 —
+      표가 SSoT 이고, 훅을 늘리거나 줄이면 표와 이 단언이 함께 움직인다.
+    - 구독한 훅마다 그 이름의 public 핸들러가 실재하고, 훅 → 핸들러 매핑이 action 표와 맞는다.
+    - 로깅 훅은 모두 priority 20 이다 (도메인 훅보다 뒤에 선다). 스냅샷 캡처 훅만 예외다.
+    - 로그 유형(Admin/User)은 요청 경로로 정해진다 — 인증 계열은 사용자 경로라 User 다.
+    - 일괄 처리(사용자·스케줄 상태 변경, 스케줄·첨부 일괄 삭제)는 **대상마다 한 건**씩 남기고,
+      존재하지 않는 대상은 건너뛴다. 삭제 뒤라 모델이 없으면 loggable_type/loggable_id 를 직접 싣는다.
+    - 수정 핸들러는 스냅샷 인자를 받아 변경 내역을 계산하고, 식별자가 빠진 입력은 빈 문자열로 대체한다.
+    - 로깅 실패가 도메인 동작을 깨뜨리지 않는다 — 예외는 `Log::error` 로 흡수한다.
+
+# axis 의미: 핸들러 묶음(도메인)별로 훅·인자 형태가 달라 묶음이 곧 커버리지 단위다.
+# 묶음마다 그 묶음의 효과가 대응하므로 묶음 × 효과의 곱집합은 두지 않는다.
+axes:
+  case:
+    - subscription_contract
+    - user_handlers
+    - auth_handlers
+    - role_handlers
+    - menu_handlers
+    - settings_handlers
+    - schedule_handlers
+    - attachment_handlers
+    - module_handlers
+    - plugin_handlers
+    - template_handlers
+    - layout_handlers
+    - extension_settings_handlers
+    - missing_inputs
+    - logging_failure_is_absorbed
+
+effects:
+  - subscribed_hook_count_matches_the_hook_table
+  - subscribed_hooks_map_to_existing_handlers
+  - all_logging_hooks_registered_at_priority_20
+  - hook_to_handler_mapping_matches_the_action_table
+  - default_handle_is_a_no_op
+  - user_crud_view_and_search_are_logged
+  - user_bulk_update_logs_one_entry_per_existing_user
+  - auth_events_are_logged_with_log_type_by_route
+  - role_changes_are_logged_with_permission_diff
+  - menu_changes_are_logged_with_role_diff
+  - settings_save_and_set_are_logged_with_keys
+  - schedule_changes_and_runs_are_logged
+  - schedule_bulk_actions_log_one_entry_per_item
+  - attachment_upload_delete_and_bulk_delete_are_logged
+  - module_lifecycle_is_logged
+  - plugin_lifecycle_is_logged
+  - template_lifecycle_is_logged
+  - layout_update_and_restore_are_logged
+  - extension_settings_save_and_reset_are_logged
+  - update_handlers_accept_a_snapshot_argument
+  - missing_identifiers_fall_back_to_empty_strings
+  - logging_exception_is_absorbed_into_log_error
+
+test_files:
+  - tests/Unit/Listeners/CoreActivityLogListenerTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

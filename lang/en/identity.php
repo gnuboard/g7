@@ -23,9 +23,13 @@ return [
         'invalid_code' => 'The verification code is incorrect.',
         'invalid_verification_token' => 'Invalid verification token.',
         'missing_target' => 'A verification target (email or phone) is required.',
+        'claim_denied' => 'The verification result cannot be retrieved. Please start verification again.',
+        'claim_already_used' => 'This verification has already been used. Please start verification again.',
+        'claim_unavailable' => 'The verification has expired or did not complete. Please start verification again.',
         'target_mismatch' => 'The verified target does not match the requested one.',
         'purpose_not_supported' => 'The selected provider does not support this purpose.',
         'provider_unavailable' => 'Identity verification provider is not available.',
+        'challenge_dispatch_failed' => 'We could not send the verification code. Please try again shortly or use another verification method.',
         'generic' => 'Identity verification failed.',
         'missing_scope_or_target' => 'Both scope and target are required to resolve a policy.',
         'admin_policy_has_no_default' => 'Admin-created policies do not have a declared default.',
@@ -37,6 +41,7 @@ return [
     'messages' => [
         'challenge_requested' => 'A verification code has been sent.',
         'challenge_verified' => 'Identity verification completed.',
+        'challenge_pending' => 'Waiting for confirmation through the link in the email.',
         'challenge_cancelled' => 'Verification request has been cancelled.',
     ],
 
@@ -75,6 +80,7 @@ return [
 
     'channels' => [
         'email' => 'Email',
+        'app' => 'Authenticator app',
     ],
 
     'origin_types' => [
@@ -107,14 +113,6 @@ return [
             'module' => 'Module',
             'plugin' => 'Plugin',
             'admin' => 'Admin',
-        ],
-    ],
-
-    'message' => [
-        'scope_type' => [
-            'provider_default' => 'Provider default',
-            'purpose' => 'Per purpose',
-            'policy' => 'Per policy',
         ],
     ],
 ];

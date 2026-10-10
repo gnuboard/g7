@@ -1,0 +1,19 @@
+feature: 큐 훅 리스너의 인자 직렬화 왕복
+
+description: |
+  Action 훅 리스너는 기본이 큐 실행이라 인자가 직렬화돼 워커에서 복원된다(HookArgumentSerializer).
+  모델은 클래스+PK(+속성 스냅샷), 컬렉션·enum 은 마커로 왕복한다. 날짜(Carbon·CarbonImmutable·DateTime)는
+  예전에 직렬화 불가로 null 이 돼 가입 시각·동의 시각이 큐 리스너에서 비어 보였다(#138 후속 11번 ②) —
+  클래스·마이크로초·시간대를 담아 왕복한다. 클로저 같은 직렬화 불가 값만 null + 경고다.
+
+axes:
+  value: [scalar, array, model, collection, enum, datetime, closure]
+
+effects:
+  - hook_argument_round_trips_through_queue
+  - unserializable_argument_becomes_null_with_warning
+  - hard_deleted_model_restored_from_attributes
+  - date_argument_round_trips_with_class_and_timezone
+
+test_files:
+  - tests/Unit/Extension/HookArgumentSerializerTest.php

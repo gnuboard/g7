@@ -10,8 +10,7 @@
  * - 업데이트 모달의 수정 감지 조회가 실패해도 "수정된 레이아웃이 없습니다" 라고
  *   단언해, 그대로 '모두 교체' 를 진행하면 사용자가 고친 화면이 소실됐다.
  *
- * @scenario extension-update-modal
- * @effects pagination-summary, check-updates-toast, modified-layouts-warning
+ * 소유 매니페스트: tests/scenarios/extension-update-modal-contract.yaml (테스트별 마킹은 각 test 위)
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Locator, Page } from '@playwright/test';
@@ -48,7 +47,7 @@ async function stubSupportingSources(page: Page): Promise<void> {
         message: 'ok',
         data: {
           items: { plugins: [], modules: [], templates: [] },
-          current_core_version: '7.0.6',
+          current_core_version: '7.1.0',
         },
       }),
     });
@@ -72,6 +71,10 @@ async function waitForGridInteractive(page: Page, target: Locator): Promise<void
 }
 
 for (const { path, label, api, permission } of LIST_ROUTES) {
+  /**
+   * @scenario contract=pagination_summary
+   * @effects pagination_summary_reads_pagination_total
+   */
   test(`${label} 목록의 페이지네이션 요약이 응답의 총건수를 표시한다`, async ({ page }) => {
     const token = issueToken(permission);
     await authenticatePage(page, token);
@@ -107,6 +110,10 @@ for (const { path, label, api, permission } of LIST_ROUTES) {
   });
 }
 
+/**
+ * @scenario contract=check_updates_toast
+ * @effects check_updates_toast_reads_updated_count
+ */
 test('업데이트 확인은 감지 건수를 토스트에 반영한다', async ({ page }) => {
   const token = issueToken('core.modules.read', 'core.modules.install');
   await authenticatePage(page, token);
@@ -168,6 +175,10 @@ test('업데이트 확인은 감지 건수를 토스트에 반영한다', async 
   await expect(toast).not.toContainText(/최신 상태입니다/);
 });
 
+/**
+ * @scenario contract=modified_layouts_check_failure
+ * @effects modified_layouts_check_failure_is_reported, row_update_button_name_excludes_icon_glyph
+ */
 test('수정 감지 조회가 실패하면 "수정 없음" 대신 확인 실패를 알린다', async ({ page }) => {
   const token = issueToken('core.modules.read', 'core.modules.install');
   await authenticatePage(page, token);
@@ -213,9 +224,9 @@ test('수정 감지 조회가 실패하면 "수정 없음" 대신 확인 실패�
   await page.goto('/admin/modules');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  // 접근성 이름은 아이콘 글리프를 포함한다 ("refresh 업데이트") — '업데이트 확인' 과 구분한다.
+  // 아이콘은 꾸밈으로 숨겨져 이름에 글리프가 섞이지 않는다(7.1.0 J D-J4) — exact 로 '업데이트 확인' 과 구분한다.
   const updateButton = page
-    .getByRole('button', { name: 'refresh 업데이트', exact: true })
+    .getByRole('button', { name: '업데이트', exact: true })
     .first();
   await waitForGridInteractive(page, updateButton);
   await updateButton.click({ timeout: 20_000 });

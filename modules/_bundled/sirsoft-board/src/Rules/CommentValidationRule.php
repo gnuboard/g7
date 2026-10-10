@@ -41,6 +41,7 @@ class CommentValidationRule implements ValidationRule
      * @param  string  $attribute  속성명
      * @param  mixed  $value  검증할 값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -60,6 +61,7 @@ class CommentValidationRule implements ValidationRule
      *
      * @param  mixed  $postId  게시글 ID
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     private function validatePost(mixed $postId, Closure $fail): void
     {
@@ -96,6 +98,7 @@ class CommentValidationRule implements ValidationRule
      *
      * @param  mixed  $parentId  부모 댓글 ID
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     private function validateParentComment(mixed $parentId, Closure $fail): void
     {
@@ -139,7 +142,7 @@ class CommentValidationRule implements ValidationRule
 
         // 댓글 깊이 제한 검증
         if ($parentComment->depth + 1 > $board->max_comment_depth) {
-            $fail(__('sirsoft-board::validation.comment.depth.exceeded', ['max' => $board->max_comment_depth]));
+            $fail(trans_choice('sirsoft-board::validation.comment.depth.exceeded', (int) $board->max_comment_depth, ['max' => $board->max_comment_depth]));
         }
     }
 

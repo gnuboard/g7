@@ -1,0 +1,24 @@
+feature: koreaexim_admin_ui
+description: 실제 레이아웃 렌더링과 브라우저에서 탭·422 보정·필터·행 펼침·권한·반응형 환율 잠금을 검증한다.
+axes:
+  flow: [filter, expand, weekdays, notifications, tabs, validation, read_only, rate_lock, connection_test]
+effects:
+  - empty_key_rejected_after_http_normalization
+  - stored_key_preserved
+  - guest_and_unprivileged_user_cannot_read_runs
+  - view_permission_reads_status_and_history_but_cannot_run
+  - manager_can_test_connection_and_fetch_currency_details
+  - invalid_filters_and_disabled_real_update_are_rejected
+  - inverted_date_range_rejection_names_fields
+  - core_plugin_settings_cannot_bypass_own_manage_permission
+  - duplicate_run_submission_prevented
+  - admin_ui_contract
+  - connection_test_reports_failure_without_applying
+  - invalid_date_range_explained
+  - recipient_user_search_skips_empty_keyword
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/exchangeRateSettings.test.tsx
+  - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/historyFilterDateRange.test.tsx
+  - plugins/_bundled/sirsoft-koreaexim/tests/Playwright/specs/exchange-rate-settings.spec.ts
+  - plugins/_bundled/sirsoft-koreaexim/tests/Playwright/specs/ecommerce-currency-lock.spec.ts
+  - plugins/_bundled/sirsoft-koreaexim/tests/Feature/RateRunControllerTest.php

@@ -4,7 +4,7 @@
  * 설계 (Phase E′ 전환):
  *  - 코어 IDV 흐름 (428 → 템플릿 launcher → POST /api/identity/challenges → 모달 open) 을 그대로 사용
  *  - 코어 모달의 `identity_provider_ui:text_code` Extension Point 슬롯을 본 plugin 의
- *    `resources/extensions/identity_provider_inicis.json` (mode: 'replace') 로 교체
+ *    `resources/extensions/identity_provider_inicis.g7.html` (mode: 'replace') 로 교체
  *  - 슬롯 안의 "이니시스 본인인증 시작" 버튼이 본 파일의 핸들러 `startAuth` 를 호출
  *  - 사용자 클릭 직접 호출 → window.open 이 사용자 제스처 컨텍스트 안에서 실행 →
  *    Chrome popup blocker 회피 (자동 호출은 차단됨)
@@ -15,6 +15,9 @@
  *
  * @since 1.0.0-beta.1
  */
+
+// 설정 화면 상태 유틸리티(접두 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-verification_kginicis';
 const PROVIDER_ID = 'inicis';
@@ -30,6 +33,10 @@ interface InicisChallengePayload {
     flgFixedUser: string;
     reservedMsg: string;
     authHash: string;
+    /** 이니시스 결과 수신 주소 — 서버가 사이트 주소로 만든 절대 URL (successUrl·failUrl) */
+    callbackUrl?: string;
+    /** 결과 창(postMessage) 출처 검증 기준 — 사이트 주소의 origin */
+    siteOrigin?: string;
 }
 
 interface BridgeResult {
@@ -49,8 +56,19 @@ function getG7Core(): Record<string, any> | null {
     return ((window as any).G7Core as Record<string, any> | undefined) ?? null;
 }
 
-function buildSuccessUrl(): string {
-    return `${window.location.origin}/plugins/${PLUGIN_IDENTIFIER}/plugin/inicis/callback`;
+/**
+ * 이니시스로 보낼 결과 수신 주소를 돌려준다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 만들지 않는다 — 별칭·하위 도메인·포트로 접속한
+ * 사용자의 인증 결과와 검증 토큰이 그 주소로 간다. 서버가 사이트 주소로 만든 값만 쓴다.
+ *
+ * @param payload 챌린지 공개 페이로드
+ * @returns 절대 URL, 없거나 http(s) 가 아니면 null
+ */
+export function buildSuccessUrl(payload: InicisChallengePayload): string | null {
+    const url = payload.callbackUrl;
+
+    return typeof url === 'string' && /^https?:\/\//i.test(url) ? url : null;
 }
 
 /**
@@ -58,7 +76,7 @@ function buildSuccessUrl(): string {
  *
  * KISA 샘플 (sirsoft-verification/inicis/PHP/request.php) 와 동일한 form 구조 + setAttribute 패턴.
  */
-function submitInicisForm(payload: InicisChallengePayload, popupName: string): void {
+function submitInicisForm(payload: InicisChallengePayload, popupName: string, successUrl: string): void {
     const form = document.createElement('form');
     form.setAttribute('name', 'saForm');
     form.setAttribute('method', 'POST');
@@ -73,8 +91,8 @@ function submitInicisForm(payload: InicisChallengePayload, popupName: string): v
         mTxId: payload.mtxid,
         authHash: payload.authHash,
         flgFixedUser: payload.flgFixedUser,
-        successUrl: buildSuccessUrl(),
-        failUrl: buildSuccessUrl(),
+        successUrl,
+        failUrl: successUrl,
         reservedMsg: payload.reservedMsg,
     };
 
@@ -232,6 +250,15 @@ async function startAuthHandler(): Promise<void> {
         return;
     }
 
+    const successUrl = buildSuccessUrl(payload);
+    const siteOrigin = typeof payload.siteOrigin === 'string' ? payload.siteOrigin : '';
+    if (!successUrl || siteOrigin === '') {
+        logger.error('public_payload 의 callbackUrl/siteOrigin 부재 — 서버가 사이트 주소를 내려주지 않음', payload);
+        await safeToast('본인인증 페이로드가 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+        return;
+    }
+    const challengeId = typeof challenge.challenge_id === 'string' ? challenge.challenge_id : '';
+
     // 사용자 제스처 컨텍스트 안에서 popup 열기
     const popupName = 'sa_popup';
     const popup = window.open('', popupName, POPUP_FEATURES);
@@ -244,7 +271,7 @@ async function startAuthHandler(): Promise<void> {
     // 진행 중 상태 진입 — 모달 슬롯이 스피너 + 안내로 전환
     setProviderInProgress(true);
 
-    submitInicisForm(payload, popupName);
+    submitInicisForm(payload, popupName, successUrl);
 
     // listener 와 polling 은 둘 중 먼저 발생한 분기에서만 cleanup 수행 (이중 dispatch 방지)
     let settled = false;
@@ -263,9 +290,13 @@ async function startAuthHandler(): Promise<void> {
     };
 
     messageHandler = (ev: MessageEvent<unknown>) => {
-        if (ev.origin !== window.location.origin) return;
+        // 보안: 이 인증창이 사이트 주소에서 보낸 결과만 받는다(같은 출처 다른 창·다른 출처의 위조 결과 차단).
+        if (ev.source !== popup) return;
+        if (ev.origin !== siteOrigin) return;
         const data = ev.data as BridgeResult | null;
         if (!data || data.type !== 'identity_result') return;
+        // 검증 토큰을 실은 결과는 지금 진행 중인 challenge 의 것이어야 한다.
+        if (data.verification_token && challengeId !== '' && data.challenge_id !== challengeId) return;
         if (settled) return;
         settled = true;
 

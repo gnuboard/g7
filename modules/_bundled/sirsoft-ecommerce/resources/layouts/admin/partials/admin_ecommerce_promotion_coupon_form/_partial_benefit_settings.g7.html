@@ -1,0 +1,69 @@
+<!-- 쿠폰 폼의 혜택 설정 구역 — 할인 방식(정액/정률)과 그 값, 정률일 때의 최대 할인액.
+  방식에 따라 같은 입력칸의 뜻이 바뀌므로(원 ↔ %) 방식을 바꾸면 **입력값을 지운다** — 남겨 두면
+  10%가 10원으로 조용히 뒤바뀐다.
+  최대 할인액 칸은 정률일 때만 나타난다(정액에는 상한이라는 개념이 없다).
+  다른 조각들과 마찬가지로 값은 부모 폼의 `_local.form` 에 쌓이고 저장은 하단에서 한 번에 한다. -->
+<partial>
+  <div data-ref="benefit_settings_section" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.benefit_settings</h2>
+    <div class="space-y-5">
+      <!-- 혜택금액 (Input + Select 같은 줄) -->
+      <form-field data-type="composite" data-ref="field_benefit_amount" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount" :required="true" error="{{_local.errors?.discount_value?.[0] ?? _local.errors?.discount_type?.[0] ?? ''}}">
+        <div class="flex-center gap-2">
+          <input aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount" type="number" name="discount_value" class="input w-40" :min="1" max="{{_local.form?.discount_type === 'rate' ? 100 : undefined}}"/>
+          <select aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit" name="discount_type" class="input w-24">
+            <options>
+              <option value="fixed">$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_fixed</option>
+              <option value="rate">$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_rate</option>
+            </options>
+            <on type="change">
+              <!-- 할인 방식 변경 — 고른 값은 선택칸이 폼에 담고, 이 액션은 **입력해 둔 할인값을 지운다**. 정액(원)과 정률(%)이 같은 칸을 쓰므로 지우지 않으면 10%가 10원으로 뒤바뀐다. -->
+              <set-state target="_local" :form.discount_value="null"/>
+            </on>
+          </select>
+        </div>
+      </form-field>
+      <!-- 최대할인금액 (% 선택 시만 표시) -->
+      <form-field data-type="composite" data-ref="field_discount_max_amount" data-if="{{_local.form?.discount_type === 'rate'}}" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.max_discount" error="{{_local.errors?.discount_max_amount?.[0] ?? ''}}">
+        <div class="flex-center gap-2">
+          <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.max_prefix</span>
+          <input type="number" name="discount_max_amount" class="input w-32" :min="0"/>
+          <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.currency_won_discount</span>
+        </div>
+      </form-field>
+      <!-- 최소주문금액 -->
+      <form-field data-type="composite" data-ref="field_min_order_amount" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.min_order_amount" error="{{_local.errors?.min_order_amount?.[0] ?? ''}}">
+        <div class="flex-center gap-2">
+          <input type="number" name="min_order_amount" class="input w-40" :min="0"/>
+          <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.min_order_suffix</span>
+        </div>
+      </form-field>
+      <!-- 유효기간 타입 RadioGroup -->
+      <form-field data-type="composite" data-ref="field_valid_type" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period" :required="true" error="{{_local.errors?.valid_type?.[0] ?? _local.errors?.valid_from?.[0] ?? _local.errors?.valid_to?.[0] ?? _local.errors?.valid_days?.[0] ?? ''}}">
+        <div>
+          <div>
+            <radio-group data-type="composite" name="valid_type" :inline="true">
+              <responsive on="mobile" :inline="false"/>
+              <prop name="options">
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.valid_type_fixed_period" value="period"/>
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.valid_type_days_from_issue" value="days_from_issue"/>
+              </prop>
+            </radio-group>
+          </div>
+          <!-- 기간선택 시: 시작일 ~ 종료일 -->
+          <div data-ref="valid_period_range" data-if="{{_local.form?.valid_type === 'period'}}" class="flex-center gap-2">
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}" type="date" name="valid_from" class="input w-40"/>
+            <span class="text-label-subtle">~</span>
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period')}}" type="date" name="valid_to" class="input w-40"/>
+          </div>
+          <!-- 발급일로부터 선택 시: 일수 입력 -->
+          <div data-ref="valid_period_days" data-if="{{_local.form?.valid_type === 'days_from_issue'}}" class="flex-center gap-2">
+            <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.from_issue_date</span>
+            <input type="number" name="valid_days" class="input w-24" :min="1"/>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_days</span>
+          </div>
+        </div>
+      </form-field>
+    </div>
+  </div>
+</partial>

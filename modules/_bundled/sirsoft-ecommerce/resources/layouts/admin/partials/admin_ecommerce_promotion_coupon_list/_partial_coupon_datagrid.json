@@ -1,1099 +1,727 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Coupon List - DataGrid Section with Bulk Actions"
-  },
-  "id": "coupon_datagrid_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "mt-6"
-  },
-  "children": [
-    {
-      "id": "bulk_action_bar",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-body font-medium whitespace-nowrap"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.selected_count|count={{(_local.selectedItems || []).length}}"
-        },
-        {
-          "type": "basic",
-          "name": "Select",
-          "props": {
-            "name": "bulkIssueStatus",
-            "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
-            "value": "{{_local.bulkIssueStatus || ''}}",
-            "disabled": "{{coupons?.data?.abilities?.can_update !== true}}",
-            "options": [
-              {
-                "value": "",
-                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.select_status",
-                "disabled": true
-              },
-              {
-                "value": "issuing",
-                "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing"
-              },
-              {
-                "value": "stopped",
-                "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped"
-              }
-            ]
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "_local",
-                "bulkIssueStatus": "{{$event.target.value}}"
-              }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50",
-            "disabled": "{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "bulkIssueStatus": "{{_local.bulkIssueStatus}}",
-                    "bulkSelectedItems": "{{_local.selectedItems}}"
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "modal_status_change_confirm"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "쿠폰 목록 — 결과 표. 좁은 화면(768px 미만)에서는 DataGrid 가 스스로 카드 보기로 바꿔 그리므로\n  목록을 따로 두 벌 두지 않는다. 예전에 있던 별도 카드 블록은 아무도 채우지 않는 `_global.isPortable`\n  에 묶여 한 번도 보이지 않아 걷어냈다(2026-10-04 결정 3).\n  \n  정렬·페이지·페이지당 개수는 전부 URL query 로 나간다(재진입·뒤로가기·주소 공유에서 같은\n  화면이 서야 한다). 정렬 select 의 값이 `created_at_desc` 처럼 한 덩어리인데 서버로는\n  `sort_by`·`sort_order` 둘로 갈라 보내는 이유는 select 가 값을 하나만 가질 수 있어서다.\n  \n  행마다 무엇을 할 수 있는지는 서버가 준 `abilities` 가 정한다 — 화면이 임의로 판단하지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Coupon List - DataGrid Section with Bulk Actions"
     },
-    {
-      "id": "table_header_bar",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-between flex-wrap gap-3 mb-4"
-      },
-      "children": [
+    "id": "coupon_datagrid_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-label"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "sortBy",
-                "className": "w-40",
-                "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
-                "options": [
-                  {
-                    "value": "created_at_desc",
-                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_desc"
-                  },
-                  {
-                    "value": "created_at_asc",
-                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_asc"
-                  },
-                  {
-                    "value": "name_asc",
-                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_asc"
-                  },
-                  {
-                    "value": "name_desc",
-                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_desc"
-                  },
-                  {
-                    "value": "valid_to_asc",
-                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_asc"
-                  },
-                  {
-                    "value": "valid_to_desc",
-                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_desc"
-                  }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/ecommerce/promotion-coupons",
-                    "mergeQuery": true,
-                    "query": {
-                      "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                      "sort_order": "{{$event.target.value.split('_').pop()}}",
-                      "page": 1
-                    },
-                    "replace": true,
-                    "transition_overlay_target": "pc_data_table__body"
-                  }
-                }
-              ]
+            "id": "bulk_action_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
             },
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "perPage",
-                "className": "w-20",
-                "value": "{{query.per_page || '10'}}",
-                "options": [
-                  {
-                    "value": "10",
-                    "label": "10"
-                  },
-                  {
-                    "value": "20",
-                    "label": "20"
-                  },
-                  {
-                    "value": "50",
-                    "label": "50"
-                  },
-                  {
-                    "value": "100",
-                    "label": "100"
-                  }
-                ]
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/ecommerce/promotion-coupons",
-                    "mergeQuery": true,
-                    "query": {
-                      "per_page": "{{$event.target.value}}",
-                      "page": 1
-                    },
-                    "replace": true,
-                    "transition_overlay_target": "pc_data_table__body"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "pc_data_table",
-      "if": "{{!_global.isPortable}}",
-      "type": "composite",
-      "name": "DataGrid",
-      "props": {
-        "data": "{{coupons?.data?.data || []}}",
-        "pagination": true,
-        "serverSidePagination": true,
-        "serverCurrentPage": "{{coupons?.data?.pagination?.current_page ?? 1}}",
-        "serverTotalPages": "{{coupons?.data?.pagination?.last_page ?? null}}",
-        "serverHasMorePages": "{{coupons?.data?.pagination?.has_more_pages ?? false}}",
-        "pageSize": "{{+(query.per_page || 10)}}",
-        "alwaysShowPagination": true,
-        "selectable": true,
-        "selectionScope": "page",
-        "selectedIds": "{{_local.selectedItems || []}}",
-        "visibleColumns": "{{_local.visibleColumns}}",
-        "selectedCountText": "",
-        "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty",
-        "loading": "{{coupons?.$loading}}",
-        "actionsColumnHeader": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions",
-        "rowActions": [
-          {
-            "id": "edit",
-            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
-            "iconName": "fa-regular fa-pen-to-square",
-            "disabledField": "abilities.can_update"
-          },
-          {
-            "id": "issue_history",
-            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title",
-            "iconName": "fa-solid fa-list"
-          },
-          {
-            "id": "direct_issue",
-            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.direct_issue",
-            "iconName": "fa-solid fa-gift",
-            "disabledField": "abilities.can_update"
-          },
-          {
-            "id": "divider",
-            "divider": true
-          },
-          {
-            "id": "delete",
-            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete",
-            "iconName": "fa-regular fa-trash-can",
-            "variant": "danger",
-            "disabledField": "abilities.can_delete"
-          }
-        ],
-        "columns": [
-          {
-            "field": "checkbox",
-            "header": "",
-            "width": "40px",
-            "selectable": true
-          },
-          {
-            "field": "target_type_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.target_type_badge_color}}",
-                  "text": "{{row.target_type_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "name",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name",
-            "width": "200px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "A",
-                "props": {
-                  "href": "#",
-                  "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
-                },
-                "text": "{{row.localized_name}}",
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
-                      "mergeQuery": true,
-                      "query": {}
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "field": "benefit_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount",
-            "width": "150px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex items-center gap-1"
-                },
-                "children": [
-                  {
-                    "type": "composite",
-                    "name": "Badge",
-                    "props": {
-                      "color": "{{row.discount_type === 'fixed' ? 'blue' : 'teal'}}",
-                      "text": "{{row.discount_type_label}}",
-                      "size": "sm"
-                    }
-                  },
-                  {
                     "type": "basic",
                     "name": "Span",
-                    "text": "{{row.benefit_formatted}}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "field": "valid_period_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period",
-            "width": "170px"
-          },
-          {
-            "field": "issue_period_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period",
-            "width": "170px"
-          },
-          {
-            "field": "issue_count_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count",
-            "width": "100px",
-            "align": "center",
-            "cellChildren": [
-              {
-                "comment": "발급수량 숫자 클릭 → 발급내역 모달 (링크 외형: 파란색 + hover 밑줄)",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "type": "button",
-                  "className": "text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-pointer"
-                },
-                "text": "{{row.issue_count_formatted}}",
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "issueHistoryCoupon": {
-                            "id": "{{row.id}}",
-                            "name": "{{row.localized_name}}"
-                          },
-                          "issueHistoryPage": 1,
-                          "issueHistoryPerPage": 10,
-                          "issueHistoryFilterUser": null
-                        }
-                      },
-                      {
-                        "handler": "refetchDataSource",
-                        "params": {
-                          "dataSourceId": "couponIssues"
-                        }
-                      },
-                      {
-                        "handler": "openModal",
-                        "target": "modal_issue_history"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "field": "issue_method_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.issue_method_badge_color}}",
-                  "text": "{{row.issue_method_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "issue_condition_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.issue_condition_badge_color}}",
-                  "text": "{{row.issue_condition_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "issue_status_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.issue_status_badge_color}}",
-                  "text": "{{row.issue_status_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "created_at",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at",
-            "width": "100px"
-          },
-          {
-            "field": "created_by_name",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by",
-            "width": "150px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Span",
-                "props": {
-                  "className": "text-gray-500 dark:text-gray-400"
-                },
-                "text": "-",
-                "if": "{{!row.created_by}}"
-              },
-              {
-                "type": "composite",
-                "name": "ActionMenu",
-                "if": "{{!!row.created_by}}",
-                "props": {
-                  "position": "right",
-                  "items": [
-                    {
-                      "id": "view_member",
-                      "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
-                      "iconName": "user",
-                      "if": "{{!!row.created_by}}"
+                    "props": {
+                        "className": "text-body font-medium whitespace-nowrap"
                     },
-                    {
-                      "id": "search_by_creator",
-                      "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.search_by_creator",
-                      "iconName": "search"
-                    }
-                  ]
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.selected_count|count={{(_local.selectedItems || []).length}}"
                 },
-                "children": [
-                  {
+                {
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "comment": "일괄 발급상태 선택. 여기서는 고르기만 하고 실제 변경은 확인 창을 거친다 — 되돌리기 번거로운 동작이라 한 번 더 묻는다.",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "_local",
+                                "bulkIssueStatus": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "name": "bulkIssueStatus",
+                        "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                        "value": "{{_local.bulkIssueStatus || ''}}",
+                        "disabled": "{{coupons?.data?.abilities?.can_update !== true}}",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.select_status",
+                                "disabled": true
+                            },
+                            {
+                                "value": "issuing",
+                                "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing"
+                            },
+                            {
+                                "value": "stopped",
+                                "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped"
+                            }
+                        ]
+                    }
+                },
+                {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                      "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                        "className": "flex-1"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄변경 확인 창 열기. 고른 쿠폰과 바꿀 방향을 _global 로 옮겨 담고 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkIssueStatus": "{{_local.bulkIssueStatus}}",
+                                        "bulkSelectedItems": "{{_local.selectedItems}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_status_change_confirm"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50",
+                        "disabled": "{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply"
+                }
+            ]
+        },
+        {
+            "id": "table_header_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between flex-wrap gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
                     },
                     "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
-                        "props": {
-                          "name": "fa-regular fa-user",
-                          "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
-                        }
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "min-w-0 flex-1"
-                        },
-                        "children": [
-                          {
+                        {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "정렬. 값을 바꾸면 페이지도 1로 되돌린다 — 안 되돌리면 3쪽을 보던 상태에서 다른 정렬의 3쪽으로 튄다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/promotion-coupons",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "pc_data_table__body",
+                                        "query": {
+                                            "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                            "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
                             "props": {
-                              "className": "font-medium text-gray-900 dark:text-gray-100 truncate block"
-                            },
-                            "text": "{{row.created_by_name}}"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-tertiary truncate block"
-                            },
-                            "text": "({{row.created_by_email}})",
-                            "if": "{{!!row.created_by_email}}"
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ],
-                "actions": [
-                  {
-                    "event": "onItemClick",
-                    "handler": "switch",
-                    "value": "{{$args[0]}}",
-                    "cases": {
-                      "view_member": {
-                        "handler": "openWindow",
-                        "params": {
-                          "path": "/admin/users/{{row.created_by}}"
-                        }
-                      },
-                      "search_by_creator": {
-                        "handler": "sequence",
-                        "actions": [
-                          {
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "filter.createdBy": "{{row.created_by}}",
-                              "creatorSearchResults": "{{[{ value: row.created_by, label: row.created_by_name, description: row.created_by_email }]}}"
+                                "name": "sortBy",
+                                "className": "w-40",
+                                "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
+                                "options": [
+                                    {
+                                        "value": "created_at_desc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_desc"
+                                    },
+                                    {
+                                        "value": "created_at_asc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_asc"
+                                    },
+                                    {
+                                        "value": "name_asc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_asc"
+                                    },
+                                    {
+                                        "value": "name_desc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_desc"
+                                    },
+                                    {
+                                        "value": "valid_to_asc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_asc"
+                                    },
+                                    {
+                                        "value": "valid_to_desc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_desc"
+                                    }
+                                ]
                             }
-                          },
-                          {
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "페이지당 개수. 정렬과 같은 이유로 페이지를 1로 되돌린다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/promotion-coupons",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "pc_data_table__body",
+                                        "query": {
+                                            "per_page": "{{$event.target.value}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "perPage",
+                                "className": "w-20",
+                                "value": "{{query.per_page || '10'}}",
+                                "options": [
+                                    {
+                                        "value": "10",
+                                        "label": "10"
+                                    },
+                                    {
+                                        "value": "20",
+                                        "label": "20"
+                                    },
+                                    {
+                                        "value": "50",
+                                        "label": "50"
+                                    },
+                                    {
+                                        "value": "100",
+                                        "label": "100"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pc_data_table",
+            "type": "composite",
+            "name": "DataGrid",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "coupons"
+            },
+            "actions": [
+                {
+                    "comment": "쪽 이동. `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다.",
+                    "type": "change",
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/ecommerce/promotion-coupons",
+                        "replace": true,
+                        "mergeQuery": true,
+                        "transition_overlay_target": "pc_data_table__body",
+                        "query": {
+                            "page": "{{$args[0]}}"
+                        }
+                    }
+                },
+                {
+                    "comment": "체크한 쿠폰. 일괄 발급상태 변경이 이 목록을 읽는다.",
+                    "event": "onSelectionChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "_local",
+                        "selectedItems": "{{$args[0]}}"
+                    }
+                },
+                {
+                    "comment": "행 액션(넓은 화면 표). 수정은 이동, 발급내역·즉시발급·삭제는 창을 연다 — 창을 여는 갈래는 대상 쿠폰을 `_global` 에 먼저 담는다(창은 부모 `_local` 을 못 본다).",
+                    "event": "onRowAction",
+                    "handler": "switch",
+                    "cases": {
+                        "edit": {
                             "handler": "navigate",
                             "params": {
-                              "path": "/admin/ecommerce/promotion-coupons",
-                              "mergeQuery": true,
-                              "query": {
-                                "created_by": "{{row.created_by}}",
-                                "page": 1
-                              },
-                              "replace": true,
-                              "transition_overlay_target": "pc_data_table__body"
+                                "path": "/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit",
+                                "mergeQuery": true,
+                                "query": {}
                             }
-                          }
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "actions": [
-        {
-          "event": "onPageChange",
-          "type": "change",
-          "handler": "navigate",
-          "params": {
-            "path": "/admin/ecommerce/promotion-coupons",
-            "mergeQuery": true,
-            "query": {
-              "page": "{{$args[0]}}"
-            },
-            "replace": true,
-            "transition_overlay_target": "pc_data_table__body"
-          }
-        },
-        {
-          "event": "onSelectionChange",
-          "handler": "setState",
-          "params": {
-            "target": "_local",
-            "selectedItems": "{{$args[0]}}"
-          }
-        },
-        {
-          "event": "onRowAction",
-          "handler": "switch",
-          "cases": {
-            "edit": {
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit",
-                "mergeQuery": true,
-                "query": {}
-              }
-            },
-            "issue_history": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "issueHistoryCoupon": {
-                      "id": "{{$args[1].id}}",
-                      "name": "{{$args[1].localized_name}}"
-                    },
-                    "issueHistoryPage": 1,
-                    "issueHistoryPerPage": 10,
-                    "issueHistoryFilterUser": null
-                  }
-                },
-                {
-                  "handler": "refetchDataSource",
-                  "params": {
-                    "dataSourceId": "couponIssues"
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "modal_issue_history"
-                }
-              ]
-            },
-            "direct_issue": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "directIssueCoupon": {
-                      "id": "{{$args[1].id}}",
-                      "name": "{{$args[1].localized_name}}"
-                    },
-                    "directIssueSelectedUsers": [],
-                    "directIssueSearchKeyword": "",
-                    "directIssueSearchResults": [],
-                    "directIssueSubmitting": false
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "modal_direct_issue"
-                }
-              ]
-            },
-            "delete": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "deleteTarget": {
-                      "id": "{{$args[1].id}}",
-                      "name": "{{$args[1].localized_name}}"
-                    }
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "modal_delete_confirm"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "mobile_card_view",
-      "if": "{{_global.isPortable}}",
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-          },
-          "children": [
-            {
-              "iteration": {
-                "source": "coupons?.data?.data || []",
-                "item_var": "coupon",
-                "key": "coupon.id"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Card",
-                  "props": {
-                    "className": "{{(_local.selectedItems || []).includes(coupon.id) ? 'ring-2 ring-blue-500' : ''}}"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-start justify-between"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-3"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "checkbox",
-                                "className": "checkbox",
-                                "checked": "{{(_local.selectedItems || []).includes(coupon.id)}}"
-                              },
-                              "actions": [
-                                {
-                                  "type": "change",
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "_local",
-                                    "selectedItems": "{{(_local.selectedItems || []).includes(coupon.id) ? (_local.selectedItems || []).filter(id => id !== coupon.id) : [...(_local.selectedItems || []), coupon.id]}}"
-                                  }
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "text-primary font-medium"
-                                  },
-                                  "text": "{{coupon.localized_name}}"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "text-label-subtle ml-2"
-                                  },
-                                  "text": "{{coupon.created_at}}"
-                                }
-                              ]
-                            }
-                          ]
                         },
-                        {
-                          "type": "composite",
-                          "name": "ActionMenu",
-                          "props": {
-                            "triggerLabel": "",
-                            "triggerIconName": "ellipsis-vertical",
-                            "position": "right",
-                            "items": [
-                              {
-                                "id": "edit",
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
-                                "iconName": "edit",
-                                "disabled": "{{!coupon.abilities?.can_update}}"
-                              },
-                              {
-                                "id": "issue_history",
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title",
-                                "iconName": "list"
-                              },
-                              {
-                                "id": "direct_issue",
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.direct_issue",
-                                "iconName": "gift",
-                                "disabled": "{{!coupon.abilities?.can_update}}"
-                              },
-                              {
-                                "divider": true
-                              },
-                              {
-                                "id": "delete",
-                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete",
-                                "iconName": "trash",
-                                "variant": "danger",
-                                "disabled": "{{!coupon.abilities?.can_delete}}"
-                              }
-                            ]
-                          },
-                          "actions": [
-                            {
-                              "event": "onItemClick",
-                              "handler": "switch",
-                              "value": "{{$args[0]}}",
-                              "cases": {
-                                "edit": {
-                                  "handler": "navigate",
-                                  "params": {
-                                    "path": "/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit",
-                                    "mergeQuery": true,
-                                    "query": {}
-                                  }
-                                },
-                                "issue_history": {
-                                  "handler": "sequence",
-                                  "actions": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
+                        "issue_history": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
                                         "target": "global",
-                                        "issueHistoryCoupon": {
-                                          "id": "{{coupon.id}}",
-                                          "name": "{{coupon.localized_name}}"
-                                        },
                                         "issueHistoryPage": 1,
                                         "issueHistoryPerPage": 10,
-                                        "issueHistoryFilterUser": null
-                                      }
-                                    },
-                                    {
-                                      "handler": "refetchDataSource",
-                                      "params": {
-                                        "dataSourceId": "couponIssues"
-                                      }
-                                    },
-                                    {
-                                      "handler": "openModal",
-                                      "target": "modal_issue_history"
+                                        "issueHistoryFilterUser": null,
+                                        "issueHistoryCoupon": {
+                                            "id": "{{$args[1].id}}",
+                                            "name": "{{$args[1].localized_name}}",
+                                            "can_update": "{{$args[1].abilities?.can_update === true}}"
+                                        }
                                     }
-                                  ]
                                 },
-                                "direct_issue": {
-                                  "handler": "sequence",
-                                  "actions": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "couponIssues"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_issue_history"
+                                }
+                            ]
+                        },
+                        "direct_issue": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
                                         "target": "global",
-                                        "directIssueCoupon": {
-                                          "id": "{{coupon.id}}",
-                                          "name": "{{coupon.localized_name}}"
-                                        },
                                         "directIssueSelectedUsers": [],
                                         "directIssueSearchKeyword": "",
                                         "directIssueSearchResults": [],
-                                        "directIssueSubmitting": false
-                                      }
-                                    },
-                                    {
-                                      "handler": "openModal",
-                                      "target": "modal_direct_issue"
+                                        "directIssueSearchResultsKeyword": null,
+                                        "directIssueSubmitting": false,
+                                        "directIssueCoupon": {
+                                            "id": "{{$args[1].id}}",
+                                            "name": "{{$args[1].localized_name}}"
+                                        }
                                     }
-                                  ]
                                 },
-                                "delete": {
-                                  "handler": "sequence",
-                                  "actions": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_direct_issue"
+                                }
+                            ]
+                        },
+                        "delete": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
                                         "target": "global",
                                         "deleteTarget": {
-                                          "id": "{{coupon.id}}",
-                                          "name": "{{coupon.localized_name}}"
+                                            "id": "{{$args[1].id}}",
+                                            "name": "{{$args[1].localized_name}}"
                                         }
-                                      }
-                                    },
-                                    {
-                                      "handler": "openModal",
-                                      "target": "modal_delete_confirm"
                                     }
-                                  ]
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Hr",
-                      "props": {
-                        "className": "my-3 border-gray-200 dark:border-gray-700"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "space-y-2 text-sm"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-primary font-medium"
-                          },
-                          "text": "{{coupon.benefit_formatted}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type:"
-                            },
-                            {
-                              "type": "composite",
-                              "name": "Badge",
-                              "props": {
-                                "color": "{{coupon.target_type_badge_color}}",
-                                "text": "{{coupon.target_type_label}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue:"
-                            },
-                            {
-                              "type": "composite",
-                              "name": "Badge",
-                              "props": {
-                                "color": "{{coupon.issue_method_badge_color}}",
-                                "text": "{{coupon.issue_method_label}}"
-                              }
-                            },
-                            {
-                              "type": "composite",
-                              "name": "Badge",
-                              "props": {
-                                "color": "{{coupon.issue_condition_badge_color}}",
-                                "text": "{{coupon.issue_condition_label}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.valid_period: "
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{coupon.valid_period_formatted}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period: "
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{coupon.issue_period_formatted}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count: "
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{coupon.issue_count_formatted}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-between"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "flex-center gap-2"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
-                                  },
-                                  "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status:"
                                 },
                                 {
-                                  "type": "composite",
-                                  "name": "Badge",
-                                  "props": {
-                                    "color": "{{coupon.issue_status_badge_color}}",
-                                    "text": "{{coupon.issue_status_label}}"
-                                  }
+                                    "handler": "openModal",
+                                    "target": "modal_delete_confirm"
                                 }
-                              ]
+                            ]
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "data": "{{coupons?.data?.data || []}}",
+                "pagination": true,
+                "serverSidePagination": true,
+                "serverCurrentPage": "{{coupons?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{coupons?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{coupons?.data?.pagination?.has_more_pages ?? false}}",
+                "pageSize": "{{+(query.per_page || 10)}}",
+                "alwaysShowPagination": true,
+                "selectable": true,
+                "selectionScope": "page",
+                "selectedIds": "{{_local.selectedItems || []}}",
+                "visibleColumns": "{{_local.visibleColumns}}",
+                "selectedCountText": "",
+                "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty",
+                "actionsColumnHeader": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions",
+                "rowActions": [
+                    {
+                        "id": "edit",
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
+                        "iconName": "fa-regular fa-pen-to-square",
+                        "disabledField": "abilities.can_update"
+                    },
+                    {
+                        "id": "issue_history",
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title",
+                        "iconName": "fa-solid fa-list"
+                    },
+                    {
+                        "id": "direct_issue",
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.direct_issue",
+                        "iconName": "fa-solid fa-gift",
+                        "disabledField": "abilities.can_update"
+                    },
+                    {
+                        "id": "divider",
+                        "divider": true
+                    },
+                    {
+                        "id": "delete",
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete",
+                        "iconName": "fa-regular fa-trash-can",
+                        "variant": "danger",
+                        "disabledField": "abilities.can_delete"
+                    }
+                ],
+                "columns": [
+                    {
+                        "field": "checkbox",
+                        "header": "",
+                        "width": "40px",
+                        "selectable": true
+                    },
+                    {
+                        "field": "target_type_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.target_type_badge_color}}",
+                                    "text": "{{row.target_type_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "name",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name",
+                        "width": "200px",
+                        "cellChildren": [
+                            {
+                                "comment": "수정 화면은 쿠폰 수정 권한이 있어야 열린다 — 권한이 없으면 링크 대신 이름만 보인다(행 「수정」과 같은 키).",
+                                "id": "coupon_name_text",
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.abilities?.can_update !== true}}",
+                                "props": {
+                                    "className": "font-medium text-gray-900 dark:text-gray-100"
+                                },
+                                "text": "{{row.localized_name}}"
                             },
                             {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
-                              },
-                              "text": "{{coupon.created_by_name ?? '-'}}"
+                                "comment": "쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다",
+                                "id": "coupon_name_link",
+                                "type": "basic",
+                                "name": "A",
+                                "if": "{{row.abilities?.can_update === true}}",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "href": "#",
+                                    "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
+                                },
+                                "text": "{{row.localized_name}}"
                             }
-                          ]
-                        }
-                      ]
+                        ]
+                    },
+                    {
+                        "field": "benefit_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount",
+                        "width": "150px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-1"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "props": {
+                                            "color": "{{row.discount_type === 'fixed' ? 'blue' : 'teal'}}",
+                                            "text": "{{row.discount_type_label}}",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{row.benefit_formatted}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "valid_period_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period",
+                        "width": "170px"
+                    },
+                    {
+                        "field": "issue_period_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period",
+                        "width": "170px"
+                    },
+                    {
+                        "field": "issue_count_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count",
+                        "width": "100px",
+                        "align": "center",
+                        "cellChildren": [
+                            {
+                                "comment": "발급수량 숫자 클릭 → 발급내역 모달 (링크 외형: 파란색 + hover 밑줄)",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "issueHistoryPage": 1,
+                                                    "issueHistoryPerPage": 10,
+                                                    "issueHistoryFilterUser": null,
+                                                    "issueHistoryCoupon": {
+                                                        "id": "{{row.id}}",
+                                                        "name": "{{row.localized_name}}",
+                                                        "can_update": "{{row.abilities?.can_update === true}}"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "couponIssues"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "modal_issue_history"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-pointer"
+                                },
+                                "text": "{{row.issue_count_formatted}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "issue_method_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.issue_method_badge_color}}",
+                                    "text": "{{row.issue_method_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "issue_condition_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.issue_condition_badge_color}}",
+                                    "text": "{{row.issue_condition_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "issue_status_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.issue_status_badge_color}}",
+                                    "text": "{{row.issue_status_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "created_at",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at",
+                        "width": "100px"
+                    },
+                    {
+                        "field": "created_by_name",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by",
+                        "width": "150px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.created_by}}",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "-"
+                            },
+                            {
+                                "type": "composite",
+                                "name": "ActionMenu",
+                                "if": "{{!!row.created_by}}",
+                                "actions": [
+                                    {
+                                        "comment": "만든 사람을 눌렀을 때의 갈래. \"회원 보기\" 는 새 창으로 열어 지금 목록을 잃지 않게 하고, \"이 사람이 만든 것만\" 은 화면 필터와 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다).",
+                                        "event": "onItemClick",
+                                        "handler": "switch",
+                                        "cases": {
+                                            "view_member": {
+                                                "handler": "openWindow",
+                                                "params": {
+                                                    "path": "/admin/users/{{row.created_by}}"
+                                                }
+                                            },
+                                            "search_by_creator": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter.createdBy": "{{row.created_by}}",
+                                                            "creatorSearchResults": "{{[{ value: row.created_by, label: row.created_by_name, description: row.created_by_email }]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/promotion-coupons",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "pc_data_table__body",
+                                                            "query": {
+                                                                "created_by": "{{row.created_by}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "position": "right",
+                                    "items": [
+                                        {
+                                            "id": "view_member",
+                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
+                                            "iconName": "user",
+                                            "if": "{{!!row.created_by}}"
+                                        },
+                                        {
+                                            "id": "search_by_creator",
+                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.search_by_creator",
+                                            "iconName": "search"
+                                        }
+                                    ]
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-regular fa-user",
+                                                    "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "min-w-0 flex-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100 truncate block"
+                                                        },
+                                                        "text": "{{row.created_by_name}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!row.created_by_email}}",
+                                                        "props": {
+                                                            "className": "text-tertiary truncate block"
+                                                        },
+                                                        "text": "({{row.created_by_email}})"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  ]
-                }
-              ]
+                ]
             }
-          ]
         }
-      ]
-    }
-  ]
+    ]
 }

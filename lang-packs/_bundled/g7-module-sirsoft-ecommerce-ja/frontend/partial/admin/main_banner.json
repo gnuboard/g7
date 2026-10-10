@@ -41,6 +41,8 @@
       "hide": "非表示",
       "color": "色",
       "position": "位置",
+      "title_position": "タイトルの位置",
+      "content_position": "内容の位置",
       "position_left": "左",
       "position_center": "中央",
       "position_right": "右",

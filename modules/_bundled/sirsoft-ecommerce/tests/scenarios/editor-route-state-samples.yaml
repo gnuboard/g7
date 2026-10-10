@@ -1,0 +1,21 @@
+feature: 쇼핑몰 편집기 화면 상태 표본이 실제 화면 모양을 그린다
+
+description: |
+  레이아웃 편집기 상태 표본 전수 순회에서 두 상태가 빈 화면을 그렸다. 주문 상세 「부분 취소」 는 표본 덮어쓰기가
+  통째 교체인데 주문을 is_partially_cancelled 하나로 덮어 주문상품, 주문자, 결제 정보가 모두 비었다(7.0.11 부터).
+  쿠폰 목록 「화면 채움」 은 실제 화면이 쓰지 않는 _global.isPortable 을 켜서 표를 숨기고 빈 카드 블록을 열었다.
+  부분 취소는 기본 주문 표본 전체에 플래그와 취소 상품 하나를 더한 주문으로 덮고, 화면 채움에서는 기기 값을 뺀다.
+
+axes:
+  target: [order_detail_partially_cancelled, coupon_list_screen_filled]
+
+effects:
+  - ecommerce_partially_cancelled_state_keeps_whole_order
+  - ecommerce_editor_states_do_not_seed_unset_device_flag
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-editor-route-state-samples.test.ts
+
+notes: |
+  브라우저 실측: 레이아웃 편집기 ?route=*/admin/ecommerce/orders/:orderNumber 에서 「부분 취소」 를 고르면 수정 전 캔버스 글자
+  506(「주문상품이 없습니다」), 기본 상태 1662. 쿠폰 목록 「화면 채움」 은 수정 전 186(표 없음), 「데이터 있음」 435.

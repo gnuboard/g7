@@ -1,0 +1,122 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(유형 × 관심사)의 조합마다 테스트를 두지 않는다 — 분할 자체는 세 유형이 **한 협력자**를
+#   공유하므로 커버리지 단위는 "그 유형의 안분 대상 컬럼이 전부 보존되는가" 이고, 전이·복귀·
+#   헤더 동기화는 유형마다 계약이 다르다(환불에는 복귀가 없고, 교환·반품에는 처리중이 없다).
+#   effects 축은 면제하지 않는다.
+feature: claim_item_quantity_split
+
+description: |
+  운영자가 신청 상품 **3개 중 2개만** 받아 주거나 반려할 수 있게 되면서, 행 하나가 두 줄로
+  갈린다. 갈랐을 때 어긋날 수 있는 것은 전부 **오류 없이 돈·수량으로만** 드러난다.
+
+  핵심 동작:
+    - 분할은 전용 협력자(`ClaimItemSplitter`) 하나가 한다. 세 서비스에 복제하면 비율 안분이
+      세 벌이 되고, 한쪽만 고쳐졌을 때 그 유형의 금액만 조용히 어긋난다.
+    - 금액은 **원본 × 비율**로 전이분을 내고 **잔여 = 원본 − 전이분**으로 맞춘다. 조각마다
+      따로 반올림하면 합이 몇 원씩 어긋난 채 남는다.
+    - 원본이 전이분, 신규가 잔여다(주문상세 분할과 반대). 부분 성공 계약이 `succeeded: [id]`
+      로 **운영자가 체크한 행 ID** 를 돌려주기 때문이다.
+    - 분할은 상품별 **저장점 맨 앞**에서 일어난다. 밖에서 나누면 "갈라졌는데 전이는 실패한"
+      행이 남아, 운영자가 아무것도 안 했는데 표가 두 줄이 된다.
+    - 교환의 후속 주문옵션은 `quantity = exchange_quantity` 1:1 산출물이라 그 행은 나눌 수
+      없다 — 두 조각이 같은 것을 가리키면 재발송 수량이 어긋난다.
+    - 상품 단위 반려의 원 주문옵션 복귀가 **그 수량만** 되돌린다. 전량이면 남은 진행분이
+      코스 밖으로 빠져 이후 취소가 가드를 통과하고 같은 상품이 두 번 환불된다.
+    - 환불 헤더는 `processing`·`completed` 로 따라가지 않는다 — 둘 다 환불 실행의 소유라,
+      따라가면 돈이 움직이지 않았는데 신청서가 처리중으로 보인다.
+    - 금액 재계산은 **반려분만큼만** 줄인다. 미판단 행을 빼면 상한과 저장 금액이 갈려
+      운영자가 아무것도 건드리지 않았는데 저장이 422 로 막힌다.
+    - 반려 행은 환불액을 들고 남지 않는다 — 남으면 D19 선점액 집계가 그 돈을 계속 센다.
+    - API 는 `items: [{id, quantity?}]` **한 모양**만 받는다. 스칼라 배열을 함께 받으면 상위
+      스코프 검사가 두 벌이 되어 다른 신청서의 행이 통과하는 결함이 되살아나고, 배포 중 두
+      형태가 섞여도 아무 데도 드러나지 않는다.
+    - 같은 행을 두 줄로 보내면 각 줄이 따로 잔여를 보고 통과한 뒤 합계가 넘는다 — 422 다.
+    - 상품이 갈리면 헤더가 움직이지 않아 기존 상태 알림이 발화하지 않는다. 그 구멍을 부분
+      처리 안내 한 통이 메우며, 발화 단위는 **[일괄 적용] 1회**다. 전건이 같은 결정으로
+      모이면 보내지 않는다 — 헤더 전이 알림과 두 통이 된다.
+
+axes:
+  claim_type:
+    - exchange
+    - return
+    - refund
+  concern:
+    - amount_proration
+    - split_guard
+    - revert_quantity
+    - header_sync
+    - header_amount
+    - api_contract
+    - partial_notification
+    - live_screen
+
+exclusions:
+  - { claim_type: refund, concern: revert_quantity, reason: "환불은 주문옵션을 코스 상태로 옮기지 않고 수량만 선점한다 — 되돌릴 상태가 없다" }
+  - { claim_type: exchange, concern: header_amount, reason: "헤더 금액 재계산은 환불신청서의 축이다(교환 차액은 행 금액이 곧 헤더다)" }
+  - { claim_type: return, concern: header_amount, reason: "같은 사유 — 반품 헤더 금액은 환불신청서로 넘어간다" }
+  - { claim_type: exchange, concern: header_sync, reason: "헤더 동기화 계약은 교환·반품이 이미 같은 형태로 있고 이번 변경은 환불 이식분이다" }
+  - { claim_type: return, concern: header_sync, reason: "같은 사유" }
+  - { claim_type: exchange, concern: revert_quantity, reason: "복귀 수량 인자는 반품·교환이 같은 메서드 모양을 쓰고, 반품 축이 그 계약을 대표한다" }
+  - { claim_type: exchange, concern: partial_notification, reason: "안내는 유형 구분 없이 한 종이고 발화 판정도 유형에 무관하다 — 반품 축이 그 계약을 대표한다" }
+  - { claim_type: refund, concern: partial_notification, reason: "같은 사유" }
+  - { claim_type: exchange, concern: live_screen, reason: "라이브 계측은 3유형을 한 spec 이 순회한다 — 유형마다 별도 축을 두면 같은 실행을 세 번 적는다" }
+  - { claim_type: return, concern: live_screen, reason: "같은 사유" }
+
+effects:
+  - split_preserves_the_exchange_price_difference_sum
+  - split_preserves_the_multi_currency_difference_sum
+  - split_preserves_the_return_subtotal_sum
+  - split_preserves_every_refund_money_column_sum
+  - split_keeps_the_transitioned_share_on_the_original_row
+  - remainder_inherits_the_request_snapshot_and_clears_completion
+  - full_quantity_split_is_a_no_op
+  - quantity_outside_the_row_is_rejected
+  - exchange_row_with_a_redelivery_option_splits_its_successor   # R10 — 발송된 교환 행도 쪼개고 후속 주문옵션을 같은 수량으로
+  - finished_row_is_not_splittable
+  - living_row_is_splittable
+  - item_rejection_reverts_only_its_own_quantity
+  - item_rejection_frees_the_locked_quantity
+  - item_rejection_splits_the_claim_row
+  - full_quantity_transition_keeps_the_single_row
+  - refund_header_follows_items_to_approved
+  - refund_header_never_follows_items_into_execution_states
+  - refund_item_completion_is_refused_outside_execution
+  - rejected_refund_row_keeps_no_money
+  - partial_approval_leaves_the_header_amount_untouched
+  - successive_rejections_do_not_double_shrink_the_header
+  - item_transition_logs_both_labels_and_the_split_quantity
+  # R7 이 겨냥한 유형은 환불이다 — 반품 축만 재면 정작 위험한 쪽이 빈다.
+  - refund_item_transition_logs_both_labels_and_the_split_quantity
+  - option_bulk_rejects_a_scalar_item_array_with_422
+  - option_bulk_rejects_duplicate_item_ids_with_422
+  - option_bulk_transitions_refund_items_in_their_own_scope
+  - option_bulk_rejects_refund_items_of_another_claim_with_422
+  - option_bulk_splits_an_item_by_quantity
+  # 교환은 재발송 주문옵션 가드가 붙은 유형이라 반품·환불로만 잠그면 축이 비어 있다.
+  - option_bulk_splits_an_exchange_item_by_quantity
+  - option_bulk_rejects_exchange_items_of_another_claim_with_422
+  - option_bulk_is_not_available_for_cancel_claims
+  - claim_detail_items_carry_their_own_transition_options
+  - partial_decision_announces_once_per_bulk_apply
+  - uniform_decision_does_not_announce_partial_processing
+  - partial_processing_summary_reaches_the_notification_data
+  - claim_item_quantity_live_measurement
+  - claim_item_transition_matrix_live_measurement
+  - claim_refund_and_attachment_flow_live_measurement
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimItemSplitterTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimItemTransitionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimControllerTest.php
+  # 라이브 계측 spec — 이 기능의 화면 축은 브라우저에서만 드러난다(수량 입력이 비활성·빈 값으로
+  # 서던 결함이 그 예다). 계측 도구이자 회귀 잠금이라 매니페스트가 소유한다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-item-quantity-measure.spec.ts
+  # 전이를 **실행**하는 축(제출 피드백·사후 상태·영속성·컨텍스트 전환·패리티·권한·에지·회귀).
+  # 읽기만 하는 앞 spec 과 달리 신청서를 소모하므로 축마다 자기 픽스처를 쓴다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-item-transition-matrix-measure.spec.ts
+  # 「부분 승인 중에는 [환불하기]가 잠기고 잔여를 마저 승인하면 풀린다」는 화면·서버·상태가
+  # 함께 움직여야 성립한다 — 한 요청의 계약으로는 잡히지 않는다. 첨부 왕복도 같은 자리다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-refund-and-attachment-flow.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

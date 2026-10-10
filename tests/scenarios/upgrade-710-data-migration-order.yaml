@@ -1,0 +1,18 @@
+feature: upgrade_710_data_migration_order
+
+description: |
+  코어 7.1.0 데이터 스텝(`upgrades/data/7.1.0/migrations/`)의 실행 순서 잠금 (7.1.0 출시 점검 CU-14).
+  접두 번호가 겹치는 두 쌍(`01_`·`05_`)이 있어도 `AbstractUpgradeStep` 의 `sort()` 로 순서가 결정적이다.
+  출시 뒤 동결 디렉토리라 파일 이름은 바꾸지 않고, 목록·순서와 순서 의존 쌍을 시험으로 고정한다.
+
+coverage_strategy: full
+
+axes:
+  step_dir: [core_7_1_0]
+
+effects:
+  - data_migrations_run_in_deterministic_sorted_order
+  - order_dependent_pairs_keep_their_sequence
+
+test_files:
+  - tests/Unit/Upgrades/Upgrade710DataMigrationOrderTest.php

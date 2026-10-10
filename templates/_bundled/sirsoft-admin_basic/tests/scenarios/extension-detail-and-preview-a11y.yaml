@@ -1,0 +1,16 @@
+feature: 확장 관리 — 정보 창 라이선스 열기 버튼과 언어팩 미리보기 아이콘 검사 결과
+
+description: |
+  #736 F 영역 실측에서 찾은 두 결함을 잠근다.
+    - 모듈·플러그인·템플릿 정보 창의 라이선스 이름이 문단(`<p>`)이라 키보드로 라이선스 창을 열 수 없었다 — 버튼이어야 한다.
+    - 언어팩 수동 설치 미리보기 서랍만 서버 응답의 `icon`(규격 검사 결과)을 그리지 않았다 — 다른 세 서랍과 같은 블록을 둔다.
+
+axes:
+  surface: [module_detail, plugin_detail, template_detail, language_pack_preview]
+
+effects:
+  - license_trigger_is_button
+  - language_pack_preview_shows_icon_check
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-f736-followups.test.tsx

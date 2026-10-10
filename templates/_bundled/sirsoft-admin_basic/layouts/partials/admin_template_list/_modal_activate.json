@@ -1,219 +1,236 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "템플릿 활성화 확인 모달",
-    "editor_label": "$t:admin.modal_label.admin_template_list.template_activate_modal"
-  },
-  "id": "template_activate_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.templates.modals.activate_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "py-2"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-gray-700 dark:text-gray-300"
-          },
-          "text": "$t:admin.templates.modals.activate_confirm|name={{_global.selectedTemplate.name}}"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "mt-2 text-label-subtle"
-          },
-          "text": "$t:admin.templates.modals.activate_description"
-        }
-      ]
+    "comment": "템플릿 활성 확인 창. 템플릿은 종류마다 하나만 활성이라 **켜는 것이 곧 교체**다 — 그래서 모듈처럼\n  토글로 바로 뒤집지 않고 이 창을 거친다.\n  취소도 그냥 닫지 않고 카드 목록을 다시 마운트한다 — 스위치가 눌린 모양으로 남기 때문이다.\n  **관리자 템플릿을 켠 경우에만 화면을 통째로 다시 읽는다** — 지금 보고 있는 화면 자체가 방금 바뀐\n  템플릿에서 나오므로 새로 받지 않으면 옛 화면이 남는다(사용자 템플릿은 이 화면과 무관하다).\n  필요한 확장이 갖춰지지 않아 409 가 오면 실패로 보지 않고 강제 활성 창으로 넘긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "템플릿 활성화 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_template_list.template_activate_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "template_activate_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.templates.modals.activate_title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isTemplateActivating}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
+            },
+            "children": [
                 {
-                  "handler": "closeModal"
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:admin.templates.modals.activate_confirm|name={{_global.selectedTemplate.name}}"
                 },
                 {
-                  "handler": "remount",
-                  "params": {
-                    "componentId": "template_card_grid"
-                  }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-2 text-label-subtle"
+                    },
+                    "text": "$t:admin.templates.modals.activate_description"
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isTemplateActivating}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isTemplateActivating": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "취소 — 목록을 다시 받는 대신 **카드 목록을 통째로 다시 마운트**한다. 값이 바뀐 것이\n               아니라 눌린 스위치 모양만 되돌리면 되므로 서버에 다시 묻지 않는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "remount",
+                                    "params": {
+                                        "componentId": "template_card_grid"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isTemplateActivating}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/templates/activate",
-                  "params": {
-                    "method": "POST",
-                    "body": {
-                      "template_name": "{{_global.selectedTemplate.identifier}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTemplateActivating": false
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.templates.activate_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "templates"
-                      }
-                    },
-                    {
-                      "handler": "reloadExtensions"
-                    },
-                    {
-                      "handler": "conditions",
-                      "conditions": [
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
                         {
-                          "if": "{{_global.selectedTemplate.type === 'admin'}}",
-                          "then": {
-                            "handler": "refresh",
-                            "params": {
-                              "delayMs": 800
+                            "comment": "활성 실행 — 성공하면 목록을 다시 받고 프론트의 확장 번들도 새로 싣는다\n               (템플릿이 바뀌면 화면을 그리는 컴포넌트가 통째로 갈린다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isTemplateActivating": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/templates/activate",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "template_name": "{{_global.selectedTemplate.identifier}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isTemplateActivating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.templates.activate_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "templates"
+                                            }
+                                        },
+                                        {
+                                            "handler": "reloadExtensions"
+                                        },
+                                        {
+                                            "comment": "템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).\n                     관리자 템플릿은 새 화면을 그리려고 페이지를 새로 고치는데, 창을 띄운 경우에는 새로 고침을\n                     창이 닫힐 때로 미룬다(`reactivateLanguagePacksRefreshAfter`) — 곧바로 고치면 창이 사라진다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactivateLanguagePacksData": "{{(response.data?.pending_language_packs ?? [])}}",
+                                                "reactivateLanguagePacksRefreshAfter": "{{_global.selectedTemplate?.type === 'admin'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "template_reactivate_language_packs_modal",
+                                            "if": "{{(response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
+                                        },
+                                        {
+                                            "handler": "conditions",
+                                            "conditions": [
+                                                {
+                                                    "if": "{{_global.selectedTemplate.type === 'admin' && !((response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage'))}}",
+                                                    "then": {
+                                                        "handler": "refresh",
+                                                        "params": {
+                                                            "delayMs": 800
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": null
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isTemplateActivating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ],
+                                    "errorHandling": {
+                                        "409": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isTemplateActivating": false,
+                                                        "activateWarningData": "{{error.errors}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "template_force_activate_modal"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isTemplateActivating}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isTemplateActivating}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
                             }
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedTemplate": null
-                      }
-                    }
-                  ],
-                  "errorHandling": {
-                    "409": {
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "isTemplateActivating": false,
-                            "activateWarningData": "{{error.errors}}"
-                          }
                         },
                         {
-                          "handler": "closeModal"
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "template_force_activate_modal"
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isTemplateActivating ? '$t:admin.templates.activating' : '$t:admin.templates.actions.activate'}}"
                         }
-                      ]
-                    }
-                  },
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTemplateActivating": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isTemplateActivating}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isTemplateActivating ? '$t:admin.templates.activating' : '$t:admin.templates.actions.activate'}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

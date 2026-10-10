@@ -11,6 +11,19 @@ use Illuminate\Http\Request;
 class UserNotificationCollection extends BaseApiCollection
 {
     /**
+     * 알림함·헤더 알림센터의 읽음·삭제 버튼을 잠글 근거 — 라우트(routes/api.php 사용자 알림)와 같은 권한이다.
+     *
+     * @return array<string, string> 능력 키 → 권한 식별자
+     */
+    protected function abilityMap(): array
+    {
+        return [
+            'can_update' => 'core.user-notifications.update',
+            'can_delete' => 'core.user-notifications.delete',
+        ];
+    }
+
+    /**
      * 컬렉션을 배열로 변환합니다.
      *
      * @param  Request  $request  HTTP 요청
@@ -35,6 +48,8 @@ class UserNotificationCollection extends BaseApiCollection
             // 구분하지 못해, 상한에 걸려 잘린 총 건수가 정확한 값처럼 나가고 마지막 페이지도
             // 계산할 수 없는데 숫자가 채워진다.
             ...$this->paginationMeta(),
+            // 읽음·삭제 권한 — 회수된 회원에게 버튼이 열린 채 403 이 나던 것을 화면이 잠그게 한다
+            'abilities' => $this->resolveCollectionAbilities($request),
         ];
     }
 }

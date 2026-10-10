@@ -39,14 +39,24 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 `DEFAULT_NECESSARY_ALLOWLIST_CATALOG` 는 **신규 설치 시드용 출하 기본값이자 화면 추천 목록**일
 뿐 판정 목록이 아닙니다 — 새 확장이 저장 키를 도입해도 이 플러그인을 고칠 필요가 없습니다.
 
+**확장 소유 키는 그 확장이 제공합니다.** 이 플러그인은 어떤 확장이 설치돼 있는지 모르는 채로
+동작해야 하므로 카탈로그에 특정 확장의 키를 적지 않습니다. 대신 이 플러그인이 필터 훅
+`sirsoft-gdpr.necessary_storage.filter_provided_keys`(`Plugin::PROVIDED_NECESSARY_STORAGE_HOOK`)를
+소유하고, 확장은 `['localStorage'=>[], 'sessionStorage'=>[], 'cookie'=>[]]` 를 받아 자기 키를 덧붙여
+돌려줍니다. `Plugin::providedNecessaryStorage()` 가 판정·인라인 때마다 그 훅을 당겨(pull) 모으고
+형식 규칙(`NECESSARY_STORAGE_KEY_PATTERN`)을 통과한 항목만 받습니다. 설정에 저장하지 않으므로 확장을
+켜고 끄면 다음 요청부터 저절로 반영되고(비활성 확장의 리스너는 부팅 때 등록되지 않는다), 이 플러그인이
+없으면 훅이 발행되지 않을 뿐 제공 확장은 그대로 섭니다 — 이커머스 결제수단 등록과 같은 방식입니다.
+
 그래서 **판정 목록은 하나**입니다. 서버(`CookieConsentMiddleware`)와 클라이언트 셋
 (`storageInterceptor` · `cookieInterceptor` · `functionalCleaner`)이 같은 설정을 같은 매칭 규칙
-(`Support\NecessaryAllowlist` ↔ `resources/js/necessaryAllowlist.ts`)으로 읽습니다. 예전에는
+(`Support\NecessaryAllowlist` ↔ `plugins/_bundled/sirsoft-gdpr/resources/js/necessaryAllowlist.ts`)으로 읽습니다. 예전에는
 쿠키 목록과 저장소 목록이 따로 있었고, 그 둘이 어긋나도 아무 신호가 없었습니다.
 
 **잠금 항목만 설정 밖입니다** — `auth_token` · `XSRF-TOKEN` · 세션 쿠키(런타임 해석) ·
 `gdpr_session` 넷은 없으면 사이트가 서지 못하므로 코드가 정하고, 판정에는 언제나 운영자 목록과
-합집합으로 얹힙니다. 설정에 담으면 저장 요청 한 번으로 지워져 잠금이 아니게 됩니다.
+합집합으로 얹힙니다. 설정에 담으면 저장 요청 한 번으로 지워져 잠금이 아니게 됩니다. 판정은
+**운영자 목록 ∪ 잠금 집합 ∪ 확장 제공 집합**입니다.
 
 그 정의는 진입 파일 `plugin.php`(`Plugin::lockedNecessaryStorage()`)가 소유하고 `Support\NecessaryAllowlist::locked()` 는
 위임만 합니다. `getConfigValues()` 가 신규 설치 흐름에서 이 플러그인의 클래스 경로 등록보다 먼저 호출되기
@@ -72,7 +82,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-gdpr --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-gdpr --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-gdpr --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-gdpr --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-gdpr --force` |
@@ -81,7 +91,8 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-gdpr --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-gdpr --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-gdpr --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -116,14 +127,14 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 4개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 4개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
-| 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 0개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 스케줄 | 1개 | [스케줄](docs/extension-points.md#스케줄) |
+| 알림 정의 | 1개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -143,18 +154,21 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 - [ ] 업그레이드 스텝·데이터 마이그레이션이 설정 파일을 새로 쓰면(`File::put`) 바로 뒤에 `FilePermissionHelper::inheritOwnershipFromParent($path)` — `sudo` 코어 업데이트 안에서 root 로 실행되어 그 파일이 root 소유로 남으면 이후 웹 프로세스의 설정 저장이 영구 실패한다. 번들 확장 `upgrades/**` 전수를 파일시스템에서 파생해 검사하는 패리티 테스트가 누락을 잡는다
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-gdpr` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] `gdpr_user_consent_histories` 는 append-only — UPDATE/DELETE 로 기존 행을 고치지 않는다 (완전삭제 시 익명화 UPDATE 예외는 `GdprUserDeleteListener` 단일 지점에서만 수행)
 - [ ] 새 자동 차단 카테고리(기능/분석/마케팅 외)를 추가하면 배너 UI·`blocked_domains` 스키마·차단 스크립트 3곳 동기화
 - [ ] 잠금 집합(`NecessaryAllowlist::locked()`)이나 출하 카탈로그에 항목을 늘릴 때는 ePrivacy Art.5(3) 면제 항목인지 먼저 검토 — 임의로 늘리면 동의 전 차단 원칙이 무력화된다
+- [ ] **카탈로그·잠금 집합에 특정 확장의 키를 적지 않는다** — 확장 소유 키는 그 확장이 `sirsoft-gdpr.necessary_storage.filter_provided_keys` 필터로 제공한다. 이 플러그인이 확장 이름을 알게 되면 그 확장이 빠지거나 키를 바꿀 때마다 이 플러그인을 고쳐야 하고, 확장이 없어도 그 키가 허용된 채 남는다 (`resources/js/__tests__/necessaryAllowlistCoverage.test.ts` 가 겹침을 잡는다)
 - [ ] **필수 허용목록에 항목이 필요하면 코드가 아니라 관리자 화면에서 추가한다** — 운영자 설정(`necessary_storage_allowlist`)이 판정 목록이다. `plugin.php` 의 `DEFAULT_NECESSARY_ALLOWLIST_CATALOG` 를 고치는 것은 **신규 설치 기본값과 화면 추천 목록**을 바꾸는 일이며, 이미 설치된 사이트에는 반영되지 않는다
-- [ ] 그 카탈로그를 고쳤다면 **동의 안내 문구도 함께** 고친다 — 항목이 어느 카테고리에 속하는지 사용자에게 말하는 자리가 `plugin.php`(설치 시드) · `src/Services/CookieCategoryService.php`(런타임 폴백) · `resources/lang/{ko,en}.json`(관리자 안내) · `editor-spec.json`(편집기 샘플) 넷이다. 한 곳만 고치면 동의 고지가 실제 동작과 어긋난 채 남는다
-- [ ] 판정 규칙(매칭·잠금 집합·스코프 어휘)을 고치면 PHP(`src/Support/NecessaryAllowlist.php`)와 TS(`resources/js/necessaryAllowlist.ts`)를 **함께** 고친다 — 한쪽만 고치면 그 항목이 서버에서만(또는 브라우저에서만) 살아 있고, 그 어긋남은 예외도 로그도 남기지 않는다 (`__tests__/necessaryAllowlistCoverage.test.ts` 가 대조한다)
+- [ ] 그 카탈로그를 고쳤다면 **동의 안내 문구도 함께** 고친다 — 항목이 어느 카테고리에 속하는지 사용자에게 말하는 자리가 `plugin.php`(설치 시드) · `plugins/_bundled/sirsoft-gdpr/src/Services/CookieCategoryService.php`(런타임 폴백) · `resources/lang/{ko,en}.json`(관리자 안내) · `editor-spec.json`(편집기 샘플) 넷이다. 한 곳만 고치면 동의 고지가 실제 동작과 어긋난 채 남는다
+- [ ] 판정 규칙(매칭·잠금 집합·스코프 어휘)을 고치면 PHP(`plugins/_bundled/sirsoft-gdpr/src/Support/NecessaryAllowlist.php`)와 TS(`plugins/_bundled/sirsoft-gdpr/resources/js/necessaryAllowlist.ts`)를 **함께** 고친다 — 한쪽만 고치면 그 항목이 서버에서만(또는 브라우저에서만) 살아 있고, 그 어긋남은 예외도 로그도 남기지 않는다 (`plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/necessaryAllowlistCoverage.test.ts` 가 대조한다)
 - [ ] 설정 키를 새로 노출할 때는 `config/settings/defaults.json` 의 `frontend_schema` 에 `expose: true` 를 **함께** 넣는다 — 빠지면 저장도 화면도 정상인데 브라우저 인라인 페이로드에만 값이 오지 않아 인터셉터가 빈 목록으로 선다
-- [ ] 그 문구를 고쳤으면 기설치본의 **저장된** 안내도 정정하는 업그레이드 스텝을 동반한다 — 카테고리 정의는 설치 시점에 시드되고 이후 갱신되지 않는다 (선례: `upgrades/data/1.0.4/migrations/01_RetagThemeAsStrictlyNecessary.php`)
+- [ ] 그 문구를 고쳤으면 기설치본의 **저장된** 안내도 정정하는 업그레이드 스텝을 동반한다 — 카테고리 정의는 설치 시점에 시드되고 이후 갱신되지 않는다 (선례: `plugins/_bundled/sirsoft-gdpr/upgrades/data/1.0.4/migrations/01_RetagThemeAsStrictlyNecessary.php`)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-gdpr --force`
+- [ ] 연간 통지 대상 조건(`GdprPrivacyNoticeRepository::candidates()`·`dueChannels()`)을 고치면 관리자 화면의 대상 건수·명단이 쓰는 `dueQuery()` 도 **같이** 고친다 — 둘이 갈리면 화면 숫자가 실제 발송 대상과 달라진다. 명단 행은 코어 값 객체 `App\Privacy\DTO\PrivacyRetentionTarget` 로 내며 모양은 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)의 대상 행과 같다
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 동의 관리 플러그인 개인정보 조치 창이 미등재·미주석으로 들어왔다).
 
 ## 6. 금지 패턴
 
@@ -169,8 +183,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | `plugin.php` 의 `getConfigValues()`/`getSettingsSchema()` 등이 `src/` 클래스를 직접 호출(정적 메서드·`new`·상수) | 값은 진입 파일이 소유하고 `src/` 쪽이 위임한다 (`::class` 참조는 무방) | 신규 설치 흐름은 클래스 경로 등록 전에 진입 파일을 읽어 "Class not found" 로 멈춘다. 업그레이드에서는 재현되지 않아 출시 전 검증을 통과한다 (`tests/Unit/EntryFileAutoloadIndependenceTest.php` 가 잠근다) |
 | 세션 쿠키 이름을 `'laravel_session'` 으로 하드코딩 | `config('session.cookie')` 런타임 해석 | `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽고, 그 사실이 어디에도 드러나지 않는다 |
 | 새 확장의 저장 키를 플러그인이 관측·수집해 자동 등재 | 운영자가 화면에서 직접 추가 | 저장 키 관측은 그 자체가 추적이다 — 동의 없이 하는 관측을 이 플러그인이 할 수는 없다 |
-| 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭 | 자동화하면 사소한 문구 수정에도 전 회원이 재동의 화면을 보게 된다 |
+| 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭. 개인정보 이용내역의 연간 통지는 별도 자동 작업 | 정책 재동의와 처리 내역 안내는 서로 다른 작업이며 연간 통지는 정책 버전을 발행하지 않는다 |
 | 저장소 허용목록만 고치고 동의 안내 문구는 그대로 두기 | 목록·문구 4곳·업그레이드 스텝을 한 작업 단위로 | 안내가 "이 항목은 기능 쿠키이고 거부하면 저장되지 않는다" 라고 말하는데 실제로는 항상 저장되면, 고지 자체가 사실과 달라진다 |
+| 처리방침 링크를 다른 확장의 주소 규칙으로 조합(`/page/{slug}` 등) 하거나 화면에서 경로를 이어 붙이기 | 운영자가 적은 `privacy_policy_url` 을 서버가 `Support\PrivacyPolicyUrl` 로 걸러 내보낸 값 그대로 href 로 쓴다 | 선언하지 않은 확장의 주소 규칙에 기대면 그 확장이 없거나 규칙이 바뀔 때 링크가 조용히 404 가 된다. 판정(저장 검증·공개 응답·메일 링크·스냅샷 비교)이 한 곳이 아니면 저장은 막혔는데 출력은 새는 틈이 생긴다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -178,10 +193,10 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 26개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 13개 | `vitest.config.ts` |
-| Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
+| PHPUnit | 46개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| Vitest | 30개 | `vitest.config.ts` |
+| Playwright | 7개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 30개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -199,6 +214,8 @@ cd plugins/_bundled/sirsoft-gdpr && npm run test:e2e -- specs/<대상>.spec.ts
 
 무필터 전체 실행은 금지되어 있습니다 — 변경 범위에 걸리는 대상만 지정해 실행합니다.
 <!-- @generated:test-commands END -->
+
+E2E 의 게스트→로그인 시나리오는 `php artisan playwright:seed-gdpr-guest-login --json --suffix=<꼬리>`(CLI + `G7_PLAYWRIGHT_BYPASS=1`)로 게스트 세션과 회원을 시드합니다. 시드 주체는 지우고 다시 만드는 고정값이라, 이 시드를 쓰는 spec 이 병렬 워커에서 동시에 돌면 서로의 데이터를 지웁니다 — fixture(`tests/Playwright/fixtures/gdpr-guest-login-seed.ts`)는 spec 파일마다 다른 `--suffix` 를 넘깁니다. 이 시드를 쓰는 새 spec 도 그 fixture 를 거칩니다.
 
 ## 8. 문서 목차
 

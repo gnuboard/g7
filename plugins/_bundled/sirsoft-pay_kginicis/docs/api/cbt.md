@@ -21,7 +21,7 @@
 <!-- @generated:start:api.plugins.sirsoft-pay_kginicis.admin.cbt.connectivity.check -->
 - **라우트명**: `api.plugins.sirsoft-pay_kginicis.admin.cbt.connectivity.check`
 - **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtConnectivityCheckController@check`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read|core.plugins.update,false` (OR)
 
 **요청 파라미터**
 
@@ -92,7 +92,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명**
+**설명** 7.1.0 부터 플러그인 설정 화면의 버튼이라 플러그인 설정 수정 권한으로도 쓸 수 있습니다.
 
 일본 CBT(테스트 모드, DEVCBT) 결제를 위한 호스트 연결 상태를 관리자 설정 페이지에서 셀프 진단하는 엔드포인트입니다. 서버의 egress IP(외부 통신에 쓰이는 IP, KG 이니시스 IP 화이트리스트 등록 대상)와 서버 내부 IP 를 조회하고, `devcbt.inicis.com` 에 대한 DNS 해석 및 TCP 443 도달성(3초 timeout)을 점검하며, 결제 콜백 URL 이 HTTPS·공인 호스트인지 등 콜백 진단 정보도 함께 반환합니다. 운영계(`cbt.inicis.com`)는 IP 화이트리스트 제약이 없어 진단 대상에서 제외됩니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.settings.read` 권한이 필요하며, 토큰 누락·만료는 401, 권한 부족은 403, 진단 중 예외 발생 시 500 으로 응답합니다.
 

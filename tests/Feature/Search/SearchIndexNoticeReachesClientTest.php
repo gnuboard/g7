@@ -16,6 +16,8 @@ use Tests\TestCase;
  *
  * `SearchIndexRebuildOptInTest` 는 "재생성을 하느냐" 를 고정하고, 이 테스트는
  * "그 결과를 알려 주느냐" 를 고정합니다.
+ *
+ * @scenario-manifest tests/scenarios/search-index-notice-reaches-client.yaml
  */
 class SearchIndexNoticeReachesClientTest extends TestCase
 {
@@ -25,7 +27,11 @@ class SearchIndexNoticeReachesClientTest extends TestCase
      * `JsonResource::resolve()` 는 `additional()` 을 버립니다. 응답 헬퍼가 그것만
      * 호출하면 `search_index` 가 조용히 사라집니다.
      *
-     * @return void
+     * @scenario payload=with_additional
+     *
+     * @effects search_index_notice_kept_in_response
+     *
+     * @return void 반환값 없음
      */
     public function test_리소스_부가데이터가_응답에_실린다(): void
     {
@@ -46,7 +52,11 @@ class SearchIndexNoticeReachesClientTest extends TestCase
     /**
      * 부가 데이터가 없을 때 응답 형태가 달라지지 않는지 검증합니다.
      *
-     * @return void
+     * @scenario payload=without_additional
+     *
+     * @effects response_shape_unchanged_without_additional
+     *
+     * @return void 반환값 없음
      */
     public function test_부가데이터가_없으면_응답_형태가_그대로다(): void
     {
@@ -66,7 +76,11 @@ class SearchIndexNoticeReachesClientTest extends TestCase
      *
      * 치환자가 남으면 API 소비자(외부 클라이언트 포함)가 `:module` 같은 원문을 그대로 봅니다.
      *
-     * @return void
+     * @scenario payload=update_success_message
+     *
+     * @effects update_success_placeholders_replaced
+     *
+     * @return void 반환값 없음
      */
     public function test_업데이트_성공_메시지의_치환자가_치환된다(): void
     {
@@ -89,7 +103,11 @@ class SearchIndexNoticeReachesClientTest extends TestCase
     /**
      * 모듈 업데이트 컨트롤러가 메시지 파라미터를 실제로 넘기는지 정적으로 고정합니다.
      *
-     * @return void
+     * @scenario payload=controller_source
+     *
+     * @effects update_controllers_pass_message_params
+     *
+     * @return void 반환값 없음
      */
     public function test_모듈_플러그인_컨트롤러가_메시지_파라미터를_넘긴다(): void
     {
@@ -99,10 +117,22 @@ class SearchIndexNoticeReachesClientTest extends TestCase
         ] as $path) {
             $source = file_get_contents($path);
 
+            // 성공 문구 키는 「업데이트할 내용 없음」 분기와 함께 $messageKey 로 고르고(#138), 치환 파라미터는
+            // $messageParams 로 모아 응답에 넘긴다 — 키 선택·파라미터 구성·응답 전달 세 자리를 모두 고정한다.
             $this->assertMatchesRegularExpression(
-                "/update_success',\s*\n?\s*\(new \w+Resource/",
+                "/\\\$messageKey\s*=.*update_success'/",
                 $source,
                 basename($path).': 업데이트 성공 응답 형태가 바뀌었습니다 — 파라미터 전달 여부를 재확인하세요'
+            );
+            $this->assertMatchesRegularExpression(
+                "/\\\$messageParams\s*=\s*\[\s*'(module|plugin)'\s*=>/",
+                $source,
+                basename($path).': 성공 메시지에 확장 이름 파라미터가 전달되지 않습니다'
+            );
+            $this->assertMatchesRegularExpression(
+                "/\\\$messageKey,[^;]*\\\$messageParams\s*\)/s",
+                $source,
+                basename($path).': 성공 메시지 파라미터가 응답에 전달되지 않습니다'
             );
             $this->assertStringContainsString(
                 "'version' =>",
@@ -122,7 +152,7 @@ class PayloadCarrierResource extends JsonResource
      * 리소스를 배열로 변환합니다.
      *
      * @param  Request  $request  요청
-     * @return array<string, mixed>
+     * @return array<string, mixed> 식별자만 담은 본문
      */
     public function toArray($request): array
     {

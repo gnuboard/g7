@@ -1,0 +1,247 @@
+feature: 구매자 클레임 신청내역 — 목록 · 상세 · 수정 (#599 S13)
+
+description: |
+  S11·S12 가 신청서를 **내는** 화면을 놓았고, 이 세션은 낸 뒤에 보고 고치는 화면을 놓는다 —
+  유형 서브탭 목록, 신청서 상세, 그리고 승인 전 수정(edit). 조용히 깨지는 지점은 여섯이다.
+
+  ① **유형마다 서버가 다른 테이블을 읽는다.** 목록은 한 번에 한 유형만 받고(`type`) 그 유형의
+     테이블을 페이지네이션한다. 그래서 서브탭 전환은 같은 목록 안의 이동이 아니라 **목록
+     정체성이 바뀌는 이동**이다 — 앞 유형의 페이지 번호를 물려받으면 3페이지가 없는 유형에서
+     빈 화면이 열리고, 응답은 200 이라 어긋난 사실이 어디에도 남지 않는다. 반대로 페이지 이동과
+     상세 왕복은 같은 목록 안의 이동이므로 서브탭·페이지를 그대로 물려줘야 한다.
+
+  ② **금액 열의 구성이 유형마다 다르다** (§6-1). 교환은 왕복 배송비와 옵션 차액이 총 청구액으로
+     모이고, 반품은 회수 편도 배송비가, 환불·취소는 환불액이 그 자리에 온다. 분기가 어긋나면
+     다른 유형의 줄이 서거나 있어야 할 줄이 빠지는데 둘 다 오류를 남기지 않는다.
+     **반품 행에는 환불액을 싣지 않는다** — 그 금액은 환불신청서가 접수되기(D26 완료 처리)
+     전에는 도메인 어디에도 없고, 화면이 미리보기를 행마다 다시 돌려 추정치를 세우면 목록 한
+     번이 페이지 크기만큼의 계산이 되며 그 수는 실제 환불액과 다를 수 있다. 관리자 목록도 같은
+     근거로 싣지 않는다.
+
+  ③ **목록은 화면이 그 행에서 그리는 것만 실어야 한다.** 이 리소스는 목록·상세 겸용이라 상세용
+     필드(첨부 전량 · 주소/배송비 스냅샷 JSON · 상세 사유 · 반려 사유 · 환불 계좌)까지 행마다
+     실렸다. `per_page` 상한이 50 이고 신청서 하나가 상품 200줄까지 가질 수 있어, 그대로 두면
+     한 페이지를 여는 것만으로 수천 줄이 응답에 실린다. 정적 룰은 `*ListResource`/`toListArray()`
+     만 보는데 이 리소스는 겸용이라 모집단 밖이다 — "0 error" 가 준수 증거가 아니다.
+     상품 행(`items`)은 남는다: 목록 카드가 상품마다 썸네일·옵션·수량·금액을 그린다.
+
+  ④ **상세는 목록보다 많은 관계를 필요로 한다.** 번호 해석(`resolveByNumber`)이 싣는 관계는
+     소유권 판정에 필요한 최소한(상품 행·첨부·주문)이라 그대로 내보내면 상품명·옵션명·썸네일과
+     회수·재발송 배송사명·추적 URL 이 **오류 없이 전부 null** 이 된다. 응답은 200 이고 키도
+     그대로 있어 어긋난 흔적이 어디에도 남지 않는다.
+
+  ⑤ **수정 라우트에는 유형도 주문번호도 없다** (`/mypage/claims/{번호}/edit`). 둘 다 신청서가
+     알려 준다 — 작성 화면의 유형 가드를 그대로 적용하면 수정 진입이 통째로 404 가 되고, 주문
+     데이터소스의 첫 호출은 주문번호를 아직 모르므로 **반드시 404** 다. 그 404 에 오류 화면을
+     세우면 수정 화면이 열리지 않고, 반대로 무조건 삼키면 작성 진입에서 열 수 없는 주문이 빈
+     신청서로 열린다. 그리고 수정 미리보기에 **자기 신청서 번호를 빼놓으면** 자기가 잡아 둔
+     수량에 자기가 막혀 거절되어, 재발송지를 바꿔도 배송비가 다시 계산되지 않는다(D14).
+
+  ⑥ **수정에서 이미 귀속된 첨부를 그 자리에서 지우면 안 된다.** 삭제 엔드포인트는 소유만 확인하고
+     파일까지 지우므로, 저장을 취소하고 나가도 첨부만 영구히 사라진다. 서버의 장수 상한 판정은
+     "삭제 후 남을 장수" 를 함께 보므로 화면이 먼저 지우면 그 판정도 갈린다 — 삭제 목록에 담아
+     저장할 때 `remove_image_ids` 로 한 흐름에 넘긴다.
+
+# axis 의미:
+#   claim_type — 목록 서브탭이자 금액 열·상세 섹션의 분기다. 네 유형이 서로 다른 테이블이라
+#                하나라도 빠지면 그 탭만 조용히 다른 모양이 된다.
+#   screen     — 같은 리소스를 읽는 두 표현(목록/상세)과 그것을 고치는 화면(수정). 목록과 상세는
+#                **실어야 할 것이 다르다**(③④)는 것이 이 축의 요지다.
+#   entry      — 목록에서 들어왔는가 상세에서 들어왔는가. 수정·철회의 진입점이 두 곳이고 두
+#                진입이 같은 확인 절차·같은 저장 경로를 써야 한다.
+#
+# 청구 방식·환불 분기는 이 매니페스트의 축이 아니다 — 신청서를 내는 시점의 축이라
+# `user-claim-exchange-apply.yaml` / `user-claim-refund-return-apply.yaml` 이 덮는다. 이 화면은
+# 접수된 값을 읽고 그중 D13 이 여는 것만 고친다.
+axes:
+  claim_type: [exchange, return, refund, cancel]
+  screen: [list, detail, edit]
+  entry: [list, detail, none]
+
+# 취소 이력은 신청서가 아니라 처리 결과다 — 되돌릴 것도 고칠 것도 없어 수정·철회 진입점이
+# 서지 않는다(`is_editable`/`is_withdrawable` 이 언제나 false). 환불신청서도 D13 이 여는 축
+# (사유·상세 사유·첨부)은 있으나 재발송지가 없어 수정 화면의 교환 전용 절이 성립하지 않는다.
+exclusions:
+  - { claim_type: cancel, screen: edit, reason: "취소 이력은 신청서가 아니라 처리 결과다 — 수정 경로 자체가 없다(서버가 notEditable 로 거절한다)" }
+  - { screen: [list, detail], entry: [list, detail], reason: "진입 축은 수정·철회에만 걸린다 — 목록·상세 자신은 진입점이 아니라 도착지다" }
+  - { screen: edit, entry: none, reason: "수정은 언제나 목록 또는 상세의 [수정] 버튼으로 들어온다 — 주소를 직접 입력한 진입도 그 둘과 같은 화면이다" }
+
+effects:
+  - user_claim_detail_shows_follow_up_refunds   # #747 보완 5
+  # 목록 — 서브탭과 목록 컨텍스트 왕복 (①)
+  - claim_list_type_tabs_follow_the_query
+  - claim_list_tab_switch_does_not_inherit_the_previous_page
+  - claim_list_page_and_detail_round_trip_keeps_the_list_state
+  - claim_list_empty_state_and_pagination
+  # 서브탭 건수 뱃지 (F12) — 서버가 `counts` 를 내고 화면이 그것만 그린다.
+  - claim_list_subtab_badges_render_server_counts
+  - claim_list_subtab_badges_absent_without_counts
+  - claim_list_pagination_survives_a_truncated_total
+  # 목록 — 유형별 금액 열 (②)
+  - claim_list_amount_column_branches_by_type
+  - claim_list_return_row_omits_refund_amount
+  - claim_list_shows_secondary_currency
+  - claim_list_item_secondary_currency_matches_subtotal  # 상품 행 보조 통화는 그 위 소계의 다른 표기다(차액 아님)
+  - claim_list_row_actions_follow_server_flags
+  # 목록 응답의 하위 컬렉션 (③)
+  - claim_list_response_drops_what_the_list_does_not_draw
+  - claim_list_response_keeps_the_item_rows_the_card_draws
+  # 상세 (④)
+  - claim_detail_loads_the_relations_the_screen_draws
+  - claim_detail_items_show_exchange_target
+  - claim_detail_item_status_badge_only_when_different
+  - claim_detail_shipping_card_absent_for_refund
+  - claim_detail_redelivery_shows_the_international_city_and_state # 해외 재발송지 도시·주 (S2-D8)
+  - claim_detail_contrast_axis_shows_both_sides
+  - claim_detail_refund_account_reads_the_claim_row
+  - claim_detail_reject_reason_leads_the_reason_card
+  # 상품 행 송장·선교환·판매자 접수 (#599 상품 행 송장) — 송장은 상품 행마다, 화면은 서버 묶음을 그린다
+  - claim_detail_shipping_groups_by_waybill
+  - claim_detail_item_row_shows_its_waybill
+  - claim_detail_item_reject_reason_on_the_row
+  - claim_detail_advance_exchange_notice_and_overdue
+  - claim_detail_unreturned_items_marked
+  - claim_detail_final_advance_exchange_drops_the_return_request  # 끝난 선교환에 반송 안내·「등록 전」 이 남지 않는다(Chrome 실측 A-5)
+  - claim_detail_admin_requested_notice
+  - claim_list_tracking_column_first_waybill_and_more
+  - claim_list_admin_requested_badge
+  # 상세 — 진행 단계 (관리자 상세와 같은 배열을 같은 자리에서 받는다)
+  - claim_detail_response_carries_progress_steps
+  - claim_detail_progress_stepper_renders_server_steps
+  - claim_progress_steps_single_source_for_admin_and_user
+  - claim_progress_cancel_has_two_stages
+  - claim_progress_steps_carry_icon_and_variant
+  # 결제 결과 복귀 — 신청서 상세가 서면서 원래 자리로 돌아왔다
+  - claim_payment_returns_to_a_screen_that_exists
+  - claim_payment_result_banner_distinguishes_three_outcomes
+  - claim_payment_result_banner_absent_without_the_query
+  # 수정 (⑤⑥)
+  - claim_edit_route_resolves_number_by_position
+  - claim_edit_order_404_is_a_normal_path
+  - claim_edit_seeds_items_from_the_claim
+  - claim_edit_unit_price_secondary_currency_is_its_own   # 단가 줄의 보조통화는 차액이 아니라 단가에서 온다 (S3-D6)
+  - claim_edit_preview_excludes_its_own_lock
+  - claim_edit_charge_delta_notice_only_when_nonzero
+  # 수정 화면의 환불계좌 (§6-3 — 무통장 원결제)
+  - claim_edit_saves_the_refund_account                # 구매자가 고친 계좌가 신청서에 남는다
+  - claim_edit_keeps_the_recorded_refund_account       # 보내지 않으면 기록된 계좌를 지우지 않는다
+  - claim_edit_rejects_a_partly_filled_refund_account  # 일부만 채운 계좌는 422 (송금 대상이 되지 못한다)
+  - claim_edit_locks_items_and_quantity
+  - claim_edit_hides_charge_axes_and_shows_the_recorded_method
+  - claim_edit_replaces_submit_with_save
+  - claim_edit_save_sends_only_editable_fields
+  - claim_edit_attached_image_removal_defers_to_save
+  - claim_edit_does_not_resend_attached_images_as_new  # 귀속된 첨부를 add 로 되보내면 저장 전체가 422 (T3-D1)
+  - claim_edit_restores_saved_refund_priority          # 마일리지 환불액이 있으면 수정 화면이 마일리지 우선으로 열린다 (S1-D13)
+  - claim_edit_blocks_a_claim_that_is_no_longer_editable # 승인 이후 신청서의 /edit 은 폼 대신 안내 후 상세로 (T2-D7)
+  - claim_detail_order_shipping_is_read_only            # 신청서 상세의 배송지 카드는 조회 전용 — 변경 모달이 없는 화면에 [배송지 변경]이 서지 않는다
+  - claim_detail_payment_provider_blocks_follow_the_shared_card # PG 제공 블록(입금 안내·영수증)은 레이아웃 이름이 아니라 결제 정보 카드를 따라간다
+  - claim_edit_rejection_stays_on_screen
+  # 철회 — 진입점이 이 세션에서 붙는다 (확인 절차는 S12 산출)
+  - claim_withdraw_entry_points_exist_on_list_and_detail
+  # 미수납 추가결제 — 승인 시점 결제의 진입점 (2026-09-01 2차 계획 검증 확정)
+  - claim_detail_outstanding_payment_has_an_entry_point
+
+  # 클레임 핸들러의 채널·주소 계약 (프론트 단위 — 셸이 준 앞부분에 번호만 잇는다)
+  - claim_withdraw_modal_target_lifecycle          # 철회 모달의 대상 세우기·지우기
+  - claim_withdraw_handler_channel_contract        # 철회 전송·중복 차단·4xx 화면 / 5xx 토스트
+  - claim_pay_handler_address_and_guards           # 결제 주소 조립 금지·중복 차단·PG 위임
+
+  # 대기 결제행의 수단을 다시 고르는 축 (#599 3차 실측 F-1·F-2 — T1-D6)
+  # 접수 때 확정한 수단이 뒤에 낼 수 없게 되는 경우가 둘 있다: 마일리지 잔액 부족, 운영자가
+  # 그 수단을 카탈로그에서 내림. 고를 자리가 없으면 출구가 신청서 철회뿐이다.
+  - claim_payment_method_choices_follow_the_setting          # 선택지는 전역 설정을 따른다
+  - claim_payment_method_choices_exclude_mileage_for_guests  # 비회원에겐 마일리지를 권하지 않는다
+  - claim_detail_pending_payment_method_can_be_rechosen      # 둘 이상이면 상세에서 다시 고른다
+  - claim_pay_handler_sends_the_chosen_method                # 고른 수단이 서버로 간다
+  - claim_payment_method_choices_carry_their_own_labels      # 카드·마일리지 밖의 수단은 카탈로그 이름으로 보인다 (S1-D14)
+
+  # 접수 시점 주문금액 비교표 — 저장 스냅샷 (#599 후속 P4)
+  - claim_detail_comparison_renders_from_frozen_snapshot
+  - claim_detail_comparison_absent_notice_for_legacy_claims
+  - claim_detail_comparison_mobile_kv_form
+  # 수정 진입의 첫 미리보기 — 2026-09-11 브라우저 실측이 드러낸 결함 두 개(셸의 기준 경로 · 첫 호출)
+  - claim_edit_entry_runs_the_first_preview
+  - claim_edit_shell_sets_api_base_on_the_order_response
+
+  # 서버 API 계약 — 구매자 클레임 엔드포인트가 실제로 고정하는 것 (#599 역매핑)
+  # 화면 effects 와 달리 이쪽은 UserClaimApiTest 가 HTTP 로 직접 재는 서버 면이다.
+  - user_claim_index_returns_type_counts                      # 목록이 네 유형 서브탭 건수를 함께 낸다
+  - user_claim_index_counts_apply_status_to_current_tab_only  # 상태 필터는 현재 탭 뱃지에만 걸린다
+  - claimable_options_lists_types_reasons_and_settings        # 신청 가능 옵션·사유·설정 한 묶음
+  - claim_endpoints_scope_to_the_requesting_member            # 남의 주문·신청서·첨부·결제는 404
+  - claim_preview_returns_the_estimate_and_rejects_ineligible_items # 미리보기 추정액과 422 거절
+  - exchange_request_attaches_images_and_enters_payment_pending     # 교환 접수가 첨부를 붙이고 결제대기로 간다
+  - return_request_with_deduct_from_refund_creates_no_payment       # 환불금 차감 반품은 결제 건을 만들지 않는다
+  - claim_request_rejects_items_outside_the_order_with_422          # 다른 주문의 상품을 담으면 422
+  - refund_request_files_a_direct_refund_for_pre_shipping_items     # 배송 전 상품은 환불신청서(request 분기)
+  - refund_request_of_a_delivered_item_is_422                       # 배송완료 상품의 환불신청은 422
+  - user_claim_index_lists_only_my_claims_by_type_with_pagination   # 목록은 내 건만, 유형별로, 페이지네이션과 함께
+  - claim_detail_carries_payment_block_and_hides_other_members      # 상세의 결제 블록과 타인 차단
+  - claim_update_changes_the_reason_before_approval_only            # 승인 전에만 사유 수정, 이후 422
+  - claim_update_rejects_reasons_hidden_from_users                  # 사용자 비노출 사유는 422
+  - claim_update_validates_attachments_before_mutating_anything     # 첨부 상한 초과는 아무것도 바꾸기 전에 422
+  - claim_withdraw_closes_and_refunds_the_paid_charge               # 철회가 신청서를 닫고 결제분을 환불한다
+  - claim_image_upload_delete_round_trip_with_type_gate             # 첨부 업로드·삭제 왕복과 파일 형식 게이트
+  - attached_claim_image_is_not_deletable_through_the_pending_route # C3 — 붙은 증빙은 미귀속 삭제 경로로 못 지운다
+  - buyer_edit_cannot_remove_an_operator_uploaded_image             # C3 — 수정 화면은 운영자 증빙을 못 지운다
+  - buyer_edit_still_removes_its_own_image                          # C3 비회귀
+  - claim_payment_pay_and_pg_approve_round_trip                     # 마일리지 결제와 PG 승인 콜백
+  - claim_attachment_signed_url_serves_without_session              # 서명 URL 은 세션 없이, 맨 URL 은 열람자 게이트
+  - order_detail_exposes_claim_additional_paid_total                # 주문 상세의 클레임 추가결제 합계
+  - claim_payment_amounts_follow_the_order_currency_snapshot        # 같은 결제행의 표기가 응답 세 자리에서 일치
+  - claim_domain_exception_is_422_infrastructure_is_500             # 도메인 422 · 인프라 500(메시지 미노출)
+  - claim_endpoints_require_authentication                          # 비인증 401
+  - claim_routes_carry_their_user_claims_permission                 # read/request/withdraw/pay 권한 미들웨어
+  - claim_permission_denial_leaves_no_side_effect                   # 403 이 상태·원장을 건드리지 않는다
+  - user_claim_index_status_filter_gated_by_type_vocabulary         # 상태 어휘는 유형 종속(밖이면 422)
+  - user_claim_index_end_date_covers_the_whole_day                  # to 축이 하루 전체를 덮고 해석 불가 값은 422
+  - missing_claim_payment_is_404_with_its_own_message               # 결제 부재는 신청서 부재와 다른 문구
+  - user_estimate_refund_is_422_for_claim_course_items              # 코스에 잠긴 상품의 회원 취소 미리보기 422
+  - user_claim_pagination_meta_contract                             # pagination 7키 계약
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-claim-linked-refunds.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimLinkedClaimsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentMethodChoicesTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimProgressStepsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimEditHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimListDetailContract.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimListRender.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimDetailRender.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimEditRender.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/claimPaymentResultBanner.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyExchange.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-list.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimDetailCalculationComparisonTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderReturnServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/CalculationSnapshotPresenterTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/guest-claim.spec.ts
+  # 수정 진입의 첫 미리보기는 작성·수정 공용 핸들러(initClaimApply 의 수정 분기)가 낸다 —
+  # 그 축의 유일한 근거가 이 파일에 있으므로 여기서도 소유한다(2026-09-11 브라우저 실측).
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
+
+notes: |
+  **§9-1 의 매니페스트 수가 10 → 11 이 된다.** §7 S15 DoD 가 그 숫자를 인용하므로 함께 정정한다.
+  이 화면들은 앞의 두 작성 매니페스트가 덮지 않는 축(목록 왕복 · 목록 응답의 하위 컬렉션 ·
+  상세 관계 · 수정 모드)을 갖는다.
+
+  **E2E 는 S15 소유다.** §9-3 이 `user-claim-list(철회+수정 edit 포함)` spec 을 S15 에 배정했다.
+  이 세션은 렌더 테스트(3종)와 핸들러 테스트로 축을 덮고, 브라우저 실측(§8-1 S13 — T1·T3·T4·T6)
+  으로 관통을 확인한다. spec 골격은 S15 가 이 매니페스트의 축을 그대로 옮겨 세운다.
+
+  **비회원(guest)은 이 매니페스트의 축이 아니다.** 비회원 셸 2종과 guest 라우트는 S14 소유이며,
+  같은 partial 을 재사용하고 셸 계약값(isGuest · claimWithdrawApiBase · claimEditApiBase ·
+  데이터소스 endpoint)만 바꾼다. 수정 주소 해석이 비회원 경로(`{shopBase}/guest/claims/{번호}/edit`)
+  에서도 같은 위치로 읽히는지는 이 세션의 핸들러 테스트가 이미 고정했다.
+
+  **`pay_on_approval` 로 접수된 신청서의 결제 진입점** — 2026-09-01 2차 계획 검증 에서
+  "S13 에서 지금 만든다" 로 확정됐다. 상세의 추가결제 블록에 결제 버튼이 서고
+  `sirsoft-ecommerce.payClaimOutstanding` 이 `POST {payApiBase}/{결제번호}/pay` 를 부른다
+  (그전까지 그 엔드포인트의 프로덕션 소비처는 0 건이었다). 결제 수단은 보내지 않는다 —
+  서버가 결제 대기 건을 만들 때 이미 상점의 허용 수단으로 확정해 두었고, 여기서 다시 고르게
+  하면 주문 스코프인 `claimable-options` 를 상세도 읽어야 한다. **수단 변경은 별개 축으로
+  남는다.** 비회원 진입점은 S14 소유다 — 같은 partial 을 쓰고 셸이 `claimPayApiBase` 에
+  주문 스코프가 붙은 주소를 세운다.

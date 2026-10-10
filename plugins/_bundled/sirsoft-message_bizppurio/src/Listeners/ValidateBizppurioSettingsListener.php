@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Lang;
  *
  * 코어 UpdatePluginSettingsRequest 의 정적 스키마는 `required`/타입 규칙만 표현할 수 있어
  * "검수 모드가 꺼진(운영) 상태일 때만 발송 자격증명 필수" 같은 조건부 검증을 담을 수 없다. 본
- * listener 가 `core.plugin_settings.update_rules` filter 로 운영 진입 시 발송에 필요한
+ * listener 가 `core.plugin_settings.update_validation_rules` filter 로 운영 진입 시 발송에 필요한
  * 자격증명에 required 규칙을 동적 부여한다.
  *
  * 필수 대상은 "운영 환경에서 최소 문자 발송이 성립하는 조건"과 일치시킨다:
@@ -37,6 +37,16 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
     private const LIVE_REQUIRED_FIELDS = ['bizppurio_id', 'password', 'sender_number'];
 
     /**
+     * 검증 오류 문구에 언어별 항목 이름을 달 설정 필드(설정 스키마 전 항목).
+     *
+     * 이름은 `messages.settings.{field}_attribute` 번역에서 읽는다 — ko/en 은 플러그인 lang,
+     * 그 밖의 언어(ja 등)는 언어팩이 채운다.
+     *
+     * @var array<int, string>
+     */
+    private const SETTINGS_FIELDS = ['is_test_mode', 'bizppurio_id', 'password', 'api_key', 'sender_number', 'sender_key'];
+
+    /**
      * 구독 훅 메타데이터.
      *
      * @return array<string, array<string, mixed>>
@@ -44,7 +54,7 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'core.plugin_settings.update_rules' => [
+            'core.plugin_settings.update_validation_rules' => [
                 'method' => 'addLiveModeRules',
                 'priority' => 10,
                 'type' => 'filter',
@@ -58,6 +68,7 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
      * 이 메서드는 미사용. HookListenerInterface 추상 메서드 충족 목적으로만 정의한다.
      *
      * @param  mixed  ...$args  사용 안 함
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -77,8 +88,15 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
             return $rules;
         }
 
+        // 저장 검증이 확정된 이 시점(HTTP 요청 처리 중)에 현재 로케일로 항목 이름을 등록한다.
+        // 운영 모드 여부와 상관없이 모든 설정 항목에 단다 — 스키마 label 은 ko/en 만 있어, 등록하지 않으면
+        // ja 화면의 형식 오류(검수 모드 값 등)가 기본 언어(ko) 항목 이름으로 나간다.
+        // 요청 처리 시점에는 플러그인 lang 네임스페이스와 언어팩이 모두 준비돼 있어 폴백 없이 정확한
+        // 로케일 이름이 잡힌다.
+        $this->registerSettingsAttributeLabels();
+
         // 검수 모드(is_test_mode)가 명시적으로 false(운영) 일 때만 자격증명을 강제한다.
-        // 본 필터 훅(core.plugin_settings.update_rules)은 코어 UpdatePluginSettingsRequest 가
+        // 본 필터 훅(core.plugin_settings.update_validation_rules)은 코어 UpdatePluginSettingsRequest 가
         // "현재 요청의 is_test_mode 에 따른 조건부 검증 규칙"을 만들도록 발행하는 확장점이므로,
         // 현재 입력 값 참조가 본질적으로 필요하다 (FormRequest 우회가 아님 — 코어 검증기 자체의 입력).
         $isTestMode = filter_var(
@@ -91,11 +109,6 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
         if ($isTestMode !== false) {
             return $rules;
         }
-
-        // 운영 모드 검증이 확정된 이 시점(HTTP 요청 처리 중)에 현재 로케일로 항목 라벨을 등록한다.
-        // 요청 처리 시점에는 플러그인 lang 네임스페이스가 모두 준비돼 있어 폴백 없이 정확한
-        // 로케일 라벨이 잡힌다.
-        $this->registerLiveCredentialAttributeLabels();
 
         foreach (self::LIVE_REQUIRED_FIELDS as $field) {
             $fieldRules = (array) ($rules[$field] ?? []);
@@ -114,13 +127,16 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
     }
 
     /**
-     * 발송 자격증명 필드의 검증 에러 메시지 항목 라벨을 현재 요청 로케일로 등록한다.
+     * 설정 필드의 검증 에러 메시지 항목 이름을 현재 요청 로케일로 등록한다.
      *
-     * 코어 UpdatePluginSettingsRequest 의 검증 에러 메시지에서 항목 이름이 영문 키(`bizppurio id`)로
-     * 노출되지 않도록, 전역 validation.attributes 에 표시 이름을 런타임 병합한다. 코어 검증기를
+     * 코어 UpdatePluginSettingsRequest 의 검증 에러 메시지에서 항목 이름이 영문 키(`bizppurio id`)나
+     * 다른 언어(ja 화면의 한국어 「검수 모드」)로 노출되지 않도록, 전역 validation.attributes 에 표시
+     * 이름을 런타임 병합한다. 코어 검증기는 이 번역선을 스키마 label 보다 먼저 쓴다. 코어 검증기를
      * 수정하지 않고 Laravel 의 attribute 해석 메커니즘만 활용한다.
+     *
+     * @return void 반환값 없음
      */
-    private function registerLiveCredentialAttributeLabels(): void
+    private function registerSettingsAttributeLabels(): void
     {
         $locale = app()->getLocale();
 
@@ -129,10 +145,17 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
         // 따라서 addLines 전에 validation 그룹을 먼저 로드시켜 캐시를 정상으로 채운 뒤 attributes 만 보탠다.
         Lang::get('validation.required', [], $locale);
 
-        Lang::addLines([
-            'validation.attributes.bizppurio_id' => __(self::IDENTIFIER.'::messages.settings.bizppurio_id_attribute', [], $locale),
-            'validation.attributes.password' => __(self::IDENTIFIER.'::messages.settings.password_attribute', [], $locale),
-            'validation.attributes.sender_number' => __(self::IDENTIFIER.'::messages.settings.sender_number_attribute', [], $locale),
-        ], $locale);
+        $lines = [];
+        foreach (self::SETTINGS_FIELDS as $field) {
+            $key = self::IDENTIFIER."::messages.settings.{$field}_attribute";
+            // 번역이 없는 언어에서는 키 문자열이 돌아온다 — 그때는 등록하지 않고 스키마 label 폴백에 맡긴다.
+            if (Lang::has($key, $locale)) {
+                $lines["validation.attributes.{$field}"] = __($key, [], $locale);
+            }
+        }
+
+        if ($lines !== []) {
+            Lang::addLines($lines, $locale);
+        }
     }
 }

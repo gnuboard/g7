@@ -1,0 +1,80 @@
+<!-- 무통장 입금이 들어왔음을 관리자가 확인해 기록하는 창.
+  **입금 기록과 주문 결제완료 처리가 갈라져 있다** — 아래 체크를 켜야 주문 상태가 결제완료로
+  넘어가고 그에 딸린 마일리지·재고·알림이 함께 움직인다. 켜지 않으면 입금 사실만 남는다. 금액이
+  모자라 부분 입금만 기록해야 하는 경우가 있어 둘을 나눈 것이다.
+  입금액의 기본값은 결제예정금액이고 위 요약이 그 값을 함께 보여 준다 — 관리자가 대조할 근거다.
+  실제 검사는 서버가 하고, 그 오류를 `_local.depositConfirmErrors` 로 받아 입력칸 아래에 보인다.
+  바깥 클릭과 ESC 로 닫히지 않게 막아 두었다 — 금액을 다루는 창이라 실수로 사라지면 안 된다.
+  누르는 순간의 처리는 전부 모듈 핸들러 몫이다(이 창에는 API 호출이 없다). -->
+<partial description="Order Detail - Confirm Bank Deposit Modal (무통장 입금확인)">
+  <modal data-type="composite" data-ref="modal_confirm_deposit" title="$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.title" size="md" :closeOnOverlayClick="false" :closeOnEscape="false">
+    <div class="space-y-4">
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.description</p>
+      <!-- 결제예정금액 요약 (참고용) -->
+      <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.due_amount</span>
+        <!-- 결제 통화 기준 실청구액 — 입금액 입력·서버 검증과 같은 SSoT. base 금액(total_due_amount_formatted)을 쓰면 base≠결제 통화 주문에서 운영자가 보는 금액과 저장 가능한 금액이 어긋난다. -->
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{order.data?.total_due_charge_amount_formatted ?? order.data?.total_due_amount_formatted ?? ''}}</span>
+      </div>
+      <!-- 입금자명 (선택) -->
+      <div>
+        <label class="form-label-block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name</label>
+        <input type="text" name="depositor_name" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name_placeholder" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400" value="{{_local.depositorName ?? ''}}">
+          <on type="input">
+            <!-- 입금자명 — 선택 항목이다(통장 표기가 주문자와 달라 남겨 두려는 자리). 비어도 실행 버튼이 잠기지 않는다. -->
+            <set-state target="local" depositorName="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <!-- 입금액 (기본값 = 결제예정금액, 정확 일치 검증) -->
+      <div>
+        <label class="form-label-block">
+          <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount</span>
+          <span class="text-required">*</span>
+        </label>
+        <input type="number" name="amount" :min="0" class="{{_local.depositConfirmErrors?.amount ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400'}}" value="{{_local.depositAmount ?? 0}}">
+          <on type="input">
+            <!-- 입금액 — 여기서는 값만 담고 검사하지 않는다. 금액 일치 여부는 서버가 판정하고, 그 결과가 위 오류 표시로 돌아온다(화면에서 미리 막으면 부분 입금 기록 경로가 닫힌다). -->
+            <set-state target="local" depositAmount="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.depositConfirmErrors?.amount}}" class="form-error-xs mt-1 block">{{_local.depositConfirmErrors?.amount?.[0] ?? ''}}</span>
+        <span data-if="{{!_local.depositConfirmErrors?.amount}}" class="text-hint mt-1 block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount_hint</span>
+      </div>
+      <!-- 원 주문서 결제완료 처리 여부 — 체크 시 주문 상태를 결제완료로 전이(마일리지/재고/알림). 미체크 시 입금만 기록.
+        결제 전(주문대기·결제대기) 주문에만 고를 수 있다. 운영자가 상태를 먼저 올려 둔 주문은 서버가 체크와 무관하게
+        입금과 결제금액만 기록하고 상태를 두므로, 체크 대신 그 사실을 알린다(실측 2026-10-03). -->
+      <div data-if="{{order.data?.is_past_payment === true}}" data-testid="confirm-deposit-past-payment-hint" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-hint">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.past_payment_hint|status={{order.data?.order_status_label ?? ''}}</div>
+      <div data-if="{{order.data?.is_past_payment !== true}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <label class="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" name="mark_order_complete" class="mt-0.5" checked="{{_local.markOrderComplete ?? false}}">
+            <on type="change">
+              <!-- 주문까지 결제완료로 넘길지 — 이 창에서 가장 무거운 한 칸이다. 켜면 마일리지 적립·재고 차감·고객 알림이 함께 일어난다. 체크박스 값은 `checked` 로 읽는다(`value` 가 아니다). -->
+              <set-state target="local" markOrderComplete="{{$event.target.checked}}"/>
+            </on>
+          </input>
+          <div>
+            <span class="text-primary text-sm font-medium block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete</span>
+            <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete_hint</span>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit || order?.data?.abilities?.can_update !== true}}">
+        <on type="click">
+          <!-- 입금확인 실행 — 화면 값 넷을 그대로 핸들러에 넘긴다. 잠금·오류 표시·창 닫기·목록 갱신이 모두 그 핸들러 안에서 일어나므로 여기에는 성공·실패 갈래가 없다. -->
+          <action handler="sirsoft-ecommerce.confirmDeposit" orderId="{{route.orderNumber}}" amount="{{_local.depositAmount}}" depositorName="{{_local.depositorName ?? ''}}" markOrderComplete="{{_local.markOrderComplete ?? false}}"/>
+        </on>
+        <icon data-if="{{_local.isConfirmingDeposit}}" name="spinner" class="animate-spin" size="sm"/>
+        <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

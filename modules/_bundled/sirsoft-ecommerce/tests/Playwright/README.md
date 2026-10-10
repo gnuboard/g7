@@ -30,6 +30,7 @@ E2E spec 이 "특정 유저 + 특정 역할 + 특정 도메인 상황" 에서 �
 | 코어 권한 (`core.*`), 역할, 유저, Sanctum 토큰 | 코어 `app/Console/Commands/PlaywrightIssueToken.php` |
 | 모듈 권한 (`sirsoft-ecommerce.*`) | 코어 커맨드의 `--permissions=` 임의 식별자 (Permission::firstOrCreate 자동 생성) |
 | 모듈 도메인 데이터 (상품/카테고리/주문/배송지) | 본 모듈 `src/Console/Commands/PlaywrightSeedEcommerce.php` |
+| 사이트 하루 경계 결제완료 주문 (대시보드 배지 ↔ 목록 일치) | 본 모듈 `src/Console/Commands/PlaywrightSeedSiteDayOrders.php` — `playwright:seed-site-day-orders [--teardown] --json` (주문 시각을 과거로 만들 화면·API 가 없어 시드로 고정, 집계 행도 다시 굽는다) |
 | 외부 의존 데이터 (토스 결제창 응답 등) | spec 안에서 `page.route()` mock |
 
 **핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드 커맨드를 코어에 두면 코어 ↔ 모듈 의존이 뒤집힘.

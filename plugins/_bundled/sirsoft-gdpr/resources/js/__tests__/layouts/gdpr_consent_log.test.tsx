@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 import layout from '../../../layouts/admin/gdpr_consent_log.json';
 import type { AnyNode } from './helpers';
 import { findById } from './helpers';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용 + debounce', () => {
     const root = layout as unknown as AnyNode;
@@ -32,7 +33,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
      * 체크박스 Input 노드의 actions 배열을 안전하게 추출.
      */
     function actionsOf(node: AnyNode | null): ActionDef[] {
-        return ((node?.actions ?? []) as unknown) as ActionDef[];
+        return (asArray(node?.actions) as unknown) as ActionDef[];
     }
 
     describe('named_actions.searchConsentLogs (SSoT)', () => {
@@ -61,8 +62,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
          *
          * sequence 패턴 (#27 옵션 A 최종 형태):
          *   - actions[0]: handler=sequence, type=change
-         *   - actions[0].params.actions[0]: setState (filter.{key} 갱신)
-         *   - actions[0].params.actions[1]: actionRef=searchConsentLogs
+         *   - callbacksOf(actions[0], 'actions')[0]: setState (filter.{key} 갱신)
+         *   - callbacksOf(actions[0], 'actions')[1]: actionRef=searchConsentLogs
          *
          * 왜 sequence 인가:
          *   actions 배열을 그냥 [setState, navigate] 로 두면 두 액션이 *같은 dataContext closure* 를
@@ -83,7 +84,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(outer.handler, `${debugLabel}: outer handler=sequence`).toBe('sequence');
             expect(outer.type, `${debugLabel}: outer type=change`).toBe('change');
 
-            const innerActions = ((outer.params as { actions?: ActionDef[] } | undefined)?.actions ?? []) as ActionDef[];
+            // 제어 핸들러의 하위 액션은 `params.actions` 에서 top-level 로 올라간다 — 양쪽을 본다.
+            const innerActions = callbacksOf(outer, 'actions') as ActionDef[];
             expect(innerActions.length, `${debugLabel}: sequence.actions 가 2개`).toBe(2);
 
             // 첫 번째 inner: setState
@@ -138,14 +140,14 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(layoutJson).toContain('sirsoft-gdpr.admin.consent_log.action.rejected');
         });
 
-        it('source 필터의 체크박스 6개 모두 옵션 C 패턴', () => {
+        it('source 필터의 체크박스 7개 모두 옵션 C 패턴', () => {
             const checkboxes = findCheckboxesIn('source_filter');
-            // 허용 어휘의 SSoT 는 ConsentSource enum 5종 — 화면 필터가 그 부분집합이면
-            // 일부 이력이 어떤 필터로도 도달 불가해진다 (#492).
+            // 허용 어휘의 SSoT 는 ConsentSource enum 6종 — 화면 필터가 그 부분집합이면
+            // 일부 이력이 어떤 필터로도 도달 불가해진다 (#492, 회원탈퇴 철회 `withdraw` 는 1.0.4).
             expect(
                 checkboxes.length,
-                '체크박스 6개 (전체 / banner / preference_center / register / mypage / mypage_renew_all)'
-            ).toBe(6);
+                '체크박스 7개 (전체 / banner / preference_center / register / mypage / mypage_renew_all / withdraw)'
+            ).toBe(7);
             checkboxes.forEach((cb, idx) => expectSequencePattern(cb, `source[${idx}]`));
         });
     });
@@ -275,7 +277,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
         });
 
         it('동의/거부 배지가 light/dark 색 쌍을 갖는다 (다크모드 회귀 가드)', () => {
-            // 동의 = green 불투명 (plugin_settings.json 활성 배지와 동일 패턴 — /40 alpha 는 너무 밝아 사용 금지)
+            // 동의 = green 불투명 (plugin_settings.g7.html 활성 배지와 동일 패턴 — /40 alpha 는 너무 밝아 사용 금지)
             // 동의 배지 클래스 자리는 "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" 형태로 등장
             expect(layoutJson).toContain('bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300');
             expect(layoutJson).not.toContain('dark:bg-green-900/40');

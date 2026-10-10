@@ -1,0 +1,19 @@
+feature: 비즈뿌리오 환경설정 화면 — 의미 클래스 위치(#408 치환 밀림 교정)
+
+description: |
+  설정 화면을 KG이니시스 본인인증 화면처럼 고칠 때 그 화면에 남아 있던 의미 클래스 치환 밀림(#408)을 함께 옮겨 와,
+  저장 오류 상자의 제목이 옅은 오류 클래스로 목록 줄과 같은 굵기·색이 됐다.
+  원래 매핑대로 섹션 제목 = section-heading-md, 오류 제목 = text-error-strong, 오류 목록 줄 = text-error-soft 를
+  고정한다(7.1.0 전수 실측 #408 클래스 밀림 후속).
+
+axes:
+  plugin: [sirsoft-message_bizppurio]
+  element: [section_title, error_box, misplaced]
+
+effects:
+  - section_titles_use_heading_class
+  - error_box_uses_error_classes
+  - semantic_classes_not_misplaced
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.ts

@@ -1,7 +1,7 @@
 /**
  * E2E: 관리자 환경설정 > 필수 저장 항목 — 허용목록 운영자 편집
  *
- * @scenario admin_gdpr_necessary_storage_allowlist_edit
+ * 조합: 저장소 3종 × 정확 표기 × (운영자 항목 · 잠금 항목) × 설정 채움 × (유효 저장 · 형식 위반 422) — 아래 라인 마커가 선언한다.
  * @effects e2e_allowlist_cards_render_three_scopes, e2e_locked_chips_render_readonly, e2e_allowlist_tag_persists_after_reload, e2e_allowlist_reaches_inline_payload, e2e_allowlist_invalid_item_rejected
  *
  * 배경: 필수 저장 항목 허용목록이 플러그인 코드 상수에서 운영자 설정으로 옮겨졌다. 이 화면이
@@ -20,6 +20,12 @@
  *
  * 종료 시 추가한 항목을 되돌린다 — 사람이 쓰는 브라우저를 공유하므로 원상 복구는 의무다.
  */
+// @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=valid_item
+// @scenario scope=sessionStorage, notation=exact, locked=operator_item, settings_state=populated, request=valid_item
+// @scenario scope=cookie, notation=exact, locked=operator_item, settings_state=populated, request=valid_item
+// @scenario scope=localStorage, notation=exact, locked=locked_item, settings_state=populated, request=valid_item
+// @scenario scope=cookie, notation=exact, locked=locked_item, settings_state=populated, request=valid_item
+// @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=invalid_format
 import { test, expect, authenticatePage } from '../../fixtures/gdpr-auth';
 import type { Page } from '@playwright/test';
 

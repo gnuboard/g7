@@ -1,0 +1,41 @@
+<!-- 게시판 글 목록 — 주소의 슬러그 하나로 모든 게시판이 이 한 화면을 쓴다. 목록의 생김새(일반/갤러리/카드)는 게시판 설정에 달려 있어 여기서 고르지 않고 유형 렌더러 조각에 맡긴다. 검색봇에게도 서버가 직접 그려 준다. -->
+<layout name="board/index" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="board" toggle_setting="$module_settings:sirsoft-board:seo.seo_board" :priority="0.6" changefreq="daily">
+      <extensions>
+        <item type="module" id="sirsoft-board"/>
+      </extensions>
+      <data-sources>
+        <item>posts</item>
+      </data-sources>
+      <vars site_name="$core_settings:general.site_name" board_name="{{posts.data.board.name ?? ''}}" board_description="{{posts.data.board.description ?? ''}}"/>
+      <og type="website" description="{{_seo.board.description ?? posts.data.board.description ?? ''}}"/>
+      <structured-data @type="ItemList"/>
+    </seo>
+  </meta>
+  <!-- 글 목록 — 페이지·검색어·분류·삭제글 보기가 모두 URL 질의에서 오므로 뒤로가기와 링크 공유가 그대로 동작한다. 비공개 게시판이면 401(로그인으로 유도)·403(권한 없음 화면)으로 갈린다. 목록은 화면에 다시 들어올 때마다 새로 받는다. -->
+  <data-source id="posts" label_key="$t:editor.data_source.posts" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
+    <params page="{{query.page ?? 1}}" search="{{query.search ?? ''}}" search_field="{{query.search_field ?? ''}}" category="{{query.category ?? ''}}" sort_by="{{query.sort_by ?? ''}}" sort_order="{{query.sort_order ?? ''}}" filters[0][field]="{{query['filters[0][field]'] ?? ''}}" filters[0][value]="{{query['filters[0][value]'] ?? ''}}" filters[0][operator]="{{query['filters[0][operator]'] ?? ''}}" del="{{query.del ?? ''}}"/>
+    <error-handling>
+      <on-code code="401">
+        <toast type="info" message="$t:board.login_required"/>
+        <action handler="redirectToLoginWithReturn"/>
+      </on-code>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <fail>
+      <set-state target="global" :hasError="true"/>
+    </fail>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <!-- 로딩 스켈레톤 + 오류 페이지 (type 불명 시점에도 표시 필요 → _type_renderer 밖에 배치) -->
+    <include src="partials/board/index/_loading_error.g7.html"/>
+    <container data-type="layout" data-if="{{posts?.data?.board}}" class="py-8">
+      <!-- 유형별 렌더러 (basic/gallery/card + fallback) -->
+      <include src="partials/board/index/_type_renderer.g7.html"/>
+    </container>
+  </slot>
+</layout>

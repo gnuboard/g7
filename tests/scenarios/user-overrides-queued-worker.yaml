@@ -1,0 +1,16 @@
+feature: 큐 워커 환경의 메뉴·역할 운영자 수정 기록(user_overrides)
+
+description: |
+  #138 후속 전수 점검 2번은 "수정 직전 훅 리스너가 큐로 돌아 운영자 수정 기록이 빠진다"로 올라왔으나,
+  database 큐로 재현하니 기록은 빠지지 않았다 — 모델의 updating 이벤트(HasUserOverrides)가 저장 시점에
+  직접 기록하고, 큐 리스너는 차이 0 을 보고 아무것도 덮지 않는다. 결함이 아님을 확인하고, 운영 큐 환경에서도
+  기록이 남는다는 사실을 회귀 가드로 고정한다(테스트 기본 큐가 sync 라 워커 경로는 따로 재야 한다).
+
+axes:
+  entity: [menu, role]
+
+effects:
+  - operator_edit_recorded_under_queue_worker
+
+test_files:
+  - tests/Feature/UserOverrides/UserOverridesQueuedWorkerTest.php

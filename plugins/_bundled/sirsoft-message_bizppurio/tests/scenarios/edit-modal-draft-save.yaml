@@ -1,0 +1,25 @@
+feature: 알림 설정 [편집] 창 하단 「저장」의 알림톡 초안 저장
+
+description: |
+  코어 알림 템플릿 [편집] 창에는 비즈뿌리오 조각(notification_template_form_footer_actions)이 통합 「저장」과
+  「저장 후 검수 신청」을 끼워 넣는다. 「알림 템플릿 관리」 탭 작성 창과 같은 규약으로 동작해야 한다.
+
+  핵심 동작:
+    - 하단 「저장」의 생성(POST)·갱신(PUT) 두 갈래는 `draft: true` 를 실어 카테고리·템플릿명이 빈 알림톡 내용도 초안으로 남긴다.
+    - 「저장 후 검수 신청」 두 갈래는 draft 를 싣지 않아 전체 규칙으로 검증하고, 빠진 필수값을 항목별 목록으로 보여 준다.
+    - 발송 설정만 보내는 delivery 갈래는 템플릿 내용을 싣지 않는다.
+    - GDPR 처럼 같은 편집 창을 쓰는 다른 확장 화면도 같은 조각이라 같게 동작한다.
+
+axes:
+  surface: [core_edit_modal]
+  transition: [draft_save, draft_to_requested]
+
+exclusions: []
+
+effects:
+  - edit_modal_save_keeps_alimtalk_as_draft
+  - edit_modal_request_validates_fully
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/editModalDraftSave.test.ts
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/specs/admin/template-draft-feedback.spec.ts

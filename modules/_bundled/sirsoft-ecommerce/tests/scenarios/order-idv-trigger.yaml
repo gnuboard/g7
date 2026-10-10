@@ -60,6 +60,19 @@ effects:
   - grace_window_skips_enforce                              # within_grace 통과
   - dummy_payment_hooks_removed                             # 더미 3건 제거
   - disabled_policy_keeps_existing_flow                     # 회귀
+  # 선언·동기화 층 — 실경로 훅이 기대는 정책·목적·문구 선언이 코어 헬퍼/매니저와 정합한다
+  - declared_policies_sync_as_hook_scope_for_module_source  # 정책 4종 module 출처 동기화 + scope=hook
+  - checkout_policy_declares_checkout_verification_purpose_for_self  # checkout.before_pay → checkout_verification · self · grace 30
+  - checkout_verification_purpose_registers_email_and_sms_channels   # 매니저 등록 + 허용 채널 email·sms
+  - checkout_verification_purpose_label_resolves_via_module_lang     # label/description 이 모듈 lang 키 → ko/en 해석
+  - checkout_verification_message_declared_as_identity_notification_definition  # 문구가 알림 정의(category=identity)로 적재 (#699)
+  - policy_user_overrides_preserved_on_resync               # 재동기화가 운영자 변경값(enabled·grace)을 덮지 않음
+  # 서비스 enforce 매트릭스 — IdentityPolicyService::enforce 가 applies_to·grace 로 throw/통과를 가른다(실경로와 독립)
+  - checkout_policy_enforces_for_self_member                # self 정책 + 인증 이력 없는 회원 → throw
+  - approve_policy_skips_regular_user                       # admin 정책은 일반 회원을 대상으로 삼지 않음
+  - confirm_deposit_policy_enforces_for_admin               # admin 정책 + 인증 이력 없는 관리자 → throw
+  - cancel_policy_enforces_for_self_and_admin               # both 정책 → 회원·관리자 모두 throw
+  - verified_log_passes_enforce_until_grace_expires         # 4정책 라이프사이클: 미인증 throw → verified 통과 → grace 경과 후 재차단
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Identity/EcommerceIdentityPolicyDeclarationTest.php

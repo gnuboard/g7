@@ -1,0 +1,17 @@
+feature: "[환불하기] 실패 안내 — 서버가 준 실제 사유 (S3-D11)"
+
+description: |
+  PG 거절 시 서버는 일반 문구 `message` 와 함께 사유를 `errors.detail` 에 싣는데 화면은 `message` 만 읽었다(실측: KCP 입금 완료
+  가상계좌 RF20261007-0209323406 · KG 「PG 환불 처리에 실패했습니다. (해당거래 없음)」 재실측).
+
+axes:
+  response:
+    - with_detail
+    - message_only
+
+effects:
+  - refund_execute_failure_shows_server_detail # errors.detail 사유를 토스트로 띄운다
+  - refund_execute_failure_falls_back_to_message # 사유가 없으면 응답 message 를 띄운다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimRefundExecuteFailureReason.test.ts

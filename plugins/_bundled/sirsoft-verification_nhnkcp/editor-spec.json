@@ -27,7 +27,7 @@
         "comment": "내정보 본인확인 카드. 카드는 nhnkcpRecord.data 유무로 인증/미인증을, is_adult_known 으로 성인 여부 판정 가능/불가를 분기한다. is_adult_known=false 는 인증기관 응답에 생년월일이 없던 경우로 「제공되지 않음 / 확인 불가」를 표시한다.",
         "scope": {
           "kind": "route",
-          "match": "*/mypage/profile"
+          "match": "/mypage/profile"
         },
         "items": [
           {

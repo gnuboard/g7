@@ -1,0 +1,23 @@
+<!-- 개요 상단의 실시간 한 줄 — 「지금 N명 · 보고 있는 페이지 상위 3」. 원장을 직접 읽는 실시간 소스
+  (`analytics_realtime`)를 개요 화면이 폴링으로 돌리므로 여기서는 값만 그린다. 페이지 순위는 접속자
+  목록의 마지막 페이지를 세어 만든다(별도 API 없음 — 개요 한 장이 요청을 늘리지 않게). -->
+<partial description="방문자 통계 개요 — 실시간 요약 한 줄">
+  <div data-ref="analytics_realtime_bar" class="flex flex-wrap items-center gap-3 px-4 py-3 mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+    <span data-ref="realtime_dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"/>
+    <span data-ref="realtime_count" class="text-heading">$t:admin.analytics.overview.realtime_now|count={{(analytics_realtime?.data?.count ?? 0) | number}}</span>
+    <span data-ref="realtime_pages" data-if="{{(analytics_realtime?.data?.visitors ?? []).length > 0}}" class="text-label-subtle truncate">
+      {{Object.entries((analytics_realtime?.data?.visitors ?? []).reduce((acc, v) => (v.page ? { ...acc, [v.page]: (acc[v.page] || 0) + 1 } : acc), {})).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([page, n]) => page + ' (' + n + ')').join(' · ')}}
+    </span>
+    <div class="flex-1"/>
+    <button data-ref="realtime_link" type="button" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline">
+      <on type="click">
+        <!-- 실시간 화면으로 — 이 한 줄은 상위 3개만 보이므로 접속자 목록과 페이지 전체는 그 화면에서 본다. 질의는 다른 통계 화면
+             이동과 같은 규칙으로 병합해 넘긴다. -->
+        <navigate path="/admin/analytics/realtime" :mergeQuery="true">
+          <query/>
+        </navigate>
+      </on>
+      $t:admin.analytics.overview.realtime_link
+    </button>
+  </div>
+</partial>

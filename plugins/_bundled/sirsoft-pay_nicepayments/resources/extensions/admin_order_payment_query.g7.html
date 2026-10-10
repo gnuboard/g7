@@ -1,0 +1,219 @@
+<!-- 주문 상세에 나이스페이먼츠 전용 결제 도구를 붙이는 조각 -->
+<extension target-layout="admin_ecommerce_order_detail">
+  <inject target-id="sticky_header_container" position="append_child">
+    <div data-if="{{nicepay_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex items-center gap-2">
+      <icon name="flask" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
+      <span class="text-sm font-semibold text-orange-800 dark:text-orange-300">$t:sirsoft-pay_nicepayments.admin.test_mode_badge</span>
+      <span class="text-sm text-orange-700 dark:text-orange-400">$t:sirsoft-pay_nicepayments.admin.test_mode_order_notice</span>
+    </div>
+  </inject>
+  <inject target-id="tab_content_area" position="prepend_child">
+    <div data-if="{{(nicepay_escrow.data?.escrow_payments ?? []).length > 0}}" class="pay-nicepayments-notice-success">
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500 text-white flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.escrow_badge</span>
+      <span class="text-sm pay-nicepayments-tone-success-strong">$t:sirsoft-pay_nicepayments.admin.escrow_payment_notice</span>
+    </div>
+  </inject>
+  <inject target-id="tab_content_area" position="append_child">
+    <div data-ref="nicepay_escrow_panel" data-if="{{(nicepay_escrow.data?.escrow_payments ?? []).length > 0}}" class="admin-card">
+      <div data-ref="nicepay_escrow_header" class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-4 bg-emerald-500 rounded-full flex-shrink-0"/>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.escrow_delivery_title</h3>
+      </div>
+      <div data-ref="nicepay_escrow_payments_{{eIdx}}" data-each="payment, eIdx in {{nicepay_escrow.data?.escrow_payments?.filter(p => p.transaction_id) ?? []}}" class="space-y-4">
+        <div class="rounded-lg border border-gray-100 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-500 dark:text-gray-400">TID:</span>
+            <span class="font-mono text-xs text-gray-900 dark:text-gray-100">{{payment.transaction_id}}</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company</label>
+              <input type="text" placeholder="$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company_placeholder" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                <on type="change">
+                  <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
+                  <set-state target="local" _escrow_delivery_name="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <div>
+              <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_tracking_number</label>
+              <input type="text" placeholder="$t:sirsoft-pay_nicepayments.admin.escrow_tracking_number_placeholder" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                <on type="change">
+                  <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
+                  <set-state target="local" _escrow_tracking_number="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <div>
+              <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_register_name</label>
+              <input type="text" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                <on type="change">
+                  <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
+                  <set-state target="local" _escrow_register_name="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_buyer_address</label>
+              <input type="text" class="text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                <on type="change">
+                  <!-- bindLocal 은 엔진 소비처가 없는 죽은 키였다 — 이 값들은 아래 에스크로 등록 API 본문으로 그대로 넘어가므로, 바인딩이 없으면 빈 값이 전송된다. -->
+                  <set-state target="local" _escrow_buyer_address="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+          <div data-if="{{_local._escrowError}}" class="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._escrowError}}</div>
+          <div class="flex justify-end">
+            <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._escrowSubmitting || ![_local._escrow_delivery_name, _local._escrow_tracking_number, _local._escrow_register_name, _local._escrow_buyer_address].every((v) => String(v ?? '').trim() !== ''))}}" class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <on type="click">
+                <!-- 에스크로 배송 등록 — 진행 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 네 칸 모두 서버 필수값이라 하나라도 비면 버튼이 잠긴다. 실패하면 서버가 준 검증·PG 문구를 그대로 보인다 -->
+                <sequence>
+                  <set-state target="local" :_escrowSubmitting="true" :_escrowError="null"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/escrow/register-delivery" method="POST">
+                    <success>
+                      <set-state target="local" :_escrowSubmitting="false"/>
+                      <toast type="success" message="$t:sirsoft-pay_nicepayments.admin.escrow_register_success"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :_escrowSubmitting="false" _escrowError="{{Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_nicepayments.admin.escrow_register_error'}}"/>
+                    </fail>
+                    <body tid="{{payment.transaction_id}}" delivery_name="{{_local._escrow_delivery_name}}" tracking_number="{{_local._escrow_tracking_number}}" buyer_address="{{_local._escrow_buyer_address}}" register_name="{{_local._escrow_register_name}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local._escrowSubmitting}}" name="spinner" class="spinner-sm"/>
+              <span>$t:sirsoft-pay_nicepayments.admin.escrow_register_button</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="nicepay_verify_panel" data-if="{{(order.data?.payments?.filter(p => p.transaction_id &amp;&amp; p.pg_provider === 'nicepayments') ?? []).length > 0}}" class="admin-card">
+      <div data-ref="nicepay_verify_header" class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-4 bg-blue-500 rounded-full flex-shrink-0"/>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.order_verify_title</h3>
+        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_nicepayments.admin.order_verify_description</span>
+      </div>
+      <!-- 간편결제 서비스명 — 이커머스 주문 상세의 결제수단 칸은 기본 결제수단(신용카드)만 안다. 이 결제의 원 수단(카카오페이 등)은 거래 조회(nicepay_status)가 주는 원 수단 코드를 번역 키로 풀어 여기서 밝힌다. 종전에는 주입 스크립트가 이커머스 결제수단 칸의 글자를 직접 고쳐 썼다(#639). -->
+      <div data-ref="nicepay_easy_pay_row" data-if="{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(nicepay_status.data?._embedded_pg_provider)}}" class="flex items-center gap-2 mb-4">
+        <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + String(nicepay_status.data?._embedded_pg_provider ?? '').toUpperCase())}}</span>
+      </div>
+      <div data-ref="nicepay_payments_list_{{pIdx}}" data-each="payment, pIdx in {{order.data?.payments?.filter(p => p.transaction_id) ?? []}}" class="space-y-3">
+        <div class="rounded-lg border border-gray-100 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50">
+          <div class="flex items-center flex-wrap gap-3">
+            <div class="flex-1 min-w-0">
+              <span class="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">TID</span>
+              <span class="font-mono text-xs text-gray-900 dark:text-gray-100 break-all block">{{payment.transaction_id}}</span>
+            </div>
+            <button disabled="{{_local._nicepayQuerying &amp;&amp; _local._nicepayActiveTid === payment.transaction_id}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0">
+              <on type="click">
+                <!-- 거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다 -->
+                <sequence>
+                  <set-state target="local" :_nicepayQuerying="true" _nicepayActiveTid="{{payment.transaction_id}}" :_nicepayResult="null" :_nicepayError="null"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/transaction/query" method="POST">
+                    <success>
+                      <set-state target="local" :_nicepayQuerying="false" _nicepayResult="{{response.data}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :_nicepayQuerying="false" _nicepayError="$t:sirsoft-pay_nicepayments.admin.order_verify_error"/>
+                    </fail>
+                    <body tid="{{_local._nicepayActiveTid}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local._nicepayQuerying &amp;&amp; _local._nicepayActiveTid === payment.transaction_id}}" name="spinner" class="text-xs animate-spin"/>
+              <span>$t:sirsoft-pay_nicepayments.admin.order_verify_button</span>
+            </button>
+          </div>
+          <div data-if="{{_local._nicepayActiveTid === payment.transaction_id &amp;&amp; _local._nicepayError}}" class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._nicepayError}}</div>
+          <div data-ref="nicepay_verify_result_{{pIdx}}" data-if="{{(_local._nicepayActiveTid === payment.transaction_id &amp;&amp; _local._nicepayResult) || nicepay_status.data}}" class="mt-3 pt-3">
+            <div class="flex items-center flex-wrap gap-2 mb-3">
+              <span data-if="{{(_local._nicepayResult ?? nicepay_status.data).Status === '0'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-pay_nicepayments.admin.pay_status_approved</span>
+              <span data-if="{{(_local._nicepayResult ?? nicepay_status.data).Status === '1'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-pay_nicepayments.admin.pay_status_cancelled</span>
+              <span data-if="{{(_local._nicepayResult ?? nicepay_status.data).Status !== '0' &amp;&amp; (_local._nicepayResult ?? nicepay_status.data).Status !== '1'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-pay_nicepayments.admin.pay_status_unknown</span>
+              <span data-if="{{(_local._nicepayResult ?? nicepay_status.data).EscrowYN === 'Y' || (_local._nicepayResult ?? nicepay_status.data)._local_is_escrow === true}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                <icon name="shield-halved" class="text-xs"/>
+                <span>$t:sirsoft-pay_nicepayments.admin.escrow_badge</span>
+              </span>
+              <span data-if="{{(_local._nicepayResult ?? nicepay_status.data)?._is_test_mode === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">$t:sirsoft-pay_nicepayments.admin.test_mode_badge</span>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_auth_code</span>
+              <span class="text-gray-900 dark:text-gray-100 font-mono">{{(_local._nicepayResult ?? nicepay_status.data).AuthCode ?? '-'}}</span>
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_auth_date</span>
+              <span class="text-gray-900 dark:text-gray-100 font-mono">{{(_local._nicepayResult ?? nicepay_status.data).AuthDate ?? '-'}}</span>
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_escrow</span>
+              <span class="text-gray-900 dark:text-gray-100">{{((_local._nicepayResult ?? nicepay_status.data).EscrowYN === 'Y' || (_local._nicepayResult ?? nicepay_status.data)._local_is_escrow) ? '$t:sirsoft-pay_nicepayments.admin.escrow_yes' : '$t:sirsoft-pay_nicepayments.admin.escrow_no'}}</span>
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.result_result_code</span>
+              <span class="font-mono text-gray-900 dark:text-gray-100">{{((_local._nicepayResult ?? nicepay_status.data).ResultCode ?? '') + ' ' + ((_local._nicepayResult ?? nicepay_status.data).ResultMsg ?? '')}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="nicepay_vbank_notifications_panel" data-if="{{(order.data?.payments?.filter(p => p.payment_method === 'vbank' &amp;&amp; p.pg_provider === 'nicepayments') ?? []).length > 0}}" class="admin-card mt-4">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-4 bg-emerald-500 rounded-full flex-shrink-0"/>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.vbank_noti_title</h3>
+        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_nicepayments.admin.vbank_noti_description</span>
+        <button disabled="{{_local._vbankNotiLoading === true}}" class="flex items-center ml-auto gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 가상계좌 입금통보 재조회 — PG 에 현재 통보 상태를 다시 물어 화면을 갱신한다 -->
+            <sequence>
+              <set-state target="local" :_vbankNotiLoading="true" :_vbankNotiError="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{order.data?.order_number}}/vbank-notifications" method="GET">
+                <success>
+                  <set-state target="local" :_vbankNotiLoading="false" _vbankNotiData="{{response.data}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_vbankNotiLoading="false" _vbankNotiError="$t:sirsoft-pay_nicepayments.admin.vbank_noti_load_error"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local._vbankNotiLoading === true}}" name="spinner" class="text-xs animate-spin"/>
+          <span>$t:sirsoft-pay_nicepayments.admin.vbank_noti_query_button</span>
+        </button>
+      </div>
+      <p data-if="{{!_local._vbankNotiData &amp;&amp; !_local._vbankNotiLoading &amp;&amp; !_local._vbankNotiError}}" class="text-xs text-gray-500 dark:text-gray-400 italic">$t:sirsoft-pay_nicepayments.admin.vbank_noti_not_loaded</p>
+      <p data-if="{{_local._vbankNotiError}}" class="text-xs text-rose-600 dark:text-rose-400">{{_local._vbankNotiError}}</p>
+      <p data-if="{{_local._vbankNotiData &amp;&amp; (_local._vbankNotiData.notifications ?? []).length === 0}}" class="text-xs text-gray-500 dark:text-gray-400 italic">$t:sirsoft-pay_nicepayments.admin.vbank_noti_empty</p>
+      <div data-if="{{_local._vbankNotiData &amp;&amp; (_local._vbankNotiData.notifications ?? []).length > 0}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs mb-3">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_count</span>
+          <span class="text-gray-900 dark:text-gray-100 font-semibold">{{(_local._vbankNotiData.summary?.count ?? 0) + '회'}}</span>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_first_at</span>
+          <span class="text-gray-900 dark:text-gray-100 font-mono">{{_local._vbankNotiData.summary?.first_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_last_at</span>
+          <span class="text-gray-900 dark:text-gray-100 font-mono">{{_local._vbankNotiData.summary?.last_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_deposited_at</span>
+          <span class="text-emerald-700 dark:text-emerald-400 font-mono">{{_local._vbankNotiData.summary?.deposited_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
+          <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_cancelled_at</span>
+          <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="text-rose-700 dark:text-rose-400 font-mono">{{_local._vbankNotiData.summary?.cancelled_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_depositor</span>
+          <span class="text-gray-900 dark:text-gray-100">{{_local._vbankNotiData.summary?.last_depositor ?? '-'}}</span>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+          <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:sirsoft-pay_nicepayments.admin.vbank_noti_history</p>
+          <div data-each="noti, nIdx in {{_local._vbankNotiData.notifications ?? []}}" class="space-y-1.5 text-xs">
+            <div class="flex items-center gap-2 py-1 border-b border-gray-100 dark:border-gray-800 last:border-0">
+              <span data-if="{{noti.type === 'deposited'}}" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_deposited</span>
+              <span data-if="{{noti.type === 'cancelled'}}" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_cancelled</span>
+              <span data-if="{{noti.type !== 'deposited' &amp;&amp; noti.type !== 'cancelled'}}" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_other</span>
+              <span class="font-mono text-gray-700 dark:text-gray-300">{{noti.received_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
+              <span class="text-gray-500 dark:text-gray-400 font-mono">{{noti.result_code ?? '-'}}</span>
+              <span class="text-gray-700 dark:text-gray-300">{{noti.result_msg ?? ''}}</span>
+              <span data-if="{{noti.depositor}}" class="text-gray-600 dark:text-gray-400 ml-auto">{{noti.depositor + ' / ' + $t('sirsoft-ecommerce.currency.krw_prefix') + (noti.amt ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix')}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </inject>
+  <!-- 이 주문의 나이스페이먼츠 결제 상태 -->
+  <data-source id="nicepay_escrow" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.nicepay_escrow" type="api" endpoint="/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{route.orderNumber}}/escrow-payments" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- 에스크로 배송 등록 상태 — 등록 폼을 띄울지 여기서 정한다 -->
+  <data-source id="nicepay_status" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.nicepay_status" type="api" endpoint="/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{route.orderNumber}}/transaction-status" method="GET" :auto_fetch="true" :auth_required="true"/>
+</extension>

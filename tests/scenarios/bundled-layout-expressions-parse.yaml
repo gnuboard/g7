@@ -1,0 +1,18 @@
+feature: 번들 레이아웃 바인딩 식 해석 가드 (SafeExpressionEvaluator)
+
+description: |
+  쇼핑몰 환경설정 저장 본문 식에 식 평가기가 지원하지 않는 구조분해 매개변수가 들어가자 해석이 실패했고,
+  식 원문 문자열이 그대로 요청 본문이 되어 모든 탭 저장이 아무것도 저장하지 못했다(#703 브라우저 실측).
+  문자열 포함 검사나 new Function 평가로는 이 실패가 보이지 않으므로, 템플릿·모듈·플러그인 번들의
+  layouts·extensions 전체 식을 엔진이 실제로 쓰는 평가기로 해석해 문법 오류 0건을 강제한다.
+
+  축 scope 는 검사 모집단이다. 한 테스트가 번들 전체를 한 번에 훑는다.
+
+axes:
+  scope: [all_bundled_layouts]
+
+effects:
+  - every_bundled_expression_parses
+
+test_files:
+  - resources/js/core/template-engine/__tests__/BundledLayoutExpressionsParse.test.ts

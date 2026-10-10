@@ -1,0 +1,40 @@
+<!-- 쇼핑몰 설정 — 클레임(취소·반품·교환) 탭. 기본정보 탭과 같이 폼 자동 바인딩만 쓰므로
+  저장 액션이 없다. 교환·반품·환불 사유 카탈로그는 하위 탭으로 나눠 한 번에 하나만 보이고,
+  고른 하위 탭은 URL 쿼리 `sub_tab` 에 남는다(새로고침·링크 공유 후에도 같은 하위 탭이 선다 —
+  코어 환경설정의 `tab=identity&sub_tab=…` 과 같은 규약). 세 카탈로그는 한 폼(_local.form.claim)
+  안의 배열이라 하위 탭을 옮겨도 편집 내용은 남고 페이지 [저장] 한 번에 함께 저장된다.
+  주소는 `navigate` 가 아니라 `replace-url` 로 바꾼다 — navigate 는 라우트를 다시 풀어 설정 데이터소스를
+  다시 받고 refetchOnMount+initLocal 로 폼을 서버값으로 덮어, 하위 탭을 옮기는 순간 저장 전 편집이
+  사라진다(2026-09-23 실측: GET 1→2, 편집한 사유명이 원래 값으로 복귀). replace-url 은 query 바인딩을
+  갱신하지 않으므로 화면은 `_local.claimReasonTab` 을 먼저 보고, 진입·새로고침 때만 query.sub_tab 을 읽는다. -->
+<partial description="쇼핑몰 설정 클레임 탭 콘텐츠 (클레임 정책 + 교환/반품/환불 사유 카탈로그 하위 탭)">
+  <div data-ref="tab_content_claim" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'claim'}}">
+    <include src="_claim_policy_section.g7.html"/>
+    <tab-navigation data-type="composite" data-ref="claim_reason_sub_tabs" activeTabId="{{['return', 'refund'].includes(_local.claimReasonTab ?? query.sub_tab) ? (_local.claimReasonTab ?? query.sub_tab) : 'exchange'}}" variant="underline" class="mb-4">
+      <prop name="tabs">
+        <item id="exchange" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.exchange"/>
+        <item id="return" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.return"/>
+        <item id="refund" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.refund"/>
+      </prop>
+      <on type="change" event="onTabChange">
+        <!-- 클레임 설정의 하위 탭을 옮길 때의 정리 — 아래 첫 줄 주석이 이유를 적는다 -->
+        <sequence>
+          <!-- 하위 탭을 옮기면 열어 둔 사유 추가 폼을 정리한다. 페이지 [저장] 가드는 이 플래그를 하위 탭과 무관하게 읽으므로, 남겨 두면 화면에 보이지도 않는 폼을 확정하라는 안내로 저장이 막힌다 — 상위 탭 전환이 같은 이유로 같은 범위(플래그 + 입력 버퍼 + 그 폼의 오류)를 비우는 것과 같다. -->
+          <set-state target="local" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" claimReasonTab="{{$args[0]}}"/>
+          <replace-url :mergeQuery="true">
+            <query tab="claim" sub_tab="{{$args[0]}}"/>
+          </replace-url>
+        </sequence>
+      </on>
+    </tab-navigation>
+    <div data-ref="claim_exchange_reason_panel" data-if="{{!['return', 'refund'].includes(_local.claimReasonTab ?? query.sub_tab)}}">
+      <include src="_exchange_reason_section.g7.html"/>
+    </div>
+    <div data-ref="claim_return_reason_panel" data-if="{{(_local.claimReasonTab ?? query.sub_tab) === 'return'}}">
+      <include src="_return_reason_section.g7.html"/>
+    </div>
+    <div data-ref="claim_refund_reason_panel" data-if="{{(_local.claimReasonTab ?? query.sub_tab) === 'refund'}}">
+      <include src="_refund_reason_section.g7.html"/>
+    </div>
+  </div>
+</partial>

@@ -1,0 +1,95 @@
+feature: SEO 렌더 파이프라인(SeoRenderer) 단위 동작 목록
+
+description: |
+  봇 방문 렌더 `SeoRenderer::render()` 와 공통 파이프라인 `renderFromResolved()` 의 단위 동작 목록이다.
+  URL → 레이아웃 매핑, meta.seo 활성·확장 토글 판정, 데이터 소스 호출과 초기 상태 반영
+  (initLocal·initGlobal·init_actions·computed), vars·_seo 컨텍스트 주입, 메타 해석기 호출,
+  분기별 필터 훅(og·twitter·structured_data·meta), 컴포넌트 HTML 변환, 블레이드 조립을 다룬다.
+  효과 이름은 각 테스트가 지키는 동작 하나에 대응한다(`renderer_` + 동작). 라우트 meta.title 을
+  해석기에 넘기는 동작은 `seo-title-route-fallback.yaml` 이 소유한다.
+
+axes:
+  # 이 파일의 테스트는 모두 봇 방문 진입점 render(Request) 로 들어간다.
+  # 편집기 미리보기가 쓰는 renderFromResolved() 직접 호출은 SeoRendererRenderFromResolvedTest 몫이다.
+  entry: [render_request]
+
+effects:
+  - renderer_render_product_detail_returns_complete_html
+  - renderer_render_returns_null_when_seo_disabled
+  - renderer_render_returns_null_when_module_seo_disabled
+  - renderer_render_with_datasource_failure_renders_with_fallback
+  - renderer_render_returns_null_when_no_layout_for_url
+  - renderer_render_includes_json_ld_when_structured_data_present
+  - renderer_render_includes_og_tags
+  - renderer_render_does_not_inject_core_app_css_path
+  - renderer_render_filters_data_sources_by_seo_config
+  - renderer_render_returns_null_when_layout_load_fails
+  - renderer_seo_config_loaded_and_component_map_set
+  - renderer_seo_config_loaded_and_render_modes_set
+  - renderer_seo_config_loaded_and_self_closing_set
+  - renderer_stylesheets_passed_to_view
+  - renderer_missing_seo_config_no_calls
+  - renderer_template_css_auto_included_in_stylesheets
+  - renderer_empty_seo_config_no_calls
+  - renderer_toggle_setting_module_enabled
+  - renderer_toggle_setting_not_declared_always_renders
+  - renderer_toggle_setting_core_settings
+  - renderer_text_props_passed_to_mapper
+  - renderer_attr_map_passed_to_mapper
+  - renderer_allowed_attrs_passed_to_mapper
+  - renderer_missing_new_config_keys_no_calls
+  - renderer_canonical_url_no_locale_param_for_default_locale
+  - renderer_canonical_url_includes_locale_param_for_non_default
+  - renderer_hreflang_tags_include_all_supported_locales
+  - renderer_hreflang_tags_empty_when_single_locale
+  - renderer_vars_passed_to_meta_resolver
+  - renderer_seo_vars_core_settings_passed_to_html_mapper
+  - renderer_seo_vars_module_settings_passed_to_html_mapper
+  - renderer_no_seo_vars_does_not_call_set_seo_vars
+  - renderer_render_returns_null_when_plugin_seo_disabled
+  - renderer_render_plugin_seo_enabled_with_toggle_setting
+  - renderer_resolve_seo_vars_with_plugin_settings_prefix
+  - renderer_global_resolver_handles_plugin_settings_with_default
+  - renderer_global_resolver_handles_plugin_settings_without_default
+  - renderer_toggle_setting_explicit_module_id_when_module_identifier_null
+  - renderer_toggle_setting_explicit_module_id_disabled_returns_null
+  - renderer_resolve_seo_vars_explicit_module_id
+  - renderer_render_injects_global_settings_into_context
+  - renderer_render_injects_global_modules_into_context
+  - renderer_render_injects_global_plugins_into_context
+  - renderer_render_applies_init_global_string_mapping
+  - renderer_render_applies_init_global_object_mapping
+  - renderer_render_passes_query_params_to_data_source_resolver
+  - renderer_render_resolves_init_actions_set_state_to_local
+  - renderer_render_returns_empty_local_when_no_init_actions
+  - renderer_render_skips_global_target_set_state_for_local
+  - renderer_render_applies_layout_state_block_to_local
+  - renderer_render_prefers_init_local_over_state_block
+  - renderer_render_applies_layout_init_global_block
+  - renderer_render_applies_init_actions_global_set_state_to_global
+  - renderer_render_init_actions_global_overrides_init_global_block
+  - renderer_render_global_set_state_nested_local_is_merged_into_local
+  - renderer_render_ignores_non_set_state_handlers_in_init_actions
+  - renderer_filter_context_hook_no_listener_preserves_behavior
+  - renderer_filter_context_hook_modifies_context_for_meta_resolution
+  - renderer_filter_meta_hook_no_listener_preserves_behavior
+  - renderer_filter_meta_hook_modifies_meta_for_view
+  - renderer_filter_view_data_hook_no_listener_has_empty_extension_slots
+  - renderer_filter_view_data_hook_injects_extra_tags
+  - renderer_filter_context_hook_receives_correct_meta
+  - renderer_computed_string_expression_evaluates_and_passes_to_context
+  - renderer_computed_switch_resolves_matching_case
+  - renderer_computed_switch_falls_back_to_default
+  - renderer_empty_computed_does_not_add_to_context
+  - renderer_computed_sequential_reference
+  - renderer_computed_evaluation_failure_sets_null
+  - renderer_seo_context_injected_for_product_page
+  - renderer_seo_context_injected_for_category_page
+  - renderer_seo_context_injected_for_search_page
+  - renderer_seo_context_handles_null_settings_template
+  - renderer_seo_context_not_injected_without_extensions
+  - renderer_filter_og_data_hook_triggers_rerender_via_metaresolver
+  - renderer_filter_structured_data_hook_triggers_rerender_via_metaresolver
+
+test_files:
+  - tests/Unit/Seo/SeoRendererTest.php

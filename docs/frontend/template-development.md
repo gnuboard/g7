@@ -105,25 +105,32 @@ export const Card = ({ title }) => (
 
 ### Step 3: 기본 레이아웃 정의
 
-`/layouts/*.json`에 기본 레이아웃 정의:
+`/layouts/*.g7.html`(소스 SSoT)에 기본 레이아웃 정의 — 설치 시 서버가 JSON 으로 컴파일해 DB 등록:
 
-- JSON 스키마 준수
+- 마크업 형식은 `.g7.html` 마크업 ([layout-markup.md](layout-markup.md)). 문서 봉투는 `<layout>` 이고, `name` 은 파일 경로에서 오는 레이아웃 식별자다
 - 데이터 바인딩/다국어 활용
+
+```html
+<layout name="admin_dashboard" version="1.0.0">
+  <page-header title="$t:dashboard.title"/>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
   "version": "1.0.0",
-  "layout": {
-    "name": "AdminLayout",
-    "children": [
-      {
-        "name": "PageHeader",
-        "props": {
-          "title": "$t:dashboard.title"
-        }
+  "layout_name": "admin_dashboard",
+  "components": [
+    {
+      "type": "composite",
+      "name": "PageHeader",
+      "props": {
+        "title": "$t:dashboard.title"
       }
-    ]
-  }
+    }
+  ]
 }
 ```
 
@@ -283,6 +290,14 @@ export type HandlerName = keyof typeof handlerMap;
 
 **init_actions (레이아웃 로드 시)**:
 
+```html
+<init>
+  <action handler="initTheme" target="{{query.theme}}"/>
+</init>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -301,10 +316,10 @@ export type HandlerName = keyof typeof handlerMap;
   "id": "my_component",
   "lifecycle": {
     "onMount": [
-      { "type": "click", "handler": "loadData", "target": "{{route.id}}" }
+      { "handler": "loadData", "target": "{{route.id}}" }
     ],
     "onUnmount": [
-      { "type": "click", "handler": "cleanup" }
+      { "handler": "cleanup" }
     ]
   }
 }
@@ -429,7 +444,7 @@ export default defineConfig({
 
 ## 4-1. 운영자가 CSS·JS 를 덧붙이는 자리 (`custom/`)
 
-템플릿 소스(`src/styles/`)를 고치고 빌드하는 방법은 **템플릿 저작자**의 방법입니다. 운영자에게는
+템플릿 소스(`src/styles/`)를 고치고 빌드하는 방법은 **템플릿 작성자**의 방법입니다. 운영자에게는
 부적합합니다 — Node.js 가 필요하고, 그렇게 넣은 파일은 다음 템플릿 업데이트에 사라집니다.
 빌드 산출물(`dist/css/`)을 직접 고치는 것도 다음 빌드에 사라집니다.
 
@@ -519,6 +534,12 @@ templates/{템플릿-식별자}/custom/custom.css
 ### 동작 방식
 
 **1. 레이아웃 JSON 정의** (사용자):
+
+```html
+<card title="{{user.name}}" onClick="navigate:/users/:id"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -653,4 +674,4 @@ cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용�
 - [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
 - [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
 - [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
-- [프론트엔드 가이드 인덱스](./index.md)
+- [프론트엔드 가이드 인덱스](./README.md)

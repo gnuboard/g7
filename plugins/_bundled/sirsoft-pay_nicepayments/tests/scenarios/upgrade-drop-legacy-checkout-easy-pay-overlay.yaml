@@ -1,0 +1,17 @@
+feature: 그려지지 않던 주문서 간편결제 조각의 구 overlay 등록 행 정리 업그레이드 스텝 (1.1.0)
+
+description: |
+  1.0.x 의 주문서 간편결제 버튼 조각은 주입 대상(nicepay_checkout_payment_section)이 주문서에 없어 한 번도 그려지지 않았다.
+  간편결제는 이커머스 결제수단 목록이 그린다. 1.1.0 에서 조각을 걷어냈고, 확장 갱신은 선언이 사라진 대상의 행을 지우지
+  않으므로 이 스텝이 이 플러그인이 주문서에 등록한 overlay 행만 지운다.
+
+axes:
+  scope: [own_rows, rerun, no_rows]
+
+effects:
+  - legacy_checkout_easy_pay_rows_of_this_plugin_only_are_removed  # 자기 플러그인의 주문서 overlay 행만 지운다
+  - legacy_checkout_easy_pay_drop_is_idempotent                    # 두 번 실행해도 같은 결과
+  - legacy_checkout_easy_pay_drop_is_safe_without_rows             # 대상 0건 안전
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Upgrades/DropLegacyCheckoutEasyPayOverlayTest.php

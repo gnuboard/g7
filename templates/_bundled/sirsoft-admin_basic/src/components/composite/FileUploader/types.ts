@@ -73,7 +73,11 @@ export interface FileUploaderProps {
   maxFiles?: number;
   /** 파일당 최대 크기 (MB) */
   maxSize?: number;
-  /** 동시 업로드 수 */
+  /**
+   * 동시 업로드 수 (기본 1 — 고른 순서대로 하나씩 올린다).
+   * 2 이상이면 빨리 올리지만, 서버가 도착 순서로 번호를 매기는 경우 저장 순서가 완료 순서가 된다.
+   * 화면 목록·완료 콜백·저장 목록은 어느 값이든 고른 순서를 지킨다.
+   */
   maxConcurrentUploads?: number;
   /** 허용 확장자 (예: ".jpg,.png,.pdf") */
   accept?: string;
@@ -100,6 +104,12 @@ export interface FileUploaderProps {
   initialFiles?: Attachment[];
   /** 비활성화 여부 (읽기 전용 모드) */
   disabled?: boolean;
+  /**
+   * 업로더 크기. 기본 `md` 는 전체 폭 영역용이고, 표 한 칸처럼 좁은 자리에는
+   * `sm`·`xs` 를 준다 — 드롭존 여백·아이콘·글자가 함께 줄어든다.
+   * 크기를 클래스로 덮어쓰지 말고 이 속성을 쓴다(호출처마다 값이 갈리면 화면이 서로 달라진다).
+   */
+  size?: 'md' | 'sm' | 'xs';
   /** 추가 CSS 클래스 */
   className?: string;
   /**

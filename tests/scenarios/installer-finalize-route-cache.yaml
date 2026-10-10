@@ -1,0 +1,109 @@
+feature: 설치 마무리 라우트 캐시 굽기 + artisan 확장 오토로드 등록 정합성
+
+# 두 축은 한 결함(S0-D1)의 앞뒤다 — "캐시가 비는가"(설치 마무리)와 "캐시가 비었을 때
+# 부팅이 견디는가"(artisan 오토로드). 어느 한쪽만 고치면 증상이 남으므로 한 시나리오로 묶는다.
+# 축 조합은 캐시 상태 × 진입점 × 명령 종류로 결정되며 전조합이 의미를 갖는다.
+coverage_strategy: full
+
+description: |
+  갓 설치한 사이트에서 `php artisan test` 가 스위트와 무관하게 부팅 단계에서 죽던
+  문제의 시나리오 매트릭스.
+
+    Error: Class "Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum" not found
+      at modules/sirsoft-ecommerce/src/routes/api.php:1587
+
+  배경 — 설치 마무리에 라우트 캐시 굽기가 없었다:
+    - 설치 마무리 태스크 목록에 `config_cache`·`static_publish` 는 있는데 `route_cache`
+      만 없었다. 그래서 갓 설치한 사이트는 라우트 캐시가 빈 채로 시작한다.
+    - 설치 중 확장 install·activate 도 `RouteCacheHelper::rebuild()` 를 부르지만, 그
+      헬퍼는 `installer_completed` 가 false 면 `route:clear` 만 하고 재생성을 건너뛴다
+      (불완전한 부팅을 캐시에 박제하지 않으려는 의도된 설계). 확장 설치는 전부
+      `complete_flag` 이전이므로 그 호출들은 전부 clear 로 끝난다.
+    - 완료 플래그 이후에는 재생성 트리거가 확장 라이프사이클에만 묶여 있어 아무도 굽지
+      않는다. 코어 업데이트 경로(CoreUpdateCommand·ExecuteUpgradeStepsCommand)는 config
+      캐시와 나란히 이미 굽고 있었다 — 설치 플로우만 비대칭이었다.
+
+  배경 — artisan 이 등록하지 않고 등록했다고 표시했다:
+    - `artisan` 은 `G7_EXTENSION_AUTOLOAD_REGISTERED` 를 무조건 정의하면서, `test` 명령일
+      때는 확장 오토로드 등록을 건너뛰었다("tests/bootstrap.php 에 위임"). 그 상수는
+      `CoreServiceProvider::registerExtensionAutoload()` 의 스킵 조건이므로, 결과적으로
+      아무도 등록하지 않은 채 부모 프로세스가 부팅한다.
+    - 위임 전제는 자식에만 성립한다 — `artisan test` 는 PHPUnit 을 `new Process(...)` 로
+      별도 자식 프로세스에 띄우므로 `tests/bootstrap.php` 는 자식에서만 돈다. 부모의
+      오토로더 등록은 자식에 전파되지 않으므로 `_bundled` prepend 의도도 깨지지 않는다.
+    - 도입 시점 원본은 `define()` 이 `if (file_exists(...))` 블록 안에 있어 "실제로
+      등록했을 때만 등록했다고 표시" 하는 구조였다. 그 커밋이 블록 밖으로 빼면서
+      "등록하지 않았는데 했다고 표시" 하는 상태가 만들어졌다. `public/index.php` 는
+      지금도 블록 안에 있어 정상이다.
+
+  왜 오래 숨어 있었나:
+    - 라우트 캐시가 이를 가려 왔다. 캐시가 있으면 부모 부팅이 캐시를 로드해 라우트 파일을
+      아예 실행하지 않는다. 확장을 하나라도 설치·삭제·업데이트하면(완료 플래그 이후이므로)
+      그때 구워지고 그 뒤로 유지되므로, 재설치 직후 확장을 건드리지 않은 상태에서만 드러난다.
+    - 웹은 캐시가 없어도 정상 동작한다(매 요청 라우트 파일 스캔 — 느릴 뿐). 브라우저로
+      접속해 보는 것으로는 관측되지 않는다.
+
+  검증 성격 — 두 대상 모두 정적 소스 분석으로 잰다. 설치 태스크 목록은 SSE 워커 안에서만
+  조립되어 호출 없이 배열을 얻을 수 없고 실제 실행은 artisan 자식 프로세스를 띄운다.
+  `artisan` 은 진입점 스크립트라 include 하는 순간 애플리케이션이 부팅된다.
+
+axes:
+  cache_lifecycle_point: [install_finalize, core_update, extension_lifecycle]
+  task_ordering: [before_complete_flag, after_complete_flag]
+  failure_tolerance: [best_effort, fatal]
+  entrypoint: [artisan_test_command, artisan_normal_command, public_index]
+  autoload_registration: [registered, skipped]
+
+exclusions:
+  - { cache_lifecycle_point: core_update, task_ordering: "*", reason: "코어 업데이트는 인스톨러 태스크 목록 밖 — complete_flag 순서 개념이 없다. 이미 config 와 나란히 굽고 있어 본 시나리오의 회귀 대상이 아니다" }
+  - { cache_lifecycle_point: extension_lifecycle, task_ordering: "*", reason: "확장 라이프사이클은 RouteCacheHelper 가 직접 가드한다 — 인스톨러 태스크 순서와 무관" }
+  - { entrypoint: public_index, autoload_registration: skipped, reason: "웹 진입점은 test 명령 분기가 없어 등록을 건너뛰는 경로 자체가 없다" }
+  - { entrypoint: artisan_normal_command, autoload_registration: skipped, reason: "test 이외 명령은 등록을 건너뛰지 않는다" }
+  - { entrypoint: "*", failure_tolerance: "*", reason: "진입점 오토로드 축과 태스크 실패 허용 축은 서로 독립 — 교차 조합에 의미 없음" }
+  - { entrypoint: "*", cache_lifecycle_point: "*", reason: "진입점 부팅 축과 캐시 갱신 지점 축은 서로 독립" }
+  - { entrypoint: "*", task_ordering: "*", reason: "진입점 부팅 축은 인스톨러 태스크 순서와 무관" }
+  - { autoload_registration: "*", failure_tolerance: "*", reason: "오토로드 등록 여부는 태스크 실패 허용과 무관" }
+  - { autoload_registration: "*", cache_lifecycle_point: "*", reason: "오토로드 등록 여부는 캐시 갱신 지점과 무관" }
+  - { autoload_registration: "*", task_ordering: "*", reason: "오토로드 등록 여부는 태스크 순서와 무관" }
+
+effects:
+  # 설치 마무리 — 태스크 존재와 위치
+  - route_cache_task_is_registered_in_finalize
+  - route_cache_task_runs_after_complete_flag
+  - route_cache_task_is_best_effort
+  - route_cache_task_invokes_route_cache_command
+
+  # 재시도 정합성 — DB 를 비우면 라우트 소스(활성 확장)가 달라진다
+  - route_cache_marker_is_invalidated_by_db_cleanup
+
+  # artisan 진입점 — 등록과 표시가 어긋나지 않는다
+  - autoload_registered_flag_is_not_defined_unconditionally
+  - autoload_registered_flag_is_defined_only_inside_registration_block
+  - test_command_detection_is_preserved
+  - extension_autoload_cache_path_is_preserved
+
+  # 부정 효과 (절대 발생 금지)
+  - installer_never_finishes_with_an_empty_route_cache
+  - artisan_never_claims_autoload_registration_it_did_not_perform
+
+test_files:
+  - tests/Unit/Installer/InstallerFinalizeCacheTasksTest.php
+  - tests/Unit/Installer/ArtisanTestCommandExtensionAutoloadTest.php
+
+manual_verification:
+  - description: "갓 설치한 사이트에서 라우트 캐시가 구워져 있는지"
+    steps:
+      - "fresh 환경에서 인스톨러로 설치를 끝까지 완료"
+      - "bootstrap/cache/routes-v*.php 가 생성되어 있는지 확인"
+      - "설치 로그에 '라우트 캐시 생성 완료' 가 남는지 확인"
+  - description: "라우트 캐시가 비어도 artisan test 가 부팅되는지 (S0-D1 재현 경로)"
+    steps:
+      - "php artisan route:clear 로 라우트 캐시를 비운다"
+      - "php artisan test --filter=<임의 테스트> 실행"
+      - "Class ... not found 없이 PHPUnit 이 시작되어 결과를 내는지 확인"
+      - "php artisan route:cache 로 캐시를 되살린다"
+  - description: "확장 테스트가 _bundled 원본을 계속 본다 (prepend 의도 보존)"
+    steps:
+      - "modules/_bundled/<id>/src 의 아무 파일에 일시적 변경을 준다"
+      - "php artisan test --testsuite=Module --filter=<그 파일을 태우는 테스트> 실행"
+      - "활성 사본이 아니라 _bundled 변경이 반영되는지 확인 후 되돌린다"

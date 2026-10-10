@@ -1,0 +1,21 @@
+feature: sirsoft-basic 모바일 머리글 — 아이콘 단추 접근 이름과 드로어 언어 목록 역할
+
+description: |
+  390 폭 첫 화면 머리글의 장바구니·사용자·메뉴 단추와 드로어 닫기 단추가 아이콘만 있어 화면 읽기 프로그램에
+  이름 없는 단추로 읽혔다(7.1.0 O-C1-3, 결정 ⑬). 각 단추는 다국어 키로 된 aria-label 을 갖는다 —
+  장바구니는 담긴 수, 사용자는 로그인 여부(마이페이지/로그인), 메뉴는 열림 여부(aria-expanded)를 함께 알린다.
+  드로어 언어 칩(role="option")을 감싼 목록은 이름 있는 role="listbox" 다.
+
+axes:
+  button: [cart, user, menu, close, drawer_language]
+
+effects:
+  - accessible_name_present
+  - label_translated
+  - label_follows_login_state
+  - cart_count_in_name
+  - menu_toggle_expanded_state
+  - option_owned_by_listbox
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/user-base-mobile-header-a11y.test.ts

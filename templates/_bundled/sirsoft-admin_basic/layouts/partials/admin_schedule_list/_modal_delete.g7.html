@@ -1,0 +1,42 @@
+<!-- 예약 작업 하나를 지우기 전 되묻는 창. 지울 대상은 **이름과 번호를 따로** 담아 온다 — 화면에는
+  이름을, 요청에는 번호를 쓰기 때문이고, 그래서 이 창은 서버를 다시 부르지 않는다.
+  지나간 실행 이력이 함께 사라지는지는 서버가 정한다. 창은 그 부분을 다루지 않는다. -->
+<partial description="스케줄 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_delete_modal">
+  <modal data-type="composite" data-ref="schedule_delete_modal" title="$t:admin.schedules.modals.delete_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.schedules.modals.delete_confirm</p>
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <span class="text-primary font-medium">{{_global.deleteTargetName}}</span>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <close-modal target="schedule_delete_modal"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <!-- 지운 뒤 담아 뒀던 대상을 비운다 — 이름·번호가 전역이라 남겨 두면 다음에 연 창이 이미 없는 작업을 가리킨다. -->
+          <sequence>
+            <set-state target="global" :isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/admin/schedules/{{_global.deleteTargetId}}" method="DELETE">
+              <success>
+                <set-state target="global" :isDeleting="false"/>
+                <set-state target="global" :deleteTargetId="null" deleteTargetName=""/>
+                <toast type="success" message="$t:admin.schedules.messages.delete_success"/>
+                <refetch-data-source dataSourceId="schedules"/>
+                <close-modal target="schedule_delete_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeleting="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.delete_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

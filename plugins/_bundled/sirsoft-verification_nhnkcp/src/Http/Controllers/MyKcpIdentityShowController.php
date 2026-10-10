@@ -39,11 +39,11 @@ class MyKcpIdentityShowController extends AuthBaseController
         $record = $this->cardService->findForUser((int) Auth::id());
 
         if ($record === null) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('sirsoft-verification_nhnkcp::messages.card.loaded', null);
         }
 
         return ResponseHelper::success(
-            'messages.success',
+            'sirsoft-verification_nhnkcp::messages.card.loaded',
             (new KcpIdentityResource($record))->resolve(),
         );
     }

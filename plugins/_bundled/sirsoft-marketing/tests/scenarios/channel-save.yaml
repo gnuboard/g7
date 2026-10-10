@@ -1,0 +1,34 @@
+feature: 마케팅 수신 채널 저장 실패 처리
+
+description: |
+  환경설정 화면의 채널 저장(PUT /api/plugins/sirsoft-marketing/admin/channels)이 422 로 실패했을 때의 처리.
+  동의한 회원이 있는 일반 채널을 지우려 하면 서버가 막힌 채널 키를 `errors.blocked_channel_keys` 로 돌려주고,
+  화면은 그 경우에만 「비활성으로 전환」 창을 열어 그 채널을 꺼진 채로 원래 자리에 되살린다.
+  형식·필수값 오류는 창을 열지 않고 실제 검증 문구를 오류 목록에 싣는다.
+  채널 추가 창은 서버 규칙(키 형식·중복)을 확정 전에 걸러 확정 버튼을 잠근다. 사이트 기본 언어 이름이 비면 확정을 눌러도
+  목록에 붙이지 않고, 이름 필수 안내는 창을 막 열었을 때가 아니라 항목명 칸을 떠나거나 확정을 누른 뒤에만 보인다.
+  시스템 채널을 빼는 요청은 시스템 채널 보호 사유로만 거절하고 `blocked_channel_keys` 를 싣지 않는다.
+  설정 화면 채널 목록의 시스템 채널 이름은 화면 언어 번역으로 그린다.
+
+axes:
+  case: [channel_has_consents, field_validation, unauthenticated, saved, add_channel]
+
+exclusions: []
+
+effects:
+  - blocked_channel_key_is_machine_readable
+  - deactivate_modal_only_for_blocked_channels
+  - blocked_channel_restored_disabled
+  - field_errors_shown_without_deactivate_modal
+  - add_modal_blocks_invalid_input
+  - admin_only_channel_save
+  - field_error_names_the_channel
+  - system_channel_label_follows_added_locale
+  - add_modal_label_hint_after_touch
+  - settings_list_uses_label_key
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Feature/Http/Controllers/MarketingAdminControllerTest.php
+  - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/pluginSettingsChannelSave.test.tsx
+  - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/pluginSettingsChannelLabelLocale.test.ts
+  - plugins/_bundled/sirsoft-marketing/tests/Playwright/specs/admin/channel-settings.spec.ts

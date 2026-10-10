@@ -334,6 +334,17 @@ php artisan extension:composer-install
 
 ---
 
+## 확장 아이콘
+
+확장과 언어팩은 자기 아이콘을 담을 수 있습니다. 패키지 루트에 `assets/icon.svg` 를 두거나
+매니페스트에 `"icon"` 경로를 적으면 관리자 확장 관리 목록·상세·확인 창과 설치 마법사에
+그 그림이 나옵니다. 아이콘이 없는 확장은 종류별 기본 그림으로 표시됩니다.
+
+규격(정사각·100KB 이하·스크립트 없는 SVG), 서빙 주소, 언어팩 합성 규칙은
+[확장 아이콘](extension-icons.md)에 있습니다.
+
+---
+
 ## 관리자 UI 필터링 (hidden 플래그)
 
 확장 manifest (`module.json` / `plugin.json` / `template.json`) 에 `"hidden": true` 를 설정하면, 관리자 UI 목록 응답과 artisan `*:list` 기본 출력에서 제외됩니다. 학습용 샘플 확장, 내부 운영 전용 확장을 숨길 때 사용합니다.
@@ -363,6 +374,8 @@ GET /api/admin/modules?include_hidden=1
 GET /api/admin/plugins?include_hidden=1
 GET /api/admin/templates?include_hidden=1
 ```
+
+API 의 `include_hidden` 은 최고관리자(`is_super`)에게만 적용됩니다. 다른 관리자가 이 값을 보내면(최고관리자가 공유한 주소로 들어온 경우 등) 요청 단계(`RestrictsHiddenExtensionsToSuperAdmin`)에서 거짓으로 바뀌어 숨김 확장이 빠진 목록을 받습니다.
 
 ### manifest 설정
 
@@ -396,14 +409,13 @@ public function register(): void
         return new ExtensionManager;
     });
 
-    // 모듈 매니저에 주입
+    // 모듈·플러그인 매니저는 저장소·레이아웃 동기화기(LayoutRowSynchronizer) 등 여러 의존을 받는다 —
+    // 실제 인자 목록은 CoreServiceProvider 를 보고, 코드에서는 직접 new 하지 말고 컨테이너로 받는다.
     $this->app->singleton(ModuleManager::class, function ($app) {
-        return new ModuleManager($app->make(ExtensionManager::class));
-    });
-
-    // 플러그인 매니저에 주입
-    $this->app->singleton(PluginManager::class, function ($app) {
-        return new PluginManager($app->make(ExtensionManager::class));
+        return new ModuleManager(
+            $app->make(ExtensionManager::class),
+            // … 저장소들 · LayoutExtensionService · LayoutRowSynchronizer · LayoutExtensionRepositoryInterface
+        );
     });
 }
 ```
@@ -459,4 +471,4 @@ DB 컬럼: `modules/plugins/templates` 테이블의 `deactivated_reason` (string
 - [플러그인 개발](plugin-development.md) - 플러그인 구조 및 설정
 - [모듈 Artisan 커맨드](module-commands.md) - 모듈 관련 커맨드
 - [확장 업데이트 시스템](extension-update-system.md) - _bundled/_pending 및 업데이트
-- [인덱스](index.md) - 확장 시스템 전체 문서 목록
+- [인덱스](README.md) - 확장 시스템 전체 문서 목록

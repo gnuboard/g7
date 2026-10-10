@@ -60,7 +60,7 @@ class MenuFactory extends Factory
     /**
      * 모듈 메뉴 상태
      */
-    public function moduleMenu(string $moduleIdentifier = 'sirsoft-ecommerce'): static
+    public function moduleMenu(string $moduleIdentifier = 'sample-module'): static
     {
         return $this->state(fn (array $attributes) => [
             'extension_type' => 'module',

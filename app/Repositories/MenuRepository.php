@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 
 class MenuRepository implements MenuRepositoryInterface
@@ -85,15 +86,15 @@ class MenuRepository implements MenuRepositoryInterface
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'core.menus.read');
 
-        // 사용자 역할 기반 접근 제어
+        // 사용자 역할 기반 접근 제어 (역할 0개 메뉴는 복구할 수 있는 관리자에게만 함께 보인다)
         if ($user) {
-            $query->accessibleBy($user);
+            $this->applyManagementAccess($query, $user);
         }
 
         return $query->with(['creator', 'roles', 'children' => function ($query) use ($extensionFilter, $user) {
             $query->where($extensionFilter);
             if ($user) {
-                $query->accessibleBy($user);
+                $this->applyManagementAccess($query, $user);
             }
             // 하위 메뉴의 역할은 목록에서 로드하지 않는다 — 화면이 쓰는 것은 하위 메뉴의
             // 개수와 표시 정보뿐이고, 역할 배지는 선택한(상위) 메뉴에만 나온다. 로드하면
@@ -415,6 +416,30 @@ class MenuRepository implements MenuRepositoryInterface
     }
 
     /**
+     * 메뉴별로 부여된 역할 ID 를 한 번에 조회합니다(목록 역할 배지용, 역할 객체 없이 ID 만).
+     *
+     * @param  array<int>  $menuIds  조회할 메뉴 ID 목록
+     * @return array<int, array<int>> 메뉴 ID => 역할 ID 목록 (역할이 없는 메뉴는 빈 배열)
+     */
+    public function getRoleIdsByMenuIds(array $menuIds): array
+    {
+        $map = array_fill_keys(array_map('intval', $menuIds), []);
+        if ($map === []) {
+            return [];
+        }
+
+        DB::table('role_menus')
+            ->whereIn('menu_id', array_keys($map))
+            ->orderBy('role_id')
+            ->get(['menu_id', 'role_id'])
+            ->each(function ($row) use (&$map) {
+                $map[(int) $row->menu_id][] = (int) $row->role_id;
+            });
+
+        return $map;
+    }
+
+    /**
      * 필터 조건이 적용된 최상위 메뉴 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건 배열 (sort_by/sort_order/검색 필드)
@@ -444,9 +469,9 @@ class MenuRepository implements MenuRepositoryInterface
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'core.menus.read');
 
-        // 사용자 역할 기반 접근 제어
+        // 사용자 역할 기반 접근 제어 (역할 0개 메뉴는 복구할 수 있는 관리자에게만 함께 보인다)
         if ($user) {
-            $query->accessibleBy($user);
+            $this->applyManagementAccess($query, $user);
         }
 
         // 활성화 상태 필터
@@ -493,7 +518,7 @@ class MenuRepository implements MenuRepositoryInterface
 
             // 자식 메뉴에도 사용자 역할 기반 접근 제어 적용
             if ($user) {
-                $childQuery->accessibleBy($user);
+                $this->applyManagementAccess($childQuery, $user);
             }
 
             // 자식 메뉴에도 활성화 상태 필터 적용
@@ -508,6 +533,36 @@ class MenuRepository implements MenuRepositoryInterface
             // Resource 는 로드되지 않은 하위 메뉴의 `roles` 키를 생략한다 — 위 메서드와 동일.
             $childQuery->orderBy('order');
         }])->get();
+    }
+
+    /**
+     * 메뉴 관리 목록의 역할 기반 접근 제어를 적용합니다.
+     *
+     * 기본은 「내 역할이 붙은 메뉴」(`accessibleBy`)다. 다만 역할이 하나도 없는 메뉴는 그 조건으로는
+     * 누구의 목록에도 오지 않아 「지정된 역할 없음 — 관리자만 복구 가능」 표시와 복구 경로가 닫힌다.
+     * 그래서 메뉴 수정 권한을 **전체 범위**로 가진 액터(관리자 역할·최고관리자 포함)에게는 역할 0개
+     * 메뉴를 함께 보인다. 범위 제한(본인·소유 역할) 운영자와 읽기 전용 운영자는 종전대로다.
+     * 사이드바(`getAccessibleNavigationMenus`)에는 적용하지 않는다 — 역할 0개 메뉴는 사이드바에 나오지 않는다.
+     *
+     * @param  Builder|Relation  $query  메뉴 쿼리 빌더 (하위 메뉴 eager load 의 관계 쿼리 포함)
+     * @param  User  $user  목록을 보는 액터
+     * @return void 반환값 없음
+     */
+    private function applyManagementAccess(Builder|Relation $query, User $user): void
+    {
+        $canRecoverRoleless = PermissionHelper::check('core.menus.update', $user)
+            && PermissionHelper::getEffectiveScope('core.menus.update', $user) === null;
+
+        if (! $canRecoverRoleless) {
+            $query->accessibleBy($user);
+
+            return;
+        }
+
+        $query->where(function (Builder $access) use ($user) {
+            $access->where(fn (Builder $mine) => $mine->accessibleBy($user))
+                ->orWhereDoesntHave('roles');
+        });
     }
 
     /**
@@ -530,6 +585,7 @@ class MenuRepository implements MenuRepositoryInterface
      * @param  string  $field  필드명
      * @param  string  $value  검색 값
      * @param  string  $operator  연산자 (like, eq, starts_with, ends_with)
+     * @return void 반환값 없음
      */
     private function applySearchableField($query, string $field, string $value, string $operator): void
     {
@@ -581,6 +637,15 @@ class MenuRepository implements MenuRepositoryInterface
         return empty($locales) ? [app()->getLocale()] : array_values($locales);
     }
 
+    /**
+     * 필터 연산자를 일반 컬럼에 적용합니다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $field  필드명
+     * @param  string  $value  검색 값
+     * @param  string  $operator  연산자 (like, eq, starts_with, ends_with)
+     * @return void 반환값 없음
+     */
     private function applyFilterOperator($query, string $field, string $value, string $operator): void
     {
         switch ($operator) {

@@ -2,6 +2,8 @@
 
 > **소유**: module `sirsoft-ecommerce` · **생성**: `php artisan api:docgen` (실측 기반). @generated 블록은 재생성 시 갱신되며, 사람이 작성한 설명은 보존됩니다.
 
+> ⚠️ **폐기 예고 (1.3.0)**: 이 문서의 회원 결제 통화·배송국가 변경 API 는 다음 버전에서 제거됩니다. 코어 회원 수정 API(`PUT /api/admin/users/{user}`) 본문에 `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country` 를 함께 보내세요.
+
 ---
 
 ## TL;DR (5초 요약)

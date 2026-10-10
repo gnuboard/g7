@@ -1,7 +1,7 @@
 /**
  * 마이페이지 주문상세 구매확정/리뷰 레이아웃 렌더링 테스트
  *
- * _items.json partial의 구매확정/리뷰작성 버튼 조건부 렌더링을 검증합니다.
+ * _items.g7.html partial의 구매확정/리뷰작성 버튼 조건부 렌더링을 검증합니다.
  * 실제 partial은 모듈 외부(templates/)에 있어 import 불가하므로
  * 핵심 조건부 렌더링 패턴만 인라인 레이아웃으로 테스트합니다.
  *
@@ -66,10 +66,10 @@ function setupTestRegistry(): ComponentRegistry {
     return registry;
 }
 
-// ========== 인라인 레이아웃 (실제 _items.json의 구매확정/리뷰 버튼 패턴 재현) ==========
+// ========== 인라인 레이아웃 (실제 _items.g7.html의 구매확정/리뷰 버튼 패턴 재현) ==========
 
 /**
- * _items.json에서 사용하는 실제 조건부 렌더링 패턴:
+ * _items.g7.html에서 사용하는 실제 조건부 렌더링 패턴:
  * - if: "{{item.can_confirm === true}}" → 구매확정 버튼
  * - if: "{{item.can_write_review === true}}" → 리뷰작성 버튼
  * - if: "{{item.has_review === true}}" → 리뷰작성완료 뱃지
@@ -337,7 +337,7 @@ describe('마이페이지 주문상세 구매확정/리뷰 버튼 조건부 렌�
 // ========== 리뷰 모달 스피너 렌더링 테스트 ==========
 
 /**
- * _modal_write_review.json의 제출 버튼 스피너 패턴을 인라인 레이아웃으로 테스트합니다.
+ * _modal_write_review.g7.html의 제출 버튼 스피너 패턴을 인라인 레이아웃으로 테스트합니다.
  * - isSubmittingReview=false: 스피너 미표시, 제출 텍스트 표시
  * - isSubmittingReview=true: 스피너 표시, 처리중 텍스트 표시, 버튼 비활성화
  */

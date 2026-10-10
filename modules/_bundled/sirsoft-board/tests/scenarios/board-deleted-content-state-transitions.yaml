@@ -1,0 +1,38 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   transition 과 target 은 서로 독립인 분기가 아니다 — 신고 처리(게시 중단·반려)의 삭제 대상 보호는
+#   게시글과 댓글이 같은 판정(isTargetDeleted)을 지나므로 게시글로 대표하고, 명시적 복구의 회귀는
+#   게시글 경로 하나로 충분하다. 실제 커버리지 계약은 effects 목록이며 선언한 항목은 모두 테스트가 잰다.
+
+feature: 삭제된 글·댓글의 상태 전이 (블라인드·신고 처리가 삭제를 풀지 않는다)
+
+description: |
+  7.1.0 브라우저 실측(O-K3T-2)에서 삭제된 글을 블라인드하면 삭제가 풀려 blinded 로 되살아났다
+  (단건·일괄 같음). 저장소의 상태 변경(updateStatus)이 「삭제 → 블라인드」에서 deleted_at 을
+  지우기 때문이다. 같은 길을 타는 신고 처리도 작성자가 이미 지운 글을 게시 중단하면 되살렸고,
+  그 신고를 반려하면 게시 상태로 돌려놓았다.
+
+  삭제를 되돌리는 길은 명시적인 복구 하나로 둔다.
+  - 단건 블라인드(글·댓글): 409 + 「먼저 복구한 뒤 블라인드」 안내, 상태 그대로.
+  - 일괄 블라인드: 삭제된 글은 건너뛰고 사유 already_deleted(「이미 삭제된 글」)를 싣는다.
+  - 신고 게시 중단·자동 블라인드: 이미 지워진 대상은 손대지 않는다(가릴 것이 없다).
+  - 신고 반려: 신고가 가린 것만 되돌린다. 다른 경로로 지워진 대상은 그대로 둔다.
+  - 명시적 복구(삭제 → 게시)는 그대로 된다.
+
+axes:
+  transition: [blind_deleted, report_suspend, report_reject, restore_deleted]
+  target: [post, comment]
+
+effects:
+  - admin_post_blind_rejects_deleted_post
+  - admin_comment_blind_rejects_deleted_comment
+  - report_suspend_keeps_deleted_post_deleted
+  - report_reject_keeps_deleted_post_deleted
+  - admin_post_restore_of_deleted_still_publishes
+  # 원글이 지워진 채로 댓글만 복구하면 고아 댓글이 된다 — 원글 복구 먼저(2026-10-07 실측 O-KF3-2)
+  - admin_comment_restore_under_deleted_post_rejected
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/DeletedContentStateTransitionTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

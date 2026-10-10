@@ -1,0 +1,301 @@
+<!-- 로그인 폼 조각 — 로그인 화면과 결제 진입 화면이 함께 쓴다. 진행 상태와 오류를 _local 이 아니라 _global 에 두는 것은 이 조각 밖(바깥 화면의 버튼 비활성화 등)에서도 읽기 때문이다. -->
+<partial description="로그인 폼 (1단계 이메일/비밀번호 → 2단계 인증번호 → 비밀번호 변경)">
+  <form class="space-y-6">
+    <on type="submit">
+      <!-- 로그인 — 성공하면 비회원 시절 주문조회 토큰을 지운다(같은 브라우저에서 회원·비회원 화면이 동시에 열리는 것을 막는다). 마친 뒤에는 원래 가려던 곳(redirect)으로, 없으면 홈으로 보낸다.
+           2단계 인증이 켜진 사이트에서는 1단계(`login`)와 2단계(`loginTwoFactor`)가 `if` 로 상호배타이고, 1단계 응답이 인증번호를 요구하면 사용자·토큰 없이 `_global.twoFactor` 만 심는다.
+           비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 1·2단계 응답이 토큰 대신 변경 단계를 돌려준다(#736) — 그때는 `_global.passwordChange` 만 심고
+           3단계(`loginPasswordChange`)로 바꾼다. 세 액션의 `if` 는 상호배타이고, 성공 분기는 `response.password_change_required` 를 먼저 본다. -->
+      <sequence>
+        <set-state target="local" :isLoginAction="true"/>
+        <set-state target="global" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
+        <!-- 1·2단계는 상호배타다. if 는 시퀀스 시작 시점 스냅샷으로 평가되므로 한 제출에 정확히 하나만 실행된다 — 이 if 가 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다. -->
+        <login target="user" if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
+          <success>
+            <!-- 2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다. -->
+            <set-state if="{{response.two_factor_required}}" target="global" :isLoggingIn="false">
+              <field name="twoFactor">
+                <field name="required" :value="true"/>
+                <field name="challenge_id" value="{{response.challenge_id}}"/>
+                <field name="provider_id" value="{{response.provider_id}}"/>
+                <field name="expires_at" value="{{response.expires_at}}"/>
+                <field name="code" value=""/>
+                <field name="error" :value="null"/>
+                <field name="verifying" :value="false"/>
+                <field name="resending" :value="false"/>
+                <field name="resent" :value="false"/>
+              </field>
+            </set-state>
+            <!-- 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호다 — 토큰 없이 변경 단계 식별자만 왔다. -->
+            <set-state if="{{response.password_change_required}}" target="global" :isLoggingIn="false">
+              <field name="passwordChange">
+                <field name="required" :value="true"/>
+                <field name="challenge_id" value="{{response.challenge_id}}"/>
+                <field name="reason" value="{{response.reason}}"/>
+                <field name="can_postpone" value="{{response.can_postpone}}"/>
+                <field name="postpone_days" value="{{response.postpone_days}}"/>
+                <field name="expired_at" value="{{response.expired_at}}"/>
+                <field name="error" :value="null"/>
+                <field name="errors" :value="null"/>
+              </field>
+            </set-state>
+            <set-state if="{{response.password_change_required}}" target="local" :passwordChangeInput="null"/>
+            <set-state if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" target="global" currentUser="{{response.user}}"/>
+            <set-state if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" target="global" :isLoggingIn="false"/>
+            <!-- 로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용. -->
+            <action handler="clearGuestOrderToken" if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}"/>
+            <toast if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" type="success" message="$t:auth.login_success"/>
+            <!-- 휴면이 풀린 로그인에만 실린다 — 서버가 해제했을 때만 이 키를 보내므로
+                 평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다
+                 풀린 사실을 끝내 모른다. -->
+            <toast if="{{!response.two_factor_required &amp;&amp; !response.password_change_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
+            <navigate if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" path="{{query.redirect ?? '/'}}"/>
+          </success>
+          <fail>
+            <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
+          </fail>
+          <body email="{{form.email}}" password="{{form.password}}"/>
+        </login>
+        <action handler="loginTwoFactor" target="user" if="{{_global.twoFactor?.required}}">
+          <success>
+            <set-state target="global" :isLoggingIn="false" :twoFactor="null"/>
+            <!-- 코드가 맞아도 비밀번호 변경 단계가 남았을 수 있다 — 그때는 이동하지 않고 변경 단계로 바꾼다. -->
+            <set-state if="{{response.password_change_required}}" target="global">
+              <field name="passwordChange">
+                <field name="required" :value="true"/>
+                <field name="challenge_id" value="{{response.challenge_id}}"/>
+                <field name="reason" value="{{response.reason}}"/>
+                <field name="can_postpone" value="{{response.can_postpone}}"/>
+                <field name="postpone_days" value="{{response.postpone_days}}"/>
+                <field name="expired_at" value="{{response.expired_at}}"/>
+                <field name="error" :value="null"/>
+                <field name="errors" :value="null"/>
+              </field>
+            </set-state>
+            <set-state if="{{response.password_change_required}}" target="local" :passwordChangeInput="null"/>
+            <set-state if="{{!response.password_change_required}}" target="global" currentUser="{{response.user}}"/>
+            <action handler="clearGuestOrderToken" if="{{!response.password_change_required}}"/>
+            <toast if="{{!response.password_change_required}}" type="success" message="$t:auth.login_success"/>
+            <!-- 2단계 인증 사이트도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에 따라
+                 해제 사실이 보이기도 하고 안 보이기도 한다. -->
+            <toast if="{{!response.password_change_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
+            <navigate if="{{!response.password_change_required}}" path="{{query.redirect ?? '/'}}"/>
+          </success>
+          <fail>
+            <!-- 423 잠금은 1단계와 같은 문구 규칙을 따르도록 loginErrors 도 함께 싣는다. -->
+            <set-state target="global" :isLoggingIn="false" twoFactor.error="{{error.message}}" loginErrors="{{error.errors}}"/>
+          </fail>
+          <body challenge_id="{{_global.twoFactor?.challenge_id}}" code="{{_global.twoFactor?.code}}"/>
+        </action>
+        <!-- 3단계 — 새 비밀번호로 로그인 완료. 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급한다. 최종 성공 지점의 후처리는 1·2단계와 같다.
+             식별자가 만료·무효(422 `errors.challenge_id`)면 단계를 비우고 1단계로 돌아가 다시 로그인을 안내한다.
+             그 밖의 실패(규칙 위반·같은 값·재사용 422, 잠금 423)는 단계에 머물며 칸 아래·상단에 싣는다. -->
+        <action handler="loginPasswordChange" target="user" if="{{_global.passwordChange?.required}}">
+          <success>
+            <set-state target="global" currentUser="{{response.user}}" :isLoggingIn="false" :passwordChange="null"/>
+            <action handler="clearGuestOrderToken"/>
+            <toast type="success" message="$t:auth.password_change.changed_toast"/>
+            <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
+            <navigate path="{{query.redirect ?? '/'}}"/>
+          </success>
+          <fail>
+            <set-state if="{{error.errors?.challenge_id}}" target="global" :isLoggingIn="false" :passwordChange="null" loginError="{{$t('auth.password_change.restart_required')}}" :loginErrors="null"/>
+            <set-state if="{{error.errors?.challenge_id}}" target="local" :passwordChangeInput="null"/>
+            <set-state if="{{!error.errors?.challenge_id}}" target="global" :isLoggingIn="false" passwordChange.error="{{error.errors?.password || error.errors?.password_confirmation ? null : error.message}}" passwordChange.errors="{{error.errors ?? null}}" loginErrors="{{error.errors}}"/>
+          </fail>
+          <body challenge_id="{{_global.passwordChange?.challenge_id}}" password="{{_local.passwordChangeInput?.password}}" password_confirmation="{{_local.passwordChangeInput?.password_confirmation}}"/>
+        </action>
+      </sequence>
+    </on>
+    <!-- API 에러 메시지 표시 -->
+    <div data-if="{{_global.loginError}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <p class="text-sm text-red-600 dark:text-red-400">{{_global.loginError}}</p>
+      <!-- 계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 사용자는 계속 눌러 보게 된다 -->
+      <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
+      <p data-if="{{_global.loginErrors?.permanent === true}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.locked_permanent</p>
+    </div>
+    <!-- 이메일 입력 필드 (1단계) -->
+    <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.email</label>
+      <input type="email" name="email" placeholder="$t:auth.email_placeholder" class="{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}" :required="true" disabled="{{_global.isLoggingIn}}"/>
+      <!-- 이메일 필드 에러 메시지 -->
+      <p data-if="{{_global.loginErrors?.email}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}</p>
+    </div>
+    <!-- 비밀번호 입력 필드 (1단계) -->
+    <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password</label>
+      <password-input name="password" placeholder="$t:auth.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" :required="true" disabled="{{_global.isLoggingIn}}" :showToggle="true" error="{{_global.loginErrors?.password?.[0] ?? (_global.loginErrors?.password ?? '')}}"/>
+    </div>
+    <!-- 로그인 버튼 (1단계) -->
+    <button data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}" type="submit" class="w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_global.isLoggingIn}}">
+      <!-- 버튼 내 스피너 -->
+      <div data-if="{{_global.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+      <span data-if="{{!_global.isLoggingIn}}">$t:auth.login</span>
+      <span data-if="{{_global.isLoggingIn}}">$t:auth.login_processing</span>
+    </button>
+    <!-- 2단계 인증 — 비밀번호 확인만 통과한 상태다. 인증번호를 확인해야 로그인이 완료된다.
+         상태를 _global 에 두는 이유는 위와 같다(바깥 화면·재발송 버튼이 함께 읽는다). 「인증번호 다시 받기」는 새 challenge 를 받아 입력값을 비우고, 「처음부터」는 1단계로 되돌린다. -->
+    <div data-if="{{_global.twoFactor?.required}}" class="space-y-6">
+      <div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800" role="status" aria-live="polite">
+        <!-- 인증 앱은 서버가 아무것도 보내지 않는다 — 「보냈습니다」로 안내하면 오지 않는 메일을 기다리게 된다. -->
+        <p data-if="{{!_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.sent</p>
+        <p data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.sent_app</p>
+        <p data-if="{{_global.twoFactor?.resent && _global.twoFactor?.provider_id !== 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.two_factor.resent</p>
+      </div>
+      <!-- 인증번호 오류 -->
+      <div data-if="{{_global.twoFactor?.error}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" role="alert">
+        <p class="text-sm text-red-600 dark:text-red-400">{{_global.twoFactor?.error ?? ''}}</p>
+      </div>
+      <div>
+        <label data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label</label>
+        <label data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label_app</label>
+        <!-- 자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다 -->
+        <input type="text" name="two_factor_code" value="{{_global.twoFactor?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="{{_global.twoFactor?.provider_id === 'totp' ? 24 : 10}}" placeholder="{{_global.twoFactor?.provider_id === 'totp' ? $t('auth.two_factor.code_placeholder_app') : $t('auth.two_factor.code_placeholder')}}" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}">
+          <on event="onChange">
+            <set-state target="global" twoFactor.code="{{$event.target.value}}" :twoFactor.error="null"/>
+          </on>
+        </input>
+        <!-- 유효시각 정적 표기 — 남은 시간 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다 -->
+        <p data-if="{{_global.twoFactor?.expires_at}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:auth.two_factor.valid_until|until={{_global.twoFactor?.expires_at | datetime}}</p>
+        <p data-if="{{_global.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:auth.two_factor.backup_hint</p>
+      </div>
+      <!-- 인증번호 확인 — submit 이라 Enter 키로도 제출된다 -->
+      <button type="submit" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{!_global.twoFactor?.code || _global.twoFactor.code.length < 4 || _global.isLoggingIn}}">
+        <div data-if="{{_global.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+        <span data-if="{{!_global.isLoggingIn}}">$t:auth.two_factor.verify</span>
+        <span data-if="{{_global.isLoggingIn}}">$t:auth.two_factor.verifying</span>
+      </button>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <!-- 인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급
+             이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다. -->
+        <button type="button" data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.twoFactor?.resending || _global.isLoggingIn}}">
+          <on type="click">
+            <!-- 인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해
+                 입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다. -->
+            <sequence>
+              <set-state target="global" :twoFactor.resending="true" :twoFactor.error="null"/>
+              <action handler="loginTwoFactorResend" target="user">
+                <success>
+                  <!-- 같은 시퀀스 안에서는 _global 이 아직 갱신 전이므로 응답 값만 읽는다. -->
+                  <set-state target="global">
+                    <field name="twoFactor">
+                      <field name="required" :value="true"/>
+                      <field name="challenge_id" value="{{response.challenge_id}}"/>
+                      <field name="provider_id" value="{{response.provider_id}}"/>
+                      <field name="expires_at" value="{{response.expires_at}}"/>
+                      <field name="code" value=""/>
+                      <field name="error" :value="null"/>
+                      <field name="verifying" :value="false"/>
+                      <field name="resending" :value="false"/>
+                      <field name="resent" :value="true"/>
+                    </field>
+                  </set-state>
+                </success>
+                <fail>
+                  <set-state target="global" :twoFactor.resending="false" twoFactor.error="{{error.message}}"/>
+                </fail>
+                <body challenge_id="{{_global.twoFactor?.challenge_id}}"/>
+              </action>
+            </sequence>
+          </on>
+          $t:auth.two_factor.resend
+        </button>
+        <button type="button" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isLoggingIn}}">
+          <on type="click">
+            <!-- 처음부터 — 2단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌린다. -->
+            <set-state target="global" :twoFactor="null" :loginError="null" :loginErrors="null"/>
+          </on>
+          $t:auth.two_factor.restart
+        </button>
+      </div>
+    </div>
+    <!-- 3단계 비밀번호 변경 — 비밀번호(와 켜져 있으면 2단계 인증)는 통과했지만 새 비밀번호를 정해야 로그인이 끝난다(#736).
+         2단계 인증과 같은 짜임으로 로그인 카드 안에서 바뀌고 제목은 그대로다. 사유와 「다음에 변경」 가능 여부는 서버 응답대로 그린다.
+         규칙 목록은 PasswordInput 이 화면에서 바로 확인하는 것(길이·특수문자·조합)이고, 재사용·아이디·반복·연속·현재와 같은 값은
+         서버만 확인할 수 있어 작은 글로 알린다. -->
+    <div data-if="{{_global.passwordChange?.required}}" class="space-y-6">
+      <div class="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 space-y-1" role="status" aria-live="polite">
+        <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">$t:auth.password_change.title</p>
+        <p data-if="{{_global.passwordChange?.reason !== 'admin_assigned' &amp;&amp; !_global.passwordChange?.can_postpone}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.password_change.reason_expired|date={{_global.passwordChange?.expired_at | date}}</p>
+        <p data-if="{{_global.passwordChange?.reason !== 'admin_assigned' &amp;&amp; _global.passwordChange?.can_postpone}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.password_change.reason_remind|count={{_global.passwordChange?.postpone_days ?? 0}}|date={{_global.passwordChange?.expired_at | date}}|days={{_global.passwordChange?.postpone_days ?? 0}}</p>
+        <p data-if="{{_global.passwordChange?.reason === 'admin_assigned'}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.password_change.reason_admin_assigned</p>
+      </div>
+      <!-- 변경 단계 상단 오류(잠금·그 밖의 실패) — 규칙 위반은 칸 아래에 싣는다 -->
+      <div data-if="{{_global.passwordChange?.error}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" role="alert">
+        <p class="text-sm text-red-600 dark:text-red-400">{{_global.passwordChange?.error ?? ''}}</p>
+        <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password_change.new_password</label>
+        <!-- 새 비밀번호 — 자동바인딩 대신 상태가 값을 소유한다(실패해도 남고, 처음부터 누르면 함께 비워진다). 값은 `_global` 이 아니라
+             이 화면의 `_local.passwordChangeInput` 에 둔다 — 비밀번호를 전역 상태에 남기지 않는다(단계 정보만 바깥 화면이 읽어 `_global`). -->
+        <password-input name="password_change_new" value="{{_local.passwordChangeInput?.password ?? ''}}" placeholder="$t:auth.password_change.new_password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}" autoComplete="new-password" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}" :showToggle="true" :showValidation="true" enableRules="{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}" error="{{_global.passwordChange?.errors?.password?.[0] ?? ''}}">
+          <on event="onChange">
+            <set-state target="local" passwordChangeInput.password="{{$event.target.value}}"/>
+          </on>
+        </password-input>
+        <p data-if="{{!!_global.settings?.security?.password_reuse_prevention_enabled || !!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}" class="mt-2 flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400">
+          <span>$t:auth.password_rules.server_intro</span>
+          <span data-if="{{!!_global.settings?.security?.password_reuse_prevention_enabled}}">$t:auth.password_rules.reuse|count={{_global.settings?.security?.password_reuse_count ?? 3}}</span>
+          <span data-if="{{!!_global.settings?.security?.password_block_identifier}}">$t:auth.password_rules.identifier</span>
+          <span data-if="{{!!_global.settings?.security?.password_block_repeated_chars}}">$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}</span>
+          <span data-if="{{!!_global.settings?.security?.password_block_sequential_chars}}">$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}</span>
+        </p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:auth.password_rules.not_current</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password_change.confirm_password</label>
+        <!-- 새 비밀번호 확인 — 같은 방식으로 상태가 값을 소유한다. -->
+        <password-input name="password_change_confirm" value="{{_local.passwordChangeInput?.password_confirmation ?? ''}}" placeholder="$t:auth.password_confirm_placeholder" autoComplete="new-password" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" disabled="{{_global.isLoggingIn}}" :showToggle="true" :isConfirmField="true" confirmTarget="{{_local.passwordChangeInput?.password ?? ''}}" error="{{_global.passwordChange?.errors?.password_confirmation?.[0] ?? ''}}">
+          <on event="onChange">
+            <set-state target="local" passwordChangeInput.password_confirmation="{{$event.target.value}}"/>
+          </on>
+        </password-input>
+      </div>
+      <!-- 변경하고 로그인 — submit 이라 Enter 키로도 제출된다 -->
+      <button type="submit" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_global.isLoggingIn}}">
+        <div data-if="{{_global.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+        <span data-if="{{!_global.isLoggingIn}}">$t:auth.password_change.submit</span>
+        <span data-if="{{_global.isLoggingIn}}">$t:auth.login_processing</span>
+      </button>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button type="button" data-if="{{_global.passwordChange?.can_postpone}}" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isLoggingIn}}">
+          <on type="click">
+            <!-- 다음에 변경 — 만료 시 동작이 「다음에 변경 허용」일 때만 보인다. 로그인을 마치고 연기 종료일을 알린 뒤 원래 가려던 곳으로 보낸다
+                 (최종 성공 지점의 후처리 — 현재 사용자·비회원 조회 토큰 정리·토스트·휴면 안내·이동 — 는 다른 단계와 같다).
+                 식별자가 만료·무효면 처음부터 다시 로그인하게 한다. -->
+            <sequence>
+              <set-state target="global" :isLoggingIn="true" :passwordChange.error="null"/>
+              <action handler="loginPasswordChangePostpone" target="user">
+                <success>
+                  <set-state target="global" currentUser="{{response.user}}" :isLoggingIn="false" :passwordChange="null"/>
+                  <action handler="clearGuestOrderToken"/>
+                  <toast type="info" message="$t:auth.password_change.postponed_toast|date={{response.postponed_until | date}}"/>
+                  <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
+                  <navigate path="{{query.redirect ?? '/'}}"/>
+                </success>
+                <fail>
+                  <set-state if="{{error.errors?.challenge_id}}" target="global" :isLoggingIn="false" :passwordChange="null" loginError="{{$t('auth.password_change.restart_required')}}" :loginErrors="null"/>
+                  <set-state if="{{error.errors?.challenge_id}}" target="local" :passwordChangeInput="null"/>
+                  <set-state if="{{!error.errors?.challenge_id}}" target="global" :isLoggingIn="false" passwordChange.error="{{error.message}}" loginErrors="{{error.errors}}"/>
+                </fail>
+                <body challenge_id="{{_global.passwordChange?.challenge_id}}"/>
+              </action>
+            </sequence>
+          </on>
+          $t:auth.password_change.postpone
+        </button>
+        <button type="button" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isLoggingIn}}">
+          <on type="click">
+            <!-- 처음부터 — 두 단계 상태와 지난 오류를 함께 지워 1단계(이메일·비밀번호)로 되돌리고, 입력하던 새 비밀번호(로컬)도 비운다. -->
+            <sequence>
+              <set-state target="global" :twoFactor="null" :passwordChange="null" :loginError="null" :loginErrors="null"/>
+              <set-state target="local" :passwordChangeInput="null"/>
+            </sequence>
+          </on>
+          $t:auth.two_factor.restart
+        </button>
+      </div>
+    </div>
+  </form>
+</partial>

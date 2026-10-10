@@ -1,7 +1,7 @@
 /**
  * 체크아웃 배타적 쿠폰 모달 테스트
  *
- * checkout.json의 modals.exclusiveCouponConfirm 모달 동작을 테스트합니다.
+ * checkout.g7.html의 modals.exclusiveCouponConfirm 모달 동작을 테스트합니다.
  * - 배타적 쿠폰 선택 시 확인 모달 표시
  * - 확인 버튼 클릭 시 기존 쿠폰 해제 및 새 쿠폰 적용
  * - 취소 버튼 클릭 시 모달 닫기
@@ -186,7 +186,12 @@ const exclusiveCouponModalLayout = {
                                                 endpoint: '/api/modules/sirsoft-ecommerce/checkout',
                                                 method: 'PUT',
                                                 body: {
-                                                    coupon_issue_ids: '{{[_local.selectedCouponId]}}',
+                                                    // 실제 레이아웃(`checkout.json` · `_checkout_discount.json`)이
+                                                    // 보내는 필드와 같아야 한다. 예전엔 여기가
+                                                    // `coupon_issue_ids`(복수)였는데, 그 필드는 서버가
+                                                    // 읽지 않아 **할인이 조용히 빠지는** 상태였다.
+                                                    // 픽스처가 실제와 달라 이 불일치가 가려져 있었다.
+                                                    order_coupon_issue_id: '{{_local.selectedCouponId}}',
                                                     use_points: '{{_local.usePoints ?? 0}}',
                                                 },
                                             },
@@ -300,18 +305,24 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
     });
 
     describe('모달 구조 검증', () => {
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects exclusive_coupon_opens_confirm_modal
         it('modals에 exclusiveCouponConfirm이 정의되어 있다', () => {
             const layout = exclusiveCouponModalLayout as any;
             expect(layout.modals).toBeDefined();
             expect(layout.modals.exclusiveCouponConfirm).toBeDefined();
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects exclusive_coupon_opens_confirm_modal
         it('모달 제목이 다국어 키로 설정되어 있다', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
             expect(modal.props.title).toBe('$t:sirsoft-ecommerce.shop.checkout.exclusive_coupon_title');
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=cancel
+        // @effects cancel_closes_modal_without_apply
         it('취소 버튼에 closeModal 핸들러가 연결되어 있다', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -332,6 +343,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(cancelButton.actions[0].handler).toBe('closeModal');
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_sets_selected_coupon_to_local_state
         it('확인 버튼에 sequence 핸들러가 연결되어 있다', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -354,6 +367,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
     });
 
     describe('확인 버튼 시퀀스 액션 검증', () => {
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_sets_selected_coupon_to_local_state
         it('시퀀스에 4개의 액션이 포함되어 있다', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -375,6 +390,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(sequenceActions).toHaveLength(4);
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_sets_selected_coupon_to_local_state
         it('첫 번째 액션: setState로 selectedCouponId 설정', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -398,6 +415,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(action1.params.selectedCouponId).toBe('{{_global.pendingExclusiveCoupon?.id}}');
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_clears_pending_global_state
         it('두 번째 액션: setState로 pendingExclusiveCoupon 초기화', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -421,6 +440,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(action2.params.pendingExclusiveCoupon).toBeNull();
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_closes_modal
         it('세 번째 액션: closeModal', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -442,6 +463,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(action3.handler).toBe('closeModal');
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_updates_checkout_via_put, checkout_body_uses_singular_order_coupon_key
         it('네 번째 액션: apiCall로 체크아웃 업데이트', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -463,8 +486,19 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(action4.handler).toBe('apiCall');
             expect(action4.params.endpoint).toContain('checkout');
             expect(action4.params.method).toBe('PUT');
+
+            // 본문 필드명까지 잠근다 — 이 단언이 없어서 픽스처가 오래 틀린 채로 green 이었다.
+            //
+            // 서버(`CheckoutController::update`)가 읽는 주문쿠폰 키는 `order_coupon_issue_id`
+            // 하나다. 예전 픽스처는 `coupon_issue_ids`(복수)를 보냈는데, 그 필드는 검증만
+            // 통과하고 아무도 읽지 않아 **200 인데 할인이 조용히 빠지는** 상태였다.
+            // 핸들러·엔드포인트·메서드만 보면 그 차이가 드러나지 않는다.
+            expect(action4.params.body).toHaveProperty('order_coupon_issue_id');
+            expect(action4.params.body).not.toHaveProperty('coupon_issue_ids');
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects success_refetches_checkout_data_source
         it('apiCall onSuccess에서 refetchDataSource가 호출된다', () => {
             const layout = exclusiveCouponModalLayout as any;
             const modal = layout.modals.exclusiveCouponConfirm;
@@ -490,6 +524,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
     });
 
     describe('모달 열기/닫기 테스트', () => {
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects exclusive_coupon_opens_confirm_modal
         it('모달을 열 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -501,6 +537,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(testUtils.getModalStack()).toContain('exclusiveCouponConfirm');
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=cancel
+        // @effects cancel_closes_modal_without_apply
         it('모달을 닫을 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -516,6 +554,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
     });
 
     describe('pendingExclusiveCoupon 상태 관리', () => {
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects exclusive_coupon_opens_confirm_modal
         it('pendingExclusiveCoupon 상태를 설정할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -530,6 +570,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(state._global.pendingExclusiveCoupon).toEqual({ id: 2, name: '50% 특별 할인' });
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_clears_pending_global_state
         it('pendingExclusiveCoupon을 null로 초기화할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -547,6 +589,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
     });
 
     describe('selectedCouponId 상태 관리', () => {
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_sets_selected_coupon_to_local_state
         it('selectedCouponId 상태를 설정할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -562,6 +606,9 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
     });
 
     describe('배타적 쿠폰 선택 흐름 시뮬레이션', () => {
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_sets_selected_coupon_to_local_state
+        // @effects confirm_clears_pending_global_state
         it('배타적 쿠폰 선택 시 전체 흐름 상태 변화를 확인할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -600,6 +647,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
             expect(testUtils.getModalStack()).not.toContain('exclusiveCouponConfirm');
         });
 
+        // @scenario coupon_kind=exclusive, user_choice=cancel
+        // @effects cancel_closes_modal_without_apply
         it('취소 버튼 클릭 시 상태가 변경되지 않는다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -628,6 +677,8 @@ describe('exclusiveCouponConfirm 모달 테스트', () => {
     });
 
     describe('API 에러 처리', () => {
+        // @scenario coupon_kind=exclusive, user_choice=confirm
+        // @effects confirm_updates_checkout_via_put
         it('API 에러 시에도 레이아웃이 유지된다', async () => {
             testUtils.mockApiError('checkoutData', 500, '서버 오류');
 

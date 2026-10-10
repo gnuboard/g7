@@ -1,0 +1,99 @@
+<!-- 쿠폰 목록 — 회원 지정 즉시발급 창. 회원을 찾아 골라 두고 한 번에 발급한다.
+  
+  회원 수가 많아 선택지를 미리 받아 둘 수 없으므로 입력할 때마다 코어 회원 검색 API 를
+  친다(250ms 로 묶는다). 검색 결과·고른 회원·발급 대상 쿠폰이 **전부 `_global`** 에 있는
+  이유는 창이 별도 컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다.
+  
+  고른 회원은 배열이라 같은 사람을 두 번 담지 않도록 uuid 로 판정한다 — 검색 결과에서
+  이미 고른 사람은 버튼 대신 "선택됨" 표시가 뜬다. -->
+<partial description="Coupon - Direct Issue Modal (관리자 회원 지정 즉시 발급)">
+  <modal data-type="composite" data-ref="modal_direct_issue" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.title" size="md">
+    <p class="text-label mb-4">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.subtitle|name={{_global.directIssueCoupon?.name}}</p>
+    <!-- 회원 검색 입력 (타이핑 시 실시간 검색, 250ms 디바운스) -->
+    <div class="mb-3">
+      <input type="text" name="directIssueSearchKeyword" class="input w-full" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_placeholder" value="{{_global.directIssueSearchKeyword ?? ''}}">
+        <prop name="debounce">250</prop>
+        <on type="input">
+          <!-- 검색어를 담는 것과 회원을 찾는 것을 한 블록에서 한다. 검색어가 비거나 공백뿐이면 `if` 가 요청을 막고 이전 결과를 비운다 — 회원 검색은 빈 검색어를 422 로 거절하고(공백은 서버 요청 정리에서 지워진다) 길이만 보면 공백이 통과해 오류 토스트가 떴다. -->
+          <sequence>
+            <set-state target="global" directIssueSearchKeyword="{{$event.target.value}}"/>
+            <api-call if="{{String($event.target.value ?? '').trim() !== ''}}" auth_mode="required" target="/api/admin/users/search" method="GET">
+              <success>
+                <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답(한 글자가 부른 전체 회원)은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이라 옛 응답도 통과하고, 값 식의 `_global` 만 평가 시점 최신 상태다). 덮어쓰고 아래 가드로 감추기만 하면 이미 보이던 정답 목록이 사라지고 다시 오지 않는다(2026-10-07 실측). -->
+                <set-state target="global" directIssueSearchResults="{{((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email })) : (_global.directIssueSearchResults ?? [])}}" directIssueSearchResultsKeyword="{{((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.directIssueSearchResultsKeyword ?? null)}}"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed'}}"/>
+              </fail>
+              <query keyword="{{$event.target.value}}"/>
+            </api-call>
+            <set-state if="{{String($event.target.value ?? '').trim() === ''}}" target="global" :directIssueSearchResults="[]" :directIssueSearchResultsKeyword="null"/>
+          </sequence>
+        </on>
+      </input>
+    </div>
+    <!-- 검색 결과 목록 — 지금 입력값이 만든 결과일 때만 그린다 (늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다). 입력값은 trim 해 견준다 — 서버가 trim 한 검색어를 `meta.keyword` 로 돌려주므로 앞뒤 공백이 있는 입력은 그대로 견주면 영영 일치하지 않는다. -->
+    <div data-if="{{(_global.directIssueSearchResults ?? []).length > 0 &amp;&amp; (_global.directIssueSearchResultsKeyword ?? null) === (_global.directIssueSearchKeyword ?? '').trim()}}" class="border border-gray-200 dark:border-gray-700 rounded-md max-h-40 overflow-y-auto mb-4 divide-y divide-gray-100 dark:divide-gray-700">
+      <div data-each="member, memberIdx in {{_global.directIssueSearchResults ?? []}}" class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <div class="flex flex-col">
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{member.name}}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{member.email}}</span>
+        </div>
+        <button data-if="{{!(_global.directIssueSelectedUsers ?? []).some(u => u.uuid === member.uuid)}}" type="button" class="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20">
+          <on type="click">
+            <!-- 고른 회원 목록에 추가. 담는 것은 uuid 와 이름뿐이라 이메일 같은 나머지는 검색 결과에만 남는다(발급에는 uuid 만 쓰인다). -->
+            <set-state target="global" directIssueSelectedUsers="{{[...(_global.directIssueSelectedUsers ?? []), { uuid: member.uuid, name: member.name }]}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.add
+        </button>
+        <span data-if="{{(_global.directIssueSelectedUsers ?? []).some(u => u.uuid === member.uuid)}}" class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.added</span>
+      </div>
+    </div>
+    <!-- 선택된 회원 칩 -->
+    <div class="mb-2 text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.selected|count={{(_global.directIssueSelectedUsers ?? []).length}}</div>
+    <div data-if="{{(_global.directIssueSelectedUsers ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
+      <div data-each="selected, selectedIdx in {{_global.directIssueSelectedUsers ?? []}}" class="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+        <span>{{selected.name}}</span>
+        <button type="button" class="ml-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full" aria-label="$t:sirsoft-ecommerce.common.remove">
+          <on type="click">
+            <!-- 고른 회원 칩에서 빼기. 배열에서 지우는 것뿐이고 서버로는 아무것도 나가지 않는다(발급은 아래 버튼이 한다). -->
+            <set-state target="global" directIssueSelectedUsers="{{(_global.directIssueSelectedUsers ?? []).filter(u => u.uuid !== selected.uuid)}}"/>
+          </on>
+          <icon name="x" size="sm"/>
+        </button>
+      </div>
+    </div>
+    <!-- 푸터 (취소 / 발급) -->
+    <div class="flex justify-end gap-2 mt-6">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" disabled="{{(_global.directIssueSelectedUsers ?? []).length === 0 || _global.directIssueSubmitting}}" class="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 발급. 고른 회원이 하나도 없으면 버튼이 잠긴다. 성공하면 창을 닫고 쿠폰 목록을 다시 불러 발급 수를 갱신한다. -->
+          <sequence>
+            <set-state target="global" :directIssueSubmitting="true"/>
+            <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.directIssueCoupon?.id}}/issue-direct" method="POST">
+              <success>
+                <set-state target="global" :directIssueSubmitting="false"/>
+                <close-modal/>
+                <refetch-data-source dataSourceId="coupons"/>
+                <toast type="success" message="{{response.message}}"/>
+              </success>
+              <fail>
+                <set-state target="global" :directIssueSubmitting="false"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_failed'}}"/>
+              </fail>
+              <body user_uuids="{{(_global.directIssueSelectedUsers ?? []).map(u => u.uuid)}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.directIssueSubmitting}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>{{_global.directIssueSubmitting ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_btn'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

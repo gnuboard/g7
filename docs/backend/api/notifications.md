@@ -151,8 +151,9 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 관리자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 15건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정되며, 다른 사용자의 알림은 조회되지 않습니다. `_admin_base.json` 헤더의 알림 벨이 이 엔드포인트를 auto_fetch 로 소비하며 WebSocket 알림 수신 시 갱신됩니다. 항목 필드는 `id`, `type`, `type_label`, `subject`, `body`, `url`, `read_at`, `created_at` 로 구성됩니다.
+인증된 관리자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 15건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정되며, 다른 사용자의 알림은 조회되지 않습니다. `_admin_base.g7.html` 헤더의 알림 벨이 이 엔드포인트를 auto_fetch 로 소비하며 WebSocket 알림 수신 시 갱신됩니다. 항목 필드는 `id`, `type`, `type_label`, `subject`, `body`, `url`, `read_at`, `created_at` 로 구성됩니다.
 
+**권한 값(7.1.0)** 응답 `data.abilities` 는 관리자 알림 라우트와 같은 판정이다 — `can_update`(= `core.notifications.update`, 읽음 처리)·`can_delete`(= `core.notifications.delete`). 헤더 알림 센터는 이 값으로 「모두 읽음」·삭제 버튼과 닫을 때의 자동 읽음 처리를 끈다.
 
 ### DELETE /api/admin/notifications/all
 <!-- @generated:start:api.admin.notifications.destroy-all -->
@@ -394,7 +395,7 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 관리자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_admin_base.json` 헤더 알림 벨의 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
+인증된 관리자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_admin_base.g7.html` 헤더 알림 벨의 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
 
 
 ### DELETE /api/admin/notifications/{notification}
@@ -671,7 +672,9 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 사용자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 20건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정됩니다. `_user_base.json` 이 이 엔드포인트를 소비하며 WebSocket 알림 수신 시 갱신됩니다. 관리자 스코프(`/api/admin/notifications`)와 동일한 서비스·리소스를 사용하되 권한(`core.user-notifications.*`)과 기본 페이지 크기(20건)가 다릅니다.
+인증된 사용자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 20건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정됩니다. `_user_base.g7.html` 이 이 엔드포인트를 소비하며 WebSocket 알림 수신 시 갱신됩니다. 관리자 스코프(`/api/admin/notifications`)와 동일한 서비스·리소스를 사용하되 권한(`core.user-notifications.*`)과 기본 페이지 크기(20건)가 다릅니다.
+
+**권한 값(7.1.0)** 응답 `data.abilities` — `can_update`(= `core.user-notifications.update`, 읽음 처리)·`can_delete`(= `core.user-notifications.delete`). 마이페이지 알림함과 헤더 알림 센터는 이 값으로 「모두 읽음」·삭제 버튼을 잠근다.
 
 
 ### DELETE /api/user/notifications/all
@@ -914,7 +917,7 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 사용자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_user_base.json` 의 알림 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
+인증된 사용자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_user_base.g7.html` 의 알림 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
 
 
 ### DELETE /api/user/notifications/{notification}

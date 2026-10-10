@@ -17,6 +17,9 @@
  * @since 1.0.0
  */
 
+// 설정 화면 상태 유틸리티(접두 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
+
 const PLUGIN_IDENTIFIER = 'sirsoft-verification_nhnkcp';
 const PROVIDER_ID = 'nhnkcp';
 const POPUP_FEATURES = 'width=410,height=500,scrollbars=yes,resizable=yes';
@@ -41,6 +44,30 @@ interface KcpChallengePayload {
     call_url: string;
     reg_cert_key: string;
     is_test_mode?: boolean;
+    /** 결과 창(postMessage) 출처 검증 기준 — 사이트 주소의 origin */
+    siteOrigin?: string;
+}
+
+/**
+ * 표준창 form 을 제출할 주소가 KCP 인증 도메인인지 판정한다.
+ *
+ * 보안: 거래등록 응답이 준 `call_url` 로 거래 키를 POST 한다 — 응답이 바뀌면 거래 키가 다른 곳으로
+ * 간다. https 이고 KCP 인증 도메인(`*.kcp.co.kr`)일 때만 제출한다(fail-closed).
+ *
+ * @param url 제출 주소
+ * @returns 허용 주소면 true
+ */
+export function isTrustedCallUrl(url: unknown): boolean {
+    if (typeof url !== 'string' || url === '') {
+        return false;
+    }
+    try {
+        const parsed = new URL(url);
+
+        return parsed.protocol === 'https:' && /(^|\.)kcp\.co\.kr$/i.test(parsed.hostname);
+    } catch {
+        return false;
+    }
 }
 
 interface BridgeResult {
@@ -447,17 +474,9 @@ function isChallengeConsumed(challengeId?: string): boolean {
 async function reportAbandonedChallenge(challengeId?: string): Promise<void> {
     if (!challengeId) return;
 
-    const token = getG7Core()?.api?.getToken?.() ?? null;
-
+    // Bearer 부착·401 처리는 코어 API 클라이언트가 맡는다 — 토큰을 꺼내 헤더를 직접 만들지 않는다.
     try {
-        await fetch(`/api/identity/challenges/${encodeURIComponent(challengeId)}/cancel`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                Accept: 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        });
+        await getG7Core()?.api?.post?.(`/api/identity/challenges/${encodeURIComponent(challengeId)}/cancel`);
     } catch (e) {
         logger.warn('이탈 거래 취소 통보 실패 (재시도 흐름에는 영향 없음)', e);
     }
@@ -479,29 +498,10 @@ async function reissueChallenge(current: Record<string, any>): Promise<Record<st
     if (current.target) body.target = current.target;
 
     try {
-        const token = G7Core?.api?.getToken?.() ?? null;
-        const locale = (() => {
-            try {
-                return window.localStorage?.getItem('g7_locale');
-            } catch {
-                return null;
-            }
-        })();
-
-        const res = await fetch('/api/identity/challenges', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                ...(locale ? { 'Accept-Language': locale } : {}),
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify(body),
-        });
-
-        const json = await res.json().catch(() => null);
-        if (!res.ok || !json?.success) {
+        // 코어 API 클라이언트로 보낸다 — Bearer 부착·401 처리·운영자 로케일(Accept-Language)은 코어가 맡는다.
+        // 4xx·5xx 는 예외로 던지므로 아래 catch 가 실패로 처리한다.
+        const json = await G7Core?.api?.post?.('/api/identity/challenges', body);
+        if (!json?.success) {
             logger.error('challenge 재발급 실패', json);
             return null;
         }
@@ -560,6 +560,12 @@ async function startAuthHandler(): Promise<void> {
         await safeToast(`$t:${PLUGIN_IDENTIFIER}.modal.payload_not_ready`);
         return;
     }
+    const siteOrigin = typeof payload.siteOrigin === 'string' ? payload.siteOrigin : '';
+    if (!isTrustedCallUrl(payload.call_url) || siteOrigin === '') {
+        logger.error('call_url 이 KCP 인증 도메인이 아니거나 siteOrigin 부재 — 제출하지 않음', payload);
+        await safeToast(`$t:${PLUGIN_IDENTIFIER}.modal.payload_not_ready`);
+        return;
+    }
 
     if (isMobileEnvironment()) {
         stashBeforeRedirect();
@@ -578,7 +584,7 @@ async function startAuthHandler(): Promise<void> {
 
     setProviderInProgress(true);
     submitKcpForm(payload, POPUP_NAME);
-    watchPopup(popup);
+    watchPopup(popup, siteOrigin, typeof challenge.challenge_id === 'string' ? challenge.challenge_id : '');
 }
 
 /**
@@ -587,8 +593,10 @@ async function startAuthHandler(): Promise<void> {
  * 둘 중 먼저 발생한 분기에서만 정리하여 이중 dispatch 를 방지한다.
  *
  * @param popup 열린 팝업 창
+ * @param siteOrigin 결과를 받을 출처 (사이트 주소의 origin)
+ * @param challengeId 진행 중인 challenge ID
  */
-function watchPopup(popup: Window): void {
+function watchPopup(popup: Window, siteOrigin: string, challengeId: string): void {
     let settled = false;
     let pollHandle: number | null = null;
     let messageHandler: ((ev: MessageEvent<unknown>) => void) | null = null;
@@ -605,9 +613,13 @@ function watchPopup(popup: Window): void {
     };
 
     messageHandler = (ev: MessageEvent<unknown>) => {
-        if (ev.origin !== window.location.origin) return;
+        // 보안: 이 인증창이 사이트 주소에서 보낸 결과만 받는다(같은 출처 다른 창·다른 출처의 위조 결과 차단).
+        if (ev.source !== popup) return;
+        if (ev.origin !== siteOrigin) return;
         const data = ev.data as BridgeResult | null;
         if (!data || data.type !== 'identity_result') return;
+        // 검증 토큰을 실은 결과는 지금 진행 중인 challenge 의 것이어야 한다.
+        if (data.verification_token && challengeId !== '' && data.challenge_id !== challengeId) return;
         if (settled) return;
         settled = true;
 

@@ -55,6 +55,8 @@ class SeoRendererTest extends TestCase
 
     /**
      * 테스트 초기화 - SeoRenderer와 모든 의존성 Mock을 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -152,6 +154,12 @@ class SeoRendererTest extends TestCase
 
     /**
      * 정상적인 상품 상세 페이지 렌더링 시 title, meta, body를 포함한 HTML을 반환합니다.
+     *
+     * @scenario entry=render_request
+     *
+     * @effects renderer_render_product_detail_returns_complete_html
+     *
+     * @return void 반환값 없음
      */
     public function test_render_product_detail_returns_complete_html(): void
     {
@@ -221,6 +229,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * meta.seo.enabled=false일 때 null을 반환합니다.
+     *
+     * @effects renderer_render_returns_null_when_seo_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_render_returns_null_when_seo_disabled(): void
     {
@@ -248,6 +260,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 모듈 SEO가 비활성화된 경우(toggle_setting → false) null을 반환합니다.
+     *
+     * @effects renderer_render_returns_null_when_module_seo_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_render_returns_null_when_module_seo_disabled(): void
     {
@@ -281,6 +297,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * DataSource 실패 시 fallback 데이터로 렌더링합니다.
+     *
+     * @effects renderer_render_with_datasource_failure_renders_with_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_render_with_datasource_failure_renders_with_fallback(): void
     {
@@ -336,6 +356,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * URL에 매칭되는 레이아웃이 없으면 null을 반환합니다.
+     *
+     * @effects renderer_render_returns_null_when_no_layout_for_url
+     *
+     * @return void 반환값 없음
      */
     public function test_render_returns_null_when_no_layout_for_url(): void
     {
@@ -354,6 +378,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * structured_data가 있으면 JSON-LD가 포함됩니다.
+     *
+     * @effects renderer_render_includes_json_ld_when_structured_data_present
+     *
+     * @return void 반환값 없음
      */
     public function test_render_includes_json_ld_when_structured_data_present(): void
     {
@@ -412,6 +440,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * OG 태그가 뷰 데이터에 포함됩니다.
+     *
+     * @effects renderer_render_includes_og_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_render_includes_og_tags(): void
     {
@@ -468,6 +500,10 @@ class SeoRendererTest extends TestCase
      * 는 404 였다. 봇 렌더링에 필요한 스타일은 템플릿 CSS($stylesheets)가 담당하므로
      * 코어 app.css 참조를 제거했다. 이 테스트는 cssPath 잔재가 재유입되지 않도록 가드한다.
      * (공개#64 — 봇 SEO HTML CSS 404 제거)
+     *
+     * @effects renderer_render_does_not_inject_core_app_css_path
+     *
+     * @return void 반환값 없음
      */
     public function test_render_does_not_inject_core_app_css_path(): void
     {
@@ -515,6 +551,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo.data_sources 필터링: 지정된 데이터소스만 호출됩니다.
+     *
+     * @effects renderer_render_filters_data_sources_by_seo_config
+     *
+     * @return void 반환값 없음
      */
     public function test_render_filters_data_sources_by_seo_config(): void
     {
@@ -585,6 +625,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 레이아웃 로드 실패 시 null을 반환합니다.
+     *
+     * @effects renderer_render_returns_null_when_layout_load_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_render_returns_null_when_layout_load_fails(): void
     {
@@ -614,6 +658,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json 존재 시 setComponentMap이 호출됩니다.
+     *
+     * @effects renderer_seo_config_loaded_and_component_map_set
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_config_loaded_and_component_map_set(): void
     {
@@ -634,6 +682,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json 존재 시 setRenderModes가 호출됩니다.
+     *
+     * @effects renderer_seo_config_loaded_and_render_modes_set
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_config_loaded_and_render_modes_set(): void
     {
@@ -656,6 +708,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json 존재 시 setSelfClosing이 호출됩니다.
+     *
+     * @effects renderer_seo_config_loaded_and_self_closing_set
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_config_loaded_and_self_closing_set(): void
     {
@@ -676,6 +732,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json의 stylesheets가 View에 전달됩니다.
+     *
+     * @effects renderer_stylesheets_passed_to_view
+     *
+     * @return void 반환값 없음
      */
     public function test_stylesheets_passed_to_view(): void
     {
@@ -701,6 +761,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json 미존재 시 set* 메서드가 호출되지 않습니다.
+     *
+     * @effects renderer_missing_seo_config_no_calls
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_seo_config_no_calls(): void
     {
@@ -740,6 +804,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * template.json의 assets.css가 stylesheets에 자동 포함됩니다.
+     *
+     * @effects renderer_template_css_auto_included_in_stylesheets
+     *
+     * @return void 반환값 없음
      */
     public function test_template_css_auto_included_in_stylesheets(): void
     {
@@ -833,6 +901,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json이 빈 객체일 때 set* 메서드가 호출되지 않습니다.
+     *
+     * @effects renderer_empty_seo_config_no_calls
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_seo_config_no_calls(): void
     {
@@ -853,6 +925,7 @@ class SeoRendererTest extends TestCase
      * @param  array  $config  병합된 SEO config 내용
      * @param  \Closure  $expectations  htmlMapper mock 기대값 설정
      * @param  \Closure|null  $viewAssert  View::make 데이터 검증 (null이면 기본)
+     * @return void 반환값 없음
      */
     private function runSeoConfigTest(array $config, \Closure $expectations, ?\Closure $viewAssert = null): void
     {
@@ -906,6 +979,7 @@ class SeoRendererTest extends TestCase
      *
      * @param  string  $url  요청 URL
      * @param  array|null  $routeInfo  반환할 라우트 정보
+     * @return void 반환값 없음
      */
     private function setupRouteResolver(string $url, ?array $routeInfo): void
     {
@@ -922,6 +996,16 @@ class SeoRendererTest extends TestCase
      * @param  bool  $seoEnabled  SEO 활성화 여부
      * @param  array  $seoDataSources  SEO 데이터소스 ID 목록
      * @param  array  $components  컴포넌트 배열
+     * @param  string|null  $toggleSetting  확장 SEO 토글 설정 표현식 (null 이면 생략)
+     * @param  string|null  $pageType  SEO 페이지 유형 (null 이면 생략)
+     * @param  array|null  $vars  meta.seo.vars 선언 (null 이면 생략)
+     * @param  array|null  $initActions  레이아웃 init_actions (null 이면 생략)
+     * @param  array|null  $structuredData  meta.seo.structured_data 선언 (null 이면 생략)
+     * @param  array|null  $computed  computed 정의 (null 이면 생략)
+     * @param  array|null  $extensions  meta.seo.extensions 선언 (null 이면 생략)
+     * @param  array|null  $state  레이아웃 state 블록 (null 이면 생략)
+     * @param  array|null  $initLocal  레이아웃 initLocal 블록 (null 이면 생략)
+     * @param  array|null  $initGlobal  레이아웃 initGlobal 블록 (null 이면 생략)
      * @return array 병합된 레이아웃 배열
      */
     private function buildMergedLayout(
@@ -998,7 +1082,11 @@ class SeoRendererTest extends TestCase
      * @param  string  $title  타이틀
      * @param  string  $description  설명
      * @param  string  $ogTags  OG 태그 HTML
-     * @param  string  $jsonLd  JSON-LD HTML
+     * @param  string  $jsonLd  JSON-LD 스크립트 HTML
+     * @param  array  $og  OG 데이터 배열
+     * @param  array  $twitter  Twitter 카드 데이터 배열
+     * @param  array|null  $structuredData  구조화 데이터 배열 (없으면 null)
+     * @param  string  $twitterTags  Twitter 태그 HTML
      * @return array 메타 결과 배열
      */
     private function buildMetaResult(
@@ -1035,6 +1123,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * toggle_setting이 모듈 설정 true이면 렌더링이 진행됩니다.
+     *
+     * @effects renderer_toggle_setting_module_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_setting_module_enabled(): void
     {
@@ -1075,6 +1167,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * toggle_setting 미선언 시 무조건 렌더링이 진행됩니다.
+     *
+     * @effects renderer_toggle_setting_not_declared_always_renders
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_setting_not_declared_always_renders(): void
     {
@@ -1107,6 +1203,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * toggle_setting이 $core_settings: 접두사일 때 코어 설정으로 판단합니다.
+     *
+     * @effects renderer_toggle_setting_core_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_setting_core_settings(): void
     {
@@ -1138,6 +1238,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json의 text_props가 setTextProps로 전달됩니다.
+     *
+     * @effects renderer_text_props_passed_to_mapper
+     *
+     * @return void 반환값 없음
      */
     public function test_text_props_passed_to_mapper(): void
     {
@@ -1161,6 +1265,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json의 attr_map이 setAttrMap으로 전달됩니다.
+     *
+     * @effects renderer_attr_map_passed_to_mapper
+     *
+     * @return void 반환값 없음
      */
     public function test_attr_map_passed_to_mapper(): void
     {
@@ -1184,6 +1292,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json의 allowed_attrs가 setAllowedAttrs로 전달됩니다.
+     *
+     * @effects renderer_allowed_attrs_passed_to_mapper
+     *
+     * @return void 반환값 없음
      */
     public function test_allowed_attrs_passed_to_mapper(): void
     {
@@ -1209,6 +1321,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * seo-config.json에 text_props/attr_map/allowed_attrs가 없으면 set 메서드가 호출되지 않습니다.
+     *
+     * @effects renderer_missing_new_config_keys_no_calls
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_new_config_keys_no_calls(): void
     {
@@ -1235,6 +1351,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 기본 로케일(ko)에서 canonical URL에 ?locale 파라미터가 없는지 검증
+     *
+     * @effects renderer_canonical_url_no_locale_param_for_default_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_canonical_url_no_locale_param_for_default_locale(): void
     {
@@ -1274,6 +1394,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 비기본 로케일(en)에서 canonical URL에 ?locale=en이 포함되는지 검증
+     *
+     * @effects renderer_canonical_url_includes_locale_param_for_non_default
+     *
+     * @return void 반환값 없음
      */
     public function test_canonical_url_includes_locale_param_for_non_default(): void
     {
@@ -1313,6 +1437,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * hreflang 태그에 모든 supported_locales가 포함되는지 검증
+     *
+     * @effects renderer_hreflang_tags_include_all_supported_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_hreflang_tags_include_all_supported_locales(): void
     {
@@ -1363,6 +1491,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 로케일 1개뿐이면 hreflang 태그가 빈 문자열인지 검증
+     *
+     * @effects renderer_hreflang_tags_empty_when_single_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_hreflang_tags_empty_when_single_locale(): void
     {
@@ -1400,6 +1532,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * vars가 레이아웃 seoConfig에 포함되어 metaResolver에 전달됩니다.
+     *
+     * @effects renderer_vars_passed_to_meta_resolver
+     *
+     * @return void 반환값 없음
      */
     public function test_vars_passed_to_meta_resolver(): void
     {
@@ -1458,7 +1594,8 @@ class SeoRendererTest extends TestCase
                 Mockery::type('array'),
                 'sirsoft-ecommerce',
                 null,
-                Mockery::type('array')
+                Mockery::type('array'),
+                null
             )
             ->once()
             ->andReturn($this->buildMetaResult(title: '상품'));
@@ -1480,6 +1617,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * meta.seo.vars에 $core_settings: 변수가 선언되면 해석 후 setSeoVars()로 전달됩니다.
+     *
+     * @effects renderer_seo_vars_core_settings_passed_to_html_mapper
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_vars_core_settings_passed_to_html_mapper(): void
     {
@@ -1537,6 +1678,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * meta.seo.vars에 $module_settings: 변수가 선언되면 해석 후 setSeoVars()로 전달됩니다.
+     *
+     * @effects renderer_seo_vars_module_settings_passed_to_html_mapper
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_vars_module_settings_passed_to_html_mapper(): void
     {
@@ -1594,6 +1739,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * meta.seo.vars가 없으면 setSeoVars()가 호출되지 않습니다.
+     *
+     * @effects renderer_no_seo_vars_does_not_call_set_seo_vars
+     *
+     * @return void 반환값 없음
      */
     public function test_no_seo_vars_does_not_call_set_seo_vars(): void
     {
@@ -1646,6 +1795,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 플러그인 toggle_setting이 false이면 null을 반환합니다.
+     *
+     * @effects renderer_render_returns_null_when_plugin_seo_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_render_returns_null_when_plugin_seo_disabled(): void
     {
@@ -1680,6 +1833,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 플러그인 toggle_setting이 true이면 렌더링이 진행됩니다.
+     *
+     * @effects renderer_render_plugin_seo_enabled_with_toggle_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_render_plugin_seo_enabled_with_toggle_setting(): void
     {
@@ -1727,6 +1884,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * $plugin_settings: 접두사 변수가 해석되어 setSeoVars()로 전달됩니다.
+     *
+     * @effects renderer_resolve_seo_vars_with_plugin_settings_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_seo_vars_with_plugin_settings_prefix(): void
     {
@@ -1785,6 +1946,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * globalResolver가 플러그인 설정 패턴(기본값 포함)을 해석합니다.
+     *
+     * @effects renderer_global_resolver_handles_plugin_settings_with_default
+     *
+     * @return void 반환값 없음
      */
     public function test_global_resolver_handles_plugin_settings_with_default(): void
     {
@@ -1845,6 +2010,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * globalResolver가 플러그인 설정 패턴(기본값 없음)을 해석합니다.
+     *
+     * @effects renderer_global_resolver_handles_plugin_settings_without_default
+     *
+     * @return void 반환값 없음
      */
     public function test_global_resolver_handles_plugin_settings_without_default(): void
     {
@@ -1910,6 +2079,10 @@ class SeoRendererTest extends TestCase
     /**
      * 명시적 모듈 ID가 toggle_setting에서 올바르게 해석됩니다.
      * 템플릿 레벨 레이아웃(moduleIdentifier=null)에서도 모듈 설정을 참조합니다.
+     *
+     * @effects renderer_toggle_setting_explicit_module_id_when_module_identifier_null
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_setting_explicit_module_id_when_module_identifier_null(): void
     {
@@ -1960,6 +2133,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 명시적 모듈 ID toggle_setting이 false면 null을 반환합니다.
+     *
+     * @effects renderer_toggle_setting_explicit_module_id_disabled_returns_null
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_setting_explicit_module_id_disabled_returns_null(): void
     {
@@ -1995,6 +2172,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 명시적 모듈 ID가 resolveSeoVars에서 올바르게 해석됩니다.
+     *
+     * @effects renderer_resolve_seo_vars_explicit_module_id
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_seo_vars_explicit_module_id(): void
     {
@@ -2057,6 +2238,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * render()에서 _global.settings에 프론트엔드 설정이 주입됩니다.
+     *
+     * @effects renderer_render_injects_global_settings_into_context
+     *
+     * @return void 반환값 없음
      */
     public function test_render_injects_global_settings_into_context(): void
     {
@@ -2116,6 +2301,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * render()에서 _global.modules에 모듈 설정이 주입됩니다.
+     *
+     * @effects renderer_render_injects_global_modules_into_context
+     *
+     * @return void 반환값 없음
      */
     public function test_render_injects_global_modules_into_context(): void
     {
@@ -2170,6 +2359,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * render()에서 _global.plugins에 플러그인 설정이 주입됩니다.
+     *
+     * @effects renderer_render_injects_global_plugins_into_context
+     *
+     * @return void 반환값 없음
      */
     public function test_render_injects_global_plugins_into_context(): void
     {
@@ -2226,6 +2419,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * render()에서 initGlobal 문자열 형식 데이터소스의 결과가 _global에 매핑됩니다.
+     *
+     * @effects renderer_render_applies_init_global_string_mapping
+     *
+     * @return void 반환값 없음
      */
     public function test_render_applies_init_global_string_mapping(): void
     {
@@ -2281,6 +2478,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * render()에서 initGlobal 객체 형식(key + path) 데이터소스의 결과가 _global에 매핑됩니다.
+     *
+     * @effects renderer_render_applies_init_global_object_mapping
+     *
+     * @return void 반환값 없음
      */
     public function test_render_applies_init_global_object_mapping(): void
     {
@@ -2335,6 +2536,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * render()에서 쿼리 파라미터가 DataSourceResolver에 전달됩니다.
+     *
+     * @effects renderer_render_passes_query_params_to_data_source_resolver
+     *
+     * @return void 반환값 없음
      */
     public function test_render_passes_query_params_to_data_source_resolver(): void
     {
@@ -2403,6 +2608,10 @@ class SeoRendererTest extends TestCase
     /**
      * init_actions의 setState(target: local)이 _local에 반영됩니다.
      * 쿼리 파라미터 기반 표현식({{query.tab ?? 'info'}})이 올바르게 평가됩니다.
+     *
+     * @effects renderer_render_resolves_init_actions_set_state_to_local
+     *
+     * @return void 반환값 없음
      */
     public function test_render_resolves_init_actions_set_state_to_local(): void
     {
@@ -2482,6 +2691,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * init_actions가 없는 레이아웃에서 _local이 빈 배열로 초기화됩니다.
+     *
+     * @effects renderer_render_returns_empty_local_when_no_init_actions
+     *
+     * @return void 반환값 없음
      */
     public function test_render_returns_empty_local_when_no_init_actions(): void
     {
@@ -2530,6 +2743,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * init_actions에서 target이 'global'인 setState는 _local에 반영되지 않습니다.
+     *
+     * @effects renderer_render_skips_global_target_set_state_for_local
+     *
+     * @return void 반환값 없음
      */
     public function test_render_skips_global_target_set_state_for_local(): void
     {
@@ -2598,6 +2815,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 레이아웃 최상위 state 블록이 _local 초기값으로 반영됩니다.
+     *
+     * @effects renderer_render_applies_layout_state_block_to_local
+     *
+     * @return void 반환값 없음
      */
     public function test_render_applies_layout_state_block_to_local(): void
     {
@@ -2610,6 +2831,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * initLocal 블록이 state 블록보다 우선합니다 (state 는 하위 호환 별칭).
+     *
+     * @effects renderer_render_prefers_init_local_over_state_block
+     *
+     * @return void 반환값 없음
      */
     public function test_render_prefers_init_local_over_state_block(): void
     {
@@ -2624,6 +2849,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 레이아웃 최상위 initGlobal 블록이 _global 초기값으로 반영됩니다.
+     *
+     * @effects renderer_render_applies_layout_init_global_block
+     *
+     * @return void 반환값 없음
      */
     public function test_render_applies_layout_init_global_block(): void
     {
@@ -2636,6 +2865,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * init_actions의 setState(target: global)이 _global에 반영됩니다.
+     *
+     * @effects renderer_render_applies_init_actions_global_set_state_to_global
+     *
+     * @return void 반환값 없음
      */
     public function test_render_applies_init_actions_global_set_state_to_global(): void
     {
@@ -2654,6 +2887,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * init_actions의 setState(target: global)이 초기 initGlobal 값을 덮어씁니다.
+     *
+     * @effects renderer_render_init_actions_global_overrides_init_global_block
+     *
+     * @return void 반환값 없음
      */
     public function test_render_init_actions_global_overrides_init_global_block(): void
     {
@@ -2673,6 +2910,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * target: global 인 setState가 실은 _local 하위 객체는 _local로 병합됩니다.
+     *
+     * @effects renderer_render_global_set_state_nested_local_is_merged_into_local
+     *
+     * @return void 반환값 없음
      */
     public function test_render_global_set_state_nested_local_is_merged_into_local(): void
     {
@@ -2699,6 +2940,7 @@ class SeoRendererTest extends TestCase
      *
      * @param  array  $layoutArgs  buildMergedLayout 에 전달할 명명 인자
      * @param  \Closure  $assertContext  htmlMapper.render 에 전달된 컨텍스트 검증 클로저
+     * @return void 반환값 없음
      */
     private function runInitialStateTest(array $layoutArgs, \Closure $assertContext): void
     {
@@ -2737,6 +2979,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * init_actions에서 setState가 아닌 핸들러(loadFromLocalStorage, closeModal)는 무시됩니다.
+     *
+     * @effects renderer_render_ignores_non_set_state_handlers_in_init_actions
+     *
+     * @return void 반환값 없음
      */
     public function test_render_ignores_non_set_state_handlers_in_init_actions(): void
     {
@@ -2808,6 +3054,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * filter_context 훅: 리스너 미등록 시 기존 동작이 불변합니다.
+     *
+     * @effects renderer_filter_context_hook_no_listener_preserves_behavior
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_context_hook_no_listener_preserves_behavior(): void
     {
@@ -2846,6 +3096,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * filter_context 훅: 리스너 등록 시 context가 변형되어 후속 단계에 반영됩니다.
+     *
+     * @effects renderer_filter_context_hook_modifies_context_for_meta_resolution
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_context_hook_modifies_context_for_meta_resolution(): void
     {
@@ -2890,7 +3144,8 @@ class SeoRendererTest extends TestCase
                 }),
                 'sirsoft-ecommerce',
                 null,
-                Mockery::type('array')
+                Mockery::type('array'),
+                null
             )
             ->andReturn($this->buildMetaResult(title: '에어맥스'));
 
@@ -2909,6 +3164,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * filter_meta 훅: 리스너 미등록 시 기존 동작이 불변합니다.
+     *
+     * @effects renderer_filter_meta_hook_no_listener_preserves_behavior
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_meta_hook_no_listener_preserves_behavior(): void
     {
@@ -2947,6 +3206,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * filter_meta 훅: 리스너 등록 시 meta 값이 변형되어 View에 반영됩니다.
+     *
+     * @effects renderer_filter_meta_hook_modifies_meta_for_view
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_meta_hook_modifies_meta_for_view(): void
     {
@@ -2997,6 +3260,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * filter_view_data 훅: 리스너 미등록 시 기본 extraHeadTags/extraBodyEnd가 빈 문자열입니다.
+     *
+     * @effects renderer_filter_view_data_hook_no_listener_has_empty_extension_slots
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_view_data_hook_no_listener_has_empty_extension_slots(): void
     {
@@ -3036,6 +3303,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * filter_view_data 훅: 리스너 등록 시 extraHeadTags/extraBodyEnd에 값이 주입됩니다.
+     *
+     * @effects renderer_filter_view_data_hook_injects_extra_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_view_data_hook_injects_extra_tags(): void
     {
@@ -3088,6 +3359,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * filter_context 훅: hookMeta에 layoutName, moduleIdentifier 등 메타 정보가 전달됩니다.
+     *
+     * @effects renderer_filter_context_hook_receives_correct_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_context_hook_receives_correct_meta(): void
     {
@@ -3141,6 +3416,10 @@ class SeoRendererTest extends TestCase
     /**
      * computed 문자열 표현식이 evaluateRaw를 통해 평가되고
      * _computed/$computed로 context에 전달됩니다.
+     *
+     * @effects renderer_computed_string_expression_evaluates_and_passes_to_context
+     *
+     * @return void 반환값 없음
      */
     public function test_computed_string_expression_evaluates_and_passes_to_context(): void
     {
@@ -3201,6 +3480,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * computed $switch 형식이 올바르게 해석됩니다.
+     *
+     * @effects renderer_computed_switch_resolves_matching_case
+     *
+     * @return void 반환값 없음
      */
     public function test_computed_switch_resolves_matching_case(): void
     {
@@ -3260,6 +3543,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * computed $switch에서 매칭 케이스가 없으면 $default를 반환합니다.
+     *
+     * @effects renderer_computed_switch_falls_back_to_default
+     *
+     * @return void 반환값 없음
      */
     public function test_computed_switch_falls_back_to_default(): void
     {
@@ -3318,6 +3605,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * computed가 비어있으면 _computed가 context에 추가되지 않습니다.
+     *
+     * @effects renderer_empty_computed_does_not_add_to_context
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_computed_does_not_add_to_context(): void
     {
@@ -3364,6 +3655,10 @@ class SeoRendererTest extends TestCase
     /**
      * computed에서 후속 항목이 이전 computed 결과를 참조할 수 있습니다.
      * (순차 평가: totalPrice → formattedTotal)
+     *
+     * @effects renderer_computed_sequential_reference
+     *
+     * @return void 반환값 없음
      */
     public function test_computed_sequential_reference(): void
     {
@@ -3428,6 +3723,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * computed 표현식 평가 실패 시 null이 설정되고 렌더링이 계속됩니다.
+     *
+     * @effects renderer_computed_evaluation_failure_sets_null
+     *
+     * @return void 반환값 없음
      */
     public function test_computed_evaluation_failure_sets_null(): void
     {
@@ -3487,6 +3786,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 상품 상세 페이지에서 extensions + seoVariables()로 _seo.product context가 주입됩니다.
+     *
+     * @effects renderer_seo_context_injected_for_product_page
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_context_injected_for_product_page(): void
     {
@@ -3569,6 +3872,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 카테고리 목록 페이지에서 _seo.category context가 주입됩니다.
+     *
+     * @effects renderer_seo_context_injected_for_category_page
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_context_injected_for_category_page(): void
     {
@@ -3645,6 +3952,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 검색결과 페이지에서 _seo.search context가 주입됩니다 (query source 변수 포함).
+     *
+     * @effects renderer_seo_context_injected_for_search_page
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_context_injected_for_search_page(): void
     {
@@ -3709,6 +4020,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 설정 템플릿 값이 null인 경우에도 TypeError 없이 정상 동작합니다.
+     *
+     * @effects renderer_seo_context_handles_null_settings_template
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_context_handles_null_settings_template(): void
     {
@@ -3779,6 +4094,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * extensions 미선언 시 _seo context가 주입되지 않습니다 (하위호환).
+     *
+     * @effects renderer_seo_context_not_injected_without_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_context_not_injected_without_extensions(): void
     {
@@ -3831,6 +4150,10 @@ class SeoRendererTest extends TestCase
      *
      * 검증 포인트: hook 적용 → 변경 감지 → 재렌더 호출 흐름.
      * (실제 HTML 출력은 SeoMetaResolverTest 가 단위 레벨로 커버)
+     *
+     * @effects renderer_filter_og_data_hook_triggers_rerender_via_metaresolver
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_og_data_hook_triggers_rerender_via_metaresolver(): void
     {
@@ -3896,6 +4219,10 @@ class SeoRendererTest extends TestCase
 
     /**
      * 회귀: filter_structured_data 청취자가 JSON-LD 배열을 수정하면 재렌더.
+     *
+     * @effects renderer_filter_structured_data_hook_triggers_rerender_via_metaresolver
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_structured_data_hook_triggers_rerender_via_metaresolver(): void
     {
@@ -3946,5 +4273,70 @@ class SeoRendererTest extends TestCase
 
         // resetAll() 대신 이 테스트가 등록한 필터만 해제 (위 og_data 테스트와 동일 사유)
         HookManager::clearFilter('core.seo.filter_structured_data');
+    }
+
+    /**
+     * 사이트 첫 화면이 아니면 라우트 meta.title 을 제목 해석기에 넘깁니다(제목 단계가 모두 빌 때 쓰는 마지막 대체).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects renderer_passes_route_meta_title_to_resolver
+     */
+    public function test_render_passes_route_meta_title_to_meta_resolver(): void
+    {
+        $this->assertSame('$t:user.board.boards_title', $this->renderAndCaptureRouteTitle('/boards', ['title' => '$t:user.board.boards_title']));
+    }
+
+    /**
+     * 사이트 첫 화면(`/`)은 사이트 이름 자체가 제목이라 라우트 meta.title(「홈」)을 넘기지 않습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects renderer_skips_route_title_for_site_root
+     */
+    public function test_render_does_not_pass_route_meta_title_for_site_root(): void
+    {
+        $this->assertNull($this->renderAndCaptureRouteTitle('/', ['title' => '$t:user.home.page_title']));
+    }
+
+    /**
+     * 주어진 라우트 meta 로 렌더하고 제목 해석기가 받은 라우트 제목 인자를 돌려줍니다.
+     *
+     * @param  string  $url  요청 경로
+     * @param  array  $routeMeta  라우트 meta
+     * @return mixed 제목 해석기의 여섯째 인자(없으면 null)
+     */
+    private function renderAndCaptureRouteTitle(string $url, array $routeMeta): mixed
+    {
+        $this->setupRouteResolver($url, [
+            'templateIdentifier' => 'sirsoft-user_basic',
+            'layoutName' => 'board/boards',
+            'routeParams' => [],
+            'moduleIdentifier' => null,
+            'routeMeta' => $routeMeta,
+        ]);
+
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($this->buildMergedLayout(seoEnabled: true));
+        $this->dataSourceResolver->shouldReceive('resolve')->andReturn([]);
+
+        $captured = null;
+        $this->metaResolver
+            ->shouldReceive('resolve')
+            ->once()
+            ->andReturnUsing(function (...$args) use (&$captured) {
+                $captured = $args[5] ?? null;
+
+                return $this->buildMetaResult(title: '');
+            });
+
+        $this->htmlMapper->shouldReceive('render')->andReturn('');
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->once()->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->assertNotNull($this->renderer->render(Request::create($url)));
+
+        return $captured;
     }
 }

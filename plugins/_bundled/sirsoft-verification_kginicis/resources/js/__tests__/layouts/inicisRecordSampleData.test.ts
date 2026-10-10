@@ -1,13 +1,13 @@
 /**
  * KG이니시스 본인인증 카드 편집기 샘플 데이터 계약 테스트
  *
- * 본인인증 카드(resources/extensions/mypage_identity_card.json)는 유저 프로필
+ * 본인인증 카드(resources/extensions/mypage_identity_card.g7.html)는 유저 프로필
  * (mypage/profile)에 layout_extension 으로 주입되며, 데이터소스 `inicisRecord` 를 선언한다.
  * 편집기 캔버스에서 이 카드가 stub("샘플 name_masked"/"sample")로 렌더되던 결함을 MCP 실측으로
  * 발견(stage C) → editor-spec.json 의 sampleData.byDataSourceId.inicisRecord 를 실제 Resource
  * (InicisIdentityResource::toArray) shape 로 충실화. 본 테스트가 stub 재발을 차단한다.
  *
- * 바인딩 SSoT: resources/extensions/mypage_identity_card.json
+ * 바인딩 SSoT: resources/extensions/mypage_identity_card.g7.html
  *   (inicisRecord.data.{method,verified_at,name_masked,birthday_masked,phone_masked,is_adult})
  */
 import { describe, it, expect } from 'vitest';

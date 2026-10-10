@@ -68,7 +68,8 @@
     "partial_expired": "일부 소멸",
     "expired_amount": "{{amount}} 소멸",
     "unlimited": "무기한",
-    "none": "-"
+    "none": "-",
+    "deleted_member": "삭제된 회원"
   },
   "row_action": {
     "expand": "상세 보기",

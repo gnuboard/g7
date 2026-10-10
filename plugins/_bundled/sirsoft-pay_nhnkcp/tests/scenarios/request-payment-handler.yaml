@@ -1,0 +1,25 @@
+feature: NHN KCP 결제창 진입 핸들러(requestPayment)의 입력 가드와 결제창 인자
+
+description: |
+  결제창 진입 핸들러가 결제 데이터 누락·애플페이 비 iOS 기기·KRW 외 통화를 결제 설정 조회 전에 막고, 결제 설정 조회 실패를
+  화면 상태 복구로 처리하는지 본다. 결제수단은 액션 인자로만 정한다 — 호출부가 넘긴 paymentMethod, 없으면 서버가
+  pg_payment_data 에 실은 payment_method 이고, 옛 pay_method 키나 화면 상태는 보지 않는다 (#639). PC 결제창 수단·
+  복합과세 분할·간편결제 반환 필드·결제창 닫힘 감지·SDK 호스트 게이트를 함께 잠근다.
+
+axes:
+  area: [entry_guard, currency, client_config, payment_method_source, frame_close, tax_split, easy_pay_fields, pc_pay_method, sdk_host]
+
+effects:
+  - early_return_without_payment_data
+  - apple_pay_blocked_off_ios
+  - non_krw_blocked
+  - client_config_failure_handled
+  - payment_method_from_action_args
+  - frame_close_detected_once
+  - tax_fields_rebalanced
+  - easy_pay_method_returned
+  - pc_window_method_from_server
+  - sdk_host_allowlisted
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/handlers/requestPayment.test.ts

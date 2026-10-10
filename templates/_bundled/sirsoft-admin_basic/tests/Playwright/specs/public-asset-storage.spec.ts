@@ -212,6 +212,12 @@ test.describe('공개 자산 스토리지 설정', () => {
     await openAndReadOptions(page, storageSelect);
     await page.locator('[role="listbox"] [role="option"]', { hasText: '로컬' }).first().click();
 
+    // 대조군을 만든다 — 공개 자산 디스크가 이미 S3 인 사이트에서는 접속 필드가 처음부터
+    // 떠 있는 것이 정상이라, 그 상태로 부재를 단언하면 환경에 따라 판정이 뒤집힌다.
+    // 저장하지 않고 폼 상태만 S3 아닌 값으로 돌려 놓는다.
+    await openAndReadOptions(page, CORE_SELECT_ROOT);
+    await page.locator('[role="listbox"] [role="option"]', { hasText: '사용 안 함' }).first().click();
+
     // 이 상태에서 s3 접속 필드는 없어야 한다 (존재 확정 전 부재 단언 회피 —
     // 아래에서 같은 선택자로 존재를 확정한다)
     const bucketInput = page.locator('input[name="drivers.s3_bucket"]');

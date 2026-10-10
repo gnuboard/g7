@@ -1,0 +1,122 @@
+<!-- 플러그인 설치 창. 예/아니오만 묻는 창이 아니라 **함께 깔 것을 고르는 창**이다 — 열리면서
+  설치 미리보기를 받아 의존 확장과 딸린 언어팩을 체크리스트로 편다.
+
+  체크 상태를 읽는 규칙이 까다로운데, 이유가 있다.
+  ⑴ 고른 적이 없으면(`null`) 서버가 정해 준 기본 선택을 그대로 따르고, 한 번이라도 건드리면
+     그때부터 사람이 고른 목록이 정본이 된다 — 그래서 표현마다 「없으면 기본값에서 시작」이 붙는다.
+  ⑵ 언어팩은 자기가 기대는 확장이 선택 목록에 있어야만 켤 수 있다. 그 확장을 빼면 언어팩 체크도
+     함께 풀리고 칸이 잠긴다(깔 수 없는 것을 요청 본문에 실어 보내지 않으려는 것이다). -->
+<partial description="플러그인 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_install_modal">
+  <modal data-type="composite" data-ref="plugin_install_modal" title="$t:admin.plugins.modals.install_title" size="medium">
+    <!-- 무엇이 함께 깔릴지와 각 항목의 기본 선택 여부를 서버가 정해 준다. 응답을 확장 공용 자리에 올려 두어 아래 체크리스트와 요청 본문이 같은 값을 읽게 한다. -->
+    <data-source id="pluginInstallPreview" label_key="$t:editor.data_source.pluginInstallPreview" type="api" endpoint="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/install-preview" :auth_required="true" initGlobal="installPreview"/>
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_install_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.plugins.modals.install_confirm|name={{_global.selectedPlugin.name}}</span></p>
+      <p class="mt-2 text-label-subtle">$t:admin.plugins.modals.install_description</p>
+    </div>
+    <div class="mt-4">
+      <label class="form-label">$t:admin.plugins.modals.vendor_mode_label</label>
+      <select class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" value="{{_global.pluginInstallVendorMode ?? 'auto'}}">
+        <options>
+          <option value="auto">$t:admin.plugins.modals.vendor_mode_auto</option>
+          <option value="composer">$t:admin.plugins.modals.vendor_mode_composer</option>
+          <option value="bundled">$t:admin.plugins.modals.vendor_mode_bundled</option>
+        </options>
+        <on type="change">
+          <!-- 딸린 라이브러리를 어떻게 들일지. 고르지 않으면 자동이고, 그 기본값은 아래 요청 본문에서 한 번 더 같은 값으로 읽는다. -->
+          <set-state target="global" pluginInstallVendorMode="{{$event.target.value}}"/>
+        </on>
+      </select>
+      <p class="form-hint">$t:admin.plugins.modals.vendor_mode_hint</p>
+    </div>
+    <div data-ref="cascade_dependencies_section" data-if="{{_global.installPreview?.dependencies &amp;&amp; _global.installPreview.dependencies.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="flex-center gap-2 mb-2">
+        <icon name="link" class="text-base text-gray-500"/>
+        <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.cascade_dependencies_title</span>
+      </div>
+      <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_dependencies_hint</p>
+      <p data-if="{{_global.installPreview.dependencies.some(x => x.available &amp;&amp; x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.plugins.modals.cascade_no_permission_hint</p>
+      <div data-each="dep in _global.installPreview.dependencies" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1">
+        <input type="checkbox" checked="{{dep.can_select === true &amp;&amp; ((_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) &amp;&amp; dep.default_selected))}}" disabled="{{!dep.available || dep.can_select !== true}}" class="w-4 h-4">
+          <on type="change">
+            <!-- 의존 확장 하나를 더하거나 뺀다. 위 규칙 ⑴ 대로 아직 고른 적이 없으면 서버 기본 선택에서 출발하고, 같은 식별자를 먼저 걸러 낸 뒤 다시 넣어 중복을 막는다. -->
+            <set-state target="global" installSelectedDeps="{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"/>
+          </on>
+        </input>
+        <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500"/>
+        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500"/>
+        <span class="text-primary text-sm">{{dep.name || dep.identifier}} ({{dep.identifier}})</span>
+        <span class="text-tertiary font-mono">{{dep.required_version}}</span>
+        <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.plugins.modals.dependency_met</span>
+        <span data-if="{{!dep.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.plugins.modals.dependency_not_installed</span>
+        <span data-if="{{dep.is_installed &amp;&amp; !dep.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.plugins.modals.dependency_inactive</span>
+        <span data-if="{{dep.available &amp;&amp; dep.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.plugins.modals.cascade_no_permission</span>
+      </div>
+    </div>
+    <div data-ref="cascade_language_packs_section" data-if="{{_global.installPreview?.language_packs &amp;&amp; _global.installPreview.language_packs.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="flex-center gap-2 mb-2">
+        <icon name="language" class="text-base text-gray-500"/>
+        <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.cascade_language_packs_title</span>
+      </div>
+      <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_language_packs_hint</p>
+      <p data-if="{{_global.installPreview.language_packs.some(x => x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.plugins.modals.cascade_no_permission_hint</p>
+      <div data-each="lp in _global.installPreview.language_packs" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1">
+        <input type="checkbox" checked="{{lp.can_select === true &amp;&amp; (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) &amp;&amp; lp.default_selected)) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}" disabled="{{lp.can_select !== true || (lp.depends_on_extension &amp;&amp; !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}" class="w-4 h-4">
+          <on type="change">
+            <!-- 언어팩 하나를 더하거나 뺀다. 켜 두더라도 기대는 확장이 선택에서 빠지면 위 규칙 ⑵ 로 다시 꺼지므로, 이 자리의 선택은 「그 확장이 함께 깔릴 때」라는 조건부다. -->
+            <set-state target="global" installSelectedLPs="{{ $event.target.checked ? [ ...((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier), lp.bundled_identifier ] : ((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier) }}"/>
+          </on>
+        </input>
+        <span class="text-primary text-sm">{{lp.locale_native_name}} ({{lp.locale}})</span>
+        <span class="text-tertiary font-mono">v{{lp.version}}</span>
+        <span data-if="{{(lp.depends_on_extension ?? lp.target_identifier) &amp;&amp; (lp.depends_on_extension ?? lp.target_identifier) !== _global.installPreview?.target?.identifier}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.plugins.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}</span>
+        <span data-if="{{lp.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.plugins.modals.cascade_no_permission</span>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isPluginInstalling}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginInstalling}}">
+        <on type="click">
+          <!-- 보낼 때 화면의 체크 상태를 그대로 싣지 않고 **미리보기 목록을 그 선택으로 다시 걸러** 만든다 —
+            사이에 미리보기가 바뀌었더라도 지금 목록에 없는 것은 요청에 실리지 않는다.
+            언어팩 쪽은 기대는 확장이 함께 깔리는지까지 한 번 더 본다(화면의 잠금과 같은 조건).
+            깐 뒤 목록·관리자 메뉴를 다시 받고 확장을 새로 읽는다 — 플러그인이 메뉴와 화면 조각을 더할 수 있다. -->
+          <sequence>
+            <set-state target="global" :isPluginInstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/install" method="POST">
+              <success>
+                <set-state target="global" :isPluginInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
+                <toast type="success" message="$t:admin.plugins.install_success"/>
+                <!-- 함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures). -->
+                <toast if="{{(response.data?.language_pack_failures ?? []).length !== 0}}" type="warning" message="$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f =&gt; f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"/>
+                <!-- 이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host). -->
+                <toast if="{{(response.data?.language_packs_awaiting_host ?? []).length !== 0}}" type="info" message="$t:extensions.alerts.language_pack_awaiting_host|names={{(response.data?.language_packs_awaiting_host ?? []).join(', ')}}"/>
+                <refetch-data-source dataSourceId="plugins"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions/>
+                <close-modal/>
+                <set-state target="global" :selectedPlugin="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :isPluginInstalling="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body plugin_name="{{_global.selectedPlugin.identifier}}" vendor_mode="{{_global.pluginInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{!_global.isPluginInstalling}}" name="download" class="text-base"/>
+        <icon data-if="{{_global.isPluginInstalling}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isPluginInstalling ? '$t:admin.plugins.installing' : '$t:admin.plugins.actions.install'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

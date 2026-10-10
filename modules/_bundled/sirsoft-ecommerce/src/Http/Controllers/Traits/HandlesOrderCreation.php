@@ -212,6 +212,15 @@ trait HandlesOrderCreation
             );
 
         } catch (Exception $e) {
+            // 위 catch 들이 잡지 못한 예외는 원인을 알 수 없는 실패다 — 반드시 남긴다.
+            // 종전에는 아무것도 기록하지 않고 500 만 돌려줘, 운영에서도 테스트에서도 원인 추적이
+            // 불가능했다 (조사에 실제로 이 침묵이 걸림돌이 됐다).
+            Log::error('Order create: unexpected failure', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.order.create_failed',
@@ -334,11 +343,31 @@ trait HandlesOrderCreation
         $charge = app(CurrencyConversionService::class)
             ->resolveSnapshotPaymentCharge((float) $order->total_due_amount, $order->currency_snapshot ?? []);
 
+        // 면세 금액도 **승인 시점에** 실어야 한다 (S1-D12).
+        //
+        // 복합 과세 상점은 결제·결제취소·현금영수증 요청에 면세 금액을 함께 보내야 한다는 것이
+        // PG 계약이다(토스 「세금 처리」 가이드). 승인에서 빼고 취소에서만 보내면 PG 는 그 결제를
+        // **전액 과세**로 등록해 두었다가 면세분이 실린 취소를 **「취소 할 수 없는 금액 입니다」**
+        // 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 통째로 막힌다.
+        // 환산은 청구액과 같은 스냅샷 규칙을 쓴다(둘이 다른 환율을 타면 PG 가 합을 못 맞춘다).
+        $taxFreeBase = (float) ($order->total_tax_free_amount ?? 0);
+        $taxFreeCharge = $taxFreeBase > 0
+            ? app(CurrencyConversionService::class)
+                ->resolveSnapshotPaymentCharge($taxFreeBase, $order->currency_snapshot ?? [])
+            : null;
+
+        // 가상계좌 입금 기한 — 주문이 정한 기한(설정 `order_settings.auto_cancel_days`)을 결제창에 그대로 넘긴다.
+        // 넘기지 않으면 PG 가 자기 기본 기한(KG 10~30일·나이스 10일)으로 계좌를 열고, 콜백이 그 값으로 주문 기한을
+        // 덮어써 주문서 안내와 자동취소 시점이 결제사마다 달라진다. PG 는 한국 시각으로 받으므로 KST 로 싣는다.
+        $vbankDueAt = $order->payment?->vbank_due_at?->copy()->setTimezone('Asia/Seoul')->toIso8601String();
+
         return [
             'order_number' => $order->order_number,
             'order_name' => $orderName,
             'amount' => $charge['minor_unit_amount'],
             'currency' => $charge['currency'],
+            // 면세분이 없으면 키를 싣지 않는다 — 과세 전용 상점에서 0 을 보내면 불필요한 계약 분기를 탄다.
+            'tax_free_amount' => $taxFreeCharge['minor_unit_amount'] ?? null,
             'customer_name' => $shippingAddress?->orderer_name,
             'customer_email' => $shippingAddress?->orderer_email,
             'customer_phone' => preg_replace('/[^0-9]/', '', $shippingAddress?->orderer_phone ?? ''),
@@ -351,7 +380,7 @@ trait HandlesOrderCreation
             // 에스크로 결제(가상계좌·계좌이체) 시 필수인 상품 상세 배열. PG 가 사용 여부를
             // 프론트에서 결정하므로 provider-agnostic 하게 항상 조립한다 (비에스크로는 무시).
             'escrow_products' => $this->buildEscrowProducts($order, $locale),
-        ];
+        ] + ($vbankDueAt !== null ? ['vbank_due_at' => $vbankDueAt] : []);
     }
 
     /**

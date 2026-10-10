@@ -1,0 +1,36 @@
+<!-- 상품 폼 — 라벨 삭제 확인. 이 상품에서 떼는 것이 아니라 라벨 자체를 지우는 것이라, 같은 라벨을
+  쓰는 다른 상품에서도 함께 떨어진다. 지울 라벨은 전역에 담긴 id 로 라벨 목록에서 되찾아 보여 준다
+  (창은 별도 컨텍스트라 폼의 선택 상태를 못 본다). -->
+<partial description="Product Form - Label Delete Confirmation Modal">
+  <modal data-type="composite" data-ref="modal_label_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.labels.delete_modal.title" size="sm">
+    <div data-ref="delete_confirm_content">
+      <div class="flex-center gap-3">
+        <div class="flex-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 justify-center flex-shrink-0">
+          <icon name="trash" class="text-xl text-red-600 dark:text-red-400"/>
+        </div>
+        <div>
+          <p class="text-primary font-medium">
+            <span class="px-2 py-0.5 rounded text-xs font-medium mr-1" style="background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280'}}">{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.name) ?? ''}}</span>
+            <span>$t:sirsoft-ecommerce.admin.product.labels.delete_modal.message</span>
+          </p>
+          <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.product.labels.delete_modal.description</p>
+        </div>
+      </div>
+      <div data-ref="delete_modal_footer" class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" class="btn btn-outline" disabled="{{_global.isDeletingLabel}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:sirsoft-ecommerce.common.cancel
+        </button>
+        <button type="button" class="btn btn-danger" disabled="{{_global.isDeletingLabel}}">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.deleteLabel"/>
+          </on>
+          <icon data-if="{{_global.isDeletingLabel}}" name="spinner" class="spinner-sm mr-2"/>
+          <span>{{_global.isDeletingLabel ? '$t:sirsoft-ecommerce.admin.product.labels.delete_modal.deleting' : '$t:sirsoft-ecommerce.admin.product.labels.remove'}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

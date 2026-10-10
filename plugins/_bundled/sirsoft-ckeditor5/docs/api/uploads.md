@@ -32,8 +32,8 @@
 | per_page | query | integer | 아니오 | 1 ~ 100 | 페이지 크기 (기본 20). 참조 판정을 페이지 단위로 수행하므로 이 값이 곧 판정 비용의 상한이다. |
 | search | query | string | 아니오 | max 255 | 원본 파일명 또는 해시 부분 일치 |
 | referenced | query | string | 아니오 | `all`, `referenced`, `unreferenced` | 참조 상태 필터 (기본 `all`) |
-| date_from | query | date | 아니오 | — | 업로드 시작일 (그날 00:00:00 포함) |
-| date_to | query | date | 아니오 | — | 업로드 종료일 (그날 23:59:59 포함) |
+| date_from | query | date | 아니오 | — | 업로드 시작일 (그날 00:00:00 포함 — 날짜는 보는 사람의 시간대 하루로 해석) |
+| date_to | query | date | 아니오 | — | 업로드 종료일 (그날 23:59:59 포함 — 날짜는 보는 사람의 시간대 하루로 해석) |
 | sort_by | query | string | 아니오 | `created_at`, `file_size`, `original_name` | 정렬 컬럼 (기본 `created_at`). 목록 밖 컬럼은 422 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (기본 `desc`) |
 
@@ -118,7 +118,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 <!-- @generated:end -->
 
-**설명**
+**설명** 응답 `data.abilities` 의 `can_delete`(업로드 삭제 권한)·`can_open_settings`(플러그인 설정 수정 권한)는 화면이 행 선택·삭제와 [설정 열기]를 잠그는 근거입니다(7.1.0).
 
 에디터로 업로드된 이미지 목록을 관리 화면에 제공하는 엔드포인트다.
 

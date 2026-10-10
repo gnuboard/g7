@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
@@ -24,10 +25,9 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  * 방어: 소유자 인증을 거친 승인키 발급 시점에 일회성 nonce 를 만들어 주문에 저장하고
  * KCP passthrough 파라미터(param_opt_2)로 실어 보낸 뒤, 콜백에서 되돌아온 값과
  * 대조한다. 불일치/부재면 상태를 전혀 바꾸지 않는다.
- *
- * @group nhnkcp
- * @group security
  */
+#[Group('nhnkcp')]
+#[Group('security')]
 class MobileVbankCallbackBindingTest extends PluginTestCase
 {
     private const TEST_SITE_CD = 'T0000';
@@ -40,6 +40,11 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     private const TEST_PAY_URL = 'https://testpay.kcp.co.kr/php/mobile/mc_pay_form.php';
 
+    /**
+     * 각 테스트 전에 공통 준비를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +53,8 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * 플러그인 설정을 테스트 모드로 고정합니다.
+     *
+     * @return void 반환값 없음
      */
     private function mockPluginSettings(): void
     {
@@ -66,6 +73,8 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * KcpSoapService 를 승인키 발급 성공으로 고정합니다.
+     *
+     * @return void 반환값 없음
      */
     private function mockSoapService(): void
     {
@@ -82,7 +91,7 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
     /**
      * KRW 통화 스냅샷을 반환합니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, 반환값
      */
     private static function krwCurrencySnapshot(): array
     {
@@ -106,6 +115,8 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
      * 가상계좌 결제대기 주문을 만듭니다.
      *
      * @param  array<string, mixed>  $paymentMeta  payment_meta 초기값
+     * @param  int  $totalAmount  주문 총액
+     * @return Order 생성한 주문
      */
     private function createVbankOrder(array $paymentMeta = [], int $totalAmount = 50000): Order
     {
@@ -157,7 +168,7 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
     /**
      * 저장된 세션 nonce 를 가진 주문을 만듭니다.
      *
-     * @return array{0: Order, 1: string}
+     * @return array{0: 반환값
      */
     private function createVbankOrderWithState(): array
     {
@@ -176,7 +187,8 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
      * 모바일 가상계좌 콜백 페이로드를 만듭니다 (enc_data/enc_info 없음).
      *
      * @param  array<string, mixed>  $overrides  덮어쓸 값
-     * @return array<string, mixed>
+     * @param  Order  $order  대상 주문
+     * @return array<string, 반환값
      */
     private function mobileVbankPayload(Order $order, array $overrides = []): array
     {
@@ -200,6 +212,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * 세션 nonce 가 저장되지 않은 주문에 온 모바일 콜백은 계좌를 쓰지 못한다.
+     *
+     * @effects mobile_vbank_callback_without_stored_state_cannot_persist_account
+     *
+     * @return void 반환값 없음
      */
     public function test_mobile_vbank_callback_without_stored_state_cannot_persist_account(): void
     {
@@ -215,6 +231,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * 저장된 nonce 와 다른 param_opt_2 는 차단된다.
+     *
+     * @effects mobile_vbank_callback_with_mismatched_state_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_mobile_vbank_callback_with_mismatched_state_is_rejected(): void
     {
@@ -231,6 +251,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * 이미 발급된 계좌는 위조 콜백으로 덮어써지지 않는다.
+     *
+     * @effects forged_callback_cannot_overwrite_an_issued_account
+     *
+     * @return void 반환값 없음
      */
     public function test_forged_callback_cannot_overwrite_an_issued_account(): void
     {
@@ -251,6 +275,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * nonce 는 1회성이다 — 정상 발급 후 같은 nonce 로 다시 오면 차단된다.
+     *
+     * @effects state_is_single_use_and_replay_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_state_is_single_use_and_replay_is_rejected(): void
     {
@@ -289,6 +317,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
      * 이 경로는 종전 테스트가 카드 결제만 다뤄 비어 있었다. 발급이 조용히 실패하면
      * 콜백은 언제나 차단되어 **가상계좌 결제 자체가 불능**이 되는데, 그 실패는 차단
      * 테스트만으로는 드러나지 않는다.
+     *
+     * @effects mobile_vbank_approval_key_issues_and_persists_the_session_state
+     *
+     * @return void 반환값 없음
      */
     public function test_mobile_vbank_approval_key_issues_and_persists_the_session_state(): void
     {
@@ -315,6 +347,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * 카드 결제에는 nonce 를 만들지 않는다 (범위 최소화 — 불필요한 부작용 방지).
+     *
+     * @effects card_approval_key_does_not_issue_a_vbank_state
+     *
+     * @return void 반환값 없음
      */
     public function test_card_approval_key_does_not_issue_a_vbank_state(): void
     {
@@ -343,6 +379,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
      * 두 지점이 서로 다른 키·형식을 쓰면 차단 테스트는 전부 통과하면서 정상 결제만
      * 막힌다. 과거 KVE 재수정 사례가 "검증 지점과 실행 지점의 해석 불일치" 였으므로
      * 두 절반을 한 테스트로 묶어 고정한다.
+     *
+     * @effects issued_state_round_trips_through_the_callback
+     *
+     * @return void 반환값 없음
      */
     public function test_issued_state_round_trips_through_the_callback(): void
     {
@@ -379,6 +419,10 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
 
     /**
      * 일치하는 nonce 를 실은 콜백은 종전대로 계좌를 저장한다.
+     *
+     * @effects mobile_vbank_callback_with_matching_state_persists_account, kcp_vbank_issue_marks_payment_waiting_deposit
+     *
+     * @return void 반환값 없음
      */
     public function test_mobile_vbank_callback_with_matching_state_persists_account(): void
     {
@@ -396,5 +440,7 @@ class MobileVbankCallbackBindingTest extends PluginTestCase
         $this->assertSame('정상은행', $payment->vbank_name);
         $this->assertSame('NHN KCP', $payment->vbank_holder);
         $this->assertSame('mobile', $payment->payment_device);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
+        $this->assertSame('nhnkcp', $payment->pg_provider);
     }
 }

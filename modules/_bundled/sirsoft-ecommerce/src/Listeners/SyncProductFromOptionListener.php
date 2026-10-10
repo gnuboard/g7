@@ -59,7 +59,7 @@ class SyncProductFromOptionListener implements HookListenerInterface
      * getSubscribedHooks()에서 개별 메서드를 지정하므로,
      * 이 메서드는 호출되지 않지만 인터페이스 준수를 위해 구현
      *
-     * @param mixed ...$args 훅 인자
+     * @param  mixed  ...$args  훅 인자
      * @return void
      */
     public function handle(...$args): void
@@ -73,8 +73,8 @@ class SyncProductFromOptionListener implements HookListenerInterface
      * 재고 동기화 후 product.after_stock_sync 훅을 발행하여
      * 활동 로그 기록을 ProductActivityLogListener에 위임합니다.
      *
-     * @param array $optionIds 변경된 옵션 ID 배열
-     * @param int $updatedCount 업데이트된 옵션 수
+     * @param  array  $optionIds  변경된 옵션 ID 배열
+     * @param  int  $updatedCount  업데이트된 옵션 수
      * @return void
      */
     public function syncProductStockFromOptions(array $optionIds, int $updatedCount): void
@@ -117,6 +117,8 @@ class SyncProductFromOptionListener implements HookListenerInterface
                 'option_count' => $updatedCount,
             ]);
         } catch (\Exception $e) {
+            // 흐름은 멈추지 않는다 — 다음 재고 변경 때 합계가 다시 계산된다. 대신 경고 로그로 흘리지 않고 오류 보고로 올린다(B6).
+            report($e);
             Log::error('SyncProductFromOptionListener: 상품 재고 동기화 실패', [
                 'error' => $e->getMessage(),
                 'option_ids' => $optionIds,
@@ -131,9 +133,9 @@ class SyncProductFromOptionListener implements HookListenerInterface
      * productRepository->syncStockFromOptions()가 이미 DB를 갱신했으므로
      * 여기서는 스냅샷 대비 변경 감지 후 훅을 발행합니다.
      *
-     * @param array $result 업데이트 결과
-     * @param array $data 원본 요청 데이터
-     * @param array $snapshots 옵션 스냅샷 (id => snapshot)
+     * @param  array  $result  업데이트 결과
+     * @param  array  $data  원본 요청 데이터
+     * @param  array  $snapshots  옵션 스냅샷 (id => snapshot)
      * @return void
      */
     public function syncProductStockFromBulkUpdate(array $result, array $data, array $snapshots = []): void
@@ -214,6 +216,8 @@ class SyncProductFromOptionListener implements HookListenerInterface
                 }
             }
         } catch (\Exception $e) {
+            // B6 — 위와 같은 이유로 보고만 한다.
+            report($e);
             Log::error('SyncProductFromOptionListener: 통합 일괄 수정 재고 동기화 실패', [
                 'error' => $e->getMessage(),
             ]);

@@ -1,164 +1,238 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "장바구니 구매불가 상품 안내 모달",
-    "editor_label": "$t:user.modal_label.shop.cart_unavailable_modal"
-  },
-  "id": "cart_unavailable_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_title' : '$t:shop.cart.unavailable_title'}}",
-    "size": "md",
-    "showCloseButton": false,
-    "closeOnOverlayClick": false
-  },
-  "children": [
-    {
-      "comment": "모달 내용",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "p-4" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center gap-3 mb-4" },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "className": "w-6 h-6 text-amber-500" } },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-gray-700 dark:text-gray-300" },
-              "text": "{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_message' : '$t:shop.cart.unavailable_message'}}"
-            }
-          ]
-        },
-        {
-          "comment": "문제 상품 목록",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-60 overflow-y-auto" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "space-y-2" },
-              "iteration": {
-                "source": "{{$parent._local.unavailableModal.items ?? []}}",
-                "item_var": "unavailableItem",
-                "index_var": "unavailableIdx"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600 flex-shrink-0" },
-                      "children": [
-                        { "type": "basic", "name": "Img", "props": { "src": "{{unavailableItem.thumbnail}}", "alt": "{{unavailableItem.name}}", "className": "w-full h-full object-cover" } }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex-1 min-w-0" },
-                      "children": [
-                        { "type": "basic", "name": "P", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white truncate" }, "text": "{{unavailableItem.name}}" },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{unavailableItem.option}}",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                          "text": "{{unavailableItem.option}}"
-                        },
-                        {
-                          "comment": "재고부족 표시",
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{unavailableItem.reason === 'stock'}}",
-                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
-                          "text": "$t:shop.cart.insufficient_stock_item|name={{unavailableItem.name}}|option={{unavailableItem.option}}|stock={{unavailableItem.stock}}|quantity={{unavailableItem.quantity}}"
-                        },
-                        {
-                          "comment": "판매중지 표시",
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{unavailableItem.reason === 'status'}}",
-                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
-                          "text": "$t:shop.cart.not_on_sale"
-                        },
-                        {
-                          "comment": "최대 구매수량 초과 표시",
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{unavailableItem.reason === 'max_qty'}}",
-                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
-                          "text": "$t:shop.cart.max_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}"
-                        },
-                        {
-                          "comment": "최소 구매수량 미달 표시",
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{unavailableItem.reason === 'min_qty'}}",
-                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
-                          "text": "$t:shop.cart.min_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}"
-                        },
-                        {
-                          "comment": "구매 대상 제한 표시",
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{unavailableItem.reason === 'restricted'}}",
-                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
-                          "text": "$t:shop.cart.restricted_item"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "주문을 진행할 수 없는 항목(품절·판매중지)을 알리는 창. 닫기·바깥 클릭을 막아 둔 이유는 이 창이\n     흐름을 끊는 자리라 «봤다» 는 선택을 반드시 받아야 하기 때문이다. 장바구니와 주문서가 함께 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "장바구니 구매불가 상품 안내 모달",
+        "editor_label": "$t:user.modal_label.shop.cart_unavailable_modal"
     },
-    {
-      "comment": "모달 푸터",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700" },
-      "children": [
+    "id": "cart_unavailable_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_title' : '$t:shop.cart.unavailable_title'}}",
+        "size": "md",
+        "showCloseButton": false,
+        "closeOnOverlayClick": false
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
-          },
-          "text": "$t:shop.cart.go_to_cart",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "comment": "모달 내용",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4"
+            },
+            "children": [
                 {
-                  "handler": "closeModal",
-                  "target": "cart_unavailable_modal"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-3 mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-2xl text-amber-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_message' : '$t:shop.cart.unavailable_message'}}"
+                        }
+                    ]
                 },
                 {
-                  "handler": "navigate",
-                  "params": {
-                    "path": "{{_global.shopBase}}/cart"
-                  }
+                    "comment": "문제 상품 목록",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-60 overflow-y-auto"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{$parent._local.unavailableModal.items ?? []}}",
+                                "item_var": "unavailableItem",
+                                "index_var": "unavailableIdx"
+                            },
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600 flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Img",
+                                                    "if": "{{unavailableItem.thumbnail}}",
+                                                    "props": {
+                                                        "src": "{{unavailableItem.thumbnail}}",
+                                                        "alt": "{{unavailableItem.name}}",
+                                                        "className": "w-full h-full object-cover"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{!unavailableItem.thumbnail}}",
+                                                    "props": {
+                                                        "className": "w-full h-full flex items-center justify-center"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "image",
+                                                                "size": "md",
+                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-900 dark:text-white truncate"
+                                                    },
+                                                    "text": "{{unavailableItem.name}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{unavailableItem.option}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{unavailableItem.option}}"
+                                                },
+                                                {
+                                                    "comment": "재고부족 표시",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{unavailableItem.reason === 'stock'}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "$t:shop.cart.insufficient_stock_item|name={{unavailableItem.name}}|option={{unavailableItem.option}}|stock={{unavailableItem.stock}}|quantity={{unavailableItem.quantity}}"
+                                                },
+                                                {
+                                                    "comment": "판매중지 표시",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{unavailableItem.reason === 'status'}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "$t:shop.cart.not_on_sale"
+                                                },
+                                                {
+                                                    "comment": "최대 구매수량 초과 표시",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{unavailableItem.reason === 'max_qty'}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "$t:shop.cart.max_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}"
+                                                },
+                                                {
+                                                    "comment": "최소 구매수량 미달 표시",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{unavailableItem.reason === 'min_qty'}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "$t:shop.cart.min_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}"
+                                                },
+                                                {
+                                                    "comment": "구매 대상 제한 표시",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{unavailableItem.reason === 'restricted'}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "$t:shop.cart.restricted_item"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "comment": "모달 푸터",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "이 창의 유일한 출구 — 문제 항목을 정리하러 장바구니로 되돌린다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal",
+                                    "target": "cart_unavailable_modal"
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_global.shopBase}}/cart"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                    },
+                    "text": "$t:shop.cart.go_to_cart"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

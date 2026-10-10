@@ -1,271 +1,275 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_ecommerce_main_banner_index",
-  "permissions": [],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:sirsoft-ecommerce.admin.main_banner.title",
-    "description": "$t:sirsoft-ecommerce.admin.main_banner.description"
-  },
-  "state": {
-    "selectedBannerId": "banner_1",
-    "viewMode": "detail",
-    "activeTab": "all",
-    "activeLanguageTab": "ko",
-    "previewLanguage": "en",
-    "bannerStatus": {
-      "banner_1": true,
-      "banner_2": false
-    }
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "main_banner_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content"
-        },
-        "responsive": {
-          "portable": {
-            "props": {
-              "className": "admin-page-content-compact"
-            }
-          }
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "flex-start justify-between gap-4 mb-6"
-            },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "row-stack mb-6"
-                }
-              }
-            },
-            "children": [
-              {
-                "id": "page_header_left",
+    "comment": "메인 배너 관리 (운영자) — 위쪽 미리보기 슬라이더 아래에 목록/상세·등록 폼을 나란히 둔다.\n  오른쪽 영역은 `viewMode` 하나로 상세·등록을 갈아 끼우고, 고른 배너가 없으면 안내만 남긴다.",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_main_banner_index",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.main_banner.title",
+        "description": "$t:sirsoft-ecommerce.admin.main_banner.description"
+    },
+    "initLocal": {
+        "selectedBannerId": "banner_1",
+        "viewMode": "detail",
+        "activeTab": "all",
+        "activeLanguageTab": "ko",
+        "previewLanguage": "en",
+        "bannerStatus": {
+            "banner_1": true,
+            "banner_2": false
+        }
+    },
+    "permissions": [
+        "sirsoft-ecommerce.settings.read"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "main_banner_content",
                 "type": "basic",
                 "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "page-title mb-1"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.main_banner.title"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                      "className": "text-secondary text-sm"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.main_banner.description"
-                  }
-                ]
-              },
-              {
-                "id": "page_header_actions",
-                "type": "basic",
-                "name": "Div",
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "admin-page-content-compact"
+                        }
+                    }
+                },
                 "props": {
-                  "className": "flex-center gap-2 flex-shrink-0"
+                    "className": "admin-page-content"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Button",
-                    "props": {
-                      "type": "button",
-                      "className": "btn btn-icon"
-                    },
-                    "children": [
-                      {
+                    {
+                        "id": "page_header",
                         "type": "basic",
-                        "name": "Icon",
+                        "name": "Div",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "row-stack mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                          "name": "refresh-cw",
-                          "className": "w-4 h-4"
-                        }
-                      }
-                    ],
-                    "actions": [
-                      {
-                        "type": "click",
-                        "handler": "navigate",
-                        "params": {
-                          "path": "/admin/ecommerce/main-banners",
-                          "mergeQuery": false
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Button",
-                    "props": {
-                      "type": "button",
-                      "className": "btn btn-outline"
+                            "className": "flex-start justify-between gap-4 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "page_header_left",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title mb-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.main_banner.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-secondary text-sm"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.main_banner.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "page_header_actions",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2 flex-shrink-0"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "쿼리를 떨어뜨린 처음 상태로 되돌린다 — 화면 상태가 전부 _local 이라 재진입이 곧 초기화다",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/main-banners",
+                                                    "mergeQuery": false
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-icon",
+                                            "aria-label": "$t:common.reset"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrows-rotate",
+                                                    "className": "text-base"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "eye-slash",
+                                                    "className": "text-base mr-1"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.main_banner.actions.preview_close"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "오른쪽 영역을 등록 폼으로 바꾼다 — 선택을 비워야 상세 패널이 물러난다",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "_local",
+                                                    "selectedBannerId": null,
+                                                    "viewMode": "add"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "plus",
+                                                    "className": "text-base mr-1"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.main_banner.actions.create"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
                     },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
-                        "props": {
-                          "name": "eye-off",
-                          "className": "w-4 h-4 mr-1"
-                        }
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "text": "$t:sirsoft-ecommerce.admin.main_banner.actions.preview_close"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Button",
-                    "props": {
-                      "type": "button",
-                      "className": "btn btn-primary"
+                    {
+                        "partial": "partials/admin_ecommerce_main_banner_index/_partial_preview_slider.json"
                     },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
-                        "props": {
-                          "name": "plus",
-                          "className": "w-4 h-4 mr-1"
-                        }
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "text": "$t:sirsoft-ecommerce.admin.main_banner.actions.create"
-                      }
-                    ],
-                    "actions": [
-                      {
-                        "type": "click",
-                        "handler": "setState",
-                        "params": {
-                          "target": "_local",
-                          "selectedBannerId": null,
-                          "viewMode": "add"
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "preview_section",
-            "partial": "partials/admin_ecommerce_main_banner_index/_partial_preview_slider.json"
-          },
-          {
-            "id": "panel_layout",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "grid-cols-1-lg-3"
-            },
-            "children": [
-              {
-                "id": "left_panel",
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "col-span-1-lg"
-                },
-                "children": [
-                  {
-                    "partial": "partials/admin_ecommerce_main_banner_index/_partial_banner_list.json"
-                  }
-                ]
-              },
-              {
-                "id": "right_panel",
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "col-span-2-lg"
-                },
-                "children": [
-                  {
-                    "id": "detail_view",
-                    "condition": "_local.viewMode === 'detail' && _local.selectedBannerId !== null",
-                    "partial": "partials/admin_ecommerce_main_banner_index/_partial_banner_detail.json"
-                  },
-                  {
-                    "id": "form_view",
-                    "condition": "_local.viewMode === 'add' || _local.viewMode === 'edit'",
-                    "partial": "partials/admin_ecommerce_main_banner_index/_partial_banner_form.json"
-                  },
-                  {
-                    "id": "empty_state",
-                    "condition": "_local.viewMode === 'detail' && _local.selectedBannerId === null",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "admin-card"
-                    },
-                    "children": [
-                      {
+                    {
+                        "id": "panel_layout",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                          "className": "flex-center flex-col justify-center py-12"
+                            "className": "grid-cols-1-lg-3"
                         },
                         "children": [
-                          {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                              "name": "image",
-                              "className": "w-16 h-16 text-gray-300 dark:text-gray-600 mb-4"
-                            }
-                          },
-                          {
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                              "className": "text-secondary text-sm"
+                            {
+                                "id": "left_panel",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "col-span-1-lg"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/admin_ecommerce_main_banner_index/_partial_banner_list.json"
+                                    }
+                                ]
                             },
-                            "text": "좌측에서 배너를 선택하세요"
-                          }
+                            {
+                                "id": "right_panel",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "col-span-2-lg"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/admin_ecommerce_main_banner_index/_partial_banner_detail.json"
+                                    },
+                                    {
+                                        "partial": "partials/admin_ecommerce_main_banner_index/_partial_banner_form.json"
+                                    },
+                                    {
+                                        "id": "empty_state",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.viewMode === 'detail' && _local.selectedBannerId === null}}",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-center flex-col justify-center py-12"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "image",
+                                                            "className": "text-[4rem] text-gray-300 dark:text-gray-600 mb-4"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-secondary text-sm"
+                                                        },
+                                                        "text": "좌측에서 배너를 선택하세요"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
                         ]
-                      }
-                    ]
-                  }
+                    }
                 ]
-              }
-            ]
-          }
+            }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "배너 삭제 확인",
+            "partial": "partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.json"
+        },
+        {
+            "comment": "편집을 접을 때 저장하지 않은 입력을 버릴지 묻는다",
+            "partial": "partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.json"
+        },
+        {
+            "comment": "노출/숨김 전환 확인 — 배너는 바꾸는 즉시 앞단에 반영된다",
+            "partial": "partials/admin_ecommerce_main_banner_index/_modal_status_change.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_main_banner_index/_modal_status_change.json"
-    }
-  ]
 }

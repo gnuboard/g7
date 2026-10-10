@@ -1,135 +1,137 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Brand Editing Discard Confirmation Modal"
-  },
-  "id": "editing_confirm_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.brand.modal.editing.title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-shrink-0 mt-0.5"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "triangle-exclamation",
-                    "className": "w-5 h-5 text-amber-600 dark:text-amber-400"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-primary text-base mb-2"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.message"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.confirm_message"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "브랜드 편집 중 이탈을 막는 확인 창. 저장하지 않은 입력이 있는 상태에서 다른 브랜드를 고르거나\n  목록으로 돌아가려 할 때 뜬다.\n  두 버튼의 무게가 반대다 — \"계속 편집\" 은 창만 닫아 원래 화면으로 돌려보내고, \"취소하고 나가기\" 는\n  패널을 보기 모드로 되돌리며 선택까지 비운다. 즉 이 창은 **입력을 버리는 유일한 경로**이고,\n  여기서 나가면 되돌릴 방법이 없다.\n  나가기 쪽은 창을 먼저 닫고 상태를 쓴다. 그 순서가 성립하는 것은 쓰는 대상이 `_global` 이기\n  때문이다 — 모달이 사라지면 `_local` 은 함께 사라지므로 그쪽이었다면 닫기를 뒤에 두어야 한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Brand Editing Discard Confirmation Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "editing_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.brand.modal.editing.title",
+        "size": "medium"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.continue"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-shrink-0 mt-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "text-xl text-amber-600 dark:text-amber-400"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-primary text-base mb-2"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.message"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.confirm_message"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "closeModal"
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.continue"
+                        }
+                    ]
                 },
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "panelMode": "view",
-                    "selectedBrandId": null,
-                    "selectedBrand": null
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "입력을 버리고 나간다 — 창을 닫고 패널을 보기 모드로 되돌리며 선택을 비운다.\n            닫기가 앞에 있어도 되는 것은 쓰는 대상이 `_global` 이라서다(`_local` 이면 모달 unmount 로 사라진다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "panelMode": "view",
+                                        "selectedBrandId": null,
+                                        "selectedBrand": null
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.discard"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.brand.modal.editing.discard"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

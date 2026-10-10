@@ -1,3 +1,4 @@
+// e2e:allow 7.1.0 출시 점검 D3-1 — 지원 언어 읽기를 코어 공개 API(locale.supported)로 교체. 단위 시험이 코어 API 모양 그대로 덮고, ja 기본 언어 화면 실측은 출시 리허설(W3) 브라우저 매트릭스에서 한다
 /**
  * 상세설명 다국어 관련 핸들러
  *
@@ -20,20 +21,37 @@ interface ActionWithParams {
 }
 
 /**
- * 설정에서 지원되는 로케일 목록을 가져옵니다.
+ * 지원되는 로케일 목록을 가져옵니다(코어 공개 API `G7Core.locale.supported()`).
  *
  * @returns 지원되는 로케일 배열
  */
 function getSupportedLocales(): string[] {
-    // G7Core 또는 window.config에서 가져오기
     const G7Core = (window as any).G7Core;
-    return G7Core?.config?.('app.supported_locales') ?? ['ko', 'en'];
+    const supported = G7Core?.locale?.supported?.();
+    return Array.isArray(supported) && supported.length > 0 ? supported : ['ko', 'en'];
+}
+
+/**
+ * 사이트 기본 언어를 가져옵니다.
+ *
+ * 서버 다국어 필수 규칙(`app.site_locale`)과 같은 값 — 프론트 `appConfig.siteLocale`. 없거나 지원 언어 밖이면 첫 지원 언어.
+ *
+ * @returns 사이트 기본 언어 코드
+ */
+function getSiteLocale(): string {
+    const w = window as any;
+    const supported = getSupportedLocales();
+    const site = w.G7Core?.state?.get?.()?.appConfig?.siteLocale ?? w.G7Config?.appConfig?.siteLocale;
+    if (typeof site === 'string' && site && supported.includes(site)) {
+        return site;
+    }
+    return supported[0] ?? 'ko';
 }
 
 /**
  * 상세설명 언어 탭을 제거합니다.
  *
- * - 기본 언어(ko)는 삭제 불가
+ * - 사이트 기본 언어는 삭제 불가
  * - PC 및 모바일 상세설명 모두에서 제거
  *
  * @param action 액션 객체 (params.locale 필요)
@@ -57,10 +75,8 @@ export function removeDescriptionLocaleHandler(
         return;
     }
 
-    // 기본 언어 삭제 불가 — 사이트 설정의 기본 언어 또는 fallback 'ko' 사용
-    const defaultLocale: string = G7Core?.state?.get?.('_global.settings.general.language')
-        ?? G7Core?.config?.('app.fallback_locale')
-        ?? 'ko';
+    // 사이트 기본 언어 삭제 불가 — 서버가 그 언어 값을 필수로 본다
+    const defaultLocale = getSiteLocale();
     if (locale === defaultLocale) {
         G7Core.toast?.error?.(
             G7Core.t?.('sirsoft-ecommerce.admin.product.description_editor.messages.default_locale_cannot_delete')
@@ -93,7 +109,7 @@ export function removeDescriptionLocaleHandler(
         ui: {
             ...state.ui,
             descriptionActiveLocales: activeLocales,
-            descriptionLocale: activeLocales[0] ?? 'ko',
+            descriptionLocale: activeLocales[0] ?? getSiteLocale(),
         },
         hasChanges: true,
     });
@@ -160,7 +176,7 @@ export function addDescriptionLocaleHandler(
 
     const state = G7Core.state.getLocal() || {};
     const supportedLocales = getSupportedLocales();
-    const activeLocales: string[] = state.ui?.descriptionActiveLocales ?? ['ko'];
+    const activeLocales: string[] = state.ui?.descriptionActiveLocales ?? [getSiteLocale()];
 
     // 이미 추가된 언어인지 확인
     if (activeLocales.includes(locale)) {

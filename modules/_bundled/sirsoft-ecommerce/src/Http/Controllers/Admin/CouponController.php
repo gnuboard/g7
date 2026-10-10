@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CouponOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateCouponStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CouponIssuesListRequest;
@@ -24,6 +25,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class CouponController extends AdminBaseController
 {
+    /**
+     * 쿠폰 서비스를 주입받습니다.
+     *
+     * @param  CouponService  $couponService  쿠폰 서비스
+     */
     public function __construct(
         private CouponService $couponService
     ) {}
@@ -208,7 +214,17 @@ class CouponController extends AdminBaseController
                 $messageKey,
                 $result,
                 200,
-                ['issued' => $result['issued'], 'skipped' => count($result['skipped'])]
+                ['issued' => $result['issued'], 'skipped' => count($result['skipped']), 'count' => $result['issued']]
+            );
+        } catch (CouponNotIssuableException $e) {
+            // 발급기간 만료·수량 소진·발급중단 같은 발급 관문 거절은 운영자가 고칠 수 있는
+            // 도메인 조건이다. 500 으로 뭉개면 「작업 처리 중 오류가 발생했습니다」만 남아
+            // 무엇을 고쳐야 하는지 알 수 없다 — 사용자 다운로드 경로(UserCouponController)와
+            // 같이 사유 식별자를 메시지 키로 넘겨 400 으로 돌려준다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.coupon.'.$e->getReason(),
+                400
             );
         } catch (CouponOperationException $e) {
             // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지

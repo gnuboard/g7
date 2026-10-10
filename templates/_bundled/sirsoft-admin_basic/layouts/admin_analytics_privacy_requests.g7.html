@@ -1,0 +1,286 @@
+<!-- 정보주체 요청 화면 — 열람·삭제 요청을 받은 운영자가 그 사람의 기록을 찾아 JSON 으로 건네거나 지운다.
+  찾는 기준(주소·회원·방문자 키)과 기간은 질의라 새로고침에 살아나고, 조건이 없으면 조회하지 않는다
+  (조건 없는 조회는 원장 전체다). 익명 모드로 모은 구간은 최근 이틀치만 주소로 찾을 수 있어 그 안내를
+  서버 `notice` 그대로 띄운다. 삭제는 공통 확인 창(체크 게이트)이 맡는다. -->
+<layout name="admin_analytics_privacy_requests" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.privacy_requests.title"/>
+  <!-- 조건이 질의에 있을 때만 받는다. 기준 셋 중 질의 `subject` 가 가리키는 하나에만 값을 싣는다.
+       응답의 `ip_mask_octets` 는 이 표의 주소도 설정대로 뒤 옥텟이 지워진 값이라는 사실이다 —
+       원본으로 읽으면 정보주체에게 그 주소로 잘못 답한다. 값마다 배지를 달면 표가 좁아지므로
+       IP 열 이름 한 자리에서 한 번만 알린다(§4.10 「IP(마스킹 표시)」, #682 S3 라운드 6). -->
+  <data-source id="analytics_subjects" label_key="$t:editor.data_source.analytics_subjects" type="api" endpoint="/api/admin/analytics/privacy/subjects" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{!!query.value}}">
+    <params ip="{{(query.subject || 'ip') === 'ip' ? query.value : undefined}}" user_id="{{query.subject === 'user_id' ? query.value : undefined}}" visitor_key="{{query.subject === 'visitor_key' ? query.value : undefined}}" from="{{query.from}}" to="{{query.to}}"/>
+    <fallback>
+      <field name="data">
+        <field name="visits" :value="[]"/>
+        <field name="notice" :value="null"/>
+        <field name="ip_mask_octets" :value="0"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 상단 경고용 진단 상태(background). 이 화면은 개인정보 권한으로 열려 통계 조회 권한이 없는 계정이면 403 이 나는데,
+       아래 처리가 조용히 삼켜 경고만 빠진다. -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+          <field name="mode" value="full"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="search">
+      <field name="subject" value="ip"/>
+      <field name="value" value=""/>
+      <field name="from" value=""/>
+      <field name="to" value=""/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>core.analytics.privacy</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_subjects</wait-for>
+  </transition-overlay>
+  <!-- 검색 실행 — 폼 값을 질의로 옮긴다. 비면 키를 지워 조회 자체가 일어나지 않게 한다.
+       값은 앞뒤 공백을 떼고 싣는다 — 공백만 든 값은 버튼이 잠겨 있어도 질의에 남으면 원장을 헛조회한다. -->
+  <action name="searchSubjects">
+    <navigate path="/admin/analytics/privacy-requests" :mergeQuery="true" :replace="true">
+      <query subject="{{_local.search?.subject || 'ip'}}" value="{{String(_local.search?.value ?? '').trim() || undefined}}" from="{{_local.search?.from || undefined}}" to="{{_local.search?.to || undefined}}"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="local" search.subject="{{query.subject || 'ip'}}" search.value="{{query.value || ''}}" search.from="{{query.from || ''}}" search.to="{{query.to || ''}}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="analytics_privacy_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.privacy_requests.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.privacy_requests.description</p>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <div data-ref="anonymous_mode_alert" data-if="{{analytics_subjects?.data?.mode === 'anonymous'}}" class="alert-info mb-4">
+        <div class="flex-center gap-3">
+          <icon name="user-secret" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft">$t:admin.analytics.privacy_requests.anonymous_notice</p>
+        </div>
+      </div>
+      <div data-ref="search_card" class="admin-card mb-4">
+        <div class="filter-grid">
+          <div class="filter-row">
+            <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.subject_label</span>
+            <radio-group data-type="composite" name="analytics_subject_type" value="{{_local.search?.subject || 'ip'}}" :inline="true">
+              <prop name="options">
+                <item label="$t:admin.analytics.privacy_requests.search.subject_ip" value="ip"/>
+                <item label="$t:admin.analytics.privacy_requests.search.subject_user" value="user_id"/>
+                <item label="$t:admin.analytics.privacy_requests.search.subject_key" value="visitor_key"/>
+              </prop>
+              <on type="change">
+                <!-- 찾는 기준 고르기 — 폼 상태만 바꾼다. 값 칸의 안내 문구가 기준에 맞춰 바뀌고, 조회는 검색 버튼·Enter 때만 일어난다. -->
+                <set-state target="local" search.subject="{{$event.target.value}}"/>
+              </on>
+            </radio-group>
+          </div>
+          <div class="filter-row">
+            <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.value_label</span>
+            <input data-ref="subject_value" name="analytics_subject_value" type="text" class="input w-80" placeholder="{{(_local.search?.subject || 'ip') === 'ip' ? $t('admin.analytics.privacy_requests.search.placeholder_ip') : ((_local.search?.subject === 'user_id') ? $t('admin.analytics.privacy_requests.search.placeholder_user') : $t('admin.analytics.privacy_requests.search.placeholder_key'))}}" value="{{_local.search?.value || ''}}">
+              <on type="change">
+                <!-- 입력값을 폼에 담아 둔다. 조회하지 않는다 — 주소에 올릴 때까지 결과 카드는 앞선 검색 그대로다. -->
+                <set-state target="local" search.value="{{$event.target.value}}"/>
+              </on>
+              <on type="keydown" key="Enter">
+                <!-- Enter 로 바로 검색 — change 가 아직 오지 않았을 수 있어 지금 칸의 값을 먼저 폼에 넣고 검색을 부른다.
+                     순서가 바뀌면 직전 값으로 찾는다. 칸이 비었으면 찾기 버튼처럼 아무것도 하지 않는다 — 그대로 부르면
+                     질의의 값이 지워져 앞선 결과가 말없이 닫힌다(비우기는 초기화 버튼 몫이다). -->
+                <sequence>
+                  <set-state target="local" search.value="{{$event.target.value}}"/>
+                  <conditions>
+                    <when if="{{!!String($event.target.value ?? '').trim()}}">
+                      <action-ref name="searchSubjects"/>
+                    </when>
+                  </conditions>
+                </sequence>
+              </on>
+            </input>
+          </div>
+          <div class="filter-row">
+            <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.period_label</span>
+            <div class="flex-center gap-2 flex-wrap">
+              <input name="analytics_subject_from" type="date" aria-label="$t:common.range_start|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.from || ''}}">
+                <on type="change">
+                  <!-- 기간 시작을 폼에 담는다. 비워 두면 검색할 때 질의에서 키가 빠져 시작 없이 찾는다. -->
+                  <set-state target="local" search.from="{{$event.target.value}}"/>
+                </on>
+              </input>
+              <span class="text-gray-400 dark:text-gray-500">~</span>
+              <input name="analytics_subject_to" type="date" aria-label="$t:common.range_end|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.to || ''}}">
+                <on type="change">
+                  <!-- 기간 끝을 폼에 담는다. 시작과 마찬가지로 비워 두면 끝 키 없이 보낸다. -->
+                  <set-state target="local" search.to="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-center gap-3 mt-4">
+          <!-- 값 칸이 비면 잠근다 — 조건 없는 조회는 하지 않으므로 눌러도 화면이 그대로라 고장처럼 보였다.
+               기간만으로는 찾지 않는다(기간만 준 조회도 원장 전체다). -->
+          <button data-ref="search_button" type="button" class="btn btn-primary px-6" disabled="{{!String(_local.search?.value ?? '').trim()}}">
+            <on type="click">
+              <action-ref name="searchSubjects"/>
+            </on>
+            $t:admin.analytics.privacy_requests.search.button
+          </button>
+          <!-- 검색 조건 초기화 — 폼(대상 IP·값·기간)과 주소를 함께 비운다. 주소에 값이 없으면 조회 자체가
+            일어나지 않아 결과 카드도 닫힌다. 폼과 주소가 모두 기본이면 잠근다. -->
+          <button data-ref="search_reset_button" type="button" class="btn btn-secondary px-6" disabled="{{(_local.search?.subject || 'ip') === 'ip' &amp;&amp; !_local.search?.value &amp;&amp; !_local.search?.from &amp;&amp; !_local.search?.to &amp;&amp; !query.subject &amp;&amp; !query.value &amp;&amp; !query.from &amp;&amp; !query.to}}">
+            <on type="click">
+              <sequence>
+                <set-state target="local" search.subject="ip" search.value="" search.from="" search.to=""/>
+                <navigate path="/admin/analytics/privacy-requests" :mergeQuery="true" :replace="true">
+                  <query subject="{{undefined}}" value="{{undefined}}" from="{{undefined}}" to="{{undefined}}"/>
+                </navigate>
+              </sequence>
+            </on>
+            $t:common.reset
+          </button>
+        </div>
+      </div>
+      <!-- 조회 전 안내 — 질의에 값이 없으면 조회하지 않아 결과 카드가 없다. 빈 화면으로 두면 목록이 안 뜨는
+           고장으로 읽히므로 무엇을 넣으면 무엇이 나오는지 알린다. -->
+      <div data-ref="subjects_prompt" data-if="{{!query.value}}" class="admin-card">
+        <empty-state data-type="composite" data-ref="subjects_prompt_state" iconName="search" title="$t:admin.analytics.privacy_requests.prompt_title" description="$t:admin.analytics.privacy_requests.prompt_description" class="py-10"/>
+      </div>
+      <div data-ref="results_card" data-if="{{!!query.value}}" class="admin-card">
+        <blur-until-loaded sources="analytics_subjects"/>
+        <div class="flex-between flex-wrap gap-3 mb-3">
+          <div>
+            <h2 class="section-heading">$t:admin.analytics.privacy_requests.results_title</h2>
+            <p class="text-label-subtle">$t:admin.analytics.privacy_requests.results_summary|visits={{((analytics_subjects?.data?.visits ?? []).length) | number}}|actions={{((analytics_subjects?.data?.visits ?? []).reduce((s, v) => s + (Number(v.actions_count) || 0), 0)) | number}}</p>
+          </div>
+          <!-- 두 버튼은 검색 응답이 오면(서버만 싣는 export_filename) 방문이 0건이어도 켠다 — 코어 원장이 보존
+            기간으로 비었어도 확장은 자기 표에 이 사람의 기록을 가질 수 있고, 서버는 그때도 확장의 정보주체
+            필터를 부른다(DataSubjectService). 응답 전에는 잠가 저장 이름이 기본값으로 떨어지지 않게 한다. -->
+          <div class="flex-center gap-2">
+            <button data-ref="export_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{!analytics_subjects?.data?.export_filename}}">
+              <on type="click">
+                <!-- 열람권 이행 파일 — 서버가 파일로 흘려보내므로 토큰 동반 blob 요청으로 받는다(POST).
+                  저장 이름은 서버가 조회 응답에 실어 준 것을 쓴다 — 검색값(방문자 IP)을 파일명에 넣지 않고, 날짜는 사이트 기준이다. -->
+                <action handler="downloadAttachment" url="/api/admin/analytics/privacy/subjects/export" method="POST" filename="{{analytics_subjects?.data?.export_filename || 'analytics-subject.json'}}">
+                  <field name="body">
+                    <field name="ip" value="{{(query.subject || 'ip') === 'ip' ? query.value : undefined}}"/>
+                    <field name="user_id" value="{{query.subject === 'user_id' ? query.value : undefined}}"/>
+                    <field name="visitor_key" value="{{query.subject === 'visitor_key' ? query.value : undefined}}"/>
+                    <field name="from" value="{{query.from || undefined}}"/>
+                    <field name="to" value="{{query.to || undefined}}"/>
+                  </field>
+                </action>
+              </on>
+              <icon name="file-export" size="sm"/>
+              <span>$t:admin.analytics.privacy_requests.export_button</span>
+            </button>
+            <button data-ref="delete_button" type="button" class="btn btn-danger btn-sm flex-center gap-1.5" disabled="{{!analytics_subjects?.data?.export_filename}}">
+              <on type="click">
+                <!-- 삭제 기준은 폼이 아니라 **질의**(지금 결과로 보이는 조건)에서 채운다 — 폼을 고쳐 두고 검색하지 않은 채 누르면
+                     화면에 보이는 결과와 다른 기록을 지우게 된다. 끝나면 이 화면의 검색 결과를 다시 받도록 돌아올 곳을 `subjects` 로 두고,
+                     확인 체크는 매번 꺼진 채로 연다. -->
+                <sequence>
+                  <set-state target="global" analyticsSubjectAfter="subjects" :analyticsSubjectConfirm="false">
+                    <field name="analyticsSubject">
+                      <field name="ip" value="{{(query.subject || 'ip') === 'ip' ? query.value : ''}}"/>
+                      <field name="user_id" value="{{query.subject === 'user_id' ? query.value : ''}}"/>
+                      <field name="visitor_key" value="{{query.subject === 'visitor_key' ? query.value : ''}}"/>
+                      <field name="from" value="{{query.from || ''}}"/>
+                      <field name="to" value="{{query.to || ''}}"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="analytics_subject_delete_modal"/>
+                </sequence>
+              </on>
+              <icon name="trash" size="sm"/>
+              <span>$t:admin.analytics.privacy_requests.delete_button</span>
+            </button>
+          </div>
+        </div>
+        <div data-ref="subject_notice" data-if="{{!!analytics_subjects?.data?.notice}}" class="alert-info mb-3">
+          <div class="flex-center gap-3">
+            <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+            <p class="text-info-soft">{{analytics_subjects?.data?.notice}}</p>
+          </div>
+        </div>
+        <empty-state data-type="composite" data-ref="subjects_empty" data-if="{{!analytics_subjects?.loading &amp;&amp; (analytics_subjects?.data?.visits ?? []).length === 0}}" iconName="user-shield" title="$t:admin.analytics.privacy_requests.no_results" class="py-8"/>
+        <div class="overflow-x-auto" data-if="{{(analytics_subjects?.data?.visits ?? []).length > 0}}">
+          <data-grid data-type="composite" data-ref="subjects_grid" data="{{analytics_subjects?.data?.visits ?? []}}" :pagination="true" :pageSize="25" idField="visit_id" :selectable="false" :sortable="false">
+            <column field="first_action_at" header="$t:admin.analytics.privacy_requests.columns.visit_at" width="170px">
+              <cell>
+                <span class="text-label">{{row.first_action_at | datetime | default('-')}}</span>
+              </cell>
+            </column>
+            <column field="visitor_key" header="$t:admin.analytics.privacy_requests.columns.visitor_key" width="140px">
+              <cell>
+                <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm">
+                  <on type="click">
+                    <!-- 이 화면은 검색 조건(대상·값·기간)을 주소에 싣는다. 병합하지 않고 이동하면
+                         상세 화면이 기간 없이 열리고 그 화면의 단건 CSV 도 다른 기간을 내려준다 —
+                         형제 화면(방문자 목록)의 같은 드릴다운과도 어긋난다(#682 S3 라운드 5). -->
+                    <navigate path="/admin/analytics/visitors/{{row.visitor_key}}" :mergeQuery="true">
+                      <query/>
+                    </navigate>
+                  </on>
+                  {{String(row.visitor_key ?? '').slice(0, 8)}}
+                </button>
+              </cell>
+            </column>
+            <column field="visitor_type" header="$t:admin.analytics.visitors.columns.type" width="90px">
+              <cell>
+                <span class="text-label">{{$t('admin.analytics.visitors.types.' + (row.visitor_type ?? 'guest'))}}</span>
+              </cell>
+            </column>
+            <column field="ip" header="{{(analytics_subjects?.data?.ip_mask_octets ?? 0) > 0 ? $t('admin.analytics.privacy_requests.columns.ip_masked') : $t('admin.analytics.privacy_requests.columns.ip')}}" width="140px">
+              <cell>
+                <!-- 열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은
+                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8). -->
+                <div class="flex-center flex-wrap gap-1">
+                  <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
+                  <badge data-type="composite" data-if="{{row.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>
+                </div>
+              </cell>
+            </column>
+            <column field="pageviews_count" header="$t:admin.analytics.common.pageviews" width="90px" align="right">
+              <cell>
+                <span class="text-body">{{(row.pageviews_count ?? 0) | number}}</span>
+              </cell>
+            </column>
+            <column field="actions_count" header="$t:admin.analytics.privacy_requests.columns.actions" width="90px" align="right">
+              <cell>
+                <span class="text-body">{{(row.actions_count ?? 0) | number}}</span>
+              </cell>
+            </column>
+          </data-grid>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 정보주체 기록 삭제 창. -->
+  <modal src="partials/admin_analytics/_modal_subject_delete.g7.html"/>
+</layout>

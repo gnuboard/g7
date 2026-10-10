@@ -1,0 +1,36 @@
+<!-- 저장하지 않은 변경이 있을 때 다른 탭으로 옮기기 전에 묻는 창 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아간다. 말없이 사라지지 않게 먼저 알리고, 옮기기로 하면 탭 전환과 같은 순서로 옮긴다 -->
+<partial description="환경설정 미저장 변경 탭 전환 확인 모달">
+  <modal data-type="composite" data-ref="modal_settings_unsaved_tab" title="$t:admin.settings.unsaved_tab_modal.title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.unsaved_tab_modal.message</p>
+    <div class="modal-footer-buttons">
+      <button type="button" data-testid="settings-unsaved-tab-stay" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <!-- 머무르기 — 옮기려던 탭을 지우고 창만 닫는다(고친 값과 「변경 있음」은 그대로) -->
+          <sequence>
+            <set-state target="global" :pendingSettingsTab="null"/>
+            <close-modal target="modal_settings_unsaved_tab"/>
+          </sequence>
+        </on>
+        $t:admin.settings.unsaved_tab_modal.btn_stay
+      </button>
+      <button type="button" data-testid="settings-unsaved-tab-leave" class="px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600">
+        <on type="click">
+          <!-- 저장하지 않고 옮기기 — 페이지 상태(오류, 「변경 있음」 끄기)는 여는 쪽 문맥인 `$parent._local` 로 먼저 고친다. 모달 문맥의 target=local 은 페이지 폼 렌더러 상태에 닿지 않아 옮긴 뒤 첫 입력에 지운 값이 되살아났다(G2 실측 C7). `$parent` 는 openModal 이 쌓은 문맥이라 closeModal 이 걷어 내기 전에 쓴다(modal-usage.md TL;DR 7). 그다음 창을 닫고(이동이 끝날 때까지 창이 떠 있지 않게), 평소 탭 전환과 같은 전역 탭, URL 갱신으로 옮긴다. 「변경 있음」을 바로 끄는 까닭은 설정 재조회(수 초) 도착 전 다른 탭을 누르면 창이 다시 뜨기 때문이다(실측). 설정을 다시 받으며 고친 값은 저장된 값으로 돌아간다 -->
+          <sequence>
+            <!-- ① 저장, 저장 가드가 읽는 자리(전역 `_local`) ② 화면 폼 렌더러가 읽는 자리(`$parent._local`) — 엔진은 $parent 쓰기를 전역 미러에서 빼 두므로 두 자리에 같은 값을 쓴다(modal-usage.md §부모 폼 커밋). 한쪽만 지우면 옮긴 뒤 첫 입력에 다른 쪽 옛 값이 되살아난다(G2 실측 C7) -->
+            <set-state target="global" :_local.errors="null" :_local.hasChanges="false"/>
+            <set-state target="$parent._local" :errors="null" :hasChanges="false"/>
+            <close-modal target="modal_settings_unsaved_tab"/>
+            <set-state target="global" activeSettingsTab="{{_global.pendingSettingsTab}}"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+            <navigate path="/admin/settings" :replace="true">
+              <query tab="{{_global.pendingSettingsTab}}"/>
+            </navigate>
+            <set-state target="global" :pendingSettingsTab="null"/>
+          </sequence>
+        </on>
+        $t:admin.settings.unsaved_tab_modal.btn_leave
+      </button>
+    </div>
+  </modal>
+</partial>

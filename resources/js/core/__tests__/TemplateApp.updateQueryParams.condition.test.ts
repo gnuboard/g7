@@ -83,7 +83,7 @@ vi.mock('../template-engine/ComponentRegistry', () => {
 import { TemplateApp } from '../TemplateApp';
 import { DataSourceManager } from '../template-engine/DataSourceManager';
 
-/** 정책/언어팩/공통 데이터소스 원본 (admin_settings.json 구조 축약) */
+/** 정책/언어팩/공통 데이터소스 원본 (admin_settings.g7.html 구조 축약) */
 const RAW_SOURCES = [
   { id: 'settings', type: 'api', endpoint: '/api/admin/settings', auto_fetch: true },
   {

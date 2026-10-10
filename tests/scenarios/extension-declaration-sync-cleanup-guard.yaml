@@ -1,0 +1,29 @@
+feature: 확장 선언 동기화의 빈 선언 정리 가드 — getter 가 빈 배열이어도 기존 row 를 지우지 않는다
+
+description: |
+  ModuleManager / PluginManager 의 선언 동기화(본인인증 정책·알림 정의·관리자 메뉴)는 선언에 없는
+  row 를 stale 로 보고 정리한다. 그런데 spawn 자식 프로세스에서 부분 로드된 확장 클래스처럼 선언
+  getter 가 예외 없이 빈 배열을 돌려주면, 「선언 부재 = 전부 stale」 로 해석돼 운영자 데이터와
+  확장 시드 데이터가 조용히 삭제된다.
+
+  가드: 선언이 빈 배열인데 DB 에 그 확장 소유 row 가 있으면 정리를 건너뛴다. 선언이 일부라도 차 있으면
+  종전처럼 선언에 없는 row 만 정리한다(가드가 정상 정리 경로를 막지 않는다). 선언도 DB 도 비어 있으면
+  아무 일도 하지 않는다.
+
+axes:
+  declaration_state: [empty_with_db_rows, empty_without_db_rows, partial_with_stale_rows]
+
+effects:
+  - module_identity_policies_preserved_when_declaration_empty
+  - module_menus_preserved_when_declaration_empty
+  - module_notification_definitions_preserved_when_declaration_empty
+  - plugin_identity_policies_preserved_when_declaration_empty
+  - plugin_notification_definitions_preserved_when_declaration_empty
+  - sync_skips_silently_when_declaration_and_db_both_empty
+  - stale_rows_removed_when_declaration_is_partial
+
+test_files:
+  - tests/Feature/Extension/ModuleManagerSyncCleanupGuardTest.php
+
+validation:
+  automated: "php artisan test --filter=ModuleManagerSyncCleanupGuardTest"

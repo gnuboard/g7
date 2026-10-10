@@ -1,0 +1,47 @@
+feature: Playwright 토큰 발급 — 테스트 역할 저장 형태와 오래된 발급분 정리(--gc-hours)
+
+description: |
+  `playwright:issue-token` 이 호출마다 만드는 `playwright_test_{uniqid}` 역할·계정의 저장 형태와,
+  발급 때 함께 도는 오래된 발급분 정리(`--gc-hours`)의 계약.
+
+  - D10(Chrome MCP 정밀 점검 실측): `Role` 의 `name`·`description` 은 모델에서 `array` 로 캐스팅되는데
+    커맨드가 `json_encode(...)` 문자열을 넣어 Eloquent 가 한 번 더 인코딩했다. 관리자 회원 수정 화면의
+    역할 선택 목록에 `{"ko":"Playwright \uXXXX…"}` JSON 원문이 그대로 보였다.
+  - D11: 호출마다 계정 1명 + 역할 1개를 만들고 회수하지 않아 역할·계정이 각각 2974건 누적됐다(전체의 99%).
+    `--gc-hours` 정리는 콜백이 순회 대상을 지우므로 키셋 순회(`chunkById`)여야 한다 — OFFSET 순회면
+    청크 크기(100)를 넘는 순간부터 조용히 건너뛴다.
+  - 정리 대상은 임계 시간보다 오래된 테스트 역할과 그 역할만 가진 계정이다. 임계 시간 안의 발급분(동시 실행
+    중인 다른 워커), 테스트 역할이 아닌 역할과 그 소속 회원, 아직 유효한 다른 테스트 역할을 가진 계정은 남긴다.
+    `--gc-hours=0` 이면 정리를 하지 않는다.
+
+  없는 권한 식별자 거절은 `playwright-issue-token-unknown-permission.yaml`, 별도 정리 명령
+  `playwright:cleanup` 은 `playwright-e2e-leftover-cleanup.yaml` 이 다룬다.
+
+axes:
+  case:
+    - role_encoding
+    - role_plain_text
+    - gc_stale_beyond_chunk
+    - gc_recent_within_threshold
+    - gc_non_test_role
+    - gc_shared_user
+    - gc_disabled
+
+effects:
+  # 역할 name·description 원시 저장값을 한 번 디코딩하면 배열이다(이중 인코딩 없음).
+  - e2e_token_role_name_and_description_stored_without_double_encoding
+  # 역할 이름의 한글이 유니코드 이스케이프 없이 그대로 읽힌다.
+  - e2e_token_role_name_reads_back_as_plain_korean_text
+  # 청크 크기(100)를 넘는 250건에서도 오래된 테스트 역할·계정이 하나도 남지 않는다.
+  - e2e_token_gc_removes_all_stale_roles_and_users_beyond_chunk_size
+  # 임계 시간 안의 테스트 역할·계정은 지우지 않는다.
+  - e2e_token_gc_keeps_artifacts_within_threshold
+  # 테스트 역할이 아닌 역할과 그 소속 회원은 아무리 오래돼도 지우지 않는다.
+  - e2e_token_gc_never_touches_non_test_roles_and_members
+  # 오래된 테스트 역할은 지우되, 최근 테스트 역할도 가진 계정은 남긴다.
+  - e2e_token_gc_keeps_user_holding_a_recent_test_role
+  # --gc-hours=0 이면 정리를 건너뛴다.
+  - e2e_token_gc_skipped_when_hours_is_zero
+
+test_files:
+  - tests/Feature/Console/PlaywrightIssueTokenTest.php

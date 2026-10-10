@@ -23,7 +23,7 @@
 
 ```
 필수: 레이아웃 JSON 작성 전 이 문서에서 props 확인 (문서에 없는 props 사용 금지)
-필수: 작성 후 /validate-frontend 스킬로 검증
+필수: 작성 후 /validate frontend 스킬로 검증
 ```
 
 ### props 사용 전 확인 체크리스트
@@ -33,7 +33,7 @@
 1. **이 문서에서 해당 컴포넌트의 지원 props 확인**
 2. **props 타입과 기본값 확인**
 3. **레이아웃 JSON 작성**
-4. **`/validate-frontend` 스킬로 검증**
+4. **`/validate frontend` 스킬로 검증**
 
 ---
 
@@ -59,6 +59,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   error?: string;                        // 에러 메시지 (상위 컴포넌트에서 처리)
   searchable?: boolean;                  // 드롭다운 내 검색 input 활성화 (engine-v1.40.0+)
   searchPlaceholder?: string;            // 검색 input placeholder (searchable=true일 때)
+  placeholder?: string;                  // 값이 비었을 때 버튼에 흐리게 보이는 안내 글자(버튼 읽기 이름도 됨)
 
   // HTML Select 표준 Props (모두 지원)
   value?: string | number;              // 선택된 값 (제어 컴포넌트)
@@ -84,7 +85,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 | `disabled` | `boolean` | ❌ | `false` | 비활성화 |
 | `required` | `boolean` | ❌ | `false` | 필수 입력 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
-| `placeholder` | `string` | ❌ | - | 플레이스홀더 (옵션 배열 첫 항목) |
+| `placeholder` | `string` | ❌ | - | 값이 비었을 때(고른 옵션이 없을 때) 버튼에 흐리게 보이는 안내 글자. 화면 낭독기도 이 글자를 버튼 이름으로 읽는다 |
+| `aria-label` | `string` | ❌ | - | 버튼(children 모드는 `<select>`)의 읽기 이름. 바깥 상자에 달리지 않는다 |
 | `searchable` | `boolean` | ❌ | `false` | 드롭다운 내 검색 input 활성화 (label/value 부분일치 필터링, engine-v1.40.0+) |
 | `searchPlaceholder` | `string` | ❌ | `'Search...'` | 검색 input placeholder (searchable=true일 때) |
 
@@ -98,6 +100,21 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 ### 레이아웃 JSON 사용 예시
 
 #### 기본 사용 (제어 컴포넌트)
+
+```html
+<select name="category" value="{{_local.category}}" class="w-full">
+  <options>
+    <option value="">선택하세요</option>
+    <option value="1">카테고리 1</option>
+    <option value="2">카테고리 2</option>
+  </options>
+  <on type="change">
+    <set-state target="_local" category="{{$event.target.value}}"/>
+  </on>
+</select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -128,6 +145,17 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 
 #### 기본값 설정 (defaultValue 사용)
 
+```html
+<select name="status" defaultValue="active">
+  <options>
+    <option value="active">활성</option>
+    <option value="inactive">비활성</option>
+  </options>
+</select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -145,15 +173,34 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 
 #### 공란 방지 패턴 (권장)
 
-**방법 1: state 초기값 설정** (권장)
+**방법 1: 로컬 상태 초기값 설정** (권장)
+
+```html
+<init-local>
+  <field name="salesStatus" value="on_sale"/>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
-  "state": {
+  "initLocal": {
     "salesStatus": "on_sale"
   }
 }
 ```
+
+```html
+<select name="salesStatus" value="{{_local.salesStatus}}">
+  <options>
+    <option value="on_sale">판매중</option>
+    <option value="sold_out">품절</option>
+  </options>
+</select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -171,6 +218,17 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 ```
 
 **방법 2: defaultValue 사용**
+
+```html
+<select name="status" value="{{_local.status}}" defaultValue="on_sale">
+  <options>
+    <option value="on_sale">판매중</option>
+    <option value="sold_out">품절</option>
+  </options>
+</select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -257,6 +315,19 @@ Input 컴포넌트는 한글 등 IME 조합 입력을 올바르게 처리합니�
 
 ### 레이아웃 JSON 사용 예시
 
+```html
+<input type="text" name="searchKeyword" placeholder="$t:common.search_placeholder" class="input w-full" value="{{_local.searchKeyword}}">
+  <on type="change">
+    <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+  </on>
+  <on type="keypress" key="Enter">
+    <refetch-data-source dataSourceId="products"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -303,8 +374,6 @@ Input 컴포넌트는 한글 등 IME 조합 입력을 올바르게 처리합니�
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  icon?: string;
 }
 ```
 
@@ -317,9 +386,21 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 | `className` | `string` | ❌ | - | CSS 클래스 |
 | `variant` | `string` | ❌ | `"primary"` | 버튼 스타일 |
 | `size` | `string` | ❌ | `"md"` | 버튼 크기 |
-| `loading` | `boolean` | ❌ | `false` | 로딩 상태 |
+
+기본 Button은 `loading` 속성으로 스피너를 자동 표시하지 않습니다. 비동기 버튼은 기존 레이아웃처럼 처리 상태를 `disabled`에 연결하고, 자식 `Icon(name: "spinner")`을 같은 상태로 조건부 표시합니다. 성공·실패 모두 처리 상태를 해제해야 합니다. 부분 조회 탭처럼 포커스를 유지해야 하는 컨트롤은 `aria-disabled`와 액션 실행 조건을 함께 사용합니다.
 
 ### 레이아웃 JSON 사용 예시
+
+```html
+<button type="button" class="btn btn-primary">
+  <on type="click">
+    <refetch-data-source dataSourceId="products"/>
+  </on>
+  $t:common.search
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -358,18 +439,36 @@ export interface DataGridColumn {
   header: string;                   // 컬럼 헤더 텍스트 (필수)
   width?: string;                   // 컬럼 너비 (예: "100px", "auto")
   sortable?: boolean;               // 정렬 가능 여부
-  template?: ComponentDefinition;   // 셀 커스텀 템플릿
+  hidden?: boolean;                 // 컬럼 숨김 (컬럼 선택기 기본 해제)
+  required?: boolean;               // 컬럼 선택기에서 해제 불가
+  cellChildren?: DataGridCellChild[]; // 셀 커스텀 — 작성에서는 <cell> 자식
 }
 
 export interface DataGridProps {
   data: any[];                      // 데이터 배열 (필수)
   columns: DataGridColumn[];        // 컬럼 정의 (필수)
-  rowKey?: string;                  // 행 고유 키 필드 (기본: 'id')
+  idField?: string;                 // 행 고유 키 필드 (기본: 'id')
   selectable?: boolean;             // 행 선택 기능
-  selectedRows?: any[];             // 선택된 행 배열
+  selectedIds?: (string | number)[]; // 선택된 행 ID 배열
   selectionScope?: 'page' | 'free'; // 선택의 유효 범위 (아래 "선택의 유효 범위" 참조)
-  loading?: boolean;                // 로딩 상태
+  nonSelectableIds?: (string | number)[]; // 선택할 수 없는 행 ID (체크박스 비활성, 전체 선택 제외)
   className?: string;               // CSS 클래스
+
+  // 정렬 (외부 제어)
+  sortField?: string | null;        // 정렬 기준 필드
+  sortDirection?: 'asc' | 'desc';   // 정렬 방향
+
+  // 페이지네이션
+  pagination?: boolean;             // 페이지네이션 활성화
+  pageSize?: number;                // 페이지당 행 수
+
+  // 컬럼 표시/숨김
+  showColumnSelector?: boolean;     // 컬럼 선택기 노출
+  visibleColumns?: string[];        // 표시할 컬럼 field 목록
+
+  // 행 액션 메뉴
+  rowActions?: ActionMenuItem[];    // 행별 액션 메뉴 항목
+  rowClassName?: string;            // 데이터 행에 덧붙일 CSS 클래스 (행 표현식 가능)
 
   // SubRow Props (engine-v1.6.0+)
   subRowChildren?: ComponentDefinition[];  // 서브 행 컴포넌트 배열
@@ -392,12 +491,24 @@ export interface DataGridProps {
 |-------|------|------|--------|------|
 | `data` | `any[]` | ✅ | - | 테이블에 표시할 데이터 배열 |
 | `columns` | `DataGridColumn[]` | ✅ | - | 컬럼 정의 배열 |
-| `rowKey` | `string` | ❌ | `'id'` | 행 고유 키로 사용할 필드명 |
+| `idField` | `string` | ❌ | `'id'` | 행 고유 키로 사용할 필드명 |
 | `selectable` | `boolean` | ❌ | `false` | 체크박스 선택 기능 활성화 |
-| `selectedRows` | `any[]` | ❌ | `[]` | 선택된 행 배열 (ID 배열) |
+| `selectedIds` | `(string\|number)[]` | ❌ | `[]` | 선택된 행 ID 배열 |
 | `selectionScope` | `'page' \| 'free'` | ❌ | `'free'` | 선택의 유효 범위 (아래 참조) |
-| `loading` | `boolean` | ❌ | `false` | 로딩 상태 표시 |
+| `nonSelectableIds` | `(string\|number)[]` | ❌ | - | 선택할 수 없는 행 ID. 체크박스가 비활성으로 그려지고 전체 선택·전체 선택 여부 판정에서 빠지며, `selectionScope: 'page'` 면 남아 있던 선택도 버린다. 서버가 일괄 요청 전체를 거절하는 대상(예: 회원 일괄 상태 변경의 로그인한 본인)에 쓴다 |
+| `sortField` | `string \| null` | ❌ | - | 정렬 기준 필드 (외부 제어) |
+| `sortDirection` | `'asc' \| 'desc'` | ❌ | - | 정렬 방향 |
+| `pagination` | `boolean` | ❌ | `false` | 페이지네이션 활성화 |
+| `pageSize` | `number` | ❌ | - | 페이지당 행 수 |
+| `showColumnSelector` | `boolean` | ❌ | `false` | 컬럼 선택기 노출 |
+| `visibleColumns` | `string[]` | ❌ | - | 표시할 컬럼 `field` 목록 |
+| `rowActions` | `ActionMenuItem[]` | ❌ | - | 행별 액션 메뉴 항목 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
+
+> **`rowKey` / `selectedRows` / `loading` 은 존재한 적이 없는 prop 이다** (S17 20차 실측 —
+> `DataGrid.tsx` grep 각 **0건**). 종전 이 표는 셋을 정식 prop 으로 적었고 아래 마크업 예시에도
+> 실었으나, 엔진은 그 키를 읽지 않으므로 전량 무시된다. 실물 이름은 `idField` · `selectedIds`
+> 이고 로딩 상태는 `DataGrid` 가 받지 않는다(데이터소스 `loading` 을 상위 노드의 `if` 로 가른다).
 
 ### 선택의 유효 범위 (selectionScope)
 
@@ -409,6 +520,16 @@ export interface DataGridProps {
 |----|------|--------|
 | `"page"` | 지금 그려진 행에 없는 선택을 버린다. 대상은 언제나 "보이고 체크된 행" | 일괄 처리 버튼이 달린 목록 화면 |
 | `"free"` | 선택을 컴포넌트가 건드리지 않는다 | 선택 자체가 저장 대상인 폼(적용 대상 고르기 등) — 여러 페이지에 걸쳐 고르는 선택기 포함 |
+
+```html
+<data-grid :selectable="true" selectionScope="page" selectedIds="{{_global.selectedIds_admin_users || []}}">
+  <on type="change" event="onSelectionChange">
+    <set-state target="global" selectedIds_admin_users="{{$args[0]}}"/>
+  </on>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -438,6 +559,7 @@ export interface DataGridProps {
 
 | Props | 타입 | 필수 | 기본값 | 설명 |
 |-------|------|------|--------|------|
+| `rowClassName` | `string` | ❌ | `''` | 데이터 행에 덧붙일 CSS 클래스. 행 유형을 배경색으로 구분할 때 쓰며, 마크업에서 행 표현식을 넘기면 엔진은 원문 그대로 넘기고(components.json `skipBindingKeys`) DataGrid 가 행마다 엔진 바인딩 해석기로 푼다 (예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`). 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다 |
 | `subRowChildren` | `ComponentDefinition[]` | ❌ | - | 서브 행에 렌더링할 컴포넌트 배열 |
 | `subRowCondition` | `string` | ❌ | - | 서브 행 표시 조건 (예: `"{{row.status !== 'free'}}"`) |
 | `subRowClassName` | `string` | ❌ | - | 서브 행 CSS 클래스 |
@@ -464,16 +586,27 @@ export interface DataGridProps {
 
 #### 기본 사용
 
+```html
+<data-grid data="{{products?.data?.data || []}}" idField="id" :selectable="true" selectedIds="{{_local.selectedItems || []}}">
+  <column field="name" header="$t:product.table.name" :sortable="true" width="200px"/>
+  <column field="price" header="$t:product.table.price" :sortable="true" width="100px"/>
+  <on type="change" event="onSelectionChange">
+    <set-state target="_local" selectedItems="{{$args[0]}}"/>
+  </on>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
   "name": "DataGrid",
   "props": {
     "data": "{{products?.data?.data || []}}",
-    "rowKey": "id",
+    "idField": "id",
     "selectable": true,
-    "selectedRows": "{{_local.selectedItems || []}}",
-    "loading": "{{products?.loading}}",
+    "selectedIds": "{{_local.selectedItems || []}}",
     "columns": [
       {
         "field": "name",
@@ -511,7 +644,7 @@ export interface DataGridProps {
   "name": "DataGrid",
   "props": {
     "data": "{{shipping_policies?.data?.data || []}}",
-    "rowKey": "id",
+    "idField": "id",
     "subRowCondition": "{{row.charge_policy !== 'free'}}",
     "subRowClassName": "px-6 py-2 bg-gray-50 dark:bg-gray-800/50 text-sm text-gray-600 dark:text-gray-400",
     "columns": [...],
@@ -528,7 +661,7 @@ export interface DataGridProps {
             "name": "Icon",
             "props": {
               "name": "truck",
-              "className": "w-4 h-4 text-gray-400"
+              "className": "text-base text-gray-400"
             }
           },
           {
@@ -556,6 +689,18 @@ export interface DataGridProps {
 
 #### 컬럼 템플릿 사용
 
+```html
+<data-grid>
+  <column field="status" header="$t:common.status" width="100px">
+    <cell>
+      <span class="{{$row.status === 'active' ? 'text-green-600' : 'text-gray-400'}}">{{$row.status_label}}</span>
+    </cell>
+  </column>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "columns": [
@@ -563,20 +708,23 @@ export interface DataGridProps {
       "field": "status",
       "header": "$t:common.status",
       "width": "100px",
-      "template": {
+      "cellChildren": [{
         "type": "basic",
         "name": "Span",
         "props": {
           "className": "{{$row.status === 'active' ? 'text-green-600' : 'text-gray-400'}}"
         },
         "text": "{{$row.status_label}}"
-      }
+      }]
     }
   ]
 }
 ```
 
-**컬럼 템플릿 컨텍스트 변수**:
+> 셀 커스텀 키는 `cellChildren`(배열)이다 — `template` 은 `DataGridColumn` 에 존재한 적이 없다
+> (S17 20차 실측: `DataGrid.tsx` 에 `template?:` **0건**). 마크업 표기는 `<column><cell>…</cell></column>`.
+
+**컬럼 셀 컨텍스트 변수**:
 - `$row`: 현재 행 데이터 객체
 - `$index`: 현재 행 인덱스
 - `$value`: 현재 셀 값 (field에 해당하는 값)
@@ -755,6 +903,44 @@ disabledField 동작
 ✅ abilities 패턴: API Resource에서 abilities 객체 반환 → disabledField로 참조
 ```
 
+### 잔여 Props (위 절에서 다루지 않은 것 — 이 표로 §DataGrid 가 전수가 된다)
+
+`DataGridProps` 공개 표면 전건이 이 문서에 등재되어야 한다. 아래는 위 주제별 절에 속하지 않는 나머지다.
+
+| Prop | 타입 | 필수 | 기본값 | 설명 |
+|------|------|------|--------|------|
+| `emptyMessage` | `string` | ❌ | - | 데이터 0건일 때 표시할 문구 |
+| `loadErrorMessage` | `string` | ❌ | - | 로딩 실패 시 표시할 문구 |
+| `style` | `CSSProperties` | ❌ | - | 인라인 스타일 |
+| `onRowClick` | `(row) => void` | ❌ | - | 행 클릭 콜백 |
+| `onRowAction` | `(action, row) => void` | ❌ | - | 행 액션 버튼 콜백 |
+| `onSortChange` | `(field, order) => void` | ❌ | - | **서버 정렬 연결점** — 지정 시 클라이언트 재정렬을 하지 않고 서버 응답 순서를 그대로 출력한다 |
+| `onPageChange` | `(page) => void` | ❌ | - | 페이지 변경 콜백 |
+| `onColumnVisibilityChange` | `(visible[]) => void` | ❌ | - | 컬럼 표시 변경 콜백 |
+| `serverSidePagination` | `boolean` | ❌ | `false` | 서버 페이지네이션 사용 |
+| `serverCurrentPage` | `number` | ❌ | - | 서버 페이지네이션 현재 페이지 |
+| `serverTotalPages` | `number \| null` | ❌ | - | 서버 페이지네이션 총 페이지 (총 건수를 모르면 `null` 그대로 — 1 로 채우면 "1페이지뿐" 으로 잘못 말한다) |
+| `serverHasMorePages` | `boolean` | ❌ | - | 다음 페이지 존재 여부 — 총 건수를 모르는 목록에서 "다음" 이동을 끝까지 열어 두는 신호 |
+| `alwaysShowPagination` | `boolean` | ❌ | `false` | 1페이지여도 페이지네이션 노출 |
+| `showFirstLast` | `boolean` | ❌ | - | 처음/마지막 페이지 버튼 노출 |
+| `prevText` / `nextText` | `string` | ❌ | - | 이전/다음 버튼 라벨 |
+| `selectedCountText` | `string` | ❌ | - | 선택 건수 표시 문구 |
+| `requiredText` | `string` | ❌ | - | 필수 표시 문구 |
+| `columnSelectorText` | `string` | ❌ | - | 컬럼 선택기 라벨 |
+| `actionsColumnHeader` | `string` | ❌ | - | 액션 컬럼 헤더 라벨 |
+| `dynamicColumns` | `DataGridColumn[]` | ❌ | - | 런타임 주입 컬럼 |
+| `dynamicColumnsInsertAfter` | `string` | ❌ | - | 주입 컬럼을 삽입할 기준 컬럼 field |
+| `cardRenderer` | `ComponentDefinition[]` | ❌ | - | 모바일 카드 뷰 커스텀 렌더링 |
+| `subRowRender` | `ComponentDefinition[]` | ❌ | - | 하위 행 렌더링 |
+| `expandedRowRender` | `ComponentDefinition[]` | ❌ | - | 확장 영역 렌더링(= `expandChildren` 의 별칭 표면) |
+| `expandConditionField` | `string` | ❌ | - | 확장 가능 여부 판단 경로 |
+| `expandColumnWidth` | `string` | ❌ | - | 확장 토글 컬럼 너비 |
+| `expandIconExpanded` / `expandIconCollapsed` | `string` | ❌ | - | 확장/축소 아이콘 |
+
+> **`editorAttrs` 는 편집기 내부 표면이라 작성 대상이 아니다** — 레이아웃 소스에 직접 적지 않는다.
+
+> 이 절은 **전수**다 — `DataGridProps` 인터페이스가 선언한 공개 prop 과 이 문서의 언급 집합이 일치하는지 계약 표면 커버리지 검사가 기계로 대조한다.
+
 ---
 
 ## HtmlEditor 컴포넌트
@@ -801,6 +987,27 @@ export interface HtmlEditorProps {
 | `readOnly` | `boolean` | ❌ | `false` | 읽기 전용 |
 
 ### 레이아웃 JSON 사용 예시
+
+```html
+<html-editor content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" name="content" htmlFieldName="content_mode">
+  <on type="change" event="onChange">
+    <set-state target="local">
+      <field name="form">
+        <field name="content" value="{{$args[0].target.value}}"/>
+      </field>
+    </set-state>
+  </on>
+  <on type="change" event="onIsHtmlChange">
+    <set-state target="local">
+      <field name="form">
+        <field name="content_mode" value="{{$args[0].target.checked ? 'html' : 'text'}}"/>
+      </field>
+    </set-state>
+  </on>
+</html-editor>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -872,6 +1079,16 @@ export interface CodeEditorProps {
 
 ### 레이아웃 JSON 사용 예시
 
+```html
+<code-editor value="{{_local.jsonContent ?? '{}'}}" language="json" height="400px" theme="vs-dark">
+  <on type="change" event="onChange">
+    <set-state target="local" jsonContent="{{$args[0]}}"/>
+  </on>
+</code-editor>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -919,13 +1136,17 @@ export interface ModalProps {
   isOpen: boolean;                    // 모달 열림 상태 (템플릿 엔진이 자동 주입)
   onClose: () => void;                // 모달 닫기 콜백 (템플릿 엔진이 자동 주입)
   title?: string;                     // 모달 타이틀
+  titlePrefix?: ComponentDefinition[]; // 타이틀 앞 컴포넌트 배열 (sirsoft-admin_basic만)
+  titleSuffix?: ComponentDefinition[]; // 타이틀 뒤 컴포넌트 배열 (sirsoft-admin_basic만)
+  footer?: ComponentDefinition[];     // 본문 스크롤 밖 고정 하단 영역 (sirsoft-admin_basic만)
   icon?: string;                      // 타이틀 옆 아이콘 (sirsoft-basic만)
   iconClassName?: string;             // 아이콘 색상 클래스 (sirsoft-basic만)
   closeOnBackdropClick?: boolean;     // 배경 클릭 시 닫기 (기본: true)
   closeOnOverlayClick?: boolean;      // closeOnBackdropClick 별칭 (레이아웃 JSON 호환)
   showCloseButton?: boolean;          // 닫기 버튼 표시 (기본: true)
   closeOnEscape?: boolean;            // ESC 키로 닫기 (기본: true)
-  width?: string;                     // 모달 너비 (기본: '500px')
+  size?: 'sm' | 'small' | 'md' | 'medium' | 'lg' | 'large' | 'xl' | '2xl'; // 이름 있는 너비 단계
+  width?: string;                     // 모달 너비 (기본: '500px', size 보다 우선)
   className?: string;                 // CSS 클래스
   style?: React.CSSProperties;        // 인라인 스타일
   children?: React.ReactNode;         // 모달 내용
@@ -939,14 +1160,28 @@ export interface ModalProps {
 | `isOpen` | `boolean` | ✅ | - | 모달 열림 상태 (템플릿 엔진 자동 주입) |
 | `onClose` | `function` | ✅ | - | 모달 닫기 콜백 (템플릿 엔진 자동 주입) |
 | `title` | `string` | ❌ | - | 모달 타이틀 |
+| `titlePrefix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **앞**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
+| `titleSuffix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **뒤**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
+| `footer` | `ComponentDefinition[]` | ❌ | - | 본문 스크롤 **밖** 고정 하단 영역 — 취소/확인 버튼 자리 (sirsoft-admin_basic) |
 | `icon` | `string` | ❌ | - | 타이틀 옆 아이콘 (sirsoft-basic) |
 | `iconClassName` | `string` | ❌ | `'text-gray-500'` | 아이콘 색상 클래스 |
 | `closeOnBackdropClick` | `boolean` | ❌ | `true` | 배경 클릭 시 닫기 |
 | `closeOnOverlayClick` | `boolean` | ❌ | `true` | closeOnBackdropClick 별칭 |
 | `showCloseButton` | `boolean` | ❌ | `true` | 헤더 닫기 버튼 표시 |
 | `closeOnEscape` | `boolean` | ❌ | `true` | ESC 키로 닫기 허용 |
-| `width` | `string` | ❌ | `'500px'` | 모달 너비 |
+| `size` | `string` | ❌ | - | 이름 있는 너비 단계 — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. 모르는 값은 기본 500px |
+| `width` | `string` | ❌ | `'500px'` | 모달 너비 (**`size` 보다 우선**) |
 | `className` | `string` | ❌ | - | CSS 클래스 |
+
+### 서브트리 Props 는 템플릿마다 다르다
+
+`titlePrefix`/`titleSuffix`/`footer` 세 표면은 **`sirsoft-admin_basic` 의 `Modal` 에만 구현**되어 있다
+([Modal.tsx](../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal.tsx) `ModalProps`).
+`sirsoft-basic` 의 `Modal` 은 이 props 를 받지 않으므로, 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**
+(취소/확인 버튼이 통째로 사라진다). 사용자측 모달의 하단 버튼은 `children` 안에 둔다.
+
+`.g7.html` 마크업 표기는 `<title-prefix>`/`<title-suffix>`/`<footer>` 이며 `Modal` 자식일 때만 해당 props 로 hoist 된다
+([layout-markup.md §6 임베딩](layout-markup.md)). 관리자 모달의 footer 배치 규칙은 [modal-usage.md](modal-usage.md) 참조.
 
 ### 회피 불가 모달 설정
 
@@ -969,6 +1204,22 @@ export interface ModalProps {
 ### 레이아웃 JSON 사용 예시
 
 #### modals 섹션에 정의 (권장)
+
+```html
+<modal>
+  <modal data-ref="confirm_modal" title="$t:common.confirm" width="400px">
+    <p>$t:common.confirm_message</p>
+    <button type="button">
+      <on type="click">
+        <close-modal/>
+      </on>
+      $t:common.ok
+    </button>
+  </modal>
+</modal>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1006,6 +1257,19 @@ export interface ModalProps {
 ```
 
 #### 모달 열기/닫기
+
+앞은 모달 열기, 뒤는 모달 닫기다.
+
+```html
+<on type="click">
+  <open-modal target="confirm_modal"/>
+</on>
+<on type="click">
+  <close-modal/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 모달 열기
@@ -1076,6 +1340,12 @@ export interface LoadingSpinnerProps {
 
 #### 기본 사용
 
+```html
+<loading-spinner size="md" text="$t:common.loading"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -1088,6 +1358,12 @@ export interface LoadingSpinnerProps {
 ```
 
 #### id 지정 (scrollIntoView 등 DOM selector 사용 시)
+
+```html
+<loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:common.loading" color="text-blue-600" class="py-3"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1116,6 +1392,12 @@ export interface LoadingSpinnerProps {
 ```
 
 #### 전체 화면 모드
+
+```html
+<loading-spinner data-if="{{_global.isLoading}}" :fullscreen="true" size="lg" text="$t:common.loading"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

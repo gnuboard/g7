@@ -209,10 +209,11 @@ async function addComponent(page: Page, name: string, sandbox = false): Promise<
 // 시드 컨테이너에서 수행하면 `↑BarChart` + ⓘ 표시 + array-group 에디터(labels/datasets) 3개 모두
 // 마운트된다. 컴포넌트 결함이 아니라 삽입 위치 문제였다.
 test.describe('@layout-editor 데이터 정의 빌트인(8-b)', () => {
+  /** @effects property_modal_dispatches_data_builtin_node_editor_in_props_tab_by_kind, array_editor_number_widget_writes_numeric_value */
   test('DonutChart 선택 시 array 에디터(data)가 속성 탭에 마운트되고 value(number) 편집 반영', async ({
     page,
   }) => {
-    await gotoEditor(page, sandboxRouteParam(TEMPLATE));
+    await gotoEditor(page, sandboxRouteParam('admin'));
     const path = await addComponent(page, 'DonutChart', true);
     expect(await selectByPath(page, path)).toBe(true);
     await openPropsTab(page);
@@ -228,10 +229,11 @@ test.describe('@layout-editor 데이터 정의 빌트인(8-b)', () => {
     await expect(valueField).toHaveValue('250');
   });
 
+  /** @effects array_group_renders_multiple_array_editors_per_group */
   test('BarChart 선택 시 array-group 에디터(labels+datasets)가 두 그룹으로 마운트', async ({
     page,
   }) => {
-    await gotoEditor(page, sandboxRouteParam(TEMPLATE));
+    await gotoEditor(page, sandboxRouteParam('admin'));
     const path = await addComponent(page, 'BarChart', true);
     expect(await selectByPath(page, path)).toBe(true);
     await openPropsTab(page);
@@ -243,8 +245,9 @@ test.describe('@layout-editor 데이터 정의 빌트인(8-b)', () => {
   // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(admin_dashboard)이 아니라
   // E2E 전용 시드 화면(e2e_sandbox)을 대상으로 한다. 제품 화면에 저장하던 동안 관리자 대시보드에
   // 빈 DonutChart 5개가 누적됐다. 시드 화면은 globalSetup 이 매 실행 fixture 원본으로 덮어쓴다.
+  /** @effects live_donut_data_item_edit_save_persists_to_user_page, admin_editor_save_specs_target_admin_sandbox_layout */
   test('DonutChart 데이터 편집 후 저장 → PUT 200', async ({ page }) => {
-    await gotoEditor(page, sandboxRouteParam(TEMPLATE));
+    await gotoEditor(page, sandboxRouteParam('admin'));
     const path = await addComponent(page, 'DonutChart', true);
     expect(await selectByPath(page, path)).toBe(true);
     await openPropsTab(page);

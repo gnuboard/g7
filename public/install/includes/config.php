@@ -198,6 +198,8 @@ if (! defined('DEFAULT_INSTALLATION_STATE')) {
             'language_packs' => [],
         ],
         'extension_names' => [], // 확장 이름 매핑 (identifier → {ko: '...', en: '...'})
+        // 상태변경 요청의 compare-and-swap 세대 — saveInstallationStateCas 만 올린다
+        'generation' => 0,
     ]);
 }
 

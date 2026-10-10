@@ -1,0 +1,30 @@
+feature: 회원 연락처·관리자 내부 메모 노출 게이트 (코어 판정기)
+
+description: |
+  응답에 회원 이메일과 관리자 내부 메모를 실어도 되는지 판정하는 코어 트레이트
+  `ExposesMemberContact` 의 두 게이트를 고정한다. 여러 확장의 Resource 가 이 판정만 읽으므로
+  판정기 자신이 SSoT 다.
+
+  - `canExposeMemberEmail($request, $ownerId)` — 관리자 컨트롤러 도달 또는 본인이면 허용
+  - `canExposeAdminNote($request)` — 관리자 컨트롤러 도달일 때만 허용. **본인 예외가 없다**
+    (고객 자신의 주문·마일리지 화면이 관리자 메모를 받아 온 것이 막으려는 결함이다)
+
+  판정 근거는 클라이언트가 보내는 값(헤더·쿼리)이 아니라 요청이 도달한 컨트롤러다.
+  라우트를 특정할 수 없으면 차단한다.
+
+axes:
+  case: [email_admin, email_public, email_no_route, email_owner, email_other, note_admin, note_public, note_authenticated, note_no_route, note_owner, note_activity_log_self]
+
+effects:
+  - email_gate_allows_admin_controller
+  - email_gate_blocks_non_admin_controller
+  - email_gate_allows_owner
+  - admin_note_gate_allows_admin_controller
+  - admin_note_gate_blocks_non_admin_controller
+  - admin_note_gate_has_no_owner_exception
+  - gate_blocks_when_route_unknown
+  - activity_log_ip_null_for_self
+
+test_files:
+  - tests/Unit/Http/Resources/MemberEmailExposureGateTest.php
+  - tests/Feature/Api/Auth/ProfileActivityLogIpExposureTest.php

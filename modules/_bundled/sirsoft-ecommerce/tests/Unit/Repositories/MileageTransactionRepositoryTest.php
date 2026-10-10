@@ -18,12 +18,26 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
 {
     private MileageTransactionRepositoryInterface $repo;
 
+    /**
+     * 컨테이너에서 마일리지 거래 저장소를 꺼내 테스트 대상으로 둡니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->repo = app(MileageTransactionRepositoryInterface::class);
     }
 
+    /**
+     * 구매 적립(purchase_earn) lot 한 건을 만듭니다 — 잔여액이 적립액과 같은 새 lot 입니다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  float  $amount  적립액(=잔여액)
+     * @param  string|null  $currency  통화 코드
+     * @param  mixed  $expiresAt  만료 일시 (null 이면 무기한)
+     * @return MileageTransaction 생성된 적립 lot
+     */
     private function lot(int $userId, float $amount, ?string $currency = 'KRW', $expiresAt = null): MileageTransaction
     {
         return MileageTransaction::create([
@@ -32,6 +46,15 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 잔액은 만료되지 않은 lot 의 잔여액 합계이며, 만료 lot 은 빠집니다.
+     *
+     * @scenario expiry_state=expired
+     *
+     * @effects balance_ssot_is_sum_remaining_where_positive_and_not_expired
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_balance_sums_active_lots(): void
     {
         $user = User::factory()->create();
@@ -42,6 +65,17 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         $this->assertSame(1000.0, $this->repo->getBalanceByCurrency($user->id, 'KRW'));
     }
 
+    /**
+     * 차감용 활성 lot 은 만료일 오름차순(무기한은 마지막), 같으면 id 순으로 나옵니다.
+     *
+     * FIFO 차감이 먼저 소멸할 lot 부터 쓰도록 순서를 저장소가 보장한다.
+     *
+     * @scenario expiry_state=active
+     *
+     * @effects fifo_deducts_oldest_expiring_lot_first_under_for_update_lock
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_active_lots_for_update_orders_by_expiry_then_id(): void
     {
         $user = User::factory()->create();
@@ -55,6 +89,15 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         $this->assertSame([$early->id, $late->id, $noExpiry->id], $lots->pluck('id')->all());
     }
 
+    /**
+     * 주문옵션의 적립 원장 존재 여부를 판정합니다 — 적립 멱등성의 근거입니다.
+     *
+     * @scenario earn_trigger=confirmed
+     *
+     * @effects earn_idempotent_skips_when_earn_ledger_exists_for_option
+     *
+     * @return void 반환값 없음
+     */
     public function test_exists_earn_for_option(): void
     {
         $user = User::factory()->create();
@@ -72,7 +115,15 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
     }
 
     /**
-     * uuid → 정수 user_id 해석 (관리자 수동 액션의 회원 식별 — 코어 UserResource 가 id 미노출).
+     * uuid 를 정수 user_id 로 해석하고, 없는 uuid 는 null 을 돌려줍니다.
+     *
+     * 관리자 수동 액션의 회원 식별 경로다 — 코어 UserResource 가 id 를 노출하지 않는다.
+     *
+     * @scenario actor_permission=read_and_manage
+     *
+     * @effects member_uuid_resolves_to_user_id_or_null
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_user_id_by_uuid(): void
     {
@@ -82,6 +133,15 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         $this->assertNull($this->repo->resolveUserIdByUuid('00000000-0000-0000-0000-000000000000'));
     }
 
+    /**
+     * 취소 건(order_cancel_id)의 복원 원장 존재 여부를 판정합니다 — 복원 멱등성의 근거입니다.
+     *
+     * @scenario cancel_kind=full_cancel
+     *
+     * @effects restore_for_cancel_idempotent_by_order_cancel_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_exists_restore_for_cancel(): void
     {
         $user = User::factory()->create();
@@ -96,6 +156,15 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         $this->assertTrue($this->repo->existsRestoreForCancel(999));
     }
 
+    /**
+     * lot 잔여액을 지정 금액만큼 차감합니다.
+     *
+     * @scenario expiry_state=active
+     *
+     * @effects lot_decrement_applies_to_the_committed_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_decrement_remaining(): void
     {
         $user = User::factory()->create();
@@ -106,6 +175,17 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         $this->assertSame(700.0, (float) $lot->fresh()->remaining_amount);
     }
 
+    /**
+     * 적립 대상 옵션은 트리거 도달 + 지연 경과 + 적립 원장 부재 + 적립액 > 0 인 것만입니다.
+     *
+     * 적립액 0 옵션과 이미 적립 원장이 있는 옵션은 빠진다 — 적립 스케줄러의 재실행 멱등성 근거.
+     *
+     * @scenario earn_trigger=confirmed, earn_delay_days=positive
+     *
+     * @effects earn_mileage_command_processes_trigger_reached_options_past_delay_idempotently
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_earnable_options_filters_by_trigger_delay_and_ledger_absence(): void
     {
         $user = User::factory()->create();
@@ -133,6 +213,15 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         $this->assertSame([$target->id], $targets->pluck('option_id')->map(fn ($v) => (int) $v)->all());
     }
 
+    /**
+     * 적립 lot 기준으로 그 lot 을 소비한 거래(사용 등)를 연결 거래로 돌려줍니다.
+     *
+     * @scenario expiry_state=active
+     *
+     * @effects admin_mileage_row_expand_shows_linked_transactions
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_linked_transactions(): void
     {
         $user = User::factory()->create();
@@ -148,26 +237,41 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
     }
 
     /**
-     * 거래유형 필터는 UI 4분류 슬러그(earn/use/expire/adjust)를 받아 8종 enum 으로 역매핑한다.
+     * 거래유형 필터는 UI 4분류 슬러그(earn/use/expire/adjust)를 받아 8종 enum 으로 역매핑합니다.
+     *
+     * 관리자 차감(admin_deduct)은 사용도 소멸도 아닌 차감이라 `adjust` 로 분류되고,
+     * 잔액이 는 거래는 전부 `earn`(적립)으로 분류된다.
+     *
+     * @scenario type_filter=adjust
+     *
+     * @effects type_slug_reverse_maps_to_enum
+     *
+     * @return void 반환값 없음
      */
     public function test_paginate_with_filters_by_type_category(): void
     {
         $user = User::factory()->create();
         $this->lot($user->id, 1000); // purchase_earn → 'earn'
         MileageTransaction::create([
-            'user_id' => $user->id, 'currency' => 'KRW', 'type' => MileageTransactionTypeEnum::ADMIN_EARN->value,
-            'amount' => 200, 'remaining_amount' => 200, 'balance_after' => 1200, // admin_earn → 'adjust'
+            'user_id' => $user->id, 'currency' => 'KRW', 'type' => MileageTransactionTypeEnum::ADMIN_DEDUCT->value,
+            'amount' => -200, 'remaining_amount' => 0, 'balance_after' => 800, // admin_deduct → 'adjust'
         ]);
 
-        // 'adjust' 슬러그는 admin_earn 등 조정계만 매칭 (purchase_earn 제외)
+        // 'adjust' 슬러그는 사용도 소멸도 아닌 차감(관리자 차감·기적립 회수)만 매칭 (purchase_earn 제외)
         $this->assertSame(1, $this->repo->paginateWithFilters(['type' => 'adjust'], 20)->total());
 
-        // 'earn' 슬러그는 purchase_earn 만 매칭 (admin_earn 은 adjust)
+        // 'earn' 슬러그는 잔액이 는 거래만 매칭 (admin_deduct 는 adjust)
         $this->assertSame(1, $this->repo->paginateWithFilters(['type' => 'earn'], 20)->total());
     }
 
     /**
-     * 검색 — search_field 별 분기 (member_id 직접 / email·order 관계).
+     * 검색은 search_field 별로 분기합니다 (회원명·회원 ID 직접 / 이메일 관계).
+     *
+     * @scenario search_field=member
+     *
+     * @effects search_field_branches_member_memberid_email_order
+     *
+     * @return void 반환값 없음
      */
     public function test_paginate_with_filters_by_search_field(): void
     {
@@ -182,7 +286,13 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
     }
 
     /**
-     * 정렬 — sort 슬러그.
+     * 정렬 슬러그(amount_asc / amount_desc)가 금액 정렬로 반영됩니다.
+     *
+     * @scenario list_state=single_page
+     *
+     * @effects sort_slug_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_paginate_with_filters_sort(): void
     {
@@ -203,7 +313,11 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
      * 값을 PHP 에서 빼고 모델 전체를 저장하면, 그 사이 다른 요청이 반영한 증액이
      * 통째로 사라진다 (KVE-2026-1886 동종 lost update).
      *
-     * @return void
+     * @scenario expiry_state=active
+     *
+     * @effects lot_decrement_applies_to_the_committed_value
+     *
+     * @return void 반환값 없음
      */
     public function test_decrement_remaining_does_not_overwrite_concurrent_change(): void
     {
@@ -228,7 +342,11 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
     /**
      * lot 증액도 낡은 스냅샷의 값을 덮어쓰지 않아야 합니다.
      *
-     * @return void
+     * @scenario expiry_state=active
+     *
+     * @effects lot_increment_applies_to_the_committed_value_and_refreshes_the_model
+     *
+     * @return void 반환값 없음
      */
     public function test_increment_earn_lot_amount_does_not_overwrite_concurrent_change(): void
     {
@@ -254,7 +372,11 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
      *
      * 호출부가 이 모델을 그대로 반환·기록하므로, 낡은 값이 남으면 화면·로그가 어긋난다.
      *
-     * @return void
+     * @scenario expiry_state=active
+     *
+     * @effects lot_increment_applies_to_the_committed_value_and_refreshes_the_model
+     *
+     * @return void 반환값 없음
      */
     public function test_increment_earn_lot_amount_refreshes_the_model(): void
     {
@@ -270,7 +392,11 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
     /**
      * 적립 lot 조회의 잠금 변형이 같은 행을 돌려줘야 합니다.
      *
-     * @return void
+     * @scenario earn_trigger=confirmed
+     *
+     * @effects earn_lot_lookup_for_update_returns_the_same_row
+     *
+     * @return void 반환값 없음
      */
     public function test_find_earn_lot_for_option_for_update_returns_same_row(): void
     {

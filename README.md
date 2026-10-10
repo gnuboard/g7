@@ -6,7 +6,7 @@
 The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.0.11-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.1.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -35,7 +35,7 @@ The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 Everything from security to architecture was rewritten from scratch on Laravel and React.
 
-- **JSON layout engine**: define React-based UI declaratively with JSON alone, no React knowledge required. Modules and plugins inject or extend UI dynamically through JSON without a frontend build. When you need something more advanced, you can develop and register custom React components
+- **Declarative layout engine**: define React-based UI declaratively with HTML-like markup (`.g7.html`) alone, no React knowledge required — the server compiles it into a runtime JSON contract at install time. Modules and plugins inject or extend UI dynamically without a frontend build. When you need something more advanced, you can develop and register custom React components
 - **One platform, many business models**: community, storefront, subscription, booking — extend it to fit your business
 - **Fine-grained access control**: Role + Permission + Scope, a three-tier model that keeps control as your service grows
 - **Global-ready**: native i18n support, locale-driven UI, multi-currency handling
@@ -56,7 +56,7 @@ Everything a modern web platform needs, built in.
 | **Access control** | Control menus, features, and even data scope per role. Role + Permission + Scope three-tier access control provides flexible management that mirrors your organization |
 | **Identity verification (IDV)** | Every verification point — signup, password reset, sensitive operations — is managed centrally through declarative route/hook-level policies. The core ships a mail provider built in, and external providers (Korean identity-verification services such as KG Inicis and NHN KCP, as well as SMS, PortOne, and Stripe Identity-style services) attach through the same provider contract. When the server returns HTTP 428, the frontend interceptor opens a verification modal automatically and replays the original request on success |
 | **Security** | Automatic input validation and token-based authentication. Layered defense designed in from the start (CSRF/XSS/SQL injection), a real implementation of login throttling and account lockout (HTTP 423), and automatic blocking of installer endpoints once setup completes (HTTP 410) |
-| **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with JSON declarations alone, no frontend infrastructure required |
+| **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with markup authoring (`.g7.html`) alone, no frontend infrastructure required |
 | **Layout editor** | A WYSIWYG layout editor lets you place screen blocks directly and see the result right away |
 | **Proven foundation** | Built on Laravel + React — a stack adopted by companies worldwide, offering high extensibility and flexible UI implementation |
 | **Shared cache system** | `CacheInterface` plus three drivers (core/module/plugin) isolate key prefixes automatically (`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`). Tag-based automatic invalidation and central TTL management via `g7_core_settings('cache.*_ttl')` keep operations free of hardcoded values |
@@ -105,19 +105,19 @@ Gnuboard7
 
 ### How the template engine works
 
-In Gnuboard7 you **declare the UI structure in JSON**, and the engine interprets it and renders React components.
+In Gnuboard7 you **declare the UI structure in `.g7.html` markup**; the server compiles it into JSON (the runtime contract) at install time, and the engine interprets that JSON and renders React components.
 
 #### What it gives you
 
-- Build React-based UI from JSON declarations alone — screen development without React expertise
-- Modules and plugins inject or extend UI dynamically through JSON, with no frontend build
+- Build React-based UI from markup authoring (`.g7.html`) alone — screen development without React expertise
+- Modules and plugins inject or extend UI dynamically, with no frontend build
 - Develop and register custom React components when a screen needs something more advanced
 - Because the UI is defined as data (JSON) rather than code, a **WYSIWYG layout editor** lets non-developers place and edit screen blocks and see the result immediately
 
 ```mermaid
 flowchart TB
     subgraph Backend ["🔧 Backend — Laravel"]
-        A["📄 JSON layout file"] --> B["⚙️ LayoutService"]
+        A["📄 Layout source .g7.html<br/>compiled to JSON at install"] --> B["⚙️ LayoutService"]
         B --> |"inheritance<br/>extends / partial"| B
         M["📦 Module layout"] -.-> |"layout_extensions<br/>extension_point injection"| B
         P["🔌 Plugin layout"] -.-> |"layout_extensions<br/>extension_point injection"| B
@@ -181,40 +181,87 @@ flowchart TB
     linkStyle default stroke:#374151,stroke-width:2px
 ```
 
-**JSON layout example** — the JSON below renders as a real React UI:
+**Layout example** — you author in `.g7.html` markup like the block below; at install time the server compiles it into the runtime contract JSON shown beneath it, which renders as a real React UI:
+
+```html
+<layout name="product_list" version="1.0.0">
+  <data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET"/>
+  <div>
+    <h1>$t:product_list</h1>
+    <div data-each="item in {{products?.data?.data}}">
+      <span>{{item.name}}</span>
+    </div>
+    <button data-if="{{products?.data?.abilities?.can_create}}">
+      <on type="click">
+        <navigate path="/products/create"/>
+      </on>
+      $t:add
+    </button>
+  </div>
+</layout>
+```
+
+> Above is the authoring source (`.g7.html`); below is its compiled result, the runtime contract JSON.
 
 ```json
 {
+  "version": "1.0.0",
+  "layout_name": "product_list",
   "data_sources": [
-    { "id": "products", "endpoint": "/api/products", "method": "GET" }
+    {
+      "id": "products",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products",
+      "method": "GET"
+    }
   ],
-  "layout": {
-    "type": "basic", "name": "Div",
-    "children": [
-      { "type": "basic", "name": "H1", "text": "$t:product_list" },
-      {
-        "type": "basic", "name": "Div",
-        "iteration": { "source": "{{products?.data?.data}}", "item_var": "$item" },
-        "children": [
-          { "type": "basic", "name": "Span", "text": "{{$item.name}}" }
-        ]
-      },
-      {
-        "type": "basic", "name": "Button", "text": "$t:add",
-        "if": "{{products?.data?.abilities?.can_create}}",
-        "actions": [{
-          "event": "onClick",
-          "handler": "navigate",
-          "params": { "path": "/products/create" }
-        }]
-      }
-    ]
-  }
+  "components": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "H1",
+          "text": "$t:product_list"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{products?.data?.data}}",
+            "item_var": "item"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{item.name}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{products?.data?.abilities?.can_create}}",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/products/create"
+              }
+            }
+          ],
+          "text": "$t:add"
+        }
+      ]
+    }
+  ]
 }
 ```
 
 Activating a module or plugin injects its UI and components automatically.
-Developers add or change UI with JSON alone — no separate frontend build — and UI elements are shown or hidden automatically according to permissions (abilities).
+Developers add or change UI with markup authoring alone — no separate frontend build — and UI elements are shown or hidden automatically according to permissions (abilities).
 
 ### Core systems
 
@@ -342,12 +389,24 @@ Every verification point — signup, password reset, sensitive operations, the m
 
 - **Policy as the single source of truth** — toggling a policy takes effect immediately without editing route code. Every API route matches against the policy database automatically
 - **428 interceptor** — when the server returns HTTP 428, the frontend opens a verification modal automatically and replays the original request once verification succeeds
-- **Declarative registration** — modules and plugins declare `module.php::getIdentityPolicies()` / `getIdentityPurposes()` / `getIdentityMessages()`, and those are registered automatically on activation or update while preserving operator edits
-- **Message templates** — define multilingual subjects and bodies per provider and per purpose/policy, falling back in the order policy → purpose → provider default
+- **Declarative registration** — modules and plugins declare `module.php::getIdentityPolicies()` / `getIdentityPurposes()`, plus verification messages as notification definitions (`category => 'identity'`), and those are registered automatically on activation or update while preserving operator edits
+- **Message templates** — verification mail is a notification definition managed under Settings > Notifications with multilingual subjects and bodies per purpose/policy, falling back in the order policy → purpose → default and following the notification channel switches
 - **External provider slots** — plugins can inject their own SDK UI for services such as KCP, PortOne, Toss verification, or Stripe Identity through the standard G7 extension-point pattern
 - **History management** — the admin screen offers tabs per verification method, unified search, multi-filters for status/purpose/channel/IP, and bulk destruction by retention period (180 days)
 
 > Details: [docs/backend/identity-policies.md](docs/backend/identity-policies.md), [docs/backend/identity-providers.md](docs/backend/identity-providers.md), [docs/backend/identity-messages.md](docs/backend/identity-messages.md) (Korean)
+
+#### 7. Privacy retention
+
+Personal data whose retention period has ended is destroyed or anonymized per domain. The core owns the shared procedure — collection, the nightly batch, target counts, target lists and permission checks — and each domain owner (core members, the e-commerce module, the board module, …) implements only what its targets are and how to erase them.
+
+- **Handler contract** — a module or plugin implements `PrivacyRetentionHandlerInterface` and registers it through the `core.privacy.retention_handlers` filter; the nightly `privacy:process-retention` batch, the target count and the target list API pick it up without core changes
+- **Off by default** — every handler reads its own setting with a `false` fallback, and the batch re-checks the toggle before any irreversible processing
+- **See before you turn it on** — each settings screen shows how many records would be processed even while the feature is off, and "View targets" opens an infinite-scroll list of exactly the records the batch will process (settings read + domain read permission required)
+- **Same population everywhere** — the count, the list and the batch share one condition, so the number on screen is what actually gets processed
+- **Dormant accounts** — a core-only lifecycle (advance notice → dormant → withdrawal notice → automatic withdrawal) with the same count and list screens
+
+> Details: [docs/backend/privacy-retention.md](docs/backend/privacy-retention.md), [docs/backend/api/privacy.md](docs/backend/api/privacy.md) (Korean)
 
 ---
 
@@ -395,7 +454,7 @@ The setup wizard creates the application key, configures the database connection
 | Module | Description |
 |--------|-------------|
 | **sirsoft-board** | Boards — multiple boards, comments, file attachments |
-| **sirsoft-ecommerce** | Storefront — products, orders, payments, shipping, coupons, product inquiries |
+| **sirsoft-ecommerce** | Storefront — products, orders, payments, shipping, cancellations/returns/exchanges/refunds, coupons, mileage, product inquiries |
 | **sirsoft-page** | Pages — static content management |
 
 ### Plugins
@@ -408,8 +467,10 @@ The setup wizard creates the application key, configures the database connection
 | **sirsoft-tosspayments** | Toss Payments integration (Korean payment gateway) |
 | **sirsoft-verification_kginicis** | KG Inicis identity verification (Korean identity verification) |
 | **sirsoft-verification_nhnkcp** | NHN KCP mobile identity verification (Korean identity verification) |
+| **sirsoft-totp** | Authenticator app two-factor login (RFC 6238 TOTP) |
 | **sirsoft-daum_postcode** | Daum postcode lookup (Korean address search) |
 | **sirsoft-marketing** | Marketing tools |
+| **sirsoft-koreaexim** | Korea Eximbank exchange rate updates and history |
 | **sirsoft-ckeditor5** | CKEditor 5 editor |
 | **sirsoft-gdpr** | Privacy and GDPR support |
 | **sirsoft-message_bizppurio** | Bizppurio messaging (SMS/LMS and KakaoTalk alimtalk delivery) |
@@ -435,11 +496,13 @@ Official language packs you can install alongside the initial setup, so the core
 | **g7-plugin-sirsoft-daum_postcode-ja** | Daum postcode plugin, Japanese |
 | **g7-plugin-sirsoft-gdpr-ja** | Privacy/GDPR plugin, Japanese |
 | **g7-plugin-sirsoft-marketing-ja** | Marketing plugin, Japanese |
+| **g7-plugin-sirsoft-koreaexim-ja** | Korea Eximbank exchange rates plugin Japanese |
 | **g7-plugin-sirsoft-message_bizppurio-ja** | Bizppurio messaging plugin, Japanese |
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG Inicis payment plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | NICE Payments plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP payment plugin, Japanese |
 | **g7-plugin-sirsoft-tosspayments-ja** | Toss Payments plugin, Japanese |
+| **g7-plugin-sirsoft-totp-ja** | Authenticator app (TOTP) two-factor plugin, Japanese |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG Inicis identity verification plugin, Japanese |
 | **g7-plugin-sirsoft-verification_nhnkcp-ja** | NHN KCP mobile identity verification plugin, Japanese |
 | **g7-template-sirsoft-admin_basic-ja** | Default admin template, Japanese |
@@ -467,7 +530,7 @@ One Gnuboard7 installation can run a range of businesses.
 | Model | Description | Status |
 |-------|-------------|--------|
 | **Community** | Boards, comments, member management | Stable |
-| **Commerce** | Product registration, orders, payments, shipping management | Stable |
+| **Commerce** | Product registration, orders, payments, shipping, cancellation/return/exchange/refund management | Stable |
 
 ---
 

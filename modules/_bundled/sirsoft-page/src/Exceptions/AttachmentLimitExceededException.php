@@ -21,7 +21,7 @@ class AttachmentLimitExceededException extends Exception
         private int $limit,
         private int $attempted,
     ) {
-        parent::__construct(__('sirsoft-page::messages.errors.attachment_limit_exceeded', [
+        parent::__construct(trans_choice('sirsoft-page::messages.errors.attachment_limit_exceeded', $limit, [
             'limit' => $limit,
             'attempted' => $attempted,
         ]));
@@ -67,6 +67,7 @@ class AttachmentLimitExceededException extends Exception
      */
     public function getMessageParams(): array
     {
-        return ['limit' => $this->limit, 'attempted' => $this->attempted];
+        // `count` 로 「1 file」/「2 files」 를 고른다 (ResponseHelper 가 trans_count 로 번역).
+        return ['limit' => $this->limit, 'attempted' => $this->attempted, 'count' => $this->limit];
     }
 }

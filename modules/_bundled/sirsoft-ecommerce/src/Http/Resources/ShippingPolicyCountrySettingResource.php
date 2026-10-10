@@ -56,6 +56,12 @@ class ShippingPolicyCountrySettingResource extends BaseApiResource
             'extra_fee_settings' => $this->extra_fee_settings,
             'extra_fee_multiply' => $this->extra_fee_multiply,
 
+            // 클레임 배송비 (상세 편집 폼 · claim-settings 조회가 그린다 — 목록 표현에는 싣지 않는다)
+            'claim_fee_mode' => $this->claim_fee_mode?->value,
+            'claim_fee_mode_label' => $this->claim_fee_mode?->label(),
+            'return_fixed_fee' => $this->roundToCurrency($this->return_fixed_fee, $this->currency_code ?: $this->getDefaultCurrencyCode()),
+            'exchange_fixed_fee' => $this->roundToCurrency($this->exchange_fixed_fee, $this->currency_code ?: $this->getDefaultCurrencyCode()),
+
             // 상태
             'is_active' => $this->is_active,
         ];

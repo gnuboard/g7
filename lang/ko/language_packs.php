@@ -50,6 +50,10 @@ return [
         'unsupported_source' => '지원하지 않는 소스 (:source) — bundled, github, url 중 하나를 사용하세요.',
     ],
 
+    // 매니페스트 이름이 없는 내장(확장·코어 동봉) 언어팩의 표시 이름
+    'built_in_name' => ':target 내장 언어팩 (:language)',
+    'core_target' => '코어',
+
     'validation' => [
         'file_required' => '언어팩 ZIP 파일을 업로드하세요.',
         'file_invalid' => '업로드된 파일이 유효하지 않습니다.',

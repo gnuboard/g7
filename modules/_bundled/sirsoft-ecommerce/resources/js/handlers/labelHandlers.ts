@@ -6,6 +6,8 @@
  * - saveLabelSettings: 라벨 설정 모달에서 name/color API 저장 + 기간 로컬 업데이트
  */
 
+import { addCalendarDays, calendarDateIn, formatCalendarDate, resolveAccountTimezone } from '../utils/timezoneDate';
+
 /**
  * 커스텀 핸들러에 전달되는 액션 객체 인터페이스
  * ActionDispatcher는 (action, context) 형태로 핸들러를 호출합니다.
@@ -168,23 +170,21 @@ export const setLabelDatePresetInlineHandler = (
         return;
     }
 
-    const today = new Date();
-    const formatDate = (date: Date): string => {
-        return date.toISOString().split('T')[0];
-    };
-
-    const startDate = formatDate(today);
+    // 시작일은 계정 시간대(회원 → 사이트 기본)의 오늘. 예전에는 `toISOString()`(UTC 날짜)라 한국 시간 오전 9시
+    // 전에 누르면 시작일이 어제로 채워졌다(7.1.0 QE-O3).
+    const today = calendarDateIn(new Date(), resolveAccountTimezone());
+    const startDate = formatCalendarDate(today);
     let endDate: string | null = null;
 
     switch (preset) {
         case '7d':
-            endDate = formatDate(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000));
+            endDate = addCalendarDays(today, 7);
             break;
         case '14d':
-            endDate = formatDate(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000));
+            endDate = addCalendarDays(today, 14);
             break;
         case '30d':
-            endDate = formatDate(new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000));
+            endDate = addCalendarDays(today, 30);
             break;
         case 'permanent':
             endDate = null;

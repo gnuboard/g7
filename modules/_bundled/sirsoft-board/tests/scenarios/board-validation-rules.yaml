@@ -1,0 +1,39 @@
+feature: 게시판 검증 규칙 클래스
+
+description: |
+  게시판 모듈이 쓰는 검증 규칙 클래스의 통과와 실패 판정을 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 guarded_input 은 규칙이 지키는 입력 묶음(게시글 본문의 금칙어, 게시판 설정 폼의 권한 역할, 슬러그, 분류, 글쓰기 흐름의 작성 간격과 댓글 대상 글),
+  input_case 는 규칙에 들어온 값이 규칙을 지키는지, 어기는지, 규칙이 판정을 건너뛰는 값(설정 없음, 형식 다름, 빈 값, 테이블 없음)인지다.
+
+axes:
+  guarded_input: [post_content, board_settings, write_flow]
+  input_case: [conforming, violating, skipped_input]
+
+effects:
+  - blocked_keywords_passes_when_no_keywords
+  - blocked_keywords_passes_when_keywords_null
+  - blocked_keywords_fails_when_keyword_found
+  - blocked_keywords_is_case_insensitive
+  - blocked_keywords_passes_when_no_match
+  - blocked_keywords_passes_when_value_not_string
+  - permission_roles_required_fails_when_roles_empty
+  - permission_roles_required_passes_when_all_have_roles
+  - permission_roles_required_passes_when_not_array
+  - permission_roles_required_uses_localized_label_for_read_secret
+  - slug_unique_fails_for_reserved_slug
+  - slug_unique_fails_for_existing_slug
+  - slug_unique_passes_for_new_slug
+  - cooldown_rule_passes_when_disabled
+  - cooldown_rule_passes_when_no_cache
+  - category_in_use_passes_when_no_removal
+  - category_in_use_passes_when_table_not_exists
+  - comment_validation_fails_for_blinded_post
+  - comment_validation_fails_for_deleted_post
+  - comment_validation_fails_for_nonexistent_post
+  - comment_validation_passes_for_published_post
+  - comment_validation_passes_for_empty_value
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Rules/BoardRulesTest.php

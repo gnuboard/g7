@@ -1,0 +1,288 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   pairwise 전개(화면 17 × 상태 14 × 뷰포트 2 × 로케일 3 × E2E 5)는 audit 환경의 fallback YAML 파서로 전개하지 않는다.
+#   조합은 Vitest 레이아웃 계약 테스트·Playwright E2E 가 테스트별 @scenario 로 나눠 덮고, 상태 14종 × 뷰포트 × 로케일 실측은
+#   Chrome MCP 매트릭스(이력 문서)가 맡는다. effects·test_files 축은 면제하지 않는다.
+
+feature: 방문자 통계 관리자 화면·사용자 위젯 (이슈 #682 S3)
+
+description: |
+  집계된 숫자를 운영자가 실제로 보는 자리 — 관리자 화면 14장, 대시보드 카드, 홈 방문자 카운터.
+
+  배경:
+    - 모든 통계 화면이 같은 기간 질의(`preset`·`from`·`to`·`unit`·`exclude`)를 쓴다. 화면 사이 이동은
+      병합이라 기간이 따라가고, 서브탭 전환은 병합하지 않고 기간 키만 질의로 명시해 넘긴다 — 리포트마다
+      행이 달라 쪽·검색·정렬을 물려받으면 빈 화면이 열린다. 주소를 공유하면 그 화면이 그대로 열린다.
+      탭은 전역 상태 없이 질의 하나가 출처다.
+    - 프리셋은 날짜 문자열만 계산한다 — 시각까지 붙인 값은 통계 API 가 422 로 거절한다.
+    - 재집계 진행률은 방송이 기본이고 폴링이 폴백이다. 진행 상태의 출처는 실행 이력 행 하나라
+      두 길이 같은 값을 본다.
+    - 대시보드 알림 카드는 복구 API 가 있으면 복구 버튼, 없고 이동 주소가 있으면 이동 버튼을 그린다.
+      버튼이 뜨는 조건은 알림 종류가 아니라 실어 온 값이다(C1).
+    - 설정 › 리포트 탭의 정의 상태는 알림 정의 API 를 따로 읽는다 — 카드가 그 API 로 편집하므로
+      같은 출처여야 편집 직후 상태가 어긋나지 않는다(§6.3-17).
+    - 홈 방문자 카운터는 설정이 켜졌고 응답이 도착했을 때만 그린다 — 0 을 그리면 아무도 오지
+      않은 것처럼 읽힌다.
+
+  적용 지점:
+    - `templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_*.g7.html` 14 화면.
+    - `templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_analytics/*` 조각 10.
+    - `templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_dashboard/_analytics_widget.g7.html` + `admin_dashboard.g7.html`.
+    - `templates/_bundled/sirsoft-admin_basic/src/components/composite/LineChart.tsx`,
+      `src/handlers/setAnalyticsPeriodHandler.ts`, `src/handlers/downloadAttachment.ts`.
+    - `templates/_bundled/sirsoft-basic/src/components/composite/VisitorCounter.tsx`,
+      `layouts/partials/_visitor_counter.g7.html`, `layouts/home.g7.html`.
+
+coverage_strategy: pairwise
+
+axes:
+  screen: [overview, pages, referrers, environment, regions, patterns, actions, realtime, visitors, visitor_detail, bots, diagnostics, privacy_requests, settings, dashboard_widget, home_widget, component]
+  state: [loading, normal, empty, forbidden, collection_off, consent_fallback, geoip_off, anonymous, unit_downgraded, queue_backlog, ws_polling, load_failed, running, locked, stale, too_many_visits]
+  viewport: [1440, 390]
+  locale: [ko, en, ja]
+  e2e: [collect, overview, settings_privacy, permissions, home_counter, archive_on_view]
+
+exclusions:
+  - { screen: home_widget, state: forbidden, reason: "공개 요약은 인증을 요구하지 않는다 — 권한 상태가 성립하지 않는다" }
+  - { screen: component, state: forbidden, reason: "순수 표시 컴포넌트에는 권한 상태가 없다" }
+  - { state: geoip_off, screen: settings, reason: "GeoIP 꺼짐은 지역·봇 설정 힌트로만 드러난다 — 화면 상태가 아니다" }
+
+effects:
+  # 7.1.0 전수 실측 영역 E 후속 — 관측 O-E2·E5·E6·E8·E10
+  - skipped_run_shows_its_reason
+  - each_address_row_says_whether_it_is_masked
+  - bot_recent_hits_follow_the_selected_period
+  - keyboard_date_entry_leaves_one_history_entry
+  - analytics_switches_have_readable_names
+  # 집계 신선도 — 기간 줄 「마지막 집계」·상단 신선도 경고·「지금 집계」
+  - freshness_line_follows_scheduler_and_on_view
+  - freshness_line_hidden_without_archive
+  - freshness_line_wraps_on_mobile
+  - scheduler_missing_alert_conditions
+  - archive_stale_alert_conditions
+  - too_many_visits_alert_conditions
+  - archive_now_button_needs_update_permission
+  - on_view_archives_before_the_report_answers
+  - archive_stale_warning_offers_archive_now
+  - diagnostics_shows_scheduler_state
+  - run_trigger_on_view_is_labelled
+  # 새 리포트 · 한 항목 추이 · 신규/재방문
+  - trend_chart_adds_new_and_returning
+  - row_trend_icon_opens_the_modal
+  - row_trend_source_follows_the_selected_row
+  - row_trend_modal_shows_empty_and_error
+  - row_trend_failure_is_not_shown_as_data
+  - keyword_tab_explains_https_empty_keywords
+  - realtime_window_choices_fit_the_server_range
+  - declaration_warnings_are_shown_on_the_diagnostics_screen
+  - every_dashboard_alert_listener_is_covered_by_a_test
+  - overview_sources_follow_period_query
+  - period_bar_rehydrates_from_query
+  - realtime_interval_id_is_fixed_and_cleared_on_unmount
+  - preset_uses_date_only_handler
+  - period_bar_navigates_with_merge_query_and_page_reset
+  - csv_button_downloads_with_token
+  - overview_renders_four_kpi_cards
+  - trend_chart_keeps_base_series
+  - quality_cards_share_one_shape
+  - overview_failure_shows_an_error_card_not_an_empty_period
+  - period_dates_show_the_preset_range_and_fit_the_card
+  - period_over_the_limit_is_explained_inline
+  - realtime_bar_counts_top_pages
+  - status_alerts_read_diagnostics
+  - every_translation_key_exists_in_ko_and_en
+  - subtab_is_query_only
+  - tab_maps_to_report_name
+  - report_screens_share_period_bar
+  - region_screen_warns_when_geoip_off
+  - share_donut_only_on_type_tabs
+  - dimension_tab_needs_a_key
+  - dimension_choices_come_from_the_registered_list
+  - pii_dimension_is_listed_with_the_reason_instead_of_an_empty_table
+  - empty_grid_shows_one_empty_message
+  - button_variant_classes_come_with_the_base_btn_class
+  - label_value_lists_align_values_in_one_column
+  - stored_codes_are_shown_as_human_labels
+  - visitor_detail_screen_shows_visit_details
+  - every_report_screen_has_an_extension_point
+  - report_grid_pages_via_query
+  - report_grid_shows_seven_columns_with_extras
+  - csv_filename_carries_the_actual_date_range
+  - csv_url_survives_a_search_term
+  - report_columns_follow_the_dimension
+  - long_labels_wrap_inside_their_cell
+  - bots_have_no_exclude_toggles
+  - realtime_broadcast_refetches_with_own_window
+  - referrer_drilldown_follows_in_page_tab_moves
+  - stat_cards_never_total_a_paged_list
+  - realtime_window_is_query
+  - realtime_transport_badge_follows_socket_config
+  - realtime_ip_column_only_from_server
+  - visitor_screens_require_privacy_permission
+  - visitor_list_filters_via_query
+  - anonymous_mode_notice_is_shown
+  - settings_screen_warns_on_server_reported_anonymous_fallback
+  - visitor_detail_reads_route_key
+  - visitor_detail_csv_and_delete_use_the_key
+  - visitor_timeline_shows_action_types
+  - timeline_search_row_shows_result_count
+  - timeline_conversions_show_the_declared_goal_name
+  - subject_delete_modal_is_gated_by_checkbox
+  - subject_delete_returns_to_list
+  - archive_progress_broadcast_updates_the_bar
+  - polling_fallback_only_without_socket_and_while_running
+  - translation_params_read_data_sources_not_computed
+  - manual_archive_reports_skipped_when_locked
+  - status_cards_are_single_row
+  - manual_archive_buttons_need_update_permission
+  - reaggregate_modal_posts_range
+  - diagnostics_tables_page_via_query
+  - settings_tab_is_query_only
+  - settings_form_binds_every_key
+  - settings_form_waits_for_first_response
+  - settings_save_sends_changed_keys_across_tabs
+  - privacy_mode_cards_expose_pressed_state
+  - bindings_parse_in_the_engine_evaluator
+  - translation_params_are_substituted
+  - stricter_privacy_opens_retro_modal
+  - retro_and_purge_modals_are_gated_by_checkbox
+  - report_definition_state_comes_from_definitions_api
+  - definition_inactive_is_warned
+  - opt_out_goes_through_server_cookie
+  - subjects_are_queried_only_with_a_value
+  - only_one_subject_criterion_is_sent
+  - subject_search_moves_form_to_query
+  - export_downloads_via_post_blob
+  - subject_actions_stay_available_without_core_visits
+  - report_switch_does_not_inherit_search_sort_page
+  - subject_delete_opens_with_search_criteria
+  - subject_delete_confirm_names_the_subject
+  - privacy_screen_reads_only_fields_the_server_sends
+  - action_conditions_are_evaluated
+  - cross_permission_fallback_never_reads_as_a_fact
+  - report_page_size_follows_the_setting
+  - download_filename_matches_the_server_name
+  - deferred_translation_needs_leading_text
+  - dashboard_widget_source_is_background_and_forbidden_is_silent
+  - dashboard_widget_hides_without_data
+  - dashboard_widget_shows_its_own_error_state
+  - alert_with_action_url_navigates
+  - alert_with_recover_endpoint_keeps_recover_button
+  - alert_without_either_has_no_button
+  - line_chart_normalizes_height
+  - line_chart_maps_datasets_to_series
+  - line_chart_survives_empty_data
+  - line_chart_adds_secondary_axis_only_when_needed
+  - line_chart_applies_id_and_class
+  - line_chart_follows_dark_mode
+  - period_presets_match_server_rules
+  - period_presets_use_site_timezone
+  - period_last_month_never_overflows
+  - period_presets_handle_leap_years
+  - period_unknown_preset_falls_back_to_7d
+  - period_preset_never_returns_datetime
+  - download_handler_posts_body_for_blob
+  - download_handler_defaults_to_get
+  - counter_renders_four_numbers
+  - counter_reads_public_settings_from_global
+  - counter_uses_layout_labels
+  - counter_never_shows_nan
+  - counter_layout_switches_grid
+  - counter_applies_id_class_and_dark
+  - counter_labels_are_announced_with_values
+  - home_counter_source_is_gated_by_setting
+  - home_counter_hides_when_disabled_or_failed
+  - home_counter_labels_exist_in_ko_and_en
+  - preset_survives_reload_screen_change_and_subtab
+  - csv_download_is_text_csv_with_bom
+  - stricter_privacy_save_shows_retro_modal_in_browser
+  - invalid_retention_shows_inline_422
+  - read_only_account_gets_403_page_on_settings
+  - privacy_account_sees_visitor_ip_column
+  - privacy_account_exports_subject_json
+  - update_account_opens_settings_but_not_visitors
+  - beacon_reaches_the_overview_after_archive
+  - every_analytics_screen_has_fallback_and_blur
+  - every_analytics_screen_surfaces_the_site_timezone_notice
+  - site_timezone_notice_names_the_account_timezone
+  - site_timezone_badge_shows_only_when_the_viewer_timezone_differs
+  # 권한 교차 — 화면이 자기 권한 밖의 API 를 부르지 않는가 (S3 라운드 2)
+  - every_analytics_screen_only_calls_its_own_permission
+  - diagnostics_screen_only_reads_keys_the_server_sends
+  - archive_actions_live_inside_the_archive_card
+  - analytics_internal_navigation_keeps_the_period
+  # 요일·시간대 화면 (S3 라운드 2 — 14면 중 마지막으로 남아 있던 무가드 화면)
+  - patterns_screen_reads_the_period_from_the_query
+  - patterns_metric_select_drives_both_charts
+  - patterns_warns_when_the_hour_range_is_beyond_retention
+  - patterns_screen_has_no_csv_button
+  # 브라우저 검수에서 짚은 일곱 가지 (S3 라운드 4)
+  - patterns_metric_lives_in_the_query_not_in_screen_state
+  - period_bar_navigations_are_pushed_so_back_returns_to_the_previous_period
+  - icon_size_utilities_set_the_glyph_size_not_just_the_box
+  - bot_recent_hits_are_paged_inside_the_card
+  - bot_recent_hits_carry_a_unique_row_id
+  - table_cells_do_not_read_computed_values
+  - new_returning_card_separates_no_visits_from_indistinguishable
+  - privacy_mode_cards_carry_distinct_decorative_icons
+  - every_core_notification_type_has_a_localized_name
+  - visitor_detail_screen_shows_the_full_referrer_url
+  - referring_site_rows_open_the_full_url_list_for_that_host
+  - report_grid_label_links_only_where_the_screen_opts_in
+  - visitor_list_shows_members_by_name_with_an_actor_menu
+  - member_column_labels_exist_in_both_locales
+  - install_summary_chips_sit_next_to_the_status_cards
+  - queued_reaggregate_shows_progress_on_both_paths
+  - masked_ip_is_labelled_as_masked
+  - member_jump_is_gated_by_destination_permission
+  - visitor_csv_filename_carries_the_period
+  # 라운드 8 실측이 드러낸 것 — 압축된 M4·M5 기록이 가리고 있던 자리
+  - anonymous_fallback_is_surfaced_whatever_the_chosen_mode
+  - opt_out_button_says_what_pressing_it_does
+  # 라운드 9 — 받아 두고 안 그리는 상태 필드가 없는가
+  - declared_status_fields_are_actually_drawn_on_every_screen
+  # 라운드 11 — D18 이 못박은 옥텟별 지역 품질이 화면 힌트에 전부 있는가
+  - ip_mask_hint_explains_every_octet_level
+  - save_failure_header_tells_which_kind_of_failure
+  # S4 — 이월 D 를 파생 모집단 가드로 (403 전수 · 인증 응답 필드 · 서버 설정 키)
+  - every_analytics_source_handles_403
+  - permission_guards_read_only_fields_the_auth_response_sends
+  - settings_keys_match_server_defaults
+  # 실측 후속 4 — 필터 영역마다 초기화(모집단 = 통계 레이아웃의 입력이 쓰는 질의 키, 카드 단위)
+  - every_filter_area_has_a_reset_that_clears_its_keys
+  - filter_reset_is_locked_when_nothing_to_clear
+  - purge_confirm_warning_icon_is_centered_at_its_size
+  # 정보주체 요청 — 값 없이 찾기를 눌러도 화면이 그대로라 목록이 안 뜨는 고장으로 읽혔다
+  - subject_search_is_locked_without_a_value
+  - subject_search_prompt_is_shown_before_query
+
+test_files:
+  - tests/Playwright/specs/admin/analytics-archive-on-view.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsFreshness.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsStateBranches.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsScreenPermissions.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPatterns.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPoFollowups.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsObservationFollowups.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsFilterReset.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsOverview.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsReports.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsRealtime.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsVisitors.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsDiagnostics.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsSettings.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPrivacyRequests.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsDashboardWidget.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsExpressionParse.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/LineChart.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/setAnalyticsPeriodHandler.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/downloadAttachment.post.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/VisitorCounter.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/visitorCounter.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/visitorCounterMount.test.ts
+  - tests/Playwright/specs/analytics-home-counter.spec.ts
+  - tests/Feature/Analytics/DashboardAlertContractTest.php
+  - tests/Playwright/specs/admin/analytics-overview.spec.ts
+  - tests/Playwright/specs/admin/analytics-po-followups.spec.ts
+  - tests/Playwright/specs/admin/analytics-settings-privacy.spec.ts
+  - tests/Playwright/specs/admin/analytics-permissions.spec.ts
+  - tests/Playwright/specs/admin/analytics-collect-e2e.spec.ts

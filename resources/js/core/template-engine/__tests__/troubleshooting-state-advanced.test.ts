@@ -1,13 +1,15 @@
+// e2e:allow 테스트 전용 파일 — 프로덕션 코드 무변경. 기존 엔진 동작(debounce 경로의 preventDefault 미호출)을 잠그는 회귀 테스트라 E2E 로 재현할 신규 사용자 표면이 없다.
 /**
  * 트러블슈팅 회귀 테스트 - 고급 이슈 (cellChildren, Debounce, computed, 모달)
  *
  * troubleshooting-state-advanced.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see docs/frontend/troubleshooting-state-advanced.md
+ * @see 트러블슈팅 가이드 troubleshooting-state-advanced.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
+import { DataBindingEngine } from '../DataBindingEngine';
 import { Logger } from '../../utils/Logger';
 
 // AuthManager mock
@@ -64,13 +66,57 @@ describe('트러블슈팅 회귀 테스트 - cellChildren 상태 접근', () => 
 });
 
 describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
-  describe('[사례 1] debounce 적용 후 $event.preventDefault() 미작동', () => {
+  describe('[사례 1] submit + debounce 조합에서 페이지 새로고침', () => {
     /**
-     * 증상: 폼 submit에 debounce 적용 후 페이지 새로고침됨
-     * 해결: preventDefault가 필요한 경우 sequence로 분리
+     * 증상: 폼 submit 액션에 debounce 를 걸면 페이지가 새로고침됨
+     *
+     * 실동작(시뮬레이션 아님, 실제 ActionDispatcher 로 검증):
+     * - `preventDefault()` 는 `createHandler` 진입점에서만 호출된다(ActionDispatcher.ts:2045).
+     * - `bindActionsToProps` 는 `action.debounce` 가 있으면 그 진입점 대신
+     *   `handleDebouncedAction` 으로 분기하므로 원본 이벤트가 방치된다.
+     * - 지연 만료 후 실행되는 것은 `preventDefault: () => {}` 인 합성 이벤트다.
+     *
+     * 작성 규칙: submit 이벤트에는 debounce 를 쓰지 않는다.
      */
-    it('debounce는 Event 객체 메서드를 추출하지 않아야 함', () => {
-      // extractEventData 시뮬레이션
+    const createSubmitEvent = () => ({
+      type: 'submit',
+      target: { value: '', name: 'form', type: 'submit' },
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+    });
+
+    it('debounce 없는 submit 액션은 원본 이벤트의 preventDefault 를 호출한다', () => {
+      const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+      const bound = dispatcher.bindActionsToProps({
+        name: 'test_form',
+        actions: [{ type: 'submit', handler: 'suppress' }],
+      });
+      const event = createSubmitEvent();
+
+      bound.onSubmit(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      dispatcher.clearDebounceTimers();
+    });
+
+    it('debounce 가 붙은 submit 액션은 원본 이벤트의 preventDefault 를 호출하지 않는다 (현행 제약)', () => {
+      vi.useFakeTimers();
+      const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+      const bound = dispatcher.bindActionsToProps({
+        name: 'test_form',
+        actions: [{ type: 'submit', handler: 'suppress', debounce: 500 }],
+      });
+      const event = createSubmitEvent();
+
+      bound.onSubmit(event);
+      vi.advanceTimersByTime(1000);
+
+      // 지연 만료 후에도 원본 이벤트는 방치된다 → 브라우저 기본 동작(새로고침) 발생
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      dispatcher.clearDebounceTimers();
+    });
+
+    it('debounce 는 Event 객체 메서드를 추출하지 않는다', () => {
       const extractEventData = (event: any) => ({
         type: event.type,
         target: {
@@ -81,16 +127,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
         },
       });
 
-      const mockEvent = {
-        type: 'submit',
-        target: { value: '', name: 'form', type: 'submit' },
-        preventDefault: vi.fn(),
-        stopPropagation: vi.fn(),
-      };
+      const extracted = extractEventData(createSubmitEvent());
 
-      const extracted = extractEventData(mockEvent);
-
-      // 메서드는 추출되지 않음
       expect(extracted).not.toHaveProperty('preventDefault');
       expect(extracted).not.toHaveProperty('stopPropagation');
     });
@@ -1180,6 +1218,55 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
 
       expect(merged.rangeErrors.KR).toEqual([]);
       expect(merged.rangeErrors.US).toEqual([{ min: '에러' }]);
+    });
+  });
+});
+
+/**
+ * 오류 콜백 컨텍스트의 이름은 `error` 이고 `$error` 는 없다.
+ *
+ * 70차가 코퍼스에서 닫은 27건(짝·픽스처 포함 61건)이 정확히 이 착각이었다 —
+ * `{{$error.message}}` 로 적힌 자리는 값이 비어 **내용 없는 토스트**가 떴고, 예외도 빨간 줄도
+ * 나지 않아 화면만 봐서는 성공과 구분되지 않았다.
+ *
+ * 코퍼스 쪽은 audit 룰 `layout-binding-error-prefix` 가 잠근다. 이 테스트가 잠그는 것은 그
+ * **반대편** — 엔진이 오류 컨텍스트에 두는 이름이 바뀌면 고쳐 둔 27건이 한꺼번에 다시 빈다.
+ * 즉 룰과 이 테스트는 같은 계약의 양 끝이다.
+ */
+describe('트러블슈팅 회귀 테스트 - 오류 콜백 컨텍스트 이름', () => {
+  describe('[사례] {{$error.xxx}} 는 빈 값이 된다 ($ 접두사 없음이 정본)', () => {
+    /** `fail`/`onError` 갈래가 받는 컨텍스트의 모양. */
+    const failContext = {
+      error: { message: '재고가 부족합니다', errors: { qty: ['재고 초과'] } },
+    };
+
+    it('정본 {{error.message}} 는 사유를 해소한다', () => {
+      const engine = new DataBindingEngine();
+
+      expect(engine.resolveBindings('{{error.message}}', failContext)).toBe('재고가 부족합니다');
+    });
+
+    it('{{$error.message}} 는 값을 얻지 못한다 — 빈 토스트의 정체', () => {
+      const engine = new DataBindingEngine();
+
+      const resolved = engine.resolveBindings('{{$error.message}}', failContext);
+
+      // 사유가 실려서는 안 된다. 실린다면 `$error` 가 컨텍스트에 생긴 것이고,
+      // 그때는 이 테스트가 아니라 audit 룰 쪽 전제를 다시 봐야 한다.
+      expect(resolved).not.toBe('재고가 부족합니다');
+    });
+
+    it('{{error.errors}} 는 필드별 오류를 객체 그대로 돌려준다 ({{error.data}} 아님)', () => {
+      const engine = new DataBindingEngine();
+
+      // 객체를 값으로 받는 자리는 경로 해석(`resolve`)이다 — `resolveBindings` 는 문자열
+      // 보간이라 같은 표현식이라도 결과 타입이 다르다(§DataBindingEngine 메서드 선택).
+      expect(engine.resolve('error.errors', failContext)).toEqual({
+        qty: ['재고 초과'],
+      });
+
+      // `$` 를 붙인 경로는 값이 없다 — 위 두 테스트와 같은 계약을 객체 축에서 한 번 더 잠근다.
+      expect(engine.resolve('$error.errors', failContext)).toBeUndefined();
     });
   });
 });

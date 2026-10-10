@@ -1,0 +1,236 @@
+{
+    "comment": "정보주체 기록 삭제 확인 창. 정보주체 요청 화면(검색 조건)과 방문자 상세(방문자 키) 두 곳이 같은 창을\n  쓴다 — 지울 기준은 `_global.analyticsSubject` 에 담아 온다. 액션·전환을 먼저 지우고 방문을 지우며\n  집계는 건드리지 않는다. 되돌릴 수 없어 체크 없이는 버튼이 잠긴다. 끝난 뒤 갈 곳은 부르는 쪽이\n  `analyticsSubjectAfter` 로 정한다(`visitors` 면 목록으로, 아니면 검색 결과를 다시 받는다).",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 — 정보주체 기록 삭제 확인 창",
+        "editor_label": "$t:admin.modal_label.analytics.subject_delete_modal"
+    },
+    "id": "analytics_subject_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.analytics.modals.subject_delete.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2 space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:admin.analytics.modals.subject_delete.body"
+                },
+                {
+                    "comment": "정보주체 요청 화면은 쓰지 않는 칸을 '' 로 채운다 — `??` 는 빈 문자열에서 멈춰 대상이 공란이 되므로 `||` 로 건너뛴다.",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle font-mono break-all"
+                    },
+                    "text": "{{_global.analyticsSubject?.visitor_key || _global.analyticsSubject?.ip || (_global.analyticsSubject?.user_id ? '#' + _global.analyticsSubject.user_id : '')}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "inline-clickable"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "확인 체크 — 켜야 삭제 버튼이 풀린다. 여는 두 화면이 매번 꺼진 값으로 열어, 앞선 요청의 체크가 다음 사람에게 넘어가지 않는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "analyticsSubjectConfirm": "{{$event.target.checked}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "checkbox",
+                                "checked": "{{_global.analyticsSubjectConfirm === true}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.analytics.modals.subject_delete.confirm_label"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "취소 — 체크를 걷고 닫는다. 지울 기준(`analyticsSubject`)은 여는 쪽이 매번 새로 채우므로 여기서 비우지 않는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "analyticsSubjectConfirm": false
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.analyticsSubjectDeleting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "id": "subject_delete_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "삭제 실행 — 여는 쪽이 넣어 둔 기준(주소·회원·방문자 키 중 하나)과 기간을 보낸다. 빈 칸은 `|| undefined` 로 본문에서\n               빼 빈 문자열을 조건으로 보내지 않는다. 끝나면 여는 쪽이 정한 곳(`analyticsSubjectAfter`)으로 — 방문자 상세면 목록으로 가고,\n               정보주체 화면이면 결과를 다시 받는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "analyticsSubjectDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/analytics/privacy/subjects",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE",
+                                        "body": {
+                                            "confirm": true,
+                                            "ip": "{{_global.analyticsSubject?.ip || undefined}}",
+                                            "user_id": "{{_global.analyticsSubject?.user_id || undefined}}",
+                                            "visitor_key": "{{_global.analyticsSubject?.visitor_key || undefined}}",
+                                            "from": "{{_global.analyticsSubject?.from || undefined}}",
+                                            "to": "{{_global.analyticsSubject?.to || undefined}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "analyticsSubjectDeleting": false,
+                                                "analyticsSubjectConfirm": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.analytics.modals.subject_delete.success|visits={{(response?.data?.deleted?.visits ?? 0) | number}}|actions={{(response?.data?.deleted?.actions ?? 0) | number}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "액션의 조건은 `if` 다 — `data-if` 는 노드 렌더 조건이라 액션에 붙이면 엔진이 평가하지 않아 두 갈래가 다 돈다.",
+                                            "handler": "navigate",
+                                            "if": "{{_global.analyticsSubjectAfter === 'visitors'}}",
+                                            "params": {
+                                                "path": "/admin/analytics/visitors",
+                                                "mergeQuery": true,
+                                                "query": {}
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "if": "{{_global.analyticsSubjectAfter !== 'visitors'}}",
+                                            "params": {
+                                                "dataSourceId": "analytics_subjects"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "analyticsSubjectDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.analyticsSubjectConfirm !== true || _global.analyticsSubjectDeleting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.analyticsSubjectDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "spin": true,
+                                "className": "text-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.analytics.modals.subject_delete.button"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

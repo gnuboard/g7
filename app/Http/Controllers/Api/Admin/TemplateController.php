@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\TemplateOperationException;
+use App\Extension\Layout\LayoutSyncSummary;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
@@ -25,8 +27,10 @@ use App\Services\Extension\ExtensionInstallPreviewBuilder;
 use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LicenseService;
 use App\Services\TemplateService;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -39,6 +43,12 @@ class TemplateController extends AdminBaseController
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
 
+    /**
+     * 템플릿 관리 API 컨트롤러를 생성합니다.
+     *
+     * @param  TemplateService  $templateService  템플릿 서비스
+     * @param  LicenseService  $licenseService  라이선스 서비스
+     */
     public function __construct(
         private TemplateService $templateService,
         private LicenseService $licenseService
@@ -83,14 +93,14 @@ class TemplateController extends AdminBaseController
                     'per_page' => $result['per_page'],
                 ],
                 'meta' => $collection->with($request)['meta'],
-                'abilities' => [
-                    'can_install' => PermissionHelper::check('core.templates.install', $request->user()),
-                    'can_activate' => PermissionHelper::check('core.templates.activate', $request->user()),
-                    'can_uninstall' => PermissionHelper::check('core.templates.uninstall', $request->user()),
+                'abilities' => $collection->resolveCollectionAbilities($request) + [
+                    // 카드 「언어팩 관리」는 다른 화면(언어팩)으로 가는 이동이라 그 화면의 조회 권한을 따로 싣는다 —
+                    // 목록 리소스의 abilityMap 에 섞으면 능력 플래그가 서로 다른 리소스를 가리키게 된다.
+                    'can_view_language_packs' => PermissionHelper::check('core.language_packs.read', $request->user()),
                 ],
             ]);
         } catch (\Exception $e) {
-            return $this->error('templates.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -122,7 +132,7 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.fetch_success', $detail);
         } catch (\Exception $e) {
-            return $this->error('templates.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -140,7 +150,7 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.fetch_success', $preview);
         } catch (\Exception $e) {
-            return $this->error('templates.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -156,6 +166,18 @@ class TemplateController extends AdminBaseController
             $validated = $request->validated();
             $templateName = $validated['template_name'];
 
+            // 동반 설치 항목마다 그 종류의 설치·활성화 권한을 먼저 확인한다 (설치 창 can_select 와 같은 판정)
+            $denied = $this->findUnauthorizedCascadeSelection(
+                $validated['dependencies'] ?? [],
+                $validated['language_packs'] ?? []
+            );
+            if ($denied !== null) {
+                return $this->forbidden('extensions.errors.cascade_permission_denied', [
+                    'type' => __('extensions.cascade_types.'.$denied['type']),
+                    'identifier' => $denied['identifier'],
+                ]);
+            }
+
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
@@ -163,10 +185,12 @@ class TemplateController extends AdminBaseController
 
             if ($template) {
                 // cascade 2단계: 동반 번들 언어팩 best-effort 설치
-                $lpFailures = $this->installSelectedLanguagePacks($validated['language_packs'] ?? []);
+                $lpFailures = $this->installSelectedLanguagePacks($validated['language_packs'] ?? [], $lpAwaitingHost);
 
                 $payload = (new TemplateResource($template))->toArray($request);
                 $payload['language_pack_failures'] = $lpFailures;
+                // 꺼진 채 설치돼 이 확장을 켤 때 함께 켜질 언어팩 — 화면이 안내 토스트로 알린다.
+                $payload['language_packs_awaiting_host'] = $lpAwaitingHost;
 
                 return $this->success('templates.install_success', $payload, 201);
             } else {
@@ -178,12 +202,12 @@ class TemplateController extends AdminBaseController
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
-                ?? __('templates.install_failed');
+                ?? __('templates.install_failed', ['error' => SafeExceptionMessage::for($e)]);
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('templates.errors.installation_failed', 500, $e->getMessage(), [
-                'error' => $e->getMessage(),
+                'error' => SafeExceptionMessage::for($e),
             ]);
         }
     }
@@ -238,9 +262,13 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.activate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.activate_failed', ['error' => SafeExceptionMessage::for($e)])
+            );
         } catch (\Exception $e) {
-            return $this->error('templates.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.activate_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -267,9 +295,13 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.deactivate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.deactivate_failed', ['error' => SafeExceptionMessage::for($e)])
+            );
         } catch (\Exception $e) {
-            return $this->error('templates.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.deactivate_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -300,9 +332,14 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.uninstall_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // Service 가 이미 「템플릿 제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
+            // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, 모듈·플러그인과 같은 처리)
+            $firstError = collect($e->errors())->flatten()->first()
+                ?? __('templates.uninstall_failed', ['error' => '']);
+
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
-            return $this->error('templates.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.uninstall_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -323,7 +360,7 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.uninstall_info_success', $uninstallInfo);
         } catch (\Exception $e) {
-            return $this->error('templates.uninstall_info_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.uninstall_info_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -340,7 +377,7 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.preview_success', $result);
         } catch (\Throwable $e) {
-            return $this->error('templates.preview_failed', 422, null, ['error' => $e->getMessage()]);
+            return $this->error('templates.preview_failed', 422, null, ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -366,7 +403,7 @@ class TemplateController extends AdminBaseController
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
-            return $this->error('templates.install_failed', 500, null, ['error' => $e->getMessage()]);
+            return $this->error('templates.install_failed', 500, null, ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -392,7 +429,7 @@ class TemplateController extends AdminBaseController
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
-            return $this->error('templates.install_failed', 500, null, ['error' => $e->getMessage()]);
+            return $this->error('templates.install_failed', 500, null, ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -419,9 +456,13 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.refresh_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])
+            );
         } catch (\Exception $e) {
-            return $this->error('templates.refresh_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.refresh_layouts_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -437,9 +478,13 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.check_updates_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('templates.check_updates_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.check_updates_failed', ['error' => SafeExceptionMessage::for($e)])
+            );
         } catch (\Exception $e) {
-            return $this->error('templates.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.check_updates_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -465,9 +510,13 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.check_modified_layouts_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('templates.check_modified_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('templates.check_modified_layouts_failed', ['error' => SafeExceptionMessage::for($e)])
+            );
         } catch (\Exception $e) {
-            return $this->error('templates.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('templates.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -492,6 +541,9 @@ class TemplateController extends AdminBaseController
 
             $templateInfo = $result['template_info'] ?? null;
 
+            // 업데이트할 것이 없었으면(success=false) 「업데이트되었습니다」가 아니라 「업데이트할 내용이 없습니다」로 답한다(#138 실측 ④)
+            $messageKey = ($result['success'] ?? true) === false ? 'templates.no_update_available' : 'templates.update_success';
+
             // 메시지 치환 파라미터를 반드시 전달한다 — 누락 시 ":template"/":version"
             // 플레이스홀더가 그대로 사용자에게 노출된다.
             $messageParams = [
@@ -499,27 +551,41 @@ class TemplateController extends AdminBaseController
                 'version' => $result['to_version'] ?? ($templateInfo['version'] ?? ''),
             ];
 
+            // 레이아웃 처리 결과(D2) — 운영자가 고친 화면이 있으면 성공 문구 뒤에 요약 한 줄, data.layout_sync 에 상세.
+            $layoutSync = $result['layout_sync'] ?? null;
+            [$messageKey, $messageParams] = LayoutSyncSummary::messageFor($messageKey, $messageParams, $result);
+
             if ($templateInfo) {
+                $data = (new TemplateResource($templateInfo))->resolve($request);
+                if ($layoutSync !== null) {
+                    $data['layout_sync'] = $layoutSync;
+                }
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                $data['layout_warnings'] = $result['layout_warnings'] ?? [];
+
                 return $this->successWithResource(
-                    'templates.update_success',
-                    new TemplateResource($templateInfo),
+                    $messageKey,
+                    new JsonResource($data),
                     200,
                     $messageParams
                 );
             }
 
-            return $this->success('templates.update_success', $result, 200, $messageParams);
+            return $this->success($messageKey, $result, 200, $messageParams);
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 두 번째 요청(버튼 더블클릭 등)을 409 로 거절한다(#138 실측 ②)
+            return $this->error($e->getMessageKey(), 409, null, $e->getMessageParams());
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('templates.errors.update_failed', ['template' => $templateName, 'error' => '']);
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('templates.errors.update_failed', 500, $e->getMessage(), [
                 'template' => $templateName,
-                'error' => $e->getMessage(),
+                'error' => SafeExceptionMessage::for($e),
             ]);
         }
     }
@@ -544,7 +610,7 @@ class TemplateController extends AdminBaseController
 
             return $this->success('template.fetch_success', ['changelog' => $changelog]);
         } catch (\Exception $e) {
-            return $this->error('template.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+            return $this->error('template.fetch_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
         }
     }
 
@@ -552,7 +618,7 @@ class TemplateController extends AdminBaseController
      * 템플릿의 라이선스 파일 내용을 반환합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return JsonResponse
+     * @return JsonResponse 라이선스 내용 응답
      */
     public function license(string $identifier): JsonResponse
     {

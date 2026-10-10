@@ -1,41 +1,42 @@
 {
-  "version": "1.0.0",
-  "layout_name": "errors/maintenance",
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:errors.maintenance.title",
-    "is_error_layout": true
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "error_container",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
-        },
-        "children": [
-          {
-            "id": "error_title",
-            "type": "basic",
-            "name": "H1",
-            "props": {
-              "className": "text-primary text-3xl font-bold mb-4"
-            },
-            "text": "$t:errors.maintenance.title"
-          },
-          {
-            "id": "error_message",
-            "type": "basic",
-            "name": "Span",
-            "props": {
-              "className": "text-gray-500 dark:text-gray-400"
-            },
-            "text": "$t:errors.maintenance.message"
-          }
+    "comment": "관리자 점검 안내 화면 — 점검 모드가 켜졌을 때 대신 뜬다",
+    "version": "1.0.0",
+    "layout_name": "errors/maintenance",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:errors.maintenance.title",
+        "is_error_layout": true
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "error_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
+                },
+                "children": [
+                    {
+                        "id": "error_title",
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                            "className": "text-primary text-3xl font-bold mb-4"
+                        },
+                        "text": "$t:errors.maintenance.title"
+                    },
+                    {
+                        "id": "error_message",
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400"
+                        },
+                        "text": "$t:errors.maintenance.message"
+                    }
+                ]
+            }
         ]
-      }
-    ]
-  }
+    }
 }

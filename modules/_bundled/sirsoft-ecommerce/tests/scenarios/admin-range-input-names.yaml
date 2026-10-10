@@ -1,0 +1,50 @@
+# 시나리오 매니페스트 — 관리자 기간 입력칸은 칸마다 이름을 갖는다 (#747 리베이스 후속, 2026-10-09 전수 실측)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_range_input_names
+
+description: >-
+  관리자 템플릿은 라벨 바로 뒤에 입력칸이 하나일 때만 그 라벨을 칸 이름으로 잇는다. 라벨 하나 뒤에
+  「시작일 ~ 종료일」 처럼 칸이 둘 이상 오면 어느 칸에도 잇지 않는다(엉뚱한 칸에 잇던 결함을 막으려는
+  PO 승인 결정). 그래서 그런 칸은 레이아웃이 직접 이름을 달아야 한다.
+
+  2026-10-09 브라우저 전수 실측에서 이름 없는 기간 칸이 적립금 내역·쿠폰 목록·주문 클레임 신청일·리뷰·
+  찜·장바구니·문의·회원 배송지 목록과 쿠폰 등록·수정에서 나왔고, 정적 전수로 첫 화면에 안 보이는
+  쿠폰 목록 상세 필터(유효기간·발급기간)까지 더 찾았다. 기간 칸은 공용 문구 「{라벨} 시작일」·
+  「{라벨} 종료일」 로 그 화면의 라벨 문구를 감싸 이름을 단다.
+
+  테스트는 모집단을 저장소에서 파생한다(레이아웃 JSON 전체에서 같은 부모 아래 날짜·일시 칸이 둘 이상인
+  자리를 모은다). 새 화면의 기간 칸에도 규칙이 그대로 걸린다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminRangeInputNames.test.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - admin_filter_range   # 관리자 레이아웃 전체의 기간 칸 (모집단 파생)
+    - admin_value_unit_pair   # 라벨 하나 뒤 「숫자칸 + 단위·시점 선택」 짝 — 상품 옵션 마일리지(표·카드)·환경설정 적립 시점/지연 일수
+    - admin_extension_select   # 관리자 확장이 곁 라벨 없이 덧붙이는 선택칸 — 회원 결제 통화·배송국가
+    - admin_shared_label   # 라벨 하나 뒤 칸 둘 이상인 모든 자리 — 관리자 레이아웃·관리자 확장 전체(모집단 파생, 템플릿 라벨 잇기 규칙과 같은 규칙)
+
+exclusions:
+  - { surface: admin_filter_range, reason: "제외 없음 — 모집단을 저장소에서 파생하는 단일 축이다" }
+  - { surface: admin_value_unit_pair, reason: "제외 없음 — 고친 두 화면을 칸 단위로 고정 단언한다" }
+  - { surface: admin_extension_select, reason: "제외 없음 — 관리자 확장 JSON 전체에서 모집단을 파생한다" }
+  - { surface: admin_shared_label, reason: "제외 없음 — 관리자 레이아웃·관리자 확장 JSON 전체에서 모집단을 파생한다" }
+
+effects:
+  - admin_range_inputs_have_own_names   # 같은 부모 아래 날짜·일시 칸 둘 이상이면 칸마다 aria-label·aria-labelledby·placeholder 중 하나가 있다
+  - admin_value_unit_inputs_have_own_names   # 라벨 하나 뒤 숫자칸·선택칸 짝은 칸마다 자기 aria-label(적립값·적립 단위 / 적립 시점·적립 지연 일수)이 있다
+  - admin_extension_selects_have_own_names   # 관리자 확장의 선택칸은 곁 라벨 없이도 자기 aria-label(카드 제목 문구)이 있다
+  - admin_controls_after_shared_label_have_own_names   # 곁 라벨 하나 뒤 입력칸이 둘 이상이면 칸마다 aria-label·aria-labelledby·placeholder·label[for] 중 하나가 있다(날짜 기준·통화·단위·위치·은행·색 선택 칸 포함)
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright MCP   # 리베이스 후속 전수 실측 세션이 같은 크롤로 재측정한다
+  note: |
+    브라우저 축은 세션의 전수 크롤 재측정이 덮는다(이름 없는 입력칸 목록이 비는지 본다).
+    spec 을 새로 두지 않는 이유는 속성 유무가 레이아웃 정적 구조로 완전히 결정되기 때문이다 —
+    이 레이아웃 테스트가 전 자리를 규칙으로 잠근다(수정 전 24칸 누락으로 red 임을 실측 확인).
+    라벨 하나 뒤 칸 모집단 단언은 수정 전 20칸 누락으로 red, 수정 후 green 을 실측했다.

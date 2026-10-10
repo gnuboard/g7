@@ -12,9 +12,12 @@ import { attachExternalContentSync } from './externalContentSync';
 import {
     CKEDITOR5_CSS_ID,
     ckeditorCssUrl,
-    ckeditorScriptUrl,
     ckeditorTranslationUrl,
 } from './ckeditorAssets';
+import { ensureCkeditorGlobal } from './ckeditorGlobal';
+import { notifyEditorAssetFailure } from './editorFailureNotice';
+import { attachReadOnlySync, readOnlyFromContainer } from './readOnlySync';
+import { createG7UploadAdapterPlugin, UPLOAD_IMAGE_TYPES } from './uploadAdapter';
 import {
     getTextareaFallbackValues,
     removeTextareaFallback,
@@ -50,7 +53,6 @@ interface CKEditorGlobal {
     ImageStyle: any;
     ImageCaption: any;
     ImageToolbar: any;
-    SimpleUploadAdapter: any;
     MediaEmbed: any;
     HorizontalLine: any;
     Indent: any;
@@ -83,6 +85,28 @@ interface InitEditorParams {
      * 핸들러가 필드명을 알아보는 대신 선언으로 받는다.
      */
     trackChanges?: boolean | string;
+    /**
+     * 편집 결과를 어느 상태 저장소에 쓸지. 기본 `local`.
+     *
+     * 이 편집기는 원래 `_local.form.{name}` 한 자리에만 썼다. 그래서 상태를 `_global` 에
+     * 두는 화면(알림 템플릿 편집 모달)에 슬롯만 갈아끼우면 **타이핑은 되는데 저장 payload 가
+     * 빈다** — 오류도 경고도 없다. 기존 5곳(게시판·상품·페이지)의 동작을 바꾸지 않기 위해
+     * 기본값은 종전 그대로다.
+     */
+    writeScope?: 'local' | 'global' | string;
+    /**
+     * 쓰기 경로(점 표기). 기본 `form.{name}`.
+     *
+     * 다국어 편집기는 여기에 `.{locale}` 이 덧붙는다 — 단일 편집기는 경로를 그대로 쓴다
+     * (모달이 활성 언어까지 포함한 경로를 넘긴다).
+     */
+    writePath?: string;
+}
+
+/** 편집 결과를 쓸 상태 위치 */
+interface EditorWriteTarget {
+    scope: 'local' | 'global';
+    path: string;
 }
 
 /** 툴바 프리셋 */
@@ -210,41 +234,6 @@ async function loadCkeditorCss(): Promise<void> {
 }
 
 /**
- * CKEditor 전역이 확보되었는지 확인하고, 없으면 한 번 더 로드를 시도합니다.
- *
- * 레이아웃 `scripts[]` 가 이미 본체를 로드하지만, 그 로드가 끝내 실패했을 수 있다.
- * 코어 로더(`TemplateApp.loadLayoutScripts`)는 실패해도 다른 스크립트를 계속 진행하므로
- * 여기까지 도달하고, 그때 `window.CKEDITOR` 는 없다.
- *
- * @return Promise<bool> 전역이 확보되면 true
- */
-async function ensureCkeditorGlobal(): Promise<boolean> {
-    if ((window as any).CKEDITOR) {
-        return true;
-    }
-
-    const loadScript = (window as any)?.G7Core?.asset?.loadScript;
-
-    if (typeof loadScript !== 'function') {
-        return false;
-    }
-
-    try {
-        await loadScript(
-            ckeditorScriptUrl(),
-            { id: 'ckeditor5-vendor-umd' },
-            { label: 'ckeditor5 UMD' }
-        );
-    } catch (error) {
-        console.warn('[ckeditor5] 편집기 본체를 불러오지 못했습니다:', error);
-
-        return false;
-    }
-
-    return Boolean((window as any).CKEDITOR);
-}
-
-/**
  * 폴백 상태에서 편집기 초기화를 다시 시도합니다.
  *
  * 성공하면 폴백에 입력해 둔 내용을 편집기로 승계한다 — 재시도가 사용자의 작성물을
@@ -293,33 +282,6 @@ async function retryEditorInit(
     // 폴백이 남긴 `_mode: 'text'` 를 편집기 계약으로 되돌린다
     const G7Core = (window as any).G7Core;
     G7Core?.state?.setLocal?.({ [`form.${name}_mode`]: 'html' });
-}
-
-/**
- * 자산 로드 실패를 코어 안내 배너에 알립니다.
- *
- * 코어 API 가 없으면(구 코어) 콘솔 경고로 떨어진다 — 안내를 못 띄운다고 에디터
- * 초기화를 중단시키지는 않는다.
- *
- * @param id 중복 누적을 막는 식별자
- * @param label 사용자에게 보일 항목명
- * @param retry 다시 시도 동작
- */
-function notifyEditorAssetFailure(
-    id: string,
-    label: string,
-    retry: () => Promise<void> | void,
-    message?: string
-): void {
-    const notify = (window as any)?.G7Core?.assets?.notifyFailure;
-
-    if (typeof notify === 'function') {
-        notify({ id, label, retry, message });
-
-        return;
-    }
-
-    console.warn(`[ckeditor5] 자산 로드 실패: ${label}`);
 }
 
 /**
@@ -844,10 +806,9 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
     }
 
     if (withImageUpload) {
-        base.push(
-            CKEDITOR.ImageUpload,
-            CKEDITOR.SimpleUploadAdapter,
-        );
+        // 업로드 어댑터는 CDN 의 SimpleUploadAdapter 가 아니라 이 플러그인의 어댑터(코어 API 클라이언트 경유)다 —
+        // createEditorInstance 의 extraPlugins 로 붙인다.
+        base.push(CKEDITOR.ImageUpload);
     }
 
     return base;
@@ -859,18 +820,6 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
  */
 function buildUploadUrl(): string {
     return '/api/plugins/sirsoft-ckeditor5/upload';
-}
-
-/**
- * 이미지 업로드 헤더를 반환합니다.
- * Bearer 토큰을 Authorization 헤더에 포함합니다.
- */
-function getUploadHeaders(): Record<string, string> {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        return { Authorization: `Bearer ${token}` };
-    }
-    return {};
 }
 
 /**
@@ -944,6 +893,8 @@ async function createEditorInstance(
                 { name: 'resizeImage:75', label: '75%', value: '75' },
             ],
             resizeUnit: '%' as const,
+            // 파일 선택 창 accept·끌어 놓기 필터를 서버가 받는 형식으로 좁힌다(기본값은 bmp·tiff 포함)
+            upload: { types: [...UPLOAD_IMAGE_TYPES] },
         },
         indentBlock: {
             offset: 40,
@@ -972,10 +923,8 @@ async function createEditorInstance(
     };
 
     if (options.imageUpload) {
-        editorConfig.simpleUpload = {
-            uploadUrl: buildUploadUrl(),
-            headers: getUploadHeaders(),
-        };
+        // Bearer 부착·401 처리는 G7Core.api 가 맡는다 — 로그인 토큰을 여기서 읽지 않는다.
+        editorConfig.extraPlugins = [createG7UploadAdapterPlugin(buildUploadUrl())];
     }
 
     const editor = await CKEDITOR.ClassicEditor.create(element, editorConfig);
@@ -1115,6 +1064,7 @@ function createMultilingualTabs(
  * @param value 편집기가 내놓은 HTML
  * @param isMultilingual 다국어 편집기 여부 (`form.{name}.{locale}` vs `form.{name}`)
  * @param tracksChanges 이 입력을 폼 변경(`_local.hasChanges`)으로 칠지 여부. 기본 `true`
+ * @param target 쓰기 위치. 기본(null)은 종전대로 `_local.form.{name}`
  * @return void
  */
 export function syncToForm(
@@ -1122,7 +1072,8 @@ export function syncToForm(
     locale: string,
     value: string,
     isMultilingual: boolean,
-    tracksChanges: boolean = true
+    tracksChanges: boolean = true,
+    target: EditorWriteTarget | null = null
 ): void {
     // setData() 호출 중 change:data 재진입 방지
     if (isSyncSuppressed()) return;
@@ -1152,14 +1103,26 @@ export function syncToForm(
         G7Core.state.setLocal({ hasChanges: true });
     }
 
+    // 쓰기 대상이 `_global` 이면 그 저장소에 경로 그대로 쓴다. `form.{name}_mode` 는
+    // `_local.form` 계약의 일부라 함께 보내지 않는다 — 남의 저장소에 그 키를 남기면
+    // 저장 payload 에 정체 모를 필드가 섞인다.
+    if (target && target.scope === 'global') {
+        const path = isMultilingual ? `${target.path}.${locale}` : target.path;
+
+        (window as any).G7Core?.state?.set?.({ [path]: value });
+
+        return;
+    }
+
+    const basePath = target?.path ?? `form.${name}`;
     const updates: Record<string, any> = {
         [`form.${name}_mode`]: 'html',
     };
 
     if (isMultilingual) {
-        updates[`form.${name}.${locale}`] = value;
+        updates[`${basePath}.${locale}`] = value;
     } else {
-        updates[`form.${name}`] = value;
+        updates[basePath] = value;
     }
 
     // G7 표준 debounce + render: false + selfManaged: true (engine-v1.43.0+)
@@ -1274,7 +1237,7 @@ export async function initEditorHandler(
     // ActionHandler 시그니처: (action: ActionDefinition, context: ActionContext)
     // action.params에 실제 파라미터가 있음 (ActionDispatcher에서 resolveParams 후 전달)
     const params: InitEditorParams = (action.params as InitEditorParams) ?? {};
-    // 컨테이너 ID: html-editor.json의 props.id와 동일한 패턴으로 계산
+    // 컨테이너 ID: html-editor.g7.html의 props.id와 동일한 패턴으로 계산
     // 동일 페이지에 에디터가 여러 개 있을 때 충돌 방지
     const editorName = (params.name as string) ?? 'content';
     const containerId = `ckeditor5-${editorName}`;
@@ -1322,6 +1285,9 @@ export async function initEditorHandler(
     const name = params.name ?? 'content';
     const isMultilingual = params.multilingual === true || params.multilingual === 'true';
     const isReadOnly = params.readOnly === true || params.readOnly === 'true';
+    // 초기화 값은 마운트 시점 한 번의 평가다. 권한 확인처럼 로드 뒤에 바뀌는 값은 조각 컨테이너의
+    // 상태 표식(`data-readonly="true|false"`)으로 따라간다 — 편집기를 만드는 순간에도 그 값을 쓴다.
+    const readOnlyNow = (): boolean => readOnlyFromContainer(container, isReadOnly);
     const withImageUpload = params.imageUpload !== undefined
         ? (params.imageUpload === true || params.imageUpload === 'true')
         : (pluginSettings.imageUpload === true || pluginSettings.imageUpload === 'true');
@@ -1332,6 +1298,38 @@ export async function initEditorHandler(
     // 미평가 표현식(`{{...}}`)이 그대로 들어와도 truthy 문자열이라 기본값 쪽으로 떨어진다.
     const tracksChanges = !(params.trackChanges === false || params.trackChanges === 'false');
 
+    // 쓰기 타깃. 선언이 없으면 종전 그대로 `_local.form.{name}` 이다 — 미평가 표현식
+    // (`{{...}}`)이 그대로 들어오는 경우도 있어 알 수 없는 값은 기본 쪽으로 떨어뜨린다.
+    const writeScope = params.writeScope === 'global' ? 'global' : 'local';
+    const writePath = typeof params.writePath === 'string' && params.writePath.trim() !== ''
+        && !params.writePath.includes('{{')
+        ? params.writePath.trim()
+        : null;
+    const writeTarget: EditorWriteTarget | null = writePath === null
+        ? null
+        : { scope: writeScope, path: writePath };
+
+    /**
+     * 쓰기 타깃에서 현재 값을 읽습니다. (편집 대상 교체 감지용)
+     *
+     * @param locale 이 편집기가 맡은 로케일
+     * @param isMultilingual 다국어 편집기 여부
+     * @return 문자열 값, 읽을 수 없으면 undefined
+     */
+    const readFromTarget = (locale: string, isMultilingual: boolean): string | undefined => {
+        if (!writeTarget) return undefined;
+
+        const G7Core = (window as any).G7Core;
+        const root = writeTarget.scope === 'global'
+            ? G7Core?.state?.get?.()
+            : G7Core?.state?.getLocal?.();
+
+        const path = isMultilingual ? `${writeTarget.path}.${locale}` : writeTarget.path;
+        const value = path.split('.').reduce((acc: any, key: string) => acc?.[key], root);
+
+        return typeof value === 'string' ? value : undefined;
+    };
+
     // content 파싱: 다국어 시 객체, 단일 시 문자열
     // extensionPointProps를 통해 전달되는 경우 표현식이 평가되지 않고 raw 문자열로 전달될 수 있음
     // 이 경우 G7Core.state.getLocal().form[name] 폴백 사용
@@ -1340,7 +1338,22 @@ export async function initEditorHandler(
     // 편집기 본체 확보 — 실패하면 평문 입력으로 내려앉는다.
     // `html-editor.json` 이 `mode: "replace"` 라 코어 HtmlEditor 도 렌더되지 않으므로,
     // 여기서 폴백을 세우지 않으면 사용자에게는 빈 div 만 남아 글을 쓸 수 없다.
-    if (!(await ensureCkeditorGlobal())) {
+    const editorReady = await ensureCkeditorGlobal();
+
+    // 기다리는 사이 컴포넌트가 해제됐으면(레이아웃 편집기 미리보기가 스크립트 목록을 다시 정하며 다시
+    // 마운트하는 경우 등) 떨어져 나간 옛 컨테이너에 편집기도 폴백도 세우지 않는다 — 다시 마운트된 쪽이 초기화한다.
+    if (!container.isConnected) {
+        return;
+    }
+
+    // 읽기 전용 값 변화 추종 — 컨테이너의 상태 표식 `data-readonly` 가 바뀌면 붙어 있는 편집기(와 평문 폴백)의 잠금을 맞춘다.
+    // 외부 재동기화 핸들로 등록해 두므로 재초기화·해제(stopExternalSyncs) 때 함께 멈춘다.
+    registerExternalSync(
+        containerId,
+        attachReadOnlySync(container, () => editorInstances.get(containerId)?.values() ?? [], isReadOnly)
+    );
+
+    if (!editorReady) {
         // 자산 확보 시도(await) 동안 폼 데이터가 도착했을 수 있으므로 **여기서 다시** 해석한다.
         // await 이전에 캡처된 값을 그대로 쓰면 수정 화면에서 폴백이 빈 채로 서고, 폴백이
         // `form.{name}` 에 빈 문자열을 써 넣어 저장된 본문이 조용히 지워진다.
@@ -1348,7 +1361,7 @@ export async function initEditorHandler(
             container,
             name,
             height,
-            readOnly: isReadOnly,
+            readOnly: readOnlyNow(),
             placeholder,
             trackChanges: tracksChanges,
             multilingual: isMultilingual,
@@ -1374,7 +1387,10 @@ export async function initEditorHandler(
 
     const editorOptions = {
         placeholder,
-        readOnly: isReadOnly,
+        // 편집기를 만드는 순간의 값 — 다국어 탭은 나중에 만들어지므로 그때 다시 읽는다
+        get readOnly(): boolean {
+            return readOnlyNow();
+        },
         imageUpload: withImageUpload,
         height,
         toolbar: toolbarType,
@@ -1414,6 +1430,7 @@ export async function initEditorHandler(
                     name,
                     locale,
                     multilingual: true,
+                    readExternal: writeTarget ? () => readFromTarget(locale, true) : undefined,
                 });
                 registerExternalSync(containerId, externalSync);
 
@@ -1422,7 +1439,7 @@ export async function initEditorHandler(
                     if (!externalSync.shouldEmit()) return;
                     const html = (editor as any).getData();
                     externalSync.noteEmitted(html);
-                    syncToForm(name, locale, html, true, tracksChanges);
+                    syncToForm(name, locale, html, true, tracksChanges, writeTarget);
                     updateCheckIconsRef.current();
                 });
 
@@ -1466,7 +1483,7 @@ export async function initEditorHandler(
                 container,
                 name,
                 height,
-                readOnly: isReadOnly,
+                readOnly: readOnlyNow(),
                 placeholder,
                 multilingual: true,
                 locales,
@@ -1521,6 +1538,7 @@ export async function initEditorHandler(
                 name,
                 locale: singleLocale,
                 multilingual: false,
+                readExternal: writeTarget ? () => readFromTarget(singleLocale, false) : undefined,
             });
             registerExternalSync(containerId, externalSync);
 
@@ -1529,7 +1547,7 @@ export async function initEditorHandler(
                 if (!externalSync.shouldEmit()) return;
                 const html = (editor as any).getData();
                 externalSync.noteEmitted(html);
-                syncToForm(name, singleLocale, html, false, tracksChanges);
+                syncToForm(name, singleLocale, html, false, tracksChanges, writeTarget);
             });
 
             isInitializing = false;
@@ -1563,7 +1581,7 @@ export async function initEditorHandler(
                 container,
                 name,
                 height,
-                readOnly: isReadOnly,
+                readOnly: readOnlyNow(),
                 placeholder,
                 multilingual: false,
                 activeLocale: getCurrentLocale(),

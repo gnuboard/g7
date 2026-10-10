@@ -158,6 +158,34 @@ class RegisterCashReceiptProviderListenerTest extends PluginTestCase
     }
 
     /**
+     * 발급: 구버전 API 응답(`approvalNumber` 만 오는 형태)에서도 발급번호를 채우는지 확인
+     *
+     * 2022-07-27 미만 버전의 상점은 `issueNumber` 대신 `approvalNumber` 만 돌려준다.
+     * 폴백이 없으면 발급은 성공했는데 발급번호가 비어 국세청 신고 근거가 남지 않는다.
+     *
+     * @effects issue_response_mapped_to_receipt_key_and_issue_number
+     */
+    public function test_issue_falls_back_to_approval_number_on_legacy_api_version(): void
+    {
+        Http::fake([
+            'api.tosspayments.com/v1/cash-receipts' => Http::response([
+                'receiptKey' => 'RK_LEGACY',
+                'receiptUrl' => 'https://dashboard.tosspayments.com/receipt/RK_LEGACY',
+                'approvalNumber' => '730000088',
+            ], 200),
+            'api.tosspayments.com/*' => Http::response([], 200),
+        ]);
+        $order = Order::factory()->create();
+
+        $result = (new RegisterCashReceiptProviderListener)->issue(
+            $this->defaultIssueResult(), $order, self::PROVIDER_ID, $this->issuePayload()
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals('730000088', $result['issue_number']);
+    }
+
+    /**
      * 발급: 코어 enum(income/expense) 을 토스가 요구하는 한글 type 으로 변환하는지 확인
      *
      * 프로바이더 종속 표현(한글)은 리스너 내부에서만 다룬다.
@@ -240,9 +268,14 @@ class RegisterCashReceiptProviderListenerTest extends PluginTestCase
             $this->issuePayload(['amount' => 10000, 'tax_free_amount' => 3000])
         );
 
+        // 소비자 인증수단은 상점의 토스 API 버전에 따라 요구 필드명이 갈린다
+        // (2022-07-27 이상 `customerIdentityNumber` / 그 이전 `registrationNumber`).
+        // 한쪽만 실으면 다른 버전의 상점에서 INVALID_REQUIRED_PARAM 으로 발급이 막히므로
+        // 두 필드가 모두, 같은 값으로 실려야 한다.
         Http::assertSent(fn ($request) => ($request->data()['taxFreeAmount'] ?? null) === 3000
             && ($request->data()['amount'] ?? null) === 10000
-            && ($request->data()['customerIdentityNumber'] ?? null) === '01012345678');
+            && ($request->data()['customerIdentityNumber'] ?? null) === '01012345678'
+            && ($request->data()['registrationNumber'] ?? null) === '01012345678');
     }
 
     /**

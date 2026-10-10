@@ -10,7 +10,7 @@ description: |
       기록되므로 최초 마운트 구간에서는 undefined 이고, 엔진이 undefined 를 빈 문자열로 서식해
       `(/27)` 로 보였다. 예외·콘솔 에러가 없어 표시로만 드러나는 결함이었다.
     - 표시식을 `{{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}}` 로 교체.
-      같은 화면 주문 요약(`_cart_summary.json`)이 쓰던 표현식과 동일 형태여서 두 카운터의
+      같은 화면 주문 요약(`_cart_summary.g7.html`)이 쓰던 표현식과 동일 형태여서 두 카운터의
       계산 방식 비대칭도 함께 해소했다.
     - 핸들러(`cartHandlers.ts`)의 `selectedCount` 기록은 소비처가 사라져 제거했다.
 

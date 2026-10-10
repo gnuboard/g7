@@ -23,6 +23,7 @@ import cartSummaryJson from '../../layouts/partials/shop/_cart_summary.json';
 import loginJson from '../../layouts/auth/login.json';
 import checkoutSummaryJson from '../../layouts/partials/shop/_checkout_summary.json';
 import checkoutOrdererJson from '../../layouts/partials/shop/_checkout_orderer.json';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 객체 트리에서 조건을 만족하는 첫 노드를 깊이우선 탐색 */
 function findNode(node: any, predicate: (n: any) => boolean): any {
@@ -52,8 +53,8 @@ function findCheckoutConditions(layout: any): any {
       n.target.includes('/checkout')
   );
   expect(checkoutCall, 'checkout apiCall 노드가 존재해야 함').toBeDefined();
-  const conditionsAction = (checkoutCall.onSuccess ?? []).find(
-    (a: any) => a.handler === 'conditions' && Array.isArray(a.conditions)
+  const conditionsAction = asArray(checkoutCall?.onSuccess).find(
+    (a: any) => a.handler === 'conditions' && asArray(a?.conditions).length > 0
   );
   expect(conditionsAction, 'checkout onSuccess 에 conditions 분기가 존재해야 함').toBeDefined();
   return conditionsAction.conditions;
@@ -131,7 +132,7 @@ describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
     // submit 방지를 위해 type=button 명시 (Form 바깥이지만 명시는 회귀 차단에 안전)
     expect(button.props.type).toBe('button');
 
-    const navAction = (button.actions ?? []).find((a: any) => a.handler === 'navigate');
+    const navAction = asArray(button?.actions).find((a: any) => a.handler === 'navigate');
     expect(navAction).toBeDefined();
     expect(navAction.params.path).toBe('{{query.redirect}}');
   });
@@ -245,7 +246,7 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
       guestSection,
       (n) => n.name === 'PasswordInput' && n.props?.name === 'guest_lookup_password'
     );
-    const changeAction = (passwordInput.actions ?? []).find((a: any) => a.type === 'change');
+    const changeAction = asArray(passwordInput?.actions).find((a: any) => a.type === 'change');
     expect(changeAction.handler).toBe('setState');
     expect(changeAction.params.target).toBe('local');
     expect(changeAction.params.guestLookupPassword).toBe('{{$event.target.value}}');
@@ -254,7 +255,7 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
       guestSection,
       (n) => n.name === 'PasswordInput' && n.props?.name === 'guest_lookup_password_confirmation'
     );
-    const confirmChange = (confirmInput.actions ?? []).find((a: any) => a.type === 'change');
+    const confirmChange = asArray(confirmInput?.actions).find((a: any) => a.type === 'change');
     expect(confirmChange.params.guestLookupPasswordConfirmation).toBe('{{$event.target.value}}');
   });
 
@@ -296,7 +297,7 @@ describe('주문자 이메일 필수 표시 - _checkout_orderer (Issue #55)', ()
     expect(emailLabel).toBeDefined();
 
     // 필수 표시(*) Span 은 비로그인(!_global.currentUser?.uuid) 조건으로만 노출
-    const requiredMark = (emailLabel.children ?? []).find(
+    const requiredMark = asArray(emailLabel?.children).find(
       (c: any) => c.name === 'Span' && c.text === '*'
     );
     expect(requiredMark).toBeDefined();

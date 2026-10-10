@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const adminSettings = require('../../layouts/admin_settings.json');
 const policiesPartial = require('../../layouts/partials/admin_settings/_tab_identity_policies.json');
@@ -23,8 +24,8 @@ interface AnyJson { [k: string]: any }
 const collectChangeTargets = (node: AnyJson, acc: string[] = []): string[] => {
   if (!node || typeof node !== 'object') return acc;
   if (Array.isArray(node)) { node.forEach(item => collectChangeTargets(item, acc)); return acc; }
-  if (Array.isArray(node.actions)) {
-    for (const a of node.actions) {
+  if (asArray(node?.actions).length > 0) {
+    for (const a of asArray(node?.actions)) {
       const isChange = a?.type === 'change' || a?.event === 'onChange' || a?.event === 'onSearch';
       if (isChange && a?.handler === 'setState' && a?.params?.target) {
         acc.push(a.params.target);
@@ -37,26 +38,36 @@ const collectChangeTargets = (node: AnyJson, acc: string[] = []): string[] => {
 
 describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)', () => {
   describe('모달 등록 / 구조', () => {
+    /** @scenario surface=identity_policy_modal
+     *  @effects modal_partial_registered_in_admin_settings_modals */
     it('admin_settings.json 의 modals 에 모달 partial 등록', () => {
       expect(JSON.stringify(adminSettings.modals)).toContain('partials/admin_settings/_modal_identity_policy_form.json');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects modal_uses_standard_modal_component_shape */
     it('표준 Modal 컴포넌트 구조', () => {
       expect(modalPartial.type).toBe('composite');
       expect(modalPartial.name).toBe('Modal');
       expect(modalPartial.id).toBe('identity_policy_form_modal');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects modal_avoids_lifecycle_onmount_single_trigger_constraint */
     it('lifecycle.onMount 미사용 (modals 섹션 모달 1회 트리거 제약)', () => {
       expect(modalPartial.lifecycle).toBeUndefined();
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects modal_does_not_use_datakey_autobinding */
     it('dataKey 자동바인딩 미사용', () => {
       expect(JSON.stringify(modalPartial)).not.toContain('"dataKey"');
     });
   });
 
   describe('list 측 setState — _global namespace 통째 set', () => {
+    /** @scenario surface=identity_policy_modal
+     *  @effects list_entry_sets_whole_global_namespace_object */
     it('add/edit click setState 가 _global.identity_policy_form_modal 객체 통째 set', () => {
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).toContain('"target":"global"');
@@ -66,6 +77,8 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
       expect(occurrences).toBeGreaterThanOrEqual(3); // add + edit-active + edit-disabled
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects entry_setstate_carries_form_and_isnew_errors_issaving */
     it('각 setState 에 form 객체와 isNew/errors/isSaving 키 포함', () => {
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).toContain('"form":');
@@ -74,6 +87,8 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
       expect(partialStr).toContain('"isSaving":false');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects entry_sequence_ends_with_openmodal */
     it('Edit/Add sequence 끝에 openModal(identity_policy_form_modal) 호출', () => {
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).toContain('"handler":"openModal"');
@@ -82,12 +97,16 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
   });
 
   describe('사례 13 — 키스트로크당 부모 _local 변경 0회', () => {
+    /** @scenario surface=identity_policy_modal
+     *  @effects change_actions_target_global_only */
     it('change 액션은 모두 target:"global"', () => {
       const targets = collectChangeTargets(modalPartial);
       expect(targets.length).toBeGreaterThan(0);
       expect(targets.every(t => t === 'global')).toBe(true);
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects modal_body_never_targets_parent_local */
     it('모달 본문에 target:"$parent._local" / "local" 사용 없음', () => {
       const modalStr = JSON.stringify(modalPartial);
       expect(modalStr).not.toContain('"target":"$parent._local"');
@@ -96,6 +115,8 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
   });
 
   describe('옵션 K — _global namespace 단일 진실', () => {
+    /** @scenario surface=identity_policy_modal
+     *  @effects all_display_expressions_read_global_namespace */
     it('모든 표시 표현식이 _global.identity_policy_form_modal 경로 참조', () => {
       const modalStr = JSON.stringify(modalPartial);
       const fields = ['key', 'scope', 'target', 'purpose', 'provider_id', 'grace_minutes', 'applies_to', 'fail_mode', 'enabled'];
@@ -107,6 +128,8 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
       expect(modalStr).toContain('_global.identity_policy_form_modal?.isSaving');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects input_change_setstate_uses_dot_path_into_form */
     it('input change setState 가 dot path 로 form.X 변경', () => {
       const modalStr = JSON.stringify(modalPartial);
       const fields = ['key', 'scope', 'target', 'purpose'];
@@ -117,6 +140,8 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
   });
 
   describe('저장 흐름 (sequence: setState saving → apiCall → onSuccess)', () => {
+    /** @scenario surface=identity_policy_modal
+     *  @effects save_onsuccess_closes_modal_refetches_and_clears_namespace */
     it('저장 onSuccess 에 closeModal + refetchDataSource + namespace null 정리', () => {
       const modalStr = JSON.stringify(modalPartial);
       expect(modalStr).toContain('"handler":"closeModal"');
@@ -124,6 +149,8 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
       expect(modalStr).toContain('"identity_policy_form_modal":null');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects apicall_body_fields_read_from_global_form */
     it('apiCall body 모든 필드가 _global.identity_policy_form_modal?.form?.X', () => {
       const modalStr = JSON.stringify(modalPartial);
       const fields = ['key', 'scope', 'target', 'purpose', 'fail_mode'];
@@ -173,6 +200,8 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
       ['강제 위치', '$t:admin.identity.policies.form.target'],
     ] as const;
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects declarative_source_locks_identity_fields */
     it.each(lockedFields)('선언형 잠금 필드 "%s" 는 disabled 바인딩 보유', (_label, labelKey) => {
       const control = findFieldControl(modalPartial, labelKey);
       expect(control).not.toBeNull();
@@ -187,17 +216,23 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
       ['실패 시 처리', '$t:admin.identity.policies.form.fail_mode'],
     ] as const;
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects editable_fields_stay_unlocked_for_declarative_source */
     it.each(editableFields)('편집 가능 필드 "%s" 는 disabled 미부여 (선언형도 편집 가능)', (_label, labelKey) => {
       const control = findFieldControl(modalPartial, labelKey);
       expect(control).not.toBeNull();
       expect(control!.props?.disabled).toBeUndefined();
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects purpose_field_has_no_disabled_class_variant */
     it('인증 목적(purpose) 은 disabled className variant 도 제거 (편집 가능 회귀)', () => {
       const purpose = findFieldControl(modalPartial, '$t:admin.identity.policies.form.purpose');
       expect(purpose!.props?.className ?? '').not.toContain('disabled:bg-gray-100');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects priority_input_exists_and_binds_form_priority */
     it('우선순위(priority) 입력칸 존재 + 편집 가능 + form.priority 바인딩', () => {
       const priority = findFieldControl(modalPartial, '$t:admin.identity.policies.form.priority');
       expect(priority).not.toBeNull();
@@ -209,11 +244,15 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
   });
 
   describe('우선순위 동률 결함 수정', () => {
+    /** @scenario surface=identity_policy_modal
+     *  @effects priority_change_setstate_targets_form_priority */
     it('모달에 우선순위 입력 change setState 가 form.priority 경로로 변경', () => {
       const modalStr = JSON.stringify(modalPartial);
       expect(modalStr).toContain('"identity_policy_form_modal.form.priority"');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects policy_grid_exposes_priority_column */
     it('정책 목록(DataGrid) 에 우선순위 컬럼 헤더 + 값 바인딩 노출', () => {
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).toContain('$t:admin.identity.policies.col.priority');
@@ -229,21 +268,38 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
      * - signup_stage Select 의 setState 가 form.conditions.signup_stage 경로로 변경
      * - apiCall body 가 form.conditions 를 그대로 전송
      */
-    it('신규 추가 init 상태에서 conditions 가 빈 객체 {}', () => {
+    /** @scenario surface=identity_policy_modal
+     *  @effects new_policy_init_state_uses_empty_map_for_conditions */
+    it('신규 추가 init 상태에서 conditions 가 빈 컨테이너', () => {
+      // `conditions` 는 **이름표로 값을 꺼내는 자리**라 빈 값도 map(`{}`)이다 — 편집 모달 진입
+      // setState 가 `policy.conditions ?? {}` 로 복사하고(아래 테스트), 저장은 그 묶음을 그대로
+      // 본문에 싣는다.
+      //
+      // 종전 판본은 `[]` 를 단언하며 「마크업 소스가 `[]` 로 선언하므로 정본은 `[]` 이고, 설치는
+      // 소스를 읽으니 실제로 돌던 값은 처음부터 `[]` 였다」고 적어 두었는데 그 전제가 사실과
+      // 다르다 — 이 파셜의 짝 `.g7.html` 은 저작 트랙 이관(#476)에서 처음 생겼고, 그 전에는
+      // 설치가 `.json` 을 읽었으므로 실제로 돌던 값은 `{}` 였다. `[]` 는 이관이 바꾼 값이다
+      // (#599 15차 병합 전수 보존 검사 실측, 운영 결정 2026-09-21 「22곳 전부 되돌린다」).
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).toContain('"conditions":{}');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects edit_entry_copies_policy_conditions_into_form */
     it('편집 모달 진입 setState 가 policy.conditions 를 form 상태로 복사', () => {
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).toContain('"conditions":"{{(policy.conditions ?? {})}}"');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects signup_stage_change_writes_form_conditions_path */
     it('signup_stage Select 의 change 가 form.conditions.signup_stage 경로 setState', () => {
       const modalStr = JSON.stringify(modalPartial);
       expect(modalStr).toContain('"identity_policy_form_modal.form.conditions.signup_stage"');
     });
 
+    /** @scenario surface=identity_policy_modal
+     *  @effects apicall_body_sends_conditions_from_form */
     it('apiCall body 에 conditions 필드가 form.conditions 로 전송', () => {
       const modalStr = JSON.stringify(modalPartial);
       expect(modalStr).toContain('_global.identity_policy_form_modal?.form?.conditions');

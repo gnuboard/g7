@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Http\Requests;
 
+use App\Support\SiteUrl;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -63,6 +64,16 @@ class AuthCallbackRequest extends FormRequest
         ];
     }
 
+    /**
+     * 검증 실패를 기록하고 사이트 주소 기준 결제 실패 화면으로 보냅니다.
+     *
+     * 입력값은 결제 정보를 담을 수 있어 키 이름만 기록한다.
+     *
+     * @param  Validator  $validator  실패한 검증기
+     * @return void 반환값 없음
+     *
+     * @throws HttpResponseException 결제 실패 화면으로의 302 (`error=invalid_params`)
+     */
     protected function failedValidation(Validator $validator): void
     {
         Log::warning('KCP: authCallback validation failed', [
@@ -71,7 +82,8 @@ class AuthCallbackRequest extends FormRequest
         ]);
 
         $settings = plugin_settings(self::PLUGIN_IDENTIFIER);
-        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
+        // 보안: 요청 Host 가 아니라 사이트 주소 기준 절대 URL
+        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         throw new HttpResponseException(

@@ -1,0 +1,641 @@
+{
+    "comment": "반응 목록 — 검색·필터 영역. 저장소의 관리자 목록 관례를 그대로 따른다(알림 로그·회원 알림함·\n  본인인증 로그·배송 정책 등 17개 화면이 같은 짜임이다).\n\n  ⓐ **층을 나눈다** — 자유 입력인 「검색어」와 값을 고르는 「필터」는 성격이 달라 같은 줄에 두지\n     않는다. 한 줄에 몰면 좁은 화면에서 서로 폭을 빼앗아 입력칸이 사라진다(2026-09-16 실측:\n     게시판 셀렉트 861px vs 검색어 200px, 셀렉트 우변이 뷰포트를 297px 넘겼다).\n  ⓑ 필터 한 줄은 `.filter-row` + 왼쪽 `.filter-label` — 이 자산이 이 용도로 만들어져 있다\n     (`main.css` 의 `.filter-grid`/`.filter-row`/`.filter-label`).\n  ⓒ 초기화·검색은 **자기 줄**에 가운데로 둔다. 좁은 화면에서는 둘이 반씩 나눠 차지한다.\n  ⓓ 상세검색 접힘 상태는 `_local` 에 둔다 — 전역 키로 두면 형제 화면(스크랩·게시글·신고)과\n     상태가 섞인다.\n\n  검색 조립은 명명 액션 `searchBoardReactions` 한 자리에 있고, 엔터·검색 버튼이 그것을 부른다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Board Reactions List - Filter Section"
+    },
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "comment": "1층 — 검색어. 무엇을 찾을지 고르고 낱말을 넣는 자리다.",
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "select-composite w-32"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "searchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "searchField",
+                                "className": "select-composite w-44",
+                                "value": "{{_local.searchField || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:sirsoft-board.admin.reactions.search_fields.all"
+                                    },
+                                    {
+                                        "value": "target_title",
+                                        "label": "$t:sirsoft-board.admin.reactions.search_fields.target_title"
+                                    },
+                                    {
+                                        "value": "target_content",
+                                        "label": "$t:sirsoft-board.admin.reactions.search_fields.target_content"
+                                    },
+                                    {
+                                        "value": "board_name",
+                                        "label": "$t:sirsoft-board.admin.reactions.search_fields.board_name"
+                                    },
+                                    {
+                                        "value": "member",
+                                        "label": "$t:sirsoft-board.admin.reactions.search_fields.member"
+                                    },
+                                    {
+                                        "value": "author_name",
+                                        "label": "$t:sirsoft-board.admin.reactions.search_fields.author_name"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "fa-solid fa-search",
+                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "search_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "searchQuery": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keypress",
+                                            "key": "Enter",
+                                            "actionRef": "searchBoardReactions"
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:sirsoft-board.admin.reactions.search_placeholder",
+                                        "className": "input pl-10",
+                                        "value": "{{_local.searchQuery || ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "2층 — 값을 고르는 필터. 줄마다 왼쪽에 무엇을 고르는지 이름이 선다.",
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-grid"
+            },
+            "children": [
+                {
+                    "id": "board_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-24"
+                            },
+                            "text": "$t:sirsoft-board.admin.reactions.filters.board_label"
+                        },
+                        {
+                            "id": "board_filter_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "select-composite w-full"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "담아만 두고 실제 조회는 검색 버튼이 한 번에 한다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reactionBoardFilter": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "select-composite w-64",
+                                "value": "{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": ""
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reactions.filters.board_all"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "iteration": {
+                                        "source": "{{reactions?.data?.boards ?? []}}",
+                                        "item_var": "b"
+                                    },
+                                    "props": {
+                                        "value": "{{b.id}}"
+                                    },
+                                    "text": "{{b.name}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "type_target_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-24"
+                            },
+                            "text": "$t:sirsoft-board.admin.reactions.filters.type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "comment": "유형 선택지는 목록 응답이 실어 준 메타에서 온다. 반응 조회 권한만 가진 매니저는\n            환경설정을 볼 수 없어 유형 API 를 부를 수 없기 때문이다. 이미 비활성으로 돌린 유형도\n            남겨 둔다 — 그 유형으로 쌓인 과거 반응을 찾아야 한다.",
+                                    "id": "reaction_type_filter_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactionTypeFilter": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "admin-reaction-type-filter",
+                                        "aria-label": "$t:sirsoft-board.admin.reactions.filters.type_label",
+                                        "className": "select-composite w-40 shrink-0",
+                                        "value": "{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": ""
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reactions.filters.type_all"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "iteration": {
+                                                "source": "{{reactions?.data?.reaction_types ?? []}}",
+                                                "item_var": "t"
+                                            },
+                                            "props": {
+                                                "value": "{{t.id}}"
+                                            },
+                                            "text": "{{t.is_active === false ? t.name + ' ' + $t('sirsoft-board.admin.reactions.filters.type_inactive_suffix') : t.name}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "target_filter_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "대상 구분(전체/글/댓글) — 값은 전역에 두었다가 검색 버튼이 쿼리로 옮긴다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reactionTargetFilter": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "admin-reaction-target-filter",
+                                        "aria-label": "$t:sirsoft-board.admin.reactions.columns.target",
+                                        "className": "select-composite w-32 shrink-0",
+                                        "value": "{{_global.reactionTargetFilter !== undefined ? _global.reactionTargetFilter : (query.target_type || '')}}",
+                                        "options": [
+                                            {
+                                                "value": "",
+                                                "label": "$t:sirsoft-board.admin.reactions.filters.target_all"
+                                            },
+                                            {
+                                                "value": "post",
+                                                "label": "$t:sirsoft-board.admin.reactions.filters.target_post"
+                                            },
+                                            {
+                                                "value": "comment",
+                                                "label": "$t:sirsoft-board.admin.reactions.filters.target_comment"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "date_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-24"
+                            },
+                            "text": "$t:sirsoft-board.admin.reactions.filters.reacted_at_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "id": "date_from",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "시작일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "dateFrom": "{{$event.target.value}}",
+                                                "dateQuick": ""
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "date",
+                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}",
+                                        "className": "input w-40",
+                                        "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reacted_at_from || '')}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "~"
+                                },
+                                {
+                                    "id": "date_to",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "종료일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "dateTo": "{{$event.target.value}}",
+                                                "dateQuick": ""
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "date",
+                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}",
+                                        "className": "input w-40",
+                                        "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}"
+                                    }
+                                },
+                                {
+                                    "id": "date_quick_buttons",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-wrap gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "오늘 하루 — 시작·끝을 같은 날로 채운다. 여섯 버튼 모두 날짜 두 칸을 대신 채워 줄 뿐이라 실제 조회는 검색 버튼에서 일어난다",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "dateQuick": "today",
+                                                        "dateFrom": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_today"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "최근 3일 — 오늘을 포함해 세 날이므로 이틀을 뺀다",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "dateQuick": "3days",
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 2); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_3days"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "최근 1주 — 오늘 포함 7일이라 엿새를 뺀다",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "dateQuick": "week",
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 6); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_week"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 다음 달로 넘어간다). 「오늘」은 계정 시간대(회원 → 사이트 기본)의 날짜이고, 그 달력 날짜에서 UTC 셈으로 빼 브라우저 시간대가 끼지 않는다",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "dateQuick": "month",
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 1); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_month"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "최근 3개월 — 달 셋을 뺀 같은 날짜",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "dateQuick": "3months",
+                                                        "dateFrom": "{{(() => { const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined }) + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 3); return d.toLocaleDateString('sv-SE', { timeZone: 'UTC' }); })()}}",
+                                                        "dateTo": "{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_3months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "기간 제한 없음 — 두 칸을 «빈 값»으로 둔다(손대지 않은 상태와 달라서, 검색 시 URL 의 기존 날짜를 잇지 않고 지운다)",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "dateQuick": "all",
+                                                        "dateFrom": "",
+                                                        "dateTo": ""
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reactions.filters.date_quick_all"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "3층 — 실행. 형제 화면과 같이 자기 줄에서 가운데로 선다.",
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "id": "search_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "comment": "조립은 명명 액션 한 자리에 있다 — 엔터와 같은 규칙을 쓰기 위해서다",
+                            "type": "click",
+                            "actionRef": "searchBoardReactions"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "text": "$t:sirsoft-board.admin.reactions.search"
+                },
+                {
+                    "id": "reset_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "comment": "초기화 ①  검색 대상·검색어·접힘 상태를 지역에서 비운다",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "searchField": "all",
+                                "searchQuery": ""
+                            }
+                        },
+                        {
+                            "comment": "초기화 ②  게시판·유형·대상·날짜·선택을 전역에서 비운다 — 이것을 먼저 하지 않으면 URL 만 털리고 화면의 셀렉트·날짜·체크가 남는다",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "reactionBoardFilter": "",
+                                "reactionTypeFilter": "",
+                                "reactionTargetFilter": "",
+                                "dateFrom": "",
+                                "dateTo": "",
+                                "dateQuick": "",
+                                "selectedIds": []
+                            }
+                        },
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. 회원 필터도 함께 떨어진다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/boards/reactions",
+                                "mergeQuery": false
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "text": "$t:sirsoft-board.admin.reactions.reset"
+                }
+            ]
+        }
+    ]
+}

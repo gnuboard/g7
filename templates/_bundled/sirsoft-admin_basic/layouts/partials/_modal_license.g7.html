@@ -1,0 +1,20 @@
+<!-- 바닥글의 저작권 표기를 누르면 뜨는 창. 코어 라이선스 전문을 손대지 않은 원문 그대로
+  싣는다(길어서 스크롤 영역 안에 둔다). 확장 하나하나의 라이선스를 보여 주는 창은 따로
+  있고, 이 창은 코어 것만 다룬다. -->
+<partial description="코어 라이선스 모달" editor_label="$t:admin.modal_label.license_modal">
+  <modal data-type="composite" data-ref="license_modal" title="$t:admin.license.modal_title" size="large">
+    <div class="flex flex-col max-h-[70vh]">
+      <div class="flex-1 overflow-y-auto min-h-0 px-1">
+        <pre class="whitespace-pre-wrap text-body font-mono leading-relaxed">{{_global.coreLicenseContent ?? ''}}</pre>
+      </div>
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

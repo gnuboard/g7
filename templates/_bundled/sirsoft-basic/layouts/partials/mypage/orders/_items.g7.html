@@ -1,0 +1,266 @@
+<!-- 주문 상세의 상품 줄 목록. 체크박스가 붙는 이유는 클레임(교환/반품/취소·환불)이 **항목 단위**로도 되기
+     때문이고, 고른 항목은 `_local.selectedItemIds` 에 모여 클레임 신청 버튼이 작성 화면으로 넘긴다(`query.options`).
+     회원·비회원 상세가 함께 쓰고, 두 셸 모두 `claimable` 데이터소스를 싣는다. -->
+<partial description="주문 상세 - 주문 상품 목록 (체크박스 + 상태뱃지 + 배송정보)">
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+    <!-- 섹션 헤더: 제목 + 전체선택 + 취소버튼 -->
+    <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+      <!-- 좌측: 아이콘 + 제목 + 전체선택 -->
+      <div class="flex items-center gap-3">
+        <icon name="shopping-bag" class="text-gray-700 dark:text-gray-300" size="md"/>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+          $t:mypage.order_detail.items_title
+        </h3>
+        <!-- 전체 선택 체크박스 — 클레임(교환/반품/취소·환불)이 열린 상품이 하나라도 있을 때 표시한다. 회원·비회원 셸 모두 claimable 데이터소스를 싣는다. 무엇을 고를지는 핸들러가 행 체크박스 잠금과 **같은 술어**(취소되지 않음 + 열린 유형 있음)로 정하므로 그 판정 재료를 넘긴다 — 잠긴 칸까지 고르면 신청 버튼이 전부 꺼진다. -->
+        <label data-if="{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}" class="flex items-center gap-1.5 ml-2 cursor-pointer select-none">
+          <input type="checkbox" checked="{{_local.selectAllItems}}" class="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500">
+            <on type="change">
+              <!-- 신청할 수 있는 상품 전체 선택을 켜고 끈다 — 신청할 수 없는 상품은 핸들러가 건너뛴다 -->
+              <action handler="sirsoft-ecommerce.toggleSelectAllItems" claimableOptions="{{claimable?.data?.options ?? null}}"/>
+            </on>
+          </input>
+          <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.select_all</span>
+        </label>
+      </div>
+    </div>
+    <!-- 상품 목록 — 구분선은 반복 노드의 **부모**가 긋는다. 반복 노드는 자기 자신이 복제되므로 그 노드의 divide-y 는 상품 사이에 걸리지 않는다. -->
+    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+    <div data-each="item in {{order.data.options ?? []}}">
+      <div class="py-4">
+        <!-- 상품 기본 정보 행 -->
+        <div class="flex gap-4">
+          <responsive on="portable" class="flex gap-3"/>
+          <!-- 체크박스 — **칸은 언제나 선다.** 신청할 수 없는 상품(취소됨·열린 클레임 유형 없음)은 잠근 채로
+               둔다(요구사항 2026-09-21). 종전에는 그런 상품에서 칸을 통째로 감춰, 같은 목록 안에서 상품 이미지가
+               한 줄만 왼쪽으로 밀려 정렬이 어긋났다 — 「왜 이 줄만 다르게 생겼나」 가 먼저 눈에 들어온다.
+               잠긴 칸은 스스로 「이 상품은 고를 수 없다」 를 말하므로 신청 버튼이 왜 안 켜지는지도 함께 설명한다.
+               칸 전체가 그 체크박스의 라벨이다(id/for) — 칸 여백을 눌러도 같은 칸이 토글된다. -->
+          <label for="order_item_check_{{item.id}}" class="flex items-start pt-5 flex-shrink-0">
+            <responsive on="portable" class="flex items-start pt-4 flex-shrink-0"/>
+            <input type="checkbox" id="order_item_check_{{item.id}}" checked="{{(_local.selectedItemIds ?? []).includes(item.id)}}" disabled="{{!(item.option_status !== 'cancelled' &amp;&amp; (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0)}}" class="{{(item.option_status !== 'cancelled' &amp;&amp; (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0) ? 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 cursor-pointer' : 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 opacity-40 cursor-not-allowed'}}">
+              <on type="change">
+                <!-- 선택 목록을 손대는 일이라 배열을 표현식으로 밀지 않고 모듈 핸들러에 맡긴다 -->
+                <action handler="sirsoft-ecommerce.toggleItemSelection" optionId="{{item.id}}" claimableOptions="{{claimable?.data?.options ?? null}}"/>
+              </on>
+            </input>
+          </label>
+          <!-- 상품 이미지 -->
+          <button class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer">
+            <responsive on="portable" class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"/>
+            <on type="click">
+              <!-- audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다. -->
+              <navigate path="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"/>
+            </on>
+            <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url ?? ''}}" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
+            <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+              <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+            </div>
+          </button>
+          <!-- 상품 정보 -->
+          <div class="flex-1 min-w-0">
+            <button class="text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer">
+              <responsive on="portable" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"/>
+              <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다. -->
+                <navigate path="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"/>
+              </on>
+              {{$localized(item.product_name)}}
+            </button>
+            <p data-if="{{item.option_snapshot?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$localized(item.option_snapshot?.option_name)}}</p>
+            <!-- 선택된 추가옵션 (스냅샷 — 옵션 라인 바로 아래) -->
+            <div data-if="{{item.additional_options?.length > 0}}" class="mt-0.5 space-y-0.5">
+              <p data-each="addOpt in {{item.additional_options ?? []}}" class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:common.count_suffix</p>
+            <!-- 모바일: 상태 뱃지 + 배송정보 (인라인) -->
+            <div data-if="{{true}}" class="flex flex-wrap items-center gap-2 mt-2">
+              <responsive on="desktop" data-if="{{false}}"/>
+              <!-- 상태 뱃지 (모바일) -->
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}">
+                <icon data-if="{{!!item.option_status_icon}}" name="{{item.option_status_icon ?? ''}}" class="text-xs"/>
+                <span>{{item.option_status_label ?? ''}}</span>
+              </span>
+              <!-- 배송사 + 운송장 (모바일) -->
+              <span data-if="{{!!item.carrier_name}}" class="text-xs text-gray-500 dark:text-gray-400">{{item.carrier_name}} {{item.tracking_number ?? ''}}</span>
+            </div>
+            <!-- 모바일: 구매확정/리뷰 버튼 -->
+            <div data-if="{{true}}" class="flex gap-2 mt-2">
+              <responsive on="desktop" data-if="{{false}}"/>
+              <!-- 구매확정 버튼 (모바일) -->
+              <button data-if="{{item.can_confirm === true}}" type="button" class="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer">
+                <on type="click">
+                  <sequence>
+                    <set-state target="_local">
+                      <field name="confirmTarget">
+                        <field name="id" value="{{item.id}}"/>
+                        <field name="orderId" value="{{order.data.id}}"/>
+                        <field name="product_name" value="{{$localized(item.product_name)}}"/>
+                        <field name="option_name" value="{{$localized(item.option_snapshot?.option_name) ?? ''}}"/>
+                        <field name="thumbnail_url" value="{{item.thumbnail_url ?? ''}}"/>
+                        <field name="subtotal_earned_points_amount" value="{{item.subtotal_earned_points_amount ?? 0}}"/>
+                        <field name="subtotal_earned_points_amount_formatted" value="{{item.subtotal_earned_points_amount_formatted ?? ''}}"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="modal_confirm_purchase"/>
+                  </sequence>
+                </on>
+                $t:mypage.order_detail.confirm_purchase
+              </button>
+              <!-- 리뷰작성 버튼 (모바일) -->
+              <button data-if="{{item.can_write_review === true}}" type="button" class="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer">
+                <on type="click">
+                  <sequence>
+                    <set-state target="_local">
+                      <field name="reviewTarget">
+                        <field name="id" value="{{item.id}}"/>
+                        <field name="orderId" value="{{order.data.id}}"/>
+                        <field name="product_id" value="{{item.product_id}}"/>
+                        <field name="product_name" value="{{$localized(item.product_name)}}"/>
+                        <field name="option_name" value="{{$localized(item.option_snapshot?.option_name) ?? ''}}"/>
+                        <field name="thumbnail_url" value="{{item.thumbnail_url ?? ''}}"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="modal_write_review"/>
+                  </sequence>
+                </on>
+                $t:mypage.order_detail.write_review
+              </button>
+              <!-- 리뷰 작성 완료 뱃지 (모바일) -->
+              <span data-if="{{item.has_review === true}}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg">
+                <icon name="check" size="xs"/>
+                <span>$t:mypage.order_detail.review_written</span>
+              </span>
+              <!-- 리뷰 작성 기간 만료 안내 (모바일) — 버튼이 사라진 이유 안내 -->
+              <span data-if="{{item.review_deadline_passed === true}}" class="inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium">
+                <icon name="clock" size="xs"/>
+                <span>$t:mypage.order_detail.review_deadline_passed</span>
+              </span>
+            </div>
+            <!-- 적용 프로모션 목록 (쿠폰/할인코드) -->
+            <div data-if="{{(item.subtotal_discount_amount_value ?? 0) > 0}}" class="mt-1.5 space-y-1">
+              <!-- 적용 쿠폰 목록 -->
+              <div data-if="{{(item.promotions_applied_snapshot?.coupons ?? []).length > 0}}" data-each="coupon in {{item.promotions_applied_snapshot?.coupons ?? []}}" class="flex items-center gap-1.5">
+                <icon name="ticket" class="text-red-500 dark:text-red-400" size="xs"/>
+                <span class="text-xs text-red-500 dark:text-red-400">{{coupon.name ?? ''}} -{{coupon.total_discount_formatted ?? ''}}</span>
+              </div>
+              <!-- 적용 할인코드 목록 -->
+              <div data-if="{{(item.promotions_applied_snapshot?.discount_codes ?? []).length > 0}}" data-each="discountCode in {{item.promotions_applied_snapshot?.discount_codes ?? []}}" class="flex items-center gap-1.5">
+                <icon name="tag" class="text-orange-500 dark:text-orange-400" size="xs"/>
+                <span class="text-xs text-orange-500 dark:text-orange-400">{{discountCode.name ?? discountCode.code ?? ''}} -{{discountCode.total_discount_formatted ?? ''}}</span>
+              </div>
+              <!-- 적용 이벤트 목록 -->
+              <div data-if="{{(item.promotions_applied_snapshot?.events ?? []).length > 0}}" data-each="event in {{item.promotions_applied_snapshot?.events ?? []}}" class="flex items-center gap-1.5">
+                <icon name="gift" class="text-purple-500 dark:text-purple-400" size="xs"/>
+                <span class="text-xs text-purple-500 dark:text-purple-400">{{event.name ?? ''}} -{{event.total_discount_formatted ?? ''}}</span>
+              </div>
+            </div>
+            <!-- 적용 배송정책 — 「그 상품만 샀을 때 배송비」는 부분취소·재활성 재계산 때 남은 수량 기준으로 갱신된다. 취소된 행은 남은 행과 같은 상품 옵션을 공유해 그 갱신된 배송비가 붙으므로(이미 취소한 상품에 「2,500원」), 취소 행에서는 줄을 세우지 않는다. -->
+            <div data-if="{{item.option_status !== 'cancelled' &amp;&amp; (order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}" class="mt-1.5 flex items-center gap-1.5">
+              <icon name="truck" class="text-gray-400 dark:text-gray-500" size="xs"/>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">/</span>
+              <!-- 배송비가 있을 때 -->
+              <span data-if="{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}</span>
+              <!-- 무료배송일 때 -->
+              <span data-if="{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-600 dark:text-green-400 font-medium">$t:mypage.order_detail.free_shipping</span>
+            </div>
+          </div>
+          <!-- 우측: 금액 + 상태뱃지 + 배송정보 (PC) -->
+          <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+            <responsive on="portable" class="flex flex-col items-end gap-1 flex-shrink-0"/>
+            <!-- 금액 (할인 있을 때) -->
+            <div data-if="{{(item.subtotal_discount_amount_value ?? 0) > 0}}" class="text-right">
+              <span class="text-sm text-gray-400 dark:text-gray-500 line-through">
+                <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500 line-through"/>
+                {{item.subtotal_price_formatted ?? ''}}
+              </span>
+              <span class="text-base font-bold text-gray-900 dark:text-white ml-1">
+                <responsive on="portable" class="text-sm font-bold text-gray-900 dark:text-white ml-1"/>
+                {{item.mc_final_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted ?? ''}}
+              </span>
+            </div>
+            <!-- 금액 (할인 없을 때) -->
+            <span data-if="{{(item.subtotal_discount_amount_value ?? 0) === 0}}" class="text-base font-bold text-gray-900 dark:text-white">
+              <responsive on="portable" class="text-sm font-bold text-gray-900 dark:text-white"/>
+              {{item.subtotal_price_formatted ?? ''}}
+            </span>
+            <!-- 보조 통화 -->
+            <div data-each="currency in {{Object.entries(item.mc_final_amount ?? item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{currency[1]?.formatted ?? ''}}</span>
+            </div>
+            <!-- 상태 뱃지 (PC만 표시) -->
+            <span data-if="{{false}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}">
+              <responsive on="desktop" data-if="{{true}}"/>
+              <icon data-if="{{!!item.option_status_icon}}" name="{{item.option_status_icon ?? ''}}" class="text-xs"/>
+              <span>{{item.option_status_label ?? ''}}</span>
+            </span>
+            <!-- 배송사 + 운송장번호 (PC만 표시) -->
+            <div data-if="{{false}}" class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <responsive on="desktop" data-if="{{!!item.carrier_name}}"/>
+              <icon name="truck" size="xs"/>
+              <span>{{item.carrier_name}}</span>
+              <span data-if="{{!!item.tracking_number}}" class="text-blue-600 dark:text-blue-400">{{item.tracking_number}}</span>
+            </div>
+            <!-- 구매확정 버튼 (PC) -->
+            <button data-if="{{false}}" type="button" class="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer">
+              <responsive on="desktop" data-if="{{item.can_confirm === true}}"/>
+              <on type="click">
+                <sequence>
+                  <set-state target="_local">
+                    <field name="confirmTarget">
+                      <field name="id" value="{{item.id}}"/>
+                      <field name="orderId" value="{{order.data.id}}"/>
+                      <field name="product_name" value="{{$localized(item.product_name)}}"/>
+                      <field name="option_name" value="{{$localized(item.option_snapshot?.option_name) ?? ''}}"/>
+                      <field name="thumbnail_url" value="{{item.thumbnail_url ?? ''}}"/>
+                      <field name="subtotal_earned_points_amount" value="{{item.subtotal_earned_points_amount ?? 0}}"/>
+                      <field name="subtotal_earned_points_amount_formatted" value="{{item.subtotal_earned_points_amount_formatted ?? ''}}"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="modal_confirm_purchase"/>
+                </sequence>
+              </on>
+              $t:mypage.order_detail.confirm_purchase
+            </button>
+            <!-- 리뷰작성 버튼 (PC) -->
+            <button data-if="{{false}}" type="button" class="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer">
+              <responsive on="desktop" data-if="{{item.can_write_review === true}}"/>
+              <on type="click">
+                <sequence>
+                  <set-state target="_local">
+                    <field name="reviewTarget">
+                      <field name="id" value="{{item.id}}"/>
+                      <field name="orderId" value="{{order.data.id}}"/>
+                      <field name="product_id" value="{{item.product_id}}"/>
+                      <field name="product_name" value="{{$localized(item.product_name)}}"/>
+                      <field name="option_name" value="{{$localized(item.option_snapshot?.option_name) ?? ''}}"/>
+                      <field name="thumbnail_url" value="{{item.thumbnail_url ?? ''}}"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="modal_write_review"/>
+                </sequence>
+              </on>
+              $t:mypage.order_detail.write_review
+            </button>
+            <!-- 리뷰 작성 완료 뱃지 (PC) -->
+            <span data-if="{{false}}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg">
+              <responsive on="desktop" data-if="{{item.has_review === true}}"/>
+              <icon name="check" size="xs"/>
+              <span>$t:mypage.order_detail.review_written</span>
+            </span>
+            <!-- 리뷰 작성 기간 만료 안내 (PC) — 버튼이 사라진 이유 안내 -->
+            <span data-if="{{false}}" class="inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium">
+              <responsive on="desktop" data-if="{{item.review_deadline_passed === true}}"/>
+              <icon name="clock" size="xs"/>
+              <span>$t:mypage.order_detail.review_deadline_passed</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</partial>

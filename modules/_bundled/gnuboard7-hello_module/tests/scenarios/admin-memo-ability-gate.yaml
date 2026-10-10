@@ -1,0 +1,20 @@
+feature: hello 관리자 메모 화면 abilities 게이트 — 새 메모·메모 폼 읽기 전용 (7.1.0 abilities 게이트 page-hello #7·#8)
+
+description: |
+  - 목록 「새 메모」는 컬렉션 abilities.can_create 로 잠근다.
+  - 메모 폼은 생성이면 can_create(목록 API 한 건으로 읽음), 수정이면 can_update 로 읽기 전용 — 안내·입력·저장이 잠긴다.
+  - 권한 응답이 아직 없거나 실패하면 입력·저장은 잠긴 쪽(fail-closed)이고, 안내는 응답이 권한 없음을 말할 때만 뜬다.
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/resources/js/components/__tests__/AdminMemoAbilityGate.test.ts
+
+axes:
+  case:
+    - memo_list_without_create
+    - memo_form_without_permission
+    - memo_form_ability_unknown
+
+effects:
+  - memo_create_button_locked
+  - memo_form_read_only
+  - memo_form_fail_closed

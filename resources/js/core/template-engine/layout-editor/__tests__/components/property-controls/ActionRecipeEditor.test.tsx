@@ -74,6 +74,8 @@ beforeEach(() => {
 describe('ActionRecipeEditor — 패리티(공통화 위임)', () => {
   const node: EditorNode = { name: 'Button', props: {} };
 
+  // @scenario event_notation=type
+  // @effects action_picker_exposes_core_recipes
   it('추가 picker(context=component) 마운트 + 코어 스펙 노출', () => {
     render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onClick'] }} t={t} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId(`${CLICK}-add-picker-toggle`)).toBeInTheDocument();
@@ -81,6 +83,8 @@ describe('ActionRecipeEditor — 패리티(공통화 위임)', () => {
     expect(screen.getByTestId('g7le-init-action-spec-navigate')).toBeInTheDocument();
   });
 
+  // @scenario event_notation=type
+  // @effects action_card_shows_friendly_summary_and_source_badge
   it('인스턴스 카드 — 친화 요약 + 출처 배지 + 코드 보기', () => {
     const withAction: EditorNode = {
       name: 'Button',
@@ -94,12 +98,16 @@ describe('ActionRecipeEditor — 패리티(공통화 위임)', () => {
     expect(screen.getByTestId(`${CLICK}-code-view-0`).textContent).toContain('"handler": "toast"');
   });
 
+  // @scenario event_notation=type
+  // @effects action_card_shows_friendly_summary_and_source_badge
   it('확장 제공 항목은 제공자명 출처 배지', () => {
     const withAction: EditorNode = { name: 'Button', actions: [{ type: 'click', handler: 'pay' }] };
     render(<ActionRecipeEditor node={withAction} spec={SPEC} capability={{ events: ['onClick'] }} t={t} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId(`${CLICK}-source-0`).textContent).toContain('tosspayments');
   });
 
+  // @scenario event_notation=type
+  // @effects action_reorder_is_drag_only
   it('순서 변경 ▲▼ 버튼은 노출되지 않는다(드래그 전용)', () => {
     const withActions: EditorNode = {
       name: 'Button',
@@ -113,6 +121,8 @@ describe('ActionRecipeEditor — 패리티(공통화 위임)', () => {
     expect(screen.queryByTestId(`${CLICK}-down-0`)).not.toBeInTheDocument();
   });
 
+  // @scenario event_notation=type
+  // @effects action_reorder_is_drag_only
   it('드래그 핸들 ⠿ 가 draggable 이고 drag→drop 으로 순서 재배치된다', () => {
     const onPatch = vi.fn();
     const withActions: EditorNode = {
@@ -135,6 +145,8 @@ describe('ActionRecipeEditor — 패리티(공통화 위임)', () => {
     expect(acts[1]).toMatchObject({ handler: 'navigate' });
   });
 
+  // @scenario event_notation=type
+  // @effects action_reorder_is_drag_only
   it('드래그 중 드롭 예정 지점의 삽입선이 활성화된다(드롭 위치 표시)', () => {
     const withActions: EditorNode = {
       name: 'Button',
@@ -153,6 +165,8 @@ describe('ActionRecipeEditor — 패리티(공통화 위임)', () => {
     expect(screen.getByTestId(`${CLICK}-dropline-end`).getAttribute('data-active')).toBe('false');
   });
 
+  // @scenario event_notation=type
+  // @effects advanced_action_preserved_without_edit
   it('고급 보존(matchAction null) 항목 — [편집] 부재 + 코드 열람', () => {
     const withAdvanced: EditorNode = {
       name: 'Button',
@@ -169,12 +183,16 @@ describe('ActionRecipeEditor — 패리티(공통화 위임)', () => {
 describe('ActionRecipeEditor — 회귀(무파괴)', () => {
   const node: EditorNode = { name: 'Button', props: {} };
 
+  // @scenario event_notation=type
+  // @effects event_slots_follow_capability
   it('이벤트 슬롯 유지(onClick/onHover)', () => {
     render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onClick', 'onHover'] }} t={t} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-action-event-onClick')).toBeInTheDocument();
     expect(screen.getByTestId('g7le-action-event-onHover')).toBeInTheDocument();
   });
 
+  // @scenario event_notation=type
+  // @effects actions_stored_top_level_with_event_key
   it('node.actions+type 저장 규약 무변경(props.actions/events 미생성)', () => {
     const onPatch = vi.fn();
     render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onClick'] }} t={t} onPatchNode={onPatch} />);
@@ -185,6 +203,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect((patched as { actions?: Array<Record<string, unknown>> }).actions?.[0]).toMatchObject({ type: 'click', handler: 'toast' });
   });
 
+  // @scenario event_notation=type
+  // @effects actions_stored_top_level_with_event_key
   it('onHover → type:mouseenter 저장', () => {
     const onPatch = vi.fn();
     render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onHover'] }} t={t} onPatchNode={onPatch} />);
@@ -196,6 +216,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     });
   });
 
+  // @scenario event_notation=type
+  // @effects nested_action_list_is_recursive
   it('onSuccess 중첩 action-list 유지(공용 빌더 재귀 — 내부도 카드 일관)', () => {
     const node2: EditorNode = { name: 'Button', actions: [{ type: 'click', handler: 'apiCall', target: 'x', onSuccess: [{ handler: 'toast', params: { message: 'ok' } }] }] };
     render(<ActionRecipeEditor node={node2} spec={SPEC} capability={{ events: ['onClick'] }} t={t} onPatchNode={vi.fn()} />);
@@ -207,6 +229,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect(screen.getByTestId(`${nestedPrefix}-item-0`)).toBeInTheDocument();
   });
 
+  // @scenario event_notation=type
+  // @effects nested_action_list_is_recursive
   it('중첩 onSuccess add picker 가 코어 recipe 를 노출(빈 상태 금지)', () => {
     const node2: EditorNode = { name: 'Button', actions: [{ type: 'click', handler: 'apiCall', target: 'x' }] };
     render(<ActionRecipeEditor node={node2} spec={SPEC} capability={{ events: ['onClick'] }} t={t} onPatchNode={vi.fn()} />);
@@ -219,6 +243,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect(nested.querySelector('[data-testid="g7le-init-action-spec-toast"]')).toBeTruthy();
   });
 
+  // @scenario event_notation=type
+  // @effects nested_action_list_is_recursive
   it('중첩 onSuccess add picker 로 동작 추가 → apiCall.onSuccess 에 toast 들어감', () => {
     const onPatch = vi.fn();
     const node2: EditorNode = { name: 'Button', actions: [{ type: 'click', handler: 'apiCall', target: 'x' }] };
@@ -234,6 +260,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect((api.onSuccess as Array<Record<string, unknown>>)[0]).toMatchObject({ handler: 'toast' });
   });
 
+  // @scenario event_notation=type
+  // @effects binding_candidates_reach_action_params
   it('bindingCandidates 가 동작 입력칸(key-value 값)까지 흘러 데이터칩 피커가 노출된다 (회귀: 컴포넌트 [동작] 탭 candidates 누락)', () => {
     // PropertyEditorModal 이 ActionRecipeEditor 에 bindingCandidates 를 전달하지 않아
     // 동작 입력칸에 데이터칩 추가(🔍 InlineBindingScalarPicker)가 안 떴던 회귀를 잠근다.
@@ -267,6 +295,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect(pickers.length).toBeGreaterThan(0);
   });
 
+  // @scenario event_notation=type
+  // @effects slot_reads_only_its_event
   it('한 이벤트(onClick) 슬롯만 onClick 액션을 읽는다 — 다른 type(change) 미혼입', () => {
     const multi: EditorNode = {
       name: 'Input',
@@ -284,6 +314,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect(changeSlot.textContent).toContain('페이지 이동');
   });
 
+  // @scenario event_notation=type
+  // @effects slot_write_preserves_other_events
   it('한 이벤트(onChange) 슬롯에 추가 시 다른 이벤트(onClick) 기존 액션 보존 — writeEventActions others', () => {
     const onPatch = vi.fn();
     const multi: EditorNode = {
@@ -300,6 +332,8 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect(acts.some((a) => a.type === 'change' && a.handler === 'navigate')).toBe(true);
   });
 
+  // @scenario event_notation=legacy_props
+  // @effects actions_stored_top_level_with_event_key
   it('legacy props.actions 를 읽고 편집 저장 시 최상위 node.actions 로 일원화(props.actions 제거)', () => {
     const onPatch = vi.fn();
     const legacy: EditorNode = {
@@ -313,6 +347,71 @@ describe('ActionRecipeEditor — 회귀(무파괴)', () => {
     expect(patched.props?.actions).toBeUndefined();
   });
 
+  // @scenario event_notation=event
+  // @effects slot_reads_only_its_event
+  it('`event` 로 적힌 액션(type 없음)을 그 이벤트 슬롯에 읽는다 — 번들 활동 로그 행위자 검색(onSearch) 모양', () => {
+    // 런타임(ActionDispatcher.bindActionsToProps)은 `event` 를 우선해 prop 이름으로 쓴다.
+    // 편집기가 `type` 만 보면 이 액션이 [동작] 탭에서 사라진다(검색어를 입력하면 슬롯이 비어 보임).
+    const node: EditorNode = {
+      name: 'SearchableDropdown',
+      actions: [
+        {
+          event: 'onSearch',
+          handler: 'apiCall',
+          target: '/api/admin/users/search',
+          params: { method: 'GET', query: { keyword: '{{$args[0]}}' } },
+          debounce: 300,
+        },
+        { type: 'change', event: 'onChange', handler: 'navigate', params: { path: '/x' } },
+      ],
+    } as never;
+    render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onChange', 'onSearch'] }} t={t} onPatchNode={vi.fn()} />);
+    const searchSlot = screen.getByTestId('g7le-action-event-onSearch');
+    const changeSlot = screen.getByTestId('g7le-action-event-onChange');
+    expect(searchSlot.querySelectorAll('[data-testid^="g7le-action-slot-onSearch-item-"]').length).toBe(1);
+    expect(changeSlot.querySelectorAll('[data-testid^="g7le-action-slot-onChange-item-"]').length).toBe(1);
+  });
+
+  // @scenario event_notation=event
+  // @effects slot_reads_only_its_event
+  it('`event` 표기 액션은 onClick 슬롯에 섞이지 않고(type 없음 폴백 제외) 제 슬롯에만 보인다', () => {
+    const node: EditorNode = {
+      name: 'Input',
+      actions: [
+        { event: 'onChange', handler: 'toast', params: { message: 'ev-change' } },
+        { event: 'click', handler: 'navigate', params: { path: '/dom-click' } },
+        { handler: 'navigate', params: { path: '/no-type' } },
+      ],
+    } as never;
+    render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onClick', 'onChange'] }} t={t} onPatchNode={vi.fn()} />);
+    const clickSlot = screen.getByTestId('g7le-action-event-onClick');
+    const changeSlot = screen.getByTestId('g7le-action-event-onChange');
+    // onClick: event:'click'(DOM 이름) + type·event 둘 다 없는 항목 = 2, event:'onChange' 는 제외
+    expect(clickSlot.querySelectorAll('[data-testid^="g7le-action-slot-onClick-item-"]').length).toBe(2);
+    expect(clickSlot.textContent).not.toContain('안내 메시지');
+    expect(changeSlot.querySelectorAll('[data-testid^="g7le-action-slot-onChange-item-"]').length).toBe(1);
+    expect(changeSlot.textContent).toContain('안내 메시지');
+  });
+
+  // @scenario event_notation=event
+  // @effects slot_write_preserves_other_events, non_dom_slot_writes_event_notation
+  it('`event` 표기 액션이 있는 슬롯에 동작을 더해도 기존 항목은 그대로(type 주입 없음), 새 항목은 슬롯의 `event` 표기로 적힌다', () => {
+    const onPatch = vi.fn();
+    const original = { event: 'onSearch', handler: 'toast', params: { message: 'keep' }, debounce: 300 };
+    const node: EditorNode = { name: 'SearchableDropdown', actions: [{ ...original }] } as never;
+    render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onChange', 'onSearch'] }} t={t} onPatchNode={onPatch} />);
+    fireEvent.click(screen.getByTestId('g7le-action-slot-onSearch-add-picker-toggle'));
+    const searchSlot = screen.getByTestId('g7le-action-event-onSearch');
+    fireEvent.click(searchSlot.querySelector('[data-testid="g7le-init-action-spec-navigate"]') as HTMLElement);
+    const acts = (onPatch.mock.calls.at(-1)![0] as { actions: Array<Record<string, unknown>> }).actions;
+    expect(acts).toHaveLength(2);
+    expect(acts[0]).toEqual(original);
+    expect(acts[1]).toMatchObject({ event: 'onSearch', handler: 'navigate' });
+    expect(acts[1]).not.toHaveProperty('type');
+  });
+
+  // @scenario event_notation=legacy_props
+  // @effects actions_stored_top_level_with_event_key
   it('legacy props.events 객체를 type 부여해 평탄화 읽기(onClick 배열 → click 슬롯)', () => {
     const legacyEvents: EditorNode = {
       name: 'Button',

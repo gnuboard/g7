@@ -6,6 +6,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Checkbox } from '../basic/Checkbox';
 import type { EditorAttrs } from '../../types';
+import { HighlightText } from '../shared/HighlightText';
 
 /**
  * 카테고리 노드 인터페이스 (CategoryResource API 응답 기반)
@@ -45,32 +46,6 @@ export interface CategoryTreeProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
-}
-
-/**
- * 텍스트에서 키워드를 하이라이트하여 렌더링합니다.
- */
-function HighlightText({ text, keyword }: { text: string; keyword: string }) {
-  if (!keyword || !text) {
-    return <>{text}</>;
-  }
-
-  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
-
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.toLowerCase() === keyword.toLowerCase() ? (
-          <Span key={i} className="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">
-            {part}
-          </Span>
-        ) : (
-          part
-        )
-      )}
-    </>
-  );
 }
 
 /**

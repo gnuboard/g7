@@ -17,15 +17,16 @@ class ProviderResource extends BaseApiResource
     /**
      * Resource 수준 abilities 매핑.
      *
-     * 프로바이더는 관리자 UI 의 S1c 서브섹션에서 설정값을 편집할 수 있으며,
-     * 편집 권한은 `core.admin.identity.providers.update` 로 분리되어 있다.
+     * 프로바이더 설정값은 환경설정 저장(`POST /api/admin/settings`, core.settings.update)으로 바뀐다.
+     * 저장 라우트와 같은 식별자로 판정해야 화면 버튼과 서버 403 이 어긋나지 않는다
+     * (`core.admin.identity.providers.update` 를 요구하는 라우트는 없다).
      *
      * @return array<string, string>
      */
     public function abilityMap(): array
     {
         return [
-            'can_update' => 'core.admin.identity.providers.update',
+            'can_update' => 'core.settings.update',
         ];
     }
 

@@ -10,27 +10,27 @@ use App\Contracts\Extension\HookListenerInterface;
  * 회원 대상 알림 정의에 sms·alimtalk 채널 template 을 증강하는 시딩 필터 리스너
  * (계획서 §6-2 결정 D, Phase 6 재설계).
  *
- * 코어/모듈은 알림 정의를 DB 로 시딩하기 직전에 "정의 배열"을 필터 훅으로 한 번 통과시킨다
- * (언어팩 다국어 병합용). 이 리스너가 그 훅에 편승해, 각 정의 배열에 sms·alimtalk 채널을
- * channels 목록과 templates 에 끼워넣는다. 그러면 코어/모듈이 그것을 자기 선언처럼 저장하고
- * (NotificationSyncHelper::syncTemplate), cleanupStaleTemplates 의 definedChannels 에 우리
- * 채널이 포함되므로 재시딩·업데이트에도 삭제되지 않는다. 코어·모듈 파일은 수정하지 않는다.
+ * 코어는 코어 시더와 모든 모듈·플러그인의 알림 정의 동기화가 DB 에 쓰기 직전 "정의 목록"을
+ * 공통 시딩 필터 훅 하나(core.notification.filter_seed_definitions, 코어 7.1.0)에 통과시킨다.
+ * 이 리스너가 그 훅에 답해, 각 정의에 sms·alimtalk 채널을 channels 목록과 templates 에
+ * 끼워넣는다. 그러면 시딩 주체가 그것을 자기 선언처럼 저장하고(NotificationSyncHelper::syncTemplate),
+ * cleanupStaleTemplates 의 definedChannels 에 우리 채널이 포함되므로 재시딩·업데이트에도 삭제되지
+ * 않는다. 코어·모듈 파일은 수정하지 않는다.
  *
- * 구독 훅(정의 배열을 넘기는 필터 4종):
- * - seed.notifications.translations                     (코어 — config/core.php)
- * - seed.sirsoft-board.notifications.translations       (게시판)
- * - seed.sirsoft-ecommerce.notifications.translations   (이커머스)
- * - core.notification.filter_default_definitions        (코어 [기본값 복원] 경로 —
- *   NotificationTemplateService::getDefaultTemplateData). 시딩 3훅과 같은 증강을 적용해야
+ * 구독 훅(정의 목록을 넘기는 코어 필터 2종) — 도메인 이름을 모른다:
+ * - core.notification.filter_seed_definitions    (시딩 — 코어·모든 모듈·플러그인 공통)
+ * - core.notification.filter_default_definitions (코어 [기본값 복원] 경로 —
+ *   NotificationTemplateService::getDefaultTemplateData). 시딩과 같은 증강을 적용해야
  *   우리가 시드한 sms·alimtalk 행의 [기본값 복원]이 "기본 템플릿 데이터를 찾을 수 없습니다" 로
  *   끝나지 않는다 — 시드 출처와 복원 출처가 같은 함수여야 한다(#597 §18.7 C2 실측 결함).
- *   게시판·이커머스가 자기 정의를 이 필터에 보태는 priority 20 뒤(50)에 돌아야 모듈 정의도
- *   증강된다.
+ *   도메인이 자기 정의를 이 필터에 보태는 priority 20 뒤(50)에 돌아야 도메인 정의도 증강된다.
  *
- * 배열 형태 차이:
- * - 코어: 연관 배열 `['welcome' => [...], ...]` (키가 type)
- * - 모듈·기본값 복원 경로: 순차 배열 `[['type' => 'order_confirmed', ...], ...]`
- * 둘 다 각 정의 값에 대해 동일하게 채널을 증강하고 키/순서는 보존한다.
+ * 종전에는 도메인별 언어팩 시딩 훅(seed.{도메인}.notifications.translations)을 이름으로 골라
+ * 구독해, 목록에 없는 새 도메인의 알림에는 문자·알림톡 template 이 생기지 않았다. 그 훅들은
+ * 언어팩 다국어 병합 전용이라 이제 구독하지 않는다.
+ *
+ * 두 훅 모두 type 을 담은 순차 배열 `[['type' => 'order_confirmed', ...], ...]` 을 넘긴다.
+ * 형태가 다른 배열(키가 type 인 연관 배열)이 와도 각 정의 값에 동일하게 증강하고 키/순서는 보존한다.
  *
  * 증강 대상 = 회원(사용자) 대상 알림(결정 E). 관리자 전용(수신자가 role:admin 뿐인) 알림은
  * 문자/알림톡 대상이 아니므로 건너뛴다. 기본 body 는 그 알림의 database 채널 body(짧은 평문)를
@@ -38,7 +38,7 @@ use App\Contracts\Extension\HookListenerInterface;
  *
  * #597 이후에도 이 시딩은 존치한다. 발송 본문의 SSoT 는 bizppurio_templates 로 옮겨졌지만
  * (SmsChannelDriver 는 sms_body, AlimtalkChannelDriver 는 approved_content 를 읽는다),
- * 코어·게시판·이커머스의 알림 설정 화면이 여전히 이 template 행을 그리기 때문이다
+ * 알림 설정 화면이 여전히 이 template 행을 그리기 때문이다
  * (채널 서브탭의 행 제목·수신자 표시, 행이 없으면 "no_template_for_channel" 문구).
  * 즉 이 행들은 화면 표시 전용이며 발송 경로는 소비하지 않는다 — 발송이 안 쓴다는 이유로
  * 시딩을 지우면 알림 설정 화면의 비즈뿌리오 탭에서 행 정보가 사라진다.
@@ -51,44 +51,49 @@ class SeedChannelTemplatesListener implements HookListenerInterface
     /**
      * 구독할 훅 목록 반환.
      *
-     * @return array<string, array<string, mixed>>
+     * 도메인 이름을 담은 훅은 구독하지 않는다 — 시딩·복원 모두 코어 훅 하나씩에 답한다.
+     * - core.notification.filter_seed_definitions: 코어·모든 모듈·플러그인 알림 정의 시딩 공통 (코어 7.1.0)
+     * - core.notification.filter_default_definitions: 코어 [기본값 복원] 경로
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 → 구독 설정(method·priority·type)
      */
     public static function getSubscribedHooks(): array
     {
-        $hooks = [];
-        foreach ([
-            'seed.notifications.translations',
-            'seed.sirsoft-board.notifications.translations',
-            'seed.sirsoft-ecommerce.notifications.translations',
-            'core.notification.filter_default_definitions',
-        ] as $hook) {
-            $hooks[$hook] = [
+        return [
+            'core.notification.filter_seed_definitions' => [
                 'method' => 'augment',
                 'priority' => 50,
                 'type' => 'filter',
-            ];
-        }
-
-        return $hooks;
+            ],
+            'core.notification.filter_default_definitions' => [
+                'method' => 'augment',
+                'priority' => 50,
+                'type' => 'filter',
+            ],
+        ];
     }
 
     /**
      * 기본 핸들러 (미사용 — 필터 메서드로 처리).
      *
-     * @param  mixed  ...$args
+     * @param  mixed  ...$args  훅 인자 (사용하지 않음)
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
     /**
      * 정의 배열의 각 회원 대상 알림에 sms·alimtalk 채널 template 을 증강합니다.
      *
-     * 키(코어=type, 모듈=정수)와 순서를 보존한 채 각 정의 값만 변형한다. 정의 형태가 배열이
-     * 아니거나 회원 대상이 아니면 원본을 그대로 둔다.
+     * 정의 소유자(코어·어느 모듈·플러그인이든)와 무관하게 같은 규칙을 적용한다. 키와 순서를
+     * 보존한 채 각 정의 값만 변형한다. 정의 형태가 배열이 아니거나 회원 대상이 아니면 원본을
+     * 그대로 둔다.
      *
-     * @param  array<int|string, mixed>  $definitions  시딩 직전 알림 정의 배열
+     * @param  array<int|string, mixed>  $definitions  시딩(또는 기본값 복원) 직전 알림 정의 배열
+     * @param  array<string, mixed>  $context  훅 컨텍스트 — 시딩 훅은 소유자(extension_type·extension_identifier),
+     *                                         복원 훅은 대상(type·channel). 증강 규칙은 컨텍스트에 의존하지 않는다
      * @return array<int|string, mixed> 채널이 증강된 정의 배열
      */
-    public function augment(array $definitions): array
+    public function augment(array $definitions, array $context = []): array
     {
         foreach ($definitions as $key => $definition) {
             if (! is_array($definition) || ! $this->isMemberFacing($definition)) {

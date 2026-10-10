@@ -1,0 +1,56 @@
+feature: 주문서·주문완료의 배송지 저장 표면 — 문구와 서버 계약
+
+description: |
+  2026-09-21 #599 세션A 브라우저 실측. 배송지를 «저장하는» 표면이 세 곳으로 늘었는데
+  (마이페이지 배송지, 주문서의 배송지 관리 모달, 주문완료 화면의 저장 버튼) 뒤의 두 곳이
+  서로 다른 이유로 어긋나 있었다.
+
+  1. **주문서 배송지 관리 모달의 제목** — 한 창이 «목록»과 «입력 폼» 두 얼굴을 갖고, 폼은
+     다시 «새 주소»와 «수정»으로 갈린다. 등록/수정을 가르는 SSoT 는 `editingAddress?.id` 다.
+     저장 버튼의 API target·method·성공 토스트·라벨이 모두 그 키를 본다. 그런데 제목만
+     `editingAddress` 의 truthy 여부로 갈렸다. 목록 헤더의 «새 배송지» 버튼은 기본배송지
+     체크박스가 바인딩할 boolean 을 심으려 `{is_default:false}` 객체로 폼을 여므로, 객체는
+     언제나 truthy 다 → 빈 폼인데 제목이 「배송지 수정」으로 떴다(같은 창 저장 버튼은
+     「새 주소 추가」 — 한 창에서 두 문구가 어긋난다).
+
+  2. **주문완료 화면의 「이 배송지를 저장하기」** — 저장 엔드포인트는 하나뿐이고 그 계약은
+     `StoreUserAddressRequest` 다(`name` 필수 · 국내 `address` · 해외 `address_line_1`
+     + `intl_city` + `intl_postal_code` · 상세는 `address_detail`). 이 버튼만 서버에 없는
+     낡은 키(`address1`/`address2`)를 보내고 `name` 을 아예 보내지 않아 **어떤 주문에서
+     눌러도 422** 였다. 화면은 실패 토스트만 띄우므로 「왜 저장이 안 되는지」가 드러나지 않는다.
+
+     고친 뒤 드러난 두 번째 함정: 배송지명을 `$t:` 접두 문자열로 두면 화면 문구에만 치환되고
+     **API 본문 값으로는 원문 키가 그대로 저장된다**(실측: 배송지명 `$t:shop.order_complete.
+     shipping_address`). 본문에 넣는 번역은 `{{$t('…')}}` 표현식이어야 한다.
+
+# axis 의미: 갈라지는 축은 «어느 표면인가» 하나다. 두 표면은 교차하지 않는다 —
+# 하나는 창 제목(표시), 다른 하나는 제출 본문(계약)이고 재는 대상이 서로 다르다.
+axes:
+  surface: [checkout_modal_title, order_complete_payload]
+
+effects:
+  - address_modal_title_splits_on_id_not_object   # 제목이 객체 truthy 가 아니라 id 로 갈린다
+  - address_modal_title_matches_submit_button     # 제목과 저장 버튼이 같은 기준을 쓴다
+  - order_complete_save_sends_required_name       # 서버 required 인 name 을 보낸다
+  - order_complete_save_uses_server_address_keys  # 국내 키가 address / address_detail 이다
+  - order_complete_save_covers_intl_address       # 해외 주소도 저장되도록 intl 키를 함께 보낸다
+  - order_complete_save_name_is_translated        # 배송지명이 원문 키로 저장되지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-checkout-address-modal-title.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-order-complete-save-address-payload.test.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: |
+    #599 세션A 가 실측으로 재현·수정·재실측했다(2026-09-21).
+    ① 모달 제목 「배송지 수정」 → 「배송지 추가」(저장 버튼 「새 주소 추가」와 일치) ·
+       기존 배송지 [수정] 경로는 제목 「배송지 수정」 + 버튼 「저장」 + 값 6칸 유지.
+    ② 주문완료 저장 **422 · 배송지 행 증가 0** → **200 · 토스트 「배송지가 저장되었습니다.」 ·
+       행 `name=배송지` 주소·상세 정합** · 재클릭 시 서버 중복 가드 문구.
+  note: |
+    이 변경의 Playwright spec 은 세우지 않았다. 두 표면 모두 「저장 배송지를 가진 회원 +
+    장바구니에 담긴 주문 가능 상품 + 완료된 주문」 이라는 상태가 필요해 기존 주문서 spec 의
+    시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유).
+    그때까지 위 레이아웃 계약 테스트가 구조적 회귀를 막는다 — 제목의 판정 키, 제출 본문의
+    키 집합과 번역 형태다. 서버 쪽 계약은 `StoreUserAddressRequest` 가 소유한다.

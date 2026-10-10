@@ -1,0 +1,40 @@
+<!-- 캐시 비우기 확인 창(고급 탭). 값이 지워지는 것이 아니라 다시 만들어지는 것이지만, 큰 사이트에서는
+  잠시 느려질 수 있어 확인을 받는다. -->
+<partial editor_label="$t:admin.modal_label.admin_settings.settings_cache_delete_modal" description="캐시 삭제 확인 모달">
+  <modal data-type="composite" data-ref="settings_cache_delete_modal" title="$t:admin.settings.modals.cache_delete_title" size="sm">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.modals.cache_delete_confirm</p>
+      <p class="mt-2 text-label-subtle">$t:admin.settings.modals.cache_delete_warning</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isDeletingCache}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingCache}}">
+        <on type="click">
+          <!-- 캐시 비우기 실행. 화면에 보이는 값이 바뀌지 않으므로 어떤 소스도 다시 부르지 않는다 —
+               결과는 토스트 하나뿐이다. -->
+          <sequence>
+            <set-state target="global" :isDeletingCache="true"/>
+            <api-call :auth_required="true" target="/api/admin/settings/clear-cache" method="POST">
+              <success>
+                <set-state target="global" :isDeletingCache="false"/>
+                <close-modal/>
+                <toast type="success" message="$t:admin.settings.cache_cleared"/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeletingCache="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDeletingCache}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeletingCache ? '$t:admin.settings.modals.deleting' : '$t:admin.settings.modals.delete_cache'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

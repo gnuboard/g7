@@ -1,0 +1,409 @@
+<!-- 관리자 전 화면의 베이스 레이아웃. 자식 화면은 `extends="_admin_base"` 로 이것을 상속하고
+  `content` 슬롯에만 자기 본문을 넣는다 — 사이드바·헤더·알림·전역 호스트는 전부 여기 몫이다.
+  그래서 여기에 둔 데이터소스 7개는 **화면마다 다시 부르지 않는다**. 자식 화면에서 같은 id 를
+  또 선언하면 부모와 충돌한다(레이아웃 간 data_sources id 는 고유해야 한다).
+
+  전역 호스트 셋(`toast`·`layout-warnings`·`page-transition-indicator`)이 여기 있기 때문에
+  자식 화면은 `toast` 핸들러를 그냥 쓸 수 있다. 반대로 `extends` 없는 독립 레이아웃
+  (`admin_login` 등)은 이 호스트가 없어 스스로 심어야 한다 — 안 심으면 토스트가 조용히 안 뜬다.
+
+  헤더/사이드바는 **주입 모듈을 모른다**. 통화·배송국가 같은 확장 UI 는 `header_currency` 슬롯으로
+  들어오고, 그 모듈이 없으면 슬롯이 비어 아무것도 그리지 않는다.
+
+  알림 센터는 데스크톱·모바일 두 벌이 **같은 동작을 그대로 반복한다**(`notification_center_desktop`
+  ↔ `_mobile`). 한쪽 이벤트 배선을 고치면 반드시 다른 쪽도 같이 고친다 — 뷰포트에 따라 한쪽만
+  렌더되므로 갈라져도 화면에서는 조용하다. -->
+<layout name="_admin_base" version="1.0.0">
+  <meta title="$t:admin.base_layout_title" description="$t:admin.base_layout_description" :is_base="true"/>
+  <!-- 사이드바 메뉴 — 현재 사용자의 역할이 접근 가능한 메뉴만 서버가 걸러 준다(프론트에서 다시 거르지 않는다). -->
+  <data-source id="admin_menu" label_key="$t:editor.data_source.admin_menu" type="api" endpoint="/api/admin/menus/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <!-- 로그인한 관리자 본인. 헤더 아바타·이름뿐 아니라 아래 웹소켓 채널명이 이 응답의 uuid 를 쓴다. -->
+  <data-source id="current_user" label_key="$t:editor.data_source.current_user" type="api" endpoint="/api/admin/auth/user" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <!-- 알림 목록. `read` 파라미터가 전역 토글을 그대로 읽으므로, 토글을 바꾼 뒤 이 소스를 다시 부르면
+       조건이 함께 따라간다(액션 쪽에서 파라미터를 다시 조립하지 않는 이유). 기본은 안 읽은 것만. -->
+  <data-source id="notifications" label_key="$t:editor.data_source.notifications" type="api" endpoint="/api/admin/notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="15" read="{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"/>
+  </data-source>
+  <!-- 안 읽은 알림 수. 응답의 `unread_count` 를 전역 `adminNotificationCount` 로 올려 두므로
+       배지는 이 소스를 직접 보지 않고 전역값을 본다 — 목록을 안 연 화면에서도 숫자가 산다. -->
+  <data-source id="notification_unread_count" label_key="$t:editor.data_source.notification_unread_count" type="api" endpoint="/api/admin/notifications/unread-count" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <init-global>
+      <field name="key" value="adminNotificationCount"/>
+      <field name="path" value="unread_count"/>
+    </init-global>
+  </data-source>
+  <!-- 설치된 모듈 목록을 전역 `installedModules` 로 올린다. 확장 유무로 UI 를 가르는 화면들이
+       이 전역을 보므로, 베이스에서 한 번만 받아 둔다(화면마다 같은 API 를 다시 두드리지 않게). -->
+  <data-source id="installed_modules" label_key="$t:editor.data_source.installed_modules" type="api" endpoint="/api/admin/modules/installed" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <init-global>
+      <field name="key" value="installedModules"/>
+      <field name="path" value="data"/>
+    </init-global>
+  </data-source>
+  <!-- 설치된 플러그인 목록 — 위 모듈과 같은 이유로 전역 `installedPlugins` 에 올린다. -->
+  <data-source id="installed_plugins" label_key="$t:editor.data_source.installed_plugins" type="api" endpoint="/api/admin/plugins/installed" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <init-global>
+      <field name="key" value="installedPlugins"/>
+      <field name="path" value="data"/>
+    </init-global>
+  </data-source>
+  <!-- 실시간 알림 수신(개인 채널). 새 알림이 오면 배지와 목록을 함께 다시 부른다 —
+       배지만 갱신하면 드롭다운을 열었을 때 숫자와 내용이 어긋난다. 채널은 본인 uuid 로 좁힌
+       private 이라 `current_user` 응답이 온 뒤에 성립한다. -->
+  <data-source id="notification_ws" label_key="$t:editor.data_source.notification_ws" type="websocket" channel="core.user.notifications.{{current_user.data.uuid}}" event="notification.received" channel_type="private" target_source="notification_unread_count">
+    <on-receive>
+      <refetch-data-source dataSourceId="notification_unread_count"/>
+      <refetch-data-source dataSourceId="notifications"/>
+      <toast type="info" message="{{$args[0].subject ?? '$t:admin.new_notification_received'}}" :duration="5000"/>
+    </on-receive>
+  </data-source>
+  <transition-overlay enabled style="spinner" target="right_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <!-- 통화 선택기 슬롯 주입 앵커 — 이커머스 모듈이 layout_extensions 로 'header_currency' 슬롯 노드를 여기에 주입한다(slot 노드는 원위치 렌더 안 함, SlotContext 등록만 → header_right 의 SlotContainer 가 떙겨 렌더). 미설치 시 빈 슬롯. 헤더는 주입 모듈을 모른다. -->
+  <div data-ref="header_currency_inject_anchor"/>
+  <toast data-type="composite" data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
+  <page-transition-indicator data-type="composite" data-ref="page_transition_indicator"/>
+  <layout-warnings data-type="composite" data-ref="layout_warnings" warnings="{{_global.layoutWarnings}}" class="layout_warnings"/>
+  <div data-ref="admin_layout_root" class="admin_layout_root">
+    <div data-ref="mobile_overlay" data-if="{{false}}" class="mobile_overlay">
+      <responsive on="portable" data-if="{{_global.sidebarOpen}}"/>
+      <on type="click">
+        <!-- 모바일에서 사이드바 바깥을 눌러 닫는다. 이 덮개는 사이드바가 열렸을 때만 렌더되므로
+             여는 동작은 없고 닫기만 있다(토글이 아니다). -->
+        <set-state target="global" :sidebarOpen="false"/>
+      </on>
+    </div>
+    <div data-ref="left_sidebar_area" class="left_sidebar_area {{_global.sidebarCollapsed ? 'left_sidebar_area_collapsed' : ''}}">
+      <responsive on="portable" class="left_sidebar_area_portable {{_global.sidebarOpen ? 'left_sidebar_area_portable_open' : ''}}"/>
+      <div data-ref="sidebar_header" class="sidebar_header">
+        <responsive on="portable" class="hidden"/>
+        <div data-ref="sidebar_logo" data-leave-guard="true" class="sidebar_logo">
+          <img data-ref="logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="logo_image"/>
+          <span data-ref="app_name" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-xl truncate">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
+        </div>
+      </div>
+      <!-- 언어/통화/배송국가 선택 — 모바일 전용. 헤더 우측 그룹에서 이동(모바일 헤더가 420px 를 요구해 폰 뷰포트에서 통화 선택기가 화면 밖으로 잘렸다). 사용자 템플릿 _user_base 의 mobile_drawer_prefs 와 동일하게 셋 다 가로 나열 칩으로 통일. 통화/배송국가는 이커머스 모듈이 'header_currency' 슬롯에 주입하므로 SlotContainer 만 배치(모듈 비활성 시 자동 미렌더). 스크롤 영역(admin_sidebar_menu) 바깥 최상단에 둔다. -->
+      <div data-ref="admin_drawer_prefs" data-if="{{false}}" class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 space-y-3">
+        <responsive on="portable" data-if="{{true}}"/>
+        <!-- 언어 선택 (여러 언어 지원 시) — 헤더 LanguageSelector 드롭다운에서 가로 칩으로 전환. 접기/펼치기: 접힘이 기본이고 트리거에 현재 언어를 요약 표기한다. 통화/배송국가(이커머스 주입 슬롯)와는 독립된 토글(_global.mobileLanguageOpen)이라 서로 영향 없음. -->
+        <div data-ref="admin_drawer_language" data-if="{{$locales.length > 1}}">
+          <!-- 트리거 — 좌측 '언어' 라벨, 우측 현재 언어명 + chevron. 접힘 상태에서도 현재 값을 알 수 있어야 하므로 요약을 항상 노출한다. -->
+          <button data-ref="admin_drawer_language_toggle" type="button" class="w-full flex items-center justify-between py-1 cursor-pointer" aria-expanded="{{_global.mobileLanguageOpen ?? false}}">
+            <on type="click">
+              <set-state target="global" mobileLanguageOpen="{{!_global.mobileLanguageOpen}}"/>
+            </on>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:admin.language</span>
+            <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+              <!-- 접힘 상태 요약 = 현재 언어명 -->
+              <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
+              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
+            </span>
+          </button>
+          <!-- 펼침 영역 — max-h/opacity 트랜지션. overflow-hidden 이라 접힘 시 칩이 잘려 사라진다. -->
+          <div class="overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileLanguageOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}">
+            <!-- 가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다. -->
+            <div class="flex flex-wrap gap-2">
+              <button data-each="loc in {{$locales}}" type="button" class="{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap" role="option" aria-selected="{{loc === $locale}}">
+                <on type="click">
+                  <set-locale target="{{loc}}"/>
+                </on>
+                <icon name="globe" size="sm"/>
+                <span>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- 통화/배송국가 선택 — 이커머스 모듈 주입 슬롯. id 필수: SlotContainer 는 주입 컴포넌트 root id 를 {id}__{containerId} 로 스코프한다. className 은 block(헤더의 flex items-center 를 쓰면 주입 루트가 콘텐츠 폭으로 줄어든다). 주입 루트가 portable 에서 스스로 w-full 을 갖는다. -->
+        <slot-container data-type="composite" data-ref="admin_drawer_currency_wrap" slotId="header_currency" class="block"/>
+      </div>
+      <!-- `data-leave-guard` — 저장하지 않은 편집을 들고 있는 화면이 **이 클릭을 먼저 받아** 확인을
+           물을 수 있게 표시해 둔다. SPA 이동은 `beforeunload` 를 내지 않으므로 이 표시가 없으면
+           좌측 메뉴로 나가는 순간 편집분이 말없이 사라진다(실측 2026-09-12: 코드 편집기에서 미저장
+           상태로 「사용자 관리」를 누르니 확인 없이 `/admin/users` 로 이동했다).
+           표시 자체는 아무 동작도 하지 않는다 — 읽는 쪽(`CodeWorkspace`)이 없으면 그냥 속성이다. -->
+      <div data-ref="admin_sidebar_menu" data-leave-guard="true" class="admin_sidebar_menu sidebar-scrollbar">
+        <responsive on="portable" class="admin_sidebar_menu_portable sidebar-scrollbar"/>
+        <admin-sidebar data-type="composite" data-ref="admin_sidebar" data-if="{{(admin_menu.data ?? []).length > 0}}" menu="{{admin_menu.data}}"/>
+        <div data-ref="admin_sidebar_empty" data-if="{{admin_menu.success === true &amp;&amp; (admin_menu.data ?? []).length === 0}}" class="admin_sidebar_empty">
+          <i class="admin_sidebar_empty_icon fas fa-lock"/>
+          <div>$t:admin.sidebar.no_accessible_menus</div>
+        </div>
+      </div>
+      <div data-ref="sidebar_footer" class="sidebar_footer">
+        <a data-ref="sidebar_view_site_link" href="/" target="_blank" rel="noopener noreferrer" title="$t:admin.sidebar.view_site" class="sidebar_view_site_link">
+          <i class="sidebar_view_site_icon fas fa-globe"/>
+          <span data-ref="sidebar_view_site_label" class="sidebar_view_site_label">$t:admin.sidebar.view_site</span>
+        </a>
+      </div>
+    </div>
+    <div data-ref="right_content_wrapper" class="right_content_wrapper">
+      <div data-ref="main_header" class="main_header">
+        <responsive on="portable" class="hidden"/>
+        <div data-ref="header_left" class="header_left">
+          <button data-ref="menu_toggle_btn" type="button" class="menu_toggle_btn" aria-label="{{_global.sidebarCollapsed ? '$t:common.expand_sidebar' : '$t:common.collapse_sidebar'}}" aria-expanded="{{!_global.sidebarCollapsed}}">
+            <on type="click">
+              <!-- 데스크톱 사이드바 접기·펼치기. 아이콘만 있어 이름과 펼침 여부를 속성으로 알린다(이름이 없으면 화면 낭독기가 「버튼」 으로만 읽는다). -->
+              <action handler="toggleSidebar"/>
+            </on>
+            <i class="menu_toggle_btn_icon fas fa-bars"/>
+          </button>
+        </div>
+        <div data-ref="header_right" class="header_right">
+          <theme-toggle data-type="composite" data-ref="theme_toggle_desktop" autoText="$t:admin.theme.auto" lightText="$t:admin.theme.light" darkText="$t:admin.theme.dark"/>
+          <!-- 언어 선택 — 헤더 독립 버튼(코어 기능). UserProfile 드롭다운에도 있으나, 통화와 함께 헤더에 노출(유저 템플릿과 패리티). showCode 로 globe 아이콘 + 현재 로케일 코드를 표시(유저 헤더와 동일 표기). -->
+          <language-selector data-type="composite" data-ref="language_selector_desktop" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" languageText="$t:admin.language" :showCode="true"/>
+          <!-- 통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions). 헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트). -->
+          <slot-container data-type="composite" data-ref="header_currency_slot_desktop" slotId="header_currency" class="flex items-center"/>
+          <notification-center data-type="composite" data-ref="notification_center_desktop" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
+            <on event="onClose">
+              <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
+                   (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —
+                   다음에 열 때 1페이지부터 다시 받아야 읽음 반영된 목록이 나온다. -->
+              <sequence>
+                <api-call :auth_required="true" target="/api/admin/notifications/read-batch" method="POST">
+                  <success>
+                    <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+                    <refetch-data-source dataSourceId="notifications"/>
+                    <refetch-data-source dataSourceId="notification_unread_count"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                  <body ids="{{$args[0]}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <on event="onNotificationClick">
+              <!-- 알림 클릭 — 이동과 읽음 처리를 **동시에** 낸다. 순차로 두면 읽음 응답을 기다리는
+                   동안 화면이 멈춘 것처럼 보이고, 이동 자체는 읽음 성공에 걸 이유가 없다.
+                   알림에 링크가 없으면 알림 이력 화면으로 보낸다. 읽음 처리 권한이 없으면 이동만 한다. -->
+              <parallel>
+                <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
+                <conditions>
+                  <when if="{{notifications?.data?.abilities?.can_update === true}}">
+                    <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
+                      <success>
+                        <refetch-data-source dataSourceId="notification_unread_count"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </when>
+                </conditions>
+              </parallel>
+            </on>
+            <on event="onMarkAllRead">
+              <!-- 전부 읽음. 목록과 배지를 함께 다시 부르고 페이지 상태를 1로 되돌린다 —
+                   안 읽은 것만 보기 상태였다면 목록이 비게 되므로 쌓인 페이지가 남아 있으면 어긋난다. -->
+              <sequence>
+                <api-call :auth_required="true" target="/api/admin/notifications/read-all" method="POST">
+                  <success>
+                    <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+                    <refetch-data-source dataSourceId="notifications"/>
+                    <refetch-data-source dataSourceId="notification_unread_count"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <on event="onUnreadOnlyToggle">
+              <!-- 안 읽은 것만 보기 토글. 전역값을 먼저 바꾸고 목록을 다시 부른다 — 이 소스의 `read`
+                   파라미터가 그 전역을 읽으므로 순서가 뒤바뀌면 이전 조건으로 한 번 더 받는다. -->
+              <sequence>
+                <set-state target="global" notificationsUnreadOnly="{{$args[0]}}" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+                <refetch-data-source dataSourceId="notifications"/>
+              </sequence>
+            </on>
+            <on event="onDelete">
+              <!-- 알림 한 건 삭제. 지운 뒤 목록·배지를 다시 부른다(지운 것이 안 읽은 상태였을 수 있다).
+                   더보기 페이지 상태도 되돌린다 — 한 건이 빠지면 뒤 페이지 경계가 밀린다. -->
+              <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null"/>
+                  <refetch-data-source dataSourceId="notifications"/>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <on event="onDeleteAll">
+              <open-modal target="notification_delete_all_confirm_modal"/>
+            </on>
+            <on event="onLoadMore">
+              <!-- 더보기 — 다음 페이지를 **직접 호출해 목록 뒤에 덧붙인다**(데이터소스를 다시 부르면
+                   1페이지로 덮여 이미 본 것이 사라진다). 다음 페이지 번호는 전역 누적값을 우선하고
+                   없으면 소스의 현재 페이지에서 이어간다 — 연타로 같은 페이지를 두 번 받지 않게. -->
+              <sequence>
+                <set-state target="global" :notificationsLoadingMore="true"/>
+                <api-call :auth_required="true" target="/api/admin/notifications" method="GET">
+                  <success>
+                    <append-data-source dataSourceId="notifications" dataPath="data.data" newData="{{response.data.data ?? []}}"/>
+                    <set-state target="global" notificationsCurrentPage="{{response.data.pagination.current_page}}" notificationsHasMore="{{response.data.pagination.has_more_pages}}" :notificationsLoadingMore="false"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                  </fail>
+                  <query page="{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}" :per_page="15" read="{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"/>
+                </api-call>
+              </sequence>
+            </on>
+          </notification-center>
+          <div data-ref="user_avatar_section" class="user_avatar_section">
+            <div data-ref="user_avatar" class="user_avatar">
+              <img data-ref="user_avatar_img" data-if="{{current_user.data?.avatar_url}}" src="{{current_user.data?.avatar_url}}" alt="{{current_user.data?.name ?? 'User'}}" class="user_avatar_img"/>
+              <i data-ref="user_avatar_fallback" data-if="{{!current_user.data?.avatar_url}}" class="fas fa-user icon-muted"/>
+            </div>
+            <div data-ref="user_info" class="user_info">
+              <p data-ref="user_name" class="text-primary text-sm font-bold leading-none">{{current_user.data?.name ?? '관리자'}}</p>
+              <p data-ref="user_email" class="text-tertiary text-[11px] mt-1">{{current_user.data?.email ?? ''}}</p>
+            </div>
+            <user-profile data-type="composite" data-ref="user_dropdown" user="{{current_user.data}}" profileText="$t:admin.profile_settings" logoutText="$t:admin.logout" languageText="$t:admin.language" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" class="" :showAvatar="false" :showName="false" :dropdownOnly="true" :showChevron="false" dropdownDirection="down"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="mobile_header" class="hidden">
+        <responsive on="portable" class="mobile_header_portable"/>
+        <div data-ref="mobile_header_left" class="mobile_header_left">
+          <button data-ref="mobile_menu_toggle" type="button" class="flex-center btn-icon" aria-label="{{_global.sidebarOpen ? '$t:common.collapse_sidebar' : '$t:common.expand_sidebar'}}" aria-expanded="{{!!_global.sidebarOpen}}">
+            <on type="click">
+              <!-- 모바일 헤더의 햄버거 — 사이드바를 연다/닫는다. 데스크톱 토글(`toggleSidebar` 핸들러)은
+                   접힘 폭을 다루는 별개 동작이라 여기서 재사용하지 않는다. 글자 「☰」 만 있어 이름·열림 여부는 속성으로 알린다. -->
+              <set-state target="global" sidebarOpen="{{!_global.sidebarOpen}}"/>
+            </on>
+            <span class="text-primary text-lg leading-none">☰</span>
+          </button>
+          <div data-ref="mobile_logo" class="mobile_logo">
+            <img data-ref="mobile_logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="mobile_logo_image"/>
+            <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-lg leading-none truncate">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
+          </div>
+        </div>
+        <div data-ref="mobile_header_right" class="mobile_header_right">
+          <theme-toggle data-type="composite" data-ref="theme_toggle_mobile" autoText="$t:admin.theme.auto" lightText="$t:admin.theme.light" darkText="$t:admin.theme.dark"/>
+          <notification-center data-type="composite" data-ref="notification_center_mobile" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+            <on event="onClose">
+              <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
+                   (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —
+                   다음에 열 때 1페이지부터 다시 받아야 읽음 반영된 목록이 나온다. -->
+              <sequence>
+                <api-call :auth_required="true" target="/api/admin/notifications/read-batch" method="POST">
+                  <success>
+                    <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+                    <refetch-data-source dataSourceId="notifications"/>
+                    <refetch-data-source dataSourceId="notification_unread_count"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                  <body ids="{{$args[0]}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <on event="onNotificationClick">
+              <!-- 알림 클릭 — 이동과 읽음 처리를 **동시에** 낸다. 순차로 두면 읽음 응답을 기다리는
+                   동안 화면이 멈춘 것처럼 보이고, 이동 자체는 읽음 성공에 걸 이유가 없다.
+                   알림에 링크가 없으면 알림 이력 화면으로 보낸다. 읽음 처리 권한이 없으면 이동만 한다. -->
+              <parallel>
+                <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
+                <conditions>
+                  <when if="{{notifications?.data?.abilities?.can_update === true}}">
+                    <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
+                      <success>
+                        <refetch-data-source dataSourceId="notification_unread_count"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </when>
+                </conditions>
+              </parallel>
+            </on>
+            <on event="onMarkAllRead">
+              <!-- 전부 읽음. 목록과 배지를 함께 다시 부르고 페이지 상태를 1로 되돌린다 —
+                   안 읽은 것만 보기 상태였다면 목록이 비게 되므로 쌓인 페이지가 남아 있으면 어긋난다. -->
+              <sequence>
+                <api-call :auth_required="true" target="/api/admin/notifications/read-all" method="POST">
+                  <success>
+                    <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+                    <refetch-data-source dataSourceId="notifications"/>
+                    <refetch-data-source dataSourceId="notification_unread_count"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <on event="onUnreadOnlyToggle">
+              <!-- 안 읽은 것만 보기 토글. 전역값을 먼저 바꾸고 목록을 다시 부른다 — 이 소스의 `read`
+                   파라미터가 그 전역을 읽으므로 순서가 뒤바뀌면 이전 조건으로 한 번 더 받는다. -->
+              <sequence>
+                <set-state target="global" notificationsUnreadOnly="{{$args[0]}}" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+                <refetch-data-source dataSourceId="notifications"/>
+              </sequence>
+            </on>
+            <on event="onDelete">
+              <!-- 알림 한 건 삭제. 지운 뒤 목록·배지를 다시 부른다(지운 것이 안 읽은 상태였을 수 있다).
+                   더보기 페이지 상태도 되돌린다 — 한 건이 빠지면 뒤 페이지 경계가 밀린다. -->
+              <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null"/>
+                  <refetch-data-source dataSourceId="notifications"/>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <on event="onDeleteAll">
+              <open-modal target="notification_delete_all_confirm_modal"/>
+            </on>
+            <on event="onLoadMore">
+              <!-- 더보기 — 다음 페이지를 **직접 호출해 목록 뒤에 덧붙인다**(데이터소스를 다시 부르면
+                   1페이지로 덮여 이미 본 것이 사라진다). 다음 페이지 번호는 전역 누적값을 우선하고
+                   없으면 소스의 현재 페이지에서 이어간다 — 연타로 같은 페이지를 두 번 받지 않게. -->
+              <sequence>
+                <set-state target="global" :notificationsLoadingMore="true"/>
+                <api-call :auth_required="true" target="/api/admin/notifications" method="GET">
+                  <success>
+                    <append-data-source dataSourceId="notifications" dataPath="data.data" newData="{{response.data.data ?? []}}"/>
+                    <set-state target="global" notificationsCurrentPage="{{response.data.pagination.current_page}}" notificationsHasMore="{{response.data.pagination.has_more_pages}}" :notificationsLoadingMore="false"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                  </fail>
+                  <query page="{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}" :per_page="15" read="{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"/>
+                </api-call>
+              </sequence>
+            </on>
+          </notification-center>
+        </div>
+      </div>
+      <div data-ref="right_content_area" class="right_content_area">
+        <container data-type="layout" data-ref="main_content" data-slot="content" class="main_content" layout="flex" direction="column" :padding="24"/>
+        <admin-footer data-type="composite" data-ref="admin_footer" copyright="© {{_global.appConfig?.releaseYear ?? '2026'}} 그누보드7" version="{{_global.appConfig?.version ?? ''}}" copyrightModalId="license_modal" changelogModalId="changelog_modal"/>
+      </div>
+    </div>
+  </div>
+  <!-- 본인인증 창. 베이스에 두는 이유가 있다 — 어느 화면에서든 서버가 428 을 던지면 코어 인터셉터가
+       이 창을 띄우므로, 화면마다 두면 그 화면에서만 인증이 되고 나머지는 조용히 실패한다. -->
+  <modal src="partials/_identity_challenge_modal.g7.html"/>
+  <!-- 라이선스 고지 창 — 푸터의 저작권 표기가 연다(`copyrightModalId`). -->
+  <modal src="partials/_modal_license.g7.html"/>
+  <!-- 변경 이력 창 — 푸터의 버전 표기가 연다(`changelogModalId`). -->
+  <modal src="partials/_modal_changelog.g7.html"/>
+  <!-- 알림 전체 삭제 확인 창. 데스크톱·모바일 알림 센터의 `onDeleteAll` 이 공통으로 이것을 연다
+       (되돌릴 수 없는 동작이라 목록 쪽에서 바로 지우지 않는다). -->
+  <modal src="partials/_modal_notification_delete_all_confirm.g7.html"/>
+</layout>

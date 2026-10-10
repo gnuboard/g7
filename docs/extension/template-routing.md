@@ -1,6 +1,6 @@
 # 템플릿 라우트/언어 파일 규칙
 
-> **관련 문서**: [index.md](index.md) | [template-basics.md](template-basics.md) | [template-security.md](template-security.md)
+> **관련 문서**: [README.md](README.md) | [template-basics.md](template-basics.md) | [template-security.md](template-security.md)
 
 ---
 
@@ -360,7 +360,7 @@ console.log(translations.dashboard.title); // "대시보드"
 
 ## 관련 문서
 
-- [index.md](index.md) - 확장 시스템 가이드 인덱스
+- [README.md](README.md) - 확장 시스템 가이드 인덱스
 - [template-basics.md](template-basics.md) - 템플릿 기초
 - [template-security.md](template-security.md) - 템플릿 보안 정책
 - [template-caching.md](template-caching.md) - 템플릿 캐싱 전략

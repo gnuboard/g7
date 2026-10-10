@@ -1,0 +1,73 @@
+<partial description="답글 섹션 내용. 표시 조건(if)은 호출부(types/basic/show.json)에서 제어.">
+  <!-- 답글 섹션 내용 -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+    <!-- 답글 헤더 -->
+    <div class="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <icon name="comments" size="md" class="text-blue-500 dark:text-blue-400"/>
+        <span>$t:board.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}</span>
+      </h3>
+    </div>
+    <!-- 답글 목록 -->
+    <div data-each="reply, replyIndex in {{post?.data?.replies ?? []}}">
+      <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+        <!-- 1줄: 제목 (클릭 가능) -->
+        <div class="flex items-center gap-1 mb-2">
+          <!-- 비밀글 아이콘 -->
+          <icon data-if="{{reply?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+          <!-- 블라인드 아이콘 -->
+          <icon data-if="{{reply?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
+          <!-- 제목 (클릭 시 해당 답글로 이동) -->
+          <a href="/board/{{route.slug}}/{{reply.id}}" class="text-lg font-bold text-blue-600 dark:text-blue-400 hover:underline">{{reply?.title ?? ''}}</a>
+          <!-- 삭제됨 배지 -->
+          <span data-if="{{reply?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
+        </div>
+        <!-- 2줄: 아바타 + 작성자 + 날짜 + 조회수/댓글수 -->
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 dark:border-gray-700">
+          <!-- 왼쪽: 아바타 + 작성자 정보 -->
+          <div class="flex items-center gap-2">
+            <avatar data-type="composite" author="{{reply?.author}}" size="sm"/>
+            <user-info data-type="composite" author="{{reply?.author}}" layout="horizontal"/>
+          </div>
+          <!-- 오른쪽: 작성일/조회수/댓글수 -->
+          <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+            <!-- 작성일 -->
+            <span title="{{reply?.created_at ?? ''}}">{{reply?.created_at_formatted ?? ''}}</span>
+            <span data-if="{{post?.data?.board?.show_view_count !== false &amp;&amp; reply?.view_count !== undefined}}" class="flex items-center gap-1">
+              <icon name="eye" size="xs"/>
+              <span>{{reply.view_count}}</span>
+            </span>
+            <span data-if="{{reply?.comment_count !== undefined &amp;&amp; reply?.comment_count > 0}}" class="flex items-center gap-1">
+              <icon name="message-square" size="xs"/>
+              <span>{{reply.comment_count}}</span>
+            </span>
+          </div>
+        </div>
+        <!-- 3줄: 내용 미리보기 (토글로 접기/펼치기) -->
+        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 {{_local?.expandedReplyId === reply?.id ? '' : 'line-clamp-2'}}">
+          <!-- 블라인드 처리된 경우 -->
+          <span data-if="{{reply?.status === 'blinded'}}" class="italic text-orange-500 dark:text-orange-400">$t:board.blinded_post</span>
+          <!-- 비밀글 안내 — 서버가 원문을 가린 경우(content null)만. 작성자·관리자처럼 열람 권한이 있으면 본문이 온다 -->
+          <span data-if="{{reply?.status !== 'blinded' &amp;&amp; reply?.is_secret &amp;&amp; reply?.content == null}}" class="italic text-gray-500 dark:text-gray-400">$t:board.posts.detail.reply_secret_content</span>
+          <!-- 일반 글 내용 -->
+          <extension-point name="html_content" data-ref="reply_html_content_{{replyIndex}}" data-if="{{reply?.status !== 'blinded' &amp;&amp; !(reply?.is_secret &amp;&amp; reply?.content == null)}}" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
+            <default>
+              <html-content data-type="composite" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
+            </default>
+          </extension-point>
+        </div>
+        <!-- 4줄: 더보기/접기 토글 버튼 (테두리 없음) - 200자 이상이고 블라인드 아닌 경우만 표시 -->
+        <div data-if="{{reply?.status !== 'blinded' &amp;&amp; !(reply?.is_secret &amp;&amp; reply?.content == null) &amp;&amp; (reply?.content ?? '').length > 200}}" class="flex justify-start">
+          <button class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1">
+            <on type="click">
+              <!-- 답글 본문 펼치기·접기 — 한 번에 하나만 펼치도록 열린 답글 번호를 하나만 들고 있는다(같은 것을 다시 누르면 비운다). 접힌 동안에는 그림·표도 함께 감춰 미리보기 높이가 들쭉날쭉해지지 않게 한다. -->
+              <set-state target="local" expandedReplyId="{{_local?.expandedReplyId === reply?.id ? null : reply?.id}}"/>
+            </on>
+            <icon name="{{_local?.expandedReplyId === reply?.id ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
+            <span>{{_local?.expandedReplyId === reply?.id ? '$t:board.show_less' : '$t:board.show_more'}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

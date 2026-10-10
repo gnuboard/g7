@@ -1,6 +1,6 @@
 {
     "name": "@g7/sirsoft-verification_kginicis",
-    "version": "1.0.5",
+    "version": "1.1.0",
     "type": "module",
     "private": true,
     "scripts": {
@@ -8,7 +8,9 @@
         "build": "vite build",
         "preview": "vite preview",
         "test": "vitest",
-        "test:run": "vitest run"
+        "test:run": "vitest run",
+        "test:e2e": "playwright test --config=tests/Playwright/playwright.config.ts",
+        "test:e2e:ui": "playwright test --config=tests/Playwright/playwright.config.ts --ui"
     },
     "devDependencies": {
         "jsdom": "^27.4.0",

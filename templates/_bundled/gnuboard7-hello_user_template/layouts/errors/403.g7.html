@@ -1,0 +1,19 @@
+<!-- 사용자 403 화면 — 권한이 없는 상태 -->
+<layout name="errors/403" version="1.0.0" extends="_user_base">
+  <meta title="$t:error.403.title" description="$t:error.403.description"/>
+  <slot name="content">
+    <div class="flex-center min-h-[50vh] justify-center">
+      <div class="text-center px-4">
+        <div class="text-6xl font-bold text-gray-200 dark:text-gray-700 mb-4">403</div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:error.403.title</h1>
+        <span class="block text-gray-600 dark:text-gray-300 mb-6">$t:error.403.description</span>
+        <button class="px-5 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer">
+          <on type="click">
+            <navigate path="/"/>
+          </on>
+          $t:error.back_to_home
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

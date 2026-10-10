@@ -1,0 +1,18 @@
+feature: 이커머스 목록 날짜 필터 — 보는 사람의 시간대 하루 (쿠폰 유효·발급기간은 사이트 표준시 하루)
+
+description: |
+  장바구니·찜·배송지·상품 문의·상품·주문(주문일·클레임 신청일)·클레임(관리 목록·구매자 신청내역)·마일리지·리뷰·쿠폰
+  목록의 날짜 조건이 날짜를 UTC 하루로 잘라(공용 applyDateRangeFilter 또는 Carbon::parse()->startOfDay())
+  한국 시간 새벽 행이 그날 필터에서 빠지고 다음날 행이 섞였다. 목록이 날짜를 보는 사람의 시간대로 그리므로
+  applyViewerDateRangeFilter 로 같은 하루를 자른다. 쿠폰 유효기간·발급기간은 입력과 표시가 사이트 표준시라
+  applyDateRangeFilterInTimezone(사이트 표준시)로 자른다(7.1.0 영역 C 후속 O-CF1).
+
+axes:
+  surface: [admin_carts, admin_wishlists, admin_user_addresses, admin_inquiries, admin_products, admin_orders, admin_claims, admin_mileage_transactions, admin_reviews, admin_coupons]
+
+effects:
+  - ecommerce_date_filters_follow_viewer_timezone_day
+  - coupon_validity_filters_follow_site_timezone_day
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminDateFilterViewerDayTest.php

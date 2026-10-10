@@ -39,6 +39,8 @@ return [
         'permissions_required' => '権限情報が必要です。',
         'permissions_invalid' => '権限形式が正しくありません。',
         'permission_roles_invalid' => '権限別ロール形式が正しくありません。',
+        'file_mimetype_invalid' => 'ファイルの内容が許可されたフォーマットと一致しません。許可フォーマット: :extensions',
+        'file_empty' => '空のファイル(0バイト)はアップロードできません。',
     ],
     'upload_success' => 'ファイルがアップロードされました。',
     'upload_batch_success' => 'ファイルが一括アップロードされました。',

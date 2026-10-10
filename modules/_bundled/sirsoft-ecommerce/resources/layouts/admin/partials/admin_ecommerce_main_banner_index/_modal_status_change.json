@@ -1,55 +1,56 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Main Banner Status Change Modal"
-  },
-  "id": "modal_status_change",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-body mb-4"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.message"
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
+    "comment": "배너 노출 상태를 바꾸기 전 확인받는 창.\n  **아직 시안이다** — 확인 버튼이 창을 닫기만 한다. 게다가 목록의 스위치는 이 창을 거치지 않고\n  곧바로 상태를 뒤집으므로, 지금은 이 창이 열리는 경로 자체가 없다.\n  배선할 때는 목록 스위치가 이 창을 먼저 열고, 확인 쪽에서 상태 변경 요청을 보내는 형태가 된다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Main Banner Status Change Modal"
     },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.confirm",
-      "actions": [
+    "id": "modal_status_change",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.confirm"
+            }
+        ]
+    },
+    "children": [
         {
-          "type": "click",
-          "handler": "closeModal"
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-body mb-4"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.status_change.message"
         }
-      ]
-    }
-  ]
+    ]
 }

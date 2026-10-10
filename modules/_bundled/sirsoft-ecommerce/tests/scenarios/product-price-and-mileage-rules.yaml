@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage[cross_product,effects] reason: |
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
 #   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(검증 규칙 계층)
 #   이며 PHPUnit Feature 테스트가 화면·필드·경계 조합을 커버하고 green 이다.

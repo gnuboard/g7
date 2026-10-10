@@ -1035,6 +1035,41 @@
       }
     ]
   },
+  "ExtensionCardGrid": {
+    "label": "$t:editor.component.extension_card_grid",
+    "propControls": [
+      "ecgViewMode",
+      "ecgMinCardWidth",
+      "ecgMaxColumns",
+      "ecgPagination"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onPageChange",
+      "onItemClick",
+      "onToggle",
+      "onPrimaryAction",
+      "onSecondaryAction",
+      "onAction"
+    ],
+    "dataProps": [
+      {
+        "propKey": "items",
+        "shape": "array",
+        "label": "$t:editor.data_prop.items",
+        "itemFields": [
+          "id",
+          "name",
+          "version",
+          "description",
+          "iconUrl"
+        ],
+        "required": true
+      }
+    ]
+  },
   "Pagination": {
     "label": "$t:editor.component.pagination",
     "propControls": [
@@ -1246,6 +1281,82 @@
           "label",
           "data",
           "backgroundColor"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "LineChart": {
+    "label": "$t:editor.component.line_chart",
+    "propControls": [
+      "bcHeight",
+      "bcShowLegend",
+      "bcShowGrid",
+      "bcShowYGrid",
+      "bcShowYAxis"
+    ],
+    "styleControls": [
+      "marginAll",
+      "width"
+    ],
+    "nodeEditor": {
+      "kind": "array-group",
+      "params": {
+        "groups": [
+          {
+            "arrayProp": "labels",
+            "title": "$t:editor.array_group.chart_labels",
+            "itemLabel": "$t:editor.array_item.chart_label",
+            "newItem": "",
+            "fields": [
+              {
+                "key": "value",
+                "widget": "i18n-text",
+                "label": "$t:editor.array_field.chart_label",
+                "primary": true
+              }
+            ]
+          },
+          {
+            "arrayProp": "datasets",
+            "title": "$t:editor.array_group.chart_datasets",
+            "itemLabel": "$t:editor.array_item.chart_dataset",
+            "newItem": {
+              "label": "",
+              "data": [],
+              "color": "#7C3AED"
+            },
+            "fields": [
+              {
+                "key": "label",
+                "widget": "i18n-text",
+                "label": "$t:editor.array_field.chart_series",
+                "primary": true
+              },
+              {
+                "key": "data",
+                "widget": "number-list",
+                "label": "$t:editor.array_field.chart_data"
+              },
+              {
+                "key": "color",
+                "widget": "color",
+                "label": "$t:editor.array_field.chart_color"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "dataProps": [
+      {
+        "propKey": "datasets",
+        "shape": "array",
+        "label": "$t:editor.data_prop.datasets",
+        "itemFields": [
+          "label",
+          "data",
+          "color"
         ],
         "required": true
       }
@@ -1994,8 +2105,10 @@
       "marginAll"
     ],
     "events": [
-      "onChange"
+      "onChange",
+      "onSearch"
     ],
+    "rawValueEvents": ["onChange"],
     "dataProps": [
       {
         "propKey": "value",
@@ -2062,6 +2175,7 @@
     "events": [
       "onChange"
     ],
+    "rawValueEvents": ["onChange"],
     "dataProps": [
       {
         "propKey": "value",
@@ -2099,6 +2213,7 @@
     "events": [
       "onChange"
     ],
+    "rawValueEvents": ["onChange"],
     "nodeEditor": {
       "kind": "array",
       "params": {
@@ -2318,7 +2433,8 @@
       {
         "propKey": "availableLocales",
         "shape": "array",
-        "label": "$t:editor.data_prop.available_locales"
+        "label": "$t:editor.data_prop.available_locales",
+        "itemFieldsReason": "항목이 로케일 코드 문자열이라 필드가 없다"
       }
     ]
   },
@@ -2355,6 +2471,35 @@
           "id",
           "scope_type"
         ]
+      }
+    ]
+  },
+  "MenuAccessTree": {
+    "label": "$t:editor.component.menu_access_tree",
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "data",
+        "shape": "array",
+        "label": "$t:editor.data_prop.tree_data",
+        "itemFields": [
+          "id",
+          "name",
+          "children"
+        ]
+      },
+      {
+        "propKey": "value",
+        "shape": "array",
+        "label": "$t:editor.data_prop.selected_menus",
+        "itemFieldsReason": "항목이 메뉴 ID 숫자라 필드가 없다"
       }
     ]
   },
@@ -2447,6 +2592,8 @@
       "onChange",
       "onReset"
     ],
+    "rawValueEvents": ["onChange"],
+    "rawValueArgIndex": { "onChange": 1 },
     "dataProps": [
       {
         "propKey": "filters",
@@ -2489,6 +2636,16 @@
           "children"
         ],
         "required": true
+      },
+      {
+        "propKey": "roleOptions",
+        "shape": "array",
+        "label": "$t:editor.data_prop.role_options",
+        "itemFields": [
+          "id",
+          "name"
+        ],
+        "required": false
       }
     ]
   },
@@ -2568,7 +2725,8 @@
         "propKey": "items",
         "shape": "array",
         "label": "$t:editor.data_prop.items",
-        "required": true
+        "required": true,
+        "itemFieldsReason": "행의 키를 columns[].key 가 정한다 — 고정 필드가 없다"
       }
     ]
   },

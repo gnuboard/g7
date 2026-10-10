@@ -1,0 +1,36 @@
+feature: sirsoft-basic 머리글 접근성 브라우저 회귀(비회원)
+
+description: |
+  7.1.0 종합 단계에서 고친 사용자 머리글 프론트 동작을 브라우저로 고정한다.
+  390 폭 머리글의 아이콘 단추 4개(장바구니, 사용자, 메뉴, 메뉴 닫기)는 화면 언어의 이름을 갖고 메뉴 단추는 aria-expanded 로
+  드로어 상태를 알린다. 비회원의 사용자 단추는 「로그인」이다. 드로어 언어 칩은 이름 있는 listbox 안의 option 이다.
+  데스크톱 언어 메뉴는 ↓ 로 열면 현재 언어 항목에 초점이 가고, ↓ 로 옮겨 Enter 로 고르며, Esc 는 닫고 단추로 초점을 돌린다.
+  테마 단추 이름은 ko 「화면 테마」, en 「Theme」 이고 종전 영문 고정 이름 「Toggle theme」 은 없다.
+  홈과 게시판 목록에 이름 없는 단추와 링크가 없다(접근성 트리, DOM 두 경로).
+
+axes:
+  case:
+    - mobile_header_names_ko
+    - mobile_header_names_en
+    - language_listbox_keyboard
+    - theme_name_ko
+    - theme_name_en
+    - icon_only_controls_named
+
+effects:
+  - mobile_buttons_named
+  - menu_expanded_state
+  - drawer_language_listbox
+  - listbox_opens_on_current_option
+  - arrow_enter_selects
+  - escape_closes_and_returns_focus
+  - theme_name_follows_locale
+  - no_unnamed_controls
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/header-accessibility.spec.ts
+
+notes: |
+  수정 전 번들(HEAD 의 dist/js/components.iife.js)을 브라우저 route 로 끼운 같은 spec 은 7건 모두 실패했다
+  (테마 단추 이름이 「Toggle theme」 이라 화면 대기 단계에서 멈춤). 단위 계약은 language-selector-listbox.yaml,
+  mobile-header-accessible-names.yaml, accessible-name-i18n.yaml, icon-only-control-names.yaml 이 소유한다.

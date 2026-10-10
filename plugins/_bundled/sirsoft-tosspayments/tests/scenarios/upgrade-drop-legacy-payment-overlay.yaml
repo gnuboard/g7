@@ -1,0 +1,20 @@
+feature: 결제 정보 카드 구 overlay 등록 행 정리 업그레이드 스텝 (1.1.0)
+
+description: |
+  결제 정보 카드 주입을 레이아웃 이름 overlay 에서 공용 슬롯(mypage_order_payment_provider_slot)으로 옮기면서
+  남는 구 overlay 행을 지운다. 확장 갱신은 파일이 더 이상 선언하지 않는 대상의 행을 지우지 않으므로, 이 스텝이
+  없으면 이미 설치를 마친 사이트에서 같은 블록이 두 번 뜬다.
+
+  스텝 번호는 working 버전(1.1.0)이어야 한다 — 공개 버전 번호로 두면 공개판 사이트에서 영원히 실행되지 않는다
+  (#599 validate C4, check-upgrade-step-coverage 의 도달 불가 스텝 검사가 잡는다).
+
+axes:
+  scope: [own_rows, rerun, no_rows]
+
+effects:
+  - legacy_overlay_rows_of_this_plugin_only_are_removed  # 자기 플러그인의 구 overlay 행만 지운다
+  - legacy_overlay_drop_is_idempotent                    # 두 번 실행해도 같은 결과
+  - legacy_overlay_drop_is_safe_without_rows             # 대상 0건 안전
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Upgrade/DropLegacyPaymentPanelOverlayTest.php

@@ -1,0 +1,21 @@
+feature: 페이지 샘플 시더 정합 (활동 로그 키·표식, 시연 페이지)
+
+description: |
+  `module:seed sirsoft-page --sample` 이 만드는 활동 로그는 리스너와 같은 밑줄 description 키
+  (page_create 등)를 쓰고 properties.seeded_by 표식을 단다. 로그는 이번 실행에서 새로 만든 페이지에만
+  만들고 활동 로그는 지우지 않으므로, 재시드해도 운영 로그는 남고 샘플 로그는 겹치지 않는다. 시연 페이지 3개(미발행 초안, 버전 이력·복원, 이미지 첨부)를
+  만들고 설치 시더의 기본 페이지 6개는 바꾸지 않는다.
+
+axes:
+  case:
+    - activity_logs   # 로그 키·표식·재시드 보존
+    - demo_pages      # 미발행·버전 복원·첨부 시연 페이지
+    - operational_site_existing_pages  # 운영자 페이지·기존 기본 페이지(작성자 탈퇴)
+
+effects:
+  - page_sample_logs_use_listener_keys_and_keep_operator_logs
+  - page_sample_seeder_creates_draft_history_and_attachment_pages
+  - page_sample_logs_only_for_pages_created_in_this_run
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Seeders/PageSampleSeederConsistencyTest.php

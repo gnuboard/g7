@@ -1,0 +1,228 @@
+<!-- 클레임 목록 (운영자) — 교환·반품·환불·취소 신청서를 유형 서브탭으로 나눠 조회하고, 취소를 뺀 세 유형은 체크한 신청서의 상태를 한꺼번에 바꾼다. 조회 조건은 전부 URL 쿼리에 싣고, 자주 쓰는 조합은 운영자별 검색 프리셋으로 저장해 불러 쓴다. -->
+<layout name="admin_ecommerce_claim_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.claim.title" description="$t:sirsoft-ecommerce.admin.claim.description"/>
+  <!-- 유형별 금지 축(귀책·청구·청구 결제수단)은 `named_actions.searchClaims` 와 동일한 게이트를 거친다. URL 은 검색 액션 말고도 북마크·뒤로가기·수기 편집으로도 만들어지므로, 이쪽을 비워 두면 교차 조합 URL 에서 목록 전체가 422 가 되고 화면은 '로딩 중...' 에 멈춘 상태로 남는다. -->
+  <data-source id="claims" label_key="$t:sirsoft-ecommerce.editor.data_source.claims" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claims" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params type="{{query.type || 'exchange'}}" page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" from="{{query.from}}" to="{{query.to}}" statuses="{{query['statuses[]']}}" fault_types="{{(query.type || 'exchange') !== 'cancel' ? query['fault_types[]'] : null}}" charge_methods="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_methods[]'] : null}}" reason_code="{{query.reason_code}}" requester_type="{{query.requester_type}}" request_source="{{(query.type || 'exchange') !== 'cancel' ? query.request_source : null}}" collection_overdue="{{(query.type || 'exchange') === 'exchange' ? query.collection_overdue : null}}" pending_refund="{{['exchange', 'return'].includes(query.type || 'exchange') ? query.pending_refund : null}}" min_amount="{{query.min_amount}}" max_amount="{{query.max_amount}}" currency_code="{{query.currency_code}}" charge_payment_methods="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_payment_methods[]'] : null}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 사유 필터 카탈로그. 취소 유형이 저장하는 cancel_reason_type 은 환불 사유 코드이므로 같은 카탈로그를 읽는다.
+    게이트는 `settings.read | claims.read` 다 — 이 화면(`claims.read`)을 열 수 있는 운영자는 늘 통과하므로 403 억제를 두지 않는다. 억제를 남기면 누군가 게이트를 다시 좁혔을 때 사유 필터가 조용히 '전체' 하나로 비고 아무도 모른다 — 그때는 기본 오류 알림으로 드러나야 한다. -->
+  <data-source id="claim_reasons" label_key="$t:sirsoft-ecommerce.editor.data_source.claim_reasons" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claim-reasons/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params type="{{(query.type || 'exchange') === 'cancel' ? 'refund' : (query.type || 'exchange')}}"/>
+  </data-source>
+  <!-- 지금 로그인한 운영자가 이 화면에 저장해 둔 검색 프리셋. 프리셋은 운영자·화면별로 따로 저장되고 대상 화면을 빼면 서버가 상품 화면 것을 돌려주므로 claims 로 지정하며, 프리셋 저장·이름 변경·삭제 창이 성공할 때마다 다시 부른다. -->
+  <data-source id="presets" label_key="$t:sirsoft-ecommerce.editor.data_source.presets" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/presets" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params target_screen="claims"/>
+  </data-source>
+  <!-- 청구 결제수단 허용값(`claim.charge_payment_methods`)의 단일 출처. 통화 선택지는 이젠 `_global.modules['sirsoft-ecommerce'].language_currency.currencies` 가 줌—이 엔드포인트는 `settings.read` 를 요구하는데 화면 라우트는 `claims.read` 라, 둘만 가진 운영자(기본 역할 manager)에게는 이 응답이 403 이 되어 드롭다운이 조용히 빈다. 주문 목록 정본과 동형으로 전역을 쓰는 축부터 옮겼다. -->
+  <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <error-handling>
+      <on-code code="403">
+        <!-- 이 엔드포인트는 `settings.read` 게이트이고 화면은 `claims.read` 다 — 클레임 권한만 가진 운영자(기본 역할 manager)에게는 정상 응답이라 전파를 끊는다. 억제하지 않으면 진입할 때마다 오류 토스트가 뜬다. 비면 청구 결제수단 칩만 사라진다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="showDetailFilter" :value="false"/>
+    <field name="isEditMode" :value="false"/>
+    <field name="filter">
+      <field name="selectedPreset" value=""/>
+      <field name="searchField" value="claim_number"/>
+      <field name="searchKeyword" value=""/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="dateQuick" value=""/>
+      <field name="claimStatus" :value="[]"/>
+      <field name="faultTypes" :value="[]"/>
+      <field name="chargeMethods" :value="[]"/>
+      <field name="reasonCode" value=""/>
+      <field name="requesterType" value=""/>
+      <field name="requestSource" value=""/>
+      <field name="collectionOverdue" value=""/>
+      <field name="pendingRefund" value=""/>
+      <field name="minAmount" value=""/>
+      <field name="maxAmount" value=""/>
+      <field name="currencyCode" value=""/>
+      <field name="chargePaymentMethods" :value="[]"/>
+    </field>
+    <field name="presetName" value=""/>
+    <field name="visibleColumns">
+      <item>requested_at</item>
+      <item>claim_number</item>
+      <item>order_number</item>
+      <item>item_summary</item>
+      <item>requester_name</item>
+      <item>status</item>
+      <item>reason_label</item>
+      <item>fault_type</item>
+      <item>amount</item>
+      <item>tracking</item>
+    </field>
+    <field name="visibleFilters">
+      <item>searchField</item>
+      <item>searchKeyword</item>
+      <item>date</item>
+      <item>claimStatus</item>
+      <item>faultType</item>
+      <item>chargeMethod</item>
+      <item>reasonCode</item>
+    </field>
+    <field name="selectedItems" :value="[]"/>
+    <field name="bulkClaimStatus" value=""/>
+    <field name="bulkRejectReason" value=""/>
+    <field name="perPage" value="20"/>
+  </init-local>
+  <computed name="claimReasonOptions">{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.claim.filter.reason_all' }, ...((claim_reasons?.data?.data || []).map(r => ({ value: r.code, label: r.localized_name })))]}}</computed>
+  <computed name="claimCurrencyOptions">{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.claim.filter.currency_all' }, ...((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code })))]}}</computed>
+  <computed name="claimChargePaymentMethods">{{((ecommerce_settings?.data?.claim?.charge_payment_methods || []).map(m => ({ value: m, label: $t('sirsoft-ecommerce.enums.payment_method.' + m) })))}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.claims.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>claims</wait-for>
+  </transition-overlay>
+  <!-- 귀책·청구 파라미터는 그 축을 가진 유형에서만 싣는다 — 게이트(`Admin\ClaimListRequest`)가 취소·환불에서 prohibited 로 거절하므로, 유형을 바꾼 뒤 남아 있던 값을 그대로 보내면 목록 전체가 422 가 된다. -->
+  <action name="searchClaims">
+    <navigate path="/admin/ecommerce/claims" :replace="true" :mergeQuery="true" transition_overlay_target="claim_datagrid__body">
+      <query :page="1" search_field="{{_local.filter.searchField || 'claim_number'}}" search_keyword="{{_local.filter.searchKeyword || null}}" from="{{_local.filter.startDate || null}}" to="{{_local.filter.endDate || null}}" statuses[]="{{(_local.filter.claimStatus || []).length > 0 ? _local.filter.claimStatus : null}}" fault_types[]="{{(query.type || 'exchange') !== 'cancel' &amp;&amp; (_local.filter.faultTypes || []).length > 0 ? _local.filter.faultTypes : null}}" charge_methods[]="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') &amp;&amp; (_local.filter.chargeMethods || []).length > 0 ? _local.filter.chargeMethods : null}}" reason_code="{{_local.filter.reasonCode || null}}" requester_type="{{_local.filter.requesterType || null}}" request_source="{{(query.type || 'exchange') !== 'cancel' ? (_local.filter.requestSource || null) : null}}" collection_overdue="{{(query.type || 'exchange') === 'exchange' &amp;&amp; _local.filter.collectionOverdue === '1' ? 1 : null}}" pending_refund="{{['exchange', 'return'].includes(query.type || 'exchange') &amp;&amp; _local.filter.pendingRefund === '1' ? 1 : null}}" min_amount="{{_local.filter.minAmount || null}}" max_amount="{{_local.filter.maxAmount || null}}" currency_code="{{_local.filter.currencyCode || null}}" charge_payment_methods[]="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') &amp;&amp; (_local.filter.chargePaymentMethods || []).length > 0 ? _local.filter.chargePaymentMethods : null}}"/>
+    </navigate>
+  </action>
+  <init>
+    <!-- URL 이 필터 상태의 단일 근거다 — 새로고침·뒤로가기·프리셋 링크 어느 경로로 들어와도 화면이 같은 조건을 그린다. -->
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="searchField" value="{{query.search_field || 'claim_number'}}"/>
+          <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+          <field name="startDate" value="{{query.from || ''}}"/>
+          <field name="endDate" value="{{query.to || ''}}"/>
+          <field name="claimStatus" value="{{query['statuses[]'] || []}}"/>
+          <field name="faultTypes" value="{{query['fault_types[]'] || []}}"/>
+          <field name="chargeMethods" value="{{query['charge_methods[]'] || []}}"/>
+          <field name="reasonCode" value="{{query.reason_code || ''}}"/>
+          <field name="requesterType" value="{{query.requester_type || ''}}"/>
+          <field name="requestSource" value="{{query.request_source || ''}}"/>
+          <field name="collectionOverdue" value="{{String(query.collection_overdue ?? '') === '1' ? '1' : ''}}"/>
+          <field name="pendingRefund" value="{{String(query.pending_refund ?? '') === '1' ? '1' : ''}}"/>
+          <field name="selectedPreset" value="{{query.preset_id || ''}}"/>
+          <field name="minAmount" value="{{query.min_amount || ''}}"/>
+          <field name="maxAmount" value="{{query.max_amount || ''}}"/>
+          <field name="currencyCode" value="{{query.currency_code || ''}}"/>
+          <field name="chargePaymentMethods" value="{{query['charge_payment_methods[]'] || []}}"/>
+        </field>
+        <field name="perPage" value="{{['10','20','50','100'].includes(String(query.per_page ?? '')) ? String(query.per_page) : '20'}}"/>
+      </field>
+    </set-state>
+    <action handler="sirsoft-ecommerce.loadVisibleFilters" id="admin_ecommerce_claim_filters">
+      <field name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>date</item>
+        <item>claimStatus</item>
+        <item>faultType</item>
+        <item>chargeMethod</item>
+        <item>reasonCode</item>
+      </field>
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="visibleFilters"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="claim_list_content" class="admin-page-content">
+      <div data-ref="page_header" class="page-header">
+        <div class="flex-center gap-3">
+          <!-- 모바일 뒤로가기 -->
+          <button aria-label="$t:common.back" data-ref="mb_001_back_button" type="button" class="btn btn-ghost btn-icon hidden">
+            <responsive on="portable" class="btn btn-ghost btn-icon flex"/>
+            <on type="click">
+              <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
+              <navigate-back/>
+            </on>
+            <icon name="arrow-left" class="text-xl"/>
+          </button>
+          <div>
+            <h1 data-ref="h_002_page_title" class="page-title">$t:sirsoft-ecommerce.admin.claim.title</h1>
+            <p data-ref="h_003_page_description" class="page-description">$t:sirsoft-ecommerce.admin.claim.description</p>
+          </div>
+        </div>
+        <div class="page-actions">
+          <button aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="h_004_refresh_button" type="button" class="btn btn-icon">
+            <on type="click">
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 유형 서브탭과 걸어둔 필터를 유지한다. -->
+              <navigate path="/admin/ecommerce/claims" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="arrows-rotate" class="text-xl"/>
+          </button>
+        </div>
+      </div>
+      <!-- 모바일 상단 액션 (검색 편집 / 프리셋 관리) -->
+      <div data-ref="mobile_top_actions" class="hidden">
+        <responsive on="portable" class="flex gap-2 mb-3"/>
+        <!-- 검색 편집 모드 토글. 켤 때는 상세 필터도 함께 펼친다 — 기본 표시 여부를 고르는 체크박스가 필터 행마다 붙어 있어, 접힌 상세 영역의 필터는 펼쳐야 기본 영역으로 끌어올릴 수 있다. -->
+        <button data-ref="mb_010_search_edit_button" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+          </on>
+          <icon name="sliders" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.claim.search.edit_search</span>
+        </button>
+        <button data-ref="mb_011_preset_manage_button" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <open-modal target="modal_claim_preset_manage"/>
+          </on>
+          <icon name="bookmark" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.claim.search.preset_manage</span>
+        </button>
+      </div>
+      <!-- 유형 서브탭. 건수 뱃지는 응답의 `counts` 를 그대로 그린다 — 유형 공통 필터(기간·검색·회원구분)만 반영된 값이라 "그 탭으로 넘어가면 몇 건이 보이는가" 를 답한다. -->
+      <tab-navigation data-type="composite" data-ref="claim_type_subtabs" activeTabId="{{query.type ?? 'exchange'}}" variant="default" class="mb-4">
+        <prop name="tabs">
+          <item id="exchange" label="$t:sirsoft-ecommerce.admin.claim.subtab.exchange" badge="{{claims?.data?.counts?.exchange ?? 0}}"/>
+          <item id="return" label="$t:sirsoft-ecommerce.admin.claim.subtab.return" badge="{{claims?.data?.counts?.return ?? 0}}"/>
+          <item id="refund" label="$t:sirsoft-ecommerce.admin.claim.subtab.refund" badge="{{claims?.data?.counts?.refund ?? 0}}"/>
+          <item id="cancel" label="$t:sirsoft-ecommerce.admin.claim.subtab.cancel" badge="{{claims?.data?.counts?.cancel ?? 0}}"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <sequence>
+            <!-- 일괄 상태 어휘는 유형이 정한다 — 앞 유형에서 고른 값을 그대로 들고 넘어가면 그 상태는 새 유형의 어휘에 없어 [일괄 적용] 이 요청 전체를 422 로 만든다. 선택도 함께 비운다 — DataGrid 의 `selectionScope: "page"` 는 지금 페이지에 없는 id 만 버리는데, `id` 는 유형마다 다른 테이블의 기본키(`order_exchanges`/`order_returns`/`order_refunds`)라 값이 겹치면 앞 유형에서 고른 선택이 살아남아 운영자가 체크한 적 없는 다른 유형의 신청서가 대상이 된다. 페이지 크기도 함께 되돌린다 — 아래 이동이 `per_page` 를 URL 에서 떨구므로 서버는 기본값 20 으로 응답하는데, 셀렉트만 앞 유형의 값을 붙들고 있으면 화면이 실제와 다른 페이지 크기를 가리킨다. -->
+            <set-state target="_local" :selectedItems="[]" bulkClaimStatus="" bulkRejectReason="" perPage="20"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 유형 전환은 유형 종속 필터의 의도적 리셋이다 — 유형마다 상태·귀책·청구 어휘가 달라 앞 유형의 `statuses[]` 가 따라오면 목록 전체가 422 가 된다(실측). 대신 서브탭 뱃지를 센 유형 공통 필터(`ClaimListRequest::countFilters()` — 기간·검색·회원구분·금액·통화)는 그대로 이어 간다: 뱃지는 "그 탭으로 가면 몇 건이 보이는가" 인데, 이것까지 버리면 「반품 4」를 눌러 17건을 보게 된다. -->
+            <navigate path="/admin/ecommerce/claims" :replace="true" transition_overlay_target="claim_datagrid__body">
+              <query type="{{$args[0]}}" from="{{query.from || null}}" to="{{query.to || null}}" search_field="{{query.search_field || null}}" search_keyword="{{query.search_keyword || null}}" requester_type="{{query.requester_type || null}}" min_amount="{{query.min_amount || null}}" max_amount="{{query.max_amount || null}}" currency_code="{{query.currency_code || null}}"/>
+            </navigate>
+          </sequence>
+        </on>
+      </tab-navigation>
+      <include src="partials/admin_ecommerce_claim_list/_partial_filter_section.g7.html"/>
+      <div data-ref="claim_data_table_section" class="mt-6">
+        <include src="partials/admin_ecommerce_claim_list/_partial_bulk_action_section.g7.html"/>
+        <include src="partials/admin_ecommerce_claim_list/_partial_claim_datagrid.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 일괄 상태 변경 확인 창 — 일괄 변경 바에서 상태를 고르고 [일괄 적용] 을 누르면 뜬다. 고른 상태가 '완료' 면 이 창 대신 완료 처리 창이 뜬다. -->
+  <modal src="partials/admin_ecommerce_claim_list/_modal_bulk_confirm.g7.html"/>
+  <!-- 완료 처리 창 — 일괄 변경 바에서 '완료' 를 골라 적용하면 뜬다. 신청서별 재고 복구와 환불신청서 접수 여부를 고르고 미리보기 요약을 확인한 뒤 실행하며, 상세 화면도 같은 파일을 연다. -->
+  <modal src="partials/admin_ecommerce_claim_list/_modal_claim_complete.g7.html"/>
+  <!-- 검색 프리셋 관리 창 — 필터 카드의 [검색 프리셋] 라벨이나 모바일 상단 [프리셋 관리] 로 연다. 이름 바꾸기·삭제·새 프리셋 저장 창이 이 창 위에 겹쳐 뜬다. -->
+  <modal src="partials/admin_ecommerce_claim_list/_modal_preset_manage.g7.html"/>
+  <!-- 새 프리셋 저장 창 — 필터 영역의 [프리셋 저장] 이나 관리 창의 [새 프리셋 추가] 로 연다. -->
+  <modal src="partials/admin_ecommerce_claim_list/_modal_preset_save.g7.html"/>
+  <!-- 프리셋 이름 바꾸기 창 — 관리 창의 연필 버튼으로 열려 그 위에 겹친다. -->
+  <modal src="partials/admin_ecommerce_claim_list/_modal_preset_edit.g7.html"/>
+  <!-- 프리셋 삭제 확인 창 — 관리 창의 휴지통 버튼으로 열린다. 지울 프리셋 이름을 문장에 넣어 한 번 더 확인받는다. -->
+  <modal src="partials/admin_ecommerce_claim_list/_modal_preset_delete_confirm.g7.html"/>
+</layout>

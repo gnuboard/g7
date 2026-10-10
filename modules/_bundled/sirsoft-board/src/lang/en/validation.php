@@ -179,11 +179,10 @@ return [
     'cooldown_required' => 'Please wait :time before posting again.',
     'cooldown_required_report' => 'Reports can be submitted at :time intervals. Please try again later.',
     'cooldown_duration' => [
-        'seconds' => ':seconds seconds',
-        'minutes' => ':minutes minutes',
-        'minutes_seconds' => ':minutes minutes :seconds seconds',
-        'hours' => ':hours hours',
-        'hours_minutes' => ':hours hours :minutes minutes',
+        // Read per unit with trans_choice (singular|plural) and joined with a space — e.g. "1 hour 30 minutes".
+        'seconds' => ':seconds second|:seconds seconds',
+        'minutes' => ':minutes minute|:minutes minutes',
+        'hours' => ':hours hour|:hours hours',
     ],
 
     // Board validation (backward compatibility)
@@ -227,6 +226,22 @@ return [
 
     // Post validation
     'post' => [
+        'search_field' => [
+            'in' => 'Invalid search target.',
+        ],
+        'bulk' => [
+            'ids' => [
+                'required' => 'Post IDs are required.',
+                'array' => 'Post IDs must be an array.',
+                'min' => 'Select at least one post.',
+                'max' => 'You can select up to :max posts at a time.',
+                'integer' => 'Post ID must be an integer.',
+                'distinct' => 'Post IDs must not be duplicated.',
+            ],
+            'reason' => [
+                'max' => 'Reason cannot exceed :max characters.',
+            ],
+        ],
         'title' => [
             'required' => 'Title is required.',
             'string' => 'Title must be a string.',
@@ -260,7 +275,7 @@ return [
             'blinded' => 'Cannot create reply on blinded post.',
             'deleted' => 'Cannot create reply on deleted post.',
             'secret' => 'Cannot create reply on a secret post you are not allowed to view.',
-            'depth_exceeded' => 'This board allows replies up to :max level(s) only.',
+            'depth_exceeded' => 'This board allows replies up to :max level only.|This board allows replies up to :max levels only.',
             'notice_not_allowed' => 'Replies cannot be created on notice posts.',
         ],
         'reply_not_allowed' => 'Reply feature is disabled for this board.',
@@ -287,7 +302,7 @@ return [
         'blocked_keyword' => 'Content contains blocked keyword: ":keyword".',
         'files' => [
             'array' => 'Attachments must be an array.',
-            'max' => 'You can upload up to :max files only.',
+            'max' => 'You can upload up to :max file only.|You can upload up to :max files only.',
             'file' => 'Invalid file.',
             'file_max' => 'File size exceeds the allowed limit.',
             'mimes' => 'File type is not allowed.',
@@ -296,6 +311,33 @@ return [
 
     // Field attributes
     'attributes' => [
+        'bulk_members' => [
+            'apply_all' => 'Target Boards Scope',
+            'board_ids' => 'Target Boards',
+            'user_uuids' => 'Members',
+            'member_type' => 'Type',
+            'mode' => 'Action',
+        ],
+        'report_my' => [
+            'search_field' => 'Search Field',
+            'target_type' => 'Target Type',
+            'status' => 'Status',
+        ],
+        'reaction_type' => [
+            'id' => 'Reaction Type',
+            'icon' => 'Icon Image',
+        ],
+        'reaction' => [
+            'ids' => 'Reaction IDs',
+            'search_field' => 'Search Field',
+            'target_type' => 'Target Type',
+            'reaction_type_id' => 'Reaction Type',
+        ],
+        'use_comment_reaction' => 'Comment Reaction Usage',
+        'scrap' => [
+            'ids' => 'Scrap IDs',
+            'search_field' => 'Search target',
+        ],
         'settings' => [
             // basic_defaults
             'basic_defaults.type' => 'Board Type',
@@ -312,6 +354,16 @@ return [
             'basic_defaults.comment_order' => 'Comment Order',
             'basic_defaults.show_view_count' => 'Show View Count',
             'basic_defaults.use_report' => 'Use Report',
+            'basic_defaults.use_reaction' => 'Use Reaction',
+            'basic_defaults.use_comment_reaction' => 'Comment Reaction Usage',
+            'basic_defaults.reaction_types' => 'Reaction Types',
+            'basic_defaults.reaction_types.*.code' => 'Reaction Type Code',
+            'basic_defaults.reaction_types.*.name' => 'Reaction Type Name',
+            'basic_defaults.reaction_types.*.name.ko' => 'Reaction Type Name (Korean)',
+            'basic_defaults.reaction_types.*.icon_attachment_id' => 'Reaction Type Icon',
+            'basic_defaults.reaction_types.*.display_order' => 'Reaction Type Display Order',
+            'basic_defaults.reaction_types.*.is_active' => 'Reaction Type Active',
+            'basic_defaults.active_reaction_types' => 'Active Reaction Types',
             'basic_defaults.min_title_length' => 'Min Title Length',
             'basic_defaults.max_title_length' => 'Max Title Length',
             'basic_defaults.min_content_length' => 'Min Content Length',
@@ -341,6 +393,39 @@ return [
             'spam_security.comment_cooldown_seconds' => 'Comment Cooldown (Seconds)',
             'spam_security.report_cooldown_seconds' => 'Report Cooldown (Seconds)',
             'spam_security.view_count_cache_ttl' => 'View Count Cache TTL (Seconds)',
+            // Groups and remaining fields — screen names so fallback messages never show field keys
+            '_tab' => 'Settings Tab',
+            'basic_defaults' => 'Board Settings',
+            'basic_defaults.use_scrap' => 'Enable Scrap',
+            'basic_defaults.blocked_keywords' => 'Blocked Keywords',
+            'basic_defaults.reaction_types.*.id' => 'Reaction Type',
+            'report_policy' => 'Report Policy',
+            'report_policy.notify_admin_on_report' => 'Report Received Admin Notification',
+            'report_policy.notify_admin_on_report_scope' => 'Notification Scope',
+            'report_policy.notify_admin_on_report_channels' => 'Admin Notification Channels',
+            'report_policy.notify_author_on_report_action' => 'Report Action Notification',
+            'report_policy.notify_author_on_report_action_channels' => 'Author Notification Channels',
+            'report_permissions' => 'Report Management Permissions',
+            'spam_security' => 'Security Settings',
+            'notifications' => 'Notification Settings',
+            'notifications.channels' => 'Notification Channels',
+            'notifications.channels.*.id' => 'Notification Channel',
+            'notifications.channels.*.is_active' => 'Notification Channel Enabled',
+            'notifications.channels.*.sort_order' => 'Notification Channel Order',
+            'display' => 'Display Settings',
+            'display.date_display_format' => 'Date Display Format',
+            'seo' => 'SEO Settings',
+            'seo.meta_boards_title' => 'Board List Page Meta Title',
+            'seo.meta_boards_description' => 'Board List Page Meta Description',
+            'seo.meta_board_title' => 'Board Posts Page Meta Title',
+            'seo.meta_board_description' => 'Board Posts Page Meta Description',
+            'seo.meta_post_title' => 'Post Detail Page Meta Title',
+            'seo.meta_post_description' => 'Post Detail Page Meta Description',
+            'seo.seo_boards' => 'Board List Page SEO',
+            'seo.seo_board' => 'Board Posts Page SEO',
+            'seo.seo_post_detail' => 'Post Detail Page SEO',
+            'attachment_settings.purge_enabled' => 'Permanent Cleanup Of Deleted Attachments',
+            'attachment_settings.purge_retention_days' => 'Deleted Attachment Retention Period',
         ],
         'post' => [
             'title' => 'Title',
@@ -381,8 +466,14 @@ return [
             'reason' => 'Restore Reason',
         ],
         'board' => [
+            'name' => 'Board Name',
+            'description' => 'Board Description',
             'add_to_menu' => 'Show in admin menu',
             'blocked_keywords' => 'Blocked Keywords',
+        ],
+        // Board type — multilingual name field (used as the field name in the core required-locale message)
+        'board_type' => [
+            'name' => 'Board Type Name',
         ],
         // Bulk apply of board settings
         'bulk_apply' => [
@@ -458,8 +549,8 @@ return [
         'depth' => [
             'integer' => 'Comment depth must be an integer.',
             'min' => 'Comment depth must be at least :min.',
-            'max' => 'Replies can only be nested up to :max levels.',
-            'exceeded' => 'This board allows replies up to :max level(s) only.',
+            'max' => 'Replies can only be nested up to :max level.|Replies can only be nested up to :max levels.',
+            'exceeded' => 'This board allows replies up to :max level only.|This board allows replies up to :max levels only.',
         ],
         'user_id' => [
             'exists' => 'User does not exist.',
@@ -472,10 +563,10 @@ return [
             'required' => 'Please enter a password.',
             'min' => 'Password must be at least :min characters.',
         ],
-        'ip_address' => [
-            'required' => 'IP address is required.',
-        ],
         'blocked_keyword' => 'Content contains blocked keyword: ":keyword".',
+        'status' => [
+            'in' => 'Invalid comment status.',
+        ],
     ],
 
     // Attachment validation
@@ -521,7 +612,7 @@ return [
     ],
 
     // Custom Rule messages
-    'category_in_use' => 'The ":category" category is currently in use by :count post(s).',
+    'category_in_use' => 'The ":category" category is currently in use by :count post.|The ":category" category is currently in use by :count posts.',
     'board_type_invalid' => 'Invalid board type. Available types: :types',
 
     // Board type management validation
@@ -563,6 +654,7 @@ return [
             'read' => 'View Posts',
             'write' => 'Create Posts',
             'read-secret' => 'View Secret Posts',
+            'write-notice' => 'Create Notice Posts',
         ],
         'comments' => [
             'read' => 'View Comments',
@@ -582,15 +674,37 @@ return [
     'report_permissions' => [
         'view_roles' => [
             'required_with' => 'Please select at least one role for report view permission.',
-            'min' => 'Please select at least :min role(s) for report view permission.',
+            'min' => 'Please select at least :min role for report view permission.',
         ],
         'manage_roles' => [
             'required_with' => 'Please select at least one role for report manage permission.',
-            'min' => 'Please select at least :min role(s) for report manage permission.',
+            'min' => 'Please select at least :min role for report manage permission.',
         ],
     ],
 
     // Report validation messages
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => 'The reaction type is required.',
+            'integer' => 'The reaction type must be an integer.',
+            'exists' => 'The reaction type does not exist.',
+        ],
+        'ids' => [
+            'required' => 'Reaction IDs are required.',
+            'array' => 'Reaction IDs must be an array.',
+            'min' => 'Please select at least one reaction.',
+            'max' => 'You can select up to :max at a time.',
+            'integer' => 'Reaction IDs must be integers.',
+            'distinct' => 'Reaction IDs must be unique.',
+            'exists' => 'The reaction does not exist.',
+        ],
+        'search_field' => [
+            'in' => 'Invalid search field.',
+        ],
+        'target_type' => [
+            'in' => 'Invalid target type.',
+        ],
+    ],
     'report' => [
         'invalid_status_transition' => 'The report cannot be changed to that status from its current status.',
         'status' => [
@@ -616,7 +730,138 @@ return [
             'min' => 'Report detail must be at least :min characters.',
             'max' => 'Report detail cannot exceed :max characters.',
         ],
-        'daily_limit_exceeded' => 'You have exceeded the daily report limit (:limit reports).',
-        'rejection_limit_exceeded' => 'Reporting is restricted due to :count rejections within the last :days days. Please try again later.',
+        'daily_limit_exceeded' => 'You have exceeded the daily report limit (:limit report).|You have exceeded the daily report limit (:limit reports).',
+        'rejection_limit_exceeded' => 'Reporting is restricted due to :count rejection in the last :days-day period. Please try again later.|Reporting is restricted due to :count rejections in the last :days-day period. Please try again later.',
+    ],
+
+    // Scrap validation messages
+    'scrap' => [
+        'ids' => [
+            'required' => 'Scrap IDs are required.',
+            'array' => 'Scrap IDs must be an array.',
+            'min' => 'Select at least one scrap.',
+            'max' => 'You can select up to :max scraps at a time.',
+            'integer' => 'Scrap ID must be an integer.',
+            'distinct' => 'Scrap IDs must not be duplicated.',
+            'exists' => 'The scrap does not exist.',
+        ],
+        'search_field' => [
+            'in' => 'Invalid search target.',
+        ],
+    ],
+
+    // Reaction type validation messages
+    'reaction_type' => [
+        'code' => [
+            'regex' => 'The code must start with a lowercase letter and contain only lowercase letters, numbers, and underscores (2-50 characters).',
+            'distinct' => 'Reaction type codes must be unique.',
+            'unique' => 'This code is already in use.',
+        ],
+        'name' => [
+            'ko' => [
+                'required' => 'Please enter the name in the default language.',
+            ],
+        ],
+        'icon_attachment_id' => [
+            'exists' => 'Invalid icon image.',
+        ],
+        'icon' => [
+            'required' => 'Please select an icon image.',
+            'image' => 'The icon must be an image file.',
+            'mimes' => 'The icon must be a JPG, PNG, GIF, or WEBP file.',
+            'max' => 'The icon image must be 1MB or smaller.',
+        ],
+    ],
+
+    // My reports (mypage) validation messages
+    'report_my' => [
+        'search_field' => [
+            'in' => 'Invalid search field.',
+        ],
+        'target_type' => [
+            'in' => 'Invalid target type.',
+        ],
+        'status' => [
+            'in' => 'Invalid status.',
+        ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'enabled' => 'Automatic Privacy Retention Processing',
+        'ip_retention_days' => 'Author IP Retention Period',
+        'guest_retention_days' => 'Guest Author Information Retention Period',
+        'guest_mode' => 'Guest Post Processing Mode',
+    ],
+
+    // Shared fallback messages for board requests (Concerns\ProvidesFallbackRuleMessages) — used for rules
+    // a request does not word itself
+    'fallback' => [
+        'in' => 'The selected :attribute is invalid.',
+        'not_in' => 'The selected :attribute is not allowed.',
+        'enum' => 'The selected :attribute is invalid.',
+        'exists' => 'The selected :attribute does not exist.',
+        'unique' => 'The :attribute has already been taken.',
+        'required_if' => 'The :attribute field is required when :other is :value.',
+        'required_with' => 'The :attribute field is required when :values is present.',
+        'required_without' => 'The :attribute field is required when :values is not present.',
+        'same' => 'The :attribute field must match :other.',
+        'different' => 'The :attribute field and :other must be different.',
+    ],
+
+    // Shared field names for board requests (Concerns\ProvidesFallbackRuleMessages) — used for fields the
+    // request does not name in attributes(). Array items (key.*) inherit the parent field name.
+    'fallback_attributes' => [
+        'ids' => 'Selected Items',
+        'reason' => 'Reason',
+        'limit' => 'Number Of Items',
+        'period' => 'Period',
+        'type' => 'Board Type',
+        'name' => 'Name',
+        'slug' => 'Slug',
+        'is_active' => 'Active',
+        'search' => 'Search Keyword',
+        'search_field' => 'Search Field',
+        'sort' => 'Sort Order',
+        'sort_by' => 'Sort By',
+        'sort_order' => 'Sort Direction',
+        'filters' => 'Search Filters',
+        'filters.*.field' => 'Search Field',
+        'filters.*.value' => 'Search Keyword',
+        'filters.*.operator' => 'Search Operator',
+        'board_id' => 'Board',
+        'board_slug' => 'Board',
+        'user_uuid' => 'Member',
+        'post_id' => 'Post',
+        'parent_id' => 'Parent Post',
+        'reaction_type_id' => 'Reaction Type',
+        'target_type' => 'Target Type',
+        'target_status' => 'New Status',
+        'reacted_at_from' => 'Reacted From',
+        'reacted_at_to' => 'Reacted To',
+        'scrapped_at_from' => 'Scrapped From',
+        'scrapped_at_to' => 'Scrapped To',
+        'reported_at_from' => 'Reported From',
+        'reported_at_to' => 'Reported To',
+        'verification_token' => 'Verification Token',
+        'force_delete' => 'Permanent Delete',
+        'collection' => 'Attachment Collection',
+        'temp_key' => 'Temporary Upload Key',
+        'order' => 'Attachment Order',
+        'order.*.id' => 'Attachment',
+        'order.*.order' => 'Attachment Position',
+        'categories' => 'Categories',
+        'board_manager_ids' => 'Board Manager',
+        'board_step_ids' => 'Board Staff',
+        'permissions' => 'Permissions',
+        'permissions.*.roles' => 'Permission Roles',
+        'reply_delete_policy' => 'Reply Delete Policy',
+        'attachment_ids' => 'Attachments',
+        'password' => 'Password',
+    ],
+
+    // Identity policy tab validation messages
+    'identity_policy' => [
+        'target_not_owned' => 'Board identity policies can only target board points. Hook and custom scopes must start with "sirsoft-board.", and the route scope must start with "api.modules.sirsoft-board.".',
+        'nothing_to_update' => 'There is nothing to update.',
     ],
 ];

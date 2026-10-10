@@ -1,0 +1,41 @@
+feature: 관리자 알림 정의 API — 조회·토글·되돌리기와 권한 경계 (코어)
+
+description: |
+  관리자 알림 설정 화면과 확장 설정 화면이 함께 쓰는 `/api/admin/notification-definitions`
+  네 갈래(목록·단건·활성 토글·되돌리기)의 응답 형태와 권한 경계를 고정한다.
+
+  목록은 `template_channel` 로 템플릿을 좁히고(`list-child-collection-pruning` 이 그 프루닝
+  계약을 소유한다), 여기서는 그 계약 **위에서** 화면이 기대하는 것을 본다 — 채널을 지정했을 때
+  템플릿이 없는 정의가 `null` 이 아니라 빈 배열로 나가는가, 페이지네이션·abilities 가 함께
+  실리는가, 단건은 전 채널 템플릿을 그대로 주는가.
+
+  되돌리기는 정의와 소속 템플릿을 **둘 다** 기본 상태로 돌려야 한다. 템플릿만 돌리면 화면의
+  「되돌리기」 버튼이 사라지지 않고, 정의만 돌리면 사용자가 고친 제목·본문이 남는다.
+
+  권한 경계를 축이 아니라 효과로 두는 이유: 읽기 권한과 쓰기 권한은 서로 다른 갈래를 막는다
+  (읽기 없으면 목록이, 쓰기 없으면 되돌리기가). 축으로 만들면 성립하지 않는 칸이 대부분이 된다.
+
+axes:
+  endpoint: [list, detail, toggle, reset]
+
+effects:
+  # 목록 — 화면이 그리는 데 필요한 것이 다 실리는가
+  - definition_list_carries_pagination_and_abilities
+  - definition_list_serializes_empty_templates_as_array
+  # 단건 — 목록이 좁힌 것의 대체 경로
+  - definition_detail_loads_templates_relation
+  # 토글·되돌리기
+  - definition_toggle_flips_active_state
+  - definition_reset_restores_definition_and_templates
+  # 권한 경계 — 읽기·쓰기가 각각 다른 갈래를 막는다
+  - definition_list_requires_settings_read_permission
+  - definition_reset_requires_settings_update_permission
+
+test_files:
+  - tests/Feature/Api/Admin/NotificationDefinitionControllerTest.php
+
+validation:
+  manual: |
+    /admin/settings?tab=notification_definitions 에서 목록이 페이지네이션과 함께 그려지고,
+    활성 토글과 「되돌리기」가 동작한 뒤 되돌리기 버튼이 사라지는지 브라우저 실측.
+    설정 쓰기 권한이 없는 계정으로는 되돌리기가 403 으로 막히는지 함께 확인한다.

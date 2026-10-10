@@ -1,0 +1,30 @@
+feature: 옵션 생성의 필수 언어 = 사이트 기본 언어
+
+description: |
+  상품 폼 옵션 처리기(조합 생성·이름 채움)가 어느 언어 칸을 필수로 보고 생성된 옵션 이름을 어느 칸에 넣을지.
+
+  1차(S5-D38, 2026-10-08): 화면·서버가 요청(화면) 언어를 필수로 보던 때라 옵션 처리기만 사이트 기본 언어를
+  써서 영어 관리자가 EN 칸만 채우면 [옵션 생성]이 막혔다 → 화면 언어로 맞췄다.
+  2차(제품 결정 2026-10-08, 후속 B 세션 B3): 그러면 영어 관리자가 만든 상품을 한국어 관리자가 저장하지 못했다
+  (서버 「ko 언어의 값은 필수」, 수정 화면에 옵션 그룹 이름 칸 없음). 필수 언어를 사이트 기본 언어 하나로
+  통일 — 서버 규칙(LocaleRequiredTranslatable → app.site_locale)·관리자 다국어 입력의 * 표시·이 처리기 모두.
+  사이트 기본 언어는 프론트 `appConfig.siteLocale` 로 온다.
+  3차(7.1.0 출시 점검 D3-1): 지원 언어를 코어에 없는 `G7Core.config('app.supported_locales')` 로 읽어 늘 ko·en 이었다 —
+  사이트 기본 언어가 ja 등 목록 밖이면 ko 로 떨어져 JA 칸만 채운 옵션이 생성되지 않았다. 코어 공개 API
+  `G7Core.locale.supported()` 로 바꿨다.
+
+axes:
+  case: [c01, c02, c03, c04]
+  # c01: 영어로 보는 관리자가 사이트 기본 언어(KO) 칸을 채움 → 생성
+  # c02: 영어로 보는 관리자가 EN 칸만 채움 → 막음(서버가 KO 를 필수로 봄)
+  # c03: 사이트 기본 언어가 EN → 한국어로 보는 관리자도 EN 칸으로 생성
+  # c04: 사이트 기본 언어가 JA(지원 언어 셋째) → JA 칸으로 생성 (지원 언어는 locale.supported())
+
+effects:
+  - option_generate_follows_site_locale
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/optionHandlersAdminLocale.test.ts
+
+validation:
+  browser_check: 사이트 기본 언어 한국어 · 관리자 언어 English 로 상품 등록 → 옵션명·옵션값 KO 칸(*)을 채워 [Generate Options] → 옵션표 생성, EN 칸만 채우면 생성되지 않음

@@ -1,0 +1,43 @@
+# 시나리오 매니페스트 — 회원 검색 응답이 자기 키워드를 싣는다 (T2-D1 · #599 3차 실측)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_user_search_keyword_echo
+
+description: >-
+  관리자 회원 검색(`GET /api/admin/users/search`)의 응답은 **그 목록을 만든 키워드**를
+  `meta.keyword` 로 함께 싣는다. 화면의 자동완성이 「지금 그리는 목록이 지금 입력값의 것인가」를
+  판정하는 유일한 근거다.
+
+  화면이 스스로 판정할 방법은 없다. 자동완성은 글자마다 요청을 내고 응답의 도착 순서는 보장되지
+  않는데, `<success>` 안에서 읽는 `$event.target.value` 는 **응답이 도착한 순간의 입력칸**이다.
+  그래서 한 글자가 부른 가장 큰 응답(전체 회원)이 가장 늦게 와서 현재 키워드로 도장되고,
+  키워드 일치 가드가 그대로 통과해 엉뚱한 목록이 그려졌다 — 2026-09-22 실측에서 `MEAS599T-S2`
+  를 친 관리자 마일리지 수동 지급 모달에 **전체 회원 83행**이 떴고(1행 `관리자`), 그 목록에서
+  고르면 **엉뚱한 회원에게 돈이 지급된다.** 쿠폰 직접발급 모달도 같은 코드였다(전수 검사로 발견).
+
+  uuid·id 로 한 건을 집은 조회는 키워드가 없어 `null` 이다 — 빈 문자열로 내려보내면
+  「검색어가 비었을 때」와 구분되지 않는다.
+
+test_files:
+  - tests/Feature/Api/Admin/UserSearchEchoesKeywordTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  lookup:
+    - narrow_keyword   # 한 건만 맞는 키워드
+    - broad_keyword    # 여러 건이 맞는 한 글자 — 늦게 도착하는 큰 응답의 대역
+    - by_uuid          # 키워드 없이 uuid 로 한 건
+    - literal_wildcards  # 키워드의 `%`·`_` 를 글자 그대로 찾는다(#736 영역 C 실측)
+
+exclusions:
+  - { lookup: by_uuid, reason: "제외 없음 — 축 값마다 테스트가 하나씩 있고 조합이 필요한 축이 없다(단일 축)" }
+
+effects:
+  - user_search_response_carries_its_own_keyword   # 좁은 검색도 자기 키워드를 싣는다
+  - user_search_broad_response_carries_its_own_keyword  # 넓은 검색은 자기 한 글자를 싣는다
+  - user_search_uuid_lookup_carries_a_null_keyword # uuid 조회는 null
+  - user_search_keyword_wildcards_are_literal # `%`·`_` 는 와일드카드가 아니다
+
+validation:
+  audit_rule: test-scenario-coverage

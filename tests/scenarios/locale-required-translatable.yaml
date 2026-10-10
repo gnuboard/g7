@@ -1,0 +1,25 @@
+feature: 다국어 필수 검증 규칙 — 필수 언어 = 사이트 기본 언어
+
+description: |
+  `LocaleRequiredTranslatable` 은 요청 언어(`app()->getLocale()`)가 아니라 사이트 기본 언어(`app.site_locale`)의 값만
+  필수로 본다. `app.locale` 은 요청마다 SetLocale 미들웨어가 보는 사람의 언어로 덮으므로, 부팅 때 환경설정
+  「기본 언어」(general.language)로 채운 `app.site_locale` 을 따로 두고 프론트 appConfig(`siteLocale`)로도 내보낸다.
+
+  수정 이력: 이커머스 전수 실측 S5 「영어 관리자가 만든 상품을 한국어 관리자가 저장할 수 없음」 → 제품 결정 (a)
+  (2026-10-08), 후속 B 세션 B3.
+
+axes:
+  case: [site_locale_value, request_locale_differs, value_shape, appconfig]
+
+effects:
+  - required_locale_value_must_be_present
+  - required_locale_is_site_locale_not_request_locale
+  - translatable_value_shape_validated
+  - site_locale_kept_and_exposed_to_frontend
+
+test_files:
+  - tests/Feature/Rules/LocaleRequiredTranslatableTest.php
+  - tests/Unit/Services/SettingsServiceSiteLocaleTest.php
+
+validation:
+  browser_check: 관리자 언어 English 로 상품을 수정해 KO 상품명·옵션 이름을 채워 저장 → 200, EN 칸만 채우면 422 「ko …필수」

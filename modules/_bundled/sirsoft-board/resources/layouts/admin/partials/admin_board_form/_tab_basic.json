@@ -1,681 +1,971 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Board Form - Basic Tab Content",
-    "_e2e_allow": "e2e:allow 반응 설정 블록 제거 — 기능 자체가 사라져 검증 대상이 없다. 남은 필드의 렌더·바인딩은 변경 없음."
-  },
-  "id": "section_basic_card",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
+    "meta": {
+        "is_partial": true,
+        "description": "Board Form - Basic Tab Content",
+        "_e2e_allow": "e2e:allow 반응 유형 체크박스 시각 스타일(배경 박스·들여쓰기·아이콘·정렬)만 변경, 클릭 동작(setState/hasChanges)은 기존과 동일. 렌더 분기·바인딩은 admin-board-reaction-settings.test.tsx(Vitest 레이아웃 테스트)로 커버, MCP 실브라우저로 시각 회귀 확인."
+    },
+    "comment": "게시판 폼 「기본」 탭 — 이름·주소(slug)·유형·분류처럼 게시판의 정체를 정하는 값들과, 켜고 끄는 성격의 스위치(활성·비밀글·조회수 표시·신고 사용·관리자 메뉴 등재)를 담는다. 읽기 전용일 때는 카드 전체가 잠긴 모습으로 바뀐다",
+    "id": "section_basic_card",
+    "type": "basic",
+    "name": "Div",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "id": "section_basic_settings",
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.form.tabs.basic"
+            "id": "section_basic_settings",
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-board.admin.form.tabs.basic"
         },
         {
-          "id": "section_basic_fields",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-        {
-          "id": "field_is_active",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.is_active"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.descriptions.is_active"
-                }
-              ]
+            "id": "section_basic_fields",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
             },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "is_active",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
-        },
-        {
-          "id": "field_slug",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "id": "field_slug_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "required": true,
-                "className": "block text-heading mb-1"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.slug"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-required"
-                  },
-                  "text": "*"
-                }
-              ]
-            },
-            {
-              "id": "field_slug_input",
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "name": "slug",
-                "type": "text",
-                "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
-                "required": true,
-                "disabled": "{{!!route?.id || _computed.isReadOnly}}",
-                "className": "font-mono"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.slug}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.slug?.[0] ?? ''}}"
-            },
-            {
-              "id": "field_slug_description",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.descriptions.slug"
-            },
-            {
-              "id": "field_menu_guide",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-start gap-2 mb-3"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "circle-info",
-                        "className": "text-secondary text-base mt-0.5 flex-shrink-0"
-                      }
+                    "id": "field_is_active",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
                     },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-body"
-                      },
-                      "text": "$t:sirsoft-board.admin.form.menu.manual_guide"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "text-secondary space-y-2 text-xs"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex items-baseline gap-2"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "font-medium text-gray-700 dark:text-gray-300"
-                          },
-                          "text": "•"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2 flex-1"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "children": [
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
                                 {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "font-medium"
-                                  },
-                                  "text": "$t:sirsoft-board.admin.form.menu.manual_admin_label:"
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.is_active"
                                 },
                                 {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono"
-                                  },
-                                  "text": "/admin/board/{{_local.form?.slug ?? 'notice'}}"
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.descriptions.is_active"
                                 }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex items-baseline gap-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "font-medium text-gray-700 dark:text-gray-300"
-                          },
-                          "text": "•"
+                            ]
                         },
                         {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "font-medium"
-                              },
-                              "text": "$t:sirsoft-board.admin.form.menu.manual_user_label:"
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "is_active",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "field_slug",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "id": "field_slug_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "required": true,
+                                "className": "block text-heading mb-1"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono"
-                              },
-                              "text": "/board/{{_local.form?.slug ?? 'notice'}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-3 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-1"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-heading"
-                          },
-                          "text": "$t:sirsoft-board.admin.form.menu.show_in_admin_menu"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.slug"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-required"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
                         },
                         {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-secondary text-xs mt-0.5"
-                          },
-                          "text": "$t:sirsoft-board.admin.form.menu.show_in_admin_menu_desc"
+                            "id": "field_slug_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "name": "slug",
+                                "type": "text",
+                                "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
+                                "required": true,
+                                "disabled": "{{!!route?.slug || _computed.isReadOnly}}",
+                                "className": "{{!!route?.slug ? 'input-readonly font-mono border border-gray-200 dark:border-gray-600' : 'font-mono'}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.slug}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.slug?.[0] ?? ''}}"
+                        },
+                        {
+                            "id": "field_slug_description",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.descriptions.slug"
+                        },
+                        {
+                            "id": "field_menu_guide",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-2 mb-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-secondary text-base mt-0.5 flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.menu.manual_guide"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-secondary space-y-2 text-xs"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-baseline gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "•"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2 flex-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "font-medium"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.form.menu.manual_admin_label:"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono"
+                                                                    },
+                                                                    "text": "/admin/board/{{_local.form?.slug ?? 'notice'}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-baseline gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "•"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.form.menu.manual_user_label:"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono"
+                                                            },
+                                                            "text": "/board/{{_local.form?.slug ?? 'notice'}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-3 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-heading"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.form.menu.show_in_admin_menu"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-secondary text-xs mt-0.5"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.form.menu.show_in_admin_menu_desc"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "add_to_menu",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "flex-shrink-0"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
+                    ]
+                },
+                {
+                    "id": "field_name",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-2"
                     },
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "name": "add_to_menu",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": "flex-shrink-0"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "field_name",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "id": "field_name_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "required": true,
-                "className": "block text-heading mb-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.name"
+                    "children": [
+                        {
+                            "id": "field_name_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "required": true,
+                                "className": "block text-heading mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-required"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_name_input",
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "props": {
+                                "name": "name",
+                                "layout": "tabs",
+                                "placeholder": "$t:sirsoft-board.admin.form.placeholders.name",
+                                "maxLength": 100,
+                                "required": true,
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.name}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.name?.[0] ?? ''}}"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-required"
-                  },
-                  "text": "*"
-                }
-              ]
-            },
-            {
-              "id": "field_name_input",
-              "type": "composite",
-              "name": "MultilingualInput",
-              "props": {
-                "name": "name",
-                "layout": "tabs",
-                "placeholder": "$t:sirsoft-board.admin.form.placeholders.name",
-                "maxLength": 100,
-                "required": true,
-                "disabled": "{{_computed.isReadOnly}}"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.name}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.name?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "field_description",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "id": "field_description_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "block text-heading mb-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.description"
-                }
-              ]
-            },
-            {
-              "id": "field_description_input",
-              "type": "composite",
-              "name": "MultilingualInput",
-              "props": {
-                "name": "description",
-                "layout": "tabs",
-                "inputType": "textarea",
-                "placeholder": "$t:sirsoft-board.admin.form.placeholders.description",
-                "rows": 3,
-                "disabled": "{{_computed.isReadOnly}}"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.description}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.description?.[0] ?? ''}}"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.descriptions.description"
-            }
-          ]
-        },
-        {
-          "id": "field_type",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "id": "field_type_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "required": true,
-                "className": "block text-heading mb-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.type"
-                }
-              ]
-            },
-            {
-              "id": "field_type_select",
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "type",
-                "options": "{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? $locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
-                "placeholder": "$t:sirsoft-board.admin.form.placeholders.select_type",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "w-full"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.descriptions.type"
-            }
-          ]
-        },
-        {
-          "id": "field_categories",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "id": "field_categories_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "text-heading"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.categories"
-                }
-              ]
-            },
-            {
-              "id": "field_categories_description",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary mb-2"
-              },
-              "text": "$t:sirsoft-board.admin.form.descriptions.categories"
-            },
-            {
-              "id": "field_categories_input",
-              "type": "composite",
-              "name": "TagInput",
-              "props": {
-                "name": "categories",
-                "options": "{{_local.form?.category_options ?? []}}",
-                "creatable": true,
-                "disabled": "{{_computed.isReadOnly}}"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.categories}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.categories?.[0] ?? ''}}"
-            },
-            {
-              "id": "field_categories_notice",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-xs text-amber-600 dark:text-amber-400 mt-2"
-              },
-              "text": "$t:sirsoft-board.admin.form.descriptions.categories_notice"
-            }
-          ]
-        },
-        {
-          "id": "field_secret_mode",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between"
-          },
-          "children": [
-            {
-              "id": "field_secret_mode_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "text-heading"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.secret_mode"
-                }
-              ]
-            },
-            {
-              "id": "field_secret_mode_select",
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "secret_mode",
-                "disabled": "{{_computed.isReadOnly}}",
-                "options": [
-                  {
-                    "value": "disabled",
-                    "label": "$t:sirsoft-board.admin.form.options.secret_mode.disabled"
-                  },
-                  {
-                    "value": "enabled",
-                    "label": "$t:sirsoft-board.admin.form.options.secret_mode.enabled"
-                  },
-                  {
-                    "value": "always",
-                    "label": "$t:sirsoft-board.admin.form.options.secret_mode.always"
-                  }
-                ],
-                "className": "w-48"
-              }
-            }
-          ]
-        },
-        {
-          "id": "field_show_view_count",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.show_view_count"
+                    "id": "field_description",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "id": "field_description_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-heading mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.description"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_description_input",
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "props": {
+                                "name": "description",
+                                "layout": "tabs",
+                                "inputType": "textarea",
+                                "placeholder": "$t:sirsoft-board.admin.form.placeholders.description",
+                                "rows": 3,
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.description}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.description?.[0] ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.descriptions.description"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.descriptions.show_view_count"
-                }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "show_view_count",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
-        },
-        {
-          "id": "field_use_report",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start justify-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-heading"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.use_report"
+                    "id": "field_type",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "id": "field_type_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "required": true,
+                                "className": "block text-heading mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.type"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_type_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "type",
+                                "options": "{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
+                                "placeholder": "$t:sirsoft-board.admin.form.placeholders.select_type",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "w-full"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.descriptions.type"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.descriptions.use_report"
+                    "id": "field_categories",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "id": "field_categories_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.categories"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_categories_description",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary mb-2"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.descriptions.categories"
+                        },
+                        {
+                            "id": "field_categories_input",
+                            "type": "composite",
+                            "name": "TagInput",
+                            "props": {
+                                "name": "categories",
+                                "options": "{{_local.form?.category_options ?? []}}",
+                                "creatable": true,
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.categories}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.categories?.[0] ?? ''}}"
+                        },
+                        {
+                            "id": "field_categories_notice",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-amber-600 dark:text-amber-400 mt-2"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.descriptions.categories_notice"
+                        }
+                    ]
+                },
+                {
+                    "id": "field_secret_mode",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between"
+                    },
+                    "children": [
+                        {
+                            "id": "field_secret_mode_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.secret_mode"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_secret_mode_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "secret_mode",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "w-48",
+                                "options": [
+                                    {
+                                        "value": "disabled",
+                                        "label": "$t:sirsoft-board.admin.form.options.secret_mode.disabled"
+                                    },
+                                    {
+                                        "value": "enabled",
+                                        "label": "$t:sirsoft-board.admin.form.options.secret_mode.enabled"
+                                    },
+                                    {
+                                        "value": "always",
+                                        "label": "$t:sirsoft-board.admin.form.options.secret_mode.always"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "field_show_view_count",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.show_view_count"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.descriptions.show_view_count"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "show_view_count",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "field_use_report",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.use_report"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.descriptions.use_report"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "use_report",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "field_use_scrap",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.use_scrap"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.descriptions.use_scrap"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "use_scrap",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "flex-shrink-0 ml-4"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "field_use_reaction",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.fields.use_reaction"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.descriptions.use_reaction"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "use_reaction",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "flex-shrink-0 ml-4"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. DB 등록 유형 전체(reactionTypes)를 순회해 체크박스로 active_reaction_types(code 배열) 를 토글. 게시판 환경설정 화면과 동일하게 배경 박스 + 좌측 들여쓰기로 시각적 구분 (검수 피드백).",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.use_reaction === true}}",
+                            "props": {
+                                "className": "ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between gap-2 mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.fields.active_reaction_types"
+                                        },
+                                        {
+                                            "comment": "유형 자체(이름·아이콘·순서)는 게시판마다 다르지 않고 사이트 공통이라 환경설정에서\n              고친다. 여기서는 그중 어느 것을 쓸지만 고르므로, 만들거나 고치러 갈 길을 열어 둔다\n              (형제 화면 「게시판 유형」의 관리 버튼과 같은 모양). 옮겨 간 환경설정에서 유형을 고치려면 게시판\n              환경설정 수정 권한이 필요하다(form-data _meta.can_manage_reaction_types) — 없으면 잠그고 이유를 툴팁으로 알린다.",
+                                            "id": "board_form_btn_manage_reaction_types",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 목록 왕복이 아니라 **다른 화면**(환경설정)으로 건너가는 이동이다. 게시판 목록의 쪽·검색 조건을 그쪽 주소에 실어 보낼 이유가 없고, 실으면 환경설정이 알지 못하는 조건이 주소에 남는다. 되돌아오는 것은 브라우저 뒤로가기가 맡는다.",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/boards/settings",
+                                                        "query": {
+                                                            "tab": "basic_defaults"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "data-testid": "board-form-manage-reaction-types",
+                                                "type": "button",
+                                                "className": "inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "title": "{{_local.form?._meta?.can_manage_reaction_types === true ? '' : '$t:sirsoft-board.admin.form.fields.manage_reaction_types_no_permission'}}",
+                                                "disabled": "{{_local.form?._meta?.can_manage_reaction_types !== true}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "gear",
+                                                        "size": "sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-board.admin.form.fields.manage_reaction_types"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-col gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{reactionTypes?.data?.reaction_types ?? []}}",
+                                                "item_var": "reactionType",
+                                                "index_var": "reactionIdx"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "flex-center gap-2 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "사용 반응 유형 토글 — 코드 배열에 넣고 빼며 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다)",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "form.active_reaction_types": "{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.active_reaction_types ?? []), reactionType.code]}}",
+                                                                        "hasChanges": true
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "className": "checkbox-aligned",
+                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "checked": "{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code)}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Img",
+                                                            "if": "{{!!reactionType.icon_url}}",
+                                                            "props": {
+                                                                "src": "{{reactionType.icon_url}}",
+                                                                "alt": "",
+                                                                "className": "w-5 h-5 object-contain"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!reactionType.icon_url}}",
+                                                            "props": {
+                                                                "name": "{{reactionType.icon_name ?? 'fa-thumbs-up'}}",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{reactionType.name ?? reactionType.code}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "댓글 반응 — 글 반응의 하위 토글이다. 글 반응을 끄면 댓글 반응만 남을 수 없으므로\n          상위가 꺼져 있으면 이 줄도 잠근다(백엔드도 같은 판정을 한다).",
+                            "id": "field_use_comment_reaction",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start justify-between mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.fields.use_comment_reaction"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.form.descriptions.use_comment_reaction"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "data-testid": "board-form-use-comment-reaction",
+                                        "className": "flex-shrink-0 ml-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "use_comment_reaction",
+                                                "disabled": "{{_computed.isReadOnly || _local.form?.use_reaction !== true}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "use_report",
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": "flex-shrink-0 ml-4"
-              }
-            }
-          ]
+            ]
         }
-          ]
-        }
-      ]
+    ]
 }

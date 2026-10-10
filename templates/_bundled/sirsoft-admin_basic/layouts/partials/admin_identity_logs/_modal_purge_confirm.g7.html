@@ -1,0 +1,41 @@
+<!-- 오래된 인증 기록을 한꺼번에 지우기 전 되묻는 창. 여는 버튼 자체가 권한이 있을 때만 보이므로
+  이 창에 닿는 사람은 이미 그 권한을 가진 사람이다. **기준 기간은 화면에서 못 고른다** —
+  180일보다 오래된 것으로 고정되어 있어, 기간을 바꾸려면 이 파일을 고쳐야 한다. -->
+<partial description="Identity Logs Purge Confirm Modal" editor_label="$t:admin.modal_label.admin_identity_logs.identity_log_purge_confirm_modal">
+  <modal data-type="composite" data-ref="identity_log_purge_confirm_modal" title="$t:admin.identity.logs.purge_button" size="sm">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.identity.logs.purge_confirm</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isPurgingIdentityLogs}}">
+        <on type="click">
+          <close-modal target="identity_log_purge_confirm_modal"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPurgingIdentityLogs}}">
+        <on type="click">
+          <!-- 지우는 동안 두 버튼을 모두 잠가 두 번 눌리는 것을 막고, 끝나면 목록을 다시 받아 남은 기록만 보이게 한다. 실패하면 창을 열어 둔 채 사유를 띄운다. -->
+          <sequence>
+            <set-state target="global" :isPurgingIdentityLogs="true"/>
+            <api-call :auth_required="true" target="/api/admin/identity/logs/purge" method="POST">
+              <success>
+                <set-state target="global" :isPurgingIdentityLogs="false"/>
+                <refetch-data-source dataSourceId="identityLogs"/>
+                <toast message="$t:admin.identity.logs.purge_success" type="success"/>
+                <close-modal target="identity_log_purge_confirm_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isPurgingIdentityLogs="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body :older_than_days="180"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isPurgingIdentityLogs}}" name="fa-solid fa-spinner" class="spinner-sm"/>
+        <span>$t:admin.identity.logs.purge_button</span>
+      </button>
+    </div>
+  </modal>
+</partial>

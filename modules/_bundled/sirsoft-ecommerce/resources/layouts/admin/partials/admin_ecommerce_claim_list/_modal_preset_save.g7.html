@@ -1,0 +1,64 @@
+<!-- 클레임 목록 — 지금 걸린 검색 조건을 새 프리셋으로 저장하는 창. 조건 묶음은 필터 영역의 [프리셋 저장] 버튼이 창을 열기 전에 `_global.savingPresetConditions` 로 옮겨 두고, 유형은 그 묶음에 없어 지금 보는 서브탭으로 채우므로 프리셋을 적용하면 저장할 때의 탭으로 돌아간다. -->
+<partial description="Claim List - Preset Save Modal">
+  <modal data-type="composite" data-ref="modal_claim_preset_save" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.title" size="sm">
+    <!-- 프리셋 이름 입력칸. 이름은 이 창에서만 쓰는 값이라 로컬 상태에 두고, 저장에 성공하면 비워 다음에 창을 열 때 앞 이름이 남지 않게 한다. -->
+    <input type="text" placeholder="$t:sirsoft-ecommerce.admin.claim.modal.preset_save.placeholder" class="input" value="{{_local.presetName}}">
+      <on type="input">
+        <set-state target="local" presetName="{{$event.target.value}}"/>
+      </on>
+    </input>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <!-- 새 프리셋 저장. 대상 화면을 claims 로 박아 보내야 이 화면 프리셋 줄에만 서고(빠지면 서버가 상품 화면으로 저장한다), 조건은 필드마다 풀어 보내 선택 프리셋 id 같은 화면 상태가 조건에 섞이지 않게 한다. -->
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.presetName || _local.presetName.trim() === '' || _global.isSaving}}">
+        <on type="click">
+          <set-state target="global" :isSaving="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets" method="POST">
+            <success>
+              <set-state target="global" :isSaving="false"/>
+              <set-state target="local" presetName=""/>
+              <refetch-data-source dataSourceId="presets"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.created"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isSaving="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <field name="body">
+              <field name="target_screen" value="claims"/>
+              <field name="name" value="{{_local.presetName}}"/>
+              <field name="conditions">
+                <field name="claimType" value="{{_global.savingPresetConditions.claimType || (query.type || 'exchange')}}"/>
+                <field name="searchField" value="{{_global.savingPresetConditions.searchField || 'claim_number'}}"/>
+                <field name="searchKeyword" value="{{_global.savingPresetConditions.searchKeyword || ''}}"/>
+                <field name="startDate" value="{{_global.savingPresetConditions.startDate || ''}}"/>
+                <field name="endDate" value="{{_global.savingPresetConditions.endDate || ''}}"/>
+                <field name="dateQuick" value="{{_global.savingPresetConditions.dateQuick || ''}}"/>
+                <field name="claimStatus" value="{{_global.savingPresetConditions.claimStatus || []}}"/>
+                <field name="faultTypes" value="{{_global.savingPresetConditions.faultTypes || []}}"/>
+                <field name="chargeMethods" value="{{_global.savingPresetConditions.chargeMethods || []}}"/>
+                <field name="reasonCode" value="{{_global.savingPresetConditions.reasonCode || ''}}"/>
+                <field name="requesterType" value="{{_global.savingPresetConditions.requesterType || ''}}"/>
+                <field name="requestSource" value="{{_global.savingPresetConditions.requestSource || ''}}"/>
+                <field name="collectionOverdue" value="{{_global.savingPresetConditions.collectionOverdue || ''}}"/>
+                <field name="pendingRefund" value="{{_global.savingPresetConditions.pendingRefund || ''}}"/>
+                <field name="minAmount" value="{{_global.savingPresetConditions.minAmount || ''}}"/>
+                <field name="maxAmount" value="{{_global.savingPresetConditions.maxAmount || ''}}"/>
+                <field name="currencyCode" value="{{_global.savingPresetConditions.currencyCode || ''}}"/>
+                <field name="chargePaymentMethods" value="{{_global.savingPresetConditions.chargePaymentMethods || []}}"/>
+              </field>
+            </field>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isSaving}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSaving ? '$t:common.saving' : '$t:sirsoft-ecommerce.admin.claim.modal.preset_save.save'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

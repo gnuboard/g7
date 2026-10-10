@@ -1,0 +1,42 @@
+feature: 이커머스 관리자 엔티티 활동 로그 리스너
+
+description: |
+  `EcommerceAdminActivityLogListener` 가 이커머스 관리자 엔티티(브랜드·라벨·공통정보·고시 템플릿·
+  추가배송비·배송정책·택배사·상품 이미지·옵션·리뷰·환경설정)의 after_* 훅을 구독해 활동 로그를
+  남기는 계약. 변경 전 스냅샷은 Service 계층에서 캡처해 after_* 훅 인수로 넘기므로 리스너는
+  before_* 훅을 구독하지 않는다. 일괄 작업은 항목마다 한 건씩 기록한다.
+
+  기존 회귀 테스트(EcommerceAdminActivityLogListenerTest)를 사후 등재한 매니페스트다. 구독 훅 수는
+  #524 에서 회원 데이터 일괄 삭제 훅 4개(찜·장바구니·배송지·상품 문의)가 늘어 45개다.
+
+axis_notes:
+  domain: |
+    훅을 발화하는 관리자 도메인. subscription 은 구독 목록 자체, error_handling 은 로그 기록 실패
+    경로, default_handler 는 구독 계약상 필요한 기본 handle() 이다.
+
+axes:
+  domain: [subscription, brand, label, common_info, notice_template, settings, extra_fee, shipping_policy, carrier, image, option, review, error_handling, default_handler]
+
+effects:
+  - subscribed_hooks_cover_all_admin_domains
+  - entity_create_logged_with_loggable_and_properties
+  - entity_update_logged_with_snapshot_changes
+  - entity_update_without_snapshot_logs_null_changes
+  - entity_delete_logged_by_id_without_loggable
+  - entity_status_toggle_logged
+  - notice_template_copy_logs_original_and_copied_ids
+  - settings_save_logs_saved_categories
+  - bulk_delete_logs_one_entry_per_item
+  - bulk_delete_includes_per_item_snapshot
+  - bulk_toggle_active_persists_per_item_activity_logs
+  - bulk_create_logs_per_created_model
+  - bulk_create_without_collection_logs_single_entry
+  - image_reorder_logs_count_without_loggable
+  - option_bulk_change_logs_per_option
+  - option_bulk_price_update_records_changes_from_snapshot
+  - option_bulk_update_skips_when_nothing_updated
+  - activity_log_failure_reported_as_error
+  - default_handle_is_noop
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceAdminActivityLogListenerTest.php

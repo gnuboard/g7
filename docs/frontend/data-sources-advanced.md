@@ -25,6 +25,18 @@
 
 API 호출 없이 정적 데이터를 정의할 수 있습니다.
 
+```html
+<data-source id="status_options" type="static">
+  <data>
+    <item value="active" label="활성"/>
+    <item value="inactive" label="비활성"/>
+    <item value="pending" label="대기중"/>
+  </data>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -50,6 +62,13 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 ### 기본 문법
 
 `if` 속성에 표현식을 지정하면 조건이 truthy일 때만 데이터 소스를 fetch합니다.
+
+```html
+<data-source id="user" type="api" endpoint="/api/admin/users/{{route.id}}" if="{{route.id}}" initLocal="form"/>
+<data-source id="user" type="api" endpoint="/api/admin/users/template" if="{{!route.id}}" initLocal="form"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -97,6 +116,13 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 
 #### 1. 생성/수정 폼 분기
 
+```html
+<data-source id="user" type="api" endpoint="/api/admin/users/{{route.id}}" :auth_required="true" loading_strategy="blocking" initLocal="form" if="{{route.id}}"/>
+<data-source id="user" type="api" endpoint="/api/admin/users/template" :auth_required="true" loading_strategy="blocking" initLocal="form" if="{{!route.id}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -127,6 +153,13 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 
 #### 2. 쿼리 파라미터 기반 분기
 
+```html
+<data-source id="data" type="api" endpoint="/api/admin/users/{{route.id}}" if="{{query.mode === 'edit'}}"/>
+<data-source id="data" type="api" endpoint="/api/admin/users/template" if="{{query.mode !== 'edit'}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -147,6 +180,13 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 ```
 
 #### 3. 권한 기반 분기
+
+```html
+<data-source id="stats" type="api" endpoint="/api/admin/stats/full" if="{{_global.isAdmin}}"/>
+<data-source id="stats" type="api" endpoint="/api/admin/stats/basic" if="{{!_global.isAdmin}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -169,25 +209,33 @@ API 호출 없이 정적 데이터를 정의할 수 있습니다.
 
 #### 4. 복잡한 조건 표현식
 
+```html
+<data-source id="premium_content" type="api" endpoint="/api/modules/sirsoft-board/content/premium" if="{{route.type === 'premium' &amp;&amp; _global.isPremiumUser}}"/>
+<data-source id="premium_content" type="api" endpoint="/api/modules/sirsoft-board/content/preview" if="{{route.type === 'premium' &amp;&amp; !_global.isPremiumUser}}"/>
+<data-source id="premium_content" type="api" endpoint="/api/modules/sirsoft-board/content/basic" if="{{route.type !== 'premium'}}"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "premium_content",
       "type": "api",
-      "endpoint": "/api/content/premium",
+      "endpoint": "/api/modules/sirsoft-board/content/premium",
       "if": "{{route.type === 'premium' && _global.isPremiumUser}}"
     },
     {
       "id": "premium_content",
       "type": "api",
-      "endpoint": "/api/content/preview",
+      "endpoint": "/api/modules/sirsoft-board/content/preview",
       "if": "{{route.type === 'premium' && !_global.isPremiumUser}}"
     },
     {
       "id": "premium_content",
       "type": "api",
-      "endpoint": "/api/content/basic",
+      "endpoint": "/api/modules/sirsoft-board/content/basic",
       "if": "{{route.type !== 'premium'}}"
     }
   ]
@@ -231,13 +279,19 @@ type ConditionExpression =
 
 #### 1. 단순 문자열 (기존 if와 동일)
 
+```html
+<json key="data_sources">[{"id":"product","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/{{route.id}}","conditions":"{{!!route.id}}"}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "product",
       "type": "api",
-      "endpoint": "/api/products/{{route.id}}",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}",
       "conditions": "{{!!route.id}}"
     }
   ]
@@ -246,13 +300,24 @@ type ConditionExpression =
 
 #### 2. AND 그룹 (모든 조건 충족)
 
+```html
+<data-source id="product" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.id}}">
+  <all-of>
+    <expr>{{!!route.id}}</expr>
+    <expr>{{_global.hasPermission('view_product')}}</expr>
+  </all-of>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "product",
       "type": "api",
-      "endpoint": "/api/products/{{route.id}}",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}",
       "conditions": {
         "and": ["{{!!route.id}}", "{{_global.hasPermission('view_product')}}"]
       }
@@ -264,6 +329,17 @@ type ConditionExpression =
 - `route.id`가 있고 **동시에** `hasPermission('view_product')`가 true일 때만 fetch
 
 #### 3. OR 그룹 (하나라도 충족)
+
+```html
+<data-source id="admin_dashboard" type="api" endpoint="/api/admin/dashboard">
+  <any-of>
+    <expr>{{_global.user?.role === 'admin'}}</expr>
+    <expr>{{_global.user?.role === 'manager'}}</expr>
+  </any-of>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -284,13 +360,27 @@ type ConditionExpression =
 
 #### 4. 중첩 AND/OR
 
+```html
+<data-source id="sales_data" type="api" endpoint="/api/modules/sirsoft-ecommerce/sales/report">
+  <any-of>
+    <expr>{{_global.user?.isSuperAdmin}}</expr>
+    <all-of>
+      <expr>{{_global.user?.isAdmin}}</expr>
+      <expr>{{_global.user?.department === 'sales'}}</expr>
+    </all-of>
+  </any-of>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "sales_data",
       "type": "api",
-      "endpoint": "/api/sales/report",
+      "endpoint": "/api/modules/sirsoft-ecommerce/sales/report",
       "conditions": {
         "or": [
           "{{_global.user?.isSuperAdmin}}",
@@ -311,20 +401,26 @@ type ConditionExpression =
 
 #### 생성/수정/복사 모드 분기
 
+```html
+<json key="data_sources">[{"id":"existing_product","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/{{route.id}}","conditions":"{{!!route.id}}","initLocal":"form"},{"id":"copy_source","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/{{query.copy_id}}","conditions":{"and":["{{!route.id}}","{{!!query.copy_id}}"]},"initLocal":"form"},{"id":"product_template","type":"api","endpoint":"/api/modules/sirsoft-ecommerce/products/template","conditions":{"and":["{{!route.id}}","{{!query.copy_id}}"]},"initLocal":"form"}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "existing_product",
       "type": "api",
-      "endpoint": "/api/products/{{route.id}}",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}",
       "conditions": "{{!!route.id}}",
       "initLocal": "form"
     },
     {
       "id": "copy_source",
       "type": "api",
-      "endpoint": "/api/products/{{query.copy_id}}",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products/{{query.copy_id}}",
       "conditions": {
         "and": ["{{!route.id}}", "{{!!query.copy_id}}"]
       },
@@ -333,7 +429,7 @@ type ConditionExpression =
     {
       "id": "product_template",
       "type": "api",
-      "endpoint": "/api/products/template",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products/template",
       "conditions": {
         "and": ["{{!route.id}}", "{{!query.copy_id}}"]
       },
@@ -358,10 +454,19 @@ type ConditionExpression =
 
 **우선순위**: `if`와 `conditions`가 모두 있으면 **`if`가 우선** 적용됩니다 (하위 호환성).
 
+```html
+<json key="id">"product"</json>
+<json key="endpoint">"/api/modules/sirsoft-ecommerce/products/{{route.id}}"</json>
+<json key="if">"{{ifCondition}}"</json>
+<json key="conditions">"{{conditionsValue}}"</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "product",
-  "endpoint": "/api/products/{{route.id}}",
+  "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}",
   "if": "{{ifCondition}}",
   "conditions": "{{conditionsValue}}"
 }
@@ -415,6 +520,24 @@ CAUTION: if와 conditions 동시 사용 시 if 우선
 데이터 소스에서도 액션과 동일한 방식으로 `errorHandling`과 `onError`를 설정할 수 있습니다.
 
 #### 기본 구조
+
+```html
+<data-source id="users" endpoint="/api/admin/users" method="GET" loading_strategy="blocking">
+  <error-handling>
+    <on-code code="403">
+      <show-error-page target="content"/>
+    </on-code>
+    <on-code code="404">
+      <toast type="warning" message="$t:errors.data_not_found"/>
+    </on-code>
+  </error-handling>
+  <fail>
+    <toast type="error" message="{{error.message}}"/>
+  </fail>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -475,6 +598,22 @@ data_source onError 있음?
 
 `fallback`과 `errorHandling`이 함께 정의된 경우, **errorHandling이 먼저 실행**된 후 fallback 데이터가 렌더링에 사용됩니다.
 
+```html
+<data-source id="user" endpoint="/api/admin/users/{{route?.id}}">
+  <error-handling>
+    <on-code code="403">
+      <show-error-page target="content"/>
+    </on-code>
+    <on-code code="404">
+      <show-error-page target="content"/>
+    </on-code>
+  </error-handling>
+  <fallback :data="null"/>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "user",
@@ -500,10 +639,35 @@ fallback이 있어도 errorHandling은 반드시 실행됨
 errorHandling 없이 fallback만 있으면 조용히 fallback 데이터 사용 (시스템 기본 에러 핸들링 적용)
 ```
 
+> **fallback 은 첫 그림용이다 (engine-v1.72.0)** — 한 번이라도 성공한 소스는 다시 부르다 실패해도
+> **마지막으로 받은 값을 그대로 둡니다**. 폴링이 한 번 실패했다고 `fallback`(0·빈 배열)으로 되돌아가면
+> 화면이 거짓을 말하기 때문입니다(실시간 화면의 「지금 0명」). 실패는 `errorHandling`·토스트로 알립니다.
+> 아직 성공한 적이 없으면 종전대로 `fallback` 이 첫 그림을 채웁니다.
+> 단, 권한 오류(401·403)는 예외입니다(engine-v1.73.0) — 마지막 값을 지우고 `fallback` 으로 그립니다. 마지막 값은
+> 계정을 가리지 않고 보관되므로, 같은 브라우저의 다른 탭에서 권한이 적은 계정으로 로그인한 뒤에도 이전 계정이
+> 보던 응답이 남기 때문입니다. 권한 오류를 오류 화면으로 보이려면 `errorHandling` 에 `401`·`403` 을 선언합니다.
+
 #### 응답 조건부 에러 처리 (errorCondition, engine-v1.18.0+)
 
 API가 200으로 응답하더라도 응답 데이터의 특정 조건에 따라 에러로 처리할 수 있습니다.
 `errorCondition`이 truthy로 평가되면 지정된 `errorCode`의 `errorHandling`이 트리거됩니다.
+
+```html
+<data-source id="user" endpoint="/api/admin/users/{{route?.id}}">
+  <field name="errorCondition">
+    <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
+    <field name="errorCode" :value="403"/>
+  </field>
+  <error-handling>
+    <on-code code="403">
+      <show-error-page target="content"/>
+    </on-code>
+  </error-handling>
+  <fallback :data="null"/>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -566,6 +730,8 @@ blocking + showErrorPage(target: "content") 조합 시 주의:
 | `{{error.errors}}` | 필드별 에러 (422) |
 | `{{error.data}}` | 전체 응답 데이터 |
 
+> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 작성 권장 경로가 아니다.
+
 ### 에러 상태 접근 (engine-v1.2.0+)
 
 데이터 소스 fetch 실패 시 `_dataSourceErrors` 객체를 통해 에러 정보에 접근할 수 있습니다.
@@ -585,6 +751,14 @@ interface DataSourceError {
 ```
 
 #### 레이아웃 JSON에서 에러 표시
+
+```html
+<div data-ref="api_error_message" data-if="{{_dataSourceErrors?.user}}" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+  <p class="text-sm text-red-700 dark:text-red-300">{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}</p>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -628,13 +802,27 @@ interface DataSourceError {
 
 ### 기본 구조
 
+```html
+<data-source id="checkoutData" type="api" endpoint="/api/modules/sirsoft-ecommerce/checkout" loading_strategy="progressive">
+  <success>
+    <conditions>
+      <when if="{{(response.data.data.unavailable_items?.length ?? 0) > 0}}">
+        <open-modal target="unavailable_modal"/>
+      </when>
+    </conditions>
+  </success>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "checkoutData",
       "type": "api",
-      "endpoint": "/api/shop/checkout",
+      "endpoint": "/api/modules/sirsoft-ecommerce/checkout",
       "loading_strategy": "progressive",
       "onSuccess": {
         "handler": "conditions",
@@ -671,12 +859,26 @@ interface DataSourceError {
 
 #### 1. 조건부 모달 표시 (체크아웃 구매불가 상품)
 
+```html
+<data-source id="checkoutData" endpoint="/api/modules/sirsoft-ecommerce/checkout" loading_strategy="progressive">
+  <success>
+    <conditions>
+      <when if="{{(response.data.data.unavailable_items?.length ?? 0) > 0}}">
+        <open-modal target="cart_unavailable_modal"/>
+      </when>
+    </conditions>
+  </success>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "checkoutData",
-      "endpoint": "/api/shop/checkout",
+      "endpoint": "/api/modules/sirsoft-ecommerce/checkout",
       "loading_strategy": "progressive",
       "onSuccess": {
         "handler": "conditions",
@@ -739,7 +941,7 @@ interface DataSourceError {
       {
         "handler": "apiCall",
         "params": {
-          "endpoint": "/api/analytics/log",
+          "endpoint": "/api/plugins/sirsoft-marketing/analytics/log",
           "method": "POST",
           "body": {
             "action": "data_loaded",
@@ -794,6 +996,12 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 
 ### 기본 사용법
 
+```html
+<data-source id="user" type="api" endpoint="/api/admin/users/{{route.id}}" method="GET" :auth_required="true" loading_strategy="progressive" initLocal="form"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -816,6 +1024,12 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 
 #### 1. 문자열 형태 (전체 응답 저장)
 
+```html
+<data-source id="currentUser" endpoint="/api/me" initGlobal="currentUser"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "currentUser",
@@ -826,6 +1040,17 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 ```
 
 #### 2. 객체 형태 (특정 필드만 저장)
+
+```html
+<data-source id="installed_modules" endpoint="/api/admin/modules/installed">
+  <init-global>
+    <field name="key" value="installedModules"/>
+    <field name="path" value="data"/>
+  </init-global>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -847,6 +1072,20 @@ API 응답 데이터를 `_local`, `_global`, 또는 `_isolated` 상태에 자동
 #### 3. 배열 형태 (여러 전역 상태 동시 초기화) (engine-v1.6.0+)
 
 하나의 데이터 소스에서 여러 전역 상태를 동시에 초기화할 때 사용합니다.
+
+```html
+<data-source id="layout_files" endpoint="/api/admin/templates/{{route.identifier}}/layouts" loading_strategy="blocking">
+  <init-global>
+    <field name="0" value="layoutFilesList"/>
+    <field name="1">
+      <field name="key" value="selectedLayoutName"/>
+      <field name="path" value="[0].name"/>
+    </field>
+  </init-global>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -904,6 +1143,16 @@ API 응답의 여러 필드를 각각 다른 `_local` 경로에 매핑할 때 �
 
 타겟 키에 점(.)을 사용하여 중첩 경로에 값을 설정합니다.
 
+```html
+<init-local>
+  <field name="checkout.item_coupons" value="promotions.item_coupons"/>
+  <field name="checkout.order_coupon_issue_id" value="promotions.order_coupon_issue_id"/>
+  <field name="checkout.use_points" value="use_points"/>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "initLocal": {
@@ -919,6 +1168,18 @@ API 응답의 여러 필드를 각각 다른 `_local` 경로에 매핑할 때 �
 #### 2. 중첩 객체 표기법
 
 가독성을 위해 중첩 객체 형태로도 작성 가능합니다. 동일한 결과를 생성합니다.
+
+```html
+<init-local>
+  <field name="checkout">
+    <field name="item_coupons" value="promotions.item_coupons"/>
+    <field name="order_coupon_issue_id" value="promotions.order_coupon_issue_id"/>
+    <field name="use_points" value="use_points"/>
+  </field>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -936,6 +1197,17 @@ API 응답의 여러 필드를 각각 다른 `_local` 경로에 매핑할 때 �
 #### 3. 병합 전략 옵션 (`_merge`)
 
 기존 `_local` 값과의 병합 방식을 지정합니다.
+
+```html
+<init-local>
+  <field name="_merge" value="deep"/>
+  <field name="checkout">
+    <field name="item_coupons" value="promotions.item_coupons"/>
+  </field>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -980,6 +1252,29 @@ actualData = response.data.data ?? response.data
 
 레이아웃 레벨 `initLocal`로 기본값을 설정하고, 데이터 소스 `initLocal`로 API 값을 매핑합니다.
 
+```html
+<data-source id="checkoutData" endpoint="/api/modules/sirsoft-ecommerce/checkout" loading_strategy="progressive">
+  <init-local>
+    <field name="_merge" value="deep"/>
+    <field name="checkout">
+      <field name="item_coupons" value="promotions.item_coupons"/>
+      <field name="order_coupon_issue_id" value="promotions.order_coupon_issue_id"/>
+      <field name="use_points" value="use_points"/>
+    </field>
+  </init-local>
+</data-source>
+<init-local>
+  <field name="checkout">
+    <field name="item_coupons" :value="[]"/>
+    <field name="order_coupon_issue_id" :value="null"/>
+    <field name="use_points" :value="0"/>
+  </field>
+  <field name="paymentMethod" value="card"/>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "initLocal": {
@@ -993,7 +1288,7 @@ actualData = response.data.data ?? response.data
   "data_sources": [
     {
       "id": "checkoutData",
-      "endpoint": "/api/shop/checkout",
+      "endpoint": "/api/modules/sirsoft-ecommerce/checkout",
       "loading_strategy": "progressive",
       "initLocal": {
         "_merge": "deep",
@@ -1014,6 +1309,8 @@ actualData = response.data.data ?? response.data
 3. `_merge: "deep"`으로 기존 `_local.checkout` 값 보존 + API 값 병합
 4. 페이지 새로고침 시 저장된 쿠폰 선택 정보가 자동 복원됨
 
+> ⚠️ 데이터 소스 `initLocal` 맵의 값은 **응답 경로**다 — 레이아웃 수준 `initLocal` 처럼 기본값을 적는 자리가 아니다. 빈 문자열 `""` 은 「응답 전체」로 읽혀, 그 칸에 응답 전체가 들어간다(예: 목록을 다시 받을 때마다 목록 응답이 폼 이름 칸에 들어가 다국어 입력이 깨진다). 빈 기본값은 레이아웃 수준 `initLocal` 이나 폼을 여는 액션에서 심고, 응답 전체가 필요하면 `"{{data}}"` 로 명시한다.
+
 ### initIsolated 문법 (engine-v1.14.0+)
 
 `initIsolated`는 API 응답 데이터를 격리된 상태(`_isolated`)에 자동으로 복사합니다. `isolatedState` 속성이 정의된 컴포넌트와 함께 사용합니다.
@@ -1031,6 +1328,19 @@ actualData = response.data.data ?? response.data
 
 #### 사용 예시
 
+```html
+<data-source id="categories" type="api" endpoint="/api/admin/categories" :auth_required="true" loading_strategy="blocking" initIsolated="categoryList"/>
+<div>
+  <isolated-state scope-id="category-selector">
+    <field name="categoryList" :value="[]"/>
+    <field name="selectedId" :value="null"/>
+  </isolated-state>
+  <div data-each="category in {{_isolated.categoryList}}">{{category.name}}</div>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -1045,7 +1355,8 @@ actualData = response.data.data ?? response.data
   ],
   "components": [
     {
-      "type": "Div",
+      "type": "basic",
+      "name": "Div",
       "isolatedState": {
         "categoryList": [],
         "selectedId": null
@@ -1055,7 +1366,7 @@ actualData = response.data.data ?? response.data
         {
           "type": "basic",
           "name": "Div",
-          "iteration": { "source": "{{_isolated.categoryList}}", "item": "category" },
+          "iteration": { "source": "{{_isolated.categoryList}}", "item_var": "category" },
           "text": "{{category.name}}"
         }
       ]
@@ -1096,23 +1407,40 @@ API 응답 수신 → user.data 저장 → _local.form에 복사
 
 `refetchDataSource` 핸들러로 데이터 소스를 다시 fetch하면 `initGlobal`/`initLocal`도 자동으로 다시 적용됩니다.
 
+```html
+<data-source id="current_file" endpoint="/api/attachment/{{_global.selectedFileId}}">
+  <init-global>
+    <field name="key" value="editorContent"/>
+    <field name="path" value="content"/>
+  </init-global>
+</data-source>
+<div data-each="file in {{files}}">
+  <on type="click">
+    <set-state target="global" selectedFileId="{{file.id}}"/>
+    <refetch-data-source dataSourceId="current_file"/>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
     {
       "id": "current_file",
-      "endpoint": "/api/files/{{_global.selectedFileId}}",
+      "endpoint": "/api/attachment/{{_global.selectedFileId}}",
       "initGlobal": {
         "key": "editorContent",
         "path": "content"
       }
     }
   ],
-  "children": [
+  "components": [
     {
       "type": "basic",
       "name": "Div",
-      "iteration": { "source": "{{files}}", "item": "file" },
+      "iteration": { "source": "{{files}}", "item_var": "file" },
       "actions": [
         {
           "type": "click",
@@ -1154,6 +1482,12 @@ API 응답 수신 → user.data 저장 → _local.form에 복사
 
 SPA에서 같은 페이지로 재진입할 때 이전 수정 데이터가 남아있는 문제를 해결합니다.
 
+```html
+<data-source id="board" type="api" endpoint="/api/admin/boards/{{route.id}}" method="GET" :auth_required="true" initLocal="formData" :refetchOnMount="true"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -1190,6 +1524,13 @@ SPA에서 같은 페이지로 재진입할 때 이전 수정 데이터가 남아
 WebSocket 데이터 소스는 서버에서 발생하는 실시간 이벤트를 구독하여 UI를 자동으로 업데이트합니다. API 데이터 소스로 초기 데이터를 로드하고, WebSocket 데이터 소스로 실시간 변경을 반영하는 패턴을 사용합니다.
 
 ### 기본 구조
+
+```html
+<data-source id="dashboard_resources" type="api" endpoint="/api/admin/dashboard/resources" :auth_required="true" loading_strategy="background"/>
+<data-source id="dashboard_resources_ws" type="websocket" channel="admin.dashboard" event="dashboard.resources.updated" channel_type="private" target_source="dashboard_resources"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1252,6 +1593,15 @@ UI 자동 재렌더링
 
 #### 1. 대시보드 실시간 업데이트
 
+```html
+<data-source id="dashboard_stats" type="api" endpoint="/api/admin/dashboard/stats" :auth_required="true" loading_strategy="progressive"/>
+<data-source id="dashboard_stats_ws" type="websocket" channel="admin.dashboard" event="dashboard.stats.updated" channel_type="private" target_source="dashboard_stats"/>
+<data-source id="dashboard_resources" type="api" endpoint="/api/admin/dashboard/resources" :auth_required="true" loading_strategy="background"/>
+<data-source id="dashboard_resources_ws" type="websocket" channel="admin.dashboard" event="dashboard.resources.updated" channel_type="private" target_source="dashboard_resources"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -1291,6 +1641,13 @@ UI 자동 재렌더링
 
 #### 2. 실시간 알림
 
+```html
+<data-source id="notifications" type="api" endpoint="/api/admin/notifications" :auth_required="true" loading_strategy="progressive"/>
+<data-source id="notifications_ws" type="websocket" channel="admin.notifications.{{_global.currentUser.id}}" event="notification.received" channel_type="private" target_source="notifications"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -1314,6 +1671,12 @@ UI 자동 재렌더링
 ```
 
 #### 3. 공개 채널 (인증 불필요)
+
+```html
+<data-source id="system_status_ws" type="websocket" channel="system.status" event="status.updated" channel_type="public"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1425,6 +1788,24 @@ Network 탭 > WS 필터에서 WebSocket 메시지를 직접 확인할 수도 있
 | `isolatedStateOverride` | engine-v1.19.0+ | object | refetch 시 `_isolated` 값 임시 오버라이드 |
 
 ### 사용 예시
+
+```html
+<on type="click">
+  <refetch-data-source dataSourceId="products">
+    <field name="globalStateOverride">
+      <field name="currentPage" :value="1"/>
+      <field name="sortField" value="created_at"/>
+    </field>
+    <field name="localStateOverride">
+      <field name="filter">
+        <field name="keyword" value="{{_local.searchInput}}"/>
+      </field>
+    </field>
+  </refetch-data-source>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

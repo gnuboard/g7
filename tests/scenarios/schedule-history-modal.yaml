@@ -1,0 +1,22 @@
+feature: 예약 작업 실행 이력 창 — 이력·출력·실행자·쪽 이동 표시
+
+description: |
+  실행 이력 창이 이력이 있어도 늘 「실행 이력이 없습니다」만 보였다(7.1.0 영역 J D-J2). 창의 데이터소스는 엔진이
+  창을 열 때 받아 `initGlobal` 로만 넘기고 id 로는 화면에 싣지 않는데, 창이 id(`schedule_history`)로 읽었다.
+  7.1.0 에서 고친 이력 창 쪽 이동도 이력이 보여야 닿는 자리라 함께 죽어 있었다. 실행자 칸은 응답에 없는
+  `triggered_by_name` 을, 출력 칸은 목록 응답이 빼던 `output`/`error_output` 을 읽었다.
+  창은 `_global.scheduleHistory` 를 읽고, 목록 응답은 회차별 출력 두 칸을 싣는다.
+
+axes:
+  surface: [admin_schedule_history_modal, admin_schedule_list, admin_schedule_run_modal]
+
+effects:
+  - schedule_history_modal_shows_runs_and_output
+  # 예약 작업 목록의 다음·마지막 실행 시각은 ISO 원문이 아니라 읽을 수 있는 날짜로 보인다(7.1.0 잔여 관측 R-13)
+  - schedule_list_shows_readable_run_times
+  # 즉시 실행 창을 Esc·X 로 닫고 다시 열어도 지난 결과 없이 [즉시 실행] 버튼이 보인다(2026-10-07 재실측)
+  - schedule_run_modal_reopens_without_previous_result
+
+test_files:
+  - tests/Feature/Api/Admin/ScheduleHistoryOutputTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-schedule-history-modal.test.ts

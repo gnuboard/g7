@@ -1,0 +1,94 @@
+{
+    "comment": "gdpr 설정 — 알림 템플릿 미리보기 창. 편집 창이 만들어 둔 결과를 보여 주기만 하고\n  입력이 없다 — 그래서 이 조각에는 액션이 하나도 없다.",
+    "meta": {
+        "is_partial": true,
+        "description": "알림 템플릿 치환 결과 미리보기"
+    },
+    "id": "modal_gdpr_notification_definition_preview",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-gdpr.notification_definitions.preview_modal.title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "id": "gdpr_preview_content",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_subject"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
+                            },
+                            "text": "{{_global.gdpr_notification_template_form_modal?.preview?.subject ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_body"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "HtmlContent",
+                            "props": {
+                                "content": "{{_global.gdpr_notification_template_form_modal?.preview?.body ?? ''}}",
+                                "isHtml": true,
+                                "className": "text-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "id": "gdpr_btn_close_preview",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "modal_gdpr_notification_definition_preview"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:sirsoft-gdpr.notification_definitions.preview_modal.btn_close"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,111 +1,113 @@
 {
-  "version": "1.0.0",
-  "layout_name": "mypage/wishlist",
-  "extends": "_user_base",
-  "permissions": [],
-  "transition_overlay": {
-    "enabled": true,
-    "style": "spinner",
-    "target": "mypage_tab_content",
-    "fallback_target": "main_content_area",
-    "spinner": {
-      "component": "PageLoading"
-    }
-  },
-  "computed": {
-    "currentTab": "wishlist"
-  },
-  "data_sources": [
-    {
-      "id": "wishlist",
-      "label_key": "$t:editor.data_source.wishlist",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/wishlist?page={{_local.wishlistPage ?? 1}}",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive"
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "wishlistPage": 1
-      }
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
-        },
-        "children": [
-          {
-            "type": "layout",
-            "name": "Container",
-            "props": {
-              "className": "py-8"
-            },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "py-4"
-                }
-              }
-            },
-            "children": [
-              {
-                "comment": "페이지 제목",
+    "comment": "마이페이지 «찜한 상품» 탭.",
+    "version": "1.0.0",
+    "layout_name": "mypage/wishlist",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "wishlist",
+            "label_key": "$t:editor.data_source.wishlist",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/wishlist?page={{_local.wishlistPage ?? 1}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "comment": "찜 목록. 쪽수를 URL 이 아니라 `_local` 에 두므로 엔드포인트 문자열에 직접 끼워 넣는다"
+        }
+    ],
+    "computed": {
+        "currentTab": "wishlist"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "wishlistPage": 1
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-2 mb-6"
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user",
-                      "size": "xl",
-                      "className": "text-gray-900 dark:text-white"
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "찜 목록",
+                                        "partial": "partials/mypage/wishlist/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                    },
-                    "text": "$t:mypage.title"
-                  }
                 ]
-              },
-              {
-                "comment": "탭 네비게이션",
-                "partial": "partials/mypage/_tab_navigation.json"
-              },
-              {
-                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
-                "type": "basic",
-                "name": "Div",
-                "id": "mypage_tab_content",
-                "children": [
-                  {
-                    "comment": "찜 목록",
-                    "partial": "partials/mypage/wishlist/_list.json"
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

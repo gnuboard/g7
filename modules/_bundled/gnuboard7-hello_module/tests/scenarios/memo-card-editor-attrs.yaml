@@ -1,0 +1,18 @@
+feature: Hello 모듈 MemoCard — 레이아웃 편집기 표식과 요소 ID 패스스루
+
+description: |
+  레이아웃 편집기 팔레트에서 메모 카드를 꺼내 넣으면 카드는 캔버스에 그려지지만 루트에 data-editor-path 가 없어
+  편집기가 그 노드를 찾지 못했다(선택·이동·삭제 불가, 7.1.0 전수 실측 G3). composite 컴포넌트는 코어가 주입하는
+  editorAttrs 를 받아 시각적 루트에 펼치고, 편집 역량 coreProps 의 요소 ID(id)도 루트에 둔다. 두 판본(기본, Hello 관리자 템플릿용)은
+  테스트가 describe.each 로 함께 잰다. 축 context 는 편집 모드 주입 여부다.
+
+axes:
+  context: [editor, runtime]
+
+effects:
+  - editor_attrs_on_root
+  - element_id_on_root
+  - no_editor_marks_outside_editor
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/resources/js/components/__tests__/MemoCardEditorAttrs.test.tsx

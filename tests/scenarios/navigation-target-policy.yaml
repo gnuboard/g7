@@ -1,0 +1,43 @@
+feature: 페이지 이동 대상 정책 — 같은 탭 이동 sink·로그인 복귀·URL 속성 (KVE-2026-2348)
+
+description: |
+  관리자 로그인 레이아웃은 `{{query.redirect}}` 를 스킴·origin 검증 없이 `navigate` 로 넘기고,
+  라우트 미매칭 폴백의 최종 sink `window.location.assign` 이 무검증이었다. 그래서
+  `?redirect=javascript:…` 가 관리자 origin 에서 실행되고(실 Chrome 재현, 토큰 가독)
+  `?redirect=//evil` 은 브라우저와 무관하게 오프사이트로 나갔다(CWE-601).
+
+  같은 원인의 진입점 전부가 하나의 판정(`support/navPolicy`)을 경유한다.
+  - 같은 탭 이동(openWindow `_self`·navigate 폴백·redirect)·로그인 복귀(`AuthManager.getRedirectUrl`)
+    는 **same-origin 절대 경로만** 통과하고, 나머지는 기본 경로로 떨어진다.
+  - 새 창·`<a href>`·제공자 외부 인증 이동은 정상 외부 링크가 있으므로 **실행 스킴만** 막는다.
+  - 봇(SEO) HTML 도 같은 판정을 한다 — 클라이언트가 막은 값을 봇 HTML 이 `<a href>` 로 되살리면
+    그 자리가 우회로가 된다.
+
+  정규화는 스크립트 출처 정책(`normalizeScriptSrcForOriginCheck`)을 그대로 재사용한다 —
+  브라우저 URL 파서와 다른 정규화를 따로 두면 그 차집합이 우회로가 된다.
+
+axes:
+  target_kind: [script_scheme, offsite, same_origin]
+  sink: [same_tab, new_window_or_link]
+
+exclusions:
+  - { target_kind: offsite, sink: new_window_or_link, reason: "새 창·링크의 외부 origin 은 정당한 외부 링크라 판정 대상이 아니다 — 과차단 방지 축(external_link_preserved)이 검증" }
+
+effects:
+  - nav_sink_rejects_script_scheme
+  - nav_sink_rejects_offsite_target
+  - same_origin_redirect_preserved
+  - dangerous_href_neutralized
+  - external_link_preserved
+
+test_files:
+  # 배포 번들 종단 — 실 로그인 흐름의 javascript:/외부 redirect
+  - tests/Playwright/specs/layout-expression-sandbox.spec.ts
+  # 소스 잠금
+  - resources/js/core/support/__tests__/navPolicy.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.navSinkPolicy.test.ts
+  - resources/js/core/auth/__tests__/AuthManager.redirectPolicy.test.ts
+  - resources/js/core/template-engine/__tests__/IdentityGuardInterceptor.redirectScheme.test.ts
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.urlSchemeSanitize.test.tsx
+  # 봇(SEO) 렌더러 패리티 — 클라이언트가 막는 값을 봇 HTML 이 `<a href>` 로 되살리지 않는다
+  - tests/Unit/Seo/ComponentHtmlMapperUrlSchemeTest.php

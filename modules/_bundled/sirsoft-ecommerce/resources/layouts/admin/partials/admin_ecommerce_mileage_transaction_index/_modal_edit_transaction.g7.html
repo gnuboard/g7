@@ -1,0 +1,102 @@
+<!-- 적립 한 건의 **사유와 만료일만** 고치는 창. 회원·금액·유형·적립일은 회색 상자로 보여 주기만
+  한다 — 이미 회원 잔액에 반영된 값이라 여기서 고칠 수 있는 것이 아니다.
+  만료일은 늘 열려 있지 않다. 이미 소멸했거나 전액 사용된 적립건은 늘려 줄 잔액이 없으므로,
+  서버가 알려 준 판정(`canEditExpiry`)에 따라 입력칸 대신 자물쇠 안내가 대신 뜬다. **그 판정이
+  본문 구성까지 바꾼다** — 잠긴 경우 만료일 키를 아예 빼고 사유만 보낸다.
+  창을 여는 쪽이 표시용 값까지 미리 만들어 `_global.mileageEdit` 에 담아 준다(금액 표기·유형
+  라벨 등). 이 창은 그것을 다시 조립하지 않는다.
+  바깥을 눌러도 닫히지 않게 해 두었다 — 입력 중 실수로 사라지는 것을 막는다. -->
+<partial description="마일리지 적립건 사유·만료일 변경 모달. 회원·금액·유형·적립일은 읽기전용(비활성), 사유(memo)·만료일만 편집. 소멸/전액사용 lot 은 만료일 비활성. PATCH /admin/mileage-transactions/{id}.">
+  <modal data-type="composite" data-ref="modal_edit_transaction" title="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.title" size="md" :closeOnOverlayClick="false">
+    <div class="space-y-4">
+      <div data-ref="edit_error_banner" data-if="{{_global.mileageEdit?.errors}}" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+        <div class="flex gap-2">
+          <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-red-800 dark:text-red-200">{{_global.mileageEdit?.errors?.message ?? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.validation_error')}}</p>
+            <ul data-if="{{_global.mileageEdit?.errors?.errors &amp;&amp; Object.keys(_global.mileageEdit.errors.errors).length > 0}}" data-each="msg in Object.entries(_global.mileageEdit?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])" class="mt-1 list-disc list-inside space-y-0.5">
+              <li class="text-xs text-red-700 dark:text-red-300">{{msg}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="edit_readonly_info" class="grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div>
+          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_member</span>
+          <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{_global.mileageEdit?.memberName ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_amount</span>
+          <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{(_global.mileageEdit?.amountFormatted ?? '-') + ' ' + (_global.mileageEdit?.currency ?? '')}}</span>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_type</span>
+          <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{_global.mileageEdit?.typeLabel ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_earned_at</span>
+          <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{_global.mileageEdit?.createdAtFormatted ?? '-'}}</span>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.readonly_hint</p>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.reason</label>
+        <input type="text" value="{{_global.mileageEdit?.memo ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.reason_placeholder" class="{{_global.mileageEdit?.errors?.errors?.memo ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}">
+          <on type="input">
+            <!-- 사유. 글자마다 전역에 쓴다(`input`) — 이 창의 입력값은 `_local` 이 아니라 `_global.mileageEdit` 에 모이므로 저장 액션이 별도 수집 없이 그대로 읽는다. -->
+            <set-state target="global" mileageEdit.memo="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_global.mileageEdit?.errors?.errors?.memo}}" class="form-error">{{_global.mileageEdit?.errors?.errors?.memo?.[0] ?? ''}}</span>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_date</label>
+        <input data-if="{{_global.mileageEdit?.canEditExpiry === true}}" type="date" value="{{_global.mileageEdit?.expiresAt ?? ''}}" min="{{_global.mileageEdit?.earnedAtDate ?? ''}}" class="{{_global.mileageEdit?.errors?.errors?.expires_at ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}">
+          <on type="change">
+            <!-- 만료일. 적립일보다 앞선 날짜를 못 고르도록 입력칸 자체에 하한(`min`)이 걸려 있고, 그 하한도 여는 쪽이 넘겨 준 값이다. -->
+            <set-state target="global" mileageEdit.expiresAt="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <div data-if="{{_global.mileageEdit?.canEditExpiry !== true}}" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <icon name="lock" class="text-gray-400 dark:text-gray-500"/>
+          <span>$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_locked</span>
+        </div>
+        <span data-if="{{_global.mileageEdit?.errors?.errors?.expires_at}}" class="form-error">{{_global.mileageEdit?.errors?.errors?.expires_at?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 mt-6">
+      <button type="button" disabled="{{_global.mileageEdit?.isSaving ?? false}}" class="btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.mileage_transactions.cancel</span>
+      </button>
+      <button data-ref="edit_submit_button" type="button" disabled="{{_global.mileageEdit?.isSaving ?? false}}" class="flex items-center gap-2 btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 저장. 만료일을 고칠 수 없는 적립건이면 본문에서 그 키를 통째로 빼고 사유만 보낸다 —
+            빈 값으로라도 실어 보내면 서버가 "만료일을 지워 달라" 로 읽는다.
+            성공 갈래에서 `mileageEdit` 를 통째로 비우는 것이 중요하다. 다음에 다른 적립건으로
+            이 창을 열 때 이전 값이 잠깐 비쳐 보이는 것을 막는다.
+            실패 갈래는 서버 응답을 통째로 담아 두고(`errors`) 창을 닫지 않는다 — 위 배너와 각
+            입력칸 아래 문구가 그 안의 필드별 오류를 나눠 읽는다. -->
+          <sequence>
+            <set-state target="global" :mileageEdit.isSaving="true" :mileageEdit.errors="null"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/mileage-transactions/{{_global.mileageEdit?.id}}" method="PATCH" body="{{(_global.mileageEdit?.canEditExpiry === true ? { memo: _global.mileageEdit?.memo ?? '', expires_at: (_global.mileageEdit?.expiresAt || null) } : { memo: _global.mileageEdit?.memo ?? '' })}}">
+              <success>
+                <close-modal/>
+                <refetch-data-source dataSourceId="transactions"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.mileage_transactions.message.edit_success"/>
+                <set-state target="global" :mileageEdit="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :mileageEdit.isSaving="false" mileageEdit.errors="{{error}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.mileageEdit?.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>{{_global.mileageEdit?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submit')}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

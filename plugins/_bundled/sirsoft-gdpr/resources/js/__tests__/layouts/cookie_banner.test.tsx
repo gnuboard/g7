@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import extension from '../../../extensions/cookie_banner.json';
 import { findById, collectHandlers, collectGdprI18nKeys, type AnyNode , serializeForSearch } from './helpers';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     const root = extension as unknown as AnyNode & {
@@ -388,13 +389,13 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).not.toContain('"auth_required": false,\n                                                            "target": "/api/plugins/sirsoft-gdpr/consent/cookie"');
         });
 
-        it('동의 저장 직후 onSuccess 에서 sirsoft-gdpr.syncConsent 핸들러를 호출 (3개 버튼 모두)', () => {
-            // v1.5.0 회귀 가드: 자동 차단 엔진이 클라이언트 쿠키 SSoT 를 버리고 서버 응답 SSoT 로
-            // 전환됨. 동의 저장 직후 차단 엔진의 메모리 캐시를 갱신하지 않으면 G-4 시나리오 (분석/
-            // 마케팅 스크립트 동의 직후 즉시 로드) 가 작동 안 함. refetchDataSource 만으로는
-            // blocker.ts 가 갱신을 알 수 없으므로 별도 핸들러 호출이 필요.
-            const syncOccurrences = (text.match(/"handler":\s*"sirsoft-gdpr\.syncConsent"/g) ?? []).length;
-            expect(syncOccurrences).toBeGreaterThanOrEqual(3);
+        it('동의 저장 직후 onSuccess 에서 코어 refreshConsent 핸들러를 호출 (3개 버튼 모두)', () => {
+            // 회귀 가드: 동의 저장 직후 코어 동의 런타임을 다시 읽지 않으면 consent:changed 가 오지 않아
+            // 자동 차단 엔진 캐시가 그대로다 — G-4 시나리오(분석/마케팅 스크립트 동의 직후 즉시 로드)가
+            // 작동 안 함. 옛 플러그인 전용 syncConsent 는 #639 에서 코어 내장 핸들러로 대체됐다.
+            const refreshOccurrences = (text.match(/"handler":\s*"refreshConsent"/g) ?? []).length;
+            expect(refreshOccurrences).toBeGreaterThanOrEqual(3);
+            expect(text).not.toContain('sirsoft-gdpr.syncConsent');
         });
 
         it('"환경설정" 클릭 시 인라인 펼침 토글 (모달 미사용)', () => {
@@ -477,6 +478,17 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('"disabled": "{{category?.required === true}}"');
         });
 
+        it('카테고리 라벨·설명은 현재 로케일($locale)을 먼저 본다', () => {
+            const text = serializeForSearch(panel);
+
+            // 엔진은 현재 로케일을 전역 변수 $locale 로 노출한다. _global.locale 은 심는 곳이
+            // 없어 항상 undefined 이고, 그러면 ?? 폴백이 걸려 **모든 언어에서 한국어**가 나간다.
+            expect(text).toContain('category?.label?.[$locale]');
+            expect(text).toContain('category?.description?.[$locale]');
+            expect(text).not.toContain('_global.locale');
+            expect(text).not.toContain('_global?.locale');
+        });
+
         it('저장 버튼 클릭 시 POST /consent/cookie + 배너 dismissedFor 갱신 + 성공 토스트', () => {
             const text = serializeForSearch(panel);
             expect(text).toContain('/api/plugins/sirsoft-gdpr/consent/cookie');
@@ -486,10 +498,24 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         });
     });
 
+    /**
+     * 처리방침 링크 — 운영자가 설정에 적은 주소를 그대로 쓴다. 1.0.x 는 페이지 모듈 주소 규칙
+     * (`/page/{slug}`)으로 화면에서 조합해, 페이지 모듈이 없거나 주소 규칙이 바뀌면 404 로 이어졌다.
+     *
+     * @scenario surface=public_show
+     * @effects banner_links_operator_privacy_policy_url
+     */
     describe('정책 링크', () => {
         it('privacy_policy_available일 때만 링크 표시', () => {
             const text = serializeForSearch(extension);
             expect(text).toContain('privacy_policy_available === true');
+        });
+
+        it('링크 href 는 공개 설정의 privacy_policy_url 을 그대로 쓰고 /page/ 를 조합하지 않는다', () => {
+            const text = JSON.stringify(extension);
+            expect(text).toContain(`"href":"{{gdprPublicSettings?.data?.privacy_policy_url ?? ''}}"`);
+            expect(text).not.toContain('/page/{{');
+            expect(text).not.toContain('privacy_policy_slug');
         });
     });
 
@@ -574,7 +600,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
         it('3-case 분기: 둘 다 / 운영자만 / 저장위치만 — 동시 노출 회피를 위해 각 케이스 if 가 상호 배타적', () => {
             // 한국어 조사 분기 + 자연어 한 줄 표현을 위해 ko/en lang 에 3종 키를 두고 if 가드로 분기.
-            const children = (footer?.children ?? []) as AnyNode[];
+            const children = asArray(footer?.children) as AnyNode[];
             const both = children.find((c) =>
                 String(c.text ?? '').includes('operator_and_storage_line')
             );
@@ -616,18 +642,18 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(className).toContain('text-gray-500');
             expect(className).not.toContain('text-tertiary');
             expect(className).toContain('border-t');
+            expect(/text-tertiary|text-gray-|text-xs/.test(className)).toBe(true);
         });
     });
 
     describe('규정 준수', () => {
-        it('핸들러는 G7 내장 핸들러 또는 sirsoft-gdpr.* 플러그인 등록 핸들러만 사용', () => {
-            // G7 빌트인 핸들러 + 플러그인이 ActionDispatcher 에 등록한 sirsoft-gdpr.* 네임스페이스 핸들러.
-            // module-assets.md 의 핸들러 네이밍 규칙: {plugin-identifier}.{handler-name}
+        it('핸들러는 G7 내장 핸들러만 사용 (이 플러그인은 핸들러를 등록하지 않는다)', () => {
+            // #639(결정 D22): 플러그인 전용 syncConsent 가 코어 내장 refreshConsent 로 대체돼 이 플러그인은
+            // ActionDispatcher 에 핸들러를 등록하지 않는다(plugin.json assets.handlers=false).
             const allowedBuiltins = [
-                'apiCall', 'setState', 'sequence', 'toast', 'refetchDataSource',
+                'apiCall', 'setState', 'sequence', 'toast', 'refetchDataSource', 'refreshConsent',
             ];
             for (const h of collectHandlers(extension)) {
-                if (h.startsWith('sirsoft-gdpr.')) continue;
                 expect(allowedBuiltins).toContain(h);
             }
         });
@@ -636,6 +662,79 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             for (const k of collectGdprI18nKeys(extension)) {
                 expect(k).toMatch(/^\$t:sirsoft-gdpr\./);
             }
+        });
+    });
+    /**
+     * 카테고리 라벨의 로케일 해석 — **배포되는 표현식을 그대로 꺼내** 평가한다.
+     *
+     * 표현식을 여기에 다시 옮겨 적지 않는 이유: 옮겨 적으면 소스가 바뀌어도 테스트는
+     * 옛 문자열을 계속 통과시킨다. 같은 파일의 dismissedFor 분기가 쓰는 방식과 동일하게
+     * cookie_banner.json 에서 뽑아 평가한다.
+     *
+     * E2E(cookie-banner-category-label-locale.spec.ts) 가 못 덮는 축을 여기서 덮는다 —
+     * 코어 supported_locales 가 [ko, en] 이고 시드 카테고리 4종이 전부 ko·en 을 모두 가져
+     * 브라우저에서는 `label[$locale]` 이 비는 상태 자체를 만들 수 없다.
+     */
+    describe('카테고리 라벨 로케일 해석 — 실제 표현식 평가', () => {
+        /** 배포되는 JSON 트리에서 카테고리 라벨 표현식을 가진 노드의 text 를 찾는다. */
+        const findLabelExpression = (): string => {
+            const stack: unknown[] = [extension];
+            while (stack.length) {
+                const node = stack.pop();
+                if (Array.isArray(node)) {
+                    stack.push(...node);
+                    continue;
+                }
+                if (!node || typeof node !== 'object') continue;
+                const text = (node as { text?: unknown }).text;
+                if (typeof text === 'string' && text.includes('category?.label?.[$locale]')) return text;
+                stack.push(...Object.values(node as Record<string, unknown>));
+            }
+            throw new Error('카테고리 라벨 표현식을 cookie_banner.json 에서 찾지 못했다');
+        };
+
+        const renderLabel = (
+            category: { key?: string; label?: Record<string, string> },
+            locale: string,
+        ): string => {
+            const expr = findLabelExpression().replace(/^\{\{/, '').replace(/\}\}$/, '');
+            // eslint-disable-next-line no-new-func
+            const fn = new Function('category', '$locale', 'return (' + expr + ');');
+            return fn(category, locale) as string;
+        };
+
+        const BOTH = { key: 'analytics', label: { ko: '분석 쿠키', en: 'Analytics' } };
+
+        /**
+         * @scenario visitor_locale=en, category_label=present_for_locale
+         * @effects banner_category_label_uses_current_locale
+         */
+        it('영어 방문자에게는 en 라벨이 나간다 (ko 를 먼저 집지 않는다)', () => {
+            expect(renderLabel(BOTH, 'en')).toBe('Analytics');
+        });
+
+        /**
+         * @scenario visitor_locale=ko, category_label=present_for_locale
+         * @effects banner_category_label_uses_current_locale
+         */
+        it('한국어 방문자에게는 ko 라벨이 나간다', () => {
+            expect(renderLabel(BOTH, 'ko')).toBe('분석 쿠키');
+        });
+
+        /**
+         * @scenario visitor_locale=en, category_label=missing_for_locale
+         * @effects banner_category_label_falls_back_when_locale_missing
+         */
+        it('en 라벨이 없으면 ko 로 내려간다 (빈 문자열·키 노출이 아니다)', () => {
+            expect(renderLabel({ key: 'analytics', label: { ko: '분석 쿠키' } }, 'en')).toBe('분석 쿠키');
+        });
+
+        /**
+         * @scenario visitor_locale=ko, category_label=missing_for_locale
+         * @effects banner_category_label_falls_back_when_locale_missing
+         */
+        it('ko 라벨이 없으면 en 으로 내려간다', () => {
+            expect(renderLabel({ key: 'analytics', label: { en: 'Analytics' } }, 'ko')).toBe('Analytics');
         });
     });
 });

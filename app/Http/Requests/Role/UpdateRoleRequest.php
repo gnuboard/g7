@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests\Role;
 
+use App\Enums\PasswordExpiryPolicy;
 use App\Enums\ScopeType;
 use App\Extension\HookManager;
+use App\Models\Menu;
 use App\Models\Permission;
 use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -62,7 +65,7 @@ class UpdateRoleRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -70,13 +73,35 @@ class UpdateRoleRequest extends FormRequest
             'name' => ['sometimes', 'required', new LocaleRequiredTranslatable(maxLength: 100)],
             'description' => ['nullable', new TranslatableField(maxLength: 500)],
             'is_active' => 'sometimes|boolean',
+            // 비밀번호 만료 (#736) — 사이트 설정 따름(기본)·적용·제외. 회원 개별 설정이 우선이고, 한 회원의 역할끼리 부딪치면 적용.
+            'password_expiry_policy' => ['sometimes', 'nullable', 'string', Rule::in(PasswordExpiryPolicy::values())],
             'permissions' => 'nullable|array',
             'permissions.*.id' => ['required', 'integer', Rule::exists(Permission::class, 'id')],
             'permissions.*.scope_type' => ['nullable', Rule::enum(ScopeType::class)],
+            // 역할 폼 「접근 가능 메뉴」 — 보내면 이 역할이 접근할 메뉴 전체 목록이다(안 보내면 메뉴 불변).
+            'menu_ids' => ['sometimes', 'array'],
+            'menu_ids.*' => ['integer', Rule::exists(Menu::class, 'id')],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.role.update_validation_rules', $rules, $this);
+    }
+
+    /**
+     * 검증 속성명을 반환합니다.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            // 다국어 칸 — 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
+            'name' => __('validation.role.attributes.name'),
+            'description' => __('validation.role.attributes.description'),
+            'menu_ids' => __('validation.attributes.menu_ids'),
+            'menu_ids.*' => __('validation.attributes.menu_ids'),
+            'password_expiry_policy' => __('validation.attributes.password_expiry_policy'),
+        ];
     }
 
     /**
@@ -91,6 +116,11 @@ class UpdateRoleRequest extends FormRequest
             'permissions.array' => __('role.validation.permission_ids_array'),
             'permissions.*.id.exists' => __('role.validation.permission_ids_exists'),
             'permissions.*.id.integer' => __('role.validation.permission_ids_integer'),
+            'menu_ids.array' => __('validation.role.menu_ids.array'),
+            'menu_ids.*.integer' => __('validation.role.menu_ids.integer'),
+            'menu_ids.*.exists' => __('validation.role.menu_ids.exists'),
+            'password_expiry_policy.string' => __('user.validation.password_expiry_policy_invalid'),
+            'password_expiry_policy.in' => __('user.validation.password_expiry_policy_invalid'),
         ];
     }
 }

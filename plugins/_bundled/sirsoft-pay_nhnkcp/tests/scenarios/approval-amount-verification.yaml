@@ -1,0 +1,34 @@
+# 시나리오 매니페스트 — NHN KCP 승인 금액 대조 (서버-서버 승인 응답이 유일한 금액 근거)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: nhnkcp_approval_amount_verification
+
+description: |
+  결제완료 확정과 가상계좌 발급 기록의 금액 근거는 KCP 서버-서버 CLI 승인 응답이다.
+  브라우저가 보낸 결제창 금액(good_mny)은 승인 전 거절 판정에만 쓰고, 근거나 대체값으로 쓰지 않는다.
+
+  - 승인(발급) 요청에 주문·청구 저장값에서 산정한 청구액을 ordr_mony 로 싣는다 (KCP 가 결제창 금액과 대조).
+  - 승인 응답의 amount 가 청구액과 정확히 같을 때만 확정한다. 다르거나, 없거나, 숫자가 아니거나, 0 이하이면
+    승인분(발급분)을 취소하고 확정하지 않는다.
+  - 거래번호는 승인 응답의 tno 만 쓴다. 승인 성공 응답에 tno 가 없으면 확정하지 않는다.
+  - 모바일 가상계좌 콜백은 서버-서버 응답이 없어 이 매니페스트 밖이다 — 금액은 승인키 발급 때 대조되어 KCP 에
+    등록되고, 결제완료 전이는 입금통보의 금액 대조(vbank 통보 테스트)가 소유한다.
+
+axes:
+  path: [order_card, order_vbank_pc, claim]
+  pg_amount: [matches, differs, missing]
+
+effects:
+  - kcp_approval_request_carries_the_order_amount_as_ordr_mony       # 승인·발급 요청의 ordr_mony = 서버 청구액
+  - kcp_approval_matching_amount_confirms_with_the_pg_amount         # 응답 금액 = 청구액이면 그 금액으로 확정
+  - kcp_approval_amount_mismatch_cancels_the_pg_approval             # 응답 금액 ≠ 청구액이면 승인분 취소
+  - kcp_approval_amount_mismatch_leaves_the_payment_unconfirmed      # 불일치 시 결제완료·승인액 보고 없음
+  - kcp_approval_missing_amount_is_treated_as_mismatch               # 응답 금액 없음·비숫자·0 이하 = 불일치
+  - kcp_approval_browser_amount_is_never_the_basis                   # 브라우저 good_mny 가 청구액과 같아도 근거가 되지 않음
+  - kcp_approval_tno_comes_only_from_the_pg_response                 # 응답 tno 없으면 브라우저 tno 로 채우지 않고 거절
+  - kcp_vbank_issue_amount_mismatch_records_no_account               # PC 가상계좌 발급 불일치 → 계좌·거래번호 미기록
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentApprovalAmountVerificationTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/ClaimApproveAmountVerificationTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/ApprovePaymentOrderAmountTest.php

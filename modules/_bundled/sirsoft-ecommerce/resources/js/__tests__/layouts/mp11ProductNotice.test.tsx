@@ -131,6 +131,8 @@ describe('A9 고시 목록 활성 토글', () => {
     );
     expect(toggleCalls.length).toBe(1);
     expect(toggleCalls[0].params.method).toBe('PATCH');
+    // 토글은 클릭 가능한 행 안에 있다 — 전파를 막지 않으면 토글을 눌러도 행 선택이 함께 발화한다.
+    // 이 키는 engine-v1.55.0 이 구현하기 전까지 엔진 소비처가 없어 무동작이었다.
     expect(toggleCalls[0].stopPropagation).toBe(true);
   });
 

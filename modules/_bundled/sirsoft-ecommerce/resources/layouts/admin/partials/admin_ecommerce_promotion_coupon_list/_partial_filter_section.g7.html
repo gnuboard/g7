@@ -1,0 +1,608 @@
+<!-- 쿠폰 목록 — 검색 필터 영역. 주문·상품 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),
+  다만 항목이 쿠폰 도메인이고 **프리셋이 없다**.
+  
+  ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를
+     정한다 — 보이고 숨겨도 행이 다시 만들어지지 않으므로 입력값이 유지된다.
+  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage)에 남긴다. 저장은 셸의 필터 표시 선택기가
+     자기 `id`(`admin_ecommerce_promotion_coupon_filters`)와 로그인 사용자로 만든 키에 스스로
+     한다 — 주문·상품 목록과 `id` 가 달라 키가 겹치지 않고, 편집모드 체크박스는 상태만 바꾼다.
+  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다.
+  
+  날짜 구간이 **셋**이라 헷갈리기 쉽다 — 만든 날(`created*`), 쿠폰을 쓸 수 있는 기간
+  (`valid*`), 발급이 열려 있는 기간(`issue*`). 빠른 기간 버튼은 만든 날에만 붙어 있다. -->
+<partial description="Coupon List - Filter Section with Slot System">
+  <div data-ref="filter_card" data-key="filter" class="admin-card">
+    <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
+      <div data-ref="target_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('targetType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('targetType')}}">
+          <on type="change">
+            <!-- 혜택 대상 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="all" checked="{{(_local.filter.targetType || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 혜택 대상 — 전체. 하나만 고르는 값이라 "전체" 도 값(`all`)이다. -->
+                <set-state target="_local" filter.targetType="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="product_amount" checked="{{_local.filter.targetType === 'product_amount'}}" class="radio">
+              <on type="change">
+                <!-- 상품금액 할인. 장바구니의 해당 상품 값에서 깎인다. -->
+                <set-state target="_local" filter.targetType="product_amount"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.product_amount</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="order_amount" checked="{{_local.filter.targetType === 'order_amount'}}" class="radio">
+              <on type="change">
+                <!-- 주문금액 할인. 주문 전체 합계에서 깎이므로 상품금액 할인과 함께 쓰면 적용 순서가 결과를 가른다. -->
+                <set-state target="_local" filter.targetType="order_amount"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.order_amount</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="shipping_fee" checked="{{_local.filter.targetType === 'shipping_fee'}}" class="radio">
+              <on type="change">
+                <!-- 배송비 할인. 상품 값은 그대로 두고 배송비만 낮춘다. -->
+                <set-state target="_local" filter.targetType="shipping_fee"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.shipping_fee</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="issue_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueStatus')}}">
+          <on type="change">
+            <!-- 발급상태 필터 노출 스위치. 발급중/중지만 가르는 짧은 행이라 기본에 두는 일이 많다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueStatus" value="all" checked="{{(_local.filter.issueStatus || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 발급상태 — 전체. -->
+                <set-state target="_local" filter.issueStatus="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueStatus" value="issuing" checked="{{_local.filter.issueStatus === 'issuing'}}" class="radio">
+              <on type="change">
+                <!-- 발급중. 새 발급이 열려 있는 상태다. -->
+                <set-state target="_local" filter.issueStatus="issuing"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueStatus" value="stopped" checked="{{_local.filter.issueStatus === 'stopped'}}" class="radio">
+              <on type="change">
+                <!-- 발급중지. 새 발급만 막히고 **이미 나간 쿠폰은 그대로 살아 있다**(회수는 발급취소다). -->
+                <set-state target="_local" filter.issueStatus="stopped"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}">
+          <on type="change">
+            <!-- 만든 날 필터 노출 스위치. 세 날짜 축 중 유일하게 빠른 기간 버튼이 붙어 있어 자리를 많이 먹는다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at</span>
+        <div class="flex-center flex-wrap gap-2">
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.created_at')}}" type="date" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
+              <on type="change">
+                <!-- 만든 날 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
+                <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
+              </on>
+            </input>
+            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.created_at')}}" type="date" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
+              <on type="change">
+                <!-- 만든 날 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
+                <set-state target="_local" filter.createdEndDate="{{$event.target.value}}" filter.createdDateQuick=""/>
+              </on>
+            </input>
+          </div>
+          <div class="flex-center flex-wrap gap-1">
+            <div class="{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 만든 날 빠른 기간 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 $prev 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. 오늘. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.today
+            </div>
+            <div class="{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.week
+            </div>
+            <div class="{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3개월. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.3months
+            </div>
+            <div class="{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 6개월. 쿠폰은 만든 뒤 오래 살아 있는 일이 많아 주문 목록보다 긴 구간을 둔다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="6months"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.6months
+            </div>
+            <div class="{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1년. 이 구간은 주문·상품 목록에는 없다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="1year"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.1year
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="benefit_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('benefitAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('benefitAmount')}}">
+          <on type="change">
+            <!-- 혜택금액 필터 노출 스위치. 정액/정률 선택이 함께 있어 범위만 보는 것보다 폭이 넓다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount</span>
+        <div class="flex-center flex-wrap gap-2">
+          <select name="discountType" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit" class="w-24" value="{{_local.filter.discountType || 'all'}}">
+            <options>
+              <option value="all">$t:common.all</option>
+              <option value="fixed">$t:sirsoft-ecommerce.enums.coupon_discount_type.fixed</option>
+              <option value="rate">$t:sirsoft-ecommerce.enums.coupon_discount_type.rate</option>
+            </options>
+            <on type="change">
+              <!-- 혜택 종류(정액/정률). 아래 범위가 **무엇의 범위인지**를 이 값이 정한다 — 정률이면 %, 정액이면 금액이다. -->
+              <set-state target="_local" filter.discountType="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input type="number" name="minBenefitAmount" class="input w-28" placeholder="$t:sirsoft-ecommerce.common.min" value="{{_local.filter.minBenefitAmount || ''}}">
+            <on type="change">
+              <!-- 혜택 최소값. 위 종류에 따라 단위가 달라지므로 종류를 바꾸면 같은 숫자가 다른 뜻이 된다. -->
+              <set-state target="_local" filter.minBenefitAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-500 dark:text-gray-400">~</span>
+          <input type="number" name="maxBenefitAmount" class="input w-28" placeholder="$t:sirsoft-ecommerce.common.max" value="{{_local.filter.maxBenefitAmount || ''}}">
+            <on type="change">
+              <!-- 혜택 최대값. 한쪽만 넣어도 서버는 열린 구간으로 받는다. -->
+              <set-state target="_local" filter.maxBenefitAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-500 dark:text-gray-400">{{(_local.filter.discountType || 'all') === 'rate' ? '%' : '$t:sirsoft-ecommerce.common.currency.won'}}</span>
+        </div>
+      </div>
+      <div data-ref="issue_method_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueMethod')}}">
+          <on type="change">
+            <!-- 발급방법 필터 노출 스위치. 아래 발급조건과 짝으로 보는 일이 많아 둘을 같은 쪽에 두는 편이 낫다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="all" checked="{{(_local.filter.issueMethod || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 발급방법 — 전체. -->
+                <set-state target="_local" filter.issueMethod="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="direct" checked="{{_local.filter.issueMethod === 'direct'}}" class="radio">
+              <on type="change">
+                <!-- 직접발급. 관리자가 회원을 지정해 주는 방식이다(즉시발급 창). -->
+                <set-state target="_local" filter.issueMethod="direct"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.direct</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="download" checked="{{_local.filter.issueMethod === 'download'}}" class="radio">
+              <on type="change">
+                <!-- 다운로드. 회원이 쇼핑몰에서 직접 받아 가는 방식이다. -->
+                <set-state target="_local" filter.issueMethod="download"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.download</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="auto" checked="{{_local.filter.issueMethod === 'auto'}}" class="radio">
+              <on type="change">
+                <!-- 자동발급. 아래 "발급조건" 이 맞을 때 시스템이 준다 — 그래서 이 둘은 함께 보는 일이 많다. -->
+                <set-state target="_local" filter.issueMethod="auto"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.auto</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="issue_condition_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueCondition') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueCondition')}}">
+          <on type="change">
+            <!-- 발급조건 필터 노출 스위치. 자동발급을 쓰지 않는 몰에서는 늘 "전체" 로 남는 행이다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="all" checked="{{(_local.filter.issueCondition || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <!-- 발급조건 — 전체. -->
+                <set-state target="_local" filter.issueCondition="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="manual" checked="{{_local.filter.issueCondition === 'manual'}}" class="radio">
+              <on type="change">
+                <!-- 수동. 조건 없이 관리자가 줄 때다. -->
+                <set-state target="_local" filter.issueCondition="manual"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.manual</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="signup" checked="{{_local.filter.issueCondition === 'signup'}}" class="radio">
+              <on type="change">
+                <!-- 회원가입. 가입 시점에 자동으로 나간다. -->
+                <set-state target="_local" filter.issueCondition="signup"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.signup</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="first_purchase" checked="{{_local.filter.issueCondition === 'first_purchase'}}" class="radio">
+              <on type="change">
+                <!-- 첫 구매. 첫 주문이 확정될 때 나간다. -->
+                <set-state target="_local" filter.issueCondition="first_purchase"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.first_purchase</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="birthday" checked="{{_local.filter.issueCondition === 'birthday'}}" class="radio">
+              <on type="change">
+                <!-- 생일. 생일 정보가 없는 회원에게는 나가지 않는다. -->
+                <set-state target="_local" filter.issueCondition="birthday"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.birthday</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="min_order_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('minOrderAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('minOrderAmount')}}">
+          <on type="change">
+            <!-- 최소 주문금액 필터 노출 스위치. 값 하나짜리 행이다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount</span>
+        <div class="flex-center gap-2">
+          <input type="number" name="minOrderAmount" class="input w-36" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_placeholder" value="{{_local.filter.minOrderAmount || ''}}">
+            <on type="change">
+              <!-- 최소 주문금액. 이 금액을 넘어야 쓸 수 있는 쿠폰만 거른다 — 쿠폰의 조건이지 검색 결과의 금액이 아니다. -->
+              <set-state target="_local" filter.minOrderAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_suffix</span>
+        </div>
+      </div>
+      <div data-ref="valid_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('validPeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('validPeriod')}}">
+          <on type="change">
+            <!-- 사용 가능 기간 필터 노출 스위치. 만든 날·발급 기간과 헷갈리기 쉬운 축이다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period</span>
+        <div class="flex-center gap-2">
+          <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+          <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}" type="date" name="validStartDate" value="{{_local.filter.validStartDate || ''}}" class="input w-36">
+            <on type="change">
+              <!-- 사용 가능 기간 시작. 만든 날과 달리 빠른 기간 버튼이 없고, 값을 지워도 다른 값에 영향을 주지 않는다. -->
+              <set-state target="_local" filter.validStartDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}" type="date" name="validEndDate" value="{{_local.filter.validEndDate || ''}}" class="input w-36">
+            <on type="change">
+              <!-- 사용 가능 기간 종료. 지난 쿠폰을 찾을 때 쓴다. -->
+              <set-state target="_local" filter.validEndDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <div data-ref="issue_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issuePeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issuePeriod')}}">
+          <on type="change">
+            <!-- 발급 기간 필터 노출 스위치. 사용 기간과 별개 축이라 둘을 함께 켜 두면 비교가 쉽다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period</span>
+        <div class="flex-center gap-2">
+          <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+          <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}" type="date" name="issueStartDate" value="{{_local.filter.issueStartDate || ''}}" class="input w-36">
+            <on type="change">
+              <!-- 발급 기간 시작. 사용 기간과 다른 축이다 — 발급은 끝났는데 아직 쓸 수 있는 쿠폰이 있을 수 있다. -->
+              <set-state target="_local" filter.issueStartDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}" type="date" name="issueEndDate" value="{{_local.filter.issueEndDate || ''}}" class="input w-36">
+            <on type="change">
+              <!-- 발급 기간 종료. -->
+              <set-state target="_local" filter.issueEndDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <div data-ref="creator_filter_row" data-slot="{{(_local.visibleFilters || []).includes('creator') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('creator')}}">
+          <on type="change">
+            <!-- 만든 사람 필터 노출 스위치. 관리자가 여럿인 몰에서만 의미가 있다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
+        <div class="flex-center gap-2 flex-1">
+          <searchable-dropdown data-type="composite" options="{{_local.creatorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_initial" class="w-64">
+            <on event="onSearch">
+              <!-- 만든 사람 검색. 관리자 수가 많을 수 있어 미리 받아 두지 않고 입력할 때마다 코어 회원 검색 API 를 친다(300ms 로 묶는다). 실패하면 이전 결과를 비운다 — 남기면 방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다. 검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다. -->
+              <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
+                <success>
+                  <set-state target="local" creatorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :creatorSearchResults="[]"/>
+                </fail>
+                <query keyword="{{$args[0]}}"/>
+              </api-call>
+            </on>
+            <on type="change" event="onChange">
+              <!-- 고른 사람은 이름이 아니라 uuid 로 담는다 — 동명이인이 있고 이름이 바뀌어도 같은 사람을 가리켜야 한다. -->
+              <set-state target="local" filter.createdBy="{{$args[0]}}"/>
+            </on>
+          </searchable-dropdown>
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:sirsoft-ecommerce.common.remove">
+            <on type="click">
+              <!-- 고른 사람 지우기. 선택과 검색 결과를 함께 비워, 지운 뒤에도 이전 후보 목록이 남지 않게 한다. -->
+              <set-state target="local" filter.createdBy="" :creatorSearchResults="[]"/>
+            </on>
+            <icon name="xmark" class="text-base"/>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-4">
+      <responsive on="portable" class="row-stack mb-4"/>
+      <div data-ref="search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <select name="searchField" class="w-32" value="{{_local.filter.searchField || 'all'}}">
+          <responsive on="portable" class="w-24"/>
+          <options>
+            <option value="all">$t:common.all</option>
+            <option value="name">$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name</option>
+            <option value="description">$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.description</option>
+          </options>
+          <on type="change">
+            <!-- 검색어를 어느 칸에서 찾을지. 범위를 좁히면 서버가 훑는 칸이 줄어든다. -->
+            <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <input type="text" name="searchKeyword" class="input flex-1 min-w-[200px]" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.search.placeholder" value="{{_local.filter.searchKeyword || ''}}">
+          <responsive on="portable" class="input flex-1"/>
+          <on type="change">
+            <!-- 타이핑은 담기만 한다 — 실제 조회는 Enter 나 검색 버튼이다. -->
+            <set-state target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+          </on>
+          <on type="keypress" key="Enter">
+            <action-ref name="searchCoupons"/>
+          </on>
+        </input>
+      </div>
+      <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
+        <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
+        <column-selector data-type="composite" data-ref="column_selector" id="admin_coupon_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+          <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
+          <prop name="columns">
+            <item field="target_type_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type"/>
+            <item field="name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" :required="true"/>
+            <item field="benefit_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount"/>
+            <item field="valid_period_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period"/>
+            <item field="issue_period_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period"/>
+            <item field="issue_count_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count"/>
+            <item field="issue_method_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method"/>
+            <item field="issue_condition_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition"/>
+            <item field="issue_status_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status"/>
+            <item field="created_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at"/>
+            <item field="created_by_name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by"/>
+          </prop>
+          <prop name="defaultColumns">
+            <item>target_type_label</item>
+            <item>name</item>
+            <item>benefit_formatted</item>
+            <item>valid_period_formatted</item>
+            <item>issue_period_formatted</item>
+            <item>issue_count_formatted</item>
+            <item>issue_method_label</item>
+            <item>issue_condition_label</item>
+            <item>issue_status_label</item>
+            <item>created_at</item>
+            <item>created_by_name</item>
+          </prop>
+          <on type="change" event="onColumnVisibilityChange">
+            <!-- 표의 열 선택. 고른 열은 ColumnSelector 가 `id`(admin_coupon_list_columns)와 로그인 사용자로 키를 만들어 브라우저에 남기므로 새로고침해도 유지된다. -->
+            <set-state target="_local" visibleColumns="{{$args[0]}}"/>
+          </on>
+        </column-selector>
+        <button type="button" class="btn btn-outline flex-center gap-2">
+          <responsive on="portable" class="flex-center btn btn-outline justify-center gap-2 w-full"/>
+          <on type="click">
+            <!-- 상세 필터 펼침/접힘. 편집모드를 켜면 아래 검색편집 버튼이 이 값을 강제로 참으로 만든다. -->
+            <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.promotion_coupon.search.detail_search</span>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <slot-container data-type="composite" data-ref="basic_filters_section" slotId="basic_filters" class="filter-grid"/>
+    <slot-container data-type="composite" data-ref="detail_filters_section" data-if="{{_local.showDetailFilter}}" slotId="detail_filters" class="filter-grid mt-4 pt-4"/>
+    <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+      <div data-ref="filter_actions_row1" class="contents">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <div data-ref="edit_search_button_wrapper" class="flex-1">
+          <responsive on="portable" class="hidden"/>
+          <button data-ref="edit_search_button_pc" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex-center gap-2' : 'btn btn-outline flex-center gap-2'}}">
+            <on type="click">
+              <!-- 검색편집을 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 다시 꺼내려면 그것이 보여야 하기 때문이고, 끌 때는 펼침 상태를 그대로 둔다. -->
+              <sequence>
+                <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+              </sequence>
+            </on>
+            <icon name="sliders" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search</span>
+          </button>
+        </div>
+        <div class="flex-center justify-center gap-2 flex-1">
+          <responsive on="portable" class="contents"/>
+          <button data-ref="search_button" type="button" class="btn btn-primary">
+            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <on type="click">
+              <action-ref name="searchCoupons"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.promotion_coupon.action.search
+          </button>
+          <!-- 필터 초기화(넓은 화면). 검색 조건과 함께 발급자 검색 결과 목록까지 비운다 — 남겨 두면 초기화한 뒤에도 지난 검색의 후보가 떠 있다 -->
+          <button data-ref="reset_button_pc" type="button" class="btn btn-outline">
+            <responsive on="portable" class="hidden"/>
+            <on type="click">
+              <set-state target="_local" :creatorSearchResults="[]">
+                <field name="filter">
+                  <field name="searchField" value="all"/>
+                  <field name="searchKeyword" value=""/>
+                  <field name="targetType" value="all"/>
+                  <field name="discountType" value="all"/>
+                  <field name="issueStatus" value="all"/>
+                  <field name="issueMethod" value="all"/>
+                  <field name="issueCondition" value="all"/>
+                  <field name="minBenefitAmount" value=""/>
+                  <field name="maxBenefitAmount" value=""/>
+                  <field name="minOrderAmount" value=""/>
+                  <field name="createdStartDate" value=""/>
+                  <field name="createdEndDate" value=""/>
+                  <field name="createdDateQuick" value=""/>
+                  <field name="validStartDate" value=""/>
+                  <field name="validEndDate" value=""/>
+                  <field name="issueStartDate" value=""/>
+                  <field name="issueEndDate" value=""/>
+                  <field name="createdBy" value=""/>
+                </field>
+              </set-state>
+              <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+              <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="false" :replace="true"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.promotion_coupon.action.reset
+          </button>
+        </div>
+        <div class="flex-1">
+          <responsive on="portable" class="hidden"/>
+        </div>
+      </div>
+      <div data-ref="filter_actions_row2_mobile" class="hidden">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <button data-ref="edit_search_button_mobile" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex items-center justify-center gap-2 flex-1' : 'btn btn-outline flex items-center justify-center gap-2 flex-1'}}">
+          <on type="click">
+            <!-- 좁은 화면용 짝 검색편집 버튼. 넓은 화면 버튼과 같이 상세 필터를 강제로 펼친다. -->
+            <sequence>
+              <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+            </sequence>
+          </on>
+          <icon name="sliders" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search</span>
+        </button>
+        <!-- 필터 초기화(좁은 화면). 넓은 화면 버튼과 같은 일을 하며, 두 벌을 두는 것은 반응형에서 버튼 배치가 달라지기 때문이다 -->
+        <button data-ref="reset_button_mobile" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <set-state target="_local" :creatorSearchResults="[]">
+              <field name="filter">
+                <field name="searchField" value="all"/>
+                <field name="searchKeyword" value=""/>
+                <field name="targetType" value="all"/>
+                <field name="discountType" value="all"/>
+                <field name="issueStatus" value="all"/>
+                <field name="issueMethod" value="all"/>
+                <field name="issueCondition" value="all"/>
+                <field name="minBenefitAmount" value=""/>
+                <field name="maxBenefitAmount" value=""/>
+                <field name="minOrderAmount" value=""/>
+                <field name="createdStartDate" value=""/>
+                <field name="createdEndDate" value=""/>
+                <field name="createdDateQuick" value=""/>
+                <field name="validStartDate" value=""/>
+                <field name="validEndDate" value=""/>
+                <field name="issueStartDate" value=""/>
+                <field name="issueEndDate" value=""/>
+                <field name="createdBy" value=""/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="false" :replace="true"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.promotion_coupon.action.reset
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

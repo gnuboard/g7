@@ -1,0 +1,14 @@
+<!-- 점검 모드(`php artisan down`)일 때의 안내 화면. 에러 코드는 503 이지만 원인이 장애가 아니라
+  운영자의 의도이므로 `errors/503` 과 문구·아이콘을 분리했다.
+  나가는 버튼을 두지 않는다 — 점검 중에는 어느 관리자 화면으로 보내도 같은 자리로 돌아온다. -->
+<layout name="errors/maintenance" version="1.0.0" extends="_admin_base">
+  <meta title="$t:errors.maintenance.title" :is_error_layout="true" :error_code="503"/>
+  <slot name="content">
+    <div data-ref="maintenance_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
+      <icon name="gear" class="text-8xl text-blue-500 dark:text-blue-400 mb-6 animate-spin"/>
+      <h1 class="text-primary text-3xl font-bold mb-4">$t:errors.maintenance.title</h1>
+      <p class="text-secondary text-lg mb-2 max-w-md">$t:errors.maintenance.message</p>
+      <p class="text-sm text-gray-500 dark:text-gray-500 max-w-md">$t:errors.maintenance.description</p>
+    </div>
+  </slot>
+</layout>

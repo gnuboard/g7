@@ -28,6 +28,11 @@ class SeoCacheManager implements SeoCacheManagerInterface
      */
     private const PRUNE_INTERVAL_SECONDS = 60;
 
+    /**
+     * SEO 캐시 관리자를 생성합니다.
+     *
+     * @param  CacheInterface  $cache  코어 캐시 드라이버
+     */
     public function __construct(private readonly CacheInterface $cache) {}
 
     /**
@@ -148,7 +153,16 @@ class SeoCacheManager implements SeoCacheManagerInterface
     }
 
     /**
-     * 캐시 키 빌드 (URL + 로케일)
+     * 캐시 키 빌드 (사이트 origin + URL + 로케일)
+     *
+     * 예전 키(`url|locale`)에는 Host 가 없어 위조 Host 로 그린 화면이 정상 방문자와 같은 칸에
+     * 저장됐다. 근본 조치는 화면이 Host 를 쓰지 않게 한 것(SeoUrl)이고, 키의 origin 은 2차
+     * 방어다 — 사이트 주소가 바뀌면 이전 주소로 그린 화면이 서빙되지 않고, 이 변경 이전에
+     * 오염됐을 수 있는 항목은 배포와 함께 모두 미스가 된다.
+     *
+     * origin 은 **요청 origin 이 아니라 사이트 주소**에서 뽑는다. 요청 origin 으로 가르면
+     * `Host: example.com:1`…`:50` 처럼 포트만 바꾼 요청이 경로당 변종 상한(canStore)을 채워
+     * 정상 origin 의 저장을 막을 수 있고, http/https·포트별로 캐시가 쪼개져 적중률도 떨어진다.
      *
      * @param  string  $url  URL
      * @param  string  $locale  로케일
@@ -156,11 +170,13 @@ class SeoCacheManager implements SeoCacheManagerInterface
      */
     private function buildKey(string $url, string $locale): string
     {
-        return self::CACHE_PREFIX.md5($url.'|'.$locale);
+        return self::CACHE_PREFIX.md5(SeoUrl::origin().'|'.$url.'|'.$locale);
     }
 
     /**
      * 캐시 활성화 여부 확인 — 고급 탭 값을 쓰되 SEO 탭에 별도 지정이 있으면 그것이 우선 (D19).
+     *
+     * @return bool 캐시 사용 여부
      */
     private function isEnabled(): bool
     {
@@ -169,6 +185,8 @@ class SeoCacheManager implements SeoCacheManagerInterface
 
     /**
      * 캐시 TTL (초) — 고급 탭 값을 쓰되 SEO 탭에 별도 지정이 있으면 그것이 우선 (D19).
+     *
+     * @return int 캐시 TTL (초)
      */
     private function getCacheTtl(): int
     {
@@ -177,6 +195,8 @@ class SeoCacheManager implements SeoCacheManagerInterface
 
     /**
      * 캐시 인덱스를 조회합니다.
+     *
+     * @return array<string, array<string, mixed>> 캐시 키 → 인덱스 항목
      */
     private function getIndex(): array
     {
@@ -232,6 +252,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
      *
      * @param  string  $url  URL
      * @param  string  $pattern  패턴 (와일드카드 * 지원)
+     * @return bool 매칭 여부
      */
     private function matchesPattern(string $url, string $pattern): bool
     {
@@ -253,6 +274,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
      * @param  string  $locale  로케일
      * @param  string  $html  HTML
      * @param  string  $layoutName  레이아웃명
+     * @return void
      */
     public function putWithLayout(string $url, string $locale, string $html, string $layoutName): void
     {
@@ -270,6 +292,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
      * @param  string  $locale  로케일
      * @param  string  $html  저장할 HTML
      * @param  string|null  $layoutName  레이아웃명 (없으면 인덱스에 기록하지 않음)
+     * @return void
      */
     private function storePage(string $url, string $locale, string $html, ?string $layoutName): void
     {

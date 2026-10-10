@@ -5,6 +5,44 @@ import { createLogger } from '../utils/Logger';
 const logger = createLogger('ErrorDisplay');
 
 /**
+ * 오류 화면 기본 문구 — 번역 파일을 받지 못한 경우(그것이 오류 원인일 수도 있다)에도 화면 언어를 따르도록
+ * 엔진에 내장한다. 번역 키가 풀리면(`G7Core.t`) 그 값을 먼저 쓴다(engine-v1.78.5).
+ * 종전에는 제목 「페이지 로딩 실패」·버튼 「새로고침」 이 영어 화면에서도 한국어로 박혀 있었다(7.1.0 J O-D 관측).
+ */
+const BUILTIN_TEXT: Record<string, Record<'ko' | 'en' | 'ja', string>> = {
+    'core.errors.page_load_failed': { ko: '페이지 로딩 실패', en: 'Page failed to load', ja: 'ページの読み込みに失敗しました' },
+    'core.errors.init_failed': { ko: '초기화 실패', en: 'Initialization failed', ja: '初期化に失敗しました' },
+    'core.errors.reload': { ko: '새로고침', en: 'Reload', ja: '再読み込み' },
+    'core.errors.layout_forbidden': {
+        ko: '이 화면을 볼 권한이 없습니다.',
+        en: 'You do not have permission to view this page.',
+        ja: 'この画面を表示する権限がありません。',
+    },
+    'core.errors.layout_not_found': {
+        ko: '요청한 화면을 찾을 수 없습니다.',
+        en: 'The requested page could not be found.',
+        ja: '要求された画面が見つかりません。',
+    },
+    // 레이아웃 편집기 번들(layout-editor.min.js) 실패 화면 — 편집기 화면 자체가 뜨지 않은 상태라
+    // 번역 파일보다 내장 문구가 먼저 필요하다(engine-v1.78.6, 7.1.0 J O-J4).
+    'core.errors.layout_editor_load_failed': {
+        ko: '레이아웃 편집기 로드 실패',
+        en: 'Layout editor failed to load',
+        ja: 'レイアウトエディターの読み込みに失敗しました',
+    },
+    'core.errors.layout_editor_bundle_failed': {
+        ko: '편집기를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.',
+        en: 'The editor could not be loaded. Check your network connection and try again.',
+        ja: 'エディターを読み込めませんでした。ネットワーク状態を確認してから、もう一度お試しください。',
+    },
+    'core.errors.layout_editor_init_failed': {
+        ko: '편집기를 불러왔으나 초기화하지 못했습니다. 페이지를 새로고침해 주세요.',
+        en: 'The editor was loaded but could not start. Please reload the page.',
+        ja: 'エディターを読み込みましたが、初期化できませんでした。ページを再読み込みしてください。',
+    },
+};
+
+/**
  * 에러 표시 옵션
  */
 export interface ErrorDisplayOptions {
@@ -34,6 +72,32 @@ export interface ErrorDisplayOptions {
  * 초기화 실패 시점에는 CSS가 아직 로드되지 않았을 수 있기 때문입니다.
  */
 export class ErrorDisplay {
+    /**
+     * 오류 화면 문구를 화면 언어로 고릅니다.
+     *
+     * 번역 엔진(`G7Core.t`)이 키를 풀면 그 값을, 아니면 내장 문구를 화면 언어(`<html lang>`)로 고릅니다.
+     *
+     * @param key 번역 키 (`core.errors.*`)
+     * @param locale 화면 언어 (생략 시 `<html lang>`)
+     * @returns 표시 문구
+     * @since engine-v1.78.5
+     */
+    static text(key: string, locale?: string): string {
+        try {
+            const translated = (window as any).G7Core?.t?.(key);
+            if (typeof translated === 'string' && translated !== '' && translated !== key) {
+                return translated;
+            }
+        } catch {
+            // 번역 엔진이 아직 준비되지 않았으면 내장 문구로 내려간다
+        }
+        const lang = (locale || document.documentElement.lang || 'ko').slice(0, 2) as 'ko' | 'en' | 'ja';
+        const builtin = BUILTIN_TEXT[key];
+        if (!builtin) return key;
+
+        return builtin[lang] ?? builtin.en;
+    }
+
     /**
      * 에러 화면을 렌더링합니다.
      *
@@ -146,7 +210,7 @@ export class ErrorDisplay {
                 <div style="${styles.card}">
                     <!-- 아이콘 -->
                     <div style="${styles.iconContainer}">
-                        <i class="fa-solid ${options.icon}" style="${styles.icon}"></i>
+                        <i class="fa-solid ${options.icon}" style="${styles.icon}" aria-hidden="true"></i>
                     </div>
 
                     <!-- 제목 -->
@@ -197,8 +261,8 @@ export class ErrorDisplay {
                                 onmouseover="this.style.backgroundColor='#1d4ed8'"
                                 onmouseout="this.style.backgroundColor='#2563eb'"
                             >
-                                <i class="fa-solid fa-rotate-right" style="margin-right: 0.5rem;"></i>
-                                새로고침
+                                <i class="fa-solid fa-rotate-right" style="margin-right: 0.5rem;" aria-hidden="true"></i>
+                                ${this.escapeHtml(this.text('core.errors.reload'))}
                             </button>
                         </div>
                     `

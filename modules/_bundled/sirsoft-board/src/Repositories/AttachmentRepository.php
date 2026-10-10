@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Repositories;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,54 @@ class AttachmentRepository implements AttachmentRepositoryInterface
             ->where('board_id', $board?->id)
             ->where('id', $id)
             ->first();
+    }
+
+    /**
+     * 이 게시판에 올렸지만 아직 글에 이어지지 않은 임시 첨부를 ID 로 조회
+     *
+     * 임시 첨부는 board_id=0 으로 저장되고 경로가 `{slug}/temp/{temp_key}/…` 이다. 경로 앞부분으로
+     * 게시판을 가려 다른 게시판 주소로는 찾지 못하게 한다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  첨부파일 ID
+     * @return Attachment|null 임시 첨부 또는 null
+     */
+    public function findTempById(string $slug, int $id): ?Attachment
+    {
+        return Attachment::query()
+            ->where('id', $id)
+            ->where(fn ($query) => $this->whereBoardTemp($query, $slug))
+            ->first();
+    }
+
+    /**
+     * 조회를 이 게시판의 임시 첨부(board_id=0, 글 미연결, `{slug}/temp/` 경로)로 좁힙니다.
+     *
+     * @param  Builder<Attachment>  $query  첨부 쿼리
+     * @param  string  $slug  게시판 슬러그
+     * @return void 반환값 없음
+     */
+    private function whereBoardTemp($query, string $slug): void
+    {
+        $query->where('board_id', 0)
+            ->whereNull('post_id')
+            ->where('path', 'like', addcslashes($slug, '\%_').'/temp/%');
+    }
+
+    /**
+     * 조회를 이 게시판 첨부 또는 이 게시판의 임시 첨부로 좁힙니다(삭제·순서 변경 대상).
+     *
+     * @param  Builder<Attachment>  $query  첨부 쿼리
+     * @param  string  $slug  게시판 슬러그
+     * @param  int|null  $boardId  게시판 ID
+     * @return void 반환값 없음
+     */
+    private function whereBoardOrBoardTemp($query, string $slug, ?int $boardId): void
+    {
+        $query->where(function ($scope) use ($slug, $boardId) {
+            $scope->where('board_id', $boardId)
+                ->orWhere(fn ($temp) => $this->whereBoardTemp($temp, $slug));
+        });
     }
 
     /**
@@ -191,8 +240,9 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     {
         $board = Board::where('slug', $slug)->first();
 
+        // 글에 이어지지 않은 임시 첨부(board_id=0)도 대상이다 — 저장이 실패한 글쓰기 화면에서 지울 수 있어야 한다
         $attachment = Attachment::query()
-            ->where('board_id', $board?->id)
+            ->where(fn ($query) => $this->whereBoardOrBoardTemp($query, $slug, $board?->id))
             ->where('id', $id)
             ->firstOrFail();
 
@@ -213,8 +263,9 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         DB::beginTransaction();
         try {
             foreach ($orders as $id => $order) {
+                // 임시 첨부(board_id=0)의 순서도 바꾼다 — 글에 이을 때 이 순서를 따른다
                 Attachment::query()
-                    ->where('board_id', $board?->id)
+                    ->where(fn ($query) => $this->whereBoardOrBoardTemp($query, $slug, $board?->id))
                     ->where('id', $id)
                     ->update(['order' => $order]);
             }
@@ -358,6 +409,40 @@ class AttachmentRepository implements AttachmentRepositoryInterface
                 'temp_key' => null,
                 'updated_at' => now(),
             ]);
+    }
+
+    /**
+     * 주어진 ID 중 다른 사람이 올린 임시 첨부(아직 글에 이어지지 않은 것)의 ID 를 돌려줍니다.
+     *
+     * 첨부 번호는 순번이라 추측할 수 있다 — 임시 키처럼 비밀이 아니므로, 번호로 잇는 경로는
+     * 올린 사람이 같은지로만 판단한다. 이미 글에 이어진 첨부는 대상이 아니다(수정 화면이 기존
+     * 첨부 번호를 함께 보내며, 그 연결은 linkAttachmentsByIds 가 손대지 않는다).
+     *
+     * @param  array<int>  $ids  첨부파일 ID 배열
+     * @param  int|null  $userId  현재 사용자 ID (null 이면 비회원)
+     * @return array<int, int> 남이 올린 임시 첨부 ID 목록
+     */
+    public function findForeignTempAttachmentIds(array $ids, ?int $userId): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        return Attachment::query()
+            ->whereIn('id', $ids)
+            ->whereNull('post_id')
+            ->where(function ($query) use ($userId) {
+                if ($userId === null) {
+                    $query->whereNotNull('created_by');
+
+                    return;
+                }
+
+                $query->whereNull('created_by')->orWhere('created_by', '!=', $userId);
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /**
@@ -520,6 +605,24 @@ class AttachmentRepository implements AttachmentRepositoryInterface
             ->orderBy('deleted_at')
             ->orderBy('id')
             ->limit($limit)
+            ->get(['id', 'board_id', 'post_id', 'disk', 'path', 'deleted_at']);
+    }
+
+    /**
+     * 게시글들에 딸린 첨부를 삭제 여부와 무관하게 조회합니다 (개인정보 보유기간 파기용).
+     *
+     * @param  array<int, int>  $postIds  게시글 ID 목록
+     * @return Collection 첨부 목록 (소프트 삭제분 포함)
+     */
+    public function findWithTrashedByPostIds(array $postIds): Collection
+    {
+        if ($postIds === []) {
+            return new Collection;
+        }
+
+        return Attachment::withTrashed()
+            ->whereIn('post_id', $postIds)
+            ->orderBy('id')
             ->get(['id', 'board_id', 'post_id', 'disk', 'path', 'deleted_at']);
     }
 

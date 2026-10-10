@@ -197,7 +197,8 @@
       "rejected": "却下",
       "suspended": "投稿停止",
       "deleted": "削除",
-      "restored": "復元"
+      "restored": "復元",
+      "report_cancelled": "通報キャンセル"
     },
     "no_histories": "処理内容がありません。",
     "cancelled_badge": "キャンセル済み ({{cancelled_at}})",

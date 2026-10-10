@@ -1,165 +1,170 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Order List - Preset Management Modal"
-  },
-  "id": "modal_preset_manage",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title",
-    "description": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!presets.data || presets.data.length === 0}}",
-      "props": {
-        "className": "text-center py-8 text-gray-500 dark:text-gray-400"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty"
+    "comment": "주문 목록 — 검색조건 프리셋 관리 창. 저장해 둔 조건 묶음의 이름을 바꾸거나 지운다. 이름 바꾸기·\n  삭제·새로 저장은 각각 **다른 창**을 열고 이 창은 닫히지 않은 채 그 위에 겹친다 — 그래서 대상\n  프리셋을 `_global` 에 먼저 담고 연다(창끼리는 서로의 `_local` 을 보지 못한다).",
+    "meta": {
+        "is_partial": true,
+        "description": "Order List - Preset Management Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{presets.data && presets.data.length > 0}}",
-      "props": {
-      },
-      "children": [
+    "id": "modal_preset_manage",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "iteration": {
-            "source": "presets.data",
-            "item_var": "presetItem"
-          },
-          "props": {
-            "className": "flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-heading"
-              },
-              "text": "{{presetItem.name}}"
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!presets.data || presets.data.length === 0}}",
+            "props": {
+                "className": "text-center py-8 text-gray-500 dark:text-gray-400"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "pen-to-square",
-                        "className": "text-sm"
-                      }
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "editingPresetId": "{{presetItem.id}}",
-                            "editingPresetName": "{{presetItem.name}}"
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "modal_preset_edit"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "trash",
-                        "className": "text-sm"
-                      }
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "deletingPresetId": "{{presetItem.id}}",
-                            "deletingPresetName": "{{presetItem.name}}"
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "modal_preset_delete_confirm"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mt-6"
-      },
-      "children": [
+            "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty"
+        },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_new",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "openModal",
-              "target": "modal_preset_save"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "if": "{{presets.data && presets.data.length > 0}}",
+            "props": {
+                "className": "stack-tight"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "presets.data",
+                        "item_var": "presetItem"
+                    },
+                    "props": {
+                        "className": "flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "{{presetItem.name}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "이름 바꾸기. 반복 변수 `presetItem` 은 이 목록 안에서만 살아 있으므로, 열릴 창이 읽을 수 있도록 값을 `_global` 로 옮겨 담고 연다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "editingPresetId": "{{presetItem.id}}",
+                                                        "editingPresetName": "{{presetItem.name}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "modal_preset_edit"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg",
+                                        "aria-label": "$t:common.edit"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "pen-to-square",
+                                                "className": "text-sm"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "삭제. 확인 창이 이름을 문장에 넣어 보여 주는데 그 창은 프리셋 목록을 따로 조회하지 않으므로, id 만이 아니라 이름도 함께 넘긴다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "deletingPresetId": "{{presetItem.id}}",
+                                                        "deletingPresetName": "{{presetItem.name}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "modal_preset_delete_confirm"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg",
+                                        "aria-label": "$t:common.delete"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "trash",
+                                                "className": "text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "openModal",
+                            "target": "modal_preset_save"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "w-full px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_new"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\PayNicepayments\Tests\Feature\Controllers;
 
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
@@ -15,6 +17,16 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 class PaymentCloseReportControllerTest extends PluginTestCase
 {
+    /**
+     * 주문 소유자의 닫힘 보고는 결제대기 주문과 결제를 모두 취소로 기록한다.
+     *
+     * 다른 PG(KG이니시스·NHN KCP·토스페이먼츠)와 같이 결제 상태는 실패가 아니라 취소이고,
+     * 결제 취소 이력이 1건 남는다.
+     *
+     * @effects close_report_marks_pending_order_failed_and_payment_cancelled
+     *
+     * @return void 반환값 없음
+     */
     public function test_close_report_marks_pending_order_failed_and_payment_cancelled(): void
     {
         $order = OrderFactory::new()->create([
@@ -35,6 +47,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             'paid_amount_local' => 0,
         ]);
 
+        $this->actAsOrderOwner($order);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-001',
             'price' => 10000,
@@ -46,11 +60,22 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ->assertJsonPath('data.status', 'recorded');
 
         $order->refresh();
+        $payment = $order->payment()->first();
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
-        $this->assertEquals(PaymentStatusEnum::FAILED, $order->payment->payment_status);
+        $this->assertEquals(PaymentStatusEnum::CANCELLED, $payment->payment_status);
+        $this->assertCount(1, $payment->cancel_history ?? []);
+        $this->assertSame('USER_CANCEL', $payment->cancel_history[0]['cancel_code'] ?? null);
+        $this->assertSame('nicepay-window-closed', $payment->cancel_history[0]['cancel_message'] ?? null);
     }
 
-    public function test_close_report_marks_real_payment_failed(): void
+    /**
+     * 주문 소유자의 닫힘 보고는 실제 결제 레코드를 취소로 남기고, 재결제 판정에 쓸 실패 코드를 메타에 보존한다.
+     *
+     * @effects close_report_marks_real_payment_cancelled_with_history
+     *
+     * @return void 반환값 없음
+     */
+    public function test_close_report_marks_real_payment_cancelled_with_history(): void
     {
         $order = OrderFactory::new()->create([
             'order_number' => 'ORD-NICE-CLOSE-REAL',
@@ -70,6 +95,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             'paid_amount_local' => 0,
         ]);
 
+        $this->actAsOrderOwner($order);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-REAL',
             'price' => 10000,
@@ -85,11 +112,71 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $payment->refresh();
 
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
-        $this->assertEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
+        $this->assertEquals(PaymentStatusEnum::CANCELLED, $payment->payment_status);
         $this->assertEquals('USER_CANCEL', $order->order_meta['payment_failure_code'] ?? null);
-        $this->assertNull($payment->cancelled_at);
+        $this->assertNotNull($payment->cancelled_at);
+        $this->assertCount(1, $payment->cancel_history ?? []);
+        $this->assertSame('USER_CANCEL', $payment->payment_meta['failure_code'] ?? null);
+        $this->assertSame('nicepayments', $payment->payment_meta['failure_source'] ?? null);
     }
 
+    /**
+     * 같은 닫힘 보고가 두 번 와도 두 번째는 무시되어 취소 이력이 1건으로 유지된다.
+     *
+     * @effects close_report_second_report_keeps_single_cancel_history
+     *
+     * @return void 반환값 없음
+     */
+    public function test_close_report_second_report_keeps_single_cancel_history(): void
+    {
+        $order = OrderFactory::new()->create([
+            'order_number' => 'ORD-NICE-CLOSE-TWICE',
+            'order_status' => OrderStatusEnum::PENDING_ORDER,
+            'currency' => 'KRW',
+            'currency_snapshot' => self::krwCurrencySnapshot(),
+            'subtotal_amount' => 10000,
+            'total_amount' => 10000,
+            'total_due_amount' => 10000,
+            'total_paid_amount' => 0,
+        ]);
+        OrderPaymentFactory::new()->create([
+            'order_id' => $order->id,
+            'payment_status' => PaymentStatusEnum::READY,
+            'payment_method' => PaymentMethodEnum::CARD,
+            'pg_provider' => 'nicepayments',
+            'paid_amount_local' => 0,
+        ]);
+
+        $this->actAsOrderOwner($order);
+
+        $payload = [
+            'oid' => 'ORD-NICE-CLOSE-TWICE',
+            'price' => 10000,
+            'payment_method' => 'card',
+            'reason' => 'nicepay-window-closed',
+        ];
+
+        $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', $payload)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'recorded');
+
+        $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', $payload)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ignored')
+            ->assertJsonPath('data.reason', 'order_not_payable');
+
+        $payment = $order->payment()->first();
+        $this->assertEquals(PaymentStatusEnum::CANCELLED, $payment->payment_status);
+        $this->assertCount(1, $payment->cancel_history ?? []);
+    }
+
+    /**
+     * 보고 금액이 주문 청구액과 다르면 거부한다.
+     *
+     * @effects close_report_rejects_amount_mismatch
+     *
+     * @return void 반환값 없음
+     */
     public function test_close_report_rejects_amount_mismatch(): void
     {
         $order = $this->makeOrder('ORD-NICE-CLOSE-002', 10000);
@@ -104,6 +191,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
         $this->app->instance(OrderProcessingService::class, $orderService);
 
+        $this->actAsOrderOwner($order);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-002',
             'price' => 9000,
@@ -113,6 +202,13 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ->assertJsonPath('errors.message.0', 'Payment amount does not match the order amount.');
     }
 
+    /**
+     * 청구할 수 없는 통화 설정이면 실패로 기록하지 않고 거부한다.
+     *
+     * @effects close_report_rejects_unchargeable_payment_currency_without_marking_failed
+     *
+     * @return void 반환값 없음
+     */
     public function test_close_report_rejects_unchargeable_payment_currency_without_marking_failed(): void
     {
         $order = $this->makeOrder('ORD-NICE-CLOSE-CURRENCY', 10000);
@@ -129,6 +225,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
         $this->app->instance(OrderProcessingService::class, $orderService);
 
+        $this->actAsOrderOwner($order);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-CURRENCY',
             'price' => 10000,
@@ -138,7 +236,16 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ->assertJsonPath('errors.message.0', 'Payment currency is not chargeable.');
     }
 
-    public function test_close_report_rejects_buyer_mismatch(): void
+    /**
+     * 주문자 연락처를 정확히 맞춰 보내도 소유자 인증이 없으면 거부된다 (KVE-2026-2434).
+     *
+     * 연락처는 제3자도 알 수 있어 소유 증명이 아니다. 종전에는 이 요청이 주문을 취소시켰다.
+     *
+     * @effects close_report_rejects_matching_buyer_contact_without_ownership
+     *
+     * @return void 반환값 없음
+     */
+    public function test_close_report_rejects_matching_buyer_contact_without_ownership(): void
     {
         $order = $this->makeOrder('ORD-NICE-CLOSE-003', 10000);
         $order->setRelation('shippingAddress', new OrderAddress([
@@ -160,14 +267,21 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-003',
             'price' => 10000,
-            'buyer_email' => 'attacker@example.com',
+            'buyer_email' => 'buyer@example.com',
             'buyer_phone' => '01012345678',
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order buyer verification failed.');
+            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
     }
 
+    /**
+     * 이미 결제할 수 없는 주문의 닫힘 보고는 무시한다.
+     *
+     * @effects close_report_ignores_order_that_is_no_longer_payable
+     *
+     * @return void 반환값 없음
+     */
     public function test_close_report_ignores_order_that_is_no_longer_payable(): void
     {
         $order = $this->makeOrder('ORD-NICE-CLOSE-004', 10000);
@@ -183,6 +297,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
         $this->app->instance(OrderProcessingService::class, $orderService);
 
+        $this->actAsOrderOwner($order);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-004',
             'price' => 10000,
@@ -193,6 +309,13 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ->assertJsonPath('data.reason', 'order_not_payable');
     }
 
+    /**
+     * 행을 잠근 뒤 주문을 다시 확인해, 그사이 결제완료된 주문은 실패 처리하지 않는다.
+     *
+     * @effects close_report_rechecks_locked_order_before_marking_failed
+     *
+     * @return void 반환값 없음
+     */
     public function test_close_report_rechecks_locked_order_before_marking_failed(): void
     {
         $order = OrderFactory::new()->create([
@@ -235,6 +358,9 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $orderService->shouldNotReceive('failPayment');
         $this->app->instance(OrderProcessingService::class, $orderService);
 
+        // 컨트롤러는 목이 돌려주는 $staleOrder 로 소유자를 확인한다.
+        $this->actAsOrderOwner($staleOrder);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-RACE',
             'price' => 10000,
@@ -251,6 +377,13 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $this->assertEquals(PaymentStatusEnum::PAID, $order->payment->payment_status);
     }
 
+    /**
+     * 주문 상태가 아직 결제대기여도 결제가 성공했으면 닫힘 보고를 무시한다.
+     *
+     * @effects close_report_ignores_order_when_payment_already_paid_but_status_still_pending
+     *
+     * @return void 반환값 없음
+     */
     public function test_close_report_ignores_order_when_payment_already_paid_but_status_still_pending(): void
     {
         // race 재현: 승인 콜백이 payment 를 먼저 PAID 로 갱신했으나 order_status 는 아직 PENDING_ORDER.
@@ -276,6 +409,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             'transaction_id' => 'TID_PAID_RACE',
         ]);
 
+        $this->actAsOrderOwner($order);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-PAID',
             'price' => 10000,
@@ -293,6 +428,13 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $this->assertNotEquals(OrderStatusEnum::CANCELLED, $order->order_status);
     }
 
+    /**
+     * 가상계좌 입금대기 주문은 뒤늦은 닫힘 보고로 취소되지 않는다.
+     *
+     * @effects close_report_ignores_vbank_order_waiting_for_deposit
+     *
+     * @return void 반환값 없음
+     */
     public function test_close_report_ignores_vbank_order_waiting_for_deposit(): void
     {
         $order = OrderFactory::new()->create([
@@ -322,6 +464,8 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ],
         ]);
 
+        $this->actAsOrderOwner($order);
+
         $response = $this->postJson('/api/plugins/sirsoft-pay_nicepayments/payment/close-report', [
             'oid' => 'ORD-NICE-CLOSE-VBANK-WAIT',
             'price' => 10000,
@@ -340,6 +484,34 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $this->assertNull($order->order_meta['payment_failure_code'] ?? null);
     }
 
+    /**
+     * 주문을 회원 소유로 만들고 그 회원으로 로그인합니다.
+     *
+     * 소유자 확인이 이 테스트의 관심사가 아닐 때 게이트를 정당하게 통과시키기 위한 준비다.
+     * 소유자 확인 자체는 PaymentCloseReportOwnershipTest 가 검증한다.
+     *
+     * @param  Order  $order  대상 주문 (저장된 주문이면 DB 에도 반영)
+     * @return User 로그인한 소유 회원
+     */
+    private function actAsOrderOwner(Order $order): User
+    {
+        $owner = User::factory()->create();
+        $order->user_id = $owner->id;
+        if ($order->exists) {
+            Order::query()->whereKey($order->getKey())->update(['user_id' => $owner->id]);
+        }
+        Sanctum::actingAs($owner);
+
+        return $owner;
+    }
+
+    /**
+     * 저장하지 않은 결제대기 주문 모델을 만듭니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  int  $amount  금액
+     * @return Order 생성한 주문
+     */
     private function makeOrder(string $orderNumber, int $amount): Order
     {
         $order = new Order;

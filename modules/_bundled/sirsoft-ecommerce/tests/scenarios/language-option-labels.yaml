@@ -1,0 +1,42 @@
+feature: language_option_labels
+
+description: |
+  언어 선택 드롭다운의 **라벨이 모든 사본에 있는가** (S2-D11)
+
+  **증상**: 마이페이지 [내 정보] → [수정하기] 의 언어 드롭다운이 이렇게 떴다.
+
+    ["언어를 선택하세요", "한국어 (Korea)", "English", "languages.ja"]
+                                                       ↑ 원문 키
+
+  선택지로는 **제시하면서 라벨이 없다.** 일본어를 고르려면 `languages.ja` 라는 개발자용
+  키를 눌러야 한다. 값은 정상 저장되므로(`users.language='ja'`) 서버·DB 에는 흔적이 없다 —
+  **화면을 열어 글자를 읽어야만** 드러나는 결함이다.
+
+  **원인**: 선택지 목록은 지원 로케일에서 오고 라벨은 `languages.json` 에서 온다. 로케일을
+  늘릴 때 목록만 늘고 라벨 파일이 따라오지 않으면 그 항목만 키가 노출된다.
+
+  **왜 전수인가** — 이 매니페스트를 세우며 드러난 것:
+
+  S2-D11 은 ja 하나의 문제로 보였지만 같은 원인이 **사본마다 따로** 난다. 실제로 회귀를
+  세우는 도중 `lang-packs/g7-template-sirsoft-basic-ja/`(활성 사본)에 `ja` 키가 **여전히
+  없는 것**을 찾았다 — `_bundled` 만 고치고 활성본이 뒤처져 있었고, 화면이 읽는 것은
+  활성본이다. 즉 **S2-D11 은 절반만 고쳐져 있었다.** 한 벌만 보는 검사는 그 상태를
+  초록으로 통과시킨다.
+
+  그래서 계약은 「ja 라벨이 있는가」가 아니라
+  **「모든 사본 × 모든 지원 로케일에 라벨이 있는가」**다.
+
+  파일이 없으면 통과가 아니라 **실패**한다. 자매 테스트
+  `ConfirmPurchaseWarningAccuracyTest` 가 「파일 없으면 null → 단언 건너뜀」으로 ja 오역을
+  놓친 전례가 있다(#599 세션2 계획서준수검증 결함1).
+
+axes:
+  language_labels:
+    - all_copies
+
+effects:
+  # 모든 사본이 지원 로케일 전건의 표시 라벨을 갖는다 — 빈 값·원문 키 포함 금지
+  - every_supported_locale_has_a_display_label_in_every_copy
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/LanguageOptionLabelsTest.php

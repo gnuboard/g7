@@ -1,0 +1,17 @@
+<!-- 홈 하단 방문자 카운터. 숫자 넷은 공개 요약 API(`visitor_summary`)에서 온다 — 로그인 없이 누구나 부르는 경로라
+  네 숫자만 나가고, 운영자가 카운터를 끄면(설정 `public_summary_enabled`) API 는 404 로 답한다. 그래서 조각은
+  설정이 켜져 있고 응답이 실제로 도착했을 때만 그린다(꺼졌거나 실패하면 0 이 아니라 아예 보이지 않는다 —
+  0 을 그리면 아무도 오지 않은 것처럼 읽힌다). -->
+<partial description="홈 하단 방문자 카운터 (오늘·어제·최대·전체)">
+  <div data-ref="visitor_counter_section" data-if="{{_global.settings?.analytics?.public_summary_enabled === true &amp;&amp; !!visitor_summary?.data &amp;&amp; !visitor_summary?.error}}" class="mt-4">
+    <visitor-counter data-type="composite" data-ref="visitor_counter" today="{{visitor_summary?.data?.today ?? 0}}" yesterday="{{visitor_summary?.data?.yesterday ?? 0}}" max="{{visitor_summary?.data?.max ?? 0}}" total="{{visitor_summary?.data?.total ?? 0}}" layout="row">
+      <prop name="labels">
+        <field name="title" value="$t:user.visitor_counter.title"/>
+        <field name="today" value="$t:user.visitor_counter.today"/>
+        <field name="yesterday" value="$t:user.visitor_counter.yesterday"/>
+        <field name="max" value="$t:user.visitor_counter.max"/>
+        <field name="total" value="$t:user.visitor_counter.total"/>
+      </prop>
+    </visitor-counter>
+  </div>
+</partial>

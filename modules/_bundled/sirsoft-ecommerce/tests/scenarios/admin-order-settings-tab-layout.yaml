@@ -1,0 +1,75 @@
+feature: 환경설정 주문설정 탭 레이아웃 구조
+
+description: |
+  환경설정 > 주문설정 탭과 그 탭이 불러오는 파셜 다섯 개의 화면 구조 계약을 소유한다.
+  저장 규칙과 결제수단 카탈로그 병합은 order-settings-payment-catalog 가, 결제수단 능력(PG 고정·
+  브랜드 마크) 표시는 extension-payment-method 가, 죽은 PG 배지는 payment-method-dead-pg 가
+  소유한다. 이 매니페스트는 그 셋이 다루지 않는 탭 골격·폼 바인딩·편집 컨트롤 가드를 맡는다.
+
+  이 화면에서 조용히 깨지는 지점:
+    - 카드 순서·카드 ID 가 바뀌면 다른 탭·스크롤 앵커가 엉뚱한 카드를 가리킨다.
+    - 숫자 입력의 경계값을 화면이 리터럴로 들고 있으면 저장 규칙이 바뀔 때 "화면은 받는데
+      저장에서 422" 가 된다. 경계값은 서버가 내려주는 한계값을 바인딩한다.
+    - 고아 결제수단(공급 확장이 사라진 수단) 행에 편집 컨트롤이 하나라도 남으면 이미 사라진
+      수단의 값을 바꿔 저장할 수 있다. 넓은 화면 표와 좁은 화면 카드가 같은 가드를 가져야
+      창 너비에 따라 편집 가능 여부가 달라지지 않는다.
+    - 결제수단 행의 필드 열에 고정폭이 없으면 PG 셀렉트 폭이 내용 폭을 따라가 미선택 상태에서
+      붕괴하고 행마다 열 위치가 어긋난다.
+    - 은행 관리 모달은 모달 지역 상태($parent._local)를 고친다. 대상이 바뀌면 저장 전에 폼이 바뀐다.
+
+# axis 의미:
+#   partial — 검증 대상 레이아웃 파일. 탭 본문과 파셜 다섯 개가 각자 다른 노드 트리를 가지므로
+#             파일이 유일한 직교 축이다. 표시 방식(넓은 화면/좁은 화면) 일치는 effect 로 덮는다.
+axes:
+  partial: [tab, payment_methods_list, payment_methods_cards, bank_accounts_table, bank_accounts_cards, bank_management_modal]
+
+effects:
+  # 탭 골격
+  - tab_partial_identity_pinned                  # 파셜 메타·탭 ID·탭 활성 조건
+  - order_settings_cards_in_fixed_order          # 카드 ID 와 순서 고정
+  - card_header_flattened                        # admin-card 아래 제목·설명이 직계 자식
+  - responsive_partials_split_by_viewport        # 넓은 화면 표 파셜 / 좁은 화면 카드 파셜 분기
+  # 탭 본문 폼
+  - auto_cancel_toggle_bound_with_conditional_days # 자동취소 토글 폼 바인딩과 기한 섹션 조건부 표시
+  - numeric_bounds_bound_to_server_limits        # 자동취소일·장바구니 유효기간 경계값이 서버 한계값 바인딩
+  - legacy_due_days_inputs_removed               # 구 가상계좌·무통장 입금기한 입력 제거 (입금기한 단일화)
+  - stock_restore_toggle_bound                   # 재고 복구 토글 폼 바인딩
+  # 결제수단 행
+  - payment_method_order_saved_on_sort           # 드래그 정렬 설정과 정렬 뒤 sort_order 갱신
+  - payment_method_name_localized                # 결제수단 이름 다국어 표시
+  - method_row_name_column_does_not_collapse     # 상태 배지 줄바꿈·축소 금지, 이름 말줄임
+  - field_columns_fixed_width                    # 필드 열 고정폭·동일 폭·축소 가능, 셀렉트 자체 폭 클래스 없음
+  - pg_not_required_shown_by_capability          # "PG 불필요" 는 !pg_locked && !needs_pg 일 때만
+  - stock_deduction_timing_editable_per_method   # 재고 차감 시점 3옵션과 행 단위 갱신
+  - min_order_amount_editable_per_method         # 최소 주문금액 입력
+  - method_active_toggle_editable                # 사용 여부 토글의 행 단위 갱신
+  - mileage_timing_select_per_method             # 마일리지 차감 시점 셀렉트가 표·카드 양쪽에 존재
+  - mileage_timing_disabled_when_mileage_off     # 마일리지 기능이 꺼지면 비활성
+  - mileage_timing_change_updates_only_its_field # 변경 시 마일리지 차감 시점만 갱신
+  - mileage_timing_options_exclude_none          # 결제 완료·주문 시점 두 옵션만 (차감 안 함 없음)
+  - pc_mobile_partials_consistent                # 표와 카드가 같은 정렬 소스·같은 분기 접두사·같은 가드
+  # 고아 결제수단
+  - orphaned_method_row_dimmed                   # 고아 행 흐림 처리
+  - orphaned_method_drag_disabled                # 고아 행 드래그 핸들 숨김
+  - orphaned_method_badge_shown                  # 고아 배지
+  - orphaned_method_removable                    # 고아일 때만 나오는 삭제 버튼
+  - orphaned_method_edit_controls_guarded        # 모든 편집 컨트롤이 고아 가드 아래
+  # 입금 계좌
+  - bank_management_modal_opened_from_card       # 은행 관리 버튼이 모달을 연다
+  - bank_account_row_added_empty                 # 계좌 추가 버튼이 빈 계좌를 넣는다
+  - bank_account_table_columns_pinned            # 표 컴포넌트·컬럼 수·헤더 다국어 키
+  - bank_account_empty_state_shown               # 계좌가 없을 때 안내
+  - bank_account_rows_iterated                   # 계좌 목록 반복
+  - bank_account_default_selectable              # 기본 계좌 선택
+  - bank_account_fields_form_bound               # 은행·계좌번호·예금주·사용 여부 폼 바인딩
+  - bank_account_delete_keeps_last_account       # 계좌가 2개 이상일 때만 삭제
+  - bank_account_card_layout_pinned              # 좁은 화면 카드 스타일
+  # 은행 관리 모달
+  - bank_management_modal_identity_pinned        # 모달 컴포넌트·ID·제목 다국어 키
+  - bank_list_edited_in_modal_local_state        # 은행 목록 반복·추가·수정·삭제가 모달 지역 상태 대상
+  - bank_management_modal_closes                 # 닫기 처리
+  # 다국어
+  - i18n_keys_scoped_to_order_settings           # 탭·파셜의 다국어 키 네임스페이스
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsOrder.test.tsx

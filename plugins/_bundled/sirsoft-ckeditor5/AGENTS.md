@@ -54,15 +54,17 @@
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-ckeditor5 --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-ckeditor5 --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-ckeditor5 --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-ckeditor5 --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-ckeditor5 --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-ckeditor5 --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-ckeditor5 --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-ckeditor5 --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-ckeditor5 --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -71,12 +73,14 @@
 
 <!-- @intent START -->
 **편집기 장착**: 어떤 화면이 `html_editor` 확장점을 열면 → 코어가
-`resources/extensions/html-editor.json` 을 그 자리에 치환 → 조각의 `scripts` 가 동봉된
+`resources/extensions/html-editor.g7.html` 을 그 자리에 치환 → 조각의 `scripts` 가 동봉된
 `ckeditor5.umd.js` 를 same-origin 으로 로드 → 컨테이너 `onMount` 에서
 `sirsoft-ckeditor5.initEditor` 핸들러가 실행되어 편집기를 붙이고
 `form.{name}_mode = 'html'` 을 세웁니다. 화면을 떠날 때 `destroyEditor` 가 인스턴스를
 해제합니다. 자산 로드가 실패하면 `renderTextareaFallback` 이 평문 입력창을 그리고 사용자에게
-사실을 알린 뒤 재시도 통로를 남깁니다.
+사실을 알린 뒤 재시도 통로를 남깁니다. 조각의 스크립트 선언에는 `label="$t:sirsoft-ckeditor5.editor.asset.label"` 이 있어
+코어의 스크립트 실패 안내도 「편집기」라는 이름으로 나옵니다(스크립트 id 를 보이지 않음). 편집기 안내가 뜨면
+같은 본체에 대한 코어 안내(`layout-script:ckeditor5_script`)는 `editorFailureNotice.ts` 가 걷어 배너에 한 건만 남깁니다.
 
 **이미지 업로드 → 서빙**: 편집기가 `POST /api/plugins/sirsoft-ckeditor5/upload` 호출 →
 `ImageUploadService`(`before_upload` → `filter_upload_file` → 저장 → `after_upload`) →
@@ -85,7 +89,7 @@
 남는 URL 형태가 두 가지입니다.
 
 **미참조 이미지 정리**: `sirsoft-ckeditor5:prune-unused-images --scheduled`(일 1회, 설정
-`unusedImageCleanup` 이 켜져 있을 때만) → `ImageReferenceScanService` 가 코어 소스 6개
+`unusedImageCleanup` 이 켜져 있을 때만) → `ImageReferenceScanService` 가 코어 소스 4개(알림 템플릿·레이아웃 3종)
 테이블 + 모듈이 `image.filter_reference_sources` 로 등록한 소스를 훑어, **해시와 저장
 파일명 두 토큰을 OR 로** 검사합니다(한쪽만 보면 다른 형태로 저장된 이미지를 미참조로
 오판합니다). 보존기간(`unusedImageRetentionDays`, 기본 30일)이 지난 것만 대상이며,
@@ -125,7 +129,7 @@
 레이아웃 미리보기는 자체 보존기간으로 지워지는 사본이라, 소스로 넣으면 "로그가 지워지는 순간
 이미지가 고아가 되는" 역전이 생깁니다. 코어가 그 넷을 명시적으로 제외한 이유입니다.
 
-레이아웃 확장 2개(`html-editor.json` · `html-content.json`)는 코어 확장점을 `replace` 로
+레이아웃 확장 2개(`html-editor.g7.html` · `html-content.g7.html`)는 코어 확장점을 `replace` 로
 차지합니다. 다른 편집기 플러그인이 같은 확장점을 노리면 어느 쪽이 이기는지가 설치 순서에
 좌우되므로, 편집기 플러그인은 하나만 활성화하는 것이 전제입니다.
 
@@ -139,10 +143,10 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-ckeditor5` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 동봉 CKEditor 5 버전을 올렸다면 디렉토리명 · `resources/extensions/html-editor.json` 의 `scripts.src` · 소스 상수 · 테스트 단언을 **한 버전으로** 맞춘다 (하나만 어긋나면 그 자산이 404 인데 빌드·테스트는 통과한다)
+- [ ] 동봉 CKEditor 5 버전을 올렸다면 디렉토리명 · `resources/extensions/html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언을 **한 버전으로** 맞춘다 (하나만 어긋나면 그 자산이 404 인데 빌드·테스트는 통과한다)
 - [ ] `dist/` 는 커밋되는 배포 산출물 — TS 를 고쳤으면 `--production` 재빌드 후 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 참조 소스 목록(코어 6종)을 바꿨다면 로그 사본 테이블이 섞이지 않았는지 확인
 - [ ] 정리 커맨드의 판정 로직을 고쳤다면 fail-open 가드(`hasPotentiallyMissingSources()`)가 여전히 앞에 있는지 확인 — 이 가드가 빠지면 이미지가 조용히 지워진다
@@ -170,10 +174,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 15개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 11개 | `vitest.config.ts` |
+| PHPUnit | 19개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
+| Vitest | 20개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 10개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

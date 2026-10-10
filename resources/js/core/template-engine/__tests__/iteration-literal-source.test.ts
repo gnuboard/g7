@@ -161,7 +161,7 @@ describe('iteration source / evaluateExpression - 리터럴 및 내장객체 회
     });
 
     it('Object.entries 결과 항목 인덱싱 (nameEntry[1]) if 조건 평가', () => {
-      // _panel_view.json 의 "if": "{{nameEntry[1]}}" 실제 패턴
+      // _panel_view.g7.html 의 "if": "{{nameEntry[1]}}" 실제 패턴
       const context = { nameEntry: ['ko', '한국어'] };
       // if 조건은 Boolean 캐스팅 — 값이 truthy 면 렌더
       expect(Boolean(engine.evaluateExpression('nameEntry[1]', context))).toBe(true);
@@ -176,7 +176,7 @@ describe('iteration source / evaluateExpression - 리터럴 및 내장객체 회
     });
 
     it('스프레드 + 배열 리터럴 결합 (의존성 병합) iteration source', () => {
-      // _tab_user.json 의 "source": "{{[...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])]}}"
+      // _tab_user.g7.html 의 "source": "{{[...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])]}}"
       const context = {
         row: { dependencies: { modules: ['m1', 'm2'], plugins: ['p1'] } },
       };

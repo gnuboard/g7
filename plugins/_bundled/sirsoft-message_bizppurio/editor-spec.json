@@ -1,0 +1,644 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — 비즈뿌리오 플러그인 sampleData. admin/plugin_settings.g7.html 의 데이터소스 5종을 각 컨트롤러 반환 형태 기준으로 작성. report_url·templates_readiness 는 목록이 아니라 단일 객체이며, templates_readiness.ready 를 true 로 두어야 캔버스에 템플릿 관리 화면이 그려진다.",
+  "pluginId": "sirsoft-message_bizppurio",
+  "version": "1.0.0",
+  "description": "비즈뿌리오(알림톡·SMS) 플러그인 레이아웃 편집기 샘플 데이터.",
+  "sampleData": {
+    "byDataSourceId": {
+      "bizppurio_templates_list": {
+        "data": {
+          "templates": [
+            {
+              "id": 3,
+              "notification_type": "order_completed",
+              "definition_name": {
+                "ko": "주문 완료",
+                "en": "Order completed"
+              },
+              "definition_variables": [
+                "user_name",
+                "order_id"
+              ],
+              "definition_extension_type": "module",
+              "definition_extension_identifier": "sirsoft-ecommerce",
+              "template_code": "g7_1a2b3c4d_1",
+              "status": "approved",
+              "has_content": true,
+              "requested_at": "2026-08-10 09:12:00",
+              "last_synced_at": "2026-08-19 03:00:00",
+              "fallback_sms_enabled": true,
+              "sms_only": false
+            },
+            {
+              "id": 7,
+              "notification_type": "user_registered",
+              "definition_name": {
+                "ko": "회원 가입 환영",
+                "en": "Welcome"
+              },
+              "definition_variables": [
+                "user_name"
+              ],
+              "definition_extension_type": "core",
+              "definition_extension_identifier": null,
+              "template_code": null,
+              "status": "draft",
+              "has_content": false,
+              "requested_at": null,
+              "last_synced_at": null,
+              "fallback_sms_enabled": false,
+              "sms_only": false
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 2,
+            "has_more_pages": false
+          }
+        }
+      },
+      "bizppurioCategories": {
+        "data": {
+          "categories": [
+            {
+              "code": "001001",
+              "name": "회원가입",
+              "groupName": "회원"
+            },
+            {
+              "code": "004001",
+              "name": "구매완료",
+              "groupName": "구매"
+            }
+          ]
+        }
+      },
+      "bizppurioProfiles": {
+        "data": {
+          "profiles": [
+            {
+              "senderKey": "05aa099bcbc5220a8c0b2f1d3e4f5a6b",
+              "name": "@우리상점"
+            },
+            {
+              "senderKey": "17bb188cdcd6331b9d1c3e2f4a5b6c7d",
+              "name": "@우리상점고객센터"
+            }
+          ]
+        }
+      },
+      "templates_readiness": {
+        "data": {
+          "api_key_set": true,
+          "sender_key_set": true,
+          "ready": true
+        }
+      },
+      "report_url": {
+        "data": {
+          "url": "https://example.co.kr/api/plugins/sirsoft-message_bizppurio/webhook",
+          "abilities": {
+            "can_manage_messaging": true
+          }
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "비즈뿌리오 설정 화면 변종. 탭은 URL 쿼리(query.tab)가 SSoT 라 편집기에서는 항상 연결 탭만 그려지고, 행 동작이 _global 에 담는 모달 5종은 본문이 통째로 비어 그려진다(편집기는 initLocal 도 행 클릭도 실행하지 않는다). 각 변종을 상태로 열어 캔버스에서 편집할 수 있게 한다.",
+    "groups": [
+      {
+        "comment": "연결/템플릿 탭. 연결 탭 입력칸은 settings 데이터소스의 initLocal(\"form\")으로 채워지는데 편집기는 그 흐름을 실행하지 않으므로 _local.form 을 직접 시드한다(비밀 필드는 실제 화면과 같이 빈 채로 둔다 — type=password 라 캔버스에서도 점으로만 보인다).",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-message_bizppurio/settings"
+        },
+        "items": [
+          {
+            "id": "connection_tab",
+            "label": "$t:editor.state.tab.connection",
+            "default": true,
+            "initialState": {
+              "query": {
+                "tab": "connection"
+              },
+              "local": {
+                "form": {
+                  "is_test_mode": true,
+                  "bizppurio_id": "sample_biz_account",
+                  "sender_number": "02-000-0000"
+                },
+                "reportInfo": {
+                  "url": "https://example.co.kr/api/plugins/sirsoft-message_bizppurio/webhook"
+                }
+              }
+            }
+          },
+          {
+            "id": "live_mode",
+            "label": "$t:editor.state.test_mode_off",
+            "comment": "is_test_mode=false 일 때만 live_mode_warning 경고 블록이 그려진다(본문 data-ref=\"live_mode_warning\").",
+            "initialState": {
+              "query": {
+                "tab": "connection"
+              },
+              "local": {
+                "form": {
+                  "is_test_mode": false,
+                  "bizppurio_id": "sample_biz_account",
+                  "sender_number": "02-000-0000"
+                }
+              }
+            }
+          },
+          {
+            "id": "validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "comment": "저장 실패 시 _local.errors 가 채워져 상단 alert(validation_error)와 필드별 빨간 안내가 함께 뜬다. hasChanges 를 켜야 저장 버튼이 활성 상태로 보인다.",
+            "initialState": {
+              "query": {
+                "tab": "connection"
+              },
+              "local": {
+                "form": {
+                  "is_test_mode": false,
+                  "bizppurio_id": "",
+                  "sender_number": ""
+                },
+                "hasChanges": true
+              }
+            },
+            "formErrors": {
+              "_local.errors.bizppurio_id": [
+                "비즈뿌리오 아이디를 입력해 주세요."
+              ],
+              "_local.errors.password": [
+                "모듈 비밀번호를 입력해 주세요."
+              ],
+              "_local.errors.sender_number": [
+                "등록된 발신번호를 입력해 주세요."
+              ]
+            }
+          },
+          {
+            "id": "templates_tab",
+            "label": "$t:editor.state.tab.alimtalk_templates",
+            "comment": "query.tab=templates 로 열어야 templates_tab_panel 이 그려진다. 기본 샘플의 templates_readiness.ready=true 라 관리 목록(templates_manage_view)이 2행으로 보인다.",
+            "initialState": {
+              "query": {
+                "tab": "templates"
+              }
+            }
+          },
+          {
+            "id": "templates_not_ready",
+            "label": "$t:editor.state.bizppurio_templates_not_ready",
+            "comment": "자격증명·발신프로필이 없을 때의 안내 카드(data-ref=\"templates_readiness\"). ready=false 라야 그려지고, 두 배지는 각각 api_key_set/sender_key_set 이 false 일 때만 붙는다.",
+            "initialState": {
+              "query": {
+                "tab": "templates"
+              }
+            },
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "templates_readiness": {
+                  "data": {
+                    "api_key_set": false,
+                    "sender_key_set": false,
+                    "ready": false
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "templates_empty",
+            "label": "$t:editor.state.empty_data",
+            "comment": "목록 0건 안내. bz_manage_list_rows 가 접히고 0건 문구가 대신 그려진다.",
+            "initialState": {
+              "query": {
+                "tab": "templates"
+              }
+            },
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "bizppurio_templates_list": {
+                  "data": {
+                    "templates": [],
+                    "pagination": {
+                      "current_page": 1,
+                      "last_page": 1,
+                      "per_page": 20,
+                      "total": 0,
+                      "has_more_pages": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "알림톡 템플릿 작성/검수 모달. 본문 전체가 _global.bz_tpl_modal 을 읽는데 그 값은 목록 행의 [작성]/[수정] 클릭이 담는다 — 편집기는 행을 클릭하지 않으므로 상태로 담지 않으면 모달이 빈 껍데기로 열린다. 유형(templateMessageType)·강조(templateEmphasizeType) 분기 구역이 서로 배타라 변종을 나눈다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_bizppurio_template"
+        },
+        "items": [
+          {
+            "id": "template_new",
+            "label": "$t:editor.state.bizppurio_template_new",
+            "default": true,
+            "comment": "id 가 없으면 신규 저장(POST)·검수 신청 버튼 쌍이 그려진다(본문 data-if 가 !(_global.bz_tpl_modal?.id) 를 본다).",
+            "initialState": {
+              "global": {
+                "bz_tpl_upload": {
+                  "uploading": false,
+                  "error": null
+                },
+                "bz_tpl_modal": {
+                  "id": null,
+                  "notification_type": "user_registered",
+                  "notification_name": "회원 가입 환영",
+                  "variables": [
+                    {
+                      "key": "user_name"
+                    }
+                  ],
+                  "status": "draft",
+                  "inspection_detail": [],
+                  "error": null,
+                  "sender_profile": "",
+                  "request_comment": "",
+                  "content": {
+                    "templateName": "회원 가입 환영 안내",
+                    "templateMessageType": "BA",
+                    "templateEmphasizeType": "NONE",
+                    "templateContent": "#{user_name}님, 가입을 환영합니다. 지금 바로 서비스를 둘러보세요.",
+                    "templateExtra": "",
+                    "templateHeader": "",
+                    "templateTitle": "",
+                    "templateSubtitle": "",
+                    "templateImageName": "",
+                    "templateImageUrl": "",
+                    "categoryCode": "001001",
+                    "buttons": [],
+                    "quickReplies": [],
+                    "templateItem": {
+                      "list": [],
+                      "summary": {
+                        "title": "",
+                        "description": ""
+                      }
+                    },
+                    "templateItemHighlight": {
+                      "title": "",
+                      "description": "",
+                      "imageUrl": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "template_rejected",
+            "label": "$t:editor.state.bizppurio_template_rejected",
+            "comment": "반려 사유 배너(status=rejected + inspection_detail) · 부가정보 구역(templateMessageType=EX) · 강조 문구 구역(TEXT) · 버튼/바로연결 링크 유형별 입력칸(WL/AL/TN/P1)을 한 상태에서 모두 연다. id 가 있으므로 수정 저장(PUT) 버튼 쌍이 그려진다.",
+            "initialState": {
+              "global": {
+                "bz_tpl_upload": {
+                  "uploading": false,
+                  "error": null
+                },
+                "bz_tpl_modal": {
+                  "id": 3,
+                  "notification_type": "order_completed",
+                  "notification_name": "주문 완료",
+                  "variables": [
+                    {
+                      "key": "user_name"
+                    },
+                    {
+                      "key": "order_id"
+                    }
+                  ],
+                  "status": "rejected",
+                  "inspection_detail": [
+                    {
+                      "createdAt": "2026-08-12T10:24:00",
+                      "content": "광고성 문구가 포함되어 있어 반려되었습니다. 정보성 문구로 수정 후 재신청해 주세요."
+                    }
+                  ],
+                  "error": null,
+                  "sender_profile": "05aa099bcbc5220a8c0b2f1d3e4f5a6b",
+                  "request_comment": "정보성 주문 안내 템플릿입니다.",
+                  "content": {
+                    "templateName": "주문 완료 안내",
+                    "templateMessageType": "EX",
+                    "templateEmphasizeType": "TEXT",
+                    "templateContent": "#{user_name}님, 주문이 완료되었습니다. 주문번호는 #{order_id} 입니다.",
+                    "templateExtra": "배송은 결제 후 영업일 기준 2~3일 소요됩니다. 문의는 고객센터로 연락해 주세요.",
+                    "templateHeader": "주문 완료",
+                    "templateTitle": "주문이 접수되었어요",
+                    "templateSubtitle": "배송 준비가 시작됩니다",
+                    "templateImageName": "",
+                    "templateImageUrl": "",
+                    "categoryCode": "004001",
+                    "buttons": [
+                      {
+                        "name": "주문 상세 보기",
+                        "linkType": "WL",
+                        "linkMo": "https://example.co.kr/orders",
+                        "linkPc": "https://example.co.kr/orders"
+                      },
+                      {
+                        "name": "앱에서 보기",
+                        "linkType": "AL",
+                        "linkAnd": "example://orders",
+                        "linkIos": "example://orders"
+                      },
+                      {
+                        "name": "고객센터 전화",
+                        "linkType": "TN",
+                        "telNumber": "02-000-0000"
+                      },
+                      {
+                        "name": "채널 추가",
+                        "linkType": "P1",
+                        "pluginId": "sample_plugin_id"
+                      }
+                    ],
+                    "quickReplies": [
+                      {
+                        "name": "배송 조회",
+                        "linkType": "WL",
+                        "linkMo": "https://example.co.kr/delivery",
+                        "linkPc": "https://example.co.kr/delivery"
+                      }
+                    ],
+                    "templateItem": {
+                      "list": [],
+                      "summary": {
+                        "title": "",
+                        "description": ""
+                      }
+                    },
+                    "templateItemHighlight": {
+                      "title": "",
+                      "description": "",
+                      "imageUrl": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "template_image",
+            "label": "$t:editor.state.bizppurio_template_image",
+            "comment": "강조 유형 IMAGE 구역 — 업로드 파일명·주소 표시 줄은 templateImageUrl 이 있어야 그려진다.",
+            "initialState": {
+              "global": {
+                "bz_tpl_upload": {
+                  "uploading": false,
+                  "error": null
+                },
+                "bz_tpl_modal": {
+                  "id": 3,
+                  "notification_type": "order_completed",
+                  "notification_name": "주문 완료",
+                  "variables": [
+                    {
+                      "key": "user_name"
+                    }
+                  ],
+                  "status": "draft",
+                  "inspection_detail": [],
+                  "error": null,
+                  "sender_profile": "",
+                  "request_comment": "",
+                  "content": {
+                    "templateName": "주문 완료 안내",
+                    "templateMessageType": "BA",
+                    "templateEmphasizeType": "IMAGE",
+                    "templateContent": "#{user_name}님, 주문이 완료되었습니다.",
+                    "templateExtra": "",
+                    "templateHeader": "",
+                    "templateTitle": "",
+                    "templateSubtitle": "",
+                    "templateImageName": "order-complete.png",
+                    "templateImageUrl": "https://example.co.kr/storage/alimtalk/order-complete.png",
+                    "categoryCode": "004001",
+                    "buttons": [],
+                    "quickReplies": [],
+                    "templateItem": {
+                      "list": [],
+                      "summary": {
+                        "title": "",
+                        "description": ""
+                      }
+                    },
+                    "templateItemHighlight": {
+                      "title": "",
+                      "description": "",
+                      "imageUrl": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "template_item_list",
+            "label": "$t:editor.state.bizppurio_template_item_list",
+            "comment": "강조 유형 ITEM_LIST 구역 — 하이라이트(제목·설명·이미지)와 항목 목록(제목 6자·설명 23자 제한)이 함께 열린다.",
+            "initialState": {
+              "global": {
+                "bz_tpl_upload": {
+                  "uploading": false,
+                  "error": null
+                },
+                "bz_tpl_modal": {
+                  "id": 3,
+                  "notification_type": "order_completed",
+                  "notification_name": "주문 완료",
+                  "variables": [
+                    {
+                      "key": "user_name"
+                    },
+                    {
+                      "key": "order_id"
+                    }
+                  ],
+                  "status": "draft",
+                  "inspection_detail": [],
+                  "error": null,
+                  "sender_profile": "",
+                  "request_comment": "",
+                  "content": {
+                    "templateName": "주문 내역 안내",
+                    "templateMessageType": "BA",
+                    "templateEmphasizeType": "ITEM_LIST",
+                    "templateContent": "#{user_name}님의 주문 내역입니다.",
+                    "templateExtra": "",
+                    "templateHeader": "",
+                    "templateTitle": "",
+                    "templateSubtitle": "",
+                    "templateImageName": "",
+                    "templateImageUrl": "",
+                    "categoryCode": "004001",
+                    "buttons": [],
+                    "quickReplies": [],
+                    "templateItem": {
+                      "list": [
+                        {
+                          "title": "주문번호",
+                          "description": "#{order_id}"
+                        },
+                        {
+                          "title": "결제금액",
+                          "description": "38,000원"
+                        },
+                        {
+                          "title": "배송예정",
+                          "description": "영업일 기준 2~3일"
+                        }
+                      ],
+                      "summary": {
+                        "title": "합계",
+                        "description": "38,000원"
+                      }
+                    },
+                    "templateItemHighlight": {
+                      "title": "주문 완료",
+                      "description": "배송 준비 중",
+                      "imageUrl": "https://example.co.kr/storage/alimtalk/highlight.png"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "대체 문자(SMS) 본문 편집 모달. 본문은 로케일 맵이라 editLang 탭으로 갈아 끼운다 — 상태가 없으면 본문 칸도 변수 칩 구역도 비어서 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_bizppurio_sms"
+        },
+        "items": [
+          {
+            "id": "sms_edit",
+            "label": "$t:editor.state.bizppurio_sms_edit",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bz_sms_modal": {
+                  "notification_type": "order_completed",
+                  "notification_name": "주문 완료",
+                  "editLang": "ko",
+                  "variables": [
+                    {
+                      "key": "user_name"
+                    },
+                    {
+                      "key": "order_id"
+                    }
+                  ],
+                  "body": {
+                    "ko": "#{user_name}님, 주문(#{order_id})이 완료되었습니다.",
+                    "en": "#{user_name}, your order #{order_id} is complete."
+                  },
+                  "isSaving": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "승인 취소 확인 모달 — 경고 문구가 _global.bz_cancel_approval.notification_name 을 끼워 넣는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_bizppurio_cancel_approval"
+        },
+        "items": [
+          {
+            "id": "cancel_approval_confirm",
+            "label": "$t:editor.state.bizppurio_cancel_approval",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bz_cancel_approval": {
+                  "id": 3,
+                  "notification_name": "주문 완료",
+                  "isSaving": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "반려 사유 열람 모달 — comments 가 비면 본문이 통째로 빈 상자로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_bizppurio_rejection"
+        },
+        "items": [
+          {
+            "id": "rejection_comments",
+            "label": "$t:editor.state.bizppurio_rejection_view",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bz_reject_view": {
+                  "notification_name": "주문 완료",
+                  "comments": [
+                    {
+                      "createdAt": "2026-08-12T10:24:00",
+                      "content": "광고성 문구가 포함되어 있어 반려되었습니다."
+                    },
+                    {
+                      "createdAt": "2026-08-14T09:03:00",
+                      "content": "변수 표기가 규격과 달라 재검수가 필요합니다."
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "템플릿 삭제 확인 모달 — 경고 문구가 _global.bz_delete_modal.notification_name 을 끼워 넣는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_bizppurio_delete"
+        },
+        "items": [
+          {
+            "id": "delete_confirm",
+            "label": "$t:editor.state.bizppurio_delete_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bz_delete_modal": {
+                  "id": 3,
+                  "notification_name": "주문 완료",
+                  "isSaving": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

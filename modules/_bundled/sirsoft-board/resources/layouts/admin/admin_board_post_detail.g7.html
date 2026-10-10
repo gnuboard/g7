@@ -1,0 +1,274 @@
+<!-- 관리자 글 상세. 원글·답글·댓글 셋을 한 화면에서 다루고, 삭제/신고/블라인드/복구 네 모달은 «어느 대상인가」를 `_global.*_modal_data.type` 으로 받아 하나의 모달이 세 종류를 겸한다 — 대상마다 모달을 따로 두면 같은 문구·같은 흐름이 세 벌이 되기 때문이다 -->
+<layout name="admin_board_post_detail" version="1.0.0" extends="_admin_base">
+  <meta title="{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title" description="{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"/>
+  <!-- 글 본문·답글·댓글을 한 번에 받는다. 오류 갈래를 둘로 나눈 이유가 있다 — 권한 없음(403)은 토스트로 알리고 왔던 곳으로 돌려보내지만, 없는 글(404)은 돌아갈 자리가 마땅치 않아 화면 자리에 오류 페이지를 세운다 -->
+  <data-source id="post" label_key="$t:sirsoft-board.editor.data_source.post" type="api" endpoint="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{route.id}}" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <error-handling>
+      <on-code code="403">
+        <toast type="error" message="{{error.message}}"/>
+        <navigate-back/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <computed name="commentRootMap">{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}</computed>
+  <permissions>
+    <permission>sirsoft-board.boards.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>post</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="post_detail_wrapper" :data-blur-until-loaded="true" class="admin-page-content-fluid">
+      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+      <page-header data-type="composite" data-ref="page_header" title="{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title" description="{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
+        <a data-ref="view_user_page_link" href="/board/{{route.slug}}/{{route?.id}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-board.admin.posts.actions.view_user_page" class="flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+          <icon name="external-link" size="sm"/>
+          <span>$t:sirsoft-board.admin.posts.actions.view_user_page</span>
+        </a>
+        <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="btn-icon">
+          <on type="click">
+            <!-- 같은 글로 다시 진입해 본문·댓글을 새로 읽는다 — `mergeQuery=true` 라 목록에서 달고 온 query(돌아갈 목록의 페이지·검색 조건)를 그대로 유지한다 -->
+            <navigate path="/admin/board/{{route.slug}}/post/{{route?.id}}" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="refresh" class="text-xl"/>
+        </button>
+        <button data-ref="back_button" class="flex-center gap-2 btn btn-secondary">
+          <on type="click">
+            <!-- 글 목록으로. 보던 검색·필터·페이지를 이고 간다 — 글 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
+            <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="arrow-left" class="text-base"/>
+          <span>$t:common.back</span>
+        </button>
+      </page-header>
+      <div data-ref="post_card">
+        <div class="admin-card">
+          <div class="row-stack">
+            <include src="partials/admin_board_post_detail/_post_card_content.g7.html"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="replies_section" data-if="{{(post?.data?.reply_count ?? 0) > 0}}">
+        <div data-ref="replies_header" class="flex-center gap-2 mb-4">
+          <icon name="comments" class="text-xl text-blue-600 dark:text-blue-400"/>
+          <h3 class="section-heading">$t:sirsoft-board.admin.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}</h3>
+        </div>
+        <div data-ref="replies_list_{{itemIdx}}" data-each="item, itemIdx in post?.data?.replies ?? []">
+          <div class="admin-card">
+            <div class="row-stack">
+              <include src="partials/admin_board_post_detail/_reply_card_content.g7.html"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <!-- 삭제 확인 — 글·답글·댓글 셋을 겸한다. 제목·문구·경고는 대상 종류로 갈리고, 댓글은 지운 뒤 이 화면에 머물지만 글은 목록으로 답글은 원글로 빠져나간다(지운 자리에 남을 수 없으므로) -->
+    <modal data-type="composite" data-ref="delete_modal" title="{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}" size="sm">
+      <meta description="Universal Delete Modal (Post/Reply/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.delete_editor_label"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}</p>
+        <p data-if="{{_global.modal_data?.type !== 'post'}}" class="text-label-subtle">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:sirsoft-board.common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
+          <on type="click">
+            <!-- 삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다 -->
+            <sequence>
+              <set-state target="global" :deleteModalLoading="true"/>
+              <api-call :auth_required="true" target="{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.modal_data?.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.modal_data?.id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :deleteModalLoading="false"/>
+                  <refetch-data-source if="{{_global.modal_data?.type === 'comment'}}" dataSourceId="post"/>
+                  <!-- 삭제 후 복귀 — 게시글이면 목록으로, 답변이면 원글 상세로 돌아간다. 어느 쪽이든 목록 클러스터 안이므로 목록 상태를 유지한다. 종전에는 mergeQuery 가 분기 표현식이라 답변 삭제 경로에서만 페이지/검색이 조용히 사라졌다 (#75). -->
+                  <navigate if="{{_global.modal_data?.type !== 'comment'}}" path="{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <toast type="success" message="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.success_post'}}"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :deleteModalLoading="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span>{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 신고 접수 — 관리자가 대신 신고를 올리는 자리라, 이 동작이 사용자 신고와 같은 파이프라인을 탄다는 것을 상단 경고로 먼저 알린다. 사유 종류는 그 게시판이 정의한 목록에서만 고른다 -->
+    <modal data-type="composite" data-ref="report_modal" title="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.title_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.title'}}" size="medium">
+      <meta description="Universal Report Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.report_editor_label"/>
+      <div class="py-2">
+        <div class="alert-warning">
+          <p class="text-warning-soft">$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice</p>
+        </div>
+        <div data-if="{{_global.modal_data?.type === 'comment'}}" class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-body">
+            <span class="font-medium">$t:sirsoft-board.admin.posts.detail.report_modal.report_target</span>
+            <span>$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author}}</span>
+          </p>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label</label>
+          <select class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+            <on type="change">
+              <!-- 고른 사유 종류를 지역 상태에 둔다 — 아래 제출 버튼이 «비었는가」를 이 값으로 판단하므로 폼 자동 바인딩에 맡기지 않고 명시로 잡는다 -->
+              <set-state target="local" report_reason_type="{{$event.target.value}}"/>
+            </on>
+            <option value="">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_placeholder</option>
+            <option data-each="type, idx in post?.data?.board?.report_types ?? []" value="{{type.value}}">{{type.label}}</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_detail_label</label>
+          <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :rows="4" placeholder="$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder">
+            <on type="input">
+              <!-- 상세 사유는 타이핑마다(`input`) 담는다 — `change` 로 두면 입력만 하고 포커스를 옮기지 않은 채 제출할 때 빈 값으로 걸린다 -->
+              <set-state target="local" report_reason="{{$event.target.value}}"/>
+            </on>
+          </textarea>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
+          <on type="click">
+            <!-- 제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다 -->
+            <sequence>
+              <toast if="{{!_local.report_reason_type || _local.report_reason_type === ''}}" type="error" message="$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_required"/>
+              <toast if="{{_local.report_reason_type &amp;&amp; _local.report_reason_type !== '' &amp;&amp; !_local.report_reason?.trim()}}" type="error" message="$t:sirsoft-board.admin.posts.detail.report_modal.reason_required"/>
+              <set-state if="{{_local.report_reason_type &amp;&amp; _local.report_reason_type !== '' &amp;&amp; _local.report_reason?.trim()}}" target="global" :reportSubmitting="true"/>
+              <api-call if="{{_local.report_reason_type &amp;&amp; _local.report_reason_type !== '' &amp;&amp; _local.report_reason?.trim()}}" :auth_required="true" target="{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}" method="POST">
+                <success>
+                  <set-state target="global" :reportSubmitting="false"/>
+                  <set-state target="local" report_reason_type="" report_reason=""/>
+                  <refetch-data-source dataSourceId="post"/>
+                  <toast type="success" message="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.success_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.success'}}"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :reportSubmitting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body reason_type="{{_local.report_reason_type}}" reason_detail="{{_local.report_reason}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.reportSubmitting}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.reportSubmitting ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.detail.report_modal.submit'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 블라인드 처리 — 지우는 것이 아니라 가리는 것이라 사유는 선택 입력이다. 대상(글·댓글)은 삭제 모달과 달리 `_global.blind_modal_data` 라는 자기 키를 쓴다 — 삭제 모달과 열린 채로 겹칠 수 있어 같은 키를 나눠 쓰면 대상이 섞인다 -->
+    <modal data-type="composite" data-ref="blind_modal" title="{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_title' : '$t:sirsoft-board.admin.posts.modals.blind_title'}}" size="medium">
+      <meta description="Blind Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.blind_editor_label"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}</p>
+        <label class="form-label">
+          <span>$t:sirsoft-board.admin.posts.modals.blind_reason_label</span>
+          <span class="text-gray-400 dark:text-gray-500 ml-1">$t:sirsoft-board.common.optional</span>
+        </label>
+        <textarea id="blind_reason" :rows="3" placeholder="$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+          <on type="change">
+            <!-- 블라인드 사유를 전역에 둔다 — 아래 실행 버튼이 이 값을 요청 본문에 실어 보내고, 모달은 별도 컨텍스트라 지역 상태로는 건너오지 않는다 -->
+            <set-state target="global" blindReason="{{$event.target.value}}"/>
+          </on>
+        </textarea>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
+          <on type="click">
+            <!-- 블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다) -->
+            <sequence>
+              <set-state target="global" :blindModalLoading="true"/>
+              <api-call :auth_required="true" target="{{_global.blind_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.blind_modal_data?.id + '/blind' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.blind_modal_data?.id + '/blind'}}" method="PATCH">
+                <success>
+                  <set-state target="global" :blindModalLoading="false"/>
+                  <refetch-data-source dataSourceId="post"/>
+                  <toast type="success" message="{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_success' : '$t:sirsoft-board.admin.posts.modals.blind_success'}}"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :blindModalLoading="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body reason="{{_global.blindReason}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <span>{{_global.blindModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.blind'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 블라인드 해제 — 되돌리는 동작이라 사유 입력이 없고 확인 한 줄로 끝난다. 대상 키(`_global.restore_modal_data`)를 따로 두는 이유는 블라인드 모달과 같다 -->
+    <modal data-type="composite" data-ref="restore_modal" title="{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}" size="sm">
+      <meta description="Restore Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.restore_editor_label"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
+          <on type="click">
+            <!-- 해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다) -->
+            <sequence>
+              <set-state target="global" :restoreModalLoading="true"/>
+              <api-call :auth_required="true" target="{{_global.restore_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.restore_modal_data?.id + '/restore' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.restore_modal_data?.id + '/restore'}}" method="PATCH">
+                <success>
+                  <set-state target="global" :restoreModalLoading="false"/>
+                  <refetch-data-source dataSourceId="post"/>
+                  <toast type="success" message="{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_success' : '$t:sirsoft-board.admin.posts.modals.restore_success'}}"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :restoreModalLoading="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span>{{_global.restoreModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.restore'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

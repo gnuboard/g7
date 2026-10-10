@@ -1,0 +1,213 @@
+<!-- 쇼핑몰 설정 — 통화 목록, 좁은 화면용 카드. 넓은 화면용 표(`_currency_exchange_table`)와
+  **같은 배열을 같은 방식으로 편집한다**(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).
+  
+  이 화면은 **줄 단위 인라인 편집**이다 — 어느 줄이 편집 중인지를 `editingCurrencyIdx` 가
+  들고 있고, 편집 중인 값은 배열이 아니라 임시 자리(`editingCurrency`)에 둔다. 그래서 저장을
+  누르기 전까지 원본 배열은 그대로이고 취소하면 임시 자리만 버리면 된다.
+  
+  저장·추가 버튼의 액션이 셋인 이유는 **분기를 `if` 로 폈기 때문**이다 — 중복이면 토스트,
+  아니면 배열 반영. 액션 하나에 조건을 걸어 두 갈래를 만든 형태라 조건식이 서로 배타적이어야
+  한다(둘 다 참이면 토스트와 반영이 함께 일어난다).
+  
+  기본 통화는 지울 수 없다 — 버튼이 잠기는 것이 아니라 클래스만 바뀌므로 판정은 그 식에 있다. -->
+<partial description="환율 설정 - Mobile 카드 뷰">
+  <div data-ref="exchange_cards_container">
+    <div data-ref="currency_card_{{currencyIndex}}" data-each="currency, currencyIndex in (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })" class="excel-card mb-3">
+      <div class="excel-card-header">
+        <div data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="flex-center gap-2">
+          <span class="{{'fi fi-' + (_defines?.currencyToFlag?.[currency.code] ?? 'xx') + ' fis rounded text-xl'}}"/>
+          <div>
+            <div class="excel-card-title">{{currency.code}}</div>
+            <div class="text-tertiary">{{(typeof currency.name === 'object' ? $localized(currency.name, 'sirsoft-ecommerce::settings.currencies.' + (currency.code ?? '') + '.name') : currency.name) + (currency.code === (_local.form?.language_currency?.default_currency) ? ' (' + $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.default_label') + ')' : '')}}</div>
+          </div>
+        </div>
+        <div data-if="{{_local.editingCurrencyIdx === currency._idx}}" class="flex-1">
+          <div class="flex-center gap-2">
+            <icon name="pencil" size="md" class="text-blue-500 dark:text-blue-400"/>
+            <span class="font-medium text-info-soft">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.edit_currency.title</span>
+          </div>
+          <input type="text" name="editingCurrency.code" value="{{_local.editingCurrency?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.code_placeholder" class="{{_local.editingCurrency?.hasError ? 'input uppercase border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500' : 'input uppercase'}}" maxLength="3" disabled="{{_computed.isReadOnly}}">
+            <on type="input">
+              <!-- 코드를 다시 치면 오류 표시를 지운다 — 중복 판정은 저장할 때 다시 하므로 여기서는 표시만 걷는다. -->
+              <set-state target="local" :editingCurrency.hasError="false"/>
+            </on>
+          </input>
+          <multilingual-input data-type="composite" name="editingCurrency.name" value="{{_local.editingCurrency?.name ?? {} }}" layout="inline" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="flex-center gap-1">
+          <button type="button" class="btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.edit">
+            <on type="click">
+              <!-- 편집 시작. 원본 코드를 `originalCode` 로 함께 담아 두는데, 저장할 때 "코드가 바뀌었는가" 를 그 값과 비교해 판정하기 때문이다. -->
+              <set-state target="local" editingCurrencyIdx="{{currency._idx}}">
+                <field name="editingCurrency">
+                  <field name="code" value="{{currency.code}}"/>
+                  <field name="name" value="{{currency.name}}"/>
+                  <field name="originalCode" value="{{currency.code}}"/>
+                </field>
+              </set-state>
+            </on>
+            <icon name="pencil" size="sm"/>
+          </button>
+          <button type="button" class="{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}" aria-label="$t:common.delete">
+            <on type="click">
+              <!-- 통화 삭제. 기본 통화면 지울 수 없다 — 그 판정이 버튼의 클래스 식에 들어 있다. -->
+              <set-state target="local" form.language_currency.currencies="{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).filter((c, i) => i !== currency._idx)}}" :hasChanges="true"/>
+            </on>
+            <icon name="trash" size="sm"/>
+          </button>
+        </div>
+        <div data-if="{{_local.editingCurrencyIdx === currency._idx}}" class="flex-center gap-1">
+          <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.save">
+            <on type="click">
+              <!-- 편집 저장. 코드가 바뀌었고 그 코드가 이미 있으면 토스트로 막고, 아니면 배열에 반영한다 — 두 액션의 조건이 서로 배타적이라 하나만 일어난다. -->
+              <sequence>
+                <toast if="{{_local.editingCurrency?.code?.trim() &amp;&amp; (_local.editingCurrency?.code?.toUpperCase().trim() !== _local.editingCurrency?.originalCode) &amp;&amp; (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.editingCurrency?.code || '').toUpperCase().trim())}}" type="error" message="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.duplicate_currency_error"/>
+                <set-state if="{{_local.editingCurrency?.code?.trim() &amp;&amp; (_local.editingCurrency?.code?.toUpperCase().trim() !== _local.editingCurrency?.originalCode) &amp;&amp; (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.editingCurrency?.code || '').toUpperCase().trim())}}" target="local" :editingCurrency.hasError="true"/>
+                <set-state if="{{_local.editingCurrency?.code?.trim() &amp;&amp; !(_local.editingCurrency?.code?.toUpperCase().trim() !== _local.editingCurrency?.originalCode &amp;&amp; (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.editingCurrency?.code || '').toUpperCase().trim()))}}" target="local" form.language_currency.currencies="{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => i === _local.editingCurrencyIdx ? { ...c, code: (_local.editingCurrency?.code || '').toUpperCase().trim(), name: _local.form?.editingCurrency?.name ?? _local.editingCurrency?.name ?? c.name } : c)}}" :editingCurrencyIdx="null" :editingCurrency="null" :form.editingCurrency="null" :hasChanges="true"/>
+              </sequence>
+            </on>
+            <icon name="check" size="md"/>
+          </button>
+          <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.cancel">
+            <on type="click">
+              <!-- 편집 취소. 임시 자리만 비우면 원본 배열은 손대지 않았으므로 그대로 돌아간다. -->
+              <set-state target="local" :editingCurrencyIdx="null" :editingCurrency="null"/>
+            </on>
+            <icon name="xmark" size="md"/>
+          </button>
+        </div>
+      </div>
+      <div class="excel-card-body">
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_symbol</label>
+          <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.symbol'}}" value="{{currency.symbol ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.symbol_placeholder" class="input w-full" maxLength="8" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-if="{{currency.code !== (_local.form?.language_currency?.default_currency)}}" class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate</label>
+          <div class="flex-center gap-2">
+            <span class="text-label-subtle whitespace-nowrap">{{(_local.form?.language_currency?.default_currency) + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency))?.base_unit ?? 1).toLocaleString()) + ' ='}}</span>
+            <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}" value="{{currency.exchange_rate}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _computed.managedRateCodes.includes(currency.code)}}"/>
+            <span class="text-label-subtle">{{currency.code}}</span>
+          </div>
+              <span data-if="{{_computed.managedRateCodes.includes(currency.code)}}" class="text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1"><icon name="lock"/><span>$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.managed_badge</span></span>
+              <span data-if="{{(_computed.activeRateProvider?.unsupported_codes ?? []).includes(currency.code)}}" class="text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1">$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual_badge</span>
+          <span data-if="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate']}}" class="form-error">{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate']?.[0] ?? ''}}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.base_unit</label>
+          <div class="flex-center gap-2">
+            <span class="text-label-subtle whitespace-nowrap">{{currency.code + ' 1 ' + $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.base_unit_equals') + ' '}}</span>
+            <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.base_unit'}}" value="{{currency.base_unit ?? 1}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span class="text-label-subtle">{{currency.code}}</span>
+          </div>
+          <span data-if="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit']}}" class="form-error">{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit']?.[0] ?? ''}}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_unit</label>
+          <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}" value="{{currency.rounding_unit}}" options="{{((currency.decimal_places ?? 2) === 0 ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]) ?? []}}" class="input w-full" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_method</label>
+          <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_method'}}" value="{{currency.rounding_method}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+            <options>
+              <option value="floor">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.floor</option>
+              <option value="round">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.round</option>
+              <option value="ceil">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.ceil</option>
+            </options>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places</label>
+          <input type="number" name="{{'language_currency.currencies.' + currency._idx + '.decimal_places'}}" value="{{currency.decimal_places ?? 0}}" :min="0" :max="8" class="input w-full" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <!-- 통화별 사용 언어(가입 시 통화 추정 매핑, A4) -->
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales</label>
+          <tag-input data-type="composite" name="{{'language_currency.currencies.' + currency._idx + '.locales'}}" value="{{currency.locales ?? []}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder" class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales')) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
+          <!-- 통화별 사용 언어 검증 에러 (지원 언어 외 선택 시) -->
+          <p data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))}}" class="form-error">{{_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0] ?? ''}}</p>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_hint</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="new_currency_card" data-if="{{_local.isAddingCurrency === true}}" class="excel-card border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20">
+      <div class="excel-card-header">
+        <div class="flex-center gap-2">
+          <icon name="plus-circle" size="lg" class="text-blue-500 dark:text-blue-400"/>
+          <span class="font-medium text-info-soft">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.title</span>
+        </div>
+        <div class="flex-center gap-1">
+          <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.add">
+            <on type="click">
+              <!-- 새 통화 추가. 편집 저장과 같은 형태로, 코드가 비었거나 이미 있으면 토스트로 막고 아니면 배열 끝에 붙인다. -->
+              <sequence>
+                <toast if="{{_local.form?.newCurrency?.code?.trim() &amp;&amp; (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.form?.newCurrency?.code || '').toUpperCase().trim())}}" type="error" message="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.duplicate_currency_error"/>
+                <set-state if="{{_local.form?.newCurrency?.code?.trim() &amp;&amp; (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.form?.newCurrency?.code || '').toUpperCase().trim())}}" target="local" :form.newCurrency.hasError="true"/>
+                <set-state if="{{!(_local.form?.newCurrency?.code?.trim() &amp;&amp; (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.form?.newCurrency?.code || '').toUpperCase().trim())) &amp;&amp; _local.form?.newCurrency?.code?.trim()}}" target="local" form.language_currency.currencies="{{[...(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []), { code: (_local.form?.newCurrency?.code || '').toUpperCase().trim(), name: _local.form?.newCurrency?.name ?? {}, symbol: _local.form?.newCurrency?.symbol ?? '', exchange_rate: _local.form?.newCurrency?.exchange_rate ?? 1, base_unit: _local.form?.newCurrency?.base_unit ?? 1, rounding_unit: _local.form?.newCurrency?.rounding_unit ?? '0.01', rounding_method: _local.form?.newCurrency?.rounding_method ?? 'round', is_default: false }]}}" :form.newCurrency="null" :isAddingCurrency="false" :hasChanges="true"/>
+              </sequence>
+            </on>
+            <icon name="check" size="md"/>
+          </button>
+          <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.cancel">
+            <on type="click">
+              <!-- 추가 취소. 추가 중 표시와 임시 입력을 함께 비운다. -->
+              <set-state target="local" :isAddingCurrency="false" :form.newCurrency="null"/>
+            </on>
+            <icon name="xmark" size="md"/>
+          </button>
+        </div>
+      </div>
+      <div class="excel-card-body">
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_code</label>
+          <input type="text" name="newCurrency.code" value="{{_local.form?.newCurrency?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.code_placeholder" class="{{_local.form?.newCurrency?.hasError ? 'input w-full uppercase border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500' : 'input w-full uppercase'}}" maxLength="3" disabled="{{_computed.isReadOnly}}">
+            <on type="input">
+              <!-- 새 통화 코드를 다시 치면 오류 표시를 지운다(편집 쪽과 같은 관용구). -->
+              <set-state target="local" :form.newCurrency.hasError="false"/>
+            </on>
+          </input>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_name</label>
+          <multilingual-input data-type="composite" name="newCurrency.name" value="{{_local.form?.newCurrency?.name ?? {} }}" layout="inline" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_symbol</label>
+          <input type="text" name="newCurrency.symbol" value="{{_local.form?.newCurrency?.symbol ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.symbol_placeholder" class="input w-full" maxLength="8" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate</label>
+          <div class="flex-center gap-2">
+            <span class="text-label-subtle whitespace-nowrap">{{(_local.form?.language_currency?.default_currency) + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency))?.base_unit ?? 1).toLocaleString()) + ' ='}}</span>
+            <input type="text" name="newCurrency.exchange_rate" value="{{_local.form?.newCurrency?.exchange_rate ?? 1}}" class="input flex-1 text-center" placeholder="1.00" disabled="{{_computed.isReadOnly}}"/>
+            <span class="text-label-subtle">{{_local.form?.newCurrency?.code || '???'}}</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_unit</label>
+          <select name="newCurrency.rounding_unit" value="{{_local.form?.newCurrency?.rounding_unit ?? '0.01'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+            <options>
+              <option value="0.01">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01</option>
+              <option value="0.1">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1</option>
+              <option value="1">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1</option>
+            </options>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_method</label>
+          <select name="newCurrency.rounding_method" value="{{_local.form?.newCurrency?.rounding_method ?? 'round'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+            <options>
+              <option value="floor">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.floor</option>
+              <option value="round">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.round</option>
+              <option value="ceil">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.ceil</option>
+            </options>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places</label>
+          <input type="number" name="newCurrency.decimal_places" value="{{_local.form?.newCurrency?.decimal_places ?? 2}}" min="{{_local?.form?._meta?.limits?.decimal_places_min ?? 0}}" max="{{_local?.form?._meta?.limits?.decimal_places_max ?? 8}}" class="input w-full" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

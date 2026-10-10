@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 폼의 국가 탭 줄 — 어느 나라 설정을 편집할지 고르는 자리이고, 아래 두 조각\n  (기본 배송 설정·부과 정책)이 여기서 고른 번호를 따라 움직인다.\n  탭은 `_local.form.country_settings` 배열을 그대로 그린 것이라 **탭 번호가 곧 배열 첨자**다.\n  나라를 더할 수 있는 선택지(`addableCountries`)는 이미 추가한 나라를 뺀 나머지다 — 더 넣을 나라가\n  없으면 추가 영역 자체가 사라진다.\n  아직 나라가 하나도 없으면 탭 대신 안내가 뜬다.",
     "meta": {
         "is_partial": true,
         "description": "배송정책 폼 - 국가 탭 바 (섹션 타이틀 + 국가 추가 + 탭 전환)"
@@ -34,14 +35,9 @@
                         {
                             "type": "basic",
                             "name": "Select",
-                            "props": {
-                                "className": "input w-40 text-sm",
-                                "value": "{{_local._selectedCountryToAdd ?? ''}}",
-                                "options": "{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}",
-                                "disabled": "{{_computed.isReadOnly}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "추가할 나라 고르기 — 아직 폼에 넣지 않은 임시 선택이라 `form` 이 아니라 `_local` 바로 아래에 둔다. 옆 [추가] 버튼의 잠금 조건이기도 하다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -49,11 +45,39 @@
                                         "_selectedCountryToAdd": "{{$event.target.value}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "className": "input w-40 text-sm",
+                                "value": "{{_local._selectedCountryToAdd ?? ''}}",
+                                "options": "{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
                         },
                         {
                             "type": "basic",
                             "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "나라 추가 — 배열에 기본값을 갖춘 칸을 하나 만들고(핸들러), 그 다음 임시 선택을 비운다. 비우지 않으면 방금 넣은 나라가 선택칸에 남아 같은 나라를 또 넣기 쉽다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.addCountrySetting",
+                                            "params": {
+                                                "country_code": "{{_local._selectedCountryToAdd}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "_selectedCountryToAdd": ""
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
@@ -72,29 +96,6 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_add"
-                                }
-                            ],
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "sirsoft-ecommerce.addCountrySetting",
-                                                "params": {
-                                                    "country_code": "{{_local._selectedCountryToAdd}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "_local",
-                                                    "_selectedCountryToAdd": ""
-                                                }
-                                            }
-                                        ]
-                                    }
                                 }
                             ]
                         }
@@ -146,6 +147,16 @@
                         "item_var": "tabItem",
                         "index_var": "tabIdx"
                     },
+                    "actions": [
+                        {
+                            "comment": "탭 전환 — 번호만 바꾸는 것이 아니라 그 나라의 부과 방식에 맞춰 아래 조건들(`_local.show*`)까지 다시 세워야 해서 핸들러가 맡는다.",
+                            "type": "click",
+                            "handler": "sirsoft-ecommerce.switchCountryTab",
+                            "params": {
+                                "index": "{{tabItem._idx}}"
+                            }
+                        }
+                    ],
                     "props": {
                         "type": "button",
                         "className": "{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 whitespace-nowrap' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 whitespace-nowrap'}}"
@@ -155,15 +166,6 @@
                             "type": "basic",
                             "name": "Span",
                             "text": "{{tabItem.country_code}}"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sirsoft-ecommerce.switchCountryTab",
-                            "params": {
-                                "index": "{{tabItem._idx}}"
-                            }
                         }
                     ]
                 }

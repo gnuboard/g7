@@ -16,6 +16,7 @@
     "status": "결제상태",
     "payment_method": "결제수단",
     "date_search": "날짜 검색",
+    "date_type": "날짜 기준",
     "amount": "결제금액",
     "all": "전체",
     "pending": "대기중",

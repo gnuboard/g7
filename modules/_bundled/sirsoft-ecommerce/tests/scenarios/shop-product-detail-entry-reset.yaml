@@ -1,0 +1,31 @@
+feature: 상품 상세 진입이 이전 화면의 잔재를 비우고 상품 도착 전까지 흐린다
+
+description: |
+  상품 상세(`templates/_bundled/sirsoft-basic/layouts/shop/show`)는 SPA 안에서 목록·다른
+  상품에서 곧바로 재진입한다. 이 화면이 자기 진입 시점에 비우지 않으면 앞 화면의 상태가
+  그대로 이어지는데, 어느 쪽도 오류를 내지 않아 화면만 보고는 알아채기 어렵다.
+
+  ① 앞 화면에서 연 모달이 닫히지 않은 채 남으면 새 상품 위에 이전 상품의 모달이 떠 있다.
+  ② 옵션 선택 잔재가 남으면 고르지도 않은 옵션이 선택된 채로 장바구니·주문에 실린다.
+  ③ 상품 응답이 도착하기 전의 빈 골격이 그대로 보이면 값이 튀어 들어오는 것처럼 보인다.
+
+  빈 값의 **모양**도 이 계약의 일부다. `selectedOptionItems` 는 고른 순서가 있는 목록이라
+  빈 배열이고, `currentSelection`·`additionalOptions` 는 옵션 그룹 이름으로 값을 꺼내는
+  묶음이라 빈 map 이다(`_local.currentSelection?.[그룹명]`). 두 모양은 화면이 읽을 때는
+  똑같이 비어 보이지만, 그 값이 서버로 실리거나 레이아웃을 `.json` 으로 설치하면 서버가
+  대상을 찾지 못해 오류도 로그도 없이 적용되지 않는다. 그래서 모양을 단언으로 잠근다
+  (`mem:markup-migration-can-flip-empty-map-to-array` — 저작 트랙 이관이 이 자리를 배열로
+  바꿨던 선례).
+
+axes:
+  # 진입 시점 한 축이다 — 세 계약이 같은 init_actions 배열을 함께 읽으므로 곱하지 않는다.
+  surface: [product_detail_entry]
+
+effects:
+  - entry_closes_modal_left_open_by_previous_screen
+  - entry_resets_option_selection_state
+  - option_reset_uses_array_for_ordered_list_and_map_for_keyed_selection
+  - product_area_blurs_until_product_datasource_resolves
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/showInitActions.test.tsx

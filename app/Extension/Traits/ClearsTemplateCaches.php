@@ -55,11 +55,18 @@ trait ClearsTemplateCaches
      * 모듈/플러그인/템플릿 활성화/비활성화/설치/삭제 시 호출되어
      * 프론트엔드가 새로운 캐시 버전으로 API를 요청하도록 합니다.
      * 이전 버전 캐시는 TTL로 자연 만료됩니다.
+     *
+     * 새 버전은 현재 버전보다 반드시 크다(`max(time(), 현재+1)`). 공개 서빙의 서버 캐시 키는 서버
+     * 버전만으로 조립되므로(KVE-2026-2336), 같은 초 안의 두 번째 bump 가 같은 값이 되면 키가 바뀌지
+     * 않아 무효화가 조용히 무시된다.
+     *
+     * @return void
      */
     protected function incrementExtensionCacheVersion(): void
     {
         try {
-            $newVersion = time();
+            $current = (int) self::resolveExtensionCache()->get(self::$extensionCacheVersionKey, 0);
+            $newVersion = max(time(), $current + 1);
             self::resolveExtensionCache()->put(self::$extensionCacheVersionKey, $newVersion, ExtensionStaticCacheService::PERSISTENT_TTL_SECONDS);
 
             Log::info('확장 기능 캐시 버전 증가', [
@@ -153,6 +160,8 @@ trait ClearsTemplateCaches
      * 버전 있는 캐시는 incrementExtensionCacheVersion()으로 무효화됩니다.
      * 이전 버전 캐시는 TTL로 자연 만료됩니다.
      * 이 메서드는 호출 호환성 유지용입니다.
+     *
+     * @return void
      */
     protected function clearAllTemplateLanguageCaches(): void
     {
@@ -165,6 +174,8 @@ trait ClearsTemplateCaches
      * 버전 있는 캐시는 incrementExtensionCacheVersion()으로 무효화됩니다.
      * 이전 버전 캐시는 TTL로 자연 만료됩니다.
      * 이 메서드는 호출 호환성 유지용입니다.
+     *
+     * @return void
      */
     protected function clearAllTemplateRoutesCaches(): void
     {
@@ -177,6 +188,8 @@ trait ClearsTemplateCaches
      * 버전 있는 캐시는 incrementExtensionCacheVersion()으로 무효화됩니다.
      * 이전 버전 캐시는 TTL로 자연 만료됩니다.
      * 이 메서드는 호출 호환성 유지용입니다.
+     *
+     * @return void
      */
     protected function clearAllTemplateLayoutCaches(): void
     {
@@ -200,6 +213,8 @@ trait ClearsTemplateCaches
      * 그 경우 bump 한 버전이 read 경로에서 보이지 않아 프론트엔드가 영구 stale
      * 캐시를 받는다(편집기 데이터소스 명칭/레이아웃 변경 미반영 — 반복 회귀).
      * 접두사가 코어 고정이듯 스토어도 코어 고정으로 일관시킨다.
+     *
+     * @return CacheInterface
      */
     private static function resolveExtensionCache(): CacheInterface
     {
@@ -253,6 +268,8 @@ trait ClearsTemplateCaches
 
     /**
      * 테스트 격리용 — 메모이즈된 스토어를 초기화한다(setUp/tearDown 에서 호출 가능).
+     *
+     * @return void
      */
     public static function resetExtensionCacheStoreMemo(): void
     {

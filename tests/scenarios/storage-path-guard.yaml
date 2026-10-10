@@ -1,0 +1,42 @@
+feature: 스토리지 드라이버 경로 가드와 루트 파괴 차단 (KVE-2026-2349)
+
+description: |
+  확장·코어 스토리지 드라이버(Module/Plugin/CoreStorageDriver)가 사용자 입력이 섞인 경로로
+  디스크 루트·확장 루트를 지우지 못하게 한다.
+
+  배경:
+    - 게시판 글 작성 요청의 temp_key 에 `../../../..` 를 넣으면 임시 디렉토리 정리 경로
+      `{식별자}/attachments/{slug}/temp/{temp_key}` 가 Flysystem 정규화로 `""`(modules 디스크 루트)
+      로 축약되어 deleteDirectory 가 전 모듈 저장소를 지웠다.
+    - 드라이버의 resolvePath 는 순수 문자열 결합이었고, Flysystem 기본 정규화는 `..` 를 상쇄했다.
+
+  계층 결정:
+    - 1차: GuardsStoragePaths 트레잇 — 결합 전 조각 검사, 결합 후 기준 디렉토리 재확인,
+      파괴 작업의 보호 루트(디스크·확장 루트) 차단 + 보안 로그
+    - deleteDirectory 의 빈 디렉토리 인자는 인터페이스 계약대로 그 카테고리 루트를 지운다(설계 결정 2026-09-26 —
+      공격 경로는 `..` 조각이고 조각 검사가 따로 막으므로, 카테고리 루트까지 막으면 공개 계약만 깨진다)
+    - 최후 방어선: 사용자 경로가 닿는 디스크(modules·plugins·attachments·public)를 local-safe
+      드라이버로 바꿔 Flysystem 에 닿은 `..` 를 PathTraversalDetected 로 거부
+
+axes:
+  driver: [module, plugin, core, disk]
+  target: [nested_path, unsafe_fragment, protected_root]
+
+effects:
+  - nested_paths_and_category_delete_still_work
+  - unsafe_fragment_rejected_before_disk
+  - sibling_extension_storage_survives
+  - protected_root_deletion_refused_and_logged
+  - category_root_deletion_follows_interface_contract
+  - unsafe_url_resolves_to_null
+  - local_safe_disk_rejects_relative_traversal
+  - settings_cleanup_limited_to_settings_category
+  - production_disks_reject_traversal_without_driver_guard
+  - local_safe_options_applied_or_rejected_loudly
+
+test_files:
+  - tests/Unit/Extension/Storage/GuardsStoragePathsTest.php
+
+rules_layer_coverage:
+  - rule: i18n-throw-hardcoded-korean
+    coverage: UnsafeStoragePathException 메시지는 lang/{ko,en}/exceptions.php#storage.* 키를 들고 다닌다

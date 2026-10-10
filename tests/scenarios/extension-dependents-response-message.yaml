@@ -1,0 +1,18 @@
+feature: 의존 확장 관련 응답 문구 (제거 실패 이중 접두어 · 모듈 비활성화 경고 대상)
+
+description: |
+  #138 실측 ① 후속. 의존 조회가 살아나며 처음 드러난 두 문구 결함.
+  - 제거 실패: Service 가 「…제거에 실패했습니다: 사유」로 감싼 문구를 컨트롤러가 같은 문구로 한 번 더 감쌌다.
+    이제 첫 사유를 그대로 응답한다(performUpdate 와 같은 처리). 템플릿 제거는 Service 가 자리표시자(:error)를
+    채우지 않고 사유를 이어 붙인 문구까지 겹쳐 있어 같은 처리와 함께 치환을 바로잡았다.
+  - 모듈 비활성화 경고: 의존하는 것이 플러그인·모듈이어도 「활성 템플릿이 있습니다」라고 답했다 → 「활성화된 확장」.
+
+axes:
+  case: [uninstall_failure_message, template_uninstall_failure_message, deactivate_warning_message]
+
+effects:
+  - uninstall_failure_prefix_appears_once
+  - module_deactivate_warning_names_extensions_not_only_templates
+
+test_files:
+  - tests/Feature/Api/Admin/ExtensionDependentsResponseMessageTest.php

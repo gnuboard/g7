@@ -1,0 +1,243 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 스크랩 선택 해제 확인 모달",
+        "editor_label": "$t:user.modal_label.mypage_scrap.scrapBulkDeleteModal"
+    },
+    "comment": "선택 스크랩 일괄 해제 확인 — 선택 ID 배열을 한 요청으로 보낸다",
+    "id": "scrap_bulk_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:mypage.scrap.bulk_delete_title",
+        "width": "420px"
+    },
+    "children": [
+        {
+            "comment": "확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가\n         ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인).",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "data-testid": "scrap-bulk-delete-modal",
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-start gap-4"
+                    },
+                    "children": [
+                        {
+                            "comment": "원형 아이콘 배지 (단건 해제 모달과 같은 형태 — 같은 성격의 행위임을 모양으로 말한다)",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "bookmark",
+                                        "iconStyle": "solid",
+                                        "className": "text-xl text-blue-600 dark:text-blue-400"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1 pt-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 leading-relaxed"
+                                    },
+                                    "text": "$t:mypage.scrap.bulk_delete_confirm|count={{($parent._local.scrapSelectedIds ?? []).length}}"
+                                },
+                                {
+                                    "comment": "원글은 지워지지 않는다는 안내 — 단건 모달과 같은 문구를 쓴다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                    },
+                                    "text": "$t:mypage.scrap.delete_notice"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 px-4 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                                        "disabled": "{{_local.isBulkRemovingScrap ?? false}}"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "여러 건을 한 요청으로 보낸다 — 응답이 늦는 사이 두 번 눌리면 같은 ID 가 겹쳐 들어가므로 먼저 잠근다.\n            DELETE 본문의 ids 는 엔진이 그대로 실어 보낸다(ActionDispatcher 가 GET 이 아닌 메서드에만 body 를 붙인다).",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isBulkRemovingScrap": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/me/scraps",
+                                            "auth_mode": "required",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE",
+                                                "body": {
+                                                    "ids": "{{$parent._local.scrapSelectedIds ?? []}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "scrap"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "처리 중 표시는 이 창의 값이고 선택 배열은 목록(부모 화면)의 값이라 스코프가 갈린다 — 한 set-state 로 묶어 창의 지역 상태에 쓰면 목록의 「N개 선택」이 남아 다음 일괄 해제가 빈 배열로 422 를 받는다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isBulkRemovingScrap": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "$parent._local",
+                                                        "scrapSelectedIds": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{response.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "comment": "실패하면 선택을 그대로 둔다 — 다시 누르면 되는 상태가 사용자에게 자연스럽다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isBulkRemovingScrap": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "scrap-bulk-delete-confirm",
+                                "type": "button",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                                "disabled": "{{_local.isBulkRemovingScrap ?? false}}"
+                            },
+                            "children": [
+                                {
+                                    "comment": "스피너 (safelist 완비된 Icon 컴포넌트 방식)",
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.isBulkRemovingScrap}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "animate-spin",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_local.isBulkRemovingScrap}}",
+                                    "text": "$t:mypage.scrap.delete_confirm_button"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.isBulkRemovingScrap}}",
+                                    "text": "$t:common.processing"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

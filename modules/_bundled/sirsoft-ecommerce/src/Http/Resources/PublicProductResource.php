@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Enums\PermissionType;
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -173,6 +174,8 @@ class PublicProductResource extends BaseApiResource
             'abilities' => [
                 'can_update' => Auth::check()
                     && Auth::user()->hasPermission('sirsoft-ecommerce.products.update', PermissionType::Admin),
+                // [바로 구매] 를 잠그는 키 — 주문 생성(`POST user/orders`)의 라우트 권한과 같다(비회원은 guest 역할로 판정).
+                'can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create'),
             ],
         ];
     }
@@ -181,6 +184,7 @@ class PublicProductResource extends BaseApiResource
      * 다국어 JSON 필드에서 현재 로케일 값을 반환합니다.
      *
      * @param  array|null  $field  다국어 JSON 필드
+     * @return string|null 현재 로케일 값 (필드가 비면 null)
      */
     private function resolveLocalizedField(?array $field): ?string
     {

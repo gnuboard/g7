@@ -15,6 +15,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useEditorDialog } from '../EditorDialog';
 import {
   listLayoutAttachments,
   uploadLayoutAttachment,
@@ -63,6 +64,7 @@ export function LayoutAttachmentManager({
   onChanged,
   onClose,
 }: LayoutAttachmentManagerProps): React.ReactElement {
+  const dialog = useEditorDialog(t);
   const [items, setItems] = useState<LayoutAttachment[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const [uploading, setUploading] = useState(false);
@@ -104,11 +106,12 @@ export function LayoutAttachmentManager({
   };
 
   const onDelete = async (att: LayoutAttachment): Promise<void> => {
-    // 편집기 코어 위젯 — 브라우저 confirm 사용(별도 confirm 모달 인프라 비종속).
-    const ok =
-      typeof window !== 'undefined' && typeof window.confirm === 'function'
-        ? window.confirm(t('layout_editor.attachment_manager.delete_confirm'))
-        : true;
+    // 편집기 대화상자(engine-v1.78.7) — 브라우저 기본 confirm 대신 편집기 모달 위에 띄운다.
+    const ok = await dialog.confirm({
+      message: t('layout_editor.attachment_manager.delete_confirm'),
+      confirmLabel: t('layout_editor.attachment_manager.delete'),
+      danger: true,
+    });
     if (!ok) return;
     const res = await deleteLayoutAttachment(att.id);
     if (res.ok) {

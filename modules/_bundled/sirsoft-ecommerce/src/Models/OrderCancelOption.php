@@ -30,6 +30,7 @@ class OrderCancelOption extends Model
         'order_option_id',
         'option_status',
         'cancel_quantity',
+        'reactivated_quantity',
         'original_quantity',
         'unit_price',
         'subtotal_amount',
@@ -47,6 +48,7 @@ class OrderCancelOption extends Model
         return [
             'option_status' => CancelOptionStatusEnum::class,
             'cancel_quantity' => 'integer',
+            'reactivated_quantity' => 'integer',
             'original_quantity' => 'integer',
             'unit_price' => 'decimal:2',
             'subtotal_amount' => 'decimal:2',

@@ -1,0 +1,22 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   두 사본(리소스 트레이트 · 서비스 위임 헬퍼)의 판정을 축 조합마다 한 메서드로 고정한다 — 조합 수가
+#   셋뿐이라 메서드가 곧 조합이다.
+feature: 주문 기준 통화 판정 두 사본의 일치 (클레임 신청 화면 base_currency)
+
+description: |
+  클레임 신청 화면은 `claimable-options` 응답의 `base_currency` 로 보조 통화 목록에서 기준 통화를 걸러 내고,
+  같은 화면의 다른 응답은 리소스 트레이트(`HasMultiCurrencyPrices`)가 정한 통화로 금액을 적는다. 두 판정이
+  갈리면 같은 금액이 두 줄로 나온다. 서비스 사본은 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency`)
+  에 위임한다.
+
+axes:
+  snapshot: [present, absent]
+  declared_default: [in_list, removed]
+
+effects:
+  - snapshot_currency_is_reported_identically_by_both_copies
+  - declared_default_is_reported_identically_when_it_exists_in_the_list
+  - the_two_copies_diverge_only_when_the_declared_default_was_removed
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimBaseCurrencyParityTest.php

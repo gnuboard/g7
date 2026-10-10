@@ -1,0 +1,30 @@
+feature: 미인증 관리자 화면(로그인·비밀번호 찾기·비밀번호 재설정)의 테마 버튼
+
+description: |
+  세 화면의 테마 버튼이 `setTheme` 을 `params.theme` 로 호출했으나 템플릿 핸들러(`setThemeHandler`)는
+  액션 top-level `target` 만 읽는다. 엔진에 상호 폴백이 없어 클릭이 콘솔 경고 한 줄만 남기고 아무 것도
+  하지 않았고, 예외도 실패한 요청도 없어 화면상 원인이 보이지 않았다 (dev-g7#640). 로그인 이후 화면은
+  핸들러를 경유하지 않는 ThemeToggle 컴포지트를 쓰므로 정상이었다.
+
+  함께 드러난 두 번째 결함 — sirsoft-gdpr 스토리지 인터셉터가 functional 동의 전 `g7_color_scheme`
+  쓰기를 버려 새로고침 시 테마가 되돌아갔다(그 키는 필수 항목으로 재분류됐다). 브라우저 spec 이
+  저장·영속까지 함께 잰다.
+
+axes:
+  screen: [admin_login, admin_forgot_password, admin_reset_password]
+  theme: [light, dark, auto]
+
+effects:
+  - settheme_action_uses_top_level_target   # 세 화면의 구운 JSON 이 setTheme 를 params.theme 아닌 top-level target 으로 부른다
+  - theme_attribute_and_class_applied       # 클릭 한 번에 data-theme 속성과 dark 클래스가 함께 바뀐다
+  - theme_persisted_in_local_storage        # g7_color_scheme 이 저장된다 (functional 동의 전에도 — 필수 항목)
+  - theme_survives_reload                   # 새로고침 뒤에도 선택이 유지된다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-auth-theme-toggle.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-auth-settheme-target.test.tsx
+
+validation:
+  note: |
+    레이아웃 테스트가 세 화면의 구운 JSON 에서 setTheme 액션을 전부 모아 top-level target 형태를 고정하고,
+    브라우저 spec 이 3화면 × 3버튼(9변종)에 대해 클릭 → data-theme · dark 클래스 · localStorage 를 실측한다.

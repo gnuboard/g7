@@ -1,0 +1,308 @@
+{
+    "comment": "환경 리포트 — 브라우저·OS·기기·해상도·브라우저 언어·사이트 로케일 여섯 탭. 기기 탭은 종류가 셋뿐이라\n  도넛을 함께 그린다. 나머지는 공통 조각이다.",
+    "version": "1.0.0",
+    "layout_name": "admin_analytics_environment",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.analytics.environment.title"
+    },
+    "data_sources": [
+        {
+            "id": "analytics_report",
+            "label_key": "$t:editor.data_source.analytics_report",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{({browsers: 'browser', os: 'os', devices: 'device_type', resolutions: 'resolution', languages: 'browser_language', locales: 'locale'})[query.tab || 'browsers'] || 'browser'}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page}}",
+                "sort": "{{query.sort}}",
+                "q": "{{query.q}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "has_more": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "탭 → 리포트 이름(기기 탭은 `device_type`). 기기 탭에서는 같은 응답을 도넛과 표가 함께 쓴다 — 두 번 받지 않는다."
+        },
+        {
+            "id": "analytics_status",
+            "label_key": "$t:editor.data_source.analytics_status",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "collection": {
+                        "enabled": true
+                    },
+                    "queue": {
+                        "backlogged": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를\n         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을\n         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2).",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "수집·큐 상태 — 상단 경고 조각이 읽는다. 첫 그림을 늦추지 않게 background 로 받고, fallback 은 「수집 켜짐·적체 없음」이라\n       응답 전이나 실패 때 경고가 헛뜨지 않는다."
+        },
+        {
+            "id": "analytics_row_trend",
+            "label_key": "$t:editor.data_source.analytics_row_trend",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "params": {
+                "label": "{{_global.analyticsRowTrend?.label ?? ''}}",
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}"
+            },
+            "fallback": {
+                "data": {
+                    "unit": "day",
+                    "unit_downgraded": false,
+                    "points": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                },
+                "404": {
+                    "handler": "suppress"
+                },
+                "422": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를\n       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다."
+        }
+    ],
+    "initLocal": {
+        "periodPath": "/admin/analytics/environment",
+        "periodSource": "analytics_report",
+        "showUnit": false
+    },
+    "computed": {
+        "reportName": "{{({browsers: 'browser', os: 'os', devices: 'device_type', resolutions: 'resolution', languages: 'browser_language', locales: 'locale'})[query.tab || 'browsers'] || 'browser'}}",
+        "csvUrl": "{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
+        "csvFilename": "{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
+        "periodFrom": "{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}",
+        "periodTo": "{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_report?.data?.freshness ?? null}}"
+    },
+    "permissions": [
+        "core.analytics.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "analytics_report"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setAnalyticsPeriod",
+            "params": {
+                "preset": "{{query.preset || '7d'}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "periodComputed"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "analytics_environment_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.analytics.environment.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:admin.analytics.environment.description"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_status_alerts.json"
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_period_bar.json"
+                    },
+                    {
+                        "id": "report_tabs",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "comment": "audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다.",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/analytics/environment",
+                                    "replace": true,
+                                    "query": {
+                                        "tab": "{{$args[0]}}",
+                                        "preset": "{{query.preset}}",
+                                        "from": "{{query.from}}",
+                                        "to": "{{query.to}}",
+                                        "unit": "{{query.unit}}",
+                                        "exclude": "{{query.exclude}}",
+                                        "per_page": "{{query.per_page}}"
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "mb-4",
+                            "activeTabId": "{{query.tab || 'browsers'}}",
+                            "variant": "underline",
+                            "tabs": [
+                                {
+                                    "id": "browsers",
+                                    "label": "$t:admin.analytics.environment.tabs.browsers"
+                                },
+                                {
+                                    "id": "os",
+                                    "label": "$t:admin.analytics.environment.tabs.os"
+                                },
+                                {
+                                    "id": "devices",
+                                    "label": "$t:admin.analytics.environment.tabs.devices"
+                                },
+                                {
+                                    "id": "resolutions",
+                                    "label": "$t:admin.analytics.environment.tabs.resolutions"
+                                },
+                                {
+                                    "id": "languages",
+                                    "label": "$t:admin.analytics.environment.tabs.languages"
+                                },
+                                {
+                                    "id": "locales",
+                                    "label": "$t:admin.analytics.environment.tabs.locales"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "device_chart_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(query.tab || 'browsers') === 'devices' && (analytics_report?.data?.data ?? []).length > 0}}",
+                        "props": {
+                            "className": "admin-card mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H2",
+                                "props": {
+                                    "className": "section-heading mb-3"
+                                },
+                                "text": "$t:admin.analytics.environment.device_share_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex justify-center"
+                                },
+                                "children": [
+                                    {
+                                        "id": "device_chart",
+                                        "type": "composite",
+                                        "name": "DonutChart",
+                                        "props": {
+                                            "data": "{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981'][i % 4] }))}}",
+                                            "size": 220,
+                                            "showLegend": true
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_report_grid.json"
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_environment_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "한 항목 추이 창.",
+            "partial": "partials/admin_analytics/_modal_row_trend.json"
+        }
+    ]
+}

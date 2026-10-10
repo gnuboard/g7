@@ -147,6 +147,7 @@ abstract class BaseApiController extends Controller
      * @param  string  $filePath  파일 경로
      * @param  string  $mimeType  MIME 타입
      * @param  int  $maxAge  캐시 유지 시간 (초, 기본: 1년)
+     * @return BinaryFileResponse|Response 파일 응답 또는 304 응답
      */
     protected function fileResponse(string $filePath, string $mimeType, int $maxAge = 31536000): BinaryFileResponse|Response
     {
@@ -319,7 +320,8 @@ abstract class BaseApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => __($messageKey, $messageParams),
+            // ResponseHelper 와 같은 번역 — 치환값의 `count` 로 `단수|복수` 문구를 고른다.
+            'message' => trans_count($messageKey, $messageParams),
             'data' => $data,
         ], 200, [], ResponseHelper::JSON_ENCODE_OPTIONS)
             ->header('ETag', $etag)

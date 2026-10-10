@@ -1,0 +1,20 @@
+<!-- e2e:allow 2026-09-21 회원 배송지 화면 전면 재작성 — Playwright spec 대신 **작성자가 직접 브라우저로 관통 실측**했다(로그인 → 회원 2명 다중선택 → 28건→10건 → 「이 회원으로 검색」 10건→5건, 콘솔 오류 0). 전용 시드(저장 배송지를 가진 회원 다수 + manage 권한 운영자)가 필요해 기존 admin spec 의 시드로는 세울 수 없고, 그 시드 신설은 별도 과제다. 구조 회귀는 레이아웃 계약 테스트 18건이 막는다.
+
+  회원 배송지 목록 — 삭제 실패 창. 서버 문구를 그대로 싣는다.
+  여러 건을 한 번에 지우는 자리라 실패 사유를 토스트로 스쳐 보내지 않는다 — 무엇이 왜 남았는지
+  모르면 운영자가 같은 삭제를 반복한다. -->
+<partial description="User Address - Error Modal">
+  <modal data-type="composite" data-ref="modal_addresses_error" title="$t:common.error" size="sm">
+    <div class="py-2">
+      <p class="text-primary text-base">{{_global.errorMessage || '$t:common.error_occurred'}}</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.close</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -11,10 +11,12 @@ use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
 use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
+use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
+use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
 
@@ -24,6 +26,7 @@ class TemplateComposer
     use CollectsCustomAssets;
     use CollectsExtensionAssets;
     use CollectsTemplateExternals;
+    use CollectsTemplateStylesheets;
 
     /**
      * 서비스 주입
@@ -48,6 +51,9 @@ class TemplateComposer
 
     /**
      * 뷰에 데이터 바인딩
+     *
+     * @param  View  $view  뷰 인스턴스
+     * @return void 반환값 없음
      */
     public function compose(View $view): void
     {
@@ -123,8 +129,12 @@ class TemplateComposer
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
         $view->with('templateExternals', $templateExternals);
+        // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
+        $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
         $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
+        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
+        $view->with('stateContracts', StateContracts::forFrontend());
     }
 }

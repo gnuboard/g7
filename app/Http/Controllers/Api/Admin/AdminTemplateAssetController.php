@@ -31,6 +31,12 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AdminTemplateAssetController extends AdminBaseController
 {
+    /**
+     * 편집기 자산 서빙 컨트롤러를 만든다.
+     *
+     * @param  TemplateService  $templateService  템플릿 라우트 병합 서비스
+     * @param  PermissionService  $permissionService  표시 권한 후보 조회 서비스
+     */
     public function __construct(
         private TemplateService $templateService,
         private PermissionService $permissionService,
@@ -45,41 +51,21 @@ class AdminTemplateAssetController extends AdminBaseController
      * 활성 템플릿은 코어 일반 부팅이 이미 자산을 로드하므로 본 엔드포인트는
      * 비활성 템플릿 케이스에서 주로 사용된다.
      *
+     * 빌드 산출물은 설치본(`templates/{id}/dist/`)에서만 찾는다. 설치본에 IIFE 가 없으면
+     * 배포 원본(`_bundled`)을 대신 읽지 않고 `manifest_present=false` 와 재업데이트 안내
+     * 메시지로 응답한다 — 편집기가 실제로 돌아가는 설치본과 다른 코드를 부팅하지 않게 한다.
+     *
      * @param  string  $identifier  템플릿 식별자
      * @return JsonResponse 편집기 자산 매니페스트 응답
      */
     public function getEditorAssets(string $identifier): JsonResponse
     {
-        // 빌드 결과물 위치 — 활성 디렉토리 우선, _bundled 폴백
+        // 빌드 결과물 위치 — 설치본만 본다(배포 원본 폴백 없음).
         // 실제 IIFE/CSS 는 `php artisan template:build` 가 `dist/js/components.iife.js` /
-        // `dist/css/components.css` 에 산출하며, `/api/templates/assets/{id}/...` 라우트가
-        // 활성/_bundled 자동 폴백 + 권한 가드를 거쳐 서빙한다 (resources/views/admin.blade.php
-        // 의 자산 URL 패턴과 동일).
-        $iifeCandidates = [
-            base_path("templates/{$identifier}/dist/js/components.iife.js"),
-            base_path("templates/_bundled/{$identifier}/dist/js/components.iife.js"),
-        ];
-        $cssCandidates = [
-            base_path("templates/{$identifier}/dist/css/components.css"),
-            base_path("templates/_bundled/{$identifier}/dist/css/components.css"),
-        ];
-
-        $jsAvailable = false;
-        $jsSource = null;
-        foreach ($iifeCandidates as $candidate) {
-            if (file_exists($candidate)) {
-                $jsAvailable = true;
-                $jsSource = str_contains($candidate, '/_bundled/') ? 'bundled' : 'active';
-                break;
-            }
-        }
-        $cssAvailable = false;
-        foreach ($cssCandidates as $candidate) {
-            if (file_exists($candidate)) {
-                $cssAvailable = true;
-                break;
-            }
-        }
+        // `dist/css/components.css` 에 산출하며, JS 는 `/api/templates/assets/{id}/...`
+        // 라우트(설치본 `dist/` 만 서빙)로, CSS 는 편집기 전용 엔드포인트로 내려간다.
+        $jsAvailable = file_exists($this->installedTemplatePath($identifier, 'dist/js/components.iife.js'));
+        $cssAvailable = file_exists($this->installedTemplatePath($identifier, 'dist/css/components.css'));
 
         if (! $jsAvailable) {
             return $this->success(
@@ -106,7 +92,6 @@ class AdminTemplateAssetController extends AdminBaseController
                     ? [AssetUrl::suffixed("/api/admin/templates/{$identifier}/editor/component-styles", 'css', $version)]
                     : [],
                 'manifest_present' => true,
-                'manifest_source' => $jsSource,
             ],
         );
     }
@@ -114,33 +99,34 @@ class AdminTemplateAssetController extends AdminBaseController
     /**
      * components.json 서빙 (활성/비활성 무관).
      *
+     * 설치본(`templates/{id}/components.json`)만 읽는다. 설치본에 파일이 없거나 JSON 이
+     * 깨져 있으면 배포 원본(`_bundled`)으로 대신하지 않고 재업데이트 안내와 함께 404 를 준다.
+     *
      * @param  string  $identifier  템플릿 식별자
-     * @return JsonResponse 컴포넌트 정의 응답
+     * @return JsonResponse 컴포넌트 정의 응답 (설치본 파일 부재 시 404)
      */
     public function serveComponents(string $identifier): JsonResponse
     {
-        $candidates = [
-            base_path("templates/{$identifier}/components.json"),
-            base_path("templates/_bundled/{$identifier}/components.json"),
-        ];
+        $path = $this->installedTemplatePath($identifier, 'components.json');
 
-        foreach ($candidates as $path) {
-            if (file_exists($path)) {
-                $data = json_decode((string) file_get_contents($path), true);
-                if (is_array($data)) {
-                    return $this->success(__('templates.messages.config_retrieved'), $data);
-                }
+        if (file_exists($path)) {
+            $data = json_decode((string) file_get_contents($path), true);
+            if (is_array($data)) {
+                return $this->success(__('templates.messages.config_retrieved'), $data);
             }
         }
 
-        return $this->error(__('templates.layout_not_found'), 404);
+        return $this->error(
+            __('templates.messages.installed_file_missing', ['file' => 'components.json']),
+            404
+        );
     }
 
     /**
      * routes.json 서빙 (활성/비활성 무관) — 편집기 라우트 트리용.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return JsonResponse 라우트 정의 응답
+     * @return JsonResponse 라우트 정의 응답 (설치본 routes.json 부재 시 404)
      */
     public function serveRoutes(string $identifier): JsonResponse
     {
@@ -148,14 +134,17 @@ class AdminTemplateAssetController extends AdminBaseController
         // (useRouteTree.buildRouteTree 가 `route.source.kind` 로 그룹핑). raw routes.json
         // 을 그대로 반환하면 source 가 없어 클라이언트가 `undefined.kind` 접근에서 throw →
         // 라우트 트리 전체가 network 에러로 무너진다. public getRoutes 와 동일한 source
-        // 태깅 + 모듈/플러그인 병합을 활성/비활성 무관 + _bundled 폴백으로 수행한다.
+        // 태깅 + 모듈/플러그인 병합을 활성/비활성 무관으로 수행한다. routes.json 은 설치본만
+        // 읽으며, 설치본에 없으면 배포 원본으로 대신하지 않고 재업데이트 안내와 함께 404 를 준다.
         $result = $this->templateService->getEditorRoutesDataWithModules($identifier);
 
         if (! $result['success']) {
             return match ($result['error']) {
-                'routes_not_found' => $this->error(__('templates.messages.routes_not_found'), 404),
                 'invalid_json' => $this->error(__('templates.errors.invalid_json'), 422),
-                default => $this->error(__('templates.messages.routes_not_found'), 404),
+                default => $this->error(
+                    __('templates.messages.installed_file_missing', ['file' => 'routes.json']),
+                    404
+                ),
             };
         }
 
@@ -165,7 +154,7 @@ class AdminTemplateAssetController extends AdminBaseController
     /**
      * 편집기 스펙 서빙 — editor-spec.json 파일 반환 (활성/비활성 무관).
      *
-     * 활성 디렉토리 → _bundled 폴백 순으로 editor-spec.json 을 읽어 반환한다.
+     * 설치본의 editor-spec.json 만 읽어 반환한다(배포 원본 폴백 없음).
      * Phase 4 S6-1 부터 응답에 sampleData/sampleGlobal/states 등 전 블록이 포함된다
      * ("골격 → 정식 응답" 이행). 파일 미작성 시 spec=null 폴백.
      *
@@ -201,24 +190,19 @@ class AdminTemplateAssetController extends AdminBaseController
      * 치환 규칙은 템플릿 editor-spec 의 `darkMode.previewIsolation`(rewriteSelector →
      * replaceWith)에서 가져온다(라이브러리 중립). 미선언/`strategy:none` 이면 원본 그대로.
      * 변환 결과는 템플릿+확장 캐시 버전 키로 캐시(대용량 CSS 매요청 재가공 방지). 치환 실패
-     * 또는 CSS 부재 시 원본/빈 응답으로 안전 폴백한다.
+     * 또는 CSS 부재 시 원본/빈 응답으로 안전 폴백한다. CSS·editor-spec 은 설치본만 읽는다 —
+     * 설치본에 CSS 가 없으면 배포 원본(`_bundled`)을 대신 서빙하지 않고 빈 CSS 로 응답한다
+     * (편집기 부팅은 계속되고 프리뷰만 스타일 없이 보인다).
      *
      * @param  string  $identifier  템플릿 식별자
      * @return Response 변환된 CSS 응답 (text/css)
      */
     public function serveEditorCss(string $identifier)
     {
-        $cssCandidates = [
-            base_path("templates/{$identifier}/dist/css/components.css"),
-            base_path("templates/_bundled/{$identifier}/dist/css/components.css"),
-        ];
-
-        $cssPath = null;
-        foreach ($cssCandidates as $candidate) {
-            if (file_exists($candidate)) {
-                $cssPath = $candidate;
-                break;
-            }
+        // 설치본 CSS 만 본다 — 설치본에 없으면 배포 원본으로 대신하지 않고 빈 CSS 로 응답한다.
+        $cssPath = $this->installedTemplatePath($identifier, 'dist/css/components.css');
+        if (! file_exists($cssPath)) {
+            $cssPath = null;
         }
 
         if ($cssPath === null) {
@@ -267,50 +251,46 @@ class AdminTemplateAssetController extends AdminBaseController
     /**
      * 템플릿 editor-spec 의 `darkMode.previewIsolation` 치환 규칙 해석.
      *
+     * 설치본 editor-spec.json 만 읽는다. 설치본에 파일이 없거나 JSON 이 깨져 있으면
+     * 배포 원본을 대신 읽지 않고 null(치환 없음)을 돌려준다.
+     *
      * @param  string  $identifier  템플릿 식별자
      * @return array{rewrite: string, replace: string, flattenLayers: bool}|null 치환 규칙, 미선언/none 이면 null
      */
     private function resolveDarkPreviewIsolation(string $identifier): ?array
     {
-        $candidates = [
-            base_path("templates/{$identifier}/editor-spec.json"),
-            base_path("templates/_bundled/{$identifier}/editor-spec.json"),
-        ];
-
-        foreach ($candidates as $path) {
-            if (! file_exists($path)) {
-                continue;
-            }
-            $spec = json_decode((string) file_get_contents($path), true);
-            if (! is_array($spec)) {
-                continue;
-
-            }
-            $dark = $spec['darkMode'] ?? null;
-            if (! is_array($dark)) {
-                return null;
-            }
-            $strategy = $dark['strategy'] ?? null;
-            if ($strategy === 'none') {
-                return null;
-            }
-            $iso = $dark['previewIsolation'] ?? null;
-            if (! is_array($iso)) {
-                return null;
-            }
-            $rewrite = $iso['rewriteSelector'] ?? null;
-            $replace = $iso['replaceWith'] ?? null;
-            if (is_string($rewrite) && $rewrite !== '' && is_string($replace) && $replace !== '') {
-                return [
-                    'rewrite' => $rewrite,
-                    'replace' => $replace,
-                    // @layer 평탄화는 라이브러리 특성(CSS @layer cascade-layer 사용 시 cross-build
-                    // 우선순위 충돌)이라 템플릿이 명시 옵트인할 때만 수행한다(라이브러리 중립).
-                    'flattenLayers' => ($iso['flattenLayers'] ?? false) === true,
-                ];
-            }
-
+        // 설치본 editor-spec.json 만 본다 — 없으면 치환 규칙 미선언과 같게 취급(원본 CSS 그대로).
+        $path = $this->installedTemplatePath($identifier, 'editor-spec.json');
+        if (! file_exists($path)) {
             return null;
+        }
+
+        $spec = json_decode((string) file_get_contents($path), true);
+        if (! is_array($spec)) {
+            return null;
+        }
+        $dark = $spec['darkMode'] ?? null;
+        if (! is_array($dark)) {
+            return null;
+        }
+        $strategy = $dark['strategy'] ?? null;
+        if ($strategy === 'none') {
+            return null;
+        }
+        $iso = $dark['previewIsolation'] ?? null;
+        if (! is_array($iso)) {
+            return null;
+        }
+        $rewrite = $iso['rewriteSelector'] ?? null;
+        $replace = $iso['replaceWith'] ?? null;
+        if (is_string($rewrite) && $rewrite !== '' && is_string($replace) && $replace !== '') {
+            return [
+                'rewrite' => $rewrite,
+                'replace' => $replace,
+                // @layer 평탄화는 라이브러리 특성(CSS @layer cascade-layer 사용 시 cross-build
+                // 우선순위 충돌)이라 템플릿이 명시 옵트인할 때만 수행한다(라이브러리 중립).
+                'flattenLayers' => ($iso['flattenLayers'] ?? false) === true,
+            ];
         }
 
         return null;
@@ -440,25 +420,22 @@ class AdminTemplateAssetController extends AdminBaseController
      * 다국어 데이터 서빙 (활성/비활성 무관).
      *
      * `TemplateService::getLanguageDataWithModules` 는 활성 검증이 있으므로,
-     * 편집기 admin 경로는 본 메서드에서 활성 검증을 우회한 폴백 로드를 수행한다.
+     * 편집기 admin 경로는 본 메서드에서 활성 검증을 우회해 설치본 lang 파일을 직접 읽는다.
+     * 설치본에 해당 로케일 파일이 없으면 배포 원본(`_bundled`)을 대신 읽지 않고 빈 객체로
+     * 응답한다 — 로케일 파일 부재는 그 로케일을 제공하지 않는 템플릿의 정상 상태다.
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일
-     * @return JsonResponse 다국어 데이터 응답
+     * @return JsonResponse 다국어 데이터 응답 (파일 부재 시 빈 객체)
      */
     public function serveLanguage(string $identifier, string $locale): JsonResponse
     {
-        $candidates = [
-            base_path("templates/{$identifier}/lang/{$locale}.json"),
-            base_path("templates/_bundled/{$identifier}/lang/{$locale}.json"),
-        ];
+        $path = $this->installedTemplatePath($identifier, "lang/{$locale}.json");
 
-        foreach ($candidates as $path) {
-            if (file_exists($path)) {
-                $data = json_decode((string) file_get_contents($path), true);
-                if (is_array($data)) {
-                    return $this->success(__('templates.messages.language_retrieved'), $data);
-                }
+        if (file_exists($path)) {
+            $data = json_decode((string) file_get_contents($path), true);
+            if (is_array($data)) {
+                return $this->success(__('templates.messages.language_retrieved'), $data);
             }
         }
 
@@ -485,5 +462,21 @@ class AdminTemplateAssetController extends AdminBaseController
             __('templates.messages.config_retrieved'),
             ['identifier' => $identifier, 'permissions' => $candidates],
         );
+    }
+
+    /**
+     * 템플릿 설치본 안의 파일 절대 경로를 만든다.
+     *
+     * 편집기 서빙은 설치본(`templates/{id}`)만 읽는다 — 배포 원본(`templates/_bundled/{id}`)은
+     * 설치·업데이트의 입력일 뿐 편집 대상이 아니다. 경로 조립을 한 곳에 모아 서빙 메서드마다
+     * 원본 후보를 덧붙이는 폴백이 다시 생기지 않게 한다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string  $relative  설치본 루트 기준 상대 경로 (예: 'dist/css/components.css' → `templates/{id}/dist/css/components.css`)
+     * @return string 설치본 파일 절대 경로
+     */
+    private function installedTemplatePath(string $identifier, string $relative): string
+    {
+        return base_path("templates/{$identifier}/{$relative}");
     }
 }

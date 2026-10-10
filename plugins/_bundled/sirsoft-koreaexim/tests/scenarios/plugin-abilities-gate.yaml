@@ -1,0 +1,17 @@
+feature: sirsoft-koreaexim 화면 abilities 게이트 — 화면 잠금을 서버 권한과 맞춘다 (7.1.0 abilities 게이트 plugins·G04·R1)
+
+description: |
+  관리자 주문 상세 결제 주입·설정 화면·업로드 관리의 쓰기 컨트롤을 응답 abilities(호스트 주문 can_update·can_execute_refund, 플러그인 API 판정)로 잠근다.
+
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/plugin-abilities-gate.test.ts
+
+axes:
+  case:
+    - settings_without_plugin_update
+    - settings_forbidden
+
+effects:
+  - settings_form_follows_both_axes
+  - forbidden_reasons_shown
+  - read_only_banners_match_missing_permission

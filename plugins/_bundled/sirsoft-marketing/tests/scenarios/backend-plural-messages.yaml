@@ -1,0 +1,13 @@
+feature: 마케팅 채널 삭제 차단 문구의 단·복수
+
+description: |
+  동의 회원이 있는 채널 삭제를 막는 검증 문구를 `(s)` 대신 `단수|복수` 로 적고 동의 회원 수로 고른다. 한국어는 그대로.
+
+axes:
+  surface: [validation_message]
+
+effects:
+  - validation_message_follows_count
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Unit/Lang/BackendPluralMessagesTest.php

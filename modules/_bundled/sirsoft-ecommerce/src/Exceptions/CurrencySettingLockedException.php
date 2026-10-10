@@ -20,7 +20,7 @@ class CurrencySettingLockedException extends Exception
         private int $productCount
     ) {
         parent::__construct(
-            __('sirsoft-ecommerce::exceptions.currency_setting_locked', [
+            trans_choice('sirsoft-ecommerce::exceptions.currency_setting_locked', $productCount, [
                 'setting_type' => $settingType,
                 'product_count' => $productCount,
             ])
@@ -30,7 +30,7 @@ class CurrencySettingLockedException extends Exception
     /**
      * 설정 유형을 반환합니다.
      *
-     * @return string
+     * @return string 잠긴 설정 유형
      */
     public function getSettingType(): string
     {
@@ -40,7 +40,7 @@ class CurrencySettingLockedException extends Exception
     /**
      * 존재하는 상품 수를 반환합니다.
      *
-     * @return int
+     * @return int 이 설정을 쓰는 상품 수
      */
     public function getProductCount(): int
     {

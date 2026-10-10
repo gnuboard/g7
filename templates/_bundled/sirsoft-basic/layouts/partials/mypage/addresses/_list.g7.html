@@ -1,0 +1,118 @@
+<!-- 배송지 목록 본체. 편집 대상(`_global.editingAddress`)이 전역인 이유는 등록·수정 폼이 **모달**이고,
+     모달은 부모 `_local` 을 읽지 못하기 때문이다. 「추가」 버튼이 두 곳(목록 위·빈 목록 안내)에 있는 것은
+     목록이 비었을 때도 시작점이 있어야 해서다. -->
+<partial description="마이페이지 배송지 관리 탭 - Nexibase 스타일">
+  <div class="mt-6">
+    <blur-until-loaded sources="addresses"/>
+    <responsive on="portable" class="mt-4"/>
+    <!-- 헤더: 새 주소 추가 버튼 -->
+    <div class="flex justify-end mb-4">
+      <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"/>
+        <on type="click">
+          <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).
+               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703) -->
+          <sequence>
+            <set-state target="global">
+              <field name="editingAddress">
+                <field name="is_default" :value="false"/>
+                <field name="country_code" value="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
+              </field>
+            </set-state>
+            <open-modal target="addressModal"/>
+          </sequence>
+        </on>
+        <icon name="plus" class="text-base"/>
+        <span>$t:mypage.addresses.add</span>
+      </button>
+    </div>
+    <!-- 배송지 목록 -->
+    <div data-if="{{(addresses?.data?.addresses?.data ?? []).length > 0}}" class="space-y-3">
+      <responsive on="portable" class="space-y-2"/>
+      <!-- 배송지 카드 -->
+      <div data-each="address, addressIdx in {{addresses?.data?.addresses?.data ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800" data-testid="address-card">
+        <responsive on="portable" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800"/>
+        <!-- 헤더: 라벨 + 기본배송지 뱃지 + 수정/삭제 버튼 -->
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-medium text-gray-900 dark:text-white">{{$localized(address.name)}}</span>
+            <!-- 기본 배송지 뱃지 - 검정 배경 + 흰 텍스트 + 별 아이콘 -->
+            <span data-if="{{address.is_default}}" class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium">
+              <icon name="star" class="text-xs"/>
+              <span>$t:mypage.addresses.default</span>
+            </span>
+          </div>
+          <!-- 수정/삭제 텍스트 버튼 -->
+          <div class="flex items-center gap-2">
+            <!-- 수정 버튼 -->
+            <button data-if="{{address.abilities?.can_update === true}}" type="button" class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <on type="click">
+                <!-- 조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙). -->
+                <set-state target="global">
+                  <field name="editingAddress">
+                    <field name="id" value="{{address.id}}"/>
+                    <field name="name" value="{{address.name ?? ''}}"/>
+                    <field name="recipient_name" value="{{address.recipient_name ?? ''}}"/>
+                    <field name="recipient_phone" value="{{address.recipient_phone ?? ''}}"/>
+                    <field name="country_code" value="{{address.country_code ?? 'KR'}}"/>
+                    <field name="zipcode" value="{{address.zipcode ?? ''}}"/>
+                    <field name="address" value="{{address.address ?? ''}}"/>
+                    <field name="address_detail" value="{{address.address_detail ?? ''}}"/>
+                    <field name="city" value="{{address.city ?? ''}}"/>
+                    <field name="address_line_1" value="{{address.address_line_1 ?? ''}}"/>
+                    <field name="address_line_2" value="{{address.address_line_2 ?? ''}}"/>
+                    <field name="intl_city" value="{{address.city ?? ''}}"/>
+                    <field name="intl_state" value="{{address.state ?? ''}}"/>
+                    <field name="intl_postal_code" value="{{address.postal_code ?? ''}}"/>
+                    <field name="is_default" value="{{address.is_default ?? false}}"/>
+                  </field>
+                </set-state>
+                <open-modal target="addressModal"/>
+              </on>
+              $t:common.edit
+            </button>
+            <!-- 삭제 버튼 - 기본 배송지는 삭제 불가 -->
+            <button data-if="{{address.abilities?.can_delete === true}}" type="button" class="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <on type="click">
+                <set-state target="global" deletingAddressId="{{address.id}}"/>
+                <open-modal target="confirmDeleteAddressModal"/>
+              </on>
+              $t:common.delete
+            </button>
+          </div>
+        </div>
+        <!-- 수령인 / 연락처 -->
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{address.recipient_name}} | {{address.recipient_phone}}</p>
+        <!-- 주소 (국내: [우편번호] 도로명 상세) -->
+        <p data-if="{{(address.country_code ?? 'KR') === 'KR'}}" class="text-sm text-gray-600 dark:text-gray-400 break-words">[{{address.zipcode}}] {{address.address}} {{address.address_detail}}</p>
+        <!-- 주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '[]' 만 보인다) -->
+        <p data-if="{{(address.country_code ?? 'KR') !== 'KR'}}" class="text-sm text-gray-600 dark:text-gray-400 break-words">{{address.full_address ?? ''}}</p>
+      </div>
+    </div>
+    <!-- 빈 상태 - 배송지 없음 -->
+    <div data-if="{{!(addresses?.data?.addresses?.data ?? []).length}}" class="bg-white dark:bg-gray-800 rounded-lg p-12 text-center">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center"/>
+      <icon name="map-pin" class="text-6xl mx-auto text-gray-300 dark:text-gray-600 mb-4">
+        <responsive on="portable" name="map-pin" class="text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      </icon>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">$t:mypage.addresses.empty</p>
+      <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <on type="click">
+          <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).
+               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703) -->
+          <sequence>
+            <set-state target="global">
+              <field name="editingAddress">
+                <field name="is_default" :value="false"/>
+                <field name="country_code" value="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
+              </field>
+            </set-state>
+            <open-modal target="addressModal"/>
+          </sequence>
+        </on>
+        <icon name="plus" class="text-base"/>
+        <span>$t:mypage.addresses.add</span>
+      </button>
+    </div>
+  </div>
+</partial>

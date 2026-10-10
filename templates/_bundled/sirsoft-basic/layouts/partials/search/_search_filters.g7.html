@@ -1,0 +1,43 @@
+<!-- 검색 결과 좁히기 — 전체 탭에는 뜻이 없어(종류가 섞여 있다) 글·상품 탭에서만 나온다. 고를 수 있는 정렬도 탭마다 다르므로 상자를 나눠 두었다. -->
+<partial description="검색 필터 (게시글/상품 탭)">
+  <div data-if="{{(query?.type === 'posts' || query?.type === 'products') &amp;&amp; query?.q}}" class="flex flex-wrap gap-2 mb-4">
+    <select data-if="{{query?.type === 'posts'}}" name="boardFilter" class="w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer" value="{{query?.board_slug ?? ''}}">
+      <on type="change">
+        <!-- 같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다 -->
+        <navigate path="/search" :mergeQuery="true">
+          <query board_slug="{{$event.target.value}}" page="" cursor=""/>
+        </navigate>
+      </on>
+      <option value="">$t:search.filter.all_boards</option>
+      <option data-each="board in {{searchResults?.data?.posts?.available_boards ?? []}}" value="{{board?.slug}}">{{board?.name}}</option>
+    </select>
+    <select data-if="{{query?.type === 'posts'}}" name="sortBy" class="w-32" value="{{query?.sort ?? 'relevance'}}">
+      <options>
+        <option value="relevance">$t:search.sort.relevance</option>
+        <option value="latest">$t:search.sort.latest</option>
+        <option value="popular">$t:search.sort.popular</option>
+      </options>
+      <on type="change">
+        <!-- 같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다 -->
+        <navigate path="/search" :mergeQuery="true">
+          <query sort="{{$event.target.value}}" page="" cursor=""/>
+        </navigate>
+      </on>
+    </select>
+    <select data-if="{{query?.type === 'products'}}" name="sortBy" class="w-32" value="{{query?.sort ?? 'relevance'}}">
+      <options>
+        <option value="relevance">$t:search.sort.relevance</option>
+        <option value="latest">$t:search.sort.latest</option>
+        <option value="price_asc">$t:search.sort.price_asc</option>
+        <option value="price_desc">$t:search.sort.price_desc</option>
+        <option value="popular">$t:search.sort.popular</option>
+      </options>
+      <on type="change">
+        <!-- 같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다 -->
+        <navigate path="/search" :mergeQuery="true">
+          <query sort="{{$event.target.value}}" page="" cursor=""/>
+        </navigate>
+      </on>
+    </select>
+  </div>
+</partial>

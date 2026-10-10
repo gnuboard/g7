@@ -1,6 +1,6 @@
 # 서비스 프로바이더 안전성
 
-> **목차**: [index.md](./index.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
+> **목차**: [README.md](./README.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
 
 ---
 
@@ -516,7 +516,7 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 | 라이프사이클 | 재생성 위치 |
 | --- | --- |
-| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task |
+| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task (라우트 캐시도 같은 자리에서 굽는다 — `docs/backend/routing.md` 「갱신이 필요한 지점」) |
 | 코어 업데이트 | `CoreUpdateCommand` Step 11 완료 지점 |
 | 코어 업그레이드 스텝(단독 실행) | `ExecuteUpgradeStepsCommand` 캐시 정리 블록 (spawn 자식은 부모가 처리) |
 | 코어 관리자 설정 저장 / 캐시 정리 / GeoIP / APP_KEY | `SettingsService` / `GeoIpDatabaseService` 의 각 지점 |
@@ -541,4 +541,4 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 - [middleware.md](./middleware.md) - 미들웨어 등록 규칙
 - [authentication.md](./authentication.md) - 인증 및 세션 처리
-- [index.md](./index.md) - 백엔드 가이드 인덱스
+- [README.md](./README.md) - 백엔드 가이드 인덱스

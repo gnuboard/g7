@@ -1,279 +1,282 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "배송정책 폼 - 국가별 기본 배송 설정 (배송방법, 통화, 활성화, 국가 삭제)"
-  },
-  "id": "country_basic_fields_section",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{_computed.activeCountrySetting}}",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "H2",
-      "props": {
-        "className": "card-title"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_basic"
+    "comment": "배송정책 폼의 국가별 기본 설정 — 배송 방법·통화·사용 여부, 그리고 그 나라 설정 자체의 삭제.\n  부과 정책 조각과 마찬가지로 **국가 탭이 고른 한 나라만** 편집하고, 값은 `country_settings` 배열의\n  그 번째 칸으로 들어간다.\n  배송 방법으로 '직접 입력' 을 고르면 이름 칸이 하나 더 나타나고, 그 이름은 언어별 값이다.\n  나라 삭제는 **마지막 하나는 지울 수 없다**(정책에 나라가 하나도 없으면 배송비를 매길 수 없다).\n  수정 권한도 함께 본다.",
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 국가별 기본 배송 설정 (배송방법, 통화, 활성화, 국가 삭제)"
     },
-    {
-      "id": "country_basic_content",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-      },
-      "children": [
+    "id": "country_basic_fields_section",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeCountrySetting}}",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "id": "country_basic_fields",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col-responsive"
-          },
-          "children": [
-            {
-              "id": "field_country_shipping_method",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.shipping_method"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-required"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Select",
-                      "props": {
-                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method'] ? 'input input-error w-full' : 'input w-full'}}",
-                        "value": "{{_computed.activeCountrySetting?.shipping_method ?? (ecommerce_settings?.data?.shipping?.types ?? []).find(t => t.is_active)?.code ?? 'parcel'}}",
-                        "options": "{{_computed.shippingMethodOptions ?? []}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "sirsoft-ecommerce.updateCountryField",
-                          "params": {
-                            "field": "shipping_method",
-                            "value": "{{$event.target.value}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']}}",
-                      "props": {
-                        "className": "form-error-xs mt-0.5"
-                      },
-                      "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "if": "{{_computed.activeCountrySetting?.shipping_method === 'custom'}}",
-                      "props": {
-                        "className": ""
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "text-secondary block text-xs font-medium mb-1"
-                          },
-                          "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name"
-                        },
-                        {
-                          "type": "composite",
-                          "name": "MultilingualInput",
-                          "props": {
-                            "value": "{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}",
-                            "layout": "inline",
-                            "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder",
-                            "error": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + (_global.locale || 'ko')]?.[0] ?? ''}}",
-                            "disabled": "{{_computed.isReadOnly}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "sirsoft-ecommerce.updateCountryField",
-                              "params": {
-                                "field": "custom_shipping_name",
-                                "value": "{{$event.target.value}}"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "country_currency_fields",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col-responsive"
-          },
-          "children": [
-            {
-              "id": "field_country_currency",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-required"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "input w-full opacity-60 cursor-not-allowed flex items-center"
-                      },
-                      "text": "{{_computed.defaultCurrencyLabel}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "form-hint-xs mt-0.5"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code_fixed_hint"
-                    }
-                  ]
-                }
-              ]
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title"
             },
-            {
-              "id": "field_country_is_active",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-end"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_active",
-                    "checked": "{{_computed.activeCountrySetting?.is_active ?? true}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "sirsoft-ecommerce.updateCountryField",
-                      "params": {
-                        "field": "is_active",
-                        "value": "{{!(_computed.activeCountrySetting?.is_active ?? true)}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_basic"
         },
         {
-          "id": "country_remove_area",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(_local.form?.country_settings ?? []).length > 1 && policy?.data?.abilities?.can_update === true}}",
-          "props": {
-            "className": "flex justify-end border-t border-gray-100 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-              },
-              "children": [
+            "id": "country_basic_content",
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "trash",
-                    "className": "text-xs mr-1"
-                  }
+                    "id": "country_basic_fields",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "id": "field_country_shipping_method",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.shipping_method"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-required"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "comment": "배송 방법 — 초깃값이 설정에서 활성인 첫 방법이라, 쇼핑몰이 쓰는 방법이 바뀌면 새 나라의 기본값도 따라 바뀐다. '직접 입력' 을 고르면 아래 이름 칸이 나타난다.",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateCountryField",
+                                                    "params": {
+                                                        "field": "shipping_method",
+                                                        "value": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method'] ? 'input input-error w-full' : 'input w-full'}}",
+                                                "value": "{{_computed.activeCountrySetting?.shipping_method ?? (ecommerce_settings?.data?.shipping?.types ?? []).find(t => t.is_active)?.code ?? 'parcel'}}",
+                                                "options": "{{_computed.shippingMethodOptions ?? []}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']}}",
+                                            "props": {
+                                                "className": "form-error-xs mt-0.5"
+                                            },
+                                            "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_computed.activeCountrySetting?.shipping_method === 'custom'}}",
+                                            "props": {
+                                                "className": ""
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "MultilingualInput",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "직접 입력한 배송 방법 이름 — 언어별 묶음을 통째로 받아 그대로 저장한다(언어 하나씩 쪼개지 않는다).",
+                                                            "type": "change",
+                                                            "handler": "sirsoft-ecommerce.updateCountryField",
+                                                            "params": {
+                                                                "field": "custom_shipping_name",
+                                                                "value": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "value": "{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}",
+                                                        "layout": "inline",
+                                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder",
+                                                        "error": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_remove"
-                }
-              ],
-              "actions": [
+                    "id": "country_currency_fields",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "id": "field_country_currency",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-required"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "input w-full opacity-60 cursor-not-allowed flex items-center"
+                                            },
+                                            "text": "{{_computed.defaultCurrencyLabel}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-field-hint block"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code_fixed_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_country_is_active",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-end"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "actions": [
+                                        {
+                                            "comment": "그 나라 설정 사용 여부. 스위치가 준 값을 읽지 않고 **현재 값을 뒤집는다** — 기본이 켬(`?? true`)이라 아직 아무도 쓴 적 없는 상태에서도 첫 클릭이 끔으로 가야 한다.",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.updateCountryField",
+                                            "params": {
+                                                "field": "is_active",
+                                                "value": "{{!(_computed.activeCountrySetting?.is_active ?? true)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_active",
+                                        "checked": "{{_computed.activeCountrySetting?.is_active ?? true}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
                 {
-                  "type": "click",
-                  "handler": "sirsoft-ecommerce.removeCountrySetting",
-                  "confirm": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_remove_confirm",
-                  "params": {
-                    "index": "{{_local.activeCountryTab ?? 0}}"
-                  }
+                    "id": "country_remove_area",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_local.form?.country_settings ?? []).length > 1 && !_computed.isReadOnly}}",
+                    "props": {
+                        "className": "flex justify-end border-t border-gray-100 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "이 나라 설정 삭제 — 확인 문구를 액션에 달아 별도 창 없이 묻는다. 이 버튼 자체가 나라가 둘 이상일 때만 나타나므로 마지막 하나는 지워지지 않는다.",
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.removeCountrySetting",
+                                    "params": {
+                                        "index": "{{_local.activeCountryTab ?? 0}}"
+                                    },
+                                    "confirm": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_remove_confirm"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "trash",
+                                        "className": "text-xs mr-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_remove"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

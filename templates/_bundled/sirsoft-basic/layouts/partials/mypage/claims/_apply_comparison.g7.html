@@ -1,0 +1,281 @@
+<partial description="클레임 신청서 - 요약 카드 안 주문금액 비교(전/후) 접이식 섹션 + 환불 요약 + 환불 불가 안내" editor_label="$t:user.modal_label.mypage_claims.apply_comparison">
+  <!-- 옛 주문 취소 모달의 주문금액 비교표를 세 유형(취소·환불 / 반품 / 교환) 신청서로 옮긴 것이다(#599 후속 P1·P2). 값은 전부 서버 미리보기 adjustment 가 정한다 — 스냅샷 행은 서버 formatted 를 직독하고 화면은 포맷·합산하지 않는다. 후열은 전열과 다를 때만 강조색이다(옛 모달 규칙). 교환의 후열은 서버가 옵션 치환으로 재계산한 값이며 row_substituted 가 그 근거를 보인다(P5).
+P6 — PC 는 펼침, 모바일(portable 0~1023px)은 접힘으로 연다. 초기값은 핸들러(initClaimApply/initClaimEdit)가 G7Core.ResponsiveManager.matches('portable') 로 세우고, 토글 뒤 상태는 화면을 떠날 때까지 유지된다(새로고침하면 디바이스 기본값으로 돌아간다 — 설계값). _global.isPortable 은 어느 런타임도 세우지 않는 값이라 쓰지 않는다.
+P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기고 환불 요약을 숨긴다. 표는 그대로 둔다(왜 막혔는지 후열이 말한다). 제출 잠금은 요약 카드의 버튼과 submitClaim 진입 가드가 함께 맡는다. -->
+  <div data-ref="claim_apply_comparison" data-if="{{_local.claimEstimateLoading === true || !!_local.claimEstimate?.adjustment?.original_snapshot || (_local.claimEditMode === true &amp;&amp; !_local.claimEstimate &amp;&amp; !_local.claimEstimateError)}}" class="pt-3 border-t border-gray-200 dark:border-gray-700">
+    <!-- 헤더 — 제목 + 접기/펼치기 토글(aria-expanded · aria-controls) -->
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <h4 class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.apply.comparison.title</h4>
+      <button type="button" class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline" aria-expanded="{{_local.claimComparisonOpen === true}}" aria-controls="claim-comparison-body" data-testid="claim-comparison-toggle">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.toggleClaimComparison"/>
+        </on>
+        {{_local.claimComparisonOpen === true ? $t('claim.apply.comparison.collapse') : $t('claim.apply.comparison.expand')}}
+      </button>
+    </div>
+    <!-- 계산 중 — 스피너 1줄 -->
+    <div data-if="{{_local.claimEstimateLoading === true}}" class="flex items-center gap-2 py-2 text-xs text-gray-500 dark:text-gray-400">
+      <icon name="spinner" class="animate-spin text-sm"/>
+      <span class="">$t:claim.apply.estimate_loading</span>
+    </div>
+    <!-- 수정 화면 — 미리보기를 강제하지 않으므로 아직 계산 전이면 안내 한 줄 -->
+    <p data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !_local.claimEstimate &amp;&amp; _local.claimEditMode === true}}" class="text-xs text-gray-400 dark:text-gray-500">$t:claim.apply.comparison.empty_hint</p>
+    <!-- 본문 — 접힘 상태에서는 렌더하지 않는다(토글이 열 때만). -->
+    <div data-if="{{_local.claimComparisonOpen === true &amp;&amp; _local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate?.adjustment?.original_snapshot}}" id="claim-comparison-body" class="space-y-3">
+      <!-- 주문금액 비교표 (§4-1 1~16행) — 금액은 서버 formatted 직독, 후열은 전열과 다를 때만 강조색. 클라이언트 포맷·합산 금지. -->
+      <div class="text-xs">
+        <!-- 표 머리글 — 열 라벨은 유형별 키(취소 전/후 · 환불 전/후 · 반품 전/후 · 교환 전/후) -->
+        <div class="grid grid-cols-3 gap-x-3 pb-1 mb-1 border-b border-gray-200 dark:border-gray-700">
+          <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">$t:claim.apply.comparison.col_item</span>
+          <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right">{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_before_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_before_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_before_cancel') : $t('claim.apply.comparison.col_before_refund')))}}</span>
+          <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right">{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_after_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_after_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_after_cancel') : $t('claim.apply.comparison.col_after_refund')))}}</span>
+        </div>
+        <!-- row_item_count — item_count -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="item_count">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_item_count</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{(_local.claimEstimate?.adjustment?.original_snapshot?.item_count ?? 0)}}$t:claim.apply.comparison.unit_count</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.item_count ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.item_count ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.item_count ?? 0)}}$t:claim.apply.comparison.unit_count</span>
+          </div>
+        </div>
+        <!-- row_list_price — total_list_price_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_list_price_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_list_price</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_list_price_amount ?? ''}}</span>
+            <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_list_price_amount ?? ''}}</span>
+            <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- row_subtotal — subtotal_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="subtotal_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_subtotal</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.subtotal_amount ?? ''}}</span>
+            <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_subtotal_amount_formatted}}" class="mt-0.5">
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.subtotal_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.subtotal_amount ?? ''}}</span>
+            <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted}}" class="mt-0.5">
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- row_product_coupon — total_product_coupon_discount_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_product_coupon_discount_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_product_coupon</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_product_coupon_discount_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_product_coupon_discount_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_order_coupon — total_order_coupon_discount_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_order_coupon_discount_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_order_coupon</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_order_coupon_discount_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_order_coupon_discount_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_code_discount — total_code_discount_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_code_discount_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_code_discount</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_code_discount_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_code_discount_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_shipping_coupon — shipping_discount_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="shipping_discount_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_shipping_coupon</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{(_local.claimEstimate?.adjustment?.original_snapshot?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.shipping_discount_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.shipping_discount_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_base_shipping — base_shipping_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="base_shipping_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_base_shipping</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.base_shipping_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.base_shipping_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_extra_shipping — extra_shipping_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="extra_shipping_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_extra_shipping</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.extra_shipping_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.extra_shipping_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_points_used — total_points_used_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_points_used_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_points_used</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_points_used_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_points_used_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_taxable — total_tax_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_tax_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_taxable</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_tax_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_tax_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_tax_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_vat — total_vat_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_vat_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_vat</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_vat_amount ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_vat_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_vat_amount ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_total_paid — total_paid_amount -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_paid_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep font-semibold">$t:claim.apply.comparison.row_total_paid</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white font-semibold">{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_paid_amount ?? ''}}</span>
+            <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_paid_amount_formatted}}" class="mt-0.5">
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_paid_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white font-semibold'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_paid_amount ?? ''}}</span>
+            <div data-if="{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted}}" class="mt-0.5">
+              <span data-each="mc in {{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-[11px] text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- row_earned_points — total_earned_points_amount. 단위 표기(P)는 서버 `total_earned_points_amount_formatted` 가 정본이다(주문 리소스와 같은 formatEarnedPoints). 화면의 `toLocaleString() + 'P'` 는 그 필드를 싣지 않는 옛 응답·스냅샷을 위한 폴백일 뿐이다. -->
+        <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_earned_points_amount">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_earned_points</span>
+          <div class="text-right">
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
+          </div>
+          <div class="text-right">
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
+          </div>
+        </div>
+        <!-- row_coupons — 적용 쿠폰 목록(쿠폰명 · 할인액). 전/후 모두 비면 행을 세우지 않는다. -->
+        <div data-if="{{(_local.claimEstimate?.adjustment?.original_coupons ?? []).length > 0 || (_local.claimEstimate?.adjustment?.recalculated_coupons ?? []).length > 0}}" class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="coupons">
+          <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_coupons</span>
+          <div class="text-right">
+            <span data-each="coupon in {{_local.claimEstimate?.adjustment?.original_coupons ?? []}}" class="text-gray-900 dark:text-white block break-keep">{{coupon.name ?? ''}} {{coupon.discount_amount_formatted ?? ''}}</span>
+          </div>
+          <div class="text-right">
+            <span data-each="coupon in {{_local.claimEstimate?.adjustment?.recalculated_coupons ?? []}}" class="text-gray-900 dark:text-white block break-keep">{{coupon.name ?? ''}} {{coupon.discount_amount_formatted ?? ''}}</span>
+          </div>
+        </div>
+        <!-- row_substituted — 교환만. 치환 근거 행(상품별 old→new). 서버 substituted_items 를 그대로 옮긴다. -->
+        <div data-if="{{_local.claimType === 'exchange' &amp;&amp; (_local.claimEstimateFormatted?.substituted_items ?? []).length > 0}}" class="pt-1 mt-1 border-t border-dashed border-gray-200 dark:border-gray-700" data-row="substituted">
+          <span class="text-gray-600 dark:text-gray-400 break-keep block mb-0.5">$t:claim.apply.comparison.row_substituted</span>
+          <div data-each="row in {{_local.claimEstimateFormatted?.substituted_items ?? []}}" class="flex flex-wrap items-baseline justify-between gap-x-2" data-substituted-item="{{row.order_option_id}}">
+            <span class="text-gray-900 dark:text-white min-w-0 break-keep">{{row.option_label ?? ''}} × {{row.quantity ?? 0}}</span>
+            <span class="text-gray-900 dark:text-white whitespace-nowrap">{{row.unit_price_formatted ?? ''}} → {{row.new_unit_price_formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 환불 불가 (P3-①) — 재계산 환불액이 0원 아래로 내려가는 조합. 미리보기 거절 블록과 같은 마크업. -->
+      <div data-if="{{_local.claimEstimate?.adjustment?.cancel_blocked === true}}" class="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" data-testid="claim-comparison-blocked">
+        <icon name="circle-exclamation" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
+        <div class="min-w-0">
+          <p class="text-sm text-red-700 dark:text-red-300">{{_local.claimEstimate?.adjustment?.cancel_blocked_reason ?? ''}}</p>
+          <p class="text-xs text-red-600 dark:text-red-400 mt-1">$t:claim.apply.comparison.blocked_hint</p>
+        </div>
+      </div>
+      <!-- 환불 요약 — 최종 환불 예정액(현금·마일리지 분해) · 잔여 잔액 2행(P3-④) · 복원 쿠폰(P3-②). 교환은 저가 교환(refund_product_amount > 0)일 때만. 환불 불가면 숨긴다. -->
+      <div data-if="{{_local.claimEstimate?.adjustment?.cancel_blocked !== true &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0)}}" class="pt-2 border-t-2 border-gray-300 dark:border-gray-600 space-y-1" data-testid="claim-comparison-refund-summary">
+        <div class="flex items-baseline justify-between gap-2 text-sm font-semibold">
+          <span class="text-gray-900 dark:text-white">$t:claim.apply.comparison.refund_summary_title</span>
+          <div class="text-right">
+            <span class="text-red-600 dark:text-red-400 text-base block">{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? ''}}</span>
+            <div data-each="mc in {{_local.claimEstimateFormatted?.mc_refund_total ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-[11px] text-gray-400 dark:text-gray-500">{{mc.formatted ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 현금 환불분 -->
+        <div class="flex items-baseline justify-between gap-2 text-xs" data-line="refund_cash">
+          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.refund_cash</span>
+          <div class="text-right">
+            <span class="text-gray-700 dark:text-gray-300">{{_local.claimEstimateFormatted?.refund_cash ?? ''}}</span>
+            <div data-each="mc in {{_local.claimEstimateFormatted?.mc_refund_cash ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-[11px] text-gray-400 dark:text-gray-500">{{mc.formatted ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 마일리지 환불분 — 마일리지를 쓴 주문에서만. 사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지를 돌려주지 않아 몫이 0 인데(Q15), 줄을 숨기면 마일리지를 썼는데 왜 안 돌아오는지 알 수 없다 — 「0원 (차감되지 않은 마일리지)」로 이유와 함께 세운다. -->
+        <div data-if="{{(_local.claimEstimate?.adjustment?.refund_points_amount ?? 0) > 0 || order?.data?.points_not_deducted === true}}" class="flex items-baseline justify-between gap-2 text-xs" data-line="refund_points">
+          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.refund_points</span>
+          <div class="text-right">
+            <span class="text-gray-700 dark:text-gray-300">{{order?.data?.points_not_deducted === true ? '$t:claim.apply.comparison.refund_points_not_deducted' : (_local.claimEstimateFormatted?.refund_points ?? '')}}</span>
+            <div data-each="mc in {{_local.claimEstimateFormatted?.mc_refund_points ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-[11px] text-gray-400 dark:text-gray-500">{{mc.formatted ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 환불 후 잔여 결제 잔액 -->
+        <div class="flex items-baseline justify-between gap-2 text-xs" data-line="remaining_pg">
+          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.remaining_pg</span>
+          <div class="text-right">
+            <span class="text-gray-700 dark:text-gray-300">{{_local.claimEstimateFormatted?.remaining_pg_balance ?? ''}}</span>
+            <div data-each="mc in {{_local.claimEstimateFormatted?.mc_remaining_pg_balance ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-[11px] text-gray-400 dark:text-gray-500">{{mc.formatted ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 환불 후 잔여 마일리지 -->
+        <div class="flex items-baseline justify-between gap-2 text-xs" data-line="remaining_points">
+          <span class="text-gray-500 dark:text-gray-400 break-keep">$t:claim.apply.comparison.remaining_points</span>
+          <div class="text-right">
+            <span class="text-gray-700 dark:text-gray-300">{{_local.claimEstimateFormatted?.remaining_points_balance ?? ''}}</span>
+            <div data-each="mc in {{_local.claimEstimateFormatted?.mc_remaining_points_balance ?? []}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-[11px] text-gray-400 dark:text-gray-500">{{mc.formatted ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 복원 쿠폰 (P3-②) — 없으면 블록 생략 -->
+        <div data-if="{{(_local.claimEstimate?.adjustment?.restored_coupons ?? []).length > 0}}" class="pt-2 border-t border-gray-200 dark:border-gray-700" data-testid="claim-comparison-restored-coupons">
+          <span class="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1 break-keep">$t:claim.apply.comparison.restored_coupons_title</span>
+          <div data-each="coupon in {{_local.claimEstimate?.adjustment?.restored_coupons ?? []}}" class="flex justify-between gap-2 text-xs py-0.5">
+            <span class="text-gray-600 dark:text-gray-400 break-keep">{{coupon.coupon_name ?? ''}}</span>
+            <span class="text-gray-700 dark:text-gray-300 whitespace-nowrap">{{coupon.discount_amount_formatted ?? ''}}</span>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">$t:claim.apply.comparison.restored_coupons_notice</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

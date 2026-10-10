@@ -1,0 +1,79 @@
+<!-- **이 템플릿이 요구하는 확장이 없는데도** 활성하겠다는 확인 창. 활성 창이 409 를 받았을 때 열린다.
+  무엇이 없는지는 전역 `activateWarningData` 에 담긴 서버 오류를 읽는다.
+  템플릿에는 강제 **비활성** 창이 없다 — 템플릿에 의존하는 확장이라는 방향이 없기 때문이다. -->
+<partial description="템플릿 강제 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_force_activate_modal">
+  <modal data-type="composite" data-ref="template_force_activate_modal" title="$t:admin.templates.modals.activate_warning_title" size="sm">
+    <div class="py-2">
+      <div class="alert-warning">
+        <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <div>
+          <p class="text-warning-soft">$t:admin.templates.modals.activate_warning_message</p>
+        </div>
+      </div>
+      <div data-if="{{_global.activateWarningData?.missing_modules?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.templates.modals.missing_modules</p>
+        <div>
+          <div data-each="module in _global.activateWarningData?.missing_modules ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{module.name || module.identifier}}</span>
+            <span data-if="{{module.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
+            <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">$t:admin.modules.status.not_installed</span>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.activateWarningData?.missing_plugins?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.templates.modals.missing_plugins</p>
+        <div>
+          <div data-each="plugin in _global.activateWarningData?.missing_plugins ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="plug" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{plugin.name || plugin.identifier}}</span>
+            <span data-if="{{plugin.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
+            <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded">$t:admin.plugins.status.not_installed</span>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-label">$t:admin.templates.modals.force_activate_description</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
+        <on type="click">
+          <!-- 취소 — 목록을 다시 받아 켜진 모양으로 남은 스위치를 서버 값으로 되돌린다. -->
+          <sequence>
+            <set-state target="global" :activateWarningData="null"/>
+            <refetch-data-source dataSourceId="templates"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
+        <on type="click">
+          <!-- 강제 활성 실행 — 요구 확장이 없는 채로 켠다. 성공하면 목록과 확장 번들을 갱신한다. -->
+          <sequence>
+            <set-state target="global" :isForceActivating="true"/>
+            <api-call :auth_required="true" target="/api/admin/templates/activate" method="POST">
+              <success>
+                <refetch-data-source dataSourceId="templates"/>
+                <reload-extensions/>
+                <toast type="success" message="$t:admin.templates.activate_success"/>
+                <close-modal/>
+                <set-state target="global" :isForceActivating="false" :activateWarningData="null" :selectedTemplate="null"/>
+                <!-- 템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).
+                     강제 활성은 새로 고침을 하지 않으므로 창이 닫힐 때도 새로 고치지 않는다. -->
+                <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}" :reactivateLanguagePacksRefreshAfter="false"/>
+                <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="template_reactivate_language_packs_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isForceActivating="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body template_name="{{_global.selectedTemplate.identifier}}" :force="true"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isForceActivating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isForceActivating ? '$t:admin.templates.activating' : '$t:admin.templates.modals.confirm_activate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -81,7 +81,19 @@ export interface ExternalContentSyncHandle {
  */
 export function attachExternalContentSync(
     editor: EditorLike,
-    options: { name: string; locale: string; multilingual: boolean }
+    options: {
+        name: string;
+        locale: string;
+        multilingual: boolean;
+        /**
+         * 이 편집기의 값을 폼에서 읽는 방법. 기본은 `_local.form` 이다.
+         *
+         * 쓰기 대상을 `_local.form` 밖으로 돌린 편집기(알림 템플릿 모달 등)는 여기서도 그
+         * 경로를 읽어야 한다 — 아니면 "편집 대상이 바뀌었다" 판정이 언제나 값을 못 찾아,
+         * 다른 템플릿으로 갈아탄 뒤에도 **이전 본문이 그대로 남는다**.
+         */
+        readExternal?: () => string | undefined;
+    }
 ): ExternalContentSyncHandle {
     const { name, locale, multilingual } = options;
 
@@ -99,6 +111,10 @@ export function attachExternalContentSync(
      * @return 문자열 값, 읽을 수 없으면 undefined
      */
     const readExternal = (): string | undefined => {
+        if (options.readExternal) {
+            return options.readExternal();
+        }
+
         const G7Core = (window as any).G7Core;
         const form = G7Core?.state?.getLocal?.()?.form;
 

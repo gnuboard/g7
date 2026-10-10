@@ -32,9 +32,9 @@ description: |
     - PublicPageAttachmentController::download — Request 주입 +
       published || user()?->hasPermission('sirsoft-page.pages.read', admin) 게이트.
     - admin 첨부 preview/download 라우트·컨트롤러 메서드 제거(공개 라우트로 단일화 후 데드코드).
-    - admin_page_detail.json / page/show.json — 다운로드 <a href> → downloadAttachment 핸들러
+    - admin_page_detail.g7.html / page/show.g7.html — 다운로드 <a href> → downloadAttachment 핸들러
       (토큰 fetch → blob) 전환. admin 다운로드 아이콘 arrow-down-tray(Heroicons·FA미존재) → download.
-    - page/show.json — 이미지 첨부는 preview_url 썸네일(<Img>, is_image 가드)로 표시(관리자 상세와
+    - page/show.g7.html — 이미지 첨부는 preview_url 썸네일(<Img>, is_image 가드)로 표시(관리자 상세와
       일관). 일반 파일은 파일 아이콘 유지. preview_url 이 공개 서빙이 되었으므로 백엔드 변경 불요.
 
   수용된 트레이드오프:

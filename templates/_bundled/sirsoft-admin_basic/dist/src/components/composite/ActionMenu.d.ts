@@ -12,13 +12,25 @@ export interface ActionMenuItem {
     divider?: boolean;
     /** 행 데이터의 필드 경로로 disabled 여부를 결정 (값이 falsy면 disabled) */
     disabledField?: string;
+    /** 잠긴 항목에 보일 안내 문구 — 항목 안 보조 줄과 title 로 「왜 잠겼는지」를 알린다(잠기지 않으면 숨김) */
+    disabledReason?: string;
     /** 조건부 표시 (false면 아이템 숨김, 엔진이 표현식 평가 후 boolean 전달) */
     if?: boolean;
 }
 export interface ActionMenuProps {
     items: ActionMenuItem[];
+    /** 트리거 글자. 생략하면 공용 문구 `common.actions`(화면 언어), 빈 문자열이면 아이콘만 그린다 */
     triggerLabel?: string;
     triggerIconName?: IconName;
+    /**
+     * 글자 없는 아이콘 트리거의 접근 가능한 이름 (aria-label)
+     *
+     * `triggerLabel` 이 비어 아이콘만 그려질 때 쓴다. 주지 않으면 공용 문구 `common.more_actions`(엔진 밖 `More actions`)로
+     * 채워 이름 없는 버튼을 남기지 않는다. 보이는 글자가 있으면 그 글자가 이름이므로 쓰지 않는다.
+     */
+    triggerAriaLabel?: string;
+    /** `triggerAriaLabel` 과 같은 뜻(DataGrid 행 메뉴가 열 머리글 이름을 넘긴다). 둘 다 있으면 `triggerAriaLabel` 이 앞선다 */
+    ariaLabel?: string;
     position?: 'left' | 'right';
     className?: string;
     style?: React.CSSProperties;

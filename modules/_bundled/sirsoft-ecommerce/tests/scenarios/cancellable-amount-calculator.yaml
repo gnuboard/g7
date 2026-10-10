@@ -1,0 +1,89 @@
+feature: cancellable_amount_calculator
+
+description: |
+  취소 가능 금액 산정기(S2c · D19)의 계약을 고정하는 Unit 테스트의 시나리오 소유 매니페스트.
+
+  ```
+  cancellable = max(0, min(① domain_refundable, ② payment_capacity))
+  ```
+
+  핵심 동작:
+    - ① 도메인 환불 대상액 — 유형별 재계산(취소·환불·반품·교환 차액)과 환불 차감 회수배송비를 반영한다.
+    - ② 결제수단 잔여 한도 — 이미 취소된 몫·입금 대기·마일리지 환불 누계를 빼고, 결제 통화 한도를
+      주문 스냅샷 환율로 기본 통화로 환산해 비교한다(환율이 없으면 원값 — 과대 산정하지 않는다).
+    - ③ 진행 중 클레임 예정액 — 환불신청서·반품(합산 재계산)·교환(저가 차액) 을 집계만 하고
+      한도를 깎지 않는다(S17 B5). 종결 상태·다른 주문·자기 자신(제외 목록)은 세지 않는다.
+    - `binding` 은 두 강제 축(①·②)만 가리키고, DTO 는 모든 축을 노출한다.
+    - 회수비 기록 자리는 유형별로 다르다 — 반품 발 환불은 `refund_shipping_amount` 를 보지 않고,
+      교환 발 환불은 그 음수분을 총액으로 되돌린다.
+
+  이 파일은 `claim-item-level-decision.yaml` 의 test_files 에도 실려 있다(반려분 제외 축).
+  산정기 자체의 효과는 여기서 소유한다.
+
+axes:
+  concern:
+    - domain            # ① 도메인 환불 대상 축
+    - payment           # ② 결제수단 잔여 한도 축
+    - currency          # ② 의 다통화 환산
+    - reserved          # ③ 진행 중 클레임 예정액(참고 축)
+    - contract          # 음수 방지 · DTO 계약
+    - shipping_column   # 회수비 기록 자리의 유형 한정
+
+effects:
+  # ① 도메인 환불 대상 축
+  - domain_axis_binds_when_it_is_the_smallest                               # 도메인 축이 최솟값이면 한도·binding
+  - domain_axis_binds_on_a_tie                                              # 동률이면 binding 은 도메인
+  - collection_fee_narrows_the_domain_axis                                  # 환불 차감 회수비만큼 도메인 축 감소
+  - exchange_without_price_difference_has_zero_domain_axis                  # 차액 없는 교환은 도메인 축 0
+  - downgrade_exchange_domain_axis_is_the_price_difference                  # 저가 교환은 차액이 도메인 축
+  - cancel_type_uses_the_cancellation_adjustment                            # 취소 유형은 취소 재계산 사용
+  - refund_type_uses_the_cancellation_adjustment                            # 환불 유형도 취소 재계산 사용
+  # ② 결제수단 잔여 한도 축
+  - payment_axis_binds_when_capacity_is_already_consumed                    # 일부 취소된 결제는 결제 축이 한도
+  - fully_cancelled_payment_leaves_no_capacity                              # 전액 취소 결제는 한도 0
+  - waiting_deposit_payment_has_no_capacity                                 # 입금 대기 결제는 한도 0
+  - methods_list_reports_the_payment_row                                    # 수단 내역에 결제 행 보고
+  - multiple_payment_methods_are_summed_and_listed                          # PG + 마일리지 합산·내역
+  - accumulated_mileage_refund_narrows_the_mileage_remainder                # 마일리지 환불 누계만큼 잔여 감소
+  - order_without_mileage_lists_no_mileage_method                           # 마일리지 미사용 주문은 항목 없음
+  - payment_capacity_is_converted_from_payment_currency_to_base             # 결제 통화 한도를 기본 통화로 환산
+  - multi_currency_amount_is_reported_with_snapshot_rates                   # 스냅샷 환율로 통화별 금액 보고
+  - missing_exchange_rate_falls_back_to_the_local_amount                    # 환율 없으면 원값 사용
+  # ③ 진행 중 클레임 예정액 축
+  - pending_refund_is_reported_but_does_not_reduce_the_amount               # 예정액은 집계만, 한도 불변
+  - binding_never_reports_the_reserved_axis                                 # binding 은 예정액 축을 가리키지 않음
+  - reserved_includes_mileage_portion_of_a_pending_refund                   # 예정액에 마일리지 환불분 포함
+  - terminal_refund_does_not_reserve                                        # 종결 환불은 예정액 제외
+  - return_row_linked_to_a_dead_refund_is_reserved_again                    # 반려·철회 환불에 걸린 반품 행은 반품 쪽이 다시 선점 (2026-09-26)
+  - reserved_entries_carry_the_claim_identity                               # 예정 항목에 클레임 식별 정보
+  - pending_return_reserves_its_estimated_refund                            # 진행 중 반품은 추정 환불액 선점
+  - multiple_pending_returns_are_estimated_jointly                          # 반품 여러 건은 합산 재계산
+  - reserved_entries_sum_to_the_reserved_total                              # 예정 항목 합 = 예정 총액
+  - pending_return_reserve_accounts_for_its_deducted_collection_fee         # 반품 예정액은 차감 회수비 반영
+  - return_with_a_refund_row_is_not_double_counted                          # 환불 연결된 반품은 중복 집계 안 함
+  - terminal_return_does_not_reserve                                        # 종결 반품은 예정액 제외
+  - pending_exchange_reserves_only_its_refundable_difference                # 교환은 저가 차액만 선점
+  - pending_exchange_without_refundable_difference_reserves_nothing         # 차액 없는 교환은 선점 없음
+  - pending_exchange_reservation_excludes_refund_requests_already_filed     # 이미 접수된 환불 몫은 교환 선점에서 제외
+  - rejected_exchange_refund_request_does_not_reduce_the_exchange_reservation  # 반려된 교환 환불은 선점 유지
+  - completed_exchange_refund_is_subtracted_from_the_exchange_reservation   # 완료된 교환 환불은 선점에서 차감
+  - terminal_exchange_does_not_reserve                                      # 종결 교환은 예정액 제외
+  - reserved_from_a_different_order_is_ignored                              # 다른 주문의 예정액 무시
+  - excluded_claim_does_not_reserve_against_itself                          # 자기 자신 제외
+  - exclusion_of_a_pending_return_removes_its_reserve                       # 제외된 반품은 선점 제거
+  # 음수 방지 · DTO 계약
+  - reserved_exceeding_the_ceiling_does_not_clamp_the_amount                # 예정액 초과여도 한도 불변
+  - amount_is_never_negative_when_capacity_is_exhausted                     # 한도 소진 시 0, 음수 없음
+  - allows_accepts_amounts_within_the_limit                                 # allows() 는 한도 이하만 허용
+  - binding_label_key_points_at_a_defined_translation                       # binding 라벨 키 번역 존재
+  - to_array_exposes_every_axis                                             # toArray() 모든 축 노출
+  - repeated_calculation_is_stable                                          # 같은 입력은 같은 값
+  # 회수비 기록 자리의 유형 한정
+  - return_sourced_refund_ignores_the_shipping_amount_column                # 반품 발 환불은 배송비 칸 무시
+  - exchange_sourced_refund_restores_the_fee_from_the_shipping_amount_column  # 교환 발 환불은 음수분 되더하기
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CancellableAmountCalculatorTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

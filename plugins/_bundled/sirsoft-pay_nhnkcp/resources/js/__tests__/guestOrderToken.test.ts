@@ -1,94 +1,133 @@
 /**
- * 비회원 주문 조회 토큰 배선 검증 (NHN KCP)
+ * 비회원 주문 조회 토큰 — 공개 상태 계약으로만 읽는다 (NHN KCP)
  *
- * 서버는 `X-Guest-Order-Token` 으로 비회원 주문 소유자를 확인한다. 화면이 그 값을
- * 보내지 않으면 서버는 주문을 찾지 못하고, 비회원 손님에게는 영수증 버튼이 아예
- * 나타나지 않는다 — 예외도 콘솔 오류도 남지 않아 원인을 알 수 없는 결함이라 구조로 잠근다.
+ * 결제창 닫힘 보고·재결제 준비는 비회원 주문이면 조회 토큰(X-Guest-Order-Token)으로 소유를 증명한다. 예전에는
+ * 세션 저장소 키와 로그인 토큰(localStorage)을 플러그인이 직접 읽었다 — 저장 방식이 바뀌면 조용히 깨진다.
+ * 이제 공개 상태 계약 `_global.guestOrderToken` 만 읽는다.
  *
- * @scenario actor=guest, surface=receipt_injector
- *
- * @effects guest_order_token_header_built,guest_order_detail_route_matched
+ * 시나리오: plugins/_bundled/sirsoft-pay_nhnkcp/tests/scenarios/payment-close-report-ownership.yaml
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildOrderRequestHeaders, getGuestOrderToken } from '../guestOrderToken';
+import { getGuestOrderToken, guestOwnershipHeaders, waitForGuestOrderToken } from '../guestOrderToken';
 
-const JS = resolve(__dirname, '..');
+type Listener = (state: Record<string, unknown>) => void;
+
+let globalState: Record<string, unknown>;
+let listeners: Listener[];
+
+/**
+ * 공개 상태 API 만 가진 코어를 꾸민다.
+ */
+function installCore(): void {
+    (window as any).G7Core = {
+        state: {
+            get: () => globalState,
+            subscribe: (listener: Listener) => {
+                listeners.push(listener);
+
+                return () => {
+                    listeners = listeners.filter((l) => l !== listener);
+                };
+            },
+        },
+    };
+}
+
+/**
+ * 전역 상태를 바꾸고 구독자에게 알린다.
+ *
+ * @param patch 바꿀 값
+ */
+function setGlobal(patch: Record<string, unknown>): void {
+    globalState = { ...globalState, ...patch };
+    listeners.forEach((l) => l(globalState));
+}
 
 beforeEach(() => {
-    localStorage.clear();
+    globalState = {};
+    listeners = [];
     sessionStorage.clear();
+    localStorage.clear();
+    installCore();
 });
 
 afterEach(() => {
     delete (window as any).G7Core;
+    vi.useRealTimers();
 });
 
-describe('buildOrderRequestHeaders', () => {
-    it('회원 토큰이 있으면 Authorization 을 쓴다', () => {
+describe('getGuestOrderToken / guestOwnershipHeaders', () => {
+    // @scenario case=token_public_state
+    // @effects guest_token_from_public_state_only
+    it('_global.guestOrderToken 을 X-Guest-Order-Token 헤더로 만든다', () => {
+        setGlobal({ guestOrderToken: 'guest-token' });
+
+        expect(getGuestOrderToken()).toBe('guest-token');
+        expect(guestOwnershipHeaders()).toEqual({ 'X-Guest-Order-Token': 'guest-token' });
+    });
+
+    // @scenario case=token_storage_only
+    // @effects guest_token_from_public_state_only
+    it('세션 저장소에만 있고 공개 상태에 없으면 읽지 않는다 (저장소 키를 직접 보지 않는다)', () => {
+        sessionStorage.setItem('g7_guest_order_token', 'storage-token');
         localStorage.setItem('auth_token', 'member-token');
 
-        expect(buildOrderRequestHeaders()).toEqual({
-            Accept: 'application/json',
-            Authorization: 'Bearer member-token',
-        });
+        expect(getGuestOrderToken()).toBeNull();
+        expect(guestOwnershipHeaders()).toEqual({});
     });
 
-    it('회원 토큰이 없고 비회원 토큰이 있으면 X-Guest-Order-Token 을 쓴다', () => {
-        sessionStorage.setItem('g7_guest_order_token', 'guest-token');
-
-        expect(buildOrderRequestHeaders()).toEqual({
-            Accept: 'application/json',
-            'X-Guest-Order-Token': 'guest-token',
-        });
-    });
-
-    it('둘 다 없으면 null 을 돌려준다 (호출 자체를 막는다)', () => {
-        expect(buildOrderRequestHeaders()).toBeNull();
-    });
-
-    it('sessionStorage 가 비어도 전역 상태 폴백을 본다', () => {
-        (window as any).G7Core = {
-            state: { get: (k: string) => (k === '_global' ? { guestOrderToken: 'global-token' } : undefined) },
-        };
-
-        expect(getGuestOrderToken()).toBe('global-token');
+    // @scenario case=token_absent
+    // @effects no_header_without_token
+    it('토큰이 없거나 빈 값이면 헤더를 싣지 않는다', () => {
+        expect(guestOwnershipHeaders()).toEqual({});
+        setGlobal({ guestOrderToken: '' });
+        expect(guestOwnershipHeaders()).toEqual({});
+        delete (window as any).G7Core;
+        expect(guestOwnershipHeaders()).toEqual({});
     });
 });
 
-describe('영수증 화면 배선', () => {
-    it.each(['orderCompleteReceiptInjector.ts', 'mypageOrderShowInjector.ts'])(
-        '%s 가 비회원 토큰 헤더를 경유한다',
-        (file) => {
-            const source = readFileSync(resolve(JS, file), 'utf-8');
+describe('waitForGuestOrderToken', () => {
+    // @scenario case=token_wait
+    // @effects waits_until_template_restores_token
+    it('템플릿이 토큰을 되살리면 그때 끝나고 구독을 푼다', async () => {
+        vi.useFakeTimers();
+        let done = false;
+        const waiting = waitForGuestOrderToken(3000).then(() => { done = true; });
 
-            expect(
-                source.includes('buildOrderRequestHeaders'),
-                `${file} 가 비회원 토큰을 싣지 않습니다 — 비회원 손님에게 영수증 버튼이 나타나지 않습니다.`
-            ).toBe(true);
+        await vi.advanceTimersByTimeAsync(500);
+        expect(done).toBe(false);
 
-            expect(
-                /localStorage\.getItem\('auth_token'\)/.test(source),
-                `${file} 에 회원 전용 토큰 조회가 남아 있습니다 — 비회원 분기가 다시 막힙니다.`
-            ).toBe(false);
-        }
-    );
+        setGlobal({ guestOrderToken: 'late-token' });
+        await waiting;
 
-    it('주문 상세 경로 판정이 비회원 주소도 매칭한다', () => {
-        const source = readFileSync(resolve(JS, 'mypageOrderShowInjector.ts'), 'utf-8');
-        const match = source.match(/const ORDER_SHOW_RE = (\/.+\/);/);
+        expect(done).toBe(true);
+        expect(listeners).toHaveLength(0);
+    });
 
-        expect(match, '주문 상세 경로 정규식을 찾지 못했습니다.').not.toBeNull();
+    // @scenario case=token_wait
+    // @effects waits_until_template_restores_token
+    it('토큰이 끝내 생기지 않으면(회원) 제한 시간 뒤에 끝난다', async () => {
+        vi.useFakeTimers();
+        let done = false;
+        void waitForGuestOrderToken(3000).then(() => { done = true; });
 
-        const re = new RegExp(match![1].slice(1, -1));
+        await vi.advanceTimersByTimeAsync(2999);
+        expect(done).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
 
-        expect(re.test('/mypage/orders/12'), '회원 주문 상세 경로가 매칭되지 않습니다.').toBe(true);
-        expect(
-            re.test('/shop/guest/orders/20260904-0001'),
-            '비회원 주문 상세 경로가 매칭되지 않습니다 — 그 화면에서는 영수증이 조회조차 되지 않습니다.'
-        ).toBe(true);
+        expect(done).toBe(true);
+        expect(listeners).toHaveLength(0);
+    });
+
+    // @scenario case=token_wait
+    // @effects waits_until_template_restores_token
+    it('토큰이 이미 있으면 기다리지 않는다', async () => {
+        setGlobal({ guestOrderToken: 'ready' });
+
+        await expect(waitForGuestOrderToken(3000)).resolves.toBeUndefined();
+        expect(listeners).toHaveLength(0);
     });
 });

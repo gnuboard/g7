@@ -1,0 +1,20 @@
+feature: 마이페이지 마일리지 내역 금액 단위
+
+description: |
+  마이페이지 마일리지 화면은 위 요약 칸(사용 가능·소멸 예정·누적 적립·누적 사용)과 아래 내역 행 모두 마일리지를 「P」 로 보인다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D12):
+    - 내역 행(PC 표·모바일 카드)이 서버의 `amount_formatted`(마일리지 통화 서식 — 「240원」) 뒤에 「 P」 를 다시 붙여
+      「+240원 P」 로 보였다. 요약 칸과 같은 방식(숫자 서식 + 「 P」)으로 맞춘다.
+
+axes:
+  sign: [plus, minus]
+
+effects:
+  - amount_shows_single_point_unit   # 「+240 P」·「-1,500 P」 — 통화 기호 없이 P 하나
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-mileage-amount-unit.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — m1 /mypage/mileage 내역 행 「+240 P」·「+50,000 P」

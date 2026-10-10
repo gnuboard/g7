@@ -61,7 +61,8 @@
   "target_screen": {
     "products": "Products",
     "orders": "Orders",
-    "customers": "Customers"
+    "customers": "Customers",
+    "claims": "Claims"
   },
   "price_type": {
     "list_price": "List Price",
@@ -191,5 +192,71 @@
     "US": "USA",
     "CN": "China",
     "JP": "Japan"
+  },
+  "claim_type": {
+    "exchange": "Exchange",
+    "return": "Return",
+    "refund": "Refund",
+    "cancel": "Cancel"
+  },
+  "exchange_status": {
+    "requested": "Exchange Requested",
+    "payment_pending": "Exchange Payment Pending",
+    "paid": "Exchange Payment Completed",
+    "approved": "Exchange Approved",
+    "on_hold": "Exchange On Hold",
+    "rejected": "Exchange Rejected",
+    "collection_ready": "Exchange Pickup Ready",
+    "collecting": "Exchange Pickup in Transit",
+    "collected": "Exchange Pickup Arrived",
+    "redelivery_ready": "Exchange Reshipment Ready",
+    "redelivering": "Exchange Reshipment in Transit",
+    "redelivered": "Exchange Reshipment Delivered",
+    "completed": "Exchange Completed",
+    "withdrawn": "Exchange Withdrawn"
+  },
+  "return_status": {
+    "requested": "Return Requested",
+    "payment_pending": "Return Payment Pending",
+    "paid": "Return Payment Completed",
+    "approved": "Return Approved",
+    "on_hold": "Return On Hold",
+    "rejected": "Return Rejected",
+    "collection_ready": "Return Pickup Ready",
+    "collecting": "Return Pickup in Transit",
+    "collected": "Return Pickup Arrived",
+    "completed": "Return Completed",
+    "withdrawn": "Return Withdrawn"
+  },
+  "refund_status": {
+    "requested": "Refund Requested",
+    "approved": "Refund Approved",
+    "processing": "Refund Processing",
+    "on_hold": "Refund On Hold",
+    "completed": "Refund Completed",
+    "rejected": "Refund Rejected",
+    "withdrawn": "Refund Withdrawn"
+  },
+  "cancel_status": {
+    "requested": "Cancel Requested",
+    "completed": "Cancel Completed"
+  },
+  "cancel_type": {
+    "full": "Full Cancel",
+    "partial": "Partial Cancel"
+  },
+  "claim_reason_fault_type": {
+    "customer": "Customer",
+    "seller": "Seller",
+    "carrier": "Carrier"
+  },
+  "claim_charge_method": {
+    "pay_on_request": "Pay on Request",
+    "pay_on_approval": "Pay after Approval",
+    "deduct_from_refund": "Deduct from Refund"
+  },
+  "claim_shipping_fee_mode": {
+    "fixed": "Fixed Amount",
+    "original_policy": "Recalculate by Original Policy"
   }
 }

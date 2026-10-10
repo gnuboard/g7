@@ -1,0 +1,35 @@
+<!-- 마이페이지 «알림» 탭. 이커머스가 아니라 **코어 알림**(`/api/user/notifications`)을 읽으므로
+     쇼핑몰 모듈이 없어도 성립하는 유일한 탭이다. -->
+<layout name="mypage/notifications" version="1.0.0" extends="_user_base">
+  <!-- 알림 목록. «안 읽음만» 토글과 쪽수가 `_local` 에 있어 이 소스만 다시 받는다 -->
+  <data-source id="userNotifications" label_key="$t:editor.data_source.userNotifications" type="api" endpoint="/api/user/notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{_local.notificationsPage ?? 1}}" sort_order="desc" read="{{_local.userNotificationsUnreadOnly ? 'unread' : 'all'}}"/>
+  </data-source>
+  <computed name="currentTab">notifications</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <init>
+    <set-state target="local" :notificationsPage="1" :userNotificationsUnreadOnly="false"/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 알림 -->
+          <include src="partials/mypage/notifications/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+</layout>

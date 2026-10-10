@@ -26,6 +26,12 @@ use App\Contracts\Extension\PluginManagerInterface;
  */
 class SeoCandidateService
 {
+    /**
+     * SEO 후보 수집 서비스를 만든다.
+     *
+     * @param  ModuleManagerInterface  $moduleManager  활성 모듈 조회
+     * @param  PluginManagerInterface  $pluginManager  활성 플러그인 조회
+     */
     public function __construct(
         private readonly ModuleManagerInterface $moduleManager,
         private readonly PluginManagerInterface $pluginManager,
@@ -280,7 +286,10 @@ class SeoCandidateService
     }
 
     /**
-     * 확장의 `config/settings/defaults.json` `defaults.seo` 배열을 읽습니다.
+     * 확장 설치본의 `config/settings/defaults.json` `defaults.seo` 배열을 읽습니다.
+     *
+     * 설치본(`{modules|plugins}/{id}`)만 읽는다. 설치본에 파일이 없으면 배포 원본(`_bundled`)을
+     * 대신 읽지 않고 빈 배열을 돌려준다 — SEO 토글 설정이 없는 확장과 같은 정상 상태로 본다.
      *
      * @param  string  $type  module|plugin
      * @param  string  $id  확장 식별자
@@ -289,17 +298,15 @@ class SeoCandidateService
     private function readSeoDefaults(string $type, string $id): array
     {
         $base = $type === 'module' ? 'modules' : 'plugins';
-        foreach ([base_path("{$base}/{$id}/config/settings/defaults.json"), base_path("{$base}/_bundled/{$id}/config/settings/defaults.json")] as $path) {
-            if (! is_file($path)) {
-                continue;
-            }
-            $decoded = json_decode((string) file_get_contents($path), true);
-            $seo = $decoded['defaults']['seo'] ?? null;
-
-            return is_array($seo) ? $seo : [];
+        $path = base_path("{$base}/{$id}/config/settings/defaults.json");
+        if (! is_file($path)) {
+            return [];
         }
 
-        return [];
+        $decoded = json_decode((string) file_get_contents($path), true);
+        $seo = $decoded['defaults']['seo'] ?? null;
+
+        return is_array($seo) ? $seo : [];
     }
 
     /**

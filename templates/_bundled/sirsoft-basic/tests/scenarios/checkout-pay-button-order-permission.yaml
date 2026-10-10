@@ -1,0 +1,20 @@
+feature: 주문서 [결제하기] — 주문 권한 잠금
+
+description: |
+  주문서의 [결제하기]는 장바구니·상품과 같이 checkoutData 의 abilities.can_order 가 true 가 아니면 잠근다.
+  쿠폰·배송지·마일리지를 바꿀 때 받는 결제 정보 갱신(PUT) 응답이 checkoutData 를 통째로 갈아끼우므로 조회와
+  갱신 응답이 모두 can_order 를 싣는다.
+
+axes:
+  can_order: [granted, denied, absent]
+
+effects:
+  - pay_button_locked_when_order_denied
+  - pay_button_open_when_order_granted
+  - pay_button_locked_when_abilities_absent
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/checkout-pay-button-order-permission.test.ts
+
+validation:
+  browser_check: 주문 권한이 있는 회원으로 주문서에서 쿠폰·배송지를 바꾼 뒤에도 [결제하기]가 열려 있는지, 권한을 회수한 회원은 안내와 함께 잠기는지

@@ -1,0 +1,21 @@
+feature: DataGrid 행 단위 클래스(rowClassName)를 행마다 푼다
+
+description: |
+  관리자 게시글 목록은 공지·답글 행을 배경색으로 구분하려고 rowClassName 에 행 표현식
+  (`{{row.row_type === 'notice' ? … : …}}`)을 넘긴다. CHANGELOG [1.1.0] Fixed 「공지·답글 행의 배경색
+  구분」 항목의 약속이다. 그런데 엔진이 컴포넌트 props 를 그릴 때 이 식을 row 없이 미리 풀어 빈 문자열로
+  넘겨 행 배경이 하나도 붙지 않았다(7.1.0 전수 실측 K3: React props rowClassName "", 답글 행 tr 배경
+  rgba(0,0,0,0)). components.json skipBindingKeys 에 rowClassName 을 더해 원문을 받고, DataGrid 가
+  행마다 엔진의 바인딩 해석기로 푼다(subRowCondition 과 같은 방식). 고정 문자열은 그대로 쓴다.
+
+axes:
+  row_type: [notice, reply, normal]
+
+effects:
+  - datagrid_row_class_resolves_per_row
+  - datagrid_row_class_static_string_unchanged
+  # 좁은 화면 카드 보기에도 같은 행 클래스가 붙는다 (7.1.0 실측 K3 O-K3-17 — 390px 공지 카드 배경 구분 없음)
+  - datagrid_row_class_applies_to_mobile_cards
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.rowClassName.test.tsx

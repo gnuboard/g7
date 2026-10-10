@@ -13,6 +13,11 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 entryFileNames: 'js/plugin.iife.js',
+                // index.ts 가 불러오는 CSS 는 plugin.json assets.css.output 과 같은 경로로 낸다
+                assetFileNames: (info) => {
+                    if (info.name && info.name.endsWith('.css')) return 'css/plugin.css';
+                    return 'assets/[name][extname]';
+                },
             },
         },
         // 배포용 빌드(--production)는 G7_BUILD_SOURCEMAP=0 을 주입해 소스맵을 생성하지 않는다.

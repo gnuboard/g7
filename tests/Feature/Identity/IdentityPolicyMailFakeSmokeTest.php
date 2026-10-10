@@ -6,11 +6,10 @@ use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Models\User;
 use App\Notifications\GenericNotification;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -23,20 +22,25 @@ use Tests\TestCase;
  */
 class IdentityPolicyMailFakeSmokeTest extends TestCase
 {
+    use CapturesSentMail;
     use RefreshDatabase;
 
     private MailIdentityProvider $provider;
 
+    /**
+     * 메일을 격리하고 본인인증 알림을 준비한 뒤 메일 프로바이더를 직접 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
-        // IdentityMessageDispatcher 가 IdentityMessageMail 을 Mail::send 로 직접 발송하므로
-        // Notification::fake() 만으로는 메일 발송이 격리되지 않음 — Mail::fake() 필수.
-        // 또한 dispatcher 의 resolver 가 정의/템플릿을 찾지 못하면 false 반환되어 status='failed' 처리되므로
-        // IdentityMessageDefinitionSeeder 를 시드해 코어 기본 정의를 채워야 함.
+        // 본인인증 메일은 알림 정의(category=identity)·메일 채널을 거쳐 발송된다 — 정의가 없거나 채널이
+        // 준비되지 않으면 dispatcher 가 false 를 돌려 status='failed' 가 되므로 둘 다 갖춘다.
         Mail::fake();
-        Notification::fake();
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        // 본인인증 메일도 알림이다(7.1.0) — Notification::fake() 는 그 발송 경로 자체를 건너뛰어
+        // challenge 가 failed 가 된다. 메일 격리는 Mail::fake() 로 충분하다.
+        $this->prepareIdentityNotifications();
         $logRepository = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
         $this->provider = new MailIdentityProvider($logRepository);
     }
@@ -48,8 +52,16 @@ class IdentityPolicyMailFakeSmokeTest extends TestCase
      * GenericNotification 의 via() 채널 평가는 NotificationDefinition/readiness 체인 의존이라
      * 테스트 환경에서 별도 시드 없이는 fake 캡처가 불가 — 회로 자체 검증으로 충분.
      *
-     * @dataProvider purposesProvider
+     * @scenario policy_stage=challenge_delivery, verification_progress=issued
+     *
+     * @effects mail_provider_circuit_for_purpose, each_core_purpose_issues_sent_challenge_with_expected_render_hint, password_reset_uses_link_render_hint_with_link_token_hash
+     *
+     * @param  string  $purpose  발급할 본인인증 목적
+     * @param  string  $expectedRenderHint  기대 render_hint (text_code 또는 link)
+     * @param  string  $expectedHashKey  metadata 에 저장돼야 할 해시 키
+     * @return void 반환값 없음
      */
+    #[DataProvider('purposesProvider')]
     public function test_mail_provider_circuit_for_purpose(string $purpose, string $expectedRenderHint, string $expectedHashKey): void
     {
         $user = User::factory()->create();
@@ -73,6 +85,11 @@ class IdentityPolicyMailFakeSmokeTest extends TestCase
         );
     }
 
+    /**
+     * 대표 목적 4종과 그 기대 render_hint·해시 키를 제공합니다.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string}> 목적·render_hint·해시 키 행렬
+     */
     public static function purposesProvider(): array
     {
         return [
@@ -86,6 +103,12 @@ class IdentityPolicyMailFakeSmokeTest extends TestCase
     /**
      * 코드 발송 회로 — 발송된 challenge 가 DB 로그에 'sent' 상태로 기록되는지 추가 확인.
      * 메일 본문 평문 코드는 보안상 hash 만 저장하므로 실재만 검증.
+     *
+     * @scenario policy_stage=challenge_delivery, verification_progress=issued
+     *
+     * @effects mail_provider_logs_challenge_with_sent_status, mail_provider_request_creates_sent_log_with_code_hash
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_provider_logs_challenge_with_sent_status(): void
     {

@@ -1,0 +1,17 @@
+feature: 관리자 결제 조회 창 — 가상계좌 입금 통지 금액의 원화 표기
+
+description: |
+  관리자 주문 상세에 끼우는 「결제 조회」 창이 입금 통지 금액을 `toLocaleString() + '원'` 고정으로 적어 영어 관리자에게도
+  「5,000원」이 보였다. 이커머스 원화 접두·접미 번역 키로 적는다(후속 B 세션 B4, S3-D23 같은 결함군).
+
+axes:
+  surface: [vbank_notice]
+
+effects:
+  - payment_query_notice_amount_follows_locale
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/adminPaymentQueryKrwLocale.test.ts
+
+validation:
+  browser_check: 관리자 English 로 나이스페이 가상계좌 입금 통지가 있는 주문 상세 → 결제 조회 → 통지 금액이 ₩ 접두

@@ -1,4 +1,5 @@
 {
+    "comment": "공통정보 화면 오른쪽 패널의 껍데기. 빈 안내만 스스로 그리고, 보기·편집 두 조각은 각자\n  `_global.panelMode` 를 보고 나타난다.\n  빈 안내의 예외가 셋이다(등록·편집·복사) — 브랜드·분류와 달리 **복사 모드가 하나 더 있기**\n  때문이고, 복사는 선택 없이도 폼이 떠야 한다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info Detail Panel - View/Form Container"

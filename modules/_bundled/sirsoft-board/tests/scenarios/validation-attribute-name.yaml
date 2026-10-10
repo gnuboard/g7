@@ -1,0 +1,30 @@
+feature: 게시판 요청 검증 문구의 칸 이름 (7.1.0 전수 실측 O-K4F-1)
+
+description: |
+  게시판 API 를 직접 부르면 일부 검증 문구에 필드 키가 그대로 보였다 — 「선택한 sort 값이 올바르지
+  않습니다.」「The board id field must be an integer.」. 그 요청들이 attributes() 로 칸 이름을 주지
+  않았기 때문이다(실측 당시 게시판 요청 54개 중 28개, ko 213곳).
+
+  - 게시판 요청 공용 트레이트(Concerns\ProvidesFallbackRuleMessages)가 대체 문구와 함께 게시판 공용
+    칸 이름(validation.fallback_attributes)을 더한다. 요청이 정한 칸 이름이 언제나 먼저다
+  - 배열 항목(ids.*)은 이름이 있는 부모 칸(ids)의 이름을 물려받는다
+  - 환경설정 저장 요청의 묶음·SEO·알림 칸은 환경설정 칸 이름(validation.attributes.settings)에 둔다
+  - 일본어 팩은 같은 키를 모두 가진다 — 배열을 통째로 읽어 ko 로 폴백하지 않으므로 하나라도 빠지면
+    ja 에서 그 칸만 필드 키로 보인다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/ValidationAttributeNameTest.php
+
+axes:
+  case:
+    - request_scan
+    - api_sort_message
+    - ja_pack_parity
+
+effects:
+  - no_field_key_in_board_validation_messages
+  - sort_rejection_names_the_field
+  - ja_pack_has_every_field_name
+
+validation:
+  audit_rule: test-scenario-coverage

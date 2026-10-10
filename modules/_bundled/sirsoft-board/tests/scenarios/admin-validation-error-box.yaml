@@ -1,0 +1,20 @@
+feature: 게시판 관리 화면 입력 오류 상자 서식
+
+description: |
+  게시판 관리 화면(게시판 생성·수정, 게시글 작성, 환경설정)의 입력 오류 상자는 경고 아이콘을 제목 첫 줄에
+  맞추고(items-start + 아이콘 leading-5) 상자 아래를 띄운다(mb-6). CHANGELOG [1.2.0] Fixed 「입력 오류 안내
+  상자」 항목의 약속이다.
+
+  배경 (7.1.0 브라우저 실측 K3, 2026-10-07): 게시판 생성·수정 폼만 15차 병합에서 옛 서식으로 돌아가
+  아이콘 중심이 제목보다 15~43px 아래, 상자와 폼 사이 0px 였다. 허용 확장자 칸은 422 가 가리키는데
+  칸 아래 오류 자리가 없었다.
+
+axes:
+  screen: [board_form]
+
+effects:
+  - validation_error_icon_aligns_with_title
+  - board_form_allowed_extensions_shows_field_error
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-validation-error-box.test.ts

@@ -55,6 +55,15 @@ export interface RichSelectProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
+    /**
+     * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 — `renderEnvRef.current` 를 component_layout 렌더에 넘긴다(#141)
+     * @internal 템플릿 엔진 내부 사용
+     */
+    __componentContext?: {
+        renderEnvRef?: {
+            current: Record<string, any> | null;
+        };
+    };
 }
 /**
  * 리치 셀렉트 컴포넌트

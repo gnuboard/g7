@@ -1,226 +1,226 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Create - Add Language Modal"
-  },
-  "id": "modal_add_language",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.create.modal.add_language.title",
-    "description": "$t:sirsoft-ecommerce.admin.product.create.modal.add_language.description",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "grid grid-cols-2 gap-3"
-      },
-      "children": [
+    "comment": "상품 폼 — 언어 추가 창. 상품명·설명을 어느 언어로 더 입력할지 고른다. 아직 고른 언어를 폼에\n  붙이는 배선이 없어 어느 버튼을 눌러도 창만 닫히고, 선택지도 이 자리에 손으로 적혀 있다\n  (쇼핑몰 설정의 사용 언어를 읽어 세우는 것이 정본이다).",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Create - Add Language Modal"
+    },
+    "id": "modal_add_language",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product.create.modal.add_language.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "id": "lang_btn_ko",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center flex-col justify-center py-4 px-6 rounded-lg bg-blue-600 text-white"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-base font-medium"
-              },
-              "text": "한국어"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid grid-cols-2 gap-3"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm opacity-80 mt-0.5"
-              },
-              "text": "KO"
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
-        },
-        {
-          "id": "lang_btn_en",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-base font-medium"
-                  },
-                  "text": "English"
+                    "id": "lang_btn_ko",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center flex-col justify-center py-4 px-6 rounded-lg bg-blue-600 dark:bg-blue-500 text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-base font-medium"
+                            },
+                            "text": "한국어"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm opacity-80 mt-0.5"
+                            },
+                            "text": "KO"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle mt-0.5"
-                  },
-                  "text": "EN"
-                }
-              ]
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
-        },
-        {
-          "id": "lang_btn_ja",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-base font-medium"
-                  },
-                  "text": "日本語"
+                    "id": "lang_btn_en",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-base font-medium"
+                                    },
+                                    "text": "English"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle mt-0.5"
+                                    },
+                                    "text": "EN"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle mt-0.5"
-                  },
-                  "text": "JP"
-                }
-              ]
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
-        },
-        {
-          "id": "lang_btn_zh_cn",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-base font-medium"
-                  },
-                  "text": "中文(简体)"
+                    "id": "lang_btn_ja",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-base font-medium"
+                                    },
+                                    "text": "日本語"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle mt-0.5"
+                                    },
+                                    "text": "JP"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle mt-0.5"
-                  },
-                  "text": "CN"
-                }
-              ]
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
-        },
-        {
-          "id": "lang_btn_zh_tw",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-base font-medium"
-                  },
-                  "text": "中文(繁體)"
+                    "id": "lang_btn_zh_cn",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-base font-medium"
+                                    },
+                                    "text": "中文(简体)"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle mt-0.5"
+                                    },
+                                    "text": "CN"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle mt-0.5"
-                  },
-                  "text": "TW"
+                    "id": "lang_btn_zh_tw",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-base font-medium"
+                                    },
+                                    "text": "中文(繁體)"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle mt-0.5"
+                                    },
+                                    "text": "TW"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

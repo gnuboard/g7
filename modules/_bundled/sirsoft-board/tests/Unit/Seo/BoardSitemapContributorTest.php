@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * BoardSitemapContributor 단위 테스트
@@ -24,20 +25,30 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - getUrls: 비밀글 URL 미포함
  * - getUrls: blinded/deleted 게시글 URL 미포함
  * - getUrls: 각 항목에 url 키 존재
- *
- * @group board
- * @group unit
- * @group seo
  */
+#[Group('board')]
+#[Group('unit')]
+#[Group('seo')]
 class BoardSitemapContributorTest extends BoardTestCase
 {
     private BoardSitemapContributor $contributor;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'sitemap-test';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -47,6 +58,11 @@ class BoardSitemapContributorTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +72,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * SitemapContributorInterface 를 구현한다
+     *
+     * @scenario url_kind=boards_index, entry_condition=listed
+     *
+     * @effects implements_sitemap_contributor_interface
+     *
+     * @return void 반환값 없음
      */
     public function test_implements_sitemap_contributor_interface(): void
     {
@@ -64,6 +86,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getIdentifier: 'sirsoft-board' 반환
+     *
+     * @scenario url_kind=boards_index, entry_condition=listed
+     *
+     * @effects get_identifier_returns_sirsoft_board
+     *
+     * @return void 반환값 없음
      */
     public function test_get_identifier_returns_sirsoft_board(): void
     {
@@ -72,6 +100,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 활성 게시판이 없으면 정적 목록 URL만 반환한다
+     *
+     * @scenario url_kind=board_detail, entry_condition=hidden_record
+     *
+     * @effects get_urls_returns_only_static_url_when_no_active_boards
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_returns_only_static_url_when_no_active_boards(): void
     {
@@ -88,6 +122,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 기여자당 URL 안전 상한을 초과하면 게시글 URL이 잘린다
+     *
+     * @scenario url_kind=post_detail, entry_condition=over_url_limit
+     *
+     * @effects get_urls_truncates_at_max_urls_per_contributor
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_truncates_at_max_urls_per_contributor(): void
     {
@@ -105,6 +145,12 @@ class BoardSitemapContributorTest extends BoardTestCase
      * getUrls: 상한이 게시판 루프에도 적용된다 (회귀)
      *
      * 상한 검사가 게시글 루프에만 있으면, 게시판 URL 만으로 상한을 초과해도 잘리지 않는다.
+     *
+     * @scenario url_kind=board_detail, entry_condition=over_url_limit
+     *
+     * @effects get_urls_truncates_within_board_loop
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_truncates_within_board_loop(): void
     {
@@ -121,6 +167,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: /boards 항목이 반드시 포함된다
+     *
+     * @scenario url_kind=boards_index, entry_condition=listed
+     *
+     * @effects get_urls_includes_boards_index
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_includes_boards_index(): void
     {
@@ -132,6 +184,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 활성 게시판 URL이 포함된다
+     *
+     * @scenario url_kind=board_detail, entry_condition=listed
+     *
+     * @effects get_urls_includes_active_board
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_includes_active_board(): void
     {
@@ -143,6 +201,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 비활성 게시판은 포함되지 않는다
+     *
+     * @scenario url_kind=board_detail, entry_condition=hidden_record
+     *
+     * @effects get_urls_excludes_inactive_board
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_inactive_board(): void
     {
@@ -156,6 +220,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 공개(published) 게시글 URL이 포함된다
+     *
+     * @scenario url_kind=post_detail, entry_condition=listed
+     *
+     * @effects get_urls_includes_published_post
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_includes_published_post(): void
     {
@@ -169,6 +239,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 비밀글은 포함되지 않는다
+     *
+     * @scenario url_kind=post_detail, entry_condition=hidden_record
+     *
+     * @effects get_urls_excludes_secret_post
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_secret_post(): void
     {
@@ -182,6 +258,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: blinded 게시글은 포함되지 않는다
+     *
+     * @scenario url_kind=post_detail, entry_condition=hidden_record
+     *
+     * @effects get_urls_excludes_blinded_post
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_blinded_post(): void
     {
@@ -195,6 +277,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: soft-deleted 게시글은 포함되지 않는다
+     *
+     * @scenario url_kind=post_detail, entry_condition=hidden_record
+     *
+     * @effects get_urls_excludes_deleted_post
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_deleted_post(): void
     {
@@ -211,6 +299,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 모든 항목에 url 키가 존재한다
+     *
+     * @scenario url_kind=post_detail, entry_condition=listed
+     *
+     * @effects get_urls_all_items_have_url_key
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_all_items_have_url_key(): void
     {
@@ -225,6 +319,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 게시판 항목에 changefreq와 priority가 있다
+     *
+     * @scenario url_kind=board_detail, entry_condition=listed
+     *
+     * @effects get_urls_board_item_has_changefreq_and_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_board_item_has_changefreq_and_priority(): void
     {
@@ -238,6 +338,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: seo_boards 토글 OFF 시 /boards 목록 URL이 제외된다 (회귀)
+     *
+     * @scenario url_kind=boards_index, entry_condition=toggle_off
+     *
+     * @effects get_urls_excludes_boards_index_when_toggle_off
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_boards_index_when_toggle_off(): void
     {
@@ -251,6 +357,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: seo_board 토글 OFF 시 개별 게시판 URL이 제외된다 (회귀)
+     *
+     * @scenario url_kind=board_detail, entry_condition=toggle_off
+     *
+     * @effects get_urls_excludes_board_detail_when_toggle_off
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_board_detail_when_toggle_off(): void
     {
@@ -264,6 +376,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: seo_post_detail 토글 OFF 시 게시글 상세 URL이 제외된다 (회귀)
+     *
+     * @scenario url_kind=post_detail, entry_condition=toggle_off
+     *
+     * @effects get_urls_excludes_post_detail_when_toggle_off
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_post_detail_when_toggle_off(): void
     {
@@ -280,6 +398,12 @@ class BoardSitemapContributorTest extends BoardTestCase
 
     /**
      * getUrls: 토글이 모두 켜진 기본 상태에서는 모든 URL 유형이 포함된다 (비파괴 회귀)
+     *
+     * @scenario url_kind=post_detail, entry_condition=listed
+     *
+     * @effects get_urls_includes_all_when_toggles_default_on
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_includes_all_when_toggles_default_on(): void
     {
@@ -298,6 +422,12 @@ class BoardSitemapContributorTest extends BoardTestCase
      *
      * 소비 경로는 getUrls() 가 아니라 getUrlsLazy() 이므로, 이것이 Traversable 로
      * 한 건씩 yield 되어야 대용량 게시글에서 메모리가 유계로 유지된다.
+     *
+     * @scenario url_kind=post_detail, entry_condition=listed
+     *
+     * @effects get_urls_lazy_streams_entries
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_lazy_streams_entries(): void
     {

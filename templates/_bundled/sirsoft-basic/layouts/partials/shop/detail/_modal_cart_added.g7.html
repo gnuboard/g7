@@ -1,0 +1,41 @@
+<!-- 장바구니에 담은 직후 뜨는 창 — 계속 둘러보기와 장바구니로 가기 중 고르게 한다. 담기 자체는 이미
+     끝난 상태라 이 창은 되돌릴 것이 없고 «다음 걸음» 만 묻는다. -->
+<partial description="장바구니 담기 완료 모달" editor_label="$t:user.modal_label.shop_detail.cart_added_modal">
+  <modal data-type="composite" data-ref="cart_added_modal" title="$t:shop.product.cart_added_modal_title" size="sm" :closeOnBackdropClick="false">
+    <!-- 모달 내용 -->
+    <div class="pb-6 text-center">
+      <div class="flex justify-center mb-4">
+        <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+          <icon name="check" class="text-green-600 dark:text-green-400" size="lg"/>
+        </div>
+      </div>
+      <p class="text-gray-700 dark:text-gray-300">$t:shop.product.cart_added_modal_message</p>
+    </div>
+    <!-- 모달 푸터 - 쇼핑 계속 / 장바구니 이동 -->
+    <div class="flex gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+      <button class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
+        <on type="click">
+          <!-- 계속 둘러보기 — 이미 담긴 뒤이므로 구매 카드에 쌓아 둔 선택을 비워야 한다. 안 그러면 같은 것을 한 번 더 담게 된다 -->
+          <sequence>
+            <set-state target="$parent._local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        $t:shop.product.continue_shopping
+      </button>
+      <button class="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
+        <on type="click">
+          <!-- 장바구니로 이동. 이동 표시를 먼저 세우고 창을 닫는다 — 상품 목록 클러스터 밖으로 나가는 이동이라 목록 상태를 승계하지 않는다 -->
+          <sequence>
+            <set-state target="global" :isNavigatingToCart="true"/>
+            <close-modal/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 장바구니로 나가는 이동이다 — 상품 목록의 페이지·정렬을 물려주면 장바구니가 읽지도 않는 query 만 주소에 붙는다. -->
+            <navigate path="{{_global.shopBase}}/cart"/>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isNavigatingToCart}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>$t:shop.product.go_to_cart</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,428 +1,429 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Common Info List Panel - Left Sidebar"
-  },
-  "id": "common_info_list_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card col-span-1-lg flex flex-col"
-  },
-  "lifecycle": {
-    "onMount": [
-      {
-        "type": "click",
-        "handler": "sirsoft-ecommerce.initCommonInfoFromUrl"
-      }
-    ]
-  },
-  "children": [
-    {
-      "id": "list_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "info-circle",
-                "className": "text-gray-700 dark:text-gray-300",
-                "size": "md"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "text-heading"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.common_info.list.title"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              },
-              "text": "{{commonInfos?.data?.pagination?.total ?? commonInfos?.data?.data?.length ?? 0}}"
-            }
-          ]
-        }
-      ]
+    "comment": "공통정보 화면 왼쪽 목록. 브랜드·분류와 달리 **쪽 넘김이 아니라 무한 스크롤**이다 — 목록 끝에\n  닿으면 다음 쪽을 받아 기존 배열 뒤에 이어 붙인다.\n  그 진행 상태(현재 쪽·더 있는지·불러오는 중)는 `_global.infiniteScroll` 이 쥐고 있고, 검색어는\n  URL 에 남는다. 검색이 바뀌면 주소가 바뀌어 화면이 다시 뜨므로 스크롤 상태도 함께 초기화된다.\n  항목을 고를 때 **편집 중이면 곧바로 넘어가지 않는다** — 고른 항목을 `_global.pendingItem*` 에\n  잡아 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다.\n  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info List Panel - Left Sidebar"
     },
-    {
-      "id": "search_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
-        {
-          "type": "composite",
-          "name": "SearchBar",
-          "props": {
-            "placeholder": "$t:sirsoft-ecommerce.admin.common_info.list.search_placeholder",
-            "value": "{{query.search || ''}}",
-            "className": "w-full"
-          },
-          "actions": [
+    "id": "common_info_list_panel",
+    "type": "basic",
+    "name": "Div",
+    "lifecycle": {
+        "onMount": [
             {
-              "type": "submit",
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/ecommerce/common-info",
-                "mergeQuery": true,
-                "query": {
-                  "search": "{{$event.target.search.value}}"
-                }
-              }
+                "handler": "sirsoft-ecommerce.initCommonInfoFromUrl"
             }
-          ]
-        }
-      ]
+        ]
     },
-    {
-      "id": "common_info_list",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(commonInfos?.data?.data?.length ?? 0) > 0}}",
-      "props": {
-        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
-      },
-      "actions": [
+    "props": {
+        "className": "admin-card col-span-1-lg flex flex-col"
+    },
+    "children": [
         {
-          "type": "scroll",
-          "debounce": 200,
-          "handler": "sequence",
-          "actions": [
-            {
-              "handler": "switch",
-              "params": {
-                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
-              },
-              "cases": {
-                "true": {
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "infiniteScroll.isLoadingMore": true
-                      }
-                    },
-                    {
-                      "handler": "scrollIntoView",
-                      "params": {
-                        "selector": "#loading_indicator",
-                        "scrollContainer": "#common_info_list",
-                        "behavior": "smooth",
-                        "block": "end",
-                        "waitForElement": true,
-                        "timeout": 2000
-                      }
-                    },
-                    {
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos",
-                      "params": {
-                        "method": "GET",
-                        "query": {
-                          "page": "{{_global.infiniteScroll.currentPage + 1}}",
-                          "per_page": 20,
-                          "search": "{{query.search || ''}}"
-                        }
-                      },
-                      "onSuccess": [
-                        {
-                          "handler": "appendDataSource",
-                          "params": {
-                            "dataSourceId": "commonInfos",
-                            "dataPath": "data.data",
-                            "newData": "{{response.data.data}}"
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
-                            "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
-                            "infiniteScroll.isLoadingMore": false
-                          }
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "infiniteScroll.isLoadingMore": false
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          ]
-        }
-      ],
-      "children": [
-        {
-          "id": "common_info_list_items",
-          "type": "basic",
-          "name": "Div",
-          "iteration": {
-            "source": "{{commonInfos?.data?.data ?? []}}",
-            "item_var": "item"
-          },
-          "children": [
-            {
-              "id": "common_info_item_{{item.id}}",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_global.selectedId === item.id ? 'admin-card-selected' : 'admin-card-clickable'}}"
-              },
-              "actions": [
+            "id": "list_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header"
+            },
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "switch",
-                      "params": {
-                        "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create' || _global.panelMode === 'copy'}}"
-                      },
-                      "cases": {
-                        "true": {
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "pendingItemId": "{{item.id}}",
-                                "pendingItem": "{{item}}"
-                              }
-                            },
-                            {
-                              "handler": "openModal",
-                              "target": "editing_confirm_modal"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "className": "text-gray-700 dark:text-gray-300",
+                                "size": "md"
                             }
-                          ]
                         },
-                        "false": {
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "selectedId": "{{item.id}}",
-                                "selectedItem": "{{item}}",
-                                "panelMode": "view"
-                              }
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "text-heading"
                             },
-                            {
-                              "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
-                              "handler": "replaceUrl",
-                              "params": {
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.list.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{commonInfos?.data?.pagination?.total ?? commonInfos?.data?.data?.length ?? 0}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "search_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header"
+            },
+            "children": [
+                {
+                    "type": "composite",
+                    "name": "SearchBar",
+                    "actions": [
+                        {
+                            "comment": "검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 함께 처음으로 돌아간다.",
+                            "type": "submit",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/ecommerce/common-info",
                                 "mergeQuery": true,
                                 "query": {
-                                  "id": "{{item.id}}",
-                                  "mode": "view"
+                                    "search": "{{$event.target.search.value}}"
                                 }
-                              }
                             }
-                          ]
                         }
-                      }
+                    ],
+                    "props": {
+                        "placeholder": "$t:sirsoft-ecommerce.admin.common_info.list.search_placeholder",
+                        "value": "{{query.search || ''}}",
+                        "className": "w-full"
                     }
-                  ]
                 }
-              ],
-              "children": [
+            ]
+        },
+        {
+            "id": "common_info_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(commonInfos?.data?.data?.length ?? 0) > 0}}",
+            "actions": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-2 flex-1 min-w-0"
-                      },
-                      "children": [
+                    "comment": "무한 스크롤. 스크롤 이벤트는 초당 수십 번 오므로 대기시간(200ms)을 두고, 그 뒤에도 세 조건이\n          모두 참일 때만 요청한다 — 바닥 100px 안에 닿았고 · 더 받을 것이 남았고 · 지금 받는 중이 아님.\n          받은 쪽은 갈아끼우지 않고 **뒤에 이어 붙인다**(`append-data-source`). 갈아끼우면 위로 스크롤\n          했을 때 앞 쪽이 사라진다.\n          실패해도 '받는 중' 깃발은 반드시 푼다 — 안 풀면 위 조건이 영영 거짓이라 스크롤이 죽는다.",
+                    "type": "scroll",
+                    "handler": "sequence",
+                    "actions": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-primary text-sm font-medium truncate"
-                          },
-                          "text": "{{$localized(item.name)}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{item.is_default}}",
-                          "props": {
-                            "className": "text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0"
-                          },
-                          "text": "$t:sirsoft-ecommerce.admin.common_info.list.default"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "size": "sm",
-                        "checked": "{{item.is_active}}",
-                        "disabled": "{{!item.abilities?.can_update}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active",
-                          "params": {
-                            "method": "PATCH"
-                          },
-                          "onSuccess": [
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "commonInfos"
-                              }
+                            "handler": "switch",
+                            "params": {
+                                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
                             },
-                            {
-                              "handler": "switch",
-                              "params": {
-                                "value": "{{_global.selectedId === item.id}}"
-                              },
-                              "cases": {
+                            "cases": {
                                 "true": {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "global",
-                                    "selectedItem.is_active": "{{response.data.is_active}}"
-                                  }
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "infiniteScroll.isLoadingMore": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "scrollIntoView",
+                                            "params": {
+                                                "selector": "#loading_indicator",
+                                                "scrollContainer": "#common_info_list",
+                                                "behavior": "smooth",
+                                                "block": "end",
+                                                "waitForElement": true,
+                                                "timeout": 2000
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET",
+                                                "query": {
+                                                    "page": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                    "per_page": 20,
+                                                    "search": "{{query.search || ''}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "appendDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "commonInfos",
+                                                        "dataPath": "data.data",
+                                                        "newData": "{{response.data.data}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                        "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
+                                                        "infiniteScroll.isLoadingMore": false
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "infiniteScroll.isLoadingMore": false
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "{{response.message}}"
-                              }
                             }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message}}"
-                              }
-                            }
-                          ],
-                          "stopPropagation": true
                         }
-                      ]
-                    }
-                  ]
+                    ],
+                    "debounce": 200
+                }
+            ],
+            "props": {
+                "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
+            },
+            "children": [
+                {
+                    "id": "common_info_list_items_{{itemIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{commonInfos?.data?.data ?? []}}",
+                        "item_var": "item",
+                        "index_var": "itemIdx"
+                    },
+                    "children": [
+                        {
+                            "id": "common_info_item_{{item.id}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "comment": "항목 선택 — 편집·등록·복사 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "switch",
+                                            "params": {
+                                                "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create' || _global.panelMode === 'copy'}}"
+                                            },
+                                            "cases": {
+                                                "true": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "pendingItemId": "{{item.id}}",
+                                                                "pendingItem": "{{item}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "editing_confirm_modal"
+                                                        }
+                                                    ]
+                                                },
+                                                "false": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "selectedId": "{{item.id}}",
+                                                                "selectedItem": "{{item}}",
+                                                                "panelMode": "view"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
+                                                            "handler": "replaceUrl",
+                                                            "params": {
+                                                                "mergeQuery": true,
+                                                                "query": {
+                                                                    "id": "{{item.id}}",
+                                                                    "mode": "view"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "{{_global.selectedId === item.id ? 'admin-card-selected' : 'admin-card-clickable'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 flex-1 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary text-sm font-medium truncate"
+                                                    },
+                                                    "text": "{{$localized(item.name)}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{item.is_default}}",
+                                                    "props": {
+                                                        "className": "text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.common_info.list.default"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다.",
+                                                    "type": "change",
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "PATCH"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "commonInfos"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "switch",
+                                                            "params": {
+                                                                "value": "{{_global.selectedId === item.id}}"
+                                                            },
+                                                            "cases": {
+                                                                "true": {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "selectedItem.is_active": "{{response.data.is_active}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "{{response.message}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    },
+                                                    "stopPropagation": true
+                                                }
+                                            ],
+                                            "props": {
+                                                "size": "sm",
+                                                "checked": "{{item.is_active}}",
+                                                "disabled": "{{!item.abilities?.can_update}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-1 form-hint"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.common_info.list.languages_count|count={{item.language_count}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "•"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{(item.updated_at ?? item.created_at) | date('YYYY-MM-DD')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-1 form-hint"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.common_info.list.languages_count|count={{item.language_count}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "•"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "{{(item.updated_at ?? item.created_at) | date('YYYY-MM-DD')}}"
+                    "id": "loading_indicator",
+                    "type": "composite",
+                    "name": "LoadingSpinner",
+                    "if": "{{_global.infiniteScroll.isLoadingMore}}",
+                    "props": {
+                        "size": "sm",
+                        "text": "$t:sirsoft-ecommerce.common.loading",
+                        "color": "text-blue-600 dark:text-blue-400",
+                        "className": "py-3"
                     }
-                  ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "loading_indicator",
-          "type": "composite",
-          "name": "LoadingSpinner",
-          "if": "{{_global.infiniteScroll.isLoadingMore}}",
-          "props": {
-            "size": "sm",
-            "text": "$t:sirsoft-ecommerce.common.loading",
-            "color": "text-blue-600 dark:text-blue-400",
-            "className": "py-3"
-          }
+            "id": "empty_state",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(commonInfos?.data?.data?.length ?? 0) === 0}}",
+            "props": {
+                "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "info-circle",
+                        "className": "text-gray-400 dark:text-gray-500",
+                        "size": "md"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.list.empty"
+                }
+            ]
         }
-      ]
-    },
-    {
-      "id": "empty_state",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(commonInfos?.data?.data?.length ?? 0) === 0}}",
-      "props": {
-        "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "info-circle",
-            "className": "text-gray-400 dark:text-gray-500",
-            "size": "md"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.common_info.list.empty"
-        }
-      ]
-    }
-  ]
+    ]
 }

@@ -14,6 +14,7 @@ class ProductImageResource extends BaseApiResource
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
+     * @return array 추출 결과
      */
     public function toArray(Request $request): array
     {
@@ -36,27 +37,5 @@ class ProductImageResource extends BaseApiResource
             'mime_type' => $this->mime_type,
             'is_image' => str_starts_with($this->mime_type ?? '', 'image/'),
         ];
-    }
-
-    /**
-     * 파일 크기를 읽기 쉬운 형식으로 변환
-     *
-     * @param  int|null  $bytes  바이트 크기
-     * @return string
-     */
-    protected function formatFileSize(?int $bytes): string
-    {
-        if ($bytes === null || $bytes === 0) {
-            return '0 B';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $i = 0;
-        while ($bytes >= 1024 && $i < count($units) - 1) {
-            $bytes /= 1024;
-            $i++;
-        }
-
-        return round($bytes, 2).' '.$units[$i];
     }
 }

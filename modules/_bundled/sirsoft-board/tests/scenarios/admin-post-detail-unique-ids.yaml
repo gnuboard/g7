@@ -1,0 +1,16 @@
+feature: 관리자 게시글 상세 — 반복 조각(댓글·답글 카드)의 요소 id 가 겹치지 않는다
+
+description: |
+  관리자 게시글 상세의 댓글 조각과 답글 카드 조각은 반복 안에서 그려지는데 요소 id 가 고정 문자열이라
+  댓글 4개·답글 2개인 상세에 같은 id 가 20종 겹쳤다(7.1.0 실측 K4, 관측 O-KF3-3 — author_name_menu 5,
+  reply_button·title_text·new_badge 각 3 등). K3 후속(KF3-8)이 첨부 토글만 고유 id 로 바꿨고, 나머지도
+  같은 방식으로 댓글은 comment.id, 답글은 item.id 를 id 에 넣는다.
+
+axes:
+  fragment: [comment, reply]
+
+effects:
+  - admin_detail_repeated_ids_unique
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-post-detail-unique-ids.test.ts

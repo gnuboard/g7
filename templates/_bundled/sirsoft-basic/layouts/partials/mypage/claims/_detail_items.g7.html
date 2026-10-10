@@ -1,0 +1,86 @@
+<partial description="클레임 상세 - 신청 상품 (신청분 vs 교환대상, 상품 단위 상태)" editor_label="$t:user.modal_label.mypage_claims.detail_items">
+  <!-- §6-2 — 신청 상품과 (교환이면) 그 상품의 교환대상을 나란히 그린다. 상품 단위 상태는 헤더 상태와 다를 수 있다(운영자가 상품 단위로 전이할 수 있다, D25) — 헤더만 보고 판단하면 일부만 반려된 신청서에서 구매자가 잘못 읽는다.
+셸이 `claim` 데이터소스를 소유한다(회원 /user/claims/{번호} · 비회원 /guest/orders/{주문번호}/claims/{번호}). 이 파일은 `claim.data` 만 읽고 회원/비회원을 판단하지 않는다. -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+    <!-- 섹션 제목 -->
+    <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <icon name="box" class="text-base text-gray-900 dark:text-white"/>
+      <h2 class="text-base font-bold text-gray-900 dark:text-white">$t:claim.detail.items_title</h2>
+    </div>
+    <!-- 상품 카드가 반복되고 간격은 부모가 준다 — 반복 노드가 space-y 를 들면 카드마다 자기 래퍼를 가져 간격도 last: 구분선 규칙도 걸리지 않는다. -->
+    <div class="space-y-4">
+      <div data-each="item in {{claim.data?.claim?.items ?? []}}" class="flex flex-col gap-3 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 last:pb-0">
+        <!-- 신청분 — 원 주문 상품. -->
+        <div class="flex gap-3">
+          <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+            <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
+            <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+              <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-sm font-medium text-gray-900 dark:text-white min-w-0">{{item.product_name ?? ''}}</p>
+              <!-- 상품 단위 상태 배지 — 헤더 상태와 다를 때만 세운다. 항상 세우면 같은 값이 두 번 보여 어느 쪽이 이 상품의 상태인지 흐려진다. -->
+              <span data-if="{{!!item.status_label &amp;&amp; item.status_label !== claim.data?.claim?.status_label}}">
+                <class-map base="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0" key="{{item.status_variant}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+                  <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
+                  <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
+                  <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+                  <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                  <variant when="secondary">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
+                  <variant when="dark">bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200</variant>
+                </class-map>
+                {{item.status_label}}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{item.product_option_name ?? ''}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{item.unit_price_formatted ?? ''}} × {{item.quantity ?? 0}}$t:shop.count_unit</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{{item.subtotal_amount_formatted ?? ''}}</p>
+            <!-- 보조 통화 — 바로 위 소계와 같은 값의 다른 표기다. 목록 카드의 같은 상품 행(`_list.json`)은 이 병기를 하고 있어, 여기만 없으면 같은 상품의 소계가 목록에는 외화가 뜨고 상세에는 안 뜬다. -->
+            <div data-each="currency in {{Object.entries(item.mc_subtotal_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 mt-0.5">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
+            </div>
+            <!-- 이 상품에서 돌려받는 금액 — 반품·환불·취소의 상품 행이 든다. -->
+            <p data-if="{{(item.refund_amount ?? 0) > 0}}" class="text-xs text-blue-600 dark:text-blue-400 mt-0.5">$t:claim.detail.item_refund_amount|amount={{item.refund_amount_formatted ?? ''}}</p>
+            <!-- 이 상품의 운송장 — 송장은 상품 행마다 있다(#599). 같은 신청서의 다른 상품은 다른 상자로 오갈 수 있어, 상품 줄에 그 행의 값을 그대로 적는다. 조회 URL 은 서버가 만든다. -->
+            <div data-if="{{!!item.collection_tracking_number}}" class="flex flex-wrap items-baseline gap-x-1 mt-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400">$t:claim.detail.item_collection_tracking</span>
+              <a data-if="{{!!item.collection_tracking_url}}" href="{{item.collection_tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline break-all">{{item.collection_carrier_name ?? ''}} {{item.collection_tracking_number ?? ''}}</a>
+              <span data-if="{{!item.collection_tracking_url}}" class="text-xs text-gray-900 dark:text-white break-all">{{item.collection_carrier_name ?? ''}} {{item.collection_tracking_number ?? ''}}</span>
+            </div>
+            <div data-if="{{!!item.redelivery_tracking_number}}" class="flex flex-wrap items-baseline gap-x-1 mt-0.5">
+              <span class="text-xs text-gray-500 dark:text-gray-400">$t:claim.detail.item_redelivery_tracking</span>
+              <a data-if="{{!!item.redelivery_tracking_url}}" href="{{item.redelivery_tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline break-all">{{item.redelivery_carrier_name ?? ''}} {{item.redelivery_tracking_number ?? ''}}</a>
+              <span data-if="{{!item.redelivery_tracking_url}}" class="text-xs text-gray-900 dark:text-white break-all">{{item.redelivery_carrier_name ?? ''}} {{item.redelivery_tracking_number ?? ''}}</span>
+            </div>
+            <!-- 선교환의 헌 상품 회수 진행(collection_state) — 새 상품이 먼저 나가므로 상태 뱃지만으로는 헌 상품이 어디쯤인지 알 수 없다. 미회수 완료면 「미회수」. -->
+            <div data-if="{{claim.data?.claim?.is_advance_exchange === true || item.is_unreturned === true}}" class="flex flex-wrap items-center gap-1 mt-1">
+              <span data-if="{{item.is_unreturned === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:claim.detail.unreturned_badge</span>
+              <span data-if="{{item.is_unreturned !== true &amp;&amp; !!item.collection_state_label}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:claim.detail.item_collection_state|state={{item.collection_state_label ?? ''}}</span>
+            </div>
+            <!-- 상품 단위 반려 사유(S3) — 일부 상품만 반려돼도 그 상품 줄에서 사유를 읽는다. 헤더 반려 사유는 신청서 전체가 반려됐을 때만 사유 카드에 선다. -->
+            <p data-if="{{!!item.reject_reason}}" class="text-xs text-red-600 dark:text-red-400 mt-1 whitespace-pre-line">$t:claim.detail.item_reject_reason|reason={{item.reject_reason ?? ''}}</p>
+          </div>
+        </div>
+        <!-- 교환대상 — 옵션을 바꾼 상품만. 동일상품 교환은 대상 줄 대신 안내만 남긴다(차액도 없다). -->
+        <div data-if="{{claim.data?.claim?.claim_type === 'exchange'}}" class="ml-8 pl-4 border-l-2 border-indigo-200 dark:border-blue-800">
+          <responsive on="portable" class="ml-4 pl-3 border-l-2 border-indigo-200 dark:border-blue-800"/>
+          <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400">$t:claim.detail.exchange_target</p>
+          <p data-if="{{item.is_option_change === true}}" class="text-sm text-gray-900 dark:text-white mt-0.5">{{item.new_option_label ?? ''}}</p>
+          <!-- 이 교환에 얹은 추가옵션 — 신청 시점 동결값이다(운영자가 나중에 선택지를 고쳐도 이 표기는 바뀌지 않는다). 추가금은 아래 옵션 차액에 이미 합산돼 있어 이름만 나열한다. -->
+          <p data-if="{{(item.new_additional_options ?? []).length > 0}}" class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">+ {{(item.new_additional_options ?? []).map(o => o.custom_text ? (o.name + ' (' + o.custom_text + ')') : o.name).join(', ')}}</p>
+          <p data-if="{{item.is_option_change !== true}}" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">$t:claim.detail.exchange_same_option</p>
+          <p data-if="{{item.is_option_change === true &amp;&amp; (item.price_difference ?? 0) !== 0}}" class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">$t:claim.detail.price_difference|amount={{item.price_difference_formatted ?? ''}}</p>
+          <!-- 보조 통화 — 바로 위 차액 줄과 **같은 게이트**여야 한다. 차액이 0 인 신청(동일상품 교환·동가 옵션변경)에서 그 줄은 서지 않는데 이 iteration 만 돌면 라벨 없는 `$0.00 ¥0 元0.00 €0.00` 만 남는다(2026-09-01 3차 검증). 서버는 교환 행이면 차액이 0 이어도 통화별 항목을 싣는다 — 게이트는 화면이 건다. 주문 도메인 mc_* 규약. -->
+          <div data-if="{{item.is_option_change === true &amp;&amp; (item.price_difference ?? 0) !== 0}}" data-each="currency in {{Object.entries(item.mc_price_difference ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 mt-0.5">
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p data-if="{{(claim.data?.claim?.items ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.no_items</p>
+  </div>
+</partial>

@@ -1,0 +1,19 @@
+feature: 확장 업데이트 응답의 색인 안내·성공 문구 전달
+
+description: |
+  색인이 비면 검색은 오류 없이 0건을 돌려주므로, 운영자가 알 방법은 모듈·플러그인 업데이트 응답에 실려 오는
+  `search_index` 페이로드뿐이다. 응답 헬퍼가 리소스의 부가 데이터를 버리지 않는지, 부가 데이터가 없을 때 응답 형태가
+  그대로인지, 업데이트 성공 문구의 `:module`·`:version` 치환자가 실제 값으로 바뀌는지, 모듈·플러그인 업데이트
+  컨트롤러가 문구 키(「업데이트할 내용 없음」 분기 포함)와 치환 파라미터를 응답에 넘기는지 고정한다.
+
+axes:
+  payload: [with_additional, without_additional, update_success_message, controller_source]
+
+effects:
+  - search_index_notice_kept_in_response
+  - response_shape_unchanged_without_additional
+  - update_success_placeholders_replaced
+  - update_controllers_pass_message_params
+
+test_files:
+  - tests/Feature/Search/SearchIndexNoticeReachesClientTest.php

@@ -7,4 +7,10 @@ return [
             'channel_database' => 'Site Notification',
         ],
     ],
+    'reactions' => [
+        'badges' => [
+            'post' => 'Post',
+            'comment' => 'Comment',
+        ],
+    ],
 ];

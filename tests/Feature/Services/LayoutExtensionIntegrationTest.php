@@ -1030,11 +1030,13 @@ class LayoutExtensionIntegrationTest extends TestCase
 
         $result = $this->service->applyExtensions($layout, $this->template->id);
 
-        // 결과는 표준 키(initActions) 로 통합된다. deprecated 별칭(init_actions)이 함께 남으면
-        // 엔진의 `initActions || init_actions` 단락이 한쪽을 통째로 무시하므로 제거되어야 한다.
+        // 병합 결과는 표준 키 `initActions`(camelCase) 단일 배열로 통합된다. deprecated 별칭
+        // `init_actions` 로 입력해도 결과는 표준 키이며, 별칭 키는 제거된다 — 두 키가 공존하면
+        // 엔진(TemplateApp)의 `initActions || init_actions` OR 단락이 한쪽을 통째로 무시해
+        // 확장이 기여한 init 단계가 실행되지 않는다 (#421 회귀의 근본 원인).
         $handlers = array_column($result['initActions'] ?? [], 'handler');
         $this->assertSame(['hostInit', 'sirsoft-ecommerce.initPreferredCurrency'], $handlers, '호스트 init_actions 뒤에 확장 init_actions 가 병합되어야 한다');
-        $this->assertArrayNotHasKey('init_actions', $result, 'deprecated 별칭 키가 남으면 통합 결과가 무시된다');
+        $this->assertArrayNotHasKey('init_actions', $result, 'deprecated 별칭 키가 잔존하면 엔진 OR 단락이 통합 결과를 무시한다');
     }
 
     /**

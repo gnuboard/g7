@@ -17,8 +17,14 @@ _등록하는 액션 핸들러가 없습니다._
 테마 전환, 장바구니 선택 상태, 브라우저 저장소 관리 같은 것들이며, `sirsoft-basic` 이 32개를
 갖는 것이 그 예입니다.
 
-핸들러를 도입할 때는 `ActionDispatcher` 에 등록하는 부트스트랩 함수가 함께 필요하고, 그 등록도
-**레지스트리·디스패처 가용을 기다리는 재시도 루프** 안에 두어야 합니다.
+핸들러를 도입할 때는 핸들러 맵을 만들어 `src/index.ts` 에서 `window.G7TemplateHandlers =
+handlerMap` 으로 노출합니다(`templates/_bundled/sirsoft-basic/src/index.ts` 참고). 맵의 키가 레이아웃에서 부르는
+이름이며, `sirsoft-basic` 은 `'sirsoft-basic.addSelectedItemIfComplete'` 처럼 템플릿 식별자를
+앞에 붙입니다. 코어 `TemplateApp` 은 부팅 때(초기 라우트 처리 전) 이 맵을 `ActionDispatcher` 에
+등록하고, 로케일을 바꿔 디스패처를 새로 만든 뒤에도 같은 맵을 다시 등록합니다
+(`reinitializeTemplateHandlers()`). 그래서 템플릿에는 디스패처를 기다리는 부트스트랩 함수나
+재시도 루프가 필요 없습니다. 문서 생성기도 `G7TemplateHandlers` 를 템플릿의 재등록 경로로
+인정합니다.
 <!-- @intent END -->
 
 ## 부트스트랩
@@ -28,20 +34,22 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
-전용 부트스트랩 함수가 없습니다. `src/index.ts` 가 **모듈 로드 시점에 곧바로** 코어
-`ComponentRegistry` 를 찾아 Basic 8개를 등록하고, 레지스트리가 없으면 경고를 남기고
-건너뜁니다.
+부트스트랩 함수가 없습니다. `src/index.ts` 는 Basic 8개, 확장 컴포넌트 대체본
+`HelloModuleMemoCard`, `templateMetadata` 를 export 할 뿐이고, 액션 핸들러가 없으므로
+`window.G7TemplateHandlers` 도 노출하지 않습니다.
 
-> **이 형태는 따라 하지 않는 것이 좋습니다.** 같은 샘플군의
-> `gnuboard7-hello_admin_template` 은 `initTemplate()` 안에서 100ms 간격 최대 50회
-> **재시도**하며 `window.load` 이후에 시작합니다. 한 번만 시도하는 이 형태는 로드 순서에 따라
-> 등록이 누락될 수 있고, 그러면 레이아웃이 컴포넌트 이름을 찾지 못해 **화면이 조용히
-> 빕니다** — 콘솔 경고 외에는 흔적이 없습니다.
+**컴포넌트 등록은 코어 몫입니다.** 블레이드가 엔진 번들과 이 템플릿의 `components.iife.js` 를
+함께 싣고, 둘 다 적재된 뒤 코어가 초기화합니다. 그때 `ComponentRegistry` 가 `components.json` 을
+읽어 선언된 이름마다 번들 전역(`window.Gnuboard7HelloUserTemplate`)에서 구현체를 찾아 등록합니다.
+Basic 은 `name` 으로, 대체본은 `overrides[].exportName` 으로 찾습니다. 템플릿이 레지스트리를 찾아
+기다리거나 재시도할 일이 없습니다.
 
-템플릿은 전역 객체를 노출하지 않습니다. 모듈·플러그인은
-`window.__[Name].initModule/initPlugin` 을 고정 이름으로 노출해야 하지만(로케일 전환 후 코어가
-그것을 다시 부릅니다), 템플릿은 코어가 부트스트랩 경로를 직접 알고 있습니다.
+깨지는 지점은 이름 대응입니다. export 이름이 선언과 다르거나 export 가 빠지면 코어는 경고만
+남기고 건너뜁니다. Basic 쪽이면 레이아웃이 그 이름을 참조하는 자리가 렌더되지 않고, 대체본
+쪽이면 Hello 모듈의 원본 `MemoCard` 가 그대로 그려집니다. 이 경고는 디버그 모드에서만 콘솔에
+보이므로, 운영 화면에서는 **화면이 조용히 빈 것**이나 서식이 원본으로 돌아간 것으로만
+드러납니다.
 
-액션 핸들러를 도입하면 그때 `ActionDispatcher` 등록이 추가되며, 그 등록도 같은 재시도 루프
-안에 두어야 합니다.
+코어는 부팅 때 `window.G7TemplateHandlers` 를 찾고, 없으면 `Template handlers not found` 경고를
+남깁니다. 핸들러가 없는 이 템플릿에서는 정상입니다.
 <!-- @intent END -->

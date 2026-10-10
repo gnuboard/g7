@@ -7,17 +7,24 @@ use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ConcurrentModificationException;
+use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Extension\HookManager;
+use App\Extension\Layout\LayoutRowSynchronizer;
+use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Support\LayoutEmptyObjects;
 use Composer\Semver\Semver;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -33,6 +40,7 @@ use Illuminate\Support\Facades\Log;
 class LayoutExtensionService
 {
     use ClearsTemplateCaches;
+    use CollectsFragmentSources;
     use ComputesLayoutContentHash;
 
     /**
@@ -64,6 +72,13 @@ class LayoutExtensionService
     private array $extensionNameCache = [];
 
     /**
+     * 템플릿 ID → 식별자 캐시 (이 서비스 인스턴스 수명) — 보고용 식별자 반복 조회 회피.
+     *
+     * @var array<int, string>
+     */
+    private array $templateIdentifiers = [];
+
+    /**
      * 미리보기 확장 content 오버라이드
      *
      * applyExtensions 실행 시, 이 키에 해당하는 extension_id 의 확장은
@@ -79,6 +94,7 @@ class LayoutExtensionService
      *
      * @param  int  $extensionId  확장 ID
      * @param  array  $content  치환할 확장 정의 JSON
+     * @return void 반환값 없음
      */
     public function setPreviewContentOverride(int $extensionId, array $content): void
     {
@@ -87,6 +103,8 @@ class LayoutExtensionService
 
     /**
      * 미리보기 확장 content 오버라이드를 모두 제거합니다.
+     *
+     * @return void 반환값 없음
      */
     public function clearPreviewContentOverrides(): void
     {
@@ -119,6 +137,14 @@ class LayoutExtensionService
      *
      * 순환 의존성 방지를 위해 ModuleManager, PluginManager는 생성자에서 주입받지 않고
      * 필요한 시점에 app() 헬퍼로 가져옵니다.
+     *
+     * @param  LayoutExtensionRepositoryInterface  $repository
+     * @param  LayoutExtensionVersionRepositoryInterface  $versionRepository
+     * @param  LayoutRepositoryInterface  $layoutRepository
+     * @param  PluginRepositoryInterface  $pluginRepository
+     * @param  ModuleRepositoryInterface  $moduleRepository
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소 (보고용 식별자·등록 대상 조회)
+     * @param  LayoutRowSynchronizer  $layoutSynchronizer  파일 → DB 행 쓰기 단일 진입점 (상태 없음)
      */
     public function __construct(
         private LayoutExtensionRepositoryInterface $repository,
@@ -126,6 +152,8 @@ class LayoutExtensionService
         private LayoutRepositoryInterface $layoutRepository,
         private PluginRepositoryInterface $pluginRepository,
         private ModuleRepositoryInterface $moduleRepository,
+        private TemplateRepositoryInterface $templateRepository,
+        private LayoutRowSynchronizer $layoutSynchronizer,
     ) {}
 
     /**
@@ -424,6 +452,8 @@ class LayoutExtensionService
      * 활성화된 모듈/플러그인 목록 초기화
      *
      * 순환 의존성 방지를 위해 app() 헬퍼로 매니저를 가져옵니다.
+     *
+     * @return void 반환값 없음
      */
     private function initializeActiveExtensions(): void
     {
@@ -505,6 +535,22 @@ class LayoutExtensionService
         return false;
     }
 
+    /**
+     * 레이아웃의 확장 지점(`type: extension_point`)에 등록된 조각을 주입합니다.
+     *
+     * `components` 뿐 아니라 **`modals` 트리도 함께** 순회한다 — 모달 안에 둔 확장 지점이
+     * 빈 채로 남으면 그 자리를 채우던 확장이 화면에서 조용히 사라진다(모달은 열려야 보이므로
+     * 목록 화면만 보고는 알 수 없다).
+     *
+     * 주입된 조각이 스크립트를 동반하면 `$scripts` 에 누적한다 — 호출부가 문서 전체의 스크립트를
+     * 한 번에 모아 중복 없이 내보내기 위해서다.
+     *
+     * @param  array<string, mixed>  $layout  레이아웃 JSON
+     * @param  int  $templateId  이 레이아웃이 속한 템플릿 ID (조각 조회 범위)
+     * @param  array<int, mixed>  $scripts  주입 조각이 동반한 스크립트 누적함 (참조)
+     * @param  bool  $withSourceMeta  편집기용 출처 메타(`__source`)를 노드에 남길지
+     * @return array<string, mixed> 확장 지점이 채워진 레이아웃 JSON
+     */
     private function applyExtensionPoints(array $layout, int $templateId, array &$scripts, bool $withSourceMeta = false): array
     {
         if (! isset($layout['components'])) {
@@ -556,6 +602,7 @@ class LayoutExtensionService
      * @param  array  &$dataSources  데이터 소스 배열 (참조)
      * @param  array  &$scripts  스크립트 배열 (참조)
      * @param  array  &$modals  모달 배열 (참조)
+     * @param  bool  $withSourceMeta
      * @return array 처리된 컴포넌트 배열
      */
     private function processExtensionPointsRecursive(array $components, int $templateId, array &$dataSources, array &$scripts, array &$modals, bool $withSourceMeta = false): array
@@ -600,7 +647,8 @@ class LayoutExtensionService
                         continue;
                     }
 
-                    $content = $extension->content;
+                    // 주입 조각도 값 자리의 빈 객체 `{}` 를 보존한다(LayoutService 병합과 같은 기준)
+                    $content = LayoutEmptyObjects::decode($extension->getAttributes()['content'] ?? null, $extension->content ?? []);
                     $mode = $content['mode'] ?? 'append';
 
                     // 컴포넌트 추가 (extension_point props/callbacks를 주입 컴포넌트에 전달)
@@ -683,9 +731,77 @@ class LayoutExtensionService
                     $withSourceMeta
                 );
             }
+
+            // 반복 렌더 템플릿(셀·확장 행·하위 행) 안의 확장점 처리
+            if (isset($component['props']) && is_array($component['props'])) {
+                $component['props'] = $this->processEmbeddedTemplateExtensionPoints(
+                    $component['props'],
+                    $templateId,
+                    $dataSources,
+                    $scripts,
+                    $modals,
+                    $withSourceMeta
+                );
+            }
         }
 
         return $components;
+    }
+
+    /**
+     * 컴포넌트 props 안에 박힌 반복 렌더 템플릿의 확장점을 처리합니다.
+     *
+     * DataGrid·CardGrid 의 셀 템플릿(`columns[].cellChildren`·`cardColumns[].cellChildren`)과
+     * 확장 행·하위 행 템플릿(`expandChildren`·`subRowChildren`)은 `children` 이 아니라 props 에 실린다.
+     * `children` 만 따라 내려가면 그 안에 둔 확장점이 채워지지 않은 빈 자리로 남아, 주입한 조각과
+     * `default` 폴백이 함께 화면에서 사라진다. 템플릿은 행마다 렌더되므로 주입 노드는 `row` 문맥을
+     * 그대로 받는다(주입 데이터 소스는 레이아웃에 한 번만 병합된다).
+     *
+     * @param  array<string, mixed>  $props  컴포넌트 props
+     * @param  int  $templateId  템플릿 ID
+     * @param  array  &$dataSources  데이터 소스 배열 (참조)
+     * @param  array  &$scripts  스크립트 배열 (참조)
+     * @param  array  &$modals  모달 배열 (참조)
+     * @param  bool  $withSourceMeta  편집기용 출처 메타를 남길지
+     * @return array<string, mixed> 확장점이 채워진 props
+     */
+    private function processEmbeddedTemplateExtensionPoints(array $props, int $templateId, array &$dataSources, array &$scripts, array &$modals, bool $withSourceMeta = false): array
+    {
+        foreach (['columns', 'cardColumns'] as $columnsKey) {
+            if (! isset($props[$columnsKey]) || ! is_array($props[$columnsKey])) {
+                continue;
+            }
+
+            foreach ($props[$columnsKey] as $index => $column) {
+                if (! is_array($column) || ! isset($column['cellChildren']) || ! is_array($column['cellChildren'])) {
+                    continue;
+                }
+
+                $props[$columnsKey][$index]['cellChildren'] = $this->processExtensionPointsRecursive(
+                    $column['cellChildren'],
+                    $templateId,
+                    $dataSources,
+                    $scripts,
+                    $modals,
+                    $withSourceMeta
+                );
+            }
+        }
+
+        foreach (['expandChildren', 'subRowChildren'] as $templateKey) {
+            if (isset($props[$templateKey]) && is_array($props[$templateKey]) && array_is_list($props[$templateKey])) {
+                $props[$templateKey] = $this->processExtensionPointsRecursive(
+                    $props[$templateKey],
+                    $templateId,
+                    $dataSources,
+                    $scripts,
+                    $modals,
+                    $withSourceMeta
+                );
+            }
+        }
+
+        return $props;
     }
 
     /**
@@ -698,6 +814,7 @@ class LayoutExtensionService
      * @param  array<int, string>  $targetNames  overlay 매칭 대상 레이아웃명 목록 (서빙 레이아웃 + 상속 체인 base)
      * @param  array  &$scripts  스크립트 배열 (참조)
      * @param  array  &$modals  모달 배열 (참조)
+     * @param  bool  $withSourceMeta
      * @return array 확장이 적용된 레이아웃
      */
     private function applyOverlays(array $layout, int $templateId, array $targetNames, array &$scripts, array &$modals, bool $withSourceMeta = false): array
@@ -742,7 +859,8 @@ class LayoutExtensionService
                 continue;
             }
 
-            $content = $overlay->content;
+            // 주입 조각도 값 자리의 빈 객체 `{}` 를 보존한다(LayoutService 병합과 같은 기준)
+            $content = LayoutEmptyObjects::decode($overlay->getAttributes()['content'] ?? null, $overlay->content ?? []);
             $injections = $content['injections'] ?? [];
 
             Log::debug('Overlay 확장 적용', [
@@ -920,6 +1038,7 @@ class LayoutExtensionService
      * @param  int  $targetIndex  타겟 인덱스
      * @param  string  $position  주입 위치
      * @param  array  $newComponents  주입할 컴포넌트들
+     * @return void 반환값 없음
      */
     private function injectComponents(
         array &$siblings,
@@ -1039,10 +1158,38 @@ class LayoutExtensionService
      * - _append: 배열 끝에 추가
      * - _prepend: 배열 앞에 추가
      * - _merge: 객체 병합 (shallow)
+     * - _patch: **목록 안의 특정 항목만** 교체 (아래 참고)
      * - (직접 값): 스칼라 덮어쓰기 또는 객체 통째로 대체
+     *
+     * `_patch` 는 「목록 중 한 항목만 바꾸고 싶다」를 위한 것이다. 그것이 없으면 확장은
+     * 목록 **전체를 복사**해야 하고, 그 복사본은 만든 날짜에 얼어붙는다 — 호스트가 나중에
+     * 항목을 더해도 확장의 낡은 복사본이 그것을 덮어써 **조용히 지운다**. 실제로 결제
+     * 플러그인 3종이 주문목록에 배지 하나를 달려고 컬럼 11칸을 통째로 복사했고, 뒤에
+     * 추가된 클레임 컬럼이 화면에서 사라졌다(#599 S2-D13). 그중 실제로 다른 칸은
+     * **하나뿐**이었고 나머지 10칸은 원본과 완전히 같았다.
+     *
+     * 형식 — `_patch.by` 로 항목을 식별할 키를, `_patch.items` 로 바꿀 항목만 적는다:
+     *
+     * ```json
+     * "columns": {
+     *   "_patch": {
+     *     "by": "field",
+     *     "items": [{ "field": "payment_method", "cellChildren": [ … ] }]
+     *   }
+     * }
+     * ```
+     *
+     * 규칙:
+     * - 기존 항목과 `by` 값이 같으면 그 항목에 **shallow 병합**한다(적은 키만 덮어씀).
+     * - `by` 값이 기존에 없으면 **끝에 추가**한다(확장이 새 항목을 더할 수 있다).
+     * - 기존 목록의 **순서와 개수는 보존**된다 — 손대지 않은 항목은 그대로 남는다.
+     * - 항목 안의 값이 `{"_append": [ … ]}` 이면 그 키를 덮어쓰지 않고 **기존 배열 뒤에
+     *   덧붙인다.** 여러 확장이 같은 항목의 같은 키(예: `cellChildren`)를 함께 쓸 때
+     *   서로 지우지 않는 유일한 방법이다 — 덮어쓰기면 priority 가 가장 높은 하나만 남는다.
      *
      * @param  array  &$component  대상 컴포넌트 (참조)
      * @param  array  $propsToInject  주입할 Props 정의
+     * @return void 반환값 없음
      */
     private function injectProps(array &$component, array $propsToInject): void
     {
@@ -1104,6 +1251,25 @@ class LayoutExtensionService
                     is_array($existing) ? $existing : [],
                     $propValue['_merge']
                 );
+            } elseif (isset($propValue['_patch'])) {
+                $existing = $component['props'][$propKey] ?? [];
+
+                if (is_string($existing)) {
+                    Log::warning('inject_props _patch 대상이 표현식 문자열', [
+                        'component_id' => $component['id'] ?? 'unknown',
+                        'prop_key' => $propKey,
+                        'existing_value' => $existing,
+                    ]);
+
+                    continue;
+                }
+
+                $component['props'][$propKey] = $this->patchListItems(
+                    is_array($existing) ? $existing : [],
+                    $propValue['_patch'],
+                    $component['id'] ?? 'unknown',
+                    $propKey
+                );
             } else {
                 // 전략 키 없으면 객체 통째로 대체
                 $component['props'][$propKey] = $propValue;
@@ -1112,14 +1278,180 @@ class LayoutExtensionService
     }
 
     /**
+     * 목록에서 **지정한 항목만** 교체합니다 (`_patch` 전략의 실제 동작).
+     *
+     * 확장이 목록 전체를 복사하지 않고 한 항목만 손댈 수 있게 하는 것이 목적이다 —
+     * 복사본은 만든 시점에 얼어붙어 호스트가 나중에 더한 항목을 조용히 지운다(S2-D13).
+     *
+     * 손대지 않은 항목은 **원본 그대로** 남고 순서도 보존한다. `by` 값이 기존에 없으면
+     * 빈 항목에 병합해(항목 안의 지시자를 풀어) 새 항목으로 끝에 붙인다.
+     *
+     * @param  array  $existing  호스트의 현재 목록
+     * @param  mixed  $patch  `{by: string, items: array}` 형태의 패치 정의
+     * @param  string  $componentId  경고 로그용 컴포넌트 id
+     * @param  string  $propKey  경고 로그용 prop 이름
+     * @return array 패치가 적용된 목록
+     */
+    private function patchListItems(array $existing, mixed $patch, string $componentId, string $propKey): array
+    {
+        $by = is_array($patch) ? ($patch['by'] ?? null) : null;
+        $items = is_array($patch) ? ($patch['items'] ?? null) : null;
+
+        // 형식이 어긋나면 **원본을 그대로 돌려준다.** 잘못 쓴 패치가 목록을 비우면
+        // 그 화면이 통째로 사라지는데, 그것이 바로 이 전략이 막으려던 사고다.
+        if (! is_string($by) || $by === '' || ! is_array($items)) {
+            Log::warning('inject_props _patch 형식 오류 — by(문자열)와 items(배열)가 필요합니다', [
+                'component_id' => $componentId,
+                'prop_key' => $propKey,
+            ]);
+
+            return $existing;
+        }
+
+        // 기존 항목의 by 값 → 인덱스 (첫 항목 우선)
+        $indexByKey = [];
+
+        foreach ($existing as $i => $item) {
+            if (is_array($item) && isset($item[$by]) && is_scalar($item[$by])) {
+                $key = (string) $item[$by];
+
+                if (! array_key_exists($key, $indexByKey)) {
+                    $indexByKey[$key] = $i;
+                }
+            }
+        }
+
+        foreach ($items as $patchItem) {
+            if (! is_array($patchItem) || ! isset($patchItem[$by]) || ! is_scalar($patchItem[$by])) {
+                Log::warning('inject_props _patch 항목에 식별 키가 없습니다', [
+                    'component_id' => $componentId,
+                    'prop_key' => $propKey,
+                    'by' => $by,
+                ]);
+
+                continue;
+            }
+
+            $key = (string) $patchItem[$by];
+
+            if (array_key_exists($key, $indexByKey)) {
+                $target = $indexByKey[$key];
+                $existing[$target] = $this->mergePatchItem(
+                    is_array($existing[$target]) ? $existing[$target] : [],
+                    $patchItem,
+                    $componentId,
+                    $propKey
+                );
+
+                continue;
+            }
+
+            // 기존에 없는 키 — 새 항목으로 끝에 붙인다. 원문을 그대로 붙이면 항목 안의
+            // `_append`·중첩 `_patch` 지시자 객체가 리터럴로 남아 렌더러가 배열 자리에서 객체를
+            // 받는다(#599 validate). 빈 항목에 병합해 지시자를 푼다.
+            $existing[] = $this->mergePatchItem([], $patchItem, $componentId, $propKey);
+            $indexByKey[$key] = array_key_last($existing);
+        }
+
+        return $existing;
+    }
+
+    /**
+     * 패치가 지목한 항목 **하나**를 병합합니다 (`_patch` 의 항목 단위 동작).
+     *
+     * 기본은 shallow 덮어쓰기다 — 적은 키만 바뀌고 나머지는 보존된다. 다만 값이
+     * `{"_append": [ … ]}` 이면 **그 키의 기존 배열 뒤에 덧붙인다.**
+     *
+     * 덧붙이기가 없으면 같은 항목의 같은 키를 여러 확장이 쓸 때 **마지막 하나만 남는다.**
+     * 확장은 priority 순서로 적용되므로 앞선 확장이 넣은 것을 뒤의 확장이 통째로 지운다.
+     * 실제로 결제 플러그인 3종이 주문목록 「결제수단」 칸의 `cellChildren` 에 각자 배지를
+     * 달았는데 우선순위가 가장 높은 하나만 살아남았고, 그래서 그 하나가 나머지 두 결제사
+     * 몫까지 대신 그려 주는 계단식 우회가 생겼다(#599). 그 우회는 남의 플러그인이 선언한
+     * 데이터소스를 참조해야 해서, 그 플러그인이 없는 사이트에서는 미정의 참조가 된다.
+     *
+     * `_append` 가 있으면 각 확장이 **자기 것만** 덧붙이면 되므로 그 의존이 사라진다 —
+     * 새 결제 플러그인이 추가돼도 기존 플러그인을 고칠 일이 없다.
+     *
+     * 값이 `{"_patch": { … }}` 이면 그 키의 목록으로 **한 겹 더 들어간다.** 셀 안의 래퍼
+     * 노드처럼 목록이 중첩된 자리를 위한 것이다 — 호스트가 래퍼를 소유하고 확장은 그 안에만
+     * 덧붙이므로, 확장이 몇 개든 래퍼와 그 className 은 하나로 유지된다.
+     *
+     * ```json
+     * "columns": {
+     *   "_patch": {
+     *     "by": "field",
+     *     "items": [{
+     *       "field": "payment_method",
+     *       "cellChildren": {
+     *         "_patch": {
+     *           "by": "name",
+     *           "items": [{ "name": "Div", "children": { "_append": [ … ] } }]
+     *         }
+     *       }
+     *     }]
+     *   }
+     * }
+     * ```
+     *
+     * @param  array  $target  호스트의 현재 항목
+     * @param  array  $patchItem  확장이 적은 패치 항목
+     * @param  string  $componentId  경고 로그용 컴포넌트 id
+     * @param  string  $propKey  경고 로그용 prop 경로
+     * @return array 병합된 항목
+     */
+    private function mergePatchItem(array $target, array $patchItem, string $componentId, string $propKey): array
+    {
+        foreach ($patchItem as $key => $value) {
+            // 대상이 표현식 문자열이면 덮어쓰지 않고 건너뛴다 — 최상위 `_append`·`_patch` 와 같은 규칙.
+            // 배열로 덮으면 호스트가 런타임에 채우던 목록이 조용히 사라진다.
+            if (is_array($value) && (array_key_exists('_append', $value) || array_key_exists('_patch', $value))
+                && is_string($target[$key] ?? null)) {
+                Log::warning('inject_props _patch 항목의 지시자 대상이 표현식 문자열', [
+                    'component_id' => $componentId,
+                    'prop_key' => $propKey.'.'.$key,
+                    'existing_value' => $target[$key],
+                ]);
+
+                continue;
+            }
+
+            if (is_array($value) && array_key_exists('_append', $value) && is_array($value['_append'])) {
+                $current = is_array($target[$key] ?? null) ? $target[$key] : [];
+
+                $target[$key] = array_merge($current, $value['_append']);
+
+                continue;
+            }
+
+            // 중첩 `_patch` — 셀 안의 래퍼 노드처럼 한 겹 더 들어가야 닿는 자리를 위한 것이다.
+            // 호스트가 래퍼를 소유하고 확장은 그 안에만 덧붙이므로, 래퍼와 그 className 은
+            // 확장이 몇 개든 하나로 유지된다.
+            if (is_array($value) && array_key_exists('_patch', $value)) {
+                $target[$key] = $this->patchListItems(
+                    is_array($target[$key] ?? null) ? $target[$key] : [],
+                    $value['_patch'],
+                    $componentId,
+                    $propKey.'.'.$key
+                );
+
+                continue;
+            }
+
+            $target[$key] = $value;
+        }
+
+        return $target;
+    }
+
+    /**
      * 확장 등록
      *
      * updateOrCreate를 사용하여 중복 등록을 방지합니다.
      * 재활성화 시 기존 레코드가 있으면 복원 및 업데이트하고, 없으면 새로 생성합니다.
      *
-     * $preserveModified 가 true 이면, 관리자가 편집한 확장(현재 content 해시가
-     * original_content_hash 와 다른 경우)은 content/priority 갱신을 건너뛰고
-     * is_active 만 갱신합니다 ('skipped' 반환).
+     * 행 쓰기는 {@see LayoutRowSynchronizer} 를 지난다. $preserveModified 가 true(keep)이면 관리자가 편집한 확장은
+     * 3자 병합한다 — 고친 부분은 두고 손대지 않은 최상위 키만 새 판으로 바꾸며, 겹치면 관리자 판을 남긴다('skipped').
+     * 결제 플러그인 리스너처럼 확장이 직접 부르는 호환 경로라 공개 시그니처는 그대로 두고 인자만 뒤에 더했다.
      *
      * 대상 템플릿 적용 가능 여부(target_layout / extension_point 존재)는 호출 측
      * (RefreshesLayoutExtensions trait)이 사전 판별한다 — isApplicableToTemplate() 참고.
@@ -1129,6 +1461,11 @@ class LayoutExtensionService
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
      * @param  bool  $preserveModified  사용자 수정분 보존 여부
+     * @param  string|null  $fragmentKey  조각 식별자 (소스 파일 기본 이름 — {@see LayoutFragmentSourceHelper::fragmentKey()}).
+     *                                    코어 등록 경로는 반드시 넘긴다. null 은 키를 모르는 호환 호출(확장 Listener 등) —
+     *                                    같은 대상의 기존 행이 정확히 하나면 그 키를 잇고, 없으면 대상 이름, 둘 이상이면 처리하지 않는다
+     * @param  array<string, mixed>|null  $backupOriginal  업데이트 백업을 컴파일한 이전 판 (원본 본문이 없는 행의 비교 기준)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return string|null 'created', 'updated', 'skipped', 또는 null (처리하지 않음)
      */
     public function registerExtension(
@@ -1136,7 +1473,10 @@ class LayoutExtensionService
         LayoutSourceType $sourceType,
         string $identifier,
         int $templateId,
-        bool $preserveModified = false
+        bool $preserveModified = false,
+        ?string $fragmentKey = null,
+        ?array $backupOriginal = null,
+        ?LayoutSyncReport $report = null
     ): ?string {
         $result = null;
 
@@ -1149,7 +1489,10 @@ class LayoutExtensionService
                 $sourceType,
                 $identifier,
                 $templateId,
-                $preserveModified
+                $preserveModified,
+                $fragmentKey,
+                $backupOriginal,
+                $report
             );
         }
 
@@ -1162,7 +1505,10 @@ class LayoutExtensionService
                 $sourceType,
                 $identifier,
                 $templateId,
-                $preserveModified
+                $preserveModified,
+                $fragmentKey,
+                $backupOriginal,
+                $report
             );
         }
 
@@ -1172,11 +1518,10 @@ class LayoutExtensionService
     /**
      * 단일 확장 레코드를 등록/갱신합니다.
      *
-     * preserveModified 전략 (TemplateManager::refreshTemplateLayouts 패턴과 동일):
-     * - 신규 생성 → content + original_content_hash/size 함께 저장 → 'created'
-     * - 기존 존재 + preserveModified + 사용자 수정 감지 → content/priority SKIP,
-     *   is_active 만 갱신 → 'skipped'
-     * - 그 외 → content 덮어쓰기 + original_content_hash/size 새 파일 기준 갱신 → 'updated'
+     * 쓰기 규칙은 {@see LayoutRowSynchronizer::syncExtension()} 이 정한다:
+     * - 신규 생성 → content + 원본 본문·해시·크기 → 'created'
+     * - keep + 관리자 수정 → 3자 병합(겹치면 관리자 판) → 새 판이 들어가면 'updated', 아니면 'skipped'
+     * - 그 외 → 새 판으로 덮어쓰기 + 원본 정보 새 파일 기준 → 'updated'
      *
      * @param  array  $content  확장 파일 내용
      * @param  LayoutExtensionType  $extensionType  확장 타입
@@ -1185,7 +1530,10 @@ class LayoutExtensionService
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
      * @param  bool  $preserveModified  사용자 수정분 보존 여부
-     * @return string 'created', 'updated', 또는 'skipped'
+     * @param  string|null  $fragmentKey  조각 식별자 (null 이면 호환 해석 — {@see resolveLegacyFragmentKey()})
+     * @param  array<string, mixed>|null  $backupOriginal  업데이트 백업을 컴파일한 이전 판
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
+     * @return string|null 'created', 'updated', 'skipped', 또는 null (키를 정할 수 없어 처리하지 않음)
      */
     private function registerExtensionRecord(
         array $content,
@@ -1194,9 +1542,12 @@ class LayoutExtensionService
         LayoutSourceType $sourceType,
         string $identifier,
         int $templateId,
-        bool $preserveModified
-    ): string {
-        $attributes = [
+        bool $preserveModified,
+        ?string $fragmentKey = null,
+        ?array $backupOriginal = null,
+        ?LayoutSyncReport $report = null
+    ): ?string {
+        $scope = [
             'template_id' => $templateId,
             'extension_type' => $extensionType,
             'target_name' => $targetName,
@@ -1204,43 +1555,97 @@ class LayoutExtensionService
             'source_identifier' => $identifier,
         ];
 
-        $existing = LayoutExtension::withTrashed()->where($attributes)->first();
+        $fragmentKey = $this->resolveLegacyFragmentKey($scope, $fragmentKey, $targetName);
 
-        // 기존 확장 존재 + 사용자 수정분 보존 전략
-        if ($existing && $preserveModified) {
-            $currentHash = $this->computeContentHash($existing->content);
-            $originalHash = $existing->original_content_hash;
-
-            // 사용자가 편집한 확장 → content/priority 덮어쓰기 SKIP, is_active 만 갱신
-            if ($originalHash && $currentHash !== $originalHash) {
-                if ($existing->trashed()) {
-                    $existing->restore();
-                }
-                $existing->update(['is_active' => true]);
-
-                Log::info('레이아웃 확장 갱신 SKIP (사용자 수정 보존)', [
-                    'extension_id' => $existing->id,
-                    'target_name' => $targetName,
-                    'source' => $identifier,
-                ]);
-
-                return 'skipped';
-            }
+        if ($fragmentKey === null) {
+            return null;
         }
 
-        $normalizedContent = $this->computeContentHash($content);
+        // 고유 키 = 대상 5축 + 조각 식별자. 같은 확장이 같은 대상에 조각 둘을 보내면 종전 5축 키는 뒤가 앞을
+        // 덮었다(ecommerce 통화 필드 조각 소실, C13).
+        $entry = $this->layoutSynchronizer->syncExtension(
+            $scope + ['fragment_key' => $fragmentKey],
+            $content,
+            LayoutSyncMode::fromPreserve($preserveModified),
+            $this->templateIdentifierOf($templateId),
+            $backupOriginal
+        );
+        $report?->add($entry);
 
-        $values = [
-            'content' => $content,
-            'priority' => $content['priority'] ?? 100,
-            'is_active' => true,
-            'original_content_hash' => $normalizedContent,
-            'original_content_size' => $this->computeContentSize($content),
-        ];
+        return match ($entry->verdict) {
+            'created' => 'created',
+            'updated', 'took_theirs', 'merged', 'unchanged' => 'updated',
+            default => 'skipped',
+        };
+    }
 
-        $model = $this->repository->updateOrCreate($attributes, $values);
+    /**
+     * 템플릿 ID 의 식별자를 읽습니다 (보고용, 서비스 인스턴스 수명 캐시).
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @return string 템플릿 식별자 (없으면 ID 문자열)
+     */
+    private function templateIdentifierOf(int $templateId): string
+    {
+        return $this->templateIdentifiers[$templateId] ??= (string) ($this->templateRepository->findById($templateId)?->identifier ?? $templateId);
+    }
 
-        return $model->wasRecentlyCreated ? 'created' : 'updated';
+    /**
+     * 키를 넘기지 않은 호출의 조각 식별자를 정합니다 (호환 경로).
+     *
+     * 코어 등록 루프는 소스 파일에서 키를 파생해 넘기지만, 확장이 직접 `registerExtension()` 을 부르는
+     * 자리(업데이트 뒤 overlay 를 복원하는 결제 플러그인 Listener 등)는 파일 경로를 모른다. 그 호출을
+     * 깨지 않되 옛 5축 키로 **새 행을 만들지 않도록**: 같은 대상의 기존 행이 정확히 하나면 그 행의 키를
+     * 잇고(갱신), 없으면 대상 이름을 키로 만든다(갱신 경로가 파일 키로 정정한다), 둘 이상이면 어느 조각인지
+     * 알 수 없으므로 경고만 남기고 처리하지 않는다.
+     *
+     * @param  array<string, mixed>  $scope  대상 5축 조회 조건
+     * @param  string|null  $fragmentKey  호출부가 넘긴 키
+     * @param  string  $targetName  대상 이름
+     * @return string|null 조각 식별자, 정할 수 없으면 null
+     */
+    private function resolveLegacyFragmentKey(array $scope, ?string $fragmentKey, string $targetName): ?string
+    {
+        if ($fragmentKey !== null && $fragmentKey !== '') {
+            return $fragmentKey;
+        }
+
+        $all = LayoutExtension::withTrashed()->where($scope)->get(['id', 'fragment_key', 'deleted_at']);
+
+        // 살아 있는 행을 우선 본다 — 갱신 경로가 옛 키 행을 soft delete 하고 파일 키 행을 만든 뒤 Listener 가
+        // 키 없이 다시 부르면, 지워진 옛 행까지 세어 "둘 이상" 으로 판정하거나 옛 행을 되살리게 된다.
+        $rows = $all->whereNull('deleted_at')->values();
+
+        if ($rows->isEmpty()) {
+            $rows = $all;
+        }
+
+        $keys = $rows->pluck('fragment_key')->unique()->values();
+
+        if ($keys->count() > 1) {
+            Log::warning('레이아웃 확장 등록 건너뜀 — 조각 식별자 없이 호출됐고 같은 대상에 조각이 둘 이상입니다', [
+                'target_name' => $targetName,
+                'source' => $scope['source_identifier'],
+                'template_id' => $scope['template_id'],
+                'fragment_keys' => $keys->all(),
+            ]);
+
+            return null;
+        }
+
+        $existing = $keys->first();
+
+        if (is_string($existing) && $existing !== '') {
+            return $existing;
+        }
+
+        // 키가 비어 있는 행(마이그레이션 백필 이전에 만들어졌거나 직접 삽입된 행)은 대상 이름을 키로 삼아 잇는다 —
+        // 그대로 두면 아래 조회가 그 행을 못 찾아 옆에 새 행을 만든다.
+        if ($rows->count() === 1) {
+            LayoutExtension::withTrashed()->whereKey($rows->first()->id)->update(['fragment_key' => $targetName]);
+        }
+
+        return $targetName;
     }
 
     /**
@@ -1264,7 +1669,9 @@ class LayoutExtensionService
         }
 
         if (isset($content['target_layout'])) {
-            return $this->layoutRepository->exists($templateId, $content['target_layout']);
+            // 모듈 레이아웃은 `{모듈}.{name}` 으로 저장되고 overlay 는 논리 이름을 가리키므로 정확 일치(`exists`)로는
+            // 모듈 화면 대상 조각이 어디서도 "부재" 가 된다 — 서빙과 같은 해석으로 본다.
+            return $this->layoutRepository->existsForOverlay($templateId, $content['target_layout']);
         }
 
         // extension_point/target_layout 둘 다 없는 정의는 처리 대상이 아님
@@ -1281,13 +1688,15 @@ class LayoutExtensionService
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
+     * @param  string|null  $fragmentKey  조각 식별자 (있으면 그 조각의 행만 본다)
      * @return bool 정리된 행이 있으면 true
      */
     public function removeInapplicableExtension(
         array $content,
         LayoutSourceType $sourceType,
         string $identifier,
-        int $templateId
+        int $templateId,
+        ?string $fragmentKey = null
     ): bool {
         $extensionType = isset($content['extension_point'])
             ? LayoutExtensionType::ExtensionPoint
@@ -1299,13 +1708,14 @@ class LayoutExtensionService
 
         $targetName = $content['extension_point'] ?? $content['target_layout'];
 
-        $existing = $this->repository->findByAttributes([
+        $existing = $this->repository->findByAttributes(array_filter([
             'template_id' => $templateId,
             'extension_type' => $extensionType,
             'target_name' => $targetName,
             'source_type' => $sourceType,
             'source_identifier' => $identifier,
-        ]);
+            'fragment_key' => $fragmentKey,
+        ], static fn ($value): bool => $value !== null));
 
         if (! $existing) {
             return false;
@@ -1322,7 +1732,7 @@ class LayoutExtensionService
         // 따라서 동일 확장(같은 source/type/target)이 *다른* 템플릿에서 적용 가능할 때만
         // 삭제한다(그 다른 템플릿이 정답 타입 → 이 행은 타입 불일치 오등록). 어느 템플릿
         // 에서도 적용 불가(전부 stale)면 보존하여 정상 확장 전멸을 막는다.
-        if (! $this->isApplicableInAnyOtherTemplate($content, $extensionType, $targetName, $sourceType, $identifier, $templateId)) {
+        if (! $this->isApplicableInAnyOtherTemplate($content, $extensionType, $targetName, $sourceType, $identifier, $templateId, $fragmentKey)) {
             return false;
         }
 
@@ -1351,6 +1761,7 @@ class LayoutExtensionService
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
      * @param  int  $candidateTemplateId  부재로 판정된 후보 행의 템플릿 ID
+     * @param  string|null  $fragmentKey  조각 식별자 (있으면 그 조각의 형제 행만 본다)
      * @return bool 다른 템플릿에서 적용 가능한 동일 확장이 존재하는지
      */
     private function isApplicableInAnyOtherTemplate(
@@ -1359,14 +1770,16 @@ class LayoutExtensionService
         string $targetName,
         LayoutSourceType $sourceType,
         string $identifier,
-        int $candidateTemplateId
+        int $candidateTemplateId,
+        ?string $fragmentKey = null
     ): bool {
-        $siblings = $this->repository->getAllByAttributesAcrossTemplates([
+        $siblings = $this->repository->getAllByAttributesAcrossTemplates(array_filter([
             'extension_type' => $extensionType,
             'target_name' => $targetName,
             'source_type' => $sourceType,
             'source_identifier' => $identifier,
-        ]);
+            'fragment_key' => $fragmentKey,
+        ], static fn ($value): bool => $value !== null));
 
         foreach ($siblings as $sibling) {
             if ($sibling->template_id === $candidateTemplateId) {
@@ -1761,29 +2174,22 @@ class LayoutExtensionService
     /**
      * 특정 템플릿에서 관리자가 수정한 확장 목록을 반환합니다.
      *
-     * 현재 content 해시가 original_content_hash 와 다른 확장을 수정된 것으로 판단합니다.
-     * hasModifiedLayouts 와 대칭 메서드입니다.
+     * 판정은 {@see LayoutRowSynchronizer::isOperatorModified()} 한 곳이 한다(원본 본문이 있으면 정규화 비교,
+     * 없으면 해시). hasModifiedLayouts 와 대칭 메서드입니다.
      *
      * @param  int  $templateId  템플릿 ID
-     * @return array<array{id: int, target_name: string, source_identifier: string}> 수정된 확장 목록
+     * @return array<array{id: int, target_name: string, fragment_key: string|null, source_identifier: string}> 수정된 확장 목록
      */
     public function hasModifiedExtensions(int $templateId): array
     {
         $modified = [];
 
         foreach ($this->repository->getByTemplateId($templateId) as $extension) {
-            $originalHash = $extension->original_content_hash;
-
-            if (! $originalHash) {
-                continue;
-            }
-
-            $currentHash = $this->computeContentHash($extension->content);
-
-            if ($currentHash !== $originalHash) {
+            if ($this->layoutSynchronizer->isOperatorModified($extension)) {
                 $modified[] = [
                     'id' => $extension->id,
                     'target_name' => $extension->target_name,
+                    'fragment_key' => $extension->fragment_key,
                     'source_identifier' => $extension->source_identifier,
                 ];
             }
@@ -1795,12 +2201,16 @@ class LayoutExtensionService
     /**
      * 특정 출처(모듈/플러그인)의 수정된 확장 목록을 반환합니다.
      *
-     * 모듈/플러그인 업데이트 커맨드의 overwrite 전략 경고에 사용합니다.
-     * 모든 활성 템플릿에 걸쳐 해당 출처의 확장을 스캔합니다.
+     * 모든 활성 템플릿에 걸쳐 해당 출처의 확장을 스캔합니다. 종전에는 모듈/플러그인 업데이트 커맨드의 overwrite 경고가
+     * 이 목록을 썼지만, 7.1.0 부터 경고는 `{Module,Plugin}Manager::hasModifiedLayouts()` 의 목록(레이아웃·확장 조각이
+     * `kind` 로 함께 담긴다)을 쓴다 — 코어 안 호출처는 없다.
+     *
+     * @deprecated 7.1.0 — 다음 메이저에서 제거 예정. 대신 `ModuleManagerInterface::hasModifiedLayouts()` /
+     *             `PluginManagerInterface::hasModifiedLayouts()` 의 `modified_layouts` 중 `kind === 'extension'` 항목을 쓴다.
      *
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
-     * @return array<array{id: int, target_name: string, source_identifier: string}> 수정된 확장 목록
+     * @return array<array{id: int, target_name: string, fragment_key: string|null, source_identifier: string}> 수정된 확장 목록
      */
     public function getModifiedExtensionsBySource(LayoutSourceType $sourceType, string $identifier): array
     {
@@ -1809,16 +2219,11 @@ class LayoutExtensionService
         $extensions = $this->repository->getBySource($sourceType, $identifier);
 
         foreach ($extensions as $extension) {
-            $originalHash = $extension->original_content_hash;
-
-            if (! $originalHash) {
-                continue;
-            }
-
-            if ($this->computeContentHash($extension->content) !== $originalHash) {
+            if ($this->layoutSynchronizer->isOperatorModified($extension)) {
                 $modified[] = [
                     'id' => $extension->id,
                     'target_name' => $extension->target_name,
+                    'fragment_key' => $extension->fragment_key,
                     'source_identifier' => $extension->source_identifier,
                 ];
             }
@@ -1836,6 +2241,7 @@ class LayoutExtensionService
      * @param  int  $templateId  템플릿 ID
      * @param  string  $targetName  타겟 이름
      * @param  LayoutExtensionType  $type  확장 타입
+     * @return void 반환값 없음
      */
     public function invalidateExtensionCache(int $templateId, string $targetName, LayoutExtensionType $type): void
     {
@@ -1866,13 +2272,19 @@ class LayoutExtensionService
     /**
      * 출처별 확장 복원
      *
+     * 재활성화가 부른다. 조각 키 집합을 넘기면 **그 키의 행만** 되살린다 — 비활성화가 지운 행과 함께, 이전에
+     * 고아 정리(`removeOrphanFragments`)가 지운 행(소스에 없는 조각·백필된 옛 키 행)까지 되살리면 같은 조각이
+     * 두 행으로 살아 두 번 주입된다 (#703). 되살린 행 가운데 붙을 자리가 없는 행은 뒤따르는 등록
+     * ({@see syncSourceFragmentsToTemplate()})이 다시 정리한다.
+     *
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
+     * @param  array<int, string>|null  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합 (null 이면 전부 복원 — 호환)
      * @return int 복원된 레코드 수
      */
-    public function restoreBySource(LayoutSourceType $sourceType, string $identifier): int
+    public function restoreBySource(LayoutSourceType $sourceType, string $identifier, ?array $liveKeys = null): int
     {
-        return $this->repository->restoreBySource($sourceType, $identifier);
+        return $this->repository->restoreBySource($sourceType, $identifier, $liveKeys);
     }
 
     /**
@@ -1895,39 +2307,69 @@ class LayoutExtensionService
      * 템플릿 활성화 시 호출하여, 이미 활성화된 모듈/플러그인의 확장이
      * 새 템플릿에도 적용되도록 합니다.
      *
+     * 붙을 자리(호스트 레이아웃·확장점)가 없는 템플릿에는 조각을 등록하지 않는다 (C10). 조각 컴파일은
+     * 템플릿과 무관하다(JSON 과 동일). 확장 활성화·업데이트도 자기 등록을 마친 뒤 이 메서드를 전 활성 템플릿에 다시 불러,
+     * 호스트가 나중에 설치된 조각을 메운다(멱등).
+     *
      * @param  int  $templateId  대상 템플릿 ID
-     * @return array{modules: int, plugins: int} 소스 타입별 등록된 확장 수
+     * @return array{modules: int, plugins: int, skipped: int} 소스 타입별 등록 수 + 대상 부재로 건너뛴 수
      */
     public function registerAllActiveExtensionsToTemplate(int $templateId): array
     {
-        $stats = ['modules' => 0, 'plugins' => 0];
+        $stats = ['modules' => 0, 'plugins' => 0, 'skipped' => 0];
+
+        // 템플릿이 없으면 등록할 곳도 없다. 식별자는 정의를 읽는 문맥과 실패 로그에 싣는다(조각 컴파일 자체는 템플릿과 무관).
+        $template = $this->templateRepository->findById($templateId);
+
+        if ($template === null) {
+            return $stats;
+        }
+
+        $templateIdentifier = (string) $template->identifier;
 
         // 활성 모듈의 레이아웃 확장 등록
         $moduleManager = app(ModuleManager::class);
         foreach ($moduleManager->getActiveModules() as $module) {
-            $stats['modules'] += $this->registerExtensionFilesToTemplate(
-                $module->getLayoutExtensions(),
+            [$registered, $skipped] = $this->registerExtensionFilesToTemplate(
+                $this->loadFragmentDefinitions(
+                    $module->getExtensionsPath(),
+                    $module->getLayoutExtensions(),
+                    ['source' => $module->getIdentifier(), 'template' => $templateIdentifier],
+                    $templateIdentifier
+                ),
+                $this->fragmentSourceKeys($module->getExtensionsPath(), $module->getLayoutExtensions()),
                 LayoutSourceType::Module,
                 $module->getIdentifier(),
                 $templateId
             );
+            $stats['modules'] += $registered;
+            $stats['skipped'] += $skipped;
         }
 
         // 활성 플러그인의 레이아웃 확장 등록
         $pluginManager = app(PluginManager::class);
         foreach ($pluginManager->getActivePlugins() as $plugin) {
-            $stats['plugins'] += $this->registerExtensionFilesToTemplate(
-                $plugin->getLayoutExtensions(),
+            [$registered, $skipped] = $this->registerExtensionFilesToTemplate(
+                $this->loadFragmentDefinitions(
+                    $plugin->getExtensionsPath(),
+                    $plugin->getLayoutExtensions(),
+                    ['source' => $plugin->getIdentifier(), 'template' => $templateIdentifier],
+                    $templateIdentifier
+                ),
+                $this->fragmentSourceKeys($plugin->getExtensionsPath(), $plugin->getLayoutExtensions()),
                 LayoutSourceType::Plugin,
                 $plugin->getIdentifier(),
                 $templateId
             );
+            $stats['plugins'] += $registered;
+            $stats['skipped'] += $skipped;
         }
 
         $total = $stats['modules'] + $stats['plugins'];
         if ($total > 0) {
             Log::info("템플릿에 활성 확장 등록 완료: 모듈 {$stats['modules']}건, 플러그인 {$stats['plugins']}건", [
                 'template_id' => $templateId,
+                'skipped' => $stats['skipped'],
             ]);
         }
 
@@ -1935,122 +2377,368 @@ class LayoutExtensionService
     }
 
     /**
-     * 확장 JSON 파일 목록을 특정 템플릿에 등록합니다.
+     * 읽어 둔 fragment 정의를 특정 템플릿에 등록합니다 — 붙을 자리가 없는 조각은 건너뜁니다.
      *
-     * @param  array<string>  $extensionFiles  JSON 파일 경로 목록
+     * 소스 선택·읽기는 호출처가 {@see CollectsFragmentSources::loadFragmentDefinitions()}
+     * 로 끝내고 여기는 판별·등록만 한다 — 종전에는 경로 배열을 받아 여기서 `File::get`+`json_decode` 로
+     * 직행했고, 그래서 **템플릿 활성화**만 소스(`.g7.html`)을 보지 못하는 네 번째 갈래로 남아 있었다.
+     *
+     * 적용 필터(C10): 호스트 레이아웃·확장점이 이 템플릿에 없으면 등록하지 않는다 — 종전엔 모든 활성 템플릿에
+     * 무조건 등록해 사용자 템플릿에 관리자 대상 조각(죽은 행)이 쌓였다. 호스트가 나중에 설치되는 경우는
+     * 확장 활성화·업데이트가 이 메서드를 전 템플릿에 다시 불러 메운다.
+     *
+     * 이 경로는 **다른 확장**의 활성화·업데이트나 템플릿 활성화가 활성 확장 전부를 다시 훑을 때 탄다. 그래서 운영자
+     * 수정본을 보존하고(`preserveModified=true` — 종전 `false` 는 무관한 확장의 수정본과 원본 해시까지 덮어썼다),
+     * 등록 뒤 소스에 없는 조각 행을 정리해 옛 키 행이 남아 두 번 주입되지 않게 한다 (#703).
+     *
+     * @param  array<int, array{path: string, data: array<string, mixed>, key: string}>  $definitions  fragment 정의 목록
+     * @param  array<int, string>  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합 ({@see CollectsFragmentSources::fragmentSourceKeys()})
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
-     * @return int 등록된 확장 수
+     * @return array{0: int, 1: int} `[등록 수, 건너뛴 수]`
      */
     private function registerExtensionFilesToTemplate(
-        array $extensionFiles,
+        array $definitions,
+        array $liveKeys,
         LayoutSourceType $sourceType,
         string $identifier,
         int $templateId
-    ): int {
-        if (empty($extensionFiles)) {
-            return 0;
-        }
+    ): array {
+        $stats = $this->syncSourceFragmentsToTemplate($definitions, $liveKeys, $sourceType, $identifier, $templateId, true);
 
-        $registered = 0;
+        return [$stats['registered'], $stats['inapplicable']];
+    }
 
-        foreach ($extensionFiles as $extensionFile) {
+    /**
+     * 한 출처(모듈·플러그인)의 조각을 한 템플릿에서 소스 파일 한 벌로 수렴시킵니다.
+     *
+     * 조각 행을 쓰는 경로(확장 활성화·업데이트·갱신, 다른 확장이 부르는 재등록, 템플릿 활성화)가 모두 이 한 곳을
+     * 탄다. 종전에는 갱신 경로만 고아 정리를 했고, 나머지는 새 키로 행을 만들기만 해 7.0.11 에서 올라온 설치의
+     * 백필 행(키 = 대상 이름)이 새 행과 함께 살아 같은 조각이 두 번 주입됐다 (#703).
+     *
+     *  1. 백필된 옛 행을 파일 키로 옮긴다({@see adoptLegacyFragmentRows()}) — 운영자 수정본을 지닌 채 이어진다.
+     *  2. 붙을 자리가 있는 조각은 등록하고, 없으면 오등록 행을 정리한다(교차 템플릿 가드 포함).
+     *  3. 소스에 없는 조각의 행을 정리한다(판정 기준은 소스 존재 — 컴파일 실패 조각의 행은 보존).
+     *
+     * @param  array<int, array{path: string, data: array<string, mixed>, key: string}>  $definitions  이 템플릿용으로 읽은 fragment 정의
+     * @param  array<int, string>  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @param  string  $identifier  출처 식별자
+     * @param  int  $templateId  템플릿 ID
+     * @param  bool  $preserveModified  운영자 수정본 보존(keep — 3자 병합) 여부. keep 이면 새 버전에서 빠진 조각도 운영자가 고쳤으면 남긴다
+     * @param  array<string, array<string, mixed>>  $backupFragments  업데이트 백업을 컴파일한 이전 판 조각 (조각 키 → 본문, 원본 본문이 없는 행의 비교 기준)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
+     * @return array{registered: int, inapplicable: int, created: int, updated: int, skipped: int, deleted: int} 통계
+     */
+    public function syncSourceFragmentsToTemplate(
+        array $definitions,
+        array $liveKeys,
+        LayoutSourceType $sourceType,
+        string $identifier,
+        int $templateId,
+        bool $preserveModified,
+        array $backupFragments = [],
+        ?LayoutSyncReport $report = null
+    ): array {
+        $stats = ['registered' => 0, 'inapplicable' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0, 'deleted' => 0];
+
+        $this->adoptLegacyFragmentRows($definitions, $liveKeys, $sourceType, $identifier, $templateId);
+
+        foreach ($definitions as $definition) {
             try {
-                $content = File::get($extensionFile);
-                $extensionData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
+                if (! $this->isExtensionApplicableToTemplate($definition['data'], $templateId)) {
+                    $stats['inapplicable']++;
+                    Log::info("레이아웃 확장 등록 건너뜀 (대상 부재): {$definition['path']}", [
                         'source' => $identifier,
-                        'error' => json_last_error_msg(),
+                        'template_id' => $templateId,
                     ]);
+
+                    // 과거 무차별 등록·재활성화 복원으로 살아난 오등록 행 정리 (다른 템플릿에서 적용 가능할 때만)
+                    if ($this->removeInapplicableExtension($definition['data'], $sourceType, $identifier, $templateId, $definition['key'])) {
+                        $stats['deleted']++;
+                    }
 
                     continue;
                 }
 
-                $this->registerExtension($extensionData, $sourceType, $identifier, $templateId);
-                $registered++;
+                // 다른 확장 활성화·템플릿 전환 경로는 늘 keep 으로 부른다 — 파일이 안 바뀐 조각의 관리자 수정은
+                // "파일 = 원본" 판정으로 그대로 남는다(L5 — 종전엔 false 고정이라 무관한 모듈 조각 수정까지 지웠다).
+                $result = $this->registerExtension(
+                    $definition['data'],
+                    $sourceType,
+                    $identifier,
+                    $templateId,
+                    $preserveModified,
+                    $definition['key'],
+                    $backupFragments[$definition['key']] ?? null,
+                    $report
+                );
+                $stats['registered']++;
+
+                if ($result === 'created' || $result === 'updated' || $result === 'skipped') {
+                    $stats[$result]++;
+                }
             } catch (\Exception $e) {
-                Log::error("레이아웃 확장 등록 실패: {$extensionFile}", [
+                Log::error("레이아웃 확장 등록 실패: {$definition['path']}", [
                     'source' => $identifier,
+                    'template_id' => $templateId,
+                    'fragment_key' => $definition['key'],
                     'error' => $e->getMessage(),
                 ]);
             }
         }
 
-        return $registered;
+        $stats['deleted'] += $this->removeOrphanFragments($sourceType, $identifier, $templateId, $liveKeys, LayoutSyncMode::fromPreserve($preserveModified), $report);
+
+        return $stats;
+    }
+
+    /**
+     * 조각 식별자 마이그레이션이 대상 이름으로 백필한 옛 행을 소스 파일 키로 옮깁니다.
+     *
+     * 7.0.11 까지 행은 대상(확장점·레이아웃) 단위로 하나였고, 마이그레이션은 그 키를 대상 이름으로 채웠다. 등록은
+     * 파일 이름을 키로 쓰므로 그대로 두면 새 행이 생기고 옛 행은 고아가 된다 — 운영자가 옛 행을 고쳤다면 keep
+     * 전략도 그 수정본을 보지 못한 채 지워진다. 그래서 **옛 행이 어느 조각이었는지 확실할 때만** 그 행의 키를
+     * 파일 키로 바꿔 잇는다(행 ID·수정본·판본 이력 유지). 확실하다는 것은:
+     *
+     *  - 이 출처에서 그 대상을 겨냥한 조각 파일이 정확히 하나이고,
+     *  - 대상 이름이 그 자체로 살아 있는 조각 파일 이름이 아니며(그러면 옛 행은 그 파일의 행이다),
+     *  - 파일 키 행이 아직 없다(있으면 옛 행은 고아 — 정리가 지운다).
+     *
+     * 한 대상에 조각이 둘 이상이면 옛 행(7.0.11 에서 뒤 조각이 앞 조각을 덮은 결과)이 어느 조각인지 알 수 없어
+     * 옮기지 않는다 — 정리가 지우고 파일 키 행들이 새로 선다.
+     *
+     * @param  array<int, array{path: string, data: array<string, mixed>, key: string}>  $definitions  fragment 정의
+     * @param  array<int, string>  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @param  string  $identifier  출처 식별자
+     * @param  int  $templateId  템플릿 ID
+     * @return int 옮긴 행 수
+     */
+    private function adoptLegacyFragmentRows(
+        array $definitions,
+        array $liveKeys,
+        LayoutSourceType $sourceType,
+        string $identifier,
+        int $templateId
+    ): int {
+        $live = array_fill_keys($liveKeys, true);
+        $groups = [];
+
+        foreach ($definitions as $definition) {
+            $data = $definition['data'];
+
+            // 두 방식을 한 파일에 함께 선언했거나 둘 다 없는 정의는 대상이 하나로 정해지지 않아 판정에서 뺀다.
+            if (isset($data['extension_point']) === isset($data['target_layout'])) {
+                continue;
+            }
+
+            $type = isset($data['extension_point']) ? LayoutExtensionType::ExtensionPoint : LayoutExtensionType::Overlay;
+            $target = (string) ($data['extension_point'] ?? $data['target_layout']);
+            $groups[$type->value."\0".$target][] = (string) $definition['key'];
+        }
+
+        $adopted = 0;
+
+        foreach ($groups as $groupKey => $keys) {
+            $keys = array_values(array_unique($keys));
+
+            if (count($keys) !== 1) {
+                continue;
+            }
+
+            [$typeValue, $target] = explode("\0", $groupKey, 2);
+            $fileKey = $keys[0];
+
+            if ($fileKey === $target || isset($live[$target])) {
+                continue;
+            }
+
+            $scope = [
+                'template_id' => $templateId,
+                'extension_type' => LayoutExtensionType::from($typeValue),
+                'target_name' => $target,
+                'source_type' => $sourceType,
+                'source_identifier' => $identifier,
+            ];
+
+            if ($this->repository->findWithTrashedByAttributes([...$scope, 'fragment_key' => $fileKey]) !== null) {
+                continue;
+            }
+
+            $legacy = $this->repository->findWithTrashedByAttributes([...$scope, 'fragment_key' => $target]);
+
+            if ($legacy === null) {
+                continue;
+            }
+
+            $this->repository->saveFragmentKey($legacy, $fileKey);
+            $adopted++;
+
+            Log::info('백필된 옛 조각 행을 파일 키로 이음', [
+                'extension_id' => $legacy->id,
+                'template_id' => $templateId,
+                'target_name' => $target,
+                'fragment_key' => $fileKey,
+                'source' => $identifier,
+            ]);
+        }
+
+        return $adopted;
+    }
+
+    /**
+     * 파일에 더는 없는 조각의 행을 정리합니다 (같은 출처·같은 템플릿, soft delete).
+     *
+     * 갱신 경로가 소스 디렉토리의 조각 키 집합을 넘긴다. 키가 그 집합에 없는 행은 소스가 사라졌거나 이름이
+     * 바뀐 조각이다(옛 5축 키로 만들어진 `target_name` 키 행도 여기서 파일 키로 정정된다 — 등록이 새 키로
+     * 행을 만들고 이 정리가 옛 행을 지운다).
+     *
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @param  string  $identifier  출처 식별자
+     * @param  int  $templateId  템플릿 ID
+     * @param  array<int, string>  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합
+     * @param  LayoutSyncMode  $mode  동기화 모드 — keep 이면 관리자가 고친 조각은 새 버전에서 빠졌어도 남긴다(D4·L10 — 템플릿 레이아웃과 같은 규칙)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
+     * @return int 정리된 행 수
+     */
+    public function removeOrphanFragments(LayoutSourceType $sourceType, string $identifier, int $templateId, array $liveKeys, LayoutSyncMode $mode = LayoutSyncMode::Overwrite, ?LayoutSyncReport $report = null): int
+    {
+        $live = array_fill_keys($liveKeys, true);
+        $deleted = 0;
+
+        foreach ($this->repository->getBySource($sourceType, $identifier) as $row) {
+            if ((int) $row->template_id !== $templateId || isset($live[(string) $row->fragment_key])) {
+                continue;
+            }
+
+            $entry = $this->layoutSynchronizer->removeOrphanExtension($row, $this->templateIdentifierOf($templateId), $mode);
+            $report?->add($entry);
+
+            if ($entry->verdict !== 'deleted') {
+                continue;
+            }
+
+            $deleted++;
+
+            Log::info('고아 레이아웃 확장 행 정리 (소스에 없는 조각)', [
+                'extension_id' => $row->id,
+                'template_id' => $templateId,
+                'target_name' => $row->target_name,
+                'fragment_key' => $row->fragment_key,
+                'source' => $identifier,
+            ]);
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * 템플릿 오버라이드 행 가운데 소스에 더는 없는 것을 정리합니다 (soft delete).
+     *
+     * 템플릿 갱신이 `extensions/{대상}/` 의 조각 키 집합을 대상별로 넘긴다. 키가 그 집합에 없는 행 —
+     * 조각 파일이 사라졌거나, 템플릿이 그 대상을 더는 오버라이드하지 않거나, 조각 식별자 마이그레이션이
+     * 대상 이름으로 백필한 옛 행(등록은 파일 이름 키로 새 행을 만든다) — 은 지운다. 모듈·플러그인 갱신의
+     * `removeOrphanFragments` 와 같은 역할이다. 이 정리가 없어 7.0.11 에서 올라온 설치에서 같은 조각이 두 행으로
+     * 남아 두 번 주입됐다(#703 실측 — 주문서 「주소 검색」 버튼 중복).
+     *
+     * @param  string  $templateIdentifier  템플릿 식별자
+     * @param  int  $templateId  템플릿 ID
+     * @param  array<string, array<int, string>>  $liveKeysByTarget  오버라이드 대상 식별자 → 소스에 실재하는 조각 키 목록
+     * @return int 정리된 행 수
+     */
+    public function removeOrphanTemplateOverrides(string $templateIdentifier, int $templateId, array $liveKeysByTarget): int
+    {
+        $live = array_map(static fn (array $keys): array => array_fill_keys($keys, true), $liveKeysByTarget);
+        $deleted = 0;
+
+        foreach ($this->repository->getBySource(LayoutSourceType::Template, $templateIdentifier) as $row) {
+            // 오버라이드가 아닌 템플릿 출처 행은 이 정리의 대상이 아니다.
+            if ((int) $row->template_id !== $templateId || $row->override_target === null) {
+                continue;
+            }
+
+            if (isset($live[$row->override_target][(string) $row->fragment_key])) {
+                continue;
+            }
+
+            $row->delete();
+            $deleted++;
+
+            Log::info('고아 템플릿 오버라이드 행 정리 (소스에 없는 조각)', [
+                'extension_id' => $row->id,
+                'template' => $templateIdentifier,
+                'override_target' => $row->override_target,
+                'target_name' => $row->target_name,
+                'fragment_key' => $row->fragment_key,
+            ]);
+        }
+
+        return $deleted;
     }
 
     /**
      * 템플릿 오버라이드 Extension 등록
      *
      * 템플릿이 모듈/플러그인의 Extension을 오버라이드하는 경우 사용합니다.
-     * updateOrCreate를 사용하여 중복 등록을 방지합니다.
+     * 행 쓰기는 {@see LayoutRowSynchronizer} 를 지나 원본 해시·원본 본문을 남기고, keep 이면 운영자 수정을 병합한다
+     * (W6 — 종전엔 해시 없이 `updateOrCreate` 로 덮어써 keep 이 무효였다).
      *
      * @param  array  $content  확장 파일 내용
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  string  $overrideTarget  오버라이드 대상 모듈/플러그인 식별자
      * @param  int  $templateId  템플릿 ID
+     * @param  string|null  $fragmentKey  조각 식별자 (null 이면 대상 이름)
+     * @param  LayoutSyncMode  $mode  동기화 모드 (설치는 Keep, 갱신은 그 갱신의 모드)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return string|null 'created', 'updated', 또는 null (처리하지 않음)
      */
     public function registerTemplateOverride(
         array $content,
         string $templateIdentifier,
         string $overrideTarget,
-        int $templateId
+        int $templateId,
+        ?string $fragmentKey = null,
+        LayoutSyncMode $mode = LayoutSyncMode::Keep,
+        ?LayoutSyncReport $report = null
     ): ?string {
         $result = null;
+        $targets = [];
 
         // Extension Point 타입 오버라이드
         if (isset($content['extension_point'])) {
-            $model = $this->repository->updateOrCreate(
-                [
-                    'template_id' => $templateId,
-                    'extension_type' => LayoutExtensionType::ExtensionPoint,
-                    'target_name' => $content['extension_point'],
-                    'source_type' => LayoutSourceType::Template,
-                    'source_identifier' => $templateIdentifier,
-                    'override_target' => $overrideTarget,
-                ],
-                [
-                    'content' => $content,
-                    'priority' => $content['priority'] ?? 100,
-                    'is_active' => true,
-                ]
-            );
-            $result = $model->wasRecentlyCreated ? 'created' : 'updated';
-
-            Log::info('템플릿 Extension Point 오버라이드 등록', [
-                'template' => $templateIdentifier,
-                'extension_point' => $content['extension_point'],
-                'override_target' => $overrideTarget,
-            ]);
+            $targets[] = [LayoutExtensionType::ExtensionPoint, $content['extension_point']];
         }
 
         // Overlay 타입 오버라이드
         if (isset($content['target_layout'])) {
-            $model = $this->repository->updateOrCreate(
+            $targets[] = [LayoutExtensionType::Overlay, $content['target_layout']];
+        }
+
+        foreach ($targets as [$extensionType, $targetName]) {
+            $entry = $this->layoutSynchronizer->syncExtension(
                 [
                     'template_id' => $templateId,
-                    'extension_type' => LayoutExtensionType::Overlay,
-                    'target_name' => $content['target_layout'],
+                    'extension_type' => $extensionType,
+                    'target_name' => $targetName,
+                    'fragment_key' => $fragmentKey ?? $targetName,
                     'source_type' => LayoutSourceType::Template,
                     'source_identifier' => $templateIdentifier,
                     'override_target' => $overrideTarget,
                 ],
-                [
-                    'content' => $content,
-                    'priority' => $content['priority'] ?? 100,
-                    'is_active' => true,
-                ]
+                $content,
+                $mode,
+                $templateIdentifier
             );
-            $result = $model->wasRecentlyCreated ? 'created' : 'updated';
+            $report?->add($entry);
+            $result = $entry->verdict === 'created' ? 'created' : 'updated';
 
-            Log::info('템플릿 Overlay 오버라이드 등록', [
+            Log::info($extensionType === LayoutExtensionType::ExtensionPoint ? '템플릿 Extension Point 오버라이드 등록' : '템플릿 Overlay 오버라이드 등록', [
                 'template' => $templateIdentifier,
-                'target_layout' => $content['target_layout'],
+                'target' => $targetName,
                 'override_target' => $overrideTarget,
+                'verdict' => $entry->verdict,
             ]);
         }
 

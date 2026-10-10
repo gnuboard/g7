@@ -1,0 +1,36 @@
+feature: CBT(엔화) 클레임 추가결제 승인의 sid ↔ 결제 건 바인딩 (#599 validate C1)
+
+description: |
+  CBT 승인 재료는 sid 하나이고, 승인 응답(/cbtapprove)에는 금액·주문번호가 없다(매뉴얼상 미사용).
+  그래서 싼 결제 건으로 연 결제창의 sid 를 비싼 결제 건의 승인에 실어 보내면 KG 는 싼 금액으로
+  승인하고 모듈은 비싼 결제 건을 결제완료로 확정했다. 클라이언트 승인 API
+  (`/user|guest/.../claim-payments/{no}/approve`)는 콜백 원문을 그대로 받으므로 sid 를 누구나 실을 수 있었다.
+
+  막는 층:
+    ① 서버 콜백 컨트롤러만 승인 재료를 넘긴다 — 결제 건 번호와 sid 를 서버 키로 서명한 토큰이 없으면
+       PG 를 부르기 전에 거절한다.
+    ② 응답에 주문번호·MID·통화·결제수단·금액이 실려 오면 주문 경로(assertCbtApproveResponseMatchesOrder)와
+       같게 대조하고, 어긋나면 승인분을 환불로 되돌린다. 금액이 실려 오면 모듈이 청구액과 대조하도록 넘긴다.
+
+  남는 위험: 응답에 금액이 없으면 세션 금액을 서버가 확인할 수단이 PG 에 없다. 이 점은 주문 경로와 같으며
+  (2026-06-29 결정 "금액 응답이 오면 검증, 없으면 결제예정액 기준 완료"), 콜백 URL 을 직접 조작하는 경로는
+  ① 이 막지 못한다 — 콜백 컨트롤러가 받은 sid 는 서명 대상이 된다.
+  (보완 — validate-p2-plugin.yaml: 응답에 금액이 없으면 해시 발급 때 기록한 인증요청 금액을, 그것도 없으면
+  결제 예정액을 승인액으로 보고한다. 모듈이 `paid_amount` 부재를 불일치로 거절하기 때문이다.)
+
+axes:
+  caller: [server_callback, client_approve_api, forged_signature]
+  response: [clean, order_id_mismatch, mid_or_currency_mismatch, amount_present, paymethod_absent]
+
+exclusions:
+  - { caller: [client_approve_api, forged_signature], response: [order_id_mismatch, mid_or_currency_mismatch, amount_present, paymethod_absent], reason: "서명이 없거나 틀리면 PG 를 부르지 않으므로 응답 축이 성립하지 않는다" }
+
+effects:
+  - cbt_claim_approve_requires_the_server_callback_signature   # ① 서명 없는·남의 서명은 PG 호출 전 거절
+  - cbt_claim_approve_matches_the_response_to_this_payment     # ② 주문번호·MID·통화 불일치 → 환불 + 거절
+  - cbt_claim_approve_hands_the_response_amount_to_the_module  # ② 응답 금액을 paid_amount 로 넘긴다
+  - cbt_claim_approve_refuses_cvs_from_either_source           # 응답·콜백 어느 쪽이든 CVS 면 거절
+  - cbt_claim_approve_still_succeeds_for_a_clean_response      # 비회귀
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Listeners/CbtClaimApproveBindingTest.php

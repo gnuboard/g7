@@ -1,0 +1,380 @@
+<!-- 상품 목록 (운영자) — 조회 조건을 전부 URL 쿼리에 싣고, 자주 쓰는 조합은 「검색 프리셋」으로
+  저장해 불러 쓴다. 목록 위 일괄처리 줄에서 판매·진열 상태와 가격·재고를 선택 건에 한꺼번에
+  적용하는데, 상품 단위와 옵션 단위 선택이 따로라 둘을 함께 들고 다닌다. -->
+<layout name="admin_ecommerce_product_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.product.title"/>
+  <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 넘기고, 「미등록」 필터는 값이 없다는 뜻이라 별도 참거짓으로 보낸다 -->
+  <data-source id="products" label_key="$t:sirsoft-ecommerce.editor.data_source.products" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" category_id="{{query.category_id4 || query.category_id3 || query.category_id2 || query.category_id1}}" no_category="{{query.no_category === 'true' ? true : null}}" sales_status="{{query['sales_status[]']}}" display_status="{{query.display_status}}" brand_id="{{query.brand_id}}" no_brand="{{query.no_brand === 'true' ? true : null}}" tax_status="{{query.tax_status}}" date_type="{{query.date_type}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" price_type="{{query.price_type}}" min_price="{{query.min_price}}" max_price="{{query.max_price}}" min_stock="{{query.min_stock}}" max_stock="{{query.max_stock}}" shipping_policy_id="{{query.shipping_policy_id}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 이 화면에 저장해 둔 검색 프리셋. 프리셋은 화면마다 따로 관리되므로 대상 화면을 지정해 받는다 -->
+  <data-source id="presets" label_key="$t:sirsoft-ecommerce.editor.data_source.presets" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/presets" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params target_screen="products"/>
+  </data-source>
+  <!-- 브랜드 필터 선택지. 목록 표시를 막지 않도록 뒤늦게 받는다 -->
+  <data-source id="brands" label_key="$t:sirsoft-ecommerce.editor.data_source.brands" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/brands" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params :per_page="100"/>
+  </data-source>
+  <!-- 분류 필터의 4단 선택지. 계층 전체를 한 번에 받아 두고 아래 computed 가 단계별로 잘라 쓴다 — 단계를 고를 때마다 서버를 부르지 않기 위해서다 -->
+  <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params hierarchical="1"/>
+  </data-source>
+  <!-- 배송정책 필터 선택지 — 사용 중인 것만 받는다 -->
+  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <init-local>
+    <field name="showDetailFilter" :value="false"/>
+    <field name="filter">
+      <field name="selectedPreset" value=""/>
+      <field name="searchField" value="all"/>
+      <field name="searchKeyword" value=""/>
+      <field name="category1" value=""/>
+      <field name="category2" value=""/>
+      <field name="category3" value=""/>
+      <field name="category4" value=""/>
+      <field name="noCategoryRegistered" :value="false"/>
+      <field name="dateType" value="created_at"/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="dateQuick" value=""/>
+      <field name="salesStatus" :value="[]"/>
+      <field name="displayStatus" value="all"/>
+      <field name="brandId" value=""/>
+      <field name="noBrandRegistered" :value="false"/>
+      <field name="taxStatus" value="all"/>
+      <field name="priceType" value="selling_price"/>
+      <field name="minPrice" value=""/>
+      <field name="maxPrice" value=""/>
+      <field name="minStock" value=""/>
+      <field name="maxStock" value=""/>
+      <field name="shippingPolicy" value=""/>
+    </field>
+    <field name="selectedItems" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="expandedRows" :value="[]"/>
+    <field name="expandedRow1" :value="false"/>
+    <field name="bulkSalesStatus" value=""/>
+    <field name="bulkDisplayStatus" value=""/>
+    <field name="bulkPrice" value=""/>
+    <field name="sortBy" value="created_at_desc"/>
+    <field name="perPage" value="20"/>
+    <field name="currentPage" :value="1"/>
+    <field name="presetName" value=""/>
+    <field name="editingPresetId" :value="null"/>
+    <field name="editingPresetName" value=""/>
+    <field name="deletingPresetId" :value="null"/>
+    <field name="deletingPresetName" value=""/>
+    <field name="savingPresetConditions" :value="null"/>
+    <field name="bulkPriceMethod" value="increase"/>
+    <field name="bulkPriceValue" value=""/>
+    <field name="bulkPriceUnit" value="won"/>
+    <field name="bulkStockMethod" value="increase"/>
+    <field name="bulkStockValue" value=""/>
+    <field name="excelDownloadType" value="search"/>
+    <field name="visibleColumns">
+      <item>thumbnail</item>
+      <item>name</item>
+      <item>categories</item>
+      <item>list_price_formatted</item>
+      <item>selling_price_formatted</item>
+      <item>stock_quantity</item>
+      <item>sales_status</item>
+      <item>display_status</item>
+      <item>shipping_policy_name</item>
+      <item>created_at</item>
+    </field>
+    <field name="isEditMode" :value="false"/>
+    <field name="visibleFilters">
+      <item>searchField</item>
+      <item>searchKeyword</item>
+      <item>category</item>
+      <item>date</item>
+      <item>salesStatus</item>
+      <item>displayStatus</item>
+    </field>
+    <field name="selectedOptionIds" :value="[]"/>
+    <field name="productFieldErrors" :value="[]"/>
+    <field name="optionFieldErrors" :value="[]"/>
+    <field name="productList">
+      <field name="copyTargetProduct" :value="null"/>
+      <field name="deleteTargetProduct" :value="null"/>
+      <field name="canDelete" :value="true"/>
+      <field name="deleteBlockReason" :value="null"/>
+      <field name="relatedData" :value="null"/>
+    </field>
+    <field name="ui">
+      <field name="showCopyModal" :value="false"/>
+      <field name="showDeleteModal" :value="false"/>
+      <field name="isDeleting" :value="false"/>
+      <field name="copyOptions">
+        <field name="images" :value="true"/>
+        <field name="options" :value="true"/>
+        <field name="categories" :value="true"/>
+        <field name="tags" :value="true"/>
+        <field name="seo" :value="false"/>
+        <field name="newProductCode" value=""/>
+      </field>
+    </field>
+  </init-local>
+  <computed name="currencyDisplayColumns">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default &amp;&amp; c.exchange_rate).map(c => ({ currencyCode: c.code }))}}</computed>
+  <computed name="filterSearchField">{{_local.filter.searchField ?? query.search_field ?? 'all'}}</computed>
+  <computed name="filterSearchKeyword">{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}</computed>
+  <computed name="filterDisplayStatus">{{_local.filter.displayStatus ?? query.display_status ?? 'all'}}</computed>
+  <computed name="filterTaxStatus">{{_local.filter.taxStatus ?? query.tax_status ?? 'all'}}</computed>
+  <computed name="filterDateType">{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}</computed>
+  <computed name="filterStartDate">{{_local.filter.startDate ?? query.start_date ?? ''}}</computed>
+  <computed name="filterEndDate">{{_local.filter.endDate ?? query.end_date ?? ''}}</computed>
+  <computed name="filterPriceType">{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}</computed>
+  <computed name="filterMinPrice">{{_local.filter.minPrice ?? query.min_price ?? ''}}</computed>
+  <computed name="filterMaxPrice">{{_local.filter.maxPrice ?? query.max_price ?? ''}}</computed>
+  <computed name="filterMinStock">{{_local.filter.minStock ?? query.min_stock ?? ''}}</computed>
+  <computed name="filterMaxStock">{{_local.filter.maxStock ?? query.max_stock ?? ''}}</computed>
+  <computed name="filterShippingPolicy">{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}</computed>
+  <computed name="filterBrandId">{{_local.filter.brandId ?? query.brand_id ?? ''}}</computed>
+  <computed name="filterCategoryId">{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}</computed>
+  <computed name="brandOptions">{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}</computed>
+  <computed name="category1Options">{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}</computed>
+  <computed name="category2Options">{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}</computed>
+  <computed name="category3Options">{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}</computed>
+  <computed name="category4Options">{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}</computed>
+  <computed name="shippingPolicyOptions">{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.products.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>products</wait-for>
+  </transition-overlay>
+  <!-- 목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.
+       목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다. -->
+  <action name="resetExpandedOptionState">
+    <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
+  </action>
+  <!-- 필터 값을 URL 로 옮겨 목록을 다시 세운다. 값이 비면 키를 아예 빼는 것(null)이 요점이다 — 빈 문자열로 남기면 서버가 그 조건을 걸린 것으로 읽어 결과가 통째로 사라진다. 페이지는 늘 1로 되돌린다 -->
+  <action name="searchProductsNavigate">
+    <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+      <query :page="1" search_field="{{$computed.filterSearchField !== 'all' ? $computed.filterSearchField : null}}" search_keyword="{{$computed.filterSearchKeyword || null}}" category_id1="{{_local.filter.category1 || null}}" category_id2="{{_local.filter.category2 || null}}" category_id3="{{_local.filter.category3 || null}}" category_id4="{{_local.filter.category4 || null}}" no_category="{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? true : null}}" sales_status="{{((_local.filter.salesStatus ?? query['sales_status[]'] ?? []) || []).length > 0 ? (_local.filter.salesStatus ?? query['sales_status[]']) : null}}" display_status="{{$computed.filterDisplayStatus !== 'all' ? $computed.filterDisplayStatus : null}}" brand_id="{{$computed.filterBrandId || null}}" no_brand="{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? true : null}}" tax_status="{{$computed.filterTaxStatus !== 'all' ? $computed.filterTaxStatus : null}}" date_type="{{$computed.filterDateType}}" start_date="{{$computed.filterStartDate || null}}" end_date="{{$computed.filterEndDate || null}}" price_type="{{$computed.filterPriceType}}" min_price="{{$computed.filterMinPrice || null}}" max_price="{{$computed.filterMaxPrice || null}}" min_stock="{{$computed.filterMinStock || null}}" max_stock="{{$computed.filterMaxStock || null}}" shipping_policy_id="{{$computed.filterShippingPolicy || null}}"/>
+    </navigate>
+  </action>
+  <!-- 검색 진입점. 주소를 바꾸기 전에 펼쳐 둔 옵션 행 상태를 먼저 비운다 — 결과가 바뀌면 그 행들은 더 이상 같은 상품이 아니다 -->
+  <action name="searchProducts">
+    <action-ref name="resetExpandedOptionState"/>
+    <action-ref name="searchProductsNavigate"/>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="searchField" value="{{query.search_field || 'all'}}"/>
+          <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+          <field name="category1" value="{{query.category_id1 || ''}}"/>
+          <field name="category2" value="{{query.category_id2 || ''}}"/>
+          <field name="category3" value="{{query.category_id3 || ''}}"/>
+          <field name="category4" value="{{query.category_id4 || ''}}"/>
+          <field name="noCategoryRegistered" value="{{query.no_category === 'true'}}"/>
+          <field name="salesStatus" value="{{query['sales_status[]'] || []}}"/>
+          <field name="displayStatus" value="{{query.display_status || 'all'}}"/>
+          <field name="brandId" value="{{query.brand_id || ''}}"/>
+          <field name="noBrandRegistered" value="{{query.no_brand === 'true'}}"/>
+          <field name="taxStatus" value="{{query.tax_status || 'all'}}"/>
+          <field name="dateType" value="{{query.date_type || 'created_at'}}"/>
+          <field name="startDate" value="{{query.start_date || ''}}"/>
+          <field name="endDate" value="{{query.end_date || ''}}"/>
+          <field name="priceType" value="{{query.price_type || 'selling_price'}}"/>
+          <field name="minPrice" value="{{query.min_price || ''}}"/>
+          <field name="maxPrice" value="{{query.max_price || ''}}"/>
+          <field name="minStock" value="{{query.min_stock || ''}}"/>
+          <field name="maxStock" value="{{query.max_stock || ''}}"/>
+          <field name="shippingPolicy" value="{{query.shipping_policy_id || ''}}"/>
+          <field name="selectedPreset" value="{{query.preset_id || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+    <action handler="sirsoft-ecommerce.loadVisibleFilters" id="admin_ecommerce_product_filters">
+      <field name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>category</item>
+        <item>date</item>
+        <item>salesStatus</item>
+        <item>displayStatus</item>
+      </field>
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="visibleFilters"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="product_list_content" class="admin-page-content">
+      <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_ecommerce_product_filters" visibleFilters="{{_local.visibleFilters}}">
+        <prop name="defaultFilters">
+          <item>searchField</item>
+          <item>searchKeyword</item>
+          <item>category</item>
+          <item>date</item>
+          <item>salesStatus</item>
+          <item>displayStatus</item>
+        </prop>
+        <on type="change" event="onFilterVisibilityChange">
+          <!-- 화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 설정으로 직접 처리한다 -->
+          <set-state target="_local" visibleFilters="{{$args[0]}}"/>
+        </on>
+      </filter-visibility-selector>
+      <div data-ref="page_header" class="flex-between mb-6">
+        <h1 class="page-title">$t:sirsoft-ecommerce.admin.product.title</h1>
+        <div class="flex-center gap-2">
+          <button type="button" class="btn btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
+            <on type="click">
+              <!-- 새로고침 — 보고 있던 목록(같은 조건·페이지)을 다시 부른다. 종전에는 처리기가 없어 눌러도 아무 일이 없었다. -->
+              <refetch-data-source dataSourceId="products"/>
+            </on>
+            <icon name="arrows-rotate" class="text-xl"/>
+          </button>
+          <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
+            <on type="click">
+              <!-- 새 상품 등록. 등록을 취소하고 돌아왔을 때 보던 목록이 그대로 서도록 목록 상태를 넘긴다 -->
+              <navigate path="/admin/ecommerce/products/create" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="plus" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.product.add</span>
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_product_list/_partial_filter_section.g7.html"/>
+      <div data-ref="data_table_section" class="mt-6">
+        <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+          <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.selected_count|count={{(_local.selectedItems || []).length}}</span>
+          <div class="flex-center flex-wrap gap-2">
+            <select name="bulkSalesStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkSalesStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="" disabled>$t:sirsoft-ecommerce.admin.product.modal.bulk_placeholder.sales_status</option>
+                <option value="on_sale">$t:sirsoft-ecommerce.enums.sales_status.on_sale</option>
+                <option value="suspended">$t:sirsoft-ecommerce.enums.sales_status.suspended</option>
+                <option value="sold_out">$t:sirsoft-ecommerce.enums.sales_status.sold_out</option>
+              </options>
+              <on type="change">
+                <!-- 고르기만 하고 보내지 않는다 — 실제 반영은 오른쪽 「일괄적용」이 확인 창을 거쳐 한다 -->
+                <set-state target="_local" bulkSalesStatus="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <select name="bulkDisplayStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkDisplayStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="" disabled>$t:sirsoft-ecommerce.admin.product.modal.bulk_placeholder.display_status</option>
+                <option value="visible">$t:sirsoft-ecommerce.enums.display_status.visible</option>
+                <option value="hidden">$t:sirsoft-ecommerce.enums.display_status.hidden</option>
+              </options>
+              <on type="change">
+                <!-- 판매 상태와 짝을 이루는 진열 상태 — 둘 중 고른 것만 일괄적용에 실린다 -->
+                <set-state target="_local" bulkDisplayStatus="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+          <div class="flex-center gap-2">
+            <button type="button" class="{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <on type="click">
+                <open-modal target="modal_bulk_price"/>
+              </on>
+              <span>$t:sirsoft-ecommerce.admin.product.table.bulk_action.price</span>
+              <span data-ref="bulk_price_condition_label" data-if="{{_global.bulkPriceCondition}}" class="ml-1 font-medium">({{_global.bulkPriceCondition}})</span>
+            </button>
+            <button type="button" data-testid="product-bulk-stock-open" class="{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <on type="click">
+                <open-modal target="modal_bulk_stock"/>
+              </on>
+              <span>$t:sirsoft-ecommerce.admin.product.table.bulk_action.stock_bulk</span>
+              <span data-ref="bulk_stock_condition_label" data-if="{{_global.bulkStockCondition}}" class="ml-1 font-medium">({{_global.bulkStockCondition}})</span>
+            </button>
+          </div>
+          <div class="flex-1"/>
+          <!-- 일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다 -->
+          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/>
+              <action handler="sirsoft-ecommerce.buildConfirmData"/>
+              <open-modal target="modal_bulk_confirm"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.bulk_apply
+          </button>
+        </div>
+        <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+          <span class="text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>
+          <div class="flex-center gap-3">
+            <!-- 정렬 선택. 값 하나에 필드와 방향이 함께 담겨 있고, 바꿀 때 펼침 상태를 비운 뒤 주소를 바꾼다 — 두 일을 함께 해야 해서 아래 블록이 두 액션으로 나뉜다 -->
+            <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+              <options>
+                <option value="created_at_desc">$t:sirsoft-ecommerce.admin.product.sort.latest</option>
+                <option value="created_at_asc">$t:sirsoft-ecommerce.admin.product.sort.oldest</option>
+                <option value="name_asc">$t:sirsoft-ecommerce.admin.product.sort.name_asc</option>
+                <option value="name_desc">$t:sirsoft-ecommerce.admin.product.sort.name_desc</option>
+                <option value="selling_price_asc">$t:sirsoft-ecommerce.admin.product.sort.price_asc</option>
+                <option value="selling_price_desc">$t:sirsoft-ecommerce.admin.product.sort.price_desc</option>
+                <option value="stock_quantity_asc">$t:sirsoft-ecommerce.admin.product.sort.stock_asc</option>
+                <option value="stock_quantity_desc">$t:sirsoft-ecommerce.admin.product.sort.stock_desc</option>
+              </options>
+              <on type="change">
+                <!-- 정렬이 바뀌면 행 구성이 통째로 달라진다 — 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다. -->
+                <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
+                <!-- 선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`selling_price_asc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다) -->
+                <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+                  <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <select name="perPage" class="w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+              <options>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </options>
+              <on type="change">
+                <!-- 한 쪽에 담는 수가 달라지면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다 -->
+                <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+                  <query per_page="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <!-- 엑셀 다운로드 미제공 - 숨김 처리 -->
+            <button :data-if="false" type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+              <on type="click">
+                <open-modal target="modal_excel_download"/>
+              </on>
+              <icon name="download" class="text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.product.excel_download</span>
+            </button>
+          </div>
+        </div>
+        <include src="partials/admin_ecommerce_product_list/_partial_product_datagrid.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 검색 프리셋 관리 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_manage.g7.html"/>
+  <!-- 지금 걸린 조건을 새 프리셋으로 저장 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_save.g7.html"/>
+  <!-- 프리셋 이름 바꾸기 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_edit.g7.html"/>
+  <!-- 프리셋 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_delete_confirm.g7.html"/>
+  <!-- 가격 일괄 변경 — 얼마를 더할지·뺄지·몇 %로 할지 정한다(적용은 「일괄적용」에서 함께 나간다) -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_price.g7.html"/>
+  <!-- 재고 일괄 변경 — 위 가격 창과 같은 방식이다 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_stock.g7.html"/>
+  <!-- 일괄적용 확인 — 무엇을 몇 건에 적용하는지 보여 주고 여기서 실제로 보낸다 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_confirm.g7.html"/>
+  <!-- 엑셀 내려받기 (이 화면에서는 여는 버튼이 숨겨져 있다) -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_excel_download.g7.html"/>
+  <!-- 상품 삭제 확인 — 주문·장바구니에 걸려 있으면 사유와 함께 삭제를 막는다 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_delete_confirm.g7.html"/>
+  <!-- 상품 복사 — 어느 구획을 가져올지 고르고 등록 폼을 복사 진입으로 연다 -->
+  <modal src="partials/admin_ecommerce_product_list/_modal_copy_product.g7.html"/>
+</layout>

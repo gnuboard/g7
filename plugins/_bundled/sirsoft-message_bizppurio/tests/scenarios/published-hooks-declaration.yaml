@@ -1,0 +1,18 @@
+feature: 발행 훅 선언과 확장 정보 창 「훅」 칸
+
+description: |
+  관리자 확장 관리의 플러그인 정보 창 「훅」·「필터」 칸과 확장 문서의 발행 훅 표는 `getHooks()` 선언을 읽는다.
+  이 플러그인이 발행하는 훅(잔액 부족 `balance.low`)은 같은 유형과 ko·en 설명으로 선언돼 있어야 정보 창에 보인다.
+  구독하는 훅은 이 칸의 대상이 아니다.
+
+axes:
+  surface: [extension_detail_hooks]
+
+exclusions: []
+
+effects:
+  - published_hooks_are_declared
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/PublishedHooksDeclarationTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/specs/admin/template-draft-feedback.spec.ts

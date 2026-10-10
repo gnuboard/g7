@@ -22,6 +22,12 @@ return [
         // 검증 에러 메시지의 항목 이름용 짧은 라벨 (화면 라벨의 부가 설명 제외)
         'live_site_cd_attribute' => '운영 사이트코드',
         'live_enc_key_attribute' => '운영 암호화 키',
+        'is_test_mode_attribute' => '테스트 모드',
+        'test_site_cd_attribute' => '테스트 사이트코드',
+        'test_enc_key_attribute' => '테스트 암호화 키',
+        'web_siteid_attribute' => '웹사이트 ID',
+        'duplicate_field_attribute' => '중복체크 기준',
+        'duplicate_block_enabled_attribute' => '중복 가입 차단',
         'duplicate_field' => '중복체크 기준',
         'duplicate_block_enabled' => [
             'label' => '중복 가입 차단',
@@ -33,6 +39,8 @@ return [
         'title' => '본인확인 정보',
         'method' => '인증 방식',
         'method_value' => 'NHN KCP 휴대폰 본인확인',
+        // 카드 조회 응답 안내 (MyKcpIdentityShowController)
+        'loaded' => '본인확인 정보를 불러왔습니다.',
         'verified_at' => '인증 일시',
         'name' => '실명',
         'birthday' => '생년월일',

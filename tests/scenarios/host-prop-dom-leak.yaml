@@ -1,0 +1,56 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 3축 조합은 exclusions 제외 후에도 누출 경로별로 의미가 겹친다(prop_shape 는 extension_point 호스트 축에서만 갈린다). 조합 전수가 아니라 경로별 대표 케이스를 단위 테스트가 덮는다. effects·test_files 검사는 켜 둔다 — 19차가 축 한정 문법을 만든 이유가 전면 면제로 그 둘까지 끄던 것이었다.
+
+feature: 호스트 DOM 으로 새면 안 되는 props (engine-v1.55.1)
+
+description: |
+  선언된 props 가 화면 마크업의 DOM 속성으로 문자열화되어 새어 나가지 않도록 하는 시나리오.
+  S18 검증 중 브라우저 실측으로 발견한 선재 결함 둘을 각각 잠근다.
+
+  누출 ① — extension_point 호스트 spread:
+    - `extension_point` 컨테이너가 선언된 props 를 호스트 `<div>` 에 그대로 spread 했다.
+      그 props 는 **주입된 자식**이 `{{extensionPointProps.xxx}}` 로 읽는 페이로드이고
+      호스트는 단순 래퍼다. 객체·배열은 `targetfields="[object Object]"` 로, 원시값은
+      `content="…"` `rows="10"` 로 샜고 React 가 무효 속성 경고까지 냈다.
+    - 이제 호스트에는 **DOM 표준 속성만** 통과시킨다(data-* · aria-* · role · title · lang ·
+      dir · hidden · tabIndex · style + 종전부터 별도 처리하던 id/className). 페이로드 키는
+      확장마다 늘어나 열거할 수 없지만 호스트가 받을 DOM 속성은 닫힌 집합이므로,
+      차단 목록이 아니라 **허용 목록**이 정본이다.
+
+  누출 ② — Form 자동 바인딩의 대상 판정:
+    - 활성 조건이 "`name` prop 존재 + 부모 `dataKey`" 뿐이라, `name` 이 폼 필드명이 **아닌**
+      컴포넌트까지 대상이 됐다. Icon 의 `name` 은 아이콘 글리프 이름인데 같은 이름의 폼 필드가
+      있으면 그 값이 `value` 로 주입돼 `<i value="[object Object],…">` 로 샜다.
+    - `ComponentMetadata.autoBinding: false` 를 신설해 매니페스트가 제외를 선언한다.
+      **미선언은 종전대로 자동 바인딩 대상**(fail-open)이라 기존 폼 동작은 바뀌지 않는다.
+
+axes:
+  leak_path: [extension_point_host, form_auto_binding]
+  prop_shape: [object, array, primitive, dom_standard]
+  autobinding_declared: [false, unset]
+
+exclusions:
+  - { leak_path: extension_point_host, autobinding_declared: false, reason: "autoBinding 선언은 Form 자동 바인딩 축의 판정값 — extension_point 호스트 필터와 무관" }
+  - { leak_path: form_auto_binding, prop_shape: dom_standard, reason: "자동 바인딩은 값의 DOM 표준 여부를 보지 않는다 — 대상 판정은 컴포넌트 메타데이터로 갈린다" }
+
+effects:
+  - extension_point_host_clean
+  - extension_point_host_keeps_dom_standard_attributes
+  - extension_point_payload_still_reaches_injected_child
+  - icon_not_autobound
+  - unmarked_component_still_autobinds
+  - address_search_still_works
+  # 게시글 본문 표시 영역(extension_point 호스트)에 content·isHtml 페이로드가 속성으로 남지 않고, 본문은 그대로 그려진다.
+  - html_content_host_clean
+  # 글 편집기 영역 호스트를 정리해도 편집기가 뜨고 입력이 폼 상태(form.content)에 반영된다.
+  - html_editor_host_clean
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.hostPropLeak.test.tsx
+  # 누출 수정의 **반대편 보증** — 호스트에서 걷어낸 페이로드가 주입된 자식에게는 여전히
+  # 평가되어 전달되는지. 종전에는 어느 매니페스트에도 귀속되지 않은 고아 마킹 파일이었다.
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.extensionPointProps.test.tsx
+  - tests/Playwright/specs/admin/host-prop-dom-leak.spec.ts
+
+rules_layer_coverage:
+  - rule: frontend-change-requires-e2e
+    coverage: DynamicRenderer.tsx · ComponentRegistry.ts 변경에 동반하는 host-prop-dom-leak.spec.ts (코어 엔진 도메인)

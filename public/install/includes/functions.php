@@ -907,8 +907,13 @@ function checkDirectoryPermissions(array $directories): array
         if (! $exists) {
             $errorType = 'not_exists';
         } elseif (! $writable) {
+            // Windows: ReadOnly 속성이 걸려 있으면 icacls 로는 해소되지 않는다.
+            // ACL 안내보다 먼저 판별해 attrib -R 을 안내한다.
+            if (hasWindowsReadOnlyAttribute($fullPath)) {
+                $errorType = 'windows_readonly';
+            }
             // 권한 비트가 충분(0755+)한데도 쓰기 불가 → 소유권 불일치 가능성
-            if ($permsOctal >= 0755 && $webServerUser && $owner && $owner !== $webServerUser) {
+            elseif ($permsOctal >= 0755 && $webServerUser && $owner && $owner !== $webServerUser) {
                 $errorType = 'ownership_mismatch';
             } else {
                 $errorType = 'not_writable';
@@ -916,8 +921,18 @@ function checkDirectoryPermissions(array $directories): array
         } elseif (! $readable) {
             $errorType = 'not_readable';
         } elseif ($hasSubdirectoryIssues) {
-            // 상위는 OK, 하위 디렉토리만 문제
-            $errorType = 'subdirectory_issues';
+            // 상위는 OK, 하위 디렉토리만 문제.
+            // 하위 중 하나라도 ReadOnly 속성이 원인이면 icacls 안내로는 해소되지 않으므로
+            // 상위 결과에도 그 사실을 올려 attrib -R 안내가 함께 노출되게 한다.
+            $hasReadOnlySubdirectory = false;
+            foreach ($failedSubdirectories as $failedSubdirectory) {
+                if (! empty($failedSubdirectory['windows_readonly'])) {
+                    $hasReadOnlySubdirectory = true;
+                    break;
+                }
+            }
+
+            $errorType = $hasReadOnlySubdirectory ? 'windows_readonly' : 'subdirectory_issues';
         }
 
         $results[$path] = [
@@ -1007,6 +1022,8 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
             $failedPaths[] = [
                 'path' => $relativePath,
                 'permissions' => $permissions,
+                // Windows ReadOnly 속성이 원인이면 icacls 가 아니라 attrib -R 이 필요하다.
+                'windows_readonly' => hasWindowsReadOnlyAttribute($itemPath),
             ];
         }
 
@@ -1164,6 +1181,59 @@ function isWindows(): bool
 }
 
 /**
+ * Windows 읽기 전용(ReadOnly) 속성이 걸린 디렉토리인지 판별합니다.
+ *
+ * ReadOnly 는 ACL(접근 제어 목록)이 아니라 파일 속성이다. 두 값은 서로 독립이라
+ * icacls 로 Everyone:(OI)(CI)F 를 부여해도 ReadOnly 가 남아 있으면 PHP 의
+ * is_writable() 은 계속 false 를 반환한다. 이 경우 안내된 icacls 명령을 몇 번
+ * 실행해도 같은 실패 화면이 반복되므로(압축 해제·백업 복원·동기화 도구가 흔한 원인),
+ * 원인을 따로 식별해 attrib -R 안내로 유도한다.
+ *
+ * @param  string  $path  검사할 경로
+ * @return bool ReadOnly 속성이 설정되어 있으면 true (Windows 아니면 항상 false)
+ */
+function hasWindowsReadOnlyAttribute(string $path): bool
+{
+    if (! isWindows() || ! file_exists($path)) {
+        return false;
+    }
+
+    // PHP 는 Windows 파일 속성을 직접 노출하지 않는다. COM 이 있으면 정확히 읽는다.
+    // FILE_ATTRIBUTE_READONLY = 0x1
+    if (class_exists('COM')) {
+        try {
+            $fso = new COM('Scripting.FileSystemObject');
+            $target = is_dir($path) ? $fso->GetFolder($path) : $fso->GetFile($path);
+
+            return ((int) $target->Attributes & 0x1) === 0x1;
+        } catch (Throwable $e) {
+            // COM 사용 불가 시 아래 폴백으로 진행
+        }
+    }
+
+    // 폴백: attrib 로 속성 문자열을 조회한다. 첫 필드에 R 이 있으면 ReadOnly.
+    // ACL 문제를 ReadOnly 로 오진하면 엉뚱한 명령을 안내하게 되므로, 확인되지
+    // 않으면 false 를 반환해 기존 icacls 안내를 유지한다.
+    if (! function_exists('exec')) {
+        return false;
+    }
+
+    $output = [];
+    $exitCode = 1;
+    @exec('attrib '.escapeshellarg($path).' 2>&1', $output, $exitCode);
+
+    if ($exitCode !== 0 || $output === []) {
+        return false;
+    }
+
+    // 출력 예: "A    R          C:\path\to\dir"  → 경로 앞 속성 플래그 구간만 검사
+    $line = (string) ($output[0] ?? '');
+    $flags = substr($line, 0, max(0, strpos($line, ':') - 1));
+
+    return strpos($flags, 'R') !== false;
+}
+
+/**
  * OS에 맞는 .env 파일 복사 명령어를 반환합니다.
  *
  * @param  string  $basePath  프로젝트 루트 경로 (빈 문자열이면 상대 경로 사용)
@@ -1201,6 +1271,14 @@ function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): 
         $winPath = str_replace('/', '\\', $pathList);
         if ($mode === 'file') {
             return 'icacls '.$winPath.' /grant Everyone:F';
+        }
+
+        if ($mode === 'windows_readonly') {
+            // 두 줄이 필요하다 — `attrib -R "<폴더>" /D /S` 는 경로를 파일 사양으로 읽어 폴더 자체만 풀고
+            // 안쪽 파일·하위 폴더는 읽기 전용으로 남긴다(2026-09-23 Windows 실측). 안쪽은 `<폴더>\*` 로 푼다.
+            $target = trim($winPath, '"');
+
+            return 'attrib -R "'.$target.'"'."\n".'attrib -R "'.$target.'\\*" /S /D';
         }
 
         return 'icacls '.$winPath.' /grant Everyone:(OI)(CI)F /T';

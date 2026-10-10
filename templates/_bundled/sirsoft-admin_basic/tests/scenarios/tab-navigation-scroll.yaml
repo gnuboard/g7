@@ -1,0 +1,55 @@
+feature: TabNavigation 가로 스크롤
+
+description: |
+  window.G7Core.useResponsive mock — 기본값은 데스크톱 (1024px).
+  모바일 케이스는 setMobile() 호출.
+
+  수정 이력: 이커머스 전수 실측 S5 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39]
+  # c01: 모든 탭을 렌더링해야 함
+  # c02: div 요소로 렌더링되어야 함
+  # c03: 첫 번째 탭이 기본 활성화되어야 함
+  # c04: activeTabId가 설정된 탭이 활성화되어야 함
+  # c05: 탭 클릭 시 scrollToSectionHandler가 호출되어야 함
+  # c06: 탭 클릭 시 활성 탭이 변경되어야 함
+  # c07: 비활성화된 탭은 클릭할 수 없어야 함
+  # c08: 개별 탭 onClick이 있으면 실행하고 기본 동작 실행 안 함
+  # c09: onTabChange가 있으면 실행하고 기본 동작 실행 안 함
+  # c10: 개별 onClick이 없고 onTabChange만 있으면 onTabChange 실행
+  # c11: 탭별로 다른 scrollOffset을 사용해야 함
+  # c12: 탭별로 다른 scrollDelay를 사용해야 함
+  # c13: enableScrollSpy가 false면 IntersectionObserver를 생성하지 않음
+  # c14: enableScrollSpy가 true면 IntersectionObserver를 생성함
+  # c15: 섹션이 화면에 보이면 해당 탭이 활성화되어야 함
+  # c16: 숫자형 ID도 올바르게 처리해야 함
+  # c17: 존재하지 않는 탭 ID는 무시해야 함
+  # c18: className prop을 적용해야 함
+  # c19: style prop을 적용해야 함
+  # c20: activeClassName을 커스터마이징할 수 있어야 함
+  # c21: inactiveClassName을 커스터마이징할 수 있어야 함
+  # c22: scrollContainerId가 지정되면 scrollToSectionHandler에 전달되어야 함
+  # c23: scrollContainerId가 없으면 params에 undefined로 전달되어야 함
+  # c24: scrollContainerId가 지정되면 IntersectionObserver root를 해당 element로 설정해야 함
+  # c25: sectionIdPrefix를 변경할 수 있어야 함
+  # c26: enableScrollSpy=true이면 onTabChange 실행 후에도 스크롤이 실행되어야 함
+  # c27: enableScrollSpy=false이면 onTabChange 실행 후 스크롤 실행 안 함 (기존 동작)
+  # c28: enableScrollSpy=true + 개별 onClick이면 onClick 실행 후에도 스크롤이 실행되어야 함
+  # c29: 데스크톱 Nav 버튼 대신 Select 드롭다운만 렌더링해야 함
+  # c30: 현재 활성 탭의 label을 Select trigger에 표시해야 함
+  # c31: Select trigger 클릭 → 옵션 선택 시 scrollToSectionHandler가 호출되어야 함
+  # c32: 개별 설정, 공통 설정, 기본값을 모두 함께 사용할 수 있어야 함
+  # c33: 목록은 tablist, 각 항목은 tab 으로 노출된다
+  # c34: 활성 탭만 aria-selected=true 이고 Tab 키 초점을 받는다
+  # c35: 좌우 화살표로 이동하며 비활성 탭은 건너뛴다
+  # c36: Home/End 로 첫/마지막 탭으로 이동한다
+  # c37: 모바일 전환 시에는 tablist/tab 을 두지 않는다
+  # c38: 데스크톱: if 가 false 인 탭은 그리지 않고 나머지는 그린다
+  # c39: 모바일 선택 목록에도 if 가 false 인 탭은 없다
+
+effects:
+  - tab_navigation_scrolls
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigationScroll.test.tsx

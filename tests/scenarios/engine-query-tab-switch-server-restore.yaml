@@ -1,0 +1,20 @@
+feature: 쿼리만 바뀌는 탭 전환에서 설정을 다시 받아 서버 값으로 돌아가는 계약
+
+description: |
+  환경설정 화면에서 값을 고친 뒤 다른 탭으로 가면 updateQueryParams 가 설정 본체를 다시 받고 initLocal 이
+  폼을 저장된 값으로 되돌린다. 저장은 지금 탭의 구획만 보내므로 이 복귀가 의도된 동작이다
+  (7.1.0 조치 G2, 2026-10-08 결정). 한때 고친 값을 보존하도록 엔진을 바꿨다가 재결정으로 되돌렸고,
+  이 테스트가 그 계약을 잠근다. 말없이 사라지지 않도록 환경설정 레이아웃이 확인 창을 띄운다(각 확장의
+  *-unsaved-tab-confirm.yaml).
+
+axes:
+  case: [dirty_same_resource, clean_same_resource, dirty_query_dependent]
+
+effects:
+  - dirty_form_reverted_to_server
+  - data_source_refreshed
+  - clean_form_refreshed_from_server
+  - other_record_replaces_form
+
+test_files:
+  - resources/js/core/__tests__/TemplateApp.updateQueryParams.dirtyForm.test.ts

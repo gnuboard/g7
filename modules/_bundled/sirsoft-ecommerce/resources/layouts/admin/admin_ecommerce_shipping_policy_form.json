@@ -1,63 +1,10 @@
 {
+    "comment": "배송정책 등록·수정 (운영자) — 한 레이아웃이 세 진입을 겸한다: 신규(`route.id` 없음) · 수정\n  (`route.id`) · 복사(`query.copy_id`). 셋의 차이는 폼을 무엇으로 채우느냐뿐이라 `<init>` 의\n  초기화 액션 한 곳에서 갈라지고, 그 아래 입력 구획은 진입 종류를 모른 채 `_local.form` 만 본다.\n  정책은 국가별 설정 배열을 품으므로 화면도 국가 탭 하나를 골라 그 항목만 편집한다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_shipping_policy_form",
-    "permissions": [
-        "sirsoft-ecommerce.shipping-policies.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"
-    },
-    "computed": {
-        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}",
-        "addableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active && !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}",
-        "addableCountryOptions": "{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}",
-        "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))}}",
-        "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
-        "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
-        "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency}}",
-        "defaultCurrencyLabel": "{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}",
-        "apiRequestFieldOptions": "{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}",
-        "apiHttpMethodOptions": "{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}",
-        "apiAuthTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}",
-        "apiResponseTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}",
-        "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
-        "rangeUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'range_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'range_weight' || p === 'range_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'range_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'range_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
-        "perUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'per_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'per_weight' || p === 'per_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'per_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'per_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
-        "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
-        "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
-    },
-    "state": {
-        "form": {
-            "name": [],
-            "is_active": true,
-            "is_default": false,
-            "country_settings": []
-        },
-        "activeCountryTab": 0,
-        "isSaving": false,
-        "errors": null,
-        "rangeErrors": [],
-        "showBaseFee": true,
-        "showFreeThreshold": false,
-        "showRanges": false,
-        "showApiSettings": false,
-        "showUnitValue": false,
-        "templateSearch": "",
-        "selectedTemplateIds": [],
-        "editingTemplate": null,
-        "templateForm": {
-            "zipcode": "",
-            "fee": 3000,
-            "region": "",
-            "description": ""
-        },
-        "templateFormErrors": []
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "extra_fee_templates"
-        ]
     },
     "data_sources": [
         {
@@ -93,9 +40,10 @@
                 }
             },
             "errorCondition": {
-                "if": "{{response?.data?.abilities?.can_update !== true}}",
+                "if": "{{response?.data?.abilities?.can_update === false}}",
                 "errorCode": 403
-            }
+            },
+            "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌리는데, 목록 진입 없이 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다"
         },
         {
             "id": "copy_source",
@@ -110,7 +58,57 @@
             "loading_strategy": "blocking",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "복사 진입일 때만 원본을 받는다(신규 경로이므로 `route.id` 가 없을 때로 한정). 원본이 지워졌어도 빈 폼으로 계속 진행하도록 fallback 을 둔다"
+        },
+        {
+            "id": "claim_settings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claim_settings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{route.id}}/claim-settings",
+            "method": "GET",
+            "if": "{{!!route.id}}",
+            "refetchOnMount": true,
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "onSuccess": [
+                {
+                    "comment": "회수지 편집 버퍼의 시드는 initLocal 이 아니라 응답 시점의 단일 setState 다 — initLocal 은 마운트 후 한 번 더 적용되며, 그 재적용이 명시적 setState 로 기록한 편집(자동바인딩이 아닌 경로)을 되돌린다. 조회가 `background` 라 응답이 편집보다 늦게 올 수 있다 — 이미 손댄 버퍼(dirty)는 덮지 않고 로딩 완료 표식(`_loaded`)만 합친다. 표식을 별도 로컬 키로 두면 입력 change 의 setState 뒤에 초기값으로 되돌아가고(10차 실측), 편집 뒤의 점 경로 쓰기도 붙지 않으므로 객체 전체를 한 번에 쓴다. `_loaded` 는 회수지 저장 허용 조건이다 — 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 `{exchange:null, return:null}` 이라 '못 받았다' 와 '비어 있다' 가 값으로 구분되지 않는데, 저장은 두 회수지를 항상 함께 실어 `null` 이 서버 삭제 계약을 탄다.",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "claimAddresses": "{{({ addresses: (_local.claimAddressesDirty === true ? _local.claimAddresses?.addresses : (response.data?.data ?? response.data)?.addresses) ?? { exchange: null, return: null }, _loaded: true })}}"
+                    }
+                }
+            ],
+            "fallback": {
+                "data": {
+                    "addresses": {
+                        "exchange": null,
+                        "return": null
+                    }
+                }
+            },
+            "comment": "수정 진입일 때만 이 정책의 교환·반품 회수지를 받는다. 폼 본체를 기다리게 하지 않도록 background 로 받고 마운트마다 새로 받는다 — 응답이 편집보다 늦게 와도 아래 success 가 이미 손댄 버퍼를 지킨다"
+        },
+        {
+            "id": "policy_abilities",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.policy_abilities",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies",
+            "method": "GET",
+            "if": "{{!route.id}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "per_page": 10
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "등록 모드에는 정책 응답이 없어 등록 권한(can_create)·수정 권한(can_update)을 알 곳이 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다.\n    회수지 저장(claim-settings PUT)과 API 연결 시험은 수정 권한의 일이라, 등록 권한만 있는 운영자가 정책은 만들고 회수지는 403 으로 남는 부분 실패를 막는다.\n    폼 전체의 읽기 전용 계산값(`isReadOnly`)도 등록·복사 진입에서는 이 응답의 can_create 를 본다 — 등록 권한 없이 주소로 들어와도 입력칸과 [저장]이 함께 잠긴다(수정 화면과 같은 기준).\n    조회 권한이 없어 실패하면 폴백(null)으로 떨어져 잠긴 쪽으로 판정한다."
         },
         {
             "id": "ecommerce_settings",
@@ -120,7 +118,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "blocking"
+            "loading_strategy": "blocking",
+            "comment": "배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다"
         },
         {
             "id": "extra_fee_templates",
@@ -134,10 +133,99 @@
             "params": {
                 "search": "{{_local.templateSearch ?? ''}}",
                 "per_page": 20
-            }
+            },
+            "comment": "지역별 추가배송비 템플릿(도서산간 등). 추가배송비 구획을 펼칠 때만 필요해 자동 조회를 끄고, 검색어가 바뀌면 그때 다시 받는다"
         }
     ],
+    "initLocal": {
+        "form": {
+            "name": [],
+            "is_active": true,
+            "is_default": false,
+            "country_settings": []
+        },
+        "activeCountryTab": 0,
+        "isSaving": false,
+        "errors": null,
+        "rangeErrors": [],
+        "showBaseFee": true,
+        "showFreeThreshold": false,
+        "showRanges": false,
+        "showApiSettings": false,
+        "showUnitValue": false,
+        "templateSearch": "",
+        "selectedTemplateIds": [],
+        "editingTemplate": null,
+        "templateForm": {
+            "zipcode": "",
+            "fee": 3000,
+            "region": "",
+            "description": ""
+        },
+        "templateFormErrors": [],
+        "claimAddresses": {
+            "addresses": {
+                "exchange": null,
+                "return": null
+            },
+            "_loaded": false
+        },
+        "claimAddressesDirty": false,
+        "savedPolicyId": null
+    },
+    "computed": {
+        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}",
+        "addableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active && !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}",
+        "addableCountryOptions": "{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}",
+        "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))}}",
+        "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
+        "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
+        "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency}}",
+        "defaultCurrencyLabel": "{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}",
+        "apiRequestFieldOptions": "{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}",
+        "apiHttpMethodOptions": "{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}",
+        "apiAuthTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}",
+        "apiResponseTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}",
+        "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
+        "rangeUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'range_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'range_weight' || p === 'range_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'range_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'range_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
+        "perUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'per_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'per_weight' || p === 'per_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'per_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'per_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
+        "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
+        "isReadOnly": "{{route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_create !== true}}",
+        "lacksUpdate": "{{!!route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.shipping-policies.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "extra_fee_templates"
+        ]
+    },
     "init_actions": [
+        {
+            "comment": "생성 모드: 배송정책 수정 화면에서 SPA 로 넘어오면 같은 레이아웃이라 엔진이 `_local` 을 비우지 않아 직전 정책의 form(id·이름 등)이 남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). 복사 진입(copy_id)은 copy_source 의 initLocal 이 init_actions 뒤에 병합되고 initShippingPolicyForm 이 country_settings 를 다시 쓰므로 영향 없음.",
+            "handler": "setState",
+            "if": "{{!route.id}}",
+            "params": {
+                "target": "local",
+                "form": null
+            }
+        },
+        {
+            "comment": "생성 모드 기본값 복원(레이아웃 state.form 과 동일) — 같은 레이아웃 재진입에서는 state 가 다시 적용되지 않는다. 직전 화면의 필드 오류도 함께 지운다.",
+            "handler": "setState",
+            "if": "{{!route.id}}",
+            "params": {
+                "target": "local",
+                "errors": null,
+                "form": {
+                    "name": [],
+                    "is_active": true,
+                    "is_default": false,
+                    "country_settings": []
+                }
+            }
+        },
         {
             "handler": "setState",
             "params": {
@@ -157,17 +245,36 @@
             }
         },
         {
-            "if": "{{!!query?.copy_id && !route?.id}}",
             "handler": "setState",
+            "if": "{{!!query?.copy_id && !route?.id}}",
             "params": {
                 "target": "local",
                 "form.is_default": false
             }
-        }
-    ],
-    "modals": [
+        },
         {
-            "partial": "partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json"
+            "comment": "신규 등록에는 서버에 덮어쓸 회수지가 없고 회수지 조회 데이터소스 자체가 돌지 않는다(`if: !!route.id`) — 회수지 저장 허용 플래그를 여기서 세운다. 화면 진입 시점에 한 번 정해지는 값이라 init_actions 가 맞는 자리다 (버튼 액션 체인의 `if` 에서 `route` 를 읽는 형태는 이 화면에서 실측 중 실패가 있었고 원인을 확정하지 못해 쓰지 않았다 — 형제 `admin_ecommerce_product_form` 의 onSuccess 체인은 `!route.itemCode` 를 읽고 출하 중이므로 '체인 if 는 route 를 못 읽는다' 로 일반화하지 말 것). 같은 자리에서 회수지 버퍼·손댐 표식·저장된 정책 id 도 함께 비운다 — 같은 레이아웃 SPA 이동(수정→신규, 수정 A→수정 B)에서는 `_local` 이 남아, 비우지 않으면 신규 폼에 앞 정책의 회수지가 보이고 `savedPolicyId` 때문에 새 정책 POST 가 앞 정책 PUT 으로 나가며, 손댐 표식이 정책 B 의 조회 응답을 막는다. `_loaded` 는 먼저 false 로 되돌리고(수정 진입은 회수지 조회가 도착해야 저장한다) 신규 등록만 바로 아래에서 true 로 세운다.",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "savedPolicyId": null,
+                "claimAddressesDirty": false,
+                "claimAddresses": {
+                    "addresses": {
+                        "exchange": null,
+                        "return": null
+                    },
+                    "_loaded": false
+                }
+            }
+        },
+        {
+            "handler": "setState",
+            "if": "{{!route.id}}",
+            "params": {
+                "target": "local",
+                "claimAddresses._loaded": true
+            }
         }
     ],
     "slots": {
@@ -246,12 +353,12 @@
                                         "type": "basic",
                                         "name": "Ul",
                                         "if": "{{typeof _local.errors === 'object'}}",
-                                        "props": {
-                                            "className": "mt-2 list-disc list-inside space-y-1"
-                                        },
                                         "iteration": {
                                             "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                             "item_var": "message"
+                                        },
+                                        "props": {
+                                            "className": "mt-2 list-disc list-inside space-y-1"
                                         },
                                         "children": [
                                             {
@@ -282,6 +389,9 @@
                                 "partial": "partials/admin_ecommerce_shipping_policy_form/_partial_basic_info.json"
                             },
                             {
+                                "partial": "partials/admin_ecommerce_shipping_policy_form/_partial_claim_addresses.json"
+                            },
+                            {
                                 "id": "country_settings_wrapper",
                                 "type": "basic",
                                 "name": "Div",
@@ -297,6 +407,9 @@
                                     },
                                     {
                                         "partial": "partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.json"
+                                    },
+                                    {
+                                        "partial": "partials/admin_ecommerce_shipping_policy_form/_partial_claim_country_fee.json"
                                     },
                                     {
                                         "partial": "partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.json"
@@ -315,6 +428,18 @@
                                         "id": "footer_list_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "목록으로. 보던 목록 상태를 이고 간다",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/shipping-policies",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
                                             "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
@@ -325,26 +450,156 @@
                                                 "name": "Span",
                                                 "text": "$t:common.list"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/shipping-policies",
-                                                    "mergeQuery": true,
-                                                    "query": {}
-                                                }
-                                            }
                                         ]
                                     },
                                     {
                                         "id": "footer_save_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "저장 — 등록/수정 구분은 `route.id` 유무 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받아 채울 필요가 없고, 실패하면 서버 오류를 폼 위 배너로 넘긴다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": true,
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "savedPolicyId 는 '이 화면에서 방금 만든 정책' 이다. 신규 등록에서 정책 POST 는 성공했는데 뒤이은 회수지 PUT 이 거절되면 화면에 머무는데, route.id 는 여전히 비어 있어 다시 [저장] 을 누르면 같은 정책이 하나 더 생긴다. 첫 성공 시점에 그 id 를 붙잡아 재저장이 PUT 으로 가게 한다.",
+                                                        "handler": "apiCall",
+                                                        "target": "{{(route.id || _local.savedPolicyId) ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + (route.id || _local.savedPolicyId) : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "{{(route.id || _local.savedPolicyId) ? 'PUT' : 'POST'}}",
+                                                            "body": "{{_local.form}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "comment": "저장 가드는 **체인 끝**에서 푼다. 회수지 요청이 이어지는 경우(dirty+loaded)에는 그 요청의 onSuccess/onError 가 풀고, 이어지지 않는 경우에만 여기서 푼다. 아래 토스트·이동의 `if` 가 같은 술어를 다시 읽어도 두 번 발화하지 않는 것은 실행 순서 때문이 아니라, 외곽 시퀀스가 내부 onSuccess 의 setState 결과를 자기 스냅샷에 반영하지 않기 때문이다(엔진의 시퀀스 스냅샷 격리). 엔진이 내부 상태를 외곽에 전파하도록 바뀌면 성공 경로에서 토스트·이동이 2회가 되므로 그때는 이 구조를 다시 본다. — `savedPolicyId` 는 **요청 주소를 정하는 값이지 '수정이었는가' 의 술어가 아니다.** 여기서 쓴 값은 같은 시퀀스의 뒤 액션 스냅샷에 병합되므로(`ActionDispatcher.handleSequence` 가 `__target:'local'` setState 결과를 `currentState` 에 합친다), 신규 등록에서도 이 줄 다음부터는 언제나 truthy 다. 토스트 문구가 이 값을 읽으면 새로 만든 정책에 '수정되었습니다' 가 나간다 — 그 판정은 `route.id`(이 화면에 무엇을 하러 들어왔는가) 하나로만 한다.",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": "{{_local.claimAddressesDirty === true && _local.claimAddresses?._loaded === true}}",
+                                                                    "savedPolicyId": "{{route.id || response?.data?.id}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "comment": "회수지는 본 폼 PUT 이 받지 않는 축이라 별도 엔드포인트로 이어 저장한다. 운영자가 손대지 않았으면 요청 자체를 보내지 않는다. 지우기 판정은 **모든 칸이 비었을 때**만 내린다 — 필수 2칸만 비었다고 null 로 바꾸면 전화·우편번호가 남은 회수지가 확인창 없이 통째로 지워지고(전용 지우기 버튼에는 확인창이 있다), 반대로 전화만 친 상태는 오류 없이 버려진다. 일부만 채워진 입력은 그대로 보내 서버가 무엇이 빠졌는지 422 로 알려준다.",
+                                                                "handler": "apiCall",
+                                                                "target": "{{'/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + (route.id || _local.savedPolicyId || response?.data?.id) + '/claim-settings'}}",
+                                                                "if": "{{_local.claimAddressesDirty === true && _local.claimAddresses?._loaded === true}}",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "PUT",
+                                                                    "body": {
+                                                                        "addresses": {
+                                                                            "exchange": "{{[_local.claimAddresses?.addresses?.exchange?.recipient_name, _local.claimAddresses?.addresses?.exchange?.address1, _local.claimAddresses?.addresses?.exchange?.address2, _local.claimAddresses?.addresses?.exchange?.zipcode, _local.claimAddresses?.addresses?.exchange?.phone].some(v => String(v ?? '').trim() !== '') ? _local.claimAddresses.addresses.exchange : null}}",
+                                                                            "return": "{{[_local.claimAddresses?.addresses?.return?.recipient_name, _local.claimAddresses?.addresses?.return?.address1, _local.claimAddresses?.addresses?.return?.address2, _local.claimAddresses?.addresses?.return?.zipcode, _local.claimAddresses?.addresses?.return?.phone].some(v => String(v ?? '').trim() !== '') ? _local.claimAddresses.addresses.return : null}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "comment": "회수지까지 끝났으므로 저장 가드를 여기서 푼다 (앞 setState 는 이 요청이 이어질 때 가드를 유지했다).",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "isSaving": false,
+                                                                            "claimAddressesDirty": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "navigate",
+                                                                        "params": {
+                                                                            "path": "/admin/ecommerce/shipping-policies",
+                                                                            "mergeQuery": true,
+                                                                            "query": {}
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "comment": "정책은 이미 저장됐고 회수지만 실패했다 — 목록으로 나가면 그 사실이 화면에서 사라지므로 남는다.",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "isSaving": false,
+                                                                            "errors": "{{error.errors}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message || '$t:sirsoft-ecommerce.admin.shipping_policy.messages.claim_settings_save_error'}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "comment": "회수지를 손댔는데 조회가 성공하지 못한 경우 — 저장을 보내지 않았음을 알린다 (조용히 건너뛰면 운영자는 저장된 줄 안다).",
+                                                                "handler": "toast",
+                                                                "if": "{{_local.claimAddressesDirty === true && _local.claimAddresses?._loaded !== true}}",
+                                                                "params": {
+                                                                    "type": "warning",
+                                                                    "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.claim_settings_not_loaded"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "if": "{{_local.claimAddressesDirty !== true}}",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "navigate",
+                                                                "if": "{{_local.claimAddressesDirty !== true}}",
+                                                                "params": {
+                                                                    "path": "/admin/ecommerce/shipping-policies",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message || '$t:common.validation_error'}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
-                                            "disabled": "{{_local.isSaving || (route.id && policy?.data?.abilities?.can_update !== true)}}",
+                                            "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
                                             "className": "btn btn-primary flex-center gap-1.5"
                                         },
                                         "children": [
@@ -369,74 +624,6 @@
                                                 "if": "{{_local.isSaving}}",
                                                 "text": "$t:sirsoft-ecommerce.common.saving"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "sequence",
-                                                "params": {
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "isSaving": true,
-                                                                "errors": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "apiCall",
-                                                            "auth_required": true,
-                                                            "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + route.id : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}",
-                                                            "params": {
-                                                                "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                "body": "{{_local.form}}"
-                                                            },
-                                                            "onSuccess": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "success",
-                                                                        "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/ecommerce/shipping-policies",
-                                                                        "mergeQuery": true,
-                                                                        "query": {}
-                                                                    }
-                                                                }
-                                                            ],
-                                                            "onError": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false,
-                                                                        "errors": "{{error.errors}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "{{error.message || '$t:common.validation_error'}}"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            }
                                         ]
                                     }
                                 ]
@@ -446,5 +633,11 @@
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "comment": "추가배송비 템플릿 만들기·고치기 — 정책 저장과 별개로 이 창에서 바로 서버에 반영된다",
+            "partial": "partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json"
+        }
+    ]
 }

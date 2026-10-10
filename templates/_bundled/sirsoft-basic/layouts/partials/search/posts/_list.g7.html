@@ -1,0 +1,38 @@
+<!-- 글 결과 목록(글 탭 전용) — 각 줄에 어느 게시판 글인지를 배지로 단다(검색은 게시판을 가로지르므로 그 표시가 없으면 어디서 온 글인지 알 수 없다). -->
+<partial description="게시글 탭 - 단순 리스트 (게시판명 배지 + 페이지네이션)">
+  <div data-if="{{searchResults?.data?.posts?.items &amp;&amp; searchResults?.data?.posts?.items?.length > 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <!-- 게시글 리스트 -->
+    <div data-each="post, idx in {{searchResults?.data?.posts?.items ?? []}}">
+      <!-- 구분선 (첫 번째 아이템 제외) -->
+      <div data-if="{{idx > 0}}" class="border-t border-gray-200 dark:border-gray-700"/>
+      <button class="block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+        <on type="click">
+          <!-- audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(게시글) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다. -->
+          <navigate path="{{post?.url}}"/>
+        </on>
+        <!-- 제목 라인 (게시판명 + 제목) -->
+        <div class="flex items-start gap-2 mb-1">
+          <!-- 게시판명 배지 -->
+          <span data-if="{{post?.board_name}}" class="flex-shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{{post?.board_name}}</span>
+          <!-- 제목 (HTML 하이라이트 지원) -->
+          <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+        </div>
+        <!-- 발췌 내용 (HTML 하이라이트 지원, 텍스트 모드 분기) -->
+        <html-content data-type="composite" data-if="{{post?.content_preview}}" content="{{post?.content_preview_highlighted ?? post?.content_preview}}" isHtml="{{post?.content_preview_highlighted ? true : (post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+        <!-- 메타 정보 -->
+        <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <span>{{post?.author_name}}</span>
+          <span title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
+          <span data-if="{{(post?.view_count ?? 0) > 0}}" class="flex items-center gap-1">
+            <icon name="eye" size="xs"/>
+            <span>{{post?.view_count}}</span>
+          </span>
+          <span data-if="{{(post?.comment_count ?? 0) > 0}}" class="flex items-center gap-1">
+            <icon name="message-square" size="xs"/>
+            <span>{{post?.comment_count}}</span>
+          </span>
+        </div>
+      </button>
+    </div>
+  </div>
+</partial>

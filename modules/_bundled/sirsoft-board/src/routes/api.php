@@ -7,12 +7,18 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardSettingsController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\IdentityPolicyController as AdminIdentityPolicyController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostController as AdminPostController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\PostScrapController as AdminPostScrapController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionController as AdminReactionController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController as AdminReactionTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\ReportController as AdminReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
 use Modules\Sirsoft\Board\Http\Controllers\User\CommentController as UserCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostController as UserPostController;
+use Modules\Sirsoft\Board\Http\Controllers\User\PostScrapController as UserPostScrapController;
+use Modules\Sirsoft\Board\Http\Controllers\User\ReactionController as UserReactionController;
 use Modules\Sirsoft\Board\Http\Controllers\User\ReportController as UserReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\UserActivityController;
 
@@ -112,8 +118,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->name('admin.settings.store');
 
     // 환경설정 기본값 일괄 적용 (와일드카드 라우트보다 먼저 등록)
+    // 기존 게시판 설정을 덮어쓰므로 환경설정 수정 + 게시판 수정 권한을 모두 요구한다(제품 결정 2026-10-09, 기본 AND)
     Route::post('settings/bulk-apply', [BoardSettingsController::class, 'bulkApply'])
-        ->middleware('permission:admin,sirsoft-board.settings.update')
+        ->middleware('permission:admin,sirsoft-board.settings.update|sirsoft-board.boards.update')
         ->name('admin.settings.bulk-apply');
 
     // 설정 캐시 초기화 (와일드카드 라우트보다 먼저 등록)
@@ -121,12 +128,51 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-board.settings.update')
         ->name('admin.settings.clear-cache');
 
+    // 개인정보 보유기간 처리 대상 건수 미리보기 (와일드카드 라우트보다 먼저 등록, 이슈 #636)
+    Route::get('settings/privacy-retention-preview', [BoardSettingsController::class, 'privacyRetentionPreview'])
+        ->middleware('permission:admin,sirsoft-board.settings.read')
+        ->name('admin.settings.privacy-retention-preview');
+
     // 환경설정 카테고리별 조회 (와일드카드 라우트 - 마지막에 배치)
     Route::get('settings/{category}', [BoardSettingsController::class, 'show'])
         ->middleware('permission:admin,sirsoft-board.settings.read')
         ->name('admin.settings.show');
 
+    // 환경설정 「본인인증 정책」 탭 — 코어 정책 표에서 게시판 몫(source_identifier=sirsoft-board)만 다룬다.
+    // 조회는 identity.policies.read, 추가·수정·삭제는 identity.policies.update(응답 abilities 와 같은 권한).
+    // 게시판 몫이 아닌 정책 ID 는 404 로 답한다.
+    Route::get('identity-policies', [AdminIdentityPolicyController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.identity.policies.read')
+        ->name('admin.identity-policies.index');
+    Route::post('identity-policies', [AdminIdentityPolicyController::class, 'store'])
+        ->middleware('permission:admin,sirsoft-board.identity.policies.update')
+        ->name('admin.identity-policies.store');
+    Route::put('identity-policies/{id}', [AdminIdentityPolicyController::class, 'update'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-board.identity.policies.update')
+        ->name('admin.identity-policies.update');
+    Route::delete('identity-policies/{id}', [AdminIdentityPolicyController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-board.identity.policies.update')
+        ->name('admin.identity-policies.destroy');
+
     // 대시보드 - 오늘 새 글/댓글 현황 (형제 settings 라우트와 동일하게 명시적 permission 가드)
+    // 반응 유형 목록 (게시판 설정 체크박스 옵션 소스, 확정 02·03)
+    // 게시판 폼의 「사용 반응 유형」 선택지로도 쓰이므로 게시판 조회 권한으로도 읽는다(OR) — 없으면 폼의 체크박스가 비었다
+    Route::get('reaction-types', [AdminReactionTypeController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.settings.read|sirsoft-board.boards.read,false')
+        ->name('admin.reaction-types.index');
+
+    // 반응 유형 아이콘 이미지 업로드/삭제 (환경설정 인라인 편집기의 행별 업로더)
+    Route::post('reaction-types/icons', [AdminReactionTypeController::class, 'uploadIcon'])
+        ->middleware('permission:admin,sirsoft-board.settings.update')
+        ->name('admin.reaction-types.icons.upload');
+    Route::delete('reaction-types/icons/{attachmentId}', [AdminReactionTypeController::class, 'destroyIcon'])
+        ->whereNumber('attachmentId')
+        ->middleware('permission:admin,sirsoft-board.settings.update')
+        ->name('admin.reaction-types.icons.destroy');
+
+    // 대시보드 - 오늘 새 글/댓글 현황 (진입 가드는 코어 core.dashboard.read + admin)
     Route::get('dashboard/overview', [DashboardController::class, 'overview'])
         ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.overview');
@@ -161,8 +207,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 |
 */
 Route::prefix('admin/board-types')->middleware(['auth:sanctum', 'admin', 'throttle:600,1'])->name('admin.board-types.')->group(function () {
+    // 목록은 환경설정 「기본 유형」 선택지로도 쓰여 환경설정 조회 권한으로도 읽는다(OR). 추가·수정·삭제는 그대로 등록 권한
     Route::get('/', [BoardTypeController::class, 'index'])
-        ->middleware('permission:admin,sirsoft-board.boards.create')
+        ->middleware('permission:admin,sirsoft-board.boards.create|sirsoft-board.settings.read,false')
         ->name('index');
 
     Route::post('/', [BoardTypeController::class, 'store'])
@@ -198,6 +245,11 @@ Route::prefix('admin/boards')->middleware(['auth:sanctum', 'admin', 'throttle:60
     Route::get('/slug/{slug}', [BoardController::class, 'showBySlug'])
         ->middleware('permission:admin,sirsoft-board.boards.read')
         ->name('show-by-slug');
+
+    // 게시판 관리자·스텝 일괄 지정 (와일드카드 라우트보다 먼저 등록)
+    Route::post('/bulk-members', [BoardController::class, 'bulkMembers'])
+        ->middleware('permission:admin,sirsoft-board.boards.update')
+        ->name('bulk-members');
 
     // 게시판 단건 조회 (ID)
     Route::get('/{board}', [BoardController::class, 'show'])
@@ -273,6 +325,66 @@ Route::prefix('admin/reports')->middleware(['auth:sanctum', 'admin', 'throttle:6
 
 /*
 |--------------------------------------------------------------------------
+| Admin Scrap Routes (스크랩 관리)
+|--------------------------------------------------------------------------
+|
+| 최종 URL 예시: /api/modules/sirsoft-board/admin/scraps
+| 최종 Name 예시: api.modules.sirsoft-board.admin.scraps.index
+|
+| 스크랩은 회원 소유 데이터라 게시판 경계를 넘어 조회되므로 게시판별 권한이 아니라
+| 모듈 레벨 권한(sirsoft-board.scraps.*)을 쓴다 (신고 관리와 동형).
+|
+*/
+Route::prefix('admin/scraps')->middleware(['auth:sanctum', 'admin', 'throttle:600,1'])->name('admin.scraps.')->group(function () {
+    // 일괄 삭제 — /{id} 보다 먼저 선언해야 'bulk' 가 id 로 잡히지 않는다
+    Route::delete('/bulk', [AdminPostScrapController::class, 'bulkDestroy'])
+        ->middleware('permission:admin,sirsoft-board.scraps.manage')
+        ->name('bulk-destroy');
+
+    // 전 회원 스크랩 목록
+    Route::get('/', [AdminPostScrapController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.scraps.view')
+        ->name('index');
+
+    // 스크랩 개별 삭제 (소유자 무관)
+    Route::delete('/{id}', [AdminPostScrapController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-board.scraps.manage')
+        ->name('destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Reaction Routes (반응 관리)
+|--------------------------------------------------------------------------
+|
+| 최종 URL 예시: /api/modules/sirsoft-board/admin/reactions
+| 최종 Name 예시: api.modules.sirsoft-board.admin.reactions.index
+|
+| 반응은 회원 소유 데이터라 게시판 경계를 넘어 조회되므로 게시판별 권한이 아니라
+| 모듈 레벨 권한(sirsoft-board.reactions.*)을 쓴다 (스크랩 관리와 동형).
+|
+*/
+Route::prefix('admin/reactions')->middleware(['auth:sanctum', 'admin', 'throttle:600,1'])->name('admin.reactions.')->group(function () {
+    // 일괄 삭제 — /{id} 보다 먼저 선언해야 'bulk' 가 id 로 잡히지 않는다
+    Route::delete('/bulk', [AdminReactionController::class, 'bulkDestroy'])
+        ->middleware('permission:admin,sirsoft-board.reactions.manage')
+        ->name('bulk-destroy');
+
+    // 전 회원 반응 목록
+    Route::get('/', [AdminReactionController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.reactions.view')
+        ->name('index');
+
+    // 반응 개별 삭제 (소유자 무관)
+    Route::delete('/{id}', [AdminReactionController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-board.reactions.manage')
+        ->name('destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Admin Post Routes (게시글 관리)
 |--------------------------------------------------------------------------
 |
@@ -295,6 +407,21 @@ Route::prefix('admin/board/{slug}/posts')->middleware(['auth:sanctum', 'admin', 
     Route::get('/', [AdminPostController::class, 'index'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.posts.read')
         ->name('index');
+
+    // 일괄 처리 3종 — /{id} 라우트들보다 **먼저** 선언해야 'bulk' 가 id 로 잡히지 않는다.
+    // 셋 다 admin.manage 를 요구한다(단건 삭제의 「본인 글이면 posts.write」 완화를 일괄에 적용하면
+    // 한 요청으로 남의 글까지 섞여 들어갈 수 있다).
+    Route::delete('/bulk', [AdminPostController::class, 'bulkDestroy'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
+        ->name('bulk-destroy');
+
+    Route::patch('/bulk-blind', [AdminPostController::class, 'bulkBlind'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
+        ->name('bulk-blind');
+
+    Route::patch('/bulk-restore', [AdminPostController::class, 'bulkRestore'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.manage')
+        ->name('bulk-restore');
 
     // 게시글 상세 조회
     Route::get('/{id}', [AdminPostController::class, 'show'])
@@ -524,6 +651,49 @@ Route::get('/me/my-comments', [UserActivityController::class, 'myComments'])
     ->middleware(['auth:sanctum', 'throttle:600,1'])
     ->name('me.my-comments.index');
 
+// 마이페이지 스크랩 목록 (최근 스크랩순)
+Route::get('/me/scraps', [UserPostScrapController::class, 'index'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.scraps.index');
+
+// 마이페이지 스크랩 선택 해제 (본문 JSON 의 ids[], 본인 소유만) — /{id} 보다 먼저 선언한다
+Route::delete('/me/scraps', [UserPostScrapController::class, 'bulkDestroy'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.scraps.bulk-destroy');
+
+// 마이페이지 스크랩 개별 삭제 (레코드 ID 기준, 본인 소유만)
+Route::delete('/me/scraps/{id}', [UserPostScrapController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.scraps.destroy');
+
+// 마이페이지 「내 반응」 목록 (최근 반응순)
+Route::get('/me/reactions', [UserReactionController::class, 'index'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reactions.index');
+
+// 마이페이지 반응 선택 해제 (본문 JSON 의 ids[], 본인 소유만) — /{id} 보다 먼저 선언한다
+Route::delete('/me/reactions', [UserReactionController::class, 'bulkDestroy'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reactions.bulk-destroy');
+
+// 마이페이지 반응 개별 해제 (반응 ID 기준, 본인 소유만)
+Route::delete('/me/reactions/{id}', [UserReactionController::class, 'destroy'])
+    ->whereNumber('id')
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reactions.destroy');
+
+// 마이페이지 「내 신고」 목록 (본인이 남긴 신고 로그)
+Route::get('/me/reports', [UserReportController::class, 'index'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reports.index');
+
+// 마이페이지 신고 취소 (접수 상태만)
+Route::delete('/me/reports/{reportLogId}', [UserReportController::class, 'cancel'])
+    ->whereNumber('reportLogId')
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.reports.cancel');
+
 /*
 |--------------------------------------------------------------------------
 | User Report Routes (사용자 신고) - 회원 전용
@@ -531,6 +701,8 @@ Route::get('/me/my-comments', [UserActivityController::class, 'myComments'])
 |
 | 로그인한 회원만 접근 가능한 신고 API입니다.
 | - 신고는 회원만 가능하므로 auth:sanctum 미들웨어 유지
+| - 글 대상 동작은 그 게시판 글 읽기 권한(posts.read), 댓글 대상 동작은 글·댓글 읽기 권한을 함께 요구한다
+|   (읽을 수 없는 글·댓글을 신고·스크랩·반응하지 못하게)
 |
 | 최종 URL 예시: /api/modules/sirsoft-board/boards/{slug}/posts/{id}/reports
 | 최종 Name 예시: api.modules.sirsoft-board.boards.posts.reports.store
@@ -539,11 +711,27 @@ Route::get('/me/my-comments', [UserActivityController::class, 'myComments'])
 Route::prefix('boards/{slug}')->middleware(['throttle:600,1', 'auth:sanctum'])->name('boards.')->group(function () {
     // 게시글 신고
     Route::post('/posts/{postId}/reports', [UserReportController::class, 'storePostReport'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
         ->name('posts.reports.store');
 
     // 댓글 신고
     Route::post('/comments/{commentId}/reports', [UserReportController::class, 'storeCommentReport'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.read|sirsoft-board.{slug}.comments.read')
         ->name('comments.reports.store');
+
+    // 게시글 스크랩 토글 (상세 버튼 — 있으면 해제, 없으면 등록)
+    Route::post('/posts/{postId}/scrap/toggle', [UserPostScrapController::class, 'toggle'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
+        ->name('posts.scrap.toggle');
+    // 게시글 반응 (추천/비추천) — 등록/전환/해제 통합 (회원 전용, 확정 07)
+    Route::post('/posts/{postId}/react', [UserReactionController::class, 'react'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
+        ->name('posts.react');
+    // 댓글 반응 — 게시판이 use_reaction + use_comment_reaction 을 모두 켰을 때만 동작
+    Route::post('/comments/{commentId}/react', [UserReactionController::class, 'reactToComment'])
+        ->whereNumber('commentId')
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.read|sirsoft-board.{slug}.comments.read')
+        ->name('comments.react');
 });
 
 /*

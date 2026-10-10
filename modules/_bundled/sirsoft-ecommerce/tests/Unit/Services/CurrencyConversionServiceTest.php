@@ -589,6 +589,62 @@ class CurrencyConversionServiceTest extends ModuleTestCase
         $this->assertSame(1, $this->service->getSnapshotBaseUnit($snap));
     }
 
+    // ========================================
+    // 절사 설정은 저장되는 값까지 지배한다
+    //
+    // `applyRounding()` 은 단위로 나눠 반올림한 뒤 그 단위를 도로 곱한다. 마지막 곱셈에서
+    // 이진 부동소수 표현이 한 칸 어긋나 `4505 * 0.01 = 45.050000000000004` 가 되는데, 그 값이
+    // 그대로 `mc_*` JSON 컬럼과 API 응답의 `amount` 에 실린다. 운영자가 "0.01 단위" 로 정해
+    // 두었으면 저장되는 숫자도 그 단위의 배수여야 한다 — 상품 가격 경로는 이미 절사 뒤에
+    // `round($x, $decimal_places)` 로 이 잔차를 지우고 있었고(그 주석이 같은 숫자를 든다),
+    // 주문·클레임·결제 금액이 쓰는 이 서비스에만 그 단계가 빠져 있었다.
+    //
+    // 오차 허용 단언(`assertEqualsWithDelta`)으로는 잡히지 않는다 — 값이 아니라 표현이
+    // 어긋나는 것이라 `assertSame` 이라야 드러난다.
+    // ========================================
+
+    public function test_apply_rounding_lands_exactly_on_the_configured_unit(): void
+    {
+        // 4505 × 0.01 — 되곱하기에서 이웃 double 로 떨어지던 대표값
+        $this->assertSame(45.05, $this->service->applyRounding(45.0512, '0.01', 'round'));
+
+        // 2,500원 → USD(환율 0.75 / 환산분모 1,000) = 1.875 → 0.01 반올림
+        $this->assertSame(1.88, $this->service->applyRounding(1.875, '0.01', 'round'));
+
+        // 버림·올림도 같은 되곱하기를 탄다
+        $this->assertSame(45.05, $this->service->applyRounding(45.0599, '0.01', 'floor'));
+        $this->assertSame(45.06, $this->service->applyRounding(45.0501, '0.01', 'ceil'));
+
+        // 정수 단위는 원래 잔차가 없다 — 정규화가 그 값을 건드리지 않아야 한다
+        $this->assertSame(3833.0, $this->service->applyRounding(3833.295, '1', 'floor'));
+        $this->assertSame(1300.0, $this->service->applyRounding(1234.5, '100', 'ceil'));
+
+        // 소수 단위가 0.01 이 아닌 경우에도 그 단위의 배수여야 한다
+        $this->assertSame(1.5, $this->service->applyRounding(1.7, '0.5', 'floor'));
+    }
+
+    public function test_snapshot_charge_amount_is_stored_without_float_residue(): void
+    {
+        $snapshot = [
+            'base_currency' => 'KRW',
+            'order_currency' => 'USD',
+            'base_unit' => 1000,
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+                'USD' => ['rate' => 0.75, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2],
+            ],
+        ];
+
+        $charge = $this->service->resolveSnapshotPaymentCharge(2500, $snapshot);
+
+        // 저장·직렬화되는 raw 숫자 자체가 0.01 의 배수여야 한다
+        $this->assertSame(1.88, $charge['amount']);
+        $this->assertSame('{"amount":1.88}', json_encode(['amount' => $charge['amount']]));
+
+        // PG 로 나가는 최소단위 금액은 종전과 같다 (이미 정수화되어 있었다)
+        $this->assertSame(188, $charge['minor_unit_amount']);
+    }
+
     public function test_snapshot_charge_uses_embedded_base_unit_new_formula(): void
     {
         // 새 스냅샷: base=USD, base_unit=1, JPY rate=157 (1달러=157엔) → $6 → ¥942

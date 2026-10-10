@@ -1,3 +1,4 @@
+// e2e:allow Vitest 테스트 파일의 훅 예산 조정만 — 제품 코드 변화 0 이라 브라우저에서 밟을 분기가 없다. 이 파일 자신이 로더 계약의 회귀 테스트다.
 /**
  * loadLayoutEditorBundle 테스트 — 편집기 lazy 번들 로더 (engine-v1.51.0)
  *
@@ -39,7 +40,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     // 모듈 재로드로 layoutEditorLoadPromise 초기화 (테스트 격리)
     vi.resetModules();
     ({ loadLayoutEditorBundle } = await import('../template-engine'));
-  });
+    // 이 훅만 예산을 따로 준다 — `vi.resetModules()` 가 그래프를 통째로 무효화하므로
+    // 매 테스트가 template-engine 배럴(엔진 전량)을 다시 변환·임포트한다. 격리를 포기하면
+    // 모듈 레벨 in-flight promise 가 테스트 사이에 새어 단언 자체가 무의미해지므로 줄이는
+    // 것은 답이 아니다. 단독 실행은 3초 안쪽이지만 전량 병렬 실행에서는 기본 10초를 넘어
+    // 통과/실패가 동시 실행 부하로 갈린다 — 그러면 게이트 구실을 못 한다.
+  }, 30_000);
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -48,6 +54,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     delete (window as any).G7Config;
   });
 
+  /**
+   * 이미 로드된 번들은 다시 주입하지 않는다.
+   *
+   * @scenario state=already_loaded
+   * @effects loader_returns_immediately_when_already_loaded
+   */
   it('이미 로드됨 → 즉시 반환하고 <script> 를 주입하지 않는다', async () => {
     const fakeChrome = () => null;
     (window as any).G7Core.__LayoutEditorChrome = fakeChrome;
@@ -58,6 +70,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     expect(appendedScripts).toHaveLength(0);
   });
 
+  /**
+   * 미로드 상태면 스크립트를 한 번 주입하고 컴포넌트를 돌려준다.
+   *
+   * @scenario state=not_loaded
+   * @effects loader_injects_script_once_and_returns_component
+   */
   it('미로드 → <script> 를 1회 주입하고 load 후 컴포넌트를 반환한다', async () => {
     const fakeChrome = () => null;
     const promise = loadLayoutEditorBundle();
@@ -76,6 +94,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     await expect(promise).resolves.toBe(fakeChrome);
   });
 
+  /**
+   * 동시에 여러 번 불러도 진행 중인 로드 하나로 합친다.
+   *
+   * @scenario state=not_loaded
+   * @effects concurrent_calls_share_one_in_flight_load
+   */
   it('동시 다중 호출 → in-flight promise 로 병합되어 <script> 는 1회만 주입된다', async () => {
     const fakeChrome = () => null;
 
@@ -95,6 +119,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     expect(r3).toBe(fakeChrome);
   });
 
+  /**
+   * 로드 실패는 세 번 시도한 뒤 거부한다.
+   *
+   * @scenario state=load_failed
+   * @effects load_failure_rejects_after_three_attempts
+   */
   it('로드 실패 → 3시도 후 reject 한다 (재시도 계층)', async () => {
     vi.useFakeTimers();
 
@@ -114,6 +144,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     vi.useRealTimers();
   });
 
+  /**
+   * 실패 문구에 내부 번들 경로가 드러나지 않는다.
+   *
+   * @scenario state=load_failed
+   * @effects failure_message_hides_bundle_path
+   */
   it('실패 문구에 번들 경로를 싣지 않는다', async () => {
     vi.useFakeTimers();
 
@@ -132,6 +168,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     vi.useRealTimers();
   });
 
+  /**
+   * 실패 뒤 다시 부르면 진행 중 로드를 비우고 새로 주입한다.
+   *
+   * @scenario state=load_failed
+   * @effects reload_after_failure_injects_again
+   */
   it('실패 후 재호출하면 다시 주입한다 (in-flight promise 초기화)', async () => {
     vi.useFakeTimers();
 
@@ -153,6 +195,33 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
 
     await expect(second).resolves.toBe(fakeChrome);
 
+    vi.useRealTimers();
+  });
+  /**
+   * 편집기 번들을 받지 못한 실패 문구는 화면 언어를 따른다 — 종전에는 영어 화면에서도 한국어로 박혀 있었다
+   * (7.1.0 J O-J4, 2026-10-07 재실측: html lang=en 에서 「편집기를 불러오지 못했습니다 …」).
+   *
+   * @scenario state=load_failed
+   * @effects failure_message_follows_screen_language
+   */
+  it('실패 문구는 화면 언어(<html lang>)를 따른다', async () => {
+    vi.useFakeTimers();
+    const previousLang = document.documentElement.lang;
+    document.documentElement.lang = 'en';
+
+    const promise = loadLayoutEditorBundle();
+    const captured = promise.catch((e: Error) => e);
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      appendedScripts[attempt - 1].dispatchEvent(new Event('error'));
+      await vi.advanceTimersByTimeAsync(3000);
+    }
+
+    const error = (await captured) as Error;
+    expect(error.message).toBe('The editor could not be loaded. Check your network connection and try again.');
+    expect(error.message).not.toMatch(/[가-힣]/);
+
+    document.documentElement.lang = previousLang;
     vi.useRealTimers();
   });
 });

@@ -1,244 +1,362 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "주문 상세 - 주문 이력"
-  },
-  "type": "basic",
-  "name": "Div",
-  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
-  "responsive": {
-    "portable": {
-      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
-    }
-  },
-  "children": [
-    {
-      "comment": "섹션 제목",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": { "name": "clock", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" }
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
-          "text": "$t:mypage.order_detail.history_title",
-          "responsive": {
-            "portable": {
-              "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
-            }
-          }
-        }
-      ]
+    "comment": "주문 상세의 처리 이력 줄 — 주문이 어떤 상태를 언제 지나왔는지 보여 준다. 회원·비회원 상세가 함께 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "_e2e_allow": "e2e:allow S4-D11 — 배송완료일시 줄의 값 출처 표현식 하나만 바꿨다(주문 delivered_at → 배송 행 최신 delivered_at_formatted). 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측. 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다",
+        "description": "주문 상세 - 주문 이력"
     },
-    {
-      "comment": "주문 이력 목록",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "space-y-3" },
-      "children": [
-        {
-          "comment": "주문일시",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.ordered_at",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.ordered_at_formatted ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "결제일시 (결제 완료된 경우만)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.paid_at_formatted}}",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.paid_at",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.paid_at_formatted ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "배송완료일시 (배송완료된 경우만)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.delivered_at}}",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.delivered_at",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.delivered_at ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "comment": "취소일시 (취소된 경우만)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{order.data.cancelled_at_formatted}}",
-          "props": { "className": "flex items-center justify-between" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.order_detail.cancelled_at",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
-                }
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.cancelled_at_formatted ?? ''}}",
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "comment": "취소 사유 (취소 이력이 있는 경우만) — 부분취소 다건 목록",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(order.data.cancels?.data ?? order.data.cancels ?? []).length > 0}}",
-      "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
-      "responsive": {
+    "type": "basic",
+    "name": "Div",
+    "responsive": {
         "portable": {
-          "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700" }
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg p-4"
+            }
         }
-      },
-      "children": [
+    },
+    "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg p-6"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-3" },
-          "text": "$t:mypage.order_detail.cancel_reason_title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "space-y-3" },
-          "children": [
-            {
-              "comment": "취소 건별 카드",
-              "type": "basic",
-              "name": "Div",
-              "iteration": {
-                "source": "order.data.cancels?.data ?? order.data.cancels ?? []",
-                "item_var": "cancel"
-              },
-              "props": { "className": "bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600" },
-              "children": [
-                {
-                  "comment": "사유 라벨 + 취소일시",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center justify-between gap-2" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-sm text-gray-900 dark:text-white font-medium" },
-                      "text": "{{cancel.cancel_reason_label ?? ''}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{cancel.cancelled_at_formatted}}",
-                      "props": { "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0" },
-                      "text": "{{cancel.cancelled_at_formatted ?? ''}}"
+            "comment": "섹션 제목",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
                     }
-                  ]
+                }
+            },
+            "props": {
+                "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "clock",
+                        "className": "text-xl text-gray-700 dark:text-gray-300"
+                    }
                 },
                 {
-                  "comment": "상세 사유 (기타 입력 시)",
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{cancel.cancel_reason_detail}}",
-                  "props": { "className": "text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-line" },
-                  "text": "{{cancel.cancel_reason_detail ?? ''}}"
+                    "type": "basic",
+                    "name": "H3",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:mypage.order_detail.history_title"
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "comment": "주문 이력 목록",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "주문일시",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.ordered_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.ordered_at_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "결제일시 (결제 완료된 경우만)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data.paid_at_formatted}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.paid_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.paid_at_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "배송완료일시 (배송완료된 경우만) — 배송 완료 시각은 배송 행(shippings[].delivered_at)에 있다. 주문 응답의 delivered_at 은\n           주문 테이블에 칼럼이 없어 늘 비어 이 줄이 한 번도 안 떴다. 여러 배송이면 가장 늦게 끝난 것을 보인다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.shippings ?? []).some(s => s.delivered_at)}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.delivered_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{(order.data.shippings ?? []).filter(s => s.delivered_at).sort((x, y) => (x.delivered_at < y.delivered_at ? 1 : -1))[0]?.delivered_at_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "구매확정일시 (구매확정된 경우만)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data.confirmed_at_formatted}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.confirmed_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.confirmed_at_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "취소일시 (취소된 경우만)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data.cancelled_at_formatted}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.cancelled_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.cancelled_at_formatted ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "취소 사유 (취소 이력이 있는 경우만) — 부분취소 다건 목록",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(order.data.cancels?.data ?? order.data.cancels ?? []).length > 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+                    }
+                }
+            },
+            "props": {
+                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white mb-3"
+                    },
+                    "text": "$t:mypage.order_detail.cancel_reason_title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "comment": "취소 건별 카드",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "order.data.cancels?.data ?? order.data.cancels ?? []",
+                                "item_var": "cancel"
+                            },
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
+                            },
+                            "children": [
+                                {
+                                    "comment": "사유 라벨 + 취소일시",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-900 dark:text-white font-medium"
+                                            },
+                                            "text": "{{cancel.cancel_reason_label ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{cancel.cancelled_at_formatted}}",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0"
+                                            },
+                                            "text": "{{cancel.cancelled_at_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "상세 사유 (기타 입력 시)",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{cancel.cancel_reason_detail}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-line"
+                                    },
+                                    "text": "{{cancel.cancel_reason_detail ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

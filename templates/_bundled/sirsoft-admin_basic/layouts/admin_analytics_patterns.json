@@ -1,0 +1,360 @@
+{
+    "comment": "요일·시간대 패턴. 값은 합이 아니라 **평균**이다(기간에 월요일이 다섯 번, 화요일이 네 번 들어 있으면\n  합계는 월요일이 더 붐비는 것처럼 보인다). 지표는 화면 안 Select 로 고르고 질의에 두지 않는다 — 같은\n  응답에서 열만 바꾸는 것이라 다시 받을 이유가 없다. 시간대 패턴은 시간 집계 보존기간 안에서만 재료가\n  있어, 기간이 그 밖으로 나가면 안내를 띄운다.",
+    "version": "1.0.0",
+    "layout_name": "admin_analytics_patterns",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.analytics.patterns.title"
+    },
+    "data_sources": [
+        {
+            "id": "analytics_patterns",
+            "label_key": "$t:editor.data_source.analytics_patterns",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/patterns",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}"
+            },
+            "fallback": {
+                "data": {
+                    "weekday": [],
+                    "hour": [],
+                    "hourly_available_from": null
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "요일·시간대 평균 한 장. 지표 선택은 이 응답의 열만 바꾸므로 질의에 없다. 시간 집계가 남아 있는 첫날\n       (`hourly_available_from`)을 함께 받아, 기간이 그보다 앞으로 나가면 안내를 띄운다."
+        },
+        {
+            "id": "analytics_status",
+            "label_key": "$t:editor.data_source.analytics_status",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "collection": {
+                        "enabled": true
+                    },
+                    "queue": {
+                        "backlogged": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를\n         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을\n         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2).",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "상단 경고용 진단 상태(background). 평균을 보는 화면이라 수집이 멈춘 날이 기간에 섞이면 그 요일·시간대가 낮게 나온다 —\n       그 까닭을 여기서 받은 경고가 먼저 알린다."
+        }
+    ],
+    "initLocal": {
+        "periodPath": "/admin/analytics/patterns",
+        "periodSource": "analytics_patterns",
+        "showUnit": false,
+        "metric": "visits"
+    },
+    "computed": {
+        "csvUrl": "{{''}}",
+        "periodStart": "{{_computed.periodFrom || ''}}",
+        "periodFrom": "{{query.from || analytics_patterns?.data?.from || _local.periodComputed?.from || ''}}",
+        "periodTo": "{{query.to || query.from || analytics_patterns?.data?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_patterns?.data?.freshness ?? null}}"
+    },
+    "permissions": [
+        "core.analytics.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "analytics_patterns"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setAnalyticsPeriod",
+            "params": {
+                "preset": "{{query.preset || '7d'}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "periodComputed"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "analytics_patterns_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.analytics.patterns.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:admin.analytics.patterns.description"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_status_alerts.json"
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_period_bar.json"
+                    },
+                    {
+                        "id": "hourly_range_alert",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!!analytics_patterns?.data?.hourly_available_from && !!_computed.periodStart && _computed.periodStart < analytics_patterns.data.hourly_available_from}}",
+                        "props": {
+                            "className": "alert-info mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "circle-info",
+                                            "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-info-soft"
+                                        },
+                                        "text": "$t:admin.analytics.patterns.hourly_from|date={{analytics_patterns?.data?.hourly_available_from ?? ''}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "metric_row",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-center gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "filter-label"
+                                },
+                                "text": "$t:admin.analytics.patterns.metric_label"
+                            },
+                            {
+                                "id": "metric_select",
+                                "type": "basic",
+                                "name": "Select",
+                                "actions": [
+                                    {
+                                        "comment": "지표도 기간과 똑같이 주소에 싣는다 — 화면 상태로만 두면 새로고침·주소 공유에서 「방문」으로 되돌아간다.\n              기본값 `visits` 는 질의에서 빼 주소를 짧게 둔다(#682 라운드 4, 검수 지적 ①).",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/analytics/patterns",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "metric": "{{$event.target.value === 'visits' ? undefined : $event.target.value}}"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "name": "analytics_pattern_metric",
+                                    "className": "w-36",
+                                    "value": "{{query.metric || 'visits'}}",
+                                    "options": [
+                                        {
+                                            "value": "visits",
+                                            "label": "$t:admin.analytics.common.visits"
+                                        },
+                                        {
+                                            "value": "visitors",
+                                            "label": "$t:admin.analytics.common.visitors"
+                                        },
+                                        {
+                                            "value": "pageviews",
+                                            "label": "$t:admin.analytics.common.pageviews"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "pattern_charts",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_patterns"
+                        },
+                        "props": {
+                            "className": "grid grid-cols-1 lg:grid-cols-2 gap-4"
+                        },
+                        "children": [
+                            {
+                                "id": "weekday_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "section-heading mb-3"
+                                        },
+                                        "text": "$t:admin.analytics.patterns.weekday_title"
+                                    },
+                                    {
+                                        "id": "weekday_chart",
+                                        "type": "composite",
+                                        "name": "BarChart",
+                                        "if": "{{(analytics_patterns?.data?.weekday ?? []).length > 0}}",
+                                        "props": {
+                                            "labels": "{{(analytics_patterns?.data?.weekday ?? []).map(d => $t('admin.analytics.patterns.weekdays.' + (d.dow ?? 0)))}}",
+                                            "datasets": "{{[{label: $t('admin.analytics.common.' + (query.metric || 'visits')), data: (analytics_patterns?.data?.weekday ?? []).map(d => d[query.metric || 'visits'] ?? 0), backgroundColor: '#7C3AED'}]}}",
+                                            "height": 240,
+                                            "showYGrid": true,
+                                            "showYAxis": true
+                                        }
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "EmptyState",
+                                        "if": "{{!analytics_patterns?.loading && (analytics_patterns?.data?.weekday ?? []).length === 0}}",
+                                        "props": {
+                                            "iconName": "calendar-week",
+                                            "title": "$t:admin.analytics.common.empty_title",
+                                            "className": "py-8"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "hour_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "section-heading mb-3"
+                                        },
+                                        "text": "$t:admin.analytics.patterns.hour_title"
+                                    },
+                                    {
+                                        "id": "hour_chart",
+                                        "type": "composite",
+                                        "name": "BarChart",
+                                        "if": "{{(analytics_patterns?.data?.hour ?? []).length > 0}}",
+                                        "props": {
+                                            "labels": "{{(analytics_patterns?.data?.hour ?? []).map(h => String(h.hour ?? 0).padStart(2, '0'))}}",
+                                            "datasets": "{{[{label: $t('admin.analytics.common.' + (query.metric || 'visits')), data: (analytics_patterns?.data?.hour ?? []).map(h => h[query.metric || 'visits'] ?? 0), backgroundColor: '#0EA5E9'}]}}",
+                                            "height": 240,
+                                            "showYGrid": true,
+                                            "showYAxis": true
+                                        }
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "EmptyState",
+                                        "if": "{{!analytics_patterns?.loading && (analytics_patterns?.data?.hour ?? []).length === 0}}",
+                                        "props": {
+                                            "iconName": "clock",
+                                            "title": "$t:admin.analytics.common.empty_title",
+                                            "className": "py-8"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-label-subtle mt-3"
+                        },
+                        "text": "$t:admin.analytics.patterns.average_note"
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_patterns_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    }
+}

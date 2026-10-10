@@ -1,0 +1,20 @@
+<!-- 사용자 목록 카드 -->
+<div class="admin-card">
+  <span data-if="!row.email" class="text-muted">-</span>
+  <div data-each="user, idx in {{users?.data?.data ?? []}}" class="row">
+    <span data-if="{{user.active}}">{{user.name}}</span>
+  </div>
+  <div data-each="coupon in coupons?.data?.data || []">
+    <span>{{coupon.code}}</span>
+  </div>
+  <button :data-if="false" class="hidden-feature">$t:common.excel_download</button>
+  <div>
+    <any-of>
+      <all-of>
+        <expr>{{_local.form?.drivers?.storage_driver === 's3'}}</expr>
+        <expr>{{!_local.driverTestResults?.s3?.success}}</expr>
+      </all-of>
+      <expr>{{_local.form?.drivers?.forced}}</expr>
+    </any-of>
+  </div>
+</div>

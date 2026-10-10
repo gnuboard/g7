@@ -1,0 +1,685 @@
+{
+    "comment": "봇·크롤러 화면. 봇 탭은 봇 이름별 집계와 최근 요청 50건(어느 주소를 언제 긁어 갔는지)을 함께 보이고,\n  페이지 탭은 봇이 가져간 페이지 집계다. 봇 행에는 뺄 사람 유형이 없으므로 「관리자·회원 제외」 토글을\n  두지 않는다. 검색엔진 캐시(SEO) 상태와 겹치는 값이라 그 설정으로 가는 길을 둔다.",
+    "version": "1.0.0",
+    "layout_name": "admin_analytics_bots",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.analytics.bots.title"
+    },
+    "data_sources": [
+        {
+            "id": "analytics_bots",
+            "label_key": "$t:editor.data_source.analytics_bots",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/bots",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "if": "{{(query.tab || 'bots') === 'bots'}}",
+            "params": {
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page}}",
+                "sort": "{{query.sort}}",
+                "q": "{{query.q}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "has_more": false
+                    },
+                    "recent_hits": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "봇 이름별 집계 + 최근 요청 목록. 봇 탭에서만 받는다."
+        },
+        {
+            "id": "analytics_report",
+            "label_key": "$t:editor.data_source.analytics_report",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/bot_pages",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "if": "{{(query.tab || 'bots') === 'pages'}}",
+            "params": {
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page}}",
+                "sort": "{{query.sort}}",
+                "q": "{{query.q}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "has_more": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "봇이 가져간 페이지 집계. 페이지 탭에서만 받는다 — 공통 표 조각이 이 소스를 읽는다."
+        },
+        {
+            "id": "analytics_status",
+            "label_key": "$t:editor.data_source.analytics_status",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "collection": {
+                        "enabled": true
+                    },
+                    "queue": {
+                        "backlogged": false
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를\n         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을\n         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2).",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "상단 경고용 진단 상태 — 봇 표보다 먼저 올 필요가 없어 background 로 받고, 응답 전에는 fallback 의 「정상」 값으로\n       경고를 띄우지 않는다."
+        },
+        {
+            "id": "analytics_row_trend",
+            "label_key": "$t:editor.data_source.analytics_row_trend",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "params": {
+                "label": "{{_global.analyticsRowTrend?.label ?? ''}}",
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}"
+            },
+            "fallback": {
+                "data": {
+                    "unit": "day",
+                    "unit_downgraded": false,
+                    "points": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                },
+                "404": {
+                    "handler": "suppress"
+                },
+                "422": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를\n       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다."
+        }
+    ],
+    "initLocal": {
+        "periodPath": "/admin/analytics/bots",
+        "periodSource": "analytics_bots",
+        "showUnit": false,
+        "showExclude": false
+    },
+    "computed": {
+        "csvUrl": "{{'/api/admin/analytics/' + ((query.tab || 'bots') === 'pages' ? 'reports/bot_pages' : 'bots') + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
+        "csvFilename": "{{'analytics-' + ((query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name') + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
+        "periodFrom": "{{query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.from : analytics_bots?.data?.from) || _local.periodComputed?.from || ''}}",
+        "periodTo": "{{query.to || query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.to : analytics_bots?.data?.to) || _local.periodComputed?.to || ''}}",
+        "reportName": "{{(query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name'}}",
+        "archiveFreshness": "{{((query.tab || 'bots') === 'pages' ? analytics_report?.data?.freshness : analytics_bots?.data?.freshness) ?? null}}"
+    },
+    "permissions": [
+        "core.analytics.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "analytics_bots",
+            "analytics_report"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "periodSource": "{{(query.tab || 'bots') === 'pages' ? 'analytics_report' : 'analytics_bots'}}"
+            }
+        },
+        {
+            "handler": "setAnalyticsPeriod",
+            "params": {
+                "preset": "{{query.preset || '7d'}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "periodComputed"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "analytics_bots_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between flex-wrap gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.analytics.bots.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:admin.analytics.bots.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "seo_cache_link",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
+                                "actions": [
+                                    {
+                                        "comment": "검색엔진 캐시 설정으로 — 환경설정 SEO 탭을 연다. 환경설정 읽기 권한이 있어야 버튼이 보인다(없으면 가도 권한 안내뿐이다).",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/settings",
+                                            "query": {
+                                                "tab": "seo"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary btn-sm"
+                                },
+                                "text": "$t:admin.analytics.bots.seo_cache_link"
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_status_alerts.json"
+                    },
+                    {
+                        "partial": "partials/admin_analytics/_partial_period_bar.json"
+                    },
+                    {
+                        "id": "bot_kpi_row",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(query.tab || 'bots') === 'bots'}}",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "analytics_bots"
+                        },
+                        "props": {
+                            "className": "grid grid-cols-2 gap-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "kpi_bot_hits",
+                                "type": "composite",
+                                "name": "StatCard",
+                                "props": {
+                                    "value": "{{(analytics_bots?.data?.totals?.hits ?? 0) | number}}",
+                                    "label": "$t:admin.analytics.bots.kpi.hits",
+                                    "iconName": "robot"
+                                }
+                            },
+                            {
+                                "id": "kpi_bot_names",
+                                "type": "composite",
+                                "name": "StatCard",
+                                "props": {
+                                    "value": "{{(analytics_bots?.data?.totals?.labels ?? 0) | number}}",
+                                    "label": "$t:admin.analytics.bots.kpi.names",
+                                    "iconName": "list"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bot_tabs",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "comment": "탭을 옮기면 기간 바의 새로고침 대상부터 그 탭의 소스로 바꾼 뒤 이동한다 — 봇 탭은 `analytics_bots`,\n               페이지 탭은 공통 표의 `analytics_report` 다. 바꾸지 않으면 새로고침이 보이지 않는 탭의 소스를 다시 받는다.",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "periodSource": "{{$args[0] === 'pages' ? 'analytics_report' : 'analytics_bots'}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 봇 이름·봇 페이지 표는 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to)과 쪽 크기만 query 로 명시해 잇는다.",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/analytics/bots",
+                                            "replace": true,
+                                            "query": {
+                                                "tab": "{{$args[0]}}",
+                                                "preset": "{{query.preset}}",
+                                                "from": "{{query.from}}",
+                                                "to": "{{query.to}}",
+                                                "per_page": "{{query.per_page}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "className": "mb-4",
+                            "activeTabId": "{{query.tab || 'bots'}}",
+                            "variant": "underline",
+                            "tabs": [
+                                {
+                                    "id": "bots",
+                                    "label": "$t:admin.analytics.bots.tabs.bots"
+                                },
+                                {
+                                    "id": "pages",
+                                    "label": "$t:admin.analytics.bots.tabs.pages"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "bots_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(query.tab || 'bots') === 'bots'}}",
+                        "props": {
+                            "className": "space-y-4"
+                        },
+                        "children": [
+                            {
+                                "id": "bot_names_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "section-heading mb-3"
+                                        },
+                                        "text": "$t:admin.analytics.bots.names_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "overflow-x-auto"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "bot_names_grid",
+                                                "type": "composite",
+                                                "name": "DataGrid",
+                                                "if": "{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length > 0}}",
+                                                "actions": [
+                                                    {
+                                                        "comment": "봇 이름 표의 쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼우고 전환 표시는 표 몸통에만 띄운다. 총 쪽 수를 모르는\n                     목록이라 다음 쪽이 있는지는 응답의 `has_more` 가 가른다.",
+                                                        "type": "action",
+                                                        "event": "onPageChange",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/bots",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "bot_names_grid__body",
+                                                            "query": {
+                                                                "page": "{{$args[0]}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "data": "{{analytics_bots?.data?.data ?? []}}",
+                                                    "pagination": true,
+                                                    "serverSidePagination": true,
+                                                    "serverCurrentPage": "{{+(query.page || 1)}}",
+                                                    "serverTotalPages": null,
+                                                    "serverHasMorePages": "{{analytics_bots?.data?.pagination?.has_more ?? false}}",
+                                                    "pageSize": "{{+(query.per_page || 25)}}",
+                                                    "alwaysShowPagination": true,
+                                                    "idField": "label",
+                                                    "selectable": false,
+                                                    "sortable": false,
+                                                    "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                                    "columns": [
+                                                        {
+                                                            "field": "label_display",
+                                                            "header": "$t:admin.analytics.bots.columns.bot",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "{{row.label_display ?? row.label ?? '-'}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "field": "visits",
+                                                            "header": "$t:admin.analytics.common.visits",
+                                                            "width": "100px",
+                                                            "align": "right",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-body"
+                                                                    },
+                                                                    "text": "{{(row.visits ?? 0) | number}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "field": "hits",
+                                                            "header": "$t:admin.analytics.bots.columns.hits",
+                                                            "width": "100px",
+                                                            "align": "right",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-body"
+                                                                    },
+                                                                    "text": "{{(row.hits ?? 0) | number}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "field": "trend",
+                                                            "header": "",
+                                                            "width": "56px",
+                                                            "align": "center",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "comment": "행 끝 추이 — 공통 표와 같은 동작(봇 이름 리포트).",
+                                                                    "id": "bot_row_trend_button",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "analyticsRowTrend": {
+                                                                                            "report": "bot_name",
+                                                                                            "label": "{{row.label ?? ''}}",
+                                                                                            "label_display": "{{row.label_display ?? row.label ?? ''}}"
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "analytics_row_trend"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "analytics_row_trend_modal"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn-icon",
+                                                                        "aria-label": "$t:admin.analytics.row_trend.open",
+                                                                        "title": "$t:admin.analytics.row_trend.open"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "chart-line",
+                                                                                "size": "sm"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "EmptyState",
+                                        "if": "{{!analytics_bots?.loading && (analytics_bots?.data?.data ?? []).length === 0}}",
+                                        "props": {
+                                            "iconName": "robot",
+                                            "title": "$t:admin.analytics.common.empty_title",
+                                            "description": "$t:admin.analytics.common.empty_description",
+                                            "className": "py-8"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "recent_hits_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "section-heading"
+                                        },
+                                        "text": "$t:admin.analytics.bots.recent_title"
+                                    },
+                                    {
+                                        "comment": "최근 요청은 고른 기간 안에서 고른다(서버 `ReportService::recentBotHits`) — 화면의 다른 숫자와 같은 기간이라는\n               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측 O-E10).",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-hint mb-3"
+                                        },
+                                        "text": "$t:admin.analytics.bots.recent_hint"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "overflow-x-auto"
+                                        },
+                                        "children": [
+                                            {
+                                                "comment": "최근 요청은 서버가 늘 50건을 한 응답에 실어 준다(`ReportService::RECENT_BOT_HITS`). 전부 펼치면\n              카드 하나가 2,800px 가까이 되어 옆의 「봇별 집계」와 높이가 맞지 않는다 — 받은 배열을 화면에서\n              10건씩 나눈다. 서버 쪽 나눔이 아니라 요청 수는 그대로다(#682 라운드 4, 검수 지적 ③).",
+                                                "id": "recent_hits_grid",
+                                                "type": "composite",
+                                                "name": "DataGrid",
+                                                "props": {
+                                                    "data": "{{analytics_bots?.data?.recent_hits ?? []}}",
+                                                    "pagination": true,
+                                                    "pageSize": 10,
+                                                    "idField": "id",
+                                                    "selectable": false,
+                                                    "sortable": false,
+                                                    "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                                    "columns": [
+                                                        {
+                                                            "field": "bot_name",
+                                                            "header": "$t:admin.analytics.bots.columns.bot",
+                                                            "width": "160px",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "{{row.bot_name ?? '-'}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "field": "url",
+                                                            "header": "$t:admin.analytics.bots.columns.url",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-body break-all"
+                                                                    },
+                                                                    "text": "{{row.url ?? '-'}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "field": "cache_status",
+                                                            "header": "$t:admin.analytics.bots.columns.cache_status",
+                                                            "width": "110px",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "props": {
+                                                                        "color": "{{row.cache_status === 'hit' ? 'green' : (row.cache_status === 'miss' ? 'yellow' : 'gray')}}",
+                                                                        "text": "{{['hit', 'miss', 'bypass', 'none'].includes(row.cache_status ?? '') ? $t('admin.analytics.bots.cache_statuses.' + row.cache_status) : (row.cache_status ?? '-')}}",
+                                                                        "size": "sm"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "field": "occurred_at",
+                                                            "header": "$t:admin.analytics.bots.columns.time",
+                                                            "width": "160px",
+                                                            "cellChildren": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-label"
+                                                                    },
+                                                                    "text": "{{row.occurred_at | datetime | default('-')}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "pages_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(query.tab || 'bots') === 'pages'}}",
+                        "children": [
+                            {
+                                "partial": "partials/admin_analytics/_partial_report_grid.json"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_bots_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "한 항목 추이 창.",
+            "partial": "partials/admin_analytics/_modal_row_trend.json"
+        }
+    ]
+}

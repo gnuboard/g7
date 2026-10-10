@@ -1,0 +1,88 @@
+<!-- 업로드 탭 — 올릴 수 있는 파일 크기·확장자 같은 제한을 정한다.
+  여기서 정한 값은 저장 뒤 전역(`uploadSettings`)으로도 올라가, 다른 화면의 업로더가 같은 제한을 쓴다. -->
+<partial description="환경설정 업로드 탭 콘텐츠">
+  <div data-ref="tab_content_upload" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'upload'}}">
+    <div data-ref="card_upload_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.upload.file_settings</h3>
+      <div class="card-description">$t:admin.settings.upload.file_settings_desc</div>
+      <div>
+        <div class="grid-2col-responsive">
+          <div data-ref="field_max_file_size">
+            <label class="form-label">
+              <span>$t:admin.settings.upload.max_file_size</span>
+              <span class="text-red-500 ml-1">*</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['upload.max_file_size'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <div class="flex-center gap-2">
+              <input type="number" name="upload.max_file_size" min="{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.max_file_size'] === true}}" class="input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"/>
+              <span class="text-label-subtle">MB</span>
+            </div>
+            <span data-if="{{_local.errors?.['upload.max_file_size']}}" class="form-error">{{_local.errors?.['upload.max_file_size']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_allowed_extensions">
+            <label class="form-label">
+              <span>$t:admin.settings.upload.allowed_extensions</span>
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <input type="text" name="upload.allowed_extensions" placeholder="jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['upload.allowed_extensions'] ? 'input-error' : ''}}"/>
+            <p class="form-hint">$t:admin.settings.upload.allowed_extensions_hint</p>
+            <span data-if="{{_local.errors?.['upload.allowed_extensions']}}" class="form-error">{{_local.errors?.['upload.allowed_extensions']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_image_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.upload.image_settings</h3>
+      <div class="card-description">$t:admin.settings.upload.image_settings_desc</div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div data-ref="field_image_max_width">
+          <label class="form-label">
+            <span>$t:admin.settings.upload.image_max_width</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['upload.image_max_width'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="flex-center gap-2">
+            <input type="number" name="upload.image_max_width" min="{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}" max="{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_width'] === true}}" class="input flex-1"/>
+            <span class="text-label-subtle">px</span>
+          </div>
+        </div>
+        <div data-ref="field_image_max_height">
+          <label class="form-label">
+            <span>$t:admin.settings.upload.image_max_height</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['upload.image_max_height'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="flex-center gap-2">
+            <input type="number" name="upload.image_max_height" min="{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}" max="{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_height'] === true}}" class="input flex-1"/>
+            <span class="text-label-subtle">px</span>
+          </div>
+        </div>
+        <div data-ref="field_image_quality">
+          <label class="form-label">
+            <span>$t:admin.settings.upload.image_quality</span>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['upload.image_quality'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </label>
+          <div class="flex-center gap-2">
+            <input type="number" name="upload.image_quality" min="{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}" disabled="{{_computed.isReadOnly || _computed.envLocked?.['upload.image_quality'] === true}}" class="input flex-1"/>
+            <span class="text-label-subtle">%</span>
+          </div>
+          <p class="form-hint">$t:admin.settings.upload.image_quality_hint</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_orphan_cleanup" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.upload.orphan_cleanup</h3>
+      <div class="card-description">$t:admin.settings.upload.orphan_cleanup_desc</div>
+      <div>
+        <div data-ref="field_orphan_cleanup_enabled">
+          <label class="form-label">$t:admin.settings.upload.orphan_cleanup_enabled</label>
+          <toggle data-type="composite" name="upload.orphan_cleanup_enabled" disabled="{{_computed.isReadOnly}}"/>
+          <p class="form-hint">$t:admin.settings.upload.orphan_cleanup_enabled_hint</p>
+        </div>
+        <div data-ref="field_orphan_retention_days">
+          <label class="form-label">$t:admin.settings.upload.orphan_retention_days</label>
+          <input type="number" name="upload.orphan_retention_days" min="{{_local?.form?._meta?.limits?.upload_orphan_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_orphan_retention_days_max ?? 3650}}" disabled="{{_computed.isReadOnly}}" class="input"/>
+          <p class="form-hint">$t:admin.settings.upload.orphan_retention_days_hint</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

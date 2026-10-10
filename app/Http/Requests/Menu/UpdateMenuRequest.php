@@ -86,9 +86,26 @@ class UpdateMenuRequest extends FormRequest
     }
 
     /**
+     * 검증 항목 표시 이름을 반환합니다.
+     *
+     * 다국어 칸은 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다.
+     * 없으면 칸 이름 없이 「한국어(ko) 값은 필수입니다」만 나왔다(2026-10-07 실측).
+     *
+     * @return array<string, string> 필드 → 표시 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => __('validation.menu.attributes.name'),
+        ];
+    }
+
+    /**
      * 검증 전 데이터 전처리
      *
      * 역호환성을 위해 문자열로 입력된 name을 다국어 배열로 자동 변환합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {

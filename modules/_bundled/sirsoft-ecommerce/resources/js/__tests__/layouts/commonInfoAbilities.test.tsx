@@ -4,9 +4,9 @@
  *
  * 테스트 대상:
  * - 메인 레이아웃: DS errorHandling, 공통정보 추가 버튼 disabled
- * - _panel_list.json: is_active Toggle per-item disabled
- * - _panel_view.json: 편집/삭제/복사/기본값 설정 버튼 권한 제어
- * - _panel_form.json: 저장, MultilingualInput, Textarea, Checkbox, Toggles disabled
+ * - _panel_list.g7.html: is_active Toggle per-item disabled
+ * - _panel_view.g7.html: 편집/삭제/복사/기본값 설정 버튼 권한 제어
+ * - _panel_form.g7.html: 저장, MultilingualInput, Textarea, Checkbox, Toggles disabled
  */
 
 import React from 'react';

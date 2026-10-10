@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceDashboardService;
@@ -86,7 +85,8 @@ class AggregateEcommerceStatsCommand extends Command
      */
     private function runDryRun(): int
     {
-        $today = CarbonImmutable::today();
+        // 실제 집계와 같은 하루(사이트 표준시)로 미리 보여 준다.
+        $today = $this->dashboardService->siteToday();
         $preview = [];
 
         for ($i = 0; $i < self::AGGREGATE_DAYS; $i++) {

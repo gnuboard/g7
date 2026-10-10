@@ -1,174 +1,173 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Order Detail - Send SMS Modal"
-  },
-  "id": "modal_send_sms",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.title",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "comment": "주문자에게 문자를 보내는 창. 받는 번호는 고칠 수 없고(주문에 적힌 번호를 읽기 전용으로 보여준다)\n  본문만 입력한다.\n  본문은 `data-key` 로 지역 상태 한 칸에 자동으로 모이고, 글자 수 표시도 그 값을 그대로 센다.\n  아래 '플러그인' 표시가 뜻하는 대로 실제 발송은 코어나 이커머스가 하지 않는다 — 문자 발송\n  플러그인이 설치돼 있어야 나간다.\n  **발송 버튼에 아직 액션이 없다.** 잠금·글자·스피너가 모두 `_global.isSending` 을 보지만 그 값을\n  쓰는 곳이 이 모듈 어디에도 없어 늘 거짓이고, 눌러도 아무 일이 일어나지 않는다. 짝인 메일 발송\n  창은 같은 이름의 깃발을 `$parent._local` 에 두고 실제로 오가며 쓴다 — 배선할 때 어느 쪽 규약을\n  따를지부터 정해야 한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Order Detail - Send SMS Modal"
+    },
+    "id": "modal_send_sms",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "form-label-block"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.phone"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "className": "input-readonly",
-                "value": "{{_local.smsPhone}}",
-                "readOnly": true
-              }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between mb-1"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message"
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.description"
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-hint"
-                  },
-                  "text": "{{(_local.smsMessage || '').length}}자"
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label-block"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.phone"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "className": "input-readonly",
+                                "value": "{{_local.smsPhone}}",
+                                "readOnly": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-between mb-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "{{(_local.smsMessage || '').length}}자"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "props": {
+                                "className": "input w-full min-h-[100px]",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message_placeholder",
+                                "value": "{{_local.smsMessage}}",
+                                "dataKey": "smsMessage"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center text-hint gap-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "puzzle-piece",
+                                "className": "text-xs"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.plugin_label"
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Textarea",
-              "props": {
-                "className": "input w-full min-h-[100px]",
-                "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message_placeholder",
-                "value": "{{_local.smsMessage}}",
-                "dataKey": "smsMessage"
-              }
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center text-hint gap-1"
-          },
-          "children": [
-            {
-              "type": "composite",
-              "name": "Icon",
-              "props": {
-                "name": "puzzle-piece",
-                "className": "text-xs"
-              }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.plugin_label"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSending}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSending}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isSending}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isSending ? '$t:common.sending' : '$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.send'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ],
-      "props": {
-      }
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isSending}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.cancel"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isSending}}"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isSending}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isSending ? '$t:common.sending' : '$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.send'}}"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

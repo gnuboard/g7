@@ -69,7 +69,15 @@ class ActivateUserOnIdentityVerified implements HookListenerInterface
             return;
         }
 
-        $this->userRepository->update($user, ['status' => UserStatus::Active->value]);
+        // 상태에 딸린 시각 칸의 짝은 Enum 한 곳(`UserStatus::transitionTimestamps()`)이
+        // 소유한다 — 관리자 생성·수정·일괄 경로와 로그인 해제 경로가 모두 그 표를 읽는다.
+        // 여기만 `status` 를 단독으로 쓰면 「→ Active」 다섯 경로 중 하나가 어휘에서
+        // 이탈하고, 낡은 `dormant_notified_at` 이 남아 재안내 쿼리(`whereNull`)에서는
+        // 빠지고 전환 쿼리(`whereNotNull` + 기한)에는 잡히는 상태가 만들어진다.
+        $this->userRepository->update($user, array_merge(
+            ['status' => UserStatus::Active->value],
+            UserStatus::Active->transitionTimestamps(),
+        ));
 
         // 마케팅/분석 연동용 보조 훅
         HookManager::doAction('core.auth.after_register_activated', $user);

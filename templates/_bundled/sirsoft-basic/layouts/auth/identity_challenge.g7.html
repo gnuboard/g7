@@ -1,0 +1,154 @@
+<!-- 본인인증 전체화면 — 인증 수단이 모달(코어 인터셉터 launcher)로 뜨지 못할 때 쓰는 폴백 경로다. 인증 방식(render_hint)에 따라 셋 중 하나만 그린다: 코드 입력 / 메일 링크 안내 / 외부 인증기관으로 넘기는 로딩. -->
+<layout name="auth/identity_challenge" version="1.0.0" extends="_user_base">
+  <meta title="$t:user.identity.challenge.title"/>
+  <!-- 진행 중인 인증 건 — auto_fetch 를 끄고 init 에서 직접 부른다(질의값을 먼저 세운 뒤 서버 값으로 덮어써야 하는 순서). 서버가 답하지 않아도 화면이 서도록 fallback 이 URL 질의값을 그대로 흉내 낸다. -->
+  <data-source id="challenge" label_key="$t:editor.data_source.challenge" type="api" endpoint="/api/identity/challenges/{{query.challenge_id}}" method="GET" :auto_fetch="false">
+    <fallback>
+      <field name="data">
+        <field name="id" value="{{query.challenge_id ?? ''}}"/>
+        <field name="label_key" value="$t:editor.data_source.{{query.challenge_id ?? ''}}"/>
+        <field name="render_hint" value="{{query.render_hint ?? 'text_code'}}"/>
+        <field name="purpose" value="{{query.purpose ?? ''}}"/>
+        <field name="redirect_url" value="{{query.redirect_url ?? ''}}"/>
+        <field name="expires_at" value="{{query.expires_at ?? ''}}"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="code" value=""/>
+    <field name="resendCooldown" :value="0"/>
+    <field name="attempts" :value="0"/>
+    <field name="maxAttempts" :value="0"/>
+    <field name="expiresAt" :value="null"/>
+    <field name="remainingSeconds" :value="0"/>
+    <field name="error" :value="null"/>
+  </init-local>
+  <init>
+    <set-state target="local" challenge_id="{{query.challenge_id ?? ''}}" render_hint="{{query.render_hint ?? 'text_code'}}" purpose="{{query.purpose ?? 'signup'}}" return_url="{{query.return_url ?? '/'}}" redirect_url="{{query.redirect_url ?? ''}}" expiresAt="{{query.expires_at ?? ''}}" remainingSeconds="{{query.expires_at ? Math.max(0, Math.floor((new Date(query.expires_at).getTime() - Date.now()) / 1000)) : 0}}" attempts="{{Number(query.attempts ?? 0)}}" maxAttempts="{{Number(query.max_attempts ?? 0)}}" :resendCooldown="0"/>
+    <!-- challenge_id 가 있으면 서버에서 정확한 max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장. 누적 시도 횟수(attempts)는 이 응답에 없다 — 인증 없이 challenge id 만으로 조회되는 공개 경로라 서버가 싣지 않는다(IdentityVerificationService::getStatus 주석 참조). 따라서 _local.attempts 는 이 화면에서 시도한 횟수만 세는 자체 카운터이며, 남은 횟수를 화면에 표시하지 않는다. -->
+    <api-call target="/api/identity/challenges/{{query.challenge_id}}" if="{{!!query.challenge_id}}" method="GET">
+      <success>
+        <set-state target="local" render_hint="{{response.data.render_hint ?? _local.render_hint}}" purpose="{{response.data.purpose ?? _local.purpose}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" maxAttempts="{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"/>
+        <redirect if="{{(response.data.render_hint ?? _local.render_hint) === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
+      </success>
+      <fail>
+        <suppress/>
+      </fail>
+    </api-call>
+    <!-- 외부 redirect 콜백 후 challenge_id 없이 진입한 경우 (render_hint=external_redirect 가 query 에서 직접 들어옴) — apiCall 우회 경로 보강. -->
+    <redirect if="{{!query.challenge_id &amp;&amp; _local.render_hint === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
+    <start-interval id="identity_challenge_tick" :intervalMs="1000">
+      <actions>
+        <set-state target="local" remainingSeconds="{{_local.expiresAt ? Math.max(0, Math.floor((new Date(_local.expiresAt).getTime() - Date.now()) / 1000)) : 0}}" resendCooldown="{{Math.max(0, (_local.resendCooldown ?? 0) - 1)}}"/>
+      </actions>
+    </start-interval>
+  </init>
+  <slot name="content">
+    <div class="min-h-[60vh] flex items-center justify-center py-12 px-4">
+      <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+        <responsive on="portable" class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"/>
+        <!-- S4 — render_hint = text_code (OTP 코드 입력) -->
+        <div data-if="{{(_local.render_hint ?? 'text_code') === 'text_code'}}">
+          <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:user.identity.challenge.code_title</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400">$t:user.identity.challenge.code_subtitle</p>
+          </div>
+          <div data-if="{{_local.error}}" class="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+            <span class="text-sm text-red-700 dark:text-red-300">{{_local.error ?? ''}}</span>
+          </div>
+          <div class="space-y-4">
+            <input type="text" name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="$t:user.identity.challenge.code_placeholder" :maxLength="10" class="w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+            <div class="flex items-center justify-between text-sm" role="status" aria-live="polite">
+              <span data-if="{{(_local.remainingSeconds ?? 0) > 0}}" class="text-gray-600 dark:text-gray-400">$t:user.identity.challenge.remaining_time|minutes={{Math.floor((_local.remainingSeconds ?? 0) / 60)}}|seconds={{String((_local.remainingSeconds ?? 0) % 60).padStart(2, '0')}}</span>
+              <span data-if="{{(_local.remainingSeconds ?? 0) <= 0 &amp;&amp; _local.expiresAt}}" class="text-red-600 dark:text-red-400">$t:user.identity.challenge.expired</span>
+            </div>
+            <button type="button" class="w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors" disabled="{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || ((_local.maxAttempts ?? 0) > 0 &amp;&amp; (_local.attempts ?? 0) >= (_local.maxAttempts ?? 0))}}">
+              <on type="click">
+                <!-- 코드 확인 — 성공하면 인증 토큰을 들고 원래 가던 화면으로 돌아간다(대기 중인 인터셉터가 있으면 그쪽에도 결과를 알린다). 틀리면 시도 횟수를 올리는데, 이 값이 한도에 닿으면 버튼이 잠긴다. -->
+                <sequence>
+                  <set-state target="local" :error="null"/>
+                  <api-call target="/api/identity/challenges/{{_local.challenge_id}}/verify" method="POST">
+                    <success>
+                      <!-- 코어 IdentityGuardInterceptor 의 deferred resolver 가 살아있다면(launcher 미등록 폴백으로 풀페이지 진입) verify 결과 통보 — defaultLauncher 폴백 흐름 일관성 확보 -->
+                      <resolve-identity-challenge result="verified" token="{{response.data.verification_token ?? ''}}"/>
+                      <navigate path="{{_local.return_url ?? '/'}}" :mergeQuery="true">
+                        <query verification_token="{{response.data.verification_token ?? ''}}" challenge_id="{{_local.challenge_id}}"/>
+                      </navigate>
+                    </success>
+                    <fail>
+                      <set-state target="local" error="{{error.message ?? '$t:user.identity.challenge.error_generic'}}" attempts="{{(_local.attempts ?? 0) + 1}}"/>
+                    </fail>
+                    <body code="{{_local.code ?? ''}}"/>
+                  </api-call>
+                </sequence>
+              </on>
+              <span>$t:user.identity.challenge.verify</span>
+            </button>
+            <div class="text-center">
+              <button type="button" disabled="{{(_local.resendCooldown ?? 0) > 0}}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed">
+                <on type="click">
+                  <!-- 코드 재발송 — 새 인증 건이 발급되므로 화면의 건 번호·만료·시도 횟수를 응답값으로 갈아 끼운다. 대기 시간은 응답을 기다리지 않고 먼저 걸어 연타를 막는다. -->
+                  <sequence>
+                    <set-state target="local" :resendCooldown="30"/>
+                    <api-call target="/api/identity/challenges" method="POST">
+                      <success>
+                        <set-state target="local" challenge_id="{{response.data.id ?? _local.challenge_id}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" :attempts="0" :error="null"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                      <body purpose="{{_local.purpose ?? 'signup'}}" target="{{query.target ?? ''}}"/>
+                    </api-call>
+                  </sequence>
+                </on>
+                <span data-if="{{(_local.resendCooldown ?? 0) > 0}}">$t:user.identity.challenge.resend_cooldown|seconds={{_local.resendCooldown ?? 0}}</span>
+                <span data-if="{{(_local.resendCooldown ?? 0) <= 0}}">$t:user.identity.challenge.resend</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- S5 — render_hint = link (메일 링크 안내) -->
+        <div data-if="{{(_local.render_hint ?? '') === 'link'}}">
+          <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full mb-4">
+              <icon name="fas fa-envelope" class="text-3xl text-blue-600 dark:text-blue-400"/>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:user.identity.challenge.link_title</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400">$t:user.identity.challenge.link_subtitle</p>
+          </div>
+          <div class="space-y-3">
+            <button type="button" class="w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors">
+              <on type="click">
+                <!-- 인증 메일 다시 보내기 — 코드 입력과 달리 대기 시간을 걸지 않는다(메일이 안 왔을 때 바로 다시 눌러야 하는 화면). 새 건 번호만 받아 둔다. -->
+                <api-call target="/api/identity/challenges" method="POST">
+                  <success>
+                    <set-state target="local" challenge_id="{{response.data.id ?? _local.challenge_id}}"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                  <body purpose="{{_local.purpose ?? 'password_reset'}}" target="{{query.target ?? ''}}"/>
+                </api-call>
+              </on>
+              <span>$t:user.identity.challenge.resend_link</span>
+            </button>
+            <p class="text-xs text-gray-500 dark:text-gray-400 text-center">$t:user.identity.challenge.check_spam</p>
+          </div>
+        </div>
+        <!-- S6 — render_hint = external_redirect (외부 리다이렉트 로딩). redirect 발화는 root init_actions 의 apiCall onSuccess + apiCall 우회 경로 보강에서 처리 (init_actions 는 레이아웃 root 전용). -->
+        <div data-if="{{(_local.render_hint ?? '') === 'external_redirect'}}">
+          <div class="text-center py-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 mb-4">
+              <icon name="fas fa-spinner fa-spin" class="text-4xl text-indigo-600 dark:text-indigo-400"/>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-2">$t:user.identity.challenge.external_title</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:user.identity.challenge.external_subtitle</p>
+            <a data-if="{{_local.redirect_url}}" href="{{_local.redirect_url}}" class="inline-block px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg">
+              <span>$t:user.identity.challenge.manual_redirect</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -1,0 +1,221 @@
+{
+    "comment": "메뉴 역할 일괄 적용 확인 창. 고른 메뉴 수·역할 이름과 함께, 부모·자식 규칙으로 서버가 **자동으로 함께** 처리할\n  메뉴 수를 미리 알린다(추가: 자식만 고른 부모 / 제거: 고른 부모의 자식). 실패는 창 안에 문구로 남기고 선택은 그대로 둔다 —\n  고친 뒤 다시 적용할 수 있게. 성공하면 선택을 비우고 목록과 사이드바 메뉴를 다시 받는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "메뉴 역할 일괄 적용 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_menu_list.bulk_roles_confirm_modal"
+    },
+    "id": "bulk_roles_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.menus.bulk.confirm_title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.menuBulkAction !== 'remove'}}",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:admin.menus.bulk.confirm_add|count={{(_global.menuBulkSelectedIds ?? []).length}}|roles={{(roles?.data?.data ?? []).filter(r => (_global.menuBulkRoleIds ?? []).includes(r.id)).map(r => $localized(r.name)).join(', ')}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.menuBulkAction === 'remove'}}",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:admin.menus.bulk.confirm_remove|count={{(_global.menuBulkSelectedIds ?? []).length}}|roles={{(roles?.data?.data ?? []).filter(r => (_global.menuBulkRoleIds ?? []).includes(r.id)).map(r => $localized(r.name)).join(', ')}}"
+                },
+                {
+                    "id": "confirm_auto_parent",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.menuBulkAction !== 'remove' && (menus?.data?.data ?? []).filter(m => !(_global.menuBulkSelectedIds ?? []).includes(m.id) && (m.children ?? []).some(c => (_global.menuBulkSelectedIds ?? []).includes(c.id))).length > 0}}",
+                    "props": {
+                        "className": "mt-2 text-tertiary"
+                    },
+                    "text": "$t:admin.menus.bulk.confirm_auto_parent|count={{(menus?.data?.data ?? []).filter(m => !(_global.menuBulkSelectedIds ?? []).includes(m.id) && (m.children ?? []).some(c => (_global.menuBulkSelectedIds ?? []).includes(c.id))).length}}"
+                },
+                {
+                    "id": "confirm_auto_child",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.menuBulkAction === 'remove' && (menus?.data?.data ?? []).filter(m => (_global.menuBulkSelectedIds ?? []).includes(m.id)).flatMap(m => m.children ?? []).filter(c => !(_global.menuBulkSelectedIds ?? []).includes(c.id)).length > 0}}",
+                    "props": {
+                        "className": "mt-2 text-tertiary"
+                    },
+                    "text": "$t:admin.menus.bulk.confirm_auto_child|count={{(menus?.data?.data ?? []).filter(m => (_global.menuBulkSelectedIds ?? []).includes(m.id)).flatMap(m => m.children ?? []).filter(c => !(_global.menuBulkSelectedIds ?? []).includes(c.id)).length}}"
+                },
+                {
+                    "id": "confirm_error",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.menuBulkError}}",
+                    "props": {
+                        "className": "mt-3 alert-danger text-sm"
+                    },
+                    "text": "{{_global.menuBulkError}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 justify-end mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "bulk_roles_confirm_modal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "id": "confirm_apply_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "일괄 적용 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다(빠뜨리면 버튼이 잠긴 채 남는다). 연타는\n                 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아(실측: 더블클릭에 요청 2건) 300ms 디바운스로 연타를 한 번으로 모은다.\n                 성공하면 선택을 비우고 목록과 사이드바 메뉴를 차례로 다시 받는다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": true,
+                                                "menuBulkError": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/menus/bulk-roles",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "menu_ids": "{{_global.menuBulkSelectedIds ?? []}}",
+                                                    "role_ids": "{{_global.menuBulkRoleIds ?? []}}",
+                                                    "mode": "{{_global.menuBulkAction ?? 'add'}}"
+                                                }
+                                            },
+                                            "onSuccess": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isProcessing": false,
+                                                            "menuBulkSelectedIds": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "closeModal",
+                                                        "target": "bulk_roles_confirm_modal"
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{response.message}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "menus"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "admin_menu",
+                                                            "sync": true
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "menuBulkError": "{{error.errors?.role_ids?.[0] ?? error.errors?.menu_ids?.[0] ?? error.message ?? '$t:errors.server_error'}}"
+                                                }
+                                            },
+                                            "errorHandling": {
+                                                "403": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isProcessing": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message ?? '$t:auth.permission_denied'}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "debounce": 300
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isProcessing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "spin": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:admin.menus.bulk.apply}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

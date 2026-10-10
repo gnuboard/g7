@@ -1,0 +1,177 @@
+{
+    "comment": "e2e:allow 2026-09-21 회원 배송지 화면 전면 재작성 — Playwright spec 대신 **작성자가 직접 브라우저로 관통 실측**했다(로그인 → 회원 2명 다중선택 → 28건→10건 → 「이 회원으로 검색」 10건→5건, 콘솔 오류 0). 전용 시드(저장 배송지를 가진 회원 다수 + manage 권한 운영자)가 필요해 기존 admin spec 의 시드로는 세울 수 없고, 그 시드 신설은 별도 과제다. 구조 회귀는 레이아웃 계약 테스트 18건이 막는다.\n\n  회원 배송지 목록 — 선택 삭제 확인 창. 고른 행 ID 는 표가 `_global.bulkSelectedItems` 에 옮겨\n  담아 둔 것을 읽는다. 건수를 본문에 싣는 것은 「몇 건을 지우는지」 가 이 창이 묻는 전부이기\n  때문이다 — 목록으로 되돌아가 세어 보게 하지 않는다.\n  일괄 삭제는 한 요청으로 보내고 활동 로그도 한 번만 남긴다(건마다 남기면 100건 삭제가 100줄이다).",
+    "meta": {
+        "is_partial": true,
+        "description": "User Address - Bulk Delete Confirm Modal"
+    },
+    "id": "modal_addresses_bulk_delete",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "data-testid": "admin-addresses-bulk-delete-modal",
+        "title": "$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-primary text-base"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.modal.bulk_delete.message|count={{(_global.bulkSelectedItems || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.modal.delete.warning"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkDeleting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "여러 건을 한 요청으로 보낸다 — 응답이 늦는 사이 두 번 눌리면 같은 ID 가 겹쳐 들어가므로\n               버튼을 먼저 잠근다. 성공하면 선택을 비운 뒤 목록을 다시 받는다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isBulkDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/user-addresses/bulk",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE",
+                                        "body": {
+                                            "ids": "{{_global.bulkSelectedItems}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkDeleting": false,
+                                                "bulkSelectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "selectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "addresses"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{result.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkDeleting": false,
+                                                "errorMessage": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "modal_addresses_error"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "admin-addresses-bulk-delete-confirm",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkDeleting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isBulkDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isBulkDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

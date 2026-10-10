@@ -1,0 +1,133 @@
+<partial description="Main Banner Add/Edit Form Partial">
+  <!-- 노출 조건은 이 조각의 루트가 들고 있다 — 부모의 partial 노드에 형제 키로 적으면 설치 시점에 조각 내용으로 통째 치환되며 함께 사라진다. -->
+  <div data-ref="banner_form_section" data-if="{{_local.viewMode === 'add' || _local.viewMode === 'edit'}}" class="admin-card">
+    <div data-ref="form_header" class="flex-between mb-6">
+      <h3 class="card-title">{{_local.viewMode === 'edit' ? '$t:sirsoft-ecommerce.admin.main_banner.form.edit_title' : '$t:sirsoft-ecommerce.admin.main_banner.form.add_title'}}</h3>
+      <div class="flex-center gap-2">
+        <button type="button" class="btn btn-outline">
+          <on type="click">
+            <!-- 편집 취소 — 상세로 돌아가며 선택을 비운다. 이탈 확인 창(`modal_edit_cancel`)을 거치지 않으므로 입력이 있어도 곧바로 나간다. -->
+            <set-state target="_local" viewMode="detail" :selectedBannerId="null"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.main_banner.form.cancel
+        </button>
+        <button type="button" class="btn btn-primary">$t:sirsoft-ecommerce.admin.main_banner.form.save</button>
+      </div>
+    </div>
+    <div data-ref="banner_preview_placeholder" class="mb-6">
+      <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.preview</label>
+      <div class="flex-center relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/1] justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+        <div class="text-center">
+          <icon name="image" class="text-5xl text-gray-400 dark:text-gray-500 mx-auto mb-2"/>
+          <p class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.image_placeholder</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="language_tabs_form" class="mb-6">
+      <div class="flex-center gap-2 mb-4">
+        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
+        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <on type="click">
+            <!-- 폼의 언어 탭 — 상세 쪽과 같은 지역 키를 쓰므로 상세에서 고른 언어가 편집으로 넘어온다. 다만 아래 입력들이 언어별로 갈려 있지 않아 탭을 바꿔도 같은 칸을 편집한다(시안). -->
+            <set-state target="_local" activeLanguageTab="{{loc}}"/>
+          </on>
+          {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+        </button>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.banner_title</label>
+          <input type="text" name="bannerTitle" class="input" placeholder="배너 제목 (한국어)"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.banner_content</label>
+          <input type="text" name="bannerContent" class="input" placeholder="배너 내용 (한국어)"/>
+        </div>
+      </div>
+    </div>
+    <div data-ref="style_settings_form" class="mb-6">
+      <h4 class="text-heading mb-4">$t:sirsoft-ecommerce.admin.main_banner.detail.field.style_settings</h4>
+      <div class="stack-tight">
+        <div class="flex-center gap-4 flex-wrap">
+          <span class="text-sm text-secondary w-12">$t:sirsoft-ecommerce.admin.main_banner.detail.field.title_style</span>
+          <div class="toggle active">
+            <div class="toggle-track"/>
+            <div class="toggle-handle"/>
+          </div>
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.show</span>
+          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-tertiary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.color_picker_placeholder</div>
+          <input type="text" name="titleColor" class="input w-24" placeholder="#ffffff" value="#ffffff"/>
+          <select name="titlePosition" aria-label="$t:sirsoft-ecommerce.admin.main_banner.detail.field.title_position" class="w-24" value="left">
+            <options>
+              <option value="left">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left</option>
+              <option value="center">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center</option>
+              <option value="right">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_right</option>
+            </options>
+          </select>
+        </div>
+        <div class="flex-center gap-4 flex-wrap">
+          <span class="text-sm text-secondary w-12">$t:sirsoft-ecommerce.admin.main_banner.detail.field.content_style</span>
+          <div class="toggle active">
+            <div class="toggle-track"/>
+            <div class="toggle-handle"/>
+          </div>
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.show</span>
+          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-tertiary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.color_picker_placeholder</div>
+          <input type="text" name="contentColor" class="input w-24" placeholder="#ffffff" value="#ffffff"/>
+          <select name="contentPosition" aria-label="$t:sirsoft-ecommerce.admin.main_banner.detail.field.content_position" class="w-24" value="left">
+            <options>
+              <option value="left">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left</option>
+              <option value="center">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center</option>
+              <option value="right">$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_right</option>
+            </options>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div data-ref="banner_image_upload" class="mb-6">
+      <h4 class="text-heading mb-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.banner_image</h4>
+      <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+        <icon name="image" class="text-5xl text-blue-500 dark:text-blue-400 mx-auto mb-3"/>
+        <p class="text-sm text-primary mb-1">$t:sirsoft-ecommerce.admin.main_banner.detail.field.image_upload_hint</p>
+        <p class="text-xs text-secondary">$t:sirsoft-ecommerce.admin.main_banner.detail.field.image_size_hint</p>
+      </div>
+    </div>
+    <div data-ref="link_url_form" class="mb-6">
+      <h4 class="text-heading mb-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url</h4>
+      <input type="text" name="linkUrl" class="input" placeholder="$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url_placeholder"/>
+      <p class="form-hint mt-1">$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url_hint</p>
+    </div>
+    <div data-ref="exposure_period_form" class="mb-6">
+      <h4 class="text-heading mb-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.exposure_period</h4>
+      <div class="grid-2col">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.start_date</label>
+          <input type="date" name="startDate" class="input"/>
+        </div>
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.end_date</label>
+          <input type="date" name="endDate" class="input"/>
+        </div>
+      </div>
+      <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.period_hint</p>
+    </div>
+    <div data-ref="status_form" class="mb-6">
+      <div class="grid-2col">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.status</label>
+          <div class="flex-center gap-2">
+            <button type="button" class="btn btn-primary flex-1">$t:sirsoft-ecommerce.admin.main_banner.detail.field.status_active</button>
+            <button type="button" class="btn btn-secondary flex-1">$t:sirsoft-ecommerce.admin.main_banner.detail.field.status_inactive</button>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.created_at</label>
+          <div class="flex-center gap-2 py-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <span class="text-sm text-primary">2025-10-24T08:05:47.271Z</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

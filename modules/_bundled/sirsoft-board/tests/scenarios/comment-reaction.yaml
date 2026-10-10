@@ -1,0 +1,105 @@
+feature: 댓글 반응 (target_type=comment)
+
+description: |
+  이슈 #525 후속 — 게시글에만 있던 반응을 댓글로 넓힌다. 마이그레이션·모델 주석이
+  「향후 comment 확장」으로 남겨 둔 미구현 표면이었고, 게시글에는 있고 댓글에는 없는
+  「반응」은 제보 ③④ 와 동형의 반쪽 표면이라 이번에 닫는다 (결정 R7).
+
+  핵심 동작 (확정):
+    - 게시글 반응과 같은 규약 — 대상당 1개, 같은 유형 재클릭=해제, 다른 유형=전환
+    - 카운트는 board_comments.reaction_counts JSON(키=유형 ID), 게시글과 같은 규약
+    - 게시판이 use_reaction **과** use_comment_reaction 을 모두 켰을 때만 허용 (결정 R9)
+      — use_comment_reaction 은 use_reaction 의 하위 토글이다
+    - 삭제·블라인드된 댓글에는 새 반응 불가(기존 반응 해제는 마이페이지 몫)
+    - 본인 댓글 차단. 단 **비회원 댓글(user_id NULL)은 본인 판정이 불가능하므로 허용**
+    - 비밀글의 댓글·비밀 댓글은 본문 열람 권한이 있어야 반응 가능(글 작성자 본인은 허용)
+    - 게시판 교차 접근 차단 — 이 게시판 소속이 아닌 댓글 ID 는 404
+    - 상세 응답은 댓글마다 reaction_counts·my_reaction_type_id 를 싣되, 유형 조회와
+      내 반응 조회는 **댓글 수와 무관하게 각각 1회**여야 한다(N+1 금지)
+
+axes:
+  # 기획서가 확정한 조합만 case 로 둔다 (독립 축 곱은 무의미한 칸이 대부분).
+  case:
+    - member_add_change_remove_on_comment
+    - comment_reaction_toggle_off_blocks
+    - parent_reaction_toggle_off_blocks
+    - self_comment_blocked_guest_comment_allowed
+    - deleted_or_blinded_comment_blocked
+    - cross_board_comment_not_found
+    - inactive_type_blocked
+    - anonymous_user_unauthorized
+    - detail_embeds_counts_and_my_reaction
+    - comment_buttons_render_under_both_toggles
+    - comment_buttons_key_state_by_comment_id
+    - admin_post_detail_shows_comment_reaction_counts
+    - secret_post_comment_reaction_denied
+    - comment_reaction_counts_recalculated
+    # 같은 프로세스에서 유형을 끄거나 다시 만들면 다음 응답의 카운트 키도 바뀐다(K1 후속 2026-10-06)
+    - active_type_ids_follow_type_changes_in_same_process
+
+effects:
+  # 등록/전환/해제 + 카운트 정합성
+  - comment_react_inserts_row_and_increments_count
+  - comment_switch_adjusts_both_counts
+  - comment_remove_deletes_row
+  # 설정 게이트
+  - comment_reaction_off_returns_422
+  - comment_reaction_requires_parent_toggle
+  # 대상·행위자 가드
+  - self_comment_react_returns_422
+  - guest_comment_react_allowed
+  # 비로그인 방문자를 비회원 댓글의 작성자로 판정하지 않는다(K1 실측 2026-10-06) — 판정되면 반응 버튼이 흐려지고 로그인 안내 대신 본인 댓글 안내가 뜬다
+  - guest_viewer_not_author_of_guest_comment
+  - unavailable_comment_returns_422
+  - cross_board_comment_returns_404
+  - inactive_type_comment_react_returns_422
+  - guest_comment_react_returns_401
+  # 응답·성능
+  - post_detail_embeds_comment_reaction_counts_and_my_reaction
+  # 댓글 수를 늘려도 상세 응답의 쿼리 수가 그대로다 — 댓글마다 반응·권한 조회가 붙는 N+1 회귀를 잡는다
+  - post_detail_query_count_does_not_grow_with_comment_count
+
+  # 화면(레이아웃 계약)
+  - comment_reaction_group_requires_both_toggles
+  - comment_reaction_group_hidden_on_deleted_or_blinded
+  - comment_reaction_state_keyed_by_comment_id
+  - comment_reaction_optimistic_then_confirmed_by_response
+  - comment_reaction_failure_rolls_back_overrides
+  - comment_reaction_self_and_guest_branch_without_redirect_helper
+  - comment_reaction_icon_image_precedes_font_icon
+  - comment_reaction_names_the_type_when_icon_is_absent
+  - admin_comment_reaction_counts_are_read_only
+  - admin_comment_reaction_icon_falls_back_to_font_icon
+  # 비밀글 게이트·카운트 캐시 재집계 (4차 검증 신설)
+  - secret_post_comment_react_returns_422
+  - secret_comment_react_returns_422
+  - secret_post_author_can_react_to_comment
+  - comment_reaction_counts_match_row_count
+  - comment_reaction_counts_serialize_as_object
+  # 활성 유형 ID 캐시는 요청 단위다 — 함수 정적 변수면 장기 실행 프로세스가 끈 유형·옛 ID 를 계속 쓴다(K1 후속 2026-10-06)
+  - comment_reaction_counts_follow_type_changes_in_same_process
+  # 댓글 반응 스위치는 게시판 폼·환경설정·일괄 적용에서 같은 라벨이고, 설명이 가리키는 상위 스위치 이름이 실제 라벨과 같다(ko/en/ja, K1 후속 2026-10-06)
+  - comment_reaction_toggle_label_matches_across_screens
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentReactionApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentReactionSecretAndRecalcTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-post-detail-comment-reactions.test.tsx
+  # 댓글 반응 토글이 부모 토글(use_reaction)에 종속되는 설정 화면 계약 — comment_reaction_toggle_off_blocks 케이스를 이 파일이 검증한다
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-settings.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Feature/PostDetailQueryCountRegressionTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-comment-reactions.test.tsx
+  - tests/Playwright/specs/user/board-comment-reaction.spec.ts
+  - tests/Playwright/specs/admin/board-form-comment-reaction-toggle.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    비밀글 댓글 권한 축(secret_comment_requires_read_permission)은 게시글 반응의
+    동일 판정(SecretContentGate)을 재사용하므로 board-reaction.yaml 의 비밀글 축과
+    같은 근거를 공유한다.
+
+    프론트(vitest) 커버리지는 레이아웃 JSON 계약 테스트로 잠근다 — 저작본(.g7.html)의 기계
+    산출물인 .json 을 직접 읽으므로, 화면을 고치고 다시 굽지 않으면 red 가 된다.
+    E2E(Playwright) 는 `playwright:seed-board-reaction` 시드로 세 상태의 행·비활성 유형·
+    탈퇴 회원을 고정해 두고 실브라우저로 잰다(되돌리기는 같은 커맨드 `--teardown`).

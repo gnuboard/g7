@@ -2,12 +2,16 @@
 
 namespace App\Http\Resources;
 
+use App\Extension\CoreVersionChecker;
 use App\Helpers\TimezoneHelper;
+use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ModuleResource extends BaseApiResource
 {
+    use ExposesUpdateCoreCompatibility;
+
     /**
      * 모듈 목록용 리소스를 배열로 변환합니다 (간소화된 정보).
      *
@@ -23,8 +27,11 @@ class ModuleResource extends BaseApiResource
             'version' => $this->getValue('version'),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
+            'integrations' => $this->getValue('integrations', []),
             'status' => $this->getValue('status'),
             'assets' => $this->getValue('assets'),
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
@@ -39,6 +46,16 @@ class ModuleResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
+            // 현재 매니페스트의 코어 요구 버전(g7_version) 충족 여부 — 설치·활성 가드
+            // (CoreVersionChecker::validateExtension)와 같은 판정이다. 화면은 이 값으로 설치 버튼과
+            // 켜기 스위치를 잠근다(안 잠그면 누른 뒤 422 core_version_mismatch 로 끝난다).
+            'core_compatible' => CoreVersionChecker::isCompatible(
+                is_string($this->getValue('requires_core')) ? $this->getValue('requires_core') : null
+            ),
+            // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
+            ...$this->updateCoreCompatibilityFields(),
+            // 레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+            ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             ...$this->resourceMeta($request),
         ];
     }
@@ -46,7 +63,7 @@ class ModuleResource extends BaseApiResource
     /**
      * deactivated_reason 을 항상 string|null 로 직렬화합니다.
      *
-     * @return string|null
+     * @return string|null 비활성화 사유 문자열 (없으면 null)
      */
     protected function getDeactivatedReasonValue(): ?string
     {
@@ -62,7 +79,7 @@ class ModuleResource extends BaseApiResource
     /**
      * 리소스별 권한 매핑을 반환합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 능력 키 → 권한 식별자 맵
      */
     protected function abilityMap(): array
     {
@@ -89,9 +106,12 @@ class ModuleResource extends BaseApiResource
             'github_url' => $this->getValue('github_url'),
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
+            'integrations' => $this->getValue('integrations', []),
             'status' => $this->getValue('status'),
             'is_installed' => $this->getValue('is_installed', false),
             // 상세 정보
+            'icon_url' => $this->getValue('icon_url'),
+            'icon_source' => $this->getValue('icon_source', 'none'),
             'permissions' => $this->getValue('permissions', []),
             'roles' => $this->getValue('roles', []),
             'admin_menus' => $this->getValue('admin_menus', []),
@@ -119,6 +139,8 @@ class ModuleResource extends BaseApiResource
             'updated_at' => $this->getValue('updated_at')
                 ? TimezoneHelper::toUserDateTimeString(Carbon::parse($this->getValue('updated_at')))
                 : null,
+            // 상세 창이 목록 행(abilities 포함)을 담던 전역을 이 응답으로 덮어쓰므로 권한 메타도 함께 싣는다.
+            ...$this->resourceMeta(request()),
         ];
     }
 

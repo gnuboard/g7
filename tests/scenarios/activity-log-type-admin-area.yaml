@@ -1,0 +1,24 @@
+feature: 활동 로그 유형 — 관리자 영역 판정 (7.1.0 관측 O-B2)
+
+description: |
+  `ResolvesActivityLogType::resolveLogType()` 이 요청 경로로 활동 로그 유형(관리자·사용자·시스템)을 정한다.
+  종전에는 `api/admin/*` 만 관리자로 봐서, 확장 관리자 API(`api/{modules|plugins}/{id}/admin/*`)에서 남는
+  로그(예: 인증 앱 강제 해제)가 「사용자」로 분류됐다. 결정(2026-10-07): 관리자로 분류하고 IP 제한의
+  관리자 영역 정의(`IpAccessMatcher::isAdminArea`)와 같은 기준을 쓴다 — 관리자 셸·코어 관리자 API·
+  관리자 로그인 API·확장 관리자 API. 확장 식별자 자리는 세그먼트 하나라 사용자 경로 깊숙한 `admin` 은 삼키지 않는다.
+
+axes:
+  path_area: [core_admin_api, extension_admin_api, admin_auth_api, user_api, extension_user_api, cli]
+
+effects:
+  - core_admin_api_logged_as_admin
+  - extension_admin_api_logged_as_admin
+  - admin_auth_api_logged_as_admin
+  - extension_user_api_stays_user
+  - user_api_logged_as_user
+  - cli_logged_as_system
+  - log_activity_resolves_or_preserves_log_type
+  - activity_log_failure_does_not_kill_triggering_request
+
+test_files:
+  - tests/Unit/ActivityLog/ResolvesActivityLogTypeTest.php

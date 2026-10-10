@@ -15,6 +15,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createLayoutTest } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
+import { asArray, actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
 import adminLogin from '../../layouts/admin_login.json';
@@ -275,7 +276,7 @@ describe('sirsoft-admin_basic 관리자 로그인 렌더링 — 2단계 인증',
 
     // 이 레이아웃이 실제로 선언한 login 액션 — 자격 증명만 리터럴로 채운다.
     const form = (adminLogin as any).components[1].children[0].children[1];
-    const loginAction = form.actions[0].actions.find(
+    const loginAction = actionsOf(asArray(form.actions)[0]).find(
       (a: any) => a.handler === 'login'
     );
     expect(loginAction, 'login 액션이 제출 시퀀스에서 사라졌습니다').toBeDefined();
@@ -318,7 +319,7 @@ describe('sirsoft-admin_basic 관리자 로그인 렌더링 — 2단계 인증',
     await t.render();
 
     const form = (adminLogin as any).components[1].children[0].children[1];
-    const loginAction = form.actions[0].actions.find((a: any) => a.handler === 'login');
+    const loginAction = actionsOf(asArray(form.actions)[0]).find((a: any) => a.handler === 'login');
 
     await t.triggerAction({
       ...loginAction,

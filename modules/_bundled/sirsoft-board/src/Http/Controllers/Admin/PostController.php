@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
+use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
+use Modules\Sirsoft\Board\Http\Requests\Admin\BulkPostActionRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostFormDataRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostFormMetaRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\PostIndexRequest;
@@ -21,8 +23,10 @@ use Modules\Sirsoft\Board\Http\Requests\UpdatePostRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -79,6 +83,15 @@ class PostController extends AdminBaseController
 
             // 게시글 목록 조회 (simplePaginate — COUNT 쿼리 제거)
             $posts = $this->postService->getPosts($slug, $listParams['filters'], $listParams['perPage'], withTrashed: $canViewDeleted, board: $board);
+
+            // board 관계 수동 주입 (목록 Repository는 board를 eager load하지 않음) — 사용자 목록과 같다.
+            // 빠지면 PostResource 가 반응 설정을 읽지 못해 reaction_total 을 싣지 않고, 화면의 「반응」 열이
+            // 반응이 있는 글에서도 늘 0 이 된다. New 배지(is_new)도 이 관계로 게시판의 신규 게시글 표시 기간을 읽어,
+            // 빠지면 늘 24시간 기본값으로 판정한다. 이미 조회한 단일 $board 를 공유 주입하므로 게시판 조회는 늘지 않고,
+            // 행마다 쓰는 활성 반응 유형은 PostResource 가 요청 안에서 한 번만 조회한다.
+            foreach ($posts as $post) {
+                $post->setRelation('board', $board);
+            }
 
             // 일반 게시글 총 건수는 캐시에서 조회 (simplePaginate는 total 미제공)
             $totalNormalPosts = $this->postService->getCachedNormalPostCount($slug, $board->id, $listParams['filters'], $canViewDeleted, 'admin');
@@ -143,8 +156,16 @@ class PostController extends AdminBaseController
                     ? $this->reportService->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds)
                     : [];
 
+                // 내 댓글 반응 일괄 조회 (댓글 수와 무관하게 쿼리 1회 — 프리로드 키가 없으면
+                // Resource 가 댓글마다 개별 조회로 조용히 퇴화한다).
+                $myCommentReactions = ! empty($commentIds)
+                    ? app(ReactionRepositoryInterface::class)
+                        ->getUserReactionTypeIdsByTargets($user->id, ReactionService::TARGET_COMMENT, $commentIds)
+                    : [];
+
                 foreach ($comments as $comment) {
                     $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
+                    $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
                 }
             }
 
@@ -176,6 +197,12 @@ class PostController extends AdminBaseController
         // 권한은 라우트 미들웨어에서 체크됨 (sirsoft-board.{slug}.admin.posts.write)
         try {
             $validated = $request->validated();
+
+            // 공지 지정은 게시판 관리 권한(admin.manage·manager) 또는 공지 등록 권한(posts.write-notice) 보유자만 —
+            // 화면은 체크박스를 잠그지만 본문에 직접 넣으면 공지가 등록됐다. 사용자 경로와 같은 판정(canSetNotice)이다
+            if (! empty($validated['is_notice']) && ! $this->canSetNotice($slug)) {
+                return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
+            }
 
             // 작성자 정보 및 IP 주소 자동 설정
             $validated['user_id'] = Auth::id();
@@ -241,6 +268,14 @@ class PostController extends AdminBaseController
             if ($response = $this->authorizePostModification($slug, $post->user_id)) {
                 return $response;
             }
+        }
+
+        // 공지 여부를 바꾸는 요청은 공지 지정 권한(canSetNotice — 관리 권한 또는 공지 등록 권한)만 —
+        // 같은 값이 다시 오는 평소 저장은 막지 않는다
+        if (array_key_exists('is_notice', $request->validated())
+            && (bool) $request->validated()['is_notice'] !== (bool) $post->is_notice
+            && ! $this->canSetNotice($slug)) {
+            return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
         }
 
         try {
@@ -355,6 +390,9 @@ class PostController extends AdminBaseController
                 'sirsoft-board::messages.posts.blind_success',
                 new PostResource($post)
             );
+        } catch (DeletedContentBlindException $e) {
+            // 삭제된 글 — 블라인드하면 삭제가 풀린다. 지금 상태와 충돌하므로 409, 먼저 복구하라고 안내한다
+            return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException $e) {
             throw new PostNotFoundException($id);
         } catch (BoardNotFoundException|PostNotFoundException $e) {
@@ -517,6 +555,12 @@ class PostController extends AdminBaseController
             // 게시글 폼에서는 게시판 이름을 로컬라이즈된 문자열로 반환
             $boardData['name'] = $board->getLocalizedName();
 
+            // 최대 파일 크기가 비어 있으면(기본값 따름) 업로드 검증과 같은 게시판 기본값을 내려 준다 —
+            // 업로더 안내·클라이언트 용량 차단이 서버 상한과 어긋나지 않도록
+            $boardData['max_file_size'] = $board->max_file_size
+                ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_file_size')
+                ?? 10;
+
             $metaData = [
                 'board' => $boardData,
             ];
@@ -534,6 +578,8 @@ class PostController extends AdminBaseController
 
                 $metaData['author'] = $postData['author'] ?? null;
                 $metaData['created_at'] = $postData['created_at'] ?? null;
+                // 저장(PUT)과 같은 판정 — 남의 글(또는 비회원 글)을 관리 권한 없이 열면 폼을 읽기 전용으로 잠그는 근거
+                $metaData['can_modify'] = $this->authorizePostModification($slug, $post->user_id) === null;
                 $metaData['attachments'] = $postData['attachments'] ?? [];
 
                 // 수정 시 원글 정보가 있으면 포함
@@ -610,5 +656,76 @@ class PostController extends AdminBaseController
         }
 
         return $this->forbidden('sirsoft-board::messages.permission.denied');
+    }
+
+    /**
+     * 선택한 게시글을 일괄 삭제합니다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @return JsonResponse 처리 결과 (affected_count, skipped)
+     */
+    public function bulkDestroy(BulkPostActionRequest $request, string $slug): JsonResponse
+    {
+        return $this->runBulkAction($request, $slug, 'delete', 'sirsoft-board::messages.posts_bulk.delete_success');
+    }
+
+    /**
+     * 선택한 게시글을 일괄 블라인드 처리합니다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @return JsonResponse 처리 결과 (affected_count, skipped)
+     */
+    public function bulkBlind(BulkPostActionRequest $request, string $slug): JsonResponse
+    {
+        return $this->runBulkAction($request, $slug, 'blind', 'sirsoft-board::messages.posts_bulk.blind_success');
+    }
+
+    /**
+     * 선택한 게시글을 일괄 복구합니다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @return JsonResponse 처리 결과 (affected_count, skipped)
+     */
+    public function bulkRestore(BulkPostActionRequest $request, string $slug): JsonResponse
+    {
+        return $this->runBulkAction($request, $slug, 'restore', 'sirsoft-board::messages.posts_bulk.restore_success');
+    }
+
+    /**
+     * 일괄 처리 3종의 공통 실행부입니다.
+     *
+     * `catch (\Exception)` 만 잡는다 — 본인인증 요구(IdentityVerificationRequiredException)는
+     * `\Error` 를 상속하므로 여기서 잡히지 않고 그대로 올라가 428 로 나간다. 그것을 삼키면
+     * 프론트 인터셉터가 인증 모달을 열 기회를 잃는다.
+     *
+     * @param  BulkPostActionRequest  $request  ID 목록 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $action  처리 종류 (delete|blind|restore)
+     * @param  string  $messageKey  성공 메시지 키
+     * @return JsonResponse 처리 결과
+     */
+    private function runBulkAction(BulkPostActionRequest $request, string $slug, string $action, string $messageKey): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $ids = array_map('intval', $validated['ids']);
+            $reason = $validated['reason'] ?? null;
+
+            $result = $this->postService->bulkAction($slug, $action, $ids, $reason);
+
+            return $this->success($messageKey, $result, 200, [
+                'count' => $result['affected_count'],
+                'skipped' => count($result['skipped']),
+            ]);
+        } catch (ModelNotFoundException $e) {
+            throw new BoardNotFoundException($slug);
+        } catch (BoardNotFoundException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->error('sirsoft-board::messages.posts_bulk.action_failed', 500, $e->getMessage());
+        }
     }
 }

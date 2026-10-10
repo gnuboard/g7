@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\SiteUrl;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class RegisterPgProviderListener implements HookListenerInterface
@@ -51,6 +52,7 @@ class RegisterPgProviderListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -105,19 +107,24 @@ class RegisterPgProviderListener implements HookListenerInterface
             'sdk_url' => $isTest
                 ? 'https://stgstdpay.inicis.com/stdjs/INIStdPay.js'
                 : 'https://stdpay.inicis.com/stdjs/INIStdPay.js',
+            // 보안: PG 로 보내는 결과·통보 주소(returnUrl·closeUrl·P_NEXT_URL·P_NOTI_URL·notiUrl)와 같은 출처 API —
+            // 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL 을 내려 준다.
+            // 브라우저가 G7Core.api 로 직접 부르는 주소(signature·close_report·cbt_checkout_token·cbt_hash_data·
+            // mobile_signature)는 API 라우트(src/routes/api.php)다 — 절대 URL 에는 ApiClient 가 /api 를 붙이지
+            // 않으므로 /api 를 포함해 내려 준다(#639).
             'callback_urls' => [
-                'signature' => '/plugins/sirsoft-pay_kginicis/payment/signature',
-                'close_report' => '/plugins/sirsoft-pay_kginicis/payment/close-report',
-                'callback' => '/plugins/sirsoft-pay_kginicis/payment/callback',
-                'close' => '/plugins/sirsoft-pay_kginicis/payment/close',
-                'cbt_checkout_token' => '/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token',
-                'cbt_hash_data' => '/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data',
-                'cbt_callback' => '/plugins/sirsoft-pay_kginicis/payment/cbt/callback',
-                'cbt_cvs_notify' => '/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify',
+                'signature' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/signature'),
+                'close_report' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/close-report'),
+                'callback' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/callback'),
+                'close' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/close'),
+                'cbt_checkout_token' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token'),
+                'cbt_hash_data' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data'),
+                'cbt_callback' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/callback'),
+                'cbt_cvs_notify' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
                 'cbt_auth_url' => $isTest ? self::CBT_AUTH_URL_TEST : self::CBT_AUTH_URL_LIVE,
-                'mobile_signature' => '/plugins/sirsoft-pay_kginicis/payment/mobile/signature',
-                'mobile_callback' => '/plugins/sirsoft-pay_kginicis/payment/mobile/callback',
-                'mobile_vbank_notify' => '/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify',
+                'mobile_signature' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/mobile/signature'),
+                'mobile_callback' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/mobile/callback'),
+                'mobile_vbank_notify' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify'),
             ],
             'japan_enabled' => $settings['japan_enabled'] ?? false,
             'japan_restrict_jpy_payment_methods' => (bool) ($settings['japan_restrict_jpy_payment_methods'] ?? false),
@@ -135,6 +142,14 @@ class RegisterPgProviderListener implements HookListenerInterface
         ]);
     }
 
+    /**
+     * 일본 CBT 결제창에 넘길 추가 데이터(결제 UI·결제수단·편의점·GMO 가맹점 정보)를 만듭니다.
+     *
+     * 편의점 입금통보 주소(notiUrl)는 요청 Host 가 아니라 사이트 주소로 만든다.
+     *
+     * @param  array<string, mixed>  $settings  플러그인 설정
+     * @return array<string, mixed> CBT 결제창 추가 데이터
+     */
     private function buildCbtExtraData(array $settings): array
     {
         return [
@@ -150,7 +165,8 @@ class RegisterPgProviderListener implements HookListenerInterface
                     'installMonth' => [3, 5, 6, 10, 12],
                 ],
                 'cvs' => [
-                    'notiUrl' => url('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
+                    // 보안: 공개 client-config 응답에 실리는 입금통보 주소 — 요청 Host 가 아니라 사이트 주소(캐시돼도 안전).
+                    'notiUrl' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
                     'contactInfo' => $this->setting($settings, 'japan_merchant_name_short', 'サンプル'),
                     'contactTelNum' => $this->setting($settings, 'japan_contact_phone', '0120-123-456'),
                     'contactHours' => $this->setting($settings, 'japan_contact_opening_hours', '10:00-18:00'),
@@ -173,6 +189,15 @@ class RegisterPgProviderListener implements HookListenerInterface
         ];
     }
 
+    /**
+     * 현재 모드의 일본 CBT 결제 준비 여부를 반환합니다.
+     *
+     * 일본 결제가 꺼져 있으면 false, 테스트 모드는 테스트 signKey, 운영 모드는 MID·signKey 가 모두 있어야 한다.
+     *
+     * @param  array<string, mixed>  $settings  플러그인 설정
+     * @param  bool  $isTest  테스트 모드 여부
+     * @return bool 일본 CBT 결제를 쓸 수 있으면 true
+     */
     private function isJapanConfigured(array $settings, bool $isTest): bool
     {
         if (! (bool) ($settings['japan_enabled'] ?? false)) {
@@ -190,7 +215,9 @@ class RegisterPgProviderListener implements HookListenerInterface
     /**
      * 현재 모드의 표준결제 MID/signKey 준비 여부를 반환합니다.
      *
-     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $settings  플러그인 설정
+     * @param  bool  $isTest  테스트 모드 여부
+     * @return bool MID 와 signKey 가 모두 있으면 true
      */
     private function isStandardConfigured(array $settings, bool $isTest): bool
     {
@@ -206,7 +233,9 @@ class RegisterPgProviderListener implements HookListenerInterface
     /**
      * 현재 모드의 모바일결제 MID/hashKey 준비 여부를 반환합니다.
      *
-     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $settings  플러그인 설정
+     * @param  bool  $isTest  테스트 모드 여부
+     * @return bool MID 와 모바일 hashKey 가 모두 있으면 true
      */
     private function isMobileConfigured(array $settings, bool $isTest): bool
     {
@@ -237,6 +266,14 @@ class RegisterPgProviderListener implements HookListenerInterface
         return $enabled;
     }
 
+    /**
+     * 설정값을 앞뒤 공백을 제거해 읽고, 비어 있으면 기본값을 돌려줍니다.
+     *
+     * @param  array<string, mixed>  $settings  플러그인 설정
+     * @param  string  $key  설정 키
+     * @param  string  $default  값이 비었을 때 쓸 기본값
+     * @return string 설정값 또는 기본값
+     */
     private function setting(array $settings, string $key, string $default): string
     {
         $value = trim((string) ($settings[$key] ?? ''));
@@ -244,6 +281,14 @@ class RegisterPgProviderListener implements HookListenerInterface
         return $value !== '' ? $value : $default;
     }
 
+    /**
+     * 운영 MID 접두사를 붙여 완전한 운영 MID 를 만듭니다.
+     *
+     * 이미 접두사로 시작하면 그대로 둔다.
+     *
+     * @param  string  $suffix  관리자가 입력한 운영 MID (접두사 포함 여부 무관)
+     * @return string 운영 MID (입력이 비면 빈 문자열)
+     */
     private function buildLiveMid(string $suffix): string
     {
         if ($suffix === '') {
@@ -253,6 +298,11 @@ class RegisterPgProviderListener implements HookListenerInterface
         return str_starts_with($suffix, self::LIVE_MID_PREFIX) ? $suffix : self::LIVE_MID_PREFIX.$suffix;
     }
 
+    /**
+     * KG 이니시스 플러그인 설정을 읽습니다.
+     *
+     * @return array<string, mixed> 플러그인 설정
+     */
     private function getPluginSettings(): array
     {
         return plugin_settings(self::PLUGIN_IDENTIFIER);

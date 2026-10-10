@@ -108,6 +108,14 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         // replace=true 일 때만 노출(폼이 dependsOn 으로 게이팅). C4 주.
         dependsOn: { param: 'replace', equals: true },
       },
+      {
+        // 이 이동에서 다시 받을 데이터 소스 id(쉼표 구분 또는 배열) — 빠지면 쿼리 갱신이 auto_fetch 소스를
+        // 전부 다시 받는다(engine-v1.79.0). build 틀에 없으면 편집기 폼 저장이 이 값을 지운다.
+        key: 'refetch_data_sources',
+        label: `$t:${L}.navigate.param_refetch_data_sources`,
+        widget: 'text',
+        dependsOn: { param: 'replace', equals: true },
+      },
     ],
     build: {
       handler: 'navigate',
@@ -118,6 +126,7 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         scroll: '{{scroll}}',
         replace: '{{replace}}',
         transition_overlay_target: '{{transition_overlay_target}}',
+        refetch_data_sources: '{{refetch_data_sources}}',
       },
     },
   },
@@ -297,6 +306,18 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     params: [{ key: 'body', label: `$t:${L}.login_two_factor_resend.param_body`, widget: 'key-value' }],
     build: { handler: 'loginTwoFactorResend', params: { body: '{{body}}' } },
   },
+  // C18-3 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
+  loginPasswordChange: {
+    label: `$t:${L}.login_password_change.label`,
+    params: [{ key: 'body', label: `$t:${L}.login_password_change.param_body`, widget: 'key-value' }],
+    build: { handler: 'loginPasswordChange', params: { body: '{{body}}' } },
+  },
+  // C18-4 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
+  loginPasswordChangePostpone: {
+    label: `$t:${L}.login_password_change_postpone.label`,
+    params: [{ key: 'body', label: `$t:${L}.login_password_change_postpone.param_body`, widget: 'key-value' }],
+    build: { handler: 'loginPasswordChangePostpone', params: { body: '{{body}}' } },
+  },
   // C19 로그아웃 처리
   logout: {
     label: `$t:${L}.logout.label`,
@@ -317,6 +338,12 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
       { key: 'data', label: `$t:${L}.emit_event.param_data`, widget: 'data-chip' },
     ],
     build: { handler: 'emitEvent', params: { event: '{{event}}', data: '{{data}}' } },
+  },
+  // C21a 방문자 동의 상태 다시 읽기 (engine-v1.78.0, #639) — 동의 저장 성공 뒤에 둔다
+  refreshConsent: {
+    label: `$t:${L}.refresh_consent.label`,
+    params: [],
+    build: { handler: 'refreshConsent' },
   },
   // C22 서버에 보내고 결과 처리 — onSuccess/onError 는 친화 중첩 액션 빌더(action-list)로 편집.
   // 응답 후속 동작(결제 진입·상태 저장·이동 등)을 코드 없이 추가/순서/속성 편집한다.

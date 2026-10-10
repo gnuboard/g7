@@ -1,0 +1,112 @@
+<!-- 상품 폼 — 공통정보 구획. 여러 상품이 함께 쓰는 안내문을 골라 붙인다. 「기본값 따라가기」를 켜면
+  기본으로 지정된 안내문이 자동으로 걸리고 목록 선택은 잠긴다 — 나중에 기본값을 바꾸면 이 상품도
+  따라가게 하려는 것이다. 고른 안내문의 본문은 아래 접이식 카드에서 읽기 전용으로 보여 준다. -->
+<partial description="Product Form - Common Info Section (시안 반영)">
+  <div data-ref="common_info" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <!-- 구획 접기/펼치기 -->
+        <set-state target="local" ui.commonInfoExpanded="{{!_local.ui.commonInfoExpanded}}"/>
+      </on>
+      <icon name="file-alt" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.common_info</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.commonInfoExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="common_info_body" data-if="{{_local.ui.commonInfoExpanded !== false}}" class="row-stack">
+      <div data-ref="common_info_template_header" class="flex-between">
+        <responsive on="portable" class="row-stack"/>
+        <label class="form-label mb-0">$t:sirsoft-ecommerce.admin.product.fields.common_info</label>
+        <a href="/admin/ecommerce/common-info" target="_blank" rel="noopener noreferrer" class="btn btn-outline text-xs">
+          <icon name="arrow-up-right-from-square" class="text-xs mr-1.5"/>
+          <span>$t:sirsoft-ecommerce.admin.product.buttons.manage_common_info</span>
+        </a>
+      </div>
+      <div data-ref="use_default_common_info_toggle" class="flex-center gap-3">
+        <toggle data-type="composite" name="use_default_common_info" checked="{{_local.form.use_default_common_info ?? false}}" disabled="{{_computed.isReadOnly}}">
+          <on type="change">
+            <!-- 켤 때 — 기본으로 지정된 안내문을 찾아 함께 걸어 준다(아래 목록이 잠기므로 여기서 골라 두지 않으면 아무것도 안 붙는다) -->
+            <sequence if="{{$event.target.checked}}">
+              <set-state target="local" :form.use_default_common_info="true" form.common_info_id="{{(common_infos?.data?.data ?? []).find(c => c.is_default)?.id ?? null}}"/>
+              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+            </sequence>
+          </on>
+          <on type="change">
+            <!-- 끌 때 — 걸려 있던 안내문은 그대로 두고 목록만 연다(끄자마자 선택이 풀리면 다시 고르는 수고가 는다). 켬/끔을 두 블록으로 나눈 것은 한쪽만 조건이 다르기 때문이다 -->
+            <sequence if="{{!$event.target.checked}}">
+              <set-state target="local" :form.use_default_common_info="false"/>
+              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+            </sequence>
+          </on>
+        </toggle>
+        <span class="text-label">$t:sirsoft-ecommerce.admin.product.common_info.use_default</span>
+      </div>
+      <div data-ref="common_info_buttons_container" data-if="{{(common_infos?.data?.data ?? []).length > 0}}" class="{{_local.errors?.common_info_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}">
+        <button data-ref="common_info_none_button" type="button" class="{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || _computed.isReadOnly}}">
+          <on type="click">
+            <!-- 「사용 안 함」 — 선택을 비우면서 아래 상세 카드도 함께 접는다(가리킬 안내문이 없어진 카드가 펼쳐진 채 남지 않도록) -->
+            <sequence>
+              <set-state target="local" :form.common_info_id="null"/>
+              <set-state target="local" :ui.commonInfoDetailExpanded="false"/>
+              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.product.common_info.none
+        </button>
+        <button data-ref="common_info_default_button" data-if="{{(common_infos?.data?.data ?? []).some(c => c.is_default)}}" type="button" class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || _computed.isReadOnly}}">
+          <on type="click">
+            <!-- 기본 안내문 고르기 — 「따라가기」와 달리 지금 값만 붙이므로, 나중에 기본값이 바뀌어도 이 상품은 따라가지 않는다 -->
+            <sequence>
+              <set-state target="local" form.common_info_id="{{(common_infos?.data?.data ?? []).find(c => c.is_default)?.id}}"/>
+              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+            </sequence>
+          </on>
+          <span class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}} px-1.5 py-0.5 rounded text-xs">$t:sirsoft-ecommerce.admin.product.common_info.badge_default</span>
+          <span>{{$localized((common_infos?.data?.data ?? []).find(c => c.is_default)?.name)}}</span>
+        </button>
+        <div data-ref="common_info_other_buttons_wrapper_{{idx}}" data-each="commonInfo, idx in {{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}" class="contents">
+          <button data-ref="common_info_btn_{{commonInfo.id}}" type="button" class="{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || _computed.isReadOnly}}">
+            <on type="click">
+              <!-- 기본값이 아닌 안내문 고르기 -->
+              <sequence>
+                <set-state target="local" form.common_info_id="{{commonInfo.id}}"/>
+                <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              </sequence>
+            </on>
+            {{$localized(commonInfo.name)}}
+          </button>
+        </div>
+      </div>
+      <span data-if="{{_local.errors?.common_info_id}}" class="form-error-xs mt-1">{{_local.errors?.common_info_id?.[0]}}</span>
+      <div data-ref="common_info_detail_accordion" data-if="{{_local.form.common_info_id}}" class="toggle-group">
+        <div data-ref="common_info_detail_header" class="flex-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <!-- 고른 안내문의 본문을 접고 편다 -->
+            <set-state target="local" ui.commonInfoDetailExpanded="{{!_local.ui.commonInfoDetailExpanded}}"/>
+          </on>
+          <span class="text-primary font-medium">{{$localized((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.name)}}</span>
+          <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"/>
+        </div>
+        <div data-ref="common_info_detail_body" data-if="{{_local.ui.commonInfoDetailExpanded}}" class="border-t border-gray-200 dark:border-gray-700">
+          <multilingual-tab-panel data-type="composite" data-ref="common_info_locale_tabs" variant="underline" class="px-4 pt-4" locales="{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k &amp;&amp; (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}">
+            <on event="onLocaleChange">
+              <!-- 어느 언어 본문을 볼지. 탭은 내용이 실제로 채워진 언어만 세운다 -->
+              <set-state target="local" ui.commonInfoLocale="{{$args[0]}}"/>
+            </on>
+            <div data-ref="common_info_content_display" class="p-4 max-h-96 overflow-y-auto">
+              <div data-if="{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode === 'html'}}" class="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML="{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}"/>
+              <div data-if="{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode !== 'html'}}" class="text-body whitespace-pre-wrap">{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}</div>
+            </div>
+          </multilingual-tab-panel>
+        </div>
+      </div>
+      <!-- 공통정보 조회 권한이 없어 선택지가 비었을 때는 「등록된 공통정보 없음」 이 아니라 권한이 없다고 말한다 — 실재하는 안내문을 없다고 읽게 하지 않는다 -->
+      <div data-ref="common_info_forbidden_notice" data-if="{{common_infos?.data?.unavailable === true}}" class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+        <icon name="circle-exclamation" class="text-base"/>
+        <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.common_infos</span>
+      </div>
+      <div data-ref="common_info_empty_state" data-if="{{common_infos?.data?.unavailable !== true &amp;&amp; !(common_infos?.data?.data ?? []).length}}" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <p class="text-sm">$t:sirsoft-ecommerce.admin.product.common_info.empty</p>
+      </div>
+    </div>
+  </div>
+</partial>

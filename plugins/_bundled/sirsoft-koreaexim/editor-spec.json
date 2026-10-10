@@ -1,0 +1,691 @@
+{
+  "pluginId": "sirsoft-koreaexim",
+  "version": "1.0.0",
+  "description": "환율 설정·상태·이력 데이터소스 프리뷰",
+  "sampleData": {
+    "byDataSourceId": {
+      "settings": {
+        "data": {
+          "auth_key": "••••••••",
+          "auto_manage": false,
+          "update_time": "11:30",
+          "run_days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "retry_max": 3,
+          "rate_type": "deal_bas_r",
+          "rate_decimal_places": 6,
+          "lookback_days": 7,
+          "history_retention_days": 365,
+          "notify_on_failure": true,
+          "abilities": {
+            "can_update": true
+          }
+        }
+      },
+      "koreaeximStatus": {
+        "data": {
+          "auto_manage": true,
+          "auth_key_set": true,
+          "base_currency": "KRW",
+          "managed_codes": [
+            "USD",
+            "JPY",
+            "EUR"
+          ],
+          "unsupported_codes": [
+            "VND"
+          ],
+          "last_run": {
+            "id": 31,
+            "status": "success",
+            "status_label": "성공",
+            "search_date": "2026-09-19",
+            "finished_at": "2026-09-19 11:30:12"
+          },
+          "last_success_run": {
+            "id": 31,
+            "status": "success",
+            "status_label": "성공",
+            "search_date": "2026-09-19",
+            "finished_at": "2026-09-19 11:30:12"
+          },
+          "today_request_count": 12,
+          "quota_limit": 1000,
+          "next_run_at": "2026-09-22 02:30:00",
+          "next_run_at_kst": "2026-09-22 11:30:00",
+          "update_time_site": "11:30",
+          "scheduler_hint": "자동 실행에는 서버 스케줄러가 필요합니다.",
+          "abilities": {
+            "can_manage": true
+          }
+        }
+      },
+      "koreaeximRuns": {
+        "data": {
+          "data": [
+            {
+              "id": 31,
+              "trigger": "schedule",
+              "trigger_label": "자동 실행",
+              "status": "success",
+              "status_label": "성공",
+              "search_date": "2026-09-19",
+              "rate_type": "deal_bas_r",
+              "base_currency": "KRW",
+              "base_unit": 1,
+              "request_count": 3,
+              "applied_count": 3,
+              "unchanged_count": 0,
+              "skipped_count": 0,
+              "message": "3개 통화 환율을 갱신했습니다.",
+              "source_run_id": null,
+              "started_at": "2026-09-19 11:30:04",
+              "finished_at": "2026-09-19 11:30:12"
+            },
+            {
+              "id": 30,
+              "trigger": "manual",
+              "trigger_label": "수동 실행",
+              "status": "partial",
+              "status_label": "일부 성공",
+              "search_date": "2026-09-18",
+              "rate_type": "deal_bas_r",
+              "base_currency": "KRW",
+              "base_unit": 1,
+              "request_count": 3,
+              "applied_count": 2,
+              "unchanged_count": 1,
+              "skipped_count": 0,
+              "message": "EUR 은 고시 환율이 없어 건너뛰었습니다.",
+              "source_run_id": null,
+              "started_at": "2026-09-18 15:02:10",
+              "finished_at": "2026-09-18 15:02:18"
+            },
+            {
+              "id": 29,
+              "trigger": "schedule",
+              "trigger_label": "자동 실행",
+              "status": "no_data",
+              "status_label": "고시 없음",
+              "search_date": "2026-09-17",
+              "rate_type": "deal_bas_r",
+              "base_currency": "KRW",
+              "base_unit": 1,
+              "request_count": 1,
+              "applied_count": 0,
+              "unchanged_count": 0,
+              "skipped_count": 3,
+              "message": "휴일이라 고시 환율이 제공되지 않았습니다.",
+              "source_run_id": null,
+              "started_at": "2026-09-17 11:30:03",
+              "finished_at": "2026-09-17 11:30:05"
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "has_more_pages": false
+          }
+        }
+      },
+      "koreaeximRecentRuns": {
+        "data": {
+          "data": [
+            {
+              "id": 31,
+              "trigger": "schedule",
+              "trigger_label": "자동 실행",
+              "status": "success",
+              "status_label": "성공",
+              "search_date": "2026-09-19",
+              "rate_type": "deal_bas_r",
+              "base_currency": "KRW",
+              "base_unit": 1,
+              "request_count": 3,
+              "applied_count": 3,
+              "unchanged_count": 0,
+              "skipped_count": 0,
+              "message": "3개 통화 환율을 갱신했습니다.",
+              "source_run_id": null,
+              "started_at": "2026-09-19 11:30:04",
+              "finished_at": "2026-09-19 11:30:12"
+            },
+            {
+              "id": 30,
+              "trigger": "manual",
+              "trigger_label": "수동 실행",
+              "status": "partial",
+              "status_label": "일부 성공",
+              "search_date": "2026-09-18",
+              "rate_type": "deal_bas_r",
+              "base_currency": "KRW",
+              "base_unit": 1,
+              "request_count": 3,
+              "applied_count": 2,
+              "unchanged_count": 1,
+              "skipped_count": 0,
+              "message": "EUR 은 고시 환율이 없어 건너뛰었습니다.",
+              "source_run_id": null,
+              "started_at": "2026-09-18 15:02:10",
+              "finished_at": "2026-09-18 15:02:18"
+            },
+            {
+              "id": 29,
+              "trigger": "schedule",
+              "trigger_label": "자동 실행",
+              "status": "no_data",
+              "status_label": "고시 없음",
+              "search_date": "2026-09-17",
+              "rate_type": "deal_bas_r",
+              "base_currency": "KRW",
+              "base_unit": 1,
+              "request_count": 1,
+              "applied_count": 0,
+              "unchanged_count": 0,
+              "skipped_count": 3,
+              "message": "휴일이라 고시 환율이 제공되지 않았습니다.",
+              "source_run_id": null,
+              "started_at": "2026-09-17 11:30:03",
+              "finished_at": "2026-09-17 11:30:05"
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 5,
+            "total": 3,
+            "has_more_pages": false
+          }
+        }
+      },
+      "koreaeximNotificationDefinitions": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "type": "koreaexim_update_failed",
+              "relations": [],
+              "hook_prefix": "sirsoft-koreaexim",
+              "name": {
+                "ko": "환율 갱신 실패 알림",
+                "en": "Exchange rate update failed"
+              },
+              "description": {
+                "ko": "자동 갱신이 실패했을 때 관리자에게 알린다",
+                "en": "Notifies administrators when an automatic update fails"
+              },
+              "is_active": true,
+              "is_default": true,
+              "channels": [
+                "mail",
+                "database"
+              ],
+              "variables": [
+                {
+                  "key": "name"
+                },
+                {
+                  "key": "status_label"
+                },
+                {
+                  "key": "message"
+                },
+                {
+                  "key": "search_date"
+                },
+                {
+                  "key": "settings_url"
+                }
+              ],
+              "templates": [
+                {
+                  "id": 1,
+                  "channel": "mail",
+                  "is_active": true,
+                  "is_default": true,
+                  "subject": {
+                    "ko": "[{app_name}] 환율 갱신 실패 ({search_date})",
+                    "en": "[{app_name}] Exchange rate update failed ({search_date})"
+                  },
+                  "body": {
+                    "ko": "<p>{name}님, {search_date} 환율 갱신이 {status_label} 로 끝났습니다.</p><p>{message}</p>",
+                    "en": "<p>{name}, the {search_date} update finished as {status_label}.</p><p>{message}</p>"
+                  },
+                  "recipients": [
+                    {
+                      "type": "role",
+                      "value": "admin"
+                    }
+                  ]
+                },
+                {
+                  "id": 2,
+                  "channel": "database",
+                  "is_active": true,
+                  "is_default": true,
+                  "subject": {
+                    "ko": "환율 갱신 실패",
+                    "en": "Exchange rate update failed"
+                  },
+                  "body": {
+                    "ko": "{search_date} — {message}",
+                    "en": "{search_date} — {message}"
+                  },
+                  "recipients": [
+                    {
+                      "type": "role",
+                      "value": "admin"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 1,
+            "has_more_pages": false
+          },
+          "abilities": {
+            "can_update": true
+          }
+        }
+      },
+      "koreaeximNotificationChannels": {
+        "data": {
+          "channels": [
+            {
+              "id": "mail",
+              "name": "메일",
+              "icon": "fas fa-envelope",
+              "description": "이메일로 알림 발송",
+              "source": "core",
+              "source_label": "코어 기본 채널",
+              "allow_guest": true,
+              "readiness": {
+                "ready": true,
+                "reason": null
+              }
+            },
+            {
+              "id": "database",
+              "name": "사이트내 알림",
+              "icon": "fas fa-bell",
+              "description": "사이트내 알림 센터에 표시",
+              "source": "core",
+              "source_label": "코어 기본 채널",
+              "allow_guest": false,
+              "readiness": {
+                "ready": true,
+                "reason": null
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "수출입은행 환율 설정 화면 변종. 탭은 query.tab 이 SSoT 라 편집기에서는 설정 탭만 그려지고, 이력 탭의 펼친 행 상세(_global.koreaeximRunItems)와 알림 템플릿 편집·미리보기 모달 본문(_global.koreaexim_notification_template_form_modal)은 행 클릭이 담는 값이라 상태 없이는 빈 채로 열린다.",
+    "groups": [
+      {
+        "comment": "설정/이력 탭. 설정 입력칸은 settings 데이터소스의 initLocal(\"form\")으로 채워지는데 편집기는 그 흐름을 실행하지 않으므로 _local.form 을 샘플과 같은 값으로 직접 시드한다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-koreaexim/settings"
+        },
+        "items": [
+          {
+            "id": "tab_settings",
+            "label": "$t:editor.state.tab.settings",
+            "default": true,
+            "initialState": {
+              "query": {
+                "tab": "settings"
+              },
+              "local": {
+                "form": {
+                  "auth_key": "",
+                  "auto_manage": true,
+                  "update_time": "11:30",
+                  "run_days": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ],
+                  "retry_max": 3,
+                  "rate_type": "deal_bas_r",
+                  "rate_decimal_places": 6,
+                  "lookback_days": 7,
+                  "history_retention_days": 365,
+                  "notify_on_failure": true
+                },
+                "hasChanges": false,
+                "isSaving": false
+              }
+            }
+          },
+          {
+            "id": "tab_history",
+            "label": "$t:editor.state.tab.history",
+            "comment": "이력 탭은 query.tab=history 라야 그려진다. 행을 펼쳤을 때의 통화별 상세는 펼침 이벤트가 _global.koreaeximRunItems 에 실행 ID 로 쌓는 값이라 함께 시드해야 캔버스에서 보인다.",
+            "initialState": {
+              "query": {
+                "tab": "history"
+              },
+              "global": {
+                "koreaeximRunItems": {
+                  "31": [
+                    {
+                      "id": 101,
+                      "currency_code": "USD",
+                      "api_currency_unit": "USD",
+                      "unit_divisor": 1,
+                      "source_rate": "1328.400000",
+                      "previous_rate": "1325.10000000",
+                      "new_rate": "1328.40000000",
+                      "status": "applied",
+                      "status_label": "반영됨"
+                    },
+                    {
+                      "id": 102,
+                      "currency_code": "JPY",
+                      "api_currency_unit": "JPY(100)",
+                      "unit_divisor": 100,
+                      "source_rate": "905.720000",
+                      "previous_rate": "9.03100000",
+                      "new_rate": "9.05720000",
+                      "status": "applied",
+                      "status_label": "반영됨"
+                    },
+                    {
+                      "id": 103,
+                      "currency_code": "EUR",
+                      "api_currency_unit": "EUR",
+                      "unit_divisor": 1,
+                      "source_rate": "1452.900000",
+                      "previous_rate": "1452.90000000",
+                      "new_rate": "1452.90000000",
+                      "status": "unchanged",
+                      "status_label": "변동 없음"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": "validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "comment": "저장 검증 실패 — _local.errors 가 각 입력칸 아래 빨간 안내로 그려진다. hasChanges 를 켜야 저장 버튼이 활성 상태로 보인다.",
+            "initialState": {
+              "query": {
+                "tab": "settings"
+              },
+              "local": {
+                "hasChanges": true,
+                "isSaving": false
+              }
+            },
+            "formErrors": {
+              "_local.errors.auth_key": [
+                "인증키를 입력해 주세요."
+              ],
+              "_local.errors.update_time": [
+                "HH:MM 형식으로 입력해 주세요."
+              ],
+              "_local.errors.retry_max": [
+                "0 이상 10 이하의 값을 입력해 주세요."
+              ]
+            }
+          },
+          {
+            "id": "read_only",
+            "label": "$t:editor.state.read_only",
+            "comment": "권한이 없는 운영자 화면 — abilities.can_manage 가 false 면 상단 안내 줄(alert-info)이 뜨고 저장 버튼이 잠긴다(_computed.isReadOnly).",
+            "initialState": {
+              "query": {
+                "tab": "settings"
+              }
+            },
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "koreaeximStatus": {
+                  "data": {
+                    "auto_manage": true,
+                    "auth_key_set": true,
+                    "base_currency": "KRW",
+                    "managed_codes": [
+                      "USD",
+                      "JPY",
+                      "EUR"
+                    ],
+                    "unsupported_codes": [],
+                    "last_run": null,
+                    "last_success_run": null,
+                    "today_request_count": 0,
+                    "quota_limit": 1000,
+                    "next_run_at": null,
+                    "next_run_at_kst": null,
+                    "update_time_site": "11:30",
+                    "scheduler_hint": "자동 실행에는 서버 스케줄러가 필요합니다.",
+                    "abilities": {
+                      "can_manage": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "알림 템플릿 편집 모달 — 폼 전체가 _global.koreaexim_notification_template_form_modal 아래에 있고 그 값은 카드의 [편집] 클릭이 담는다. 상태로 담지 않으면 제목·본문·수신자 구역이 모두 빈 채로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_koreaexim_notification_template_edit"
+        },
+        "items": [
+          {
+            "id": "template_edit",
+            "label": "$t:editor.state.notification_template_edit",
+            "default": true,
+            "comment": "수신자 유형은 서로 배타 입력칸이라 한 건씩 넣어 모두 열어 둔다. 역할·특정 회원은 여러 개를 고르는 칸이라 값이 배열이다. 관련 사용자는 환율 갱신 실패 정의가 관계를 선언하지 않아 실제 화면에 나오지 않으므로 넣지 않는다.",
+            "initialState": {
+              "global": {
+                "koreaexim_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "koreaexim_update_failed",
+                    "relations": [],
+                    "name": {
+                      "ko": "환율 갱신 실패 알림",
+                      "en": "Exchange rate update failed"
+                    },
+                    "variables": [
+                      {
+                        "key": "name"
+                      },
+                      {
+                        "key": "status_label"
+                      },
+                      {
+                        "key": "message"
+                      },
+                      {
+                        "key": "search_date"
+                      },
+                      {
+                        "key": "settings_url"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/admin/plugins/sirsoft-koreaexim/settings",
+                    "subject": {
+                      "ko": "[{app_name}] 환율 갱신 실패 ({search_date})",
+                      "en": "[{app_name}] Exchange rate update failed ({search_date})"
+                    },
+                    "body": {
+                      "ko": "<p>{name}님, {search_date} 환율 갱신이 {status_label} 로 끝났습니다.</p><p>{message}</p>",
+                      "en": "<p>{name}, the {search_date} update finished as {status_label}.</p><p>{message}</p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "role",
+                      "value": [
+                        "admin"
+                      ],
+                      "display_names": [
+                        "최고 관리자"
+                      ],
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "",
+                    "body": ""
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "template_edit_validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "comment": "모달 상단 오류 목록(koreaexim_template_validation_error)은 errors 가 객체일 때만 그려진다.",
+            "initialState": {
+              "global": {
+                "koreaexim_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": {
+                    "subject.ko": [
+                      "제목을 입력해 주세요."
+                    ],
+                    "body.ko": [
+                      "본문을 입력해 주세요."
+                    ]
+                  },
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "koreaexim_update_failed",
+                    "relations": [],
+                    "name": {
+                      "ko": "환율 갱신 실패 알림",
+                      "en": "Exchange rate update failed"
+                    },
+                    "variables": [
+                      {
+                        "key": "name"
+                      },
+                      {
+                        "key": "message"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "",
+                    "subject": {
+                      "ko": "",
+                      "en": ""
+                    },
+                    "body": {
+                      "ko": "",
+                      "en": ""
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    }
+                  ],
+                  "roleSearchResults": [],
+                  "userSearchResults": [],
+                  "preview": {
+                    "subject": "",
+                    "body": ""
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "알림 템플릿 미리보기 모달 — preview.subject/body 만 읽는다. 값이 없으면 빈 상자로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_koreaexim_notification_definition_preview"
+        },
+        "items": [
+          {
+            "id": "template_preview",
+            "label": "$t:editor.state.notification_template_preview",
+            "default": true,
+            "initialState": {
+              "global": {
+                "koreaexim_notification_template_form_modal": {
+                  "preview": {
+                    "subject": "[샘플 사이트] 환율 갱신 실패 (2026-09-18)",
+                    "body": "<p>운영자님, 2026-09-18 환율 갱신이 일부 성공 으로 끝났습니다.</p><p>EUR 은 고시 환율이 없어 건너뛰었습니다.</p>"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

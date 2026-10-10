@@ -1,0 +1,34 @@
+feature: 템플릿 서비스 생명주기 위임
+
+description: |
+  TemplateService 가 템플릿 목록·설치·제거·활성화·비활성화를 TemplateManager 에 위임하고, 실패를
+  ValidationException 으로 바꾸며, before_* 훅·필터를 발화하는 계약. 완료 훅(after_*)은 Manager 가
+  발화하므로 Service 는 중복 발화하지 않는다(#138). 매니저 실패 문구는 번역의 :error 자리에 원인을 넣는다 —
+  자리표시자를 남기지 않는다(#703).
+
+axes:
+  operation: [list, install, uninstall, activate, deactivate, failure_message]
+
+effects:
+  - get_all_templates_returns_installed_and_uninstalled
+  - get_all_templates_filters_by_type
+  - get_installed_templates_only
+  - get_uninstalled_templates_only
+  - get_template_info
+  - install_template_successfully
+  - install_template_throws_exception_on_failure
+  - uninstall_template_successfully
+  - uninstall_template_throws_exception_on_failure
+  - deactivate_template_successfully
+  - deactivate_template_throws_exception_on_failure
+  - activates_template_with_hook_system
+  - delegates_file_copy_to_manager
+  - filter_activate_data_left_to_manager_not_applied_by_service
+  - throws_exception_on_manager_failure
+  - throws_exception_when_template_not_found
+  - template_failure_message_fills_error_placeholder
+
+test_files:
+  - tests/Feature/Services/TemplateServiceInstallationTest.php
+  - tests/Feature/Services/TemplateServiceTest.php
+  - tests/Feature/Services/TemplateServiceFailureMessageTest.php

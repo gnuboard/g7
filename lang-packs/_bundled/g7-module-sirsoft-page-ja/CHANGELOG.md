@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-10-10
+
+### Added
+
+- 페이지 생성·수정 검증 문구의 칸 이름 「ページタイトル」·「ページ本文」(`validation.attributes.title`·`content`)의 일본어 번역을 추가했습니다.
+- 페이지 첨부 설정 조회 결과 안내 문구와, 화면 편집기의 데이터 출처 「첨부 설정」 이름의 일본어 번역을 추가했습니다. 페이지 작성 화면이 첨부 개수·용량 상한과 허용 형식을 설정에서 읽어 오면서 생긴 문구입니다.
+- 관리자 페이지 상세의 첨부파일 내려받기 실패 안내 문구 일본어 번역을 추가했습니다.
+- 등록 권한이 없는 관리자가 페이지 작성 화면에 들어왔을 때의 읽기 전용 안내(`admin.page.form.read_only_message_create`)와 편집기 데이터 출처 「등록 권한 확인」, 임시 첨부 키 검증 오류의 항목 이름(`validation.attributes.temp_key`), 미리보기를 제공하지 않는 형식 안내(`messages.attachment.preview_not_supported`)의 일본어 번역을 추가했습니다.
+- 설치할 때 만드는 기본 페이지(이용약관·개인정보처리방침·취소/반품/교환 정책·소개·자주 묻는 질문·문의하기)에 일본어 제목과 본문이 함께 들어가도록 일본어 시드를 추가했습니다.
+
 ## [1.0.2] - 2026-08-10
 
 ### Added

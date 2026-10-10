@@ -21,6 +21,11 @@ class NotificationDefinitionControllerTest extends TestCase
 
     private string $token;
 
+    /**
+     * 관리자와 토큰을 만들어 각 시험의 출발 상태를 맞춥니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,6 +35,12 @@ class NotificationDefinitionControllerTest extends TestCase
 
     /**
      * 목록 조회 성공 — pagination + abilities 포함
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=list
+     *
+     * @effects definition_list_carries_pagination_and_abilities
      */
     public function test_index_returns_definitions_with_pagination_and_abilities(): void
     {
@@ -57,7 +68,18 @@ class NotificationDefinitionControllerTest extends TestCase
     }
 
     /**
-     * 목록 조회 — templates 없는 definition은 빈 배열 반환 (json 직렬화 에러 없음)
+     * 목록 조회 — templates 가 없는 정의도 빈 배열로 직렬화된다 (json 직렬화 에러 없음).
+     *
+     * 채널을 지정해야 `templates` 가 실린다. 지정하지 않으면 키 자체가 없는 것이 계약이고
+     * (정의 하나당 채널 × 로케일만큼의 제목·본문이 실리는 것을 막는다), 그 계약은
+     * `NotificationDefinitionListPayloadTest` 가 따로 고정한다 — 여기서 보는 것은
+     * 「템플릿이 하나도 없는 정의」가 null 이 아니라 빈 배열로 나가는가다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=list
+     *
+     * @effects definition_list_serializes_empty_templates_as_array
      */
     public function test_index_serializes_with_empty_templates(): void
     {
@@ -71,7 +93,7 @@ class NotificationDefinitionControllerTest extends TestCase
             'hooks' => [],
         ]);
 
-        $response = $this->authRequest()->getJson('/api/admin/notification-definitions');
+        $response = $this->authRequest()->getJson('/api/admin/notification-definitions?template_channel=mail');
 
         $response->assertStatus(200)
             ->assertJsonPath('data.data.0.templates', []);
@@ -79,6 +101,12 @@ class NotificationDefinitionControllerTest extends TestCase
 
     /**
      * 상세 조회 — templates 관계 로드됨
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=detail
+     *
+     * @effects definition_detail_loads_templates_relation
      */
     public function test_show_returns_definition_with_templates(): void
     {
@@ -112,6 +140,12 @@ class NotificationDefinitionControllerTest extends TestCase
 
     /**
      * 활성/비활성 토글
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=toggle
+     *
+     * @effects definition_toggle_flips_active_state
      */
     public function test_toggle_active(): void
     {
@@ -134,6 +168,12 @@ class NotificationDefinitionControllerTest extends TestCase
 
     /**
      * 정의 리셋 — 소속 템플릿 일괄 기본값 복원 + 정의도 기본 상태로 복구
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=reset
+     *
+     * @effects definition_reset_restores_definition_and_templates
      */
     public function test_reset_restores_all_templates_to_defaults(): void
     {
@@ -168,6 +208,12 @@ class NotificationDefinitionControllerTest extends TestCase
 
     /**
      * 정의 리셋 — 권한 없는 사용자 403
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=reset
+     *
+     * @effects definition_reset_requires_settings_update_permission
      */
     public function test_reset_requires_settings_update_permission(): void
     {
@@ -196,6 +242,12 @@ class NotificationDefinitionControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자 — 403
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario endpoint=list
+     *
+     * @effects definition_list_requires_settings_read_permission
      */
     public function test_index_requires_settings_read_permission(): void
     {
@@ -215,7 +267,7 @@ class NotificationDefinitionControllerTest extends TestCase
     /**
      * 인증된 요청 헬퍼.
      *
-     * @return static
+     * @return static 인증 헤더가 붙은 요청 빌더
      */
     private function authRequest(): static
     {
@@ -228,7 +280,7 @@ class NotificationDefinitionControllerTest extends TestCase
     /**
      * 관리자 생성 헬퍼.
      *
-     * @return User
+     * @return User 설정 읽기·쓰기 권한을 가진 관리자
      */
     private function createAdminWithPermissions(): User
     {

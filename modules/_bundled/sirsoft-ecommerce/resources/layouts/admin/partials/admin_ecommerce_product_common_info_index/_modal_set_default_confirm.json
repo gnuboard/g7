@@ -1,142 +1,144 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Common Info Set Default Confirm Modal (View Panel)"
-  },
-  "id": "modal_set_default_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-body text-center"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message"
+    "comment": "보기 패널에서 이 공통정보를 기본값으로 지정하는 확인 창. 편집을 거치지 않고 **곧바로 서버에\n  반영한다** — 같은 이름의 편집용 창(`_modal_default_confirm`)이 체크만 켜 두는 것과 다르다.\n  성공하면 응답을 선택 항목에 갈아끼우고 목록도 다시 부른다 — 다른 항목의 기본 표시가 함께 풀리기\n  때문에 목록 전체가 낡는다.\n  진행 깃발이 전역이라 두 버튼이 함께 잠긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Set Default Confirm Modal (View Panel)"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "modal_set_default_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isSettingDefault}}"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-body text-center"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message"
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isSettingDefault}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isSettingDefault": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSettingDefault}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "{{'/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId}}",
-                  "params": {
-                    "method": "PUT",
-                    "body": {
-                      "name": "{{_global.selectedItem?.name}}",
-                      "is_default": true
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isSettingDefault": false,
-                        "selectedItem": "{{response.data}}"
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "기본값 지정 실행. 성공 갈래에서 선택 항목을 응답으로 갈아끼우고 목록도 다시 부른다 — 다른 항목의 기본 표시가 함께 풀려 목록 전체가 낡기 때문이다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isSettingDefault": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PUT",
+                                        "body": {
+                                            "name": "{{_global.selectedItem?.name}}",
+                                            "is_default": true
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSettingDefault": false,
+                                                "selectedItem": "{{response.data}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "commonInfos"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSettingDefault": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSettingDefault}}"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "commonInfos"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "{{response.message}}"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isSettingDefault": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isSettingDefault}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isSettingDefault ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.common_info.button.confirm'}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isSettingDefault}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isSettingDefault ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.common_info.button.confirm'}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

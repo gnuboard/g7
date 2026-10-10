@@ -8,6 +8,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_3;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 1.0.3 게시글 목록 조회수 정렬 색인 업그레이드 스텝 테스트
@@ -20,10 +21,9 @@ use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_3;
  * - 색인이 없는 상태(기설치본 모사)에서 스텝이 색인을 만든다
  * - 재실행해도 예외 없이 결과가 같다 (멱등)
  * - 인기글 조회가 쓰는 기존 색인을 건드리지 않는다
- *
- * @group board
- * @group upgrade
  */
+#[Group('board')]
+#[Group('upgrade')]
 class PostListViewCountIndexUpgradeTest extends BoardTestCase
 {
     private const TABLE = 'board_posts';
@@ -33,11 +33,22 @@ class PostListViewCountIndexUpgradeTest extends BoardTestCase
     /** 인기글 조회가 이름으로 의존하는 기존 색인 — 보존되어야 한다. */
     private const LEGACY_INDEX_NAME = 'idx_board_posts_board_view_count';
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'post-list-view-count-index';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -50,9 +61,11 @@ class PostListViewCountIndexUpgradeTest extends BoardTestCase
     /**
      * 색인이 없는 기설치본에서 업그레이드 스텝이 색인을 만든다
      *
-     * @scenario case=post_list_view_count_index_upgrade
+     * @scenario upgrade_step=view_count_list_index, existing_data=needs_change
      *
      * @effects view_count_list_index_created_on_existing_site
+     *
+     * @return void 반환값 없음
      */
     public function test_색인이_없으면_업그레이드_스텝이_생성한다(): void
     {
@@ -70,9 +83,11 @@ class PostListViewCountIndexUpgradeTest extends BoardTestCase
     /**
      * 재실행해도 예외 없이 결과가 같다 (멱등)
      *
-     * @scenario case=post_list_view_count_index_upgrade
+     * @scenario upgrade_step=view_count_list_index, existing_data=already_applied
      *
      * @effects view_count_list_index_upgrade_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_이미_있으면_재실행해도_결과가_같다(): void
     {
@@ -92,9 +107,11 @@ class PostListViewCountIndexUpgradeTest extends BoardTestCase
     /**
      * 인기글 조회가 쓰는 기존 색인을 건드리지 않는다
      *
-     * @scenario case=post_list_view_count_index_upgrade
+     * @scenario upgrade_step=view_count_list_index, existing_data=needs_change
      *
      * @effects legacy_popular_posts_index_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_기존_인기글_색인을_보존한다(): void
     {
@@ -112,6 +129,8 @@ class PostListViewCountIndexUpgradeTest extends BoardTestCase
 
     /**
      * 1.0.3 업그레이드 스텝을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function runUpgrade(): void
     {
@@ -122,6 +141,8 @@ class PostListViewCountIndexUpgradeTest extends BoardTestCase
 
     /**
      * 대상 색인이 존재하면 제거합니다 (기설치본 모사).
+     *
+     * @return void 반환값 없음
      */
     private function dropIndexIfExists(): void
     {

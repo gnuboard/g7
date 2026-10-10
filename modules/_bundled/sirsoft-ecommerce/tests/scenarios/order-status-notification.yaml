@@ -84,9 +84,17 @@ effects:
   - no_duplicate_payment_complete_type_created                     # 중복 type 금지
   # 브라우저 E2E (Playwright)
   - admin_status_change_triggers_user_notification
+  # 주문 알림 데이터 (Unit — EcommerceNotificationDataListenerTest)
+  - order_notification_amount_uses_paid_then_total                 # 결제액 우선, 0 이면 주문 총액
+  - member_order_notification_uses_member_name_and_mypage_url
+  - guest_order_notification_uses_orderer_name_and_lookup_url
+  - staff_order_status_notifications_carry_order_data              # 결제완료·구매확정 관리자 알림도 신규 주문 관리자 알림과 같은 변수
+  - pending_deposit_notification_only_for_dbank_with_due_amount    # 무통장 + 입금 필요액 > 0 만
+  - pending_deposit_amount_in_order_currency
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderStatusNotificationListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceNotificationDataListenerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/OrderStatusNotificationTest.php

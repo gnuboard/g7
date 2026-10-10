@@ -1,0 +1,53 @@
+<!-- 주문을 진행할 수 없는 항목(품절·판매중지)을 알리는 창. 닫기·바깥 클릭을 막아 둔 이유는 이 창이
+     흐름을 끊는 자리라 «봤다» 는 선택을 반드시 받아야 하기 때문이다. 장바구니와 주문서가 함께 쓴다. -->
+<partial description="장바구니 구매불가 상품 안내 모달" editor_label="$t:user.modal_label.shop.cart_unavailable_modal">
+  <modal data-type="composite" data-ref="cart_unavailable_modal" title="{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_title' : '$t:shop.cart.unavailable_title'}}" size="md" :showCloseButton="false" :closeOnOverlayClick="false">
+    <!-- 모달 내용 -->
+    <div class="p-4">
+      <div class="flex items-center gap-3 mb-4">
+        <icon name="triangle-exclamation" class="text-2xl text-amber-500"/>
+        <p class="text-gray-700 dark:text-gray-300">{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_message' : '$t:shop.cart.unavailable_message'}}</p>
+      </div>
+      <!-- 문제 상품 목록 -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-60 overflow-y-auto">
+        <div data-each="unavailableItem, unavailableIdx in {{$parent._local.unavailableModal.items ?? []}}" class="space-y-2">
+          <div class="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded">
+            <div class="w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600 flex-shrink-0">
+              <img data-if="{{unavailableItem.thumbnail}}" src="{{unavailableItem.thumbnail}}" alt="{{unavailableItem.name}}" class="w-full h-full object-cover"/>
+              <div data-if="{{!unavailableItem.thumbnail}}" class="w-full h-full flex items-center justify-center">
+                <icon name="image" size="md" class="text-gray-400 dark:text-gray-500"/>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{unavailableItem.name}}</p>
+              <p data-if="{{unavailableItem.option}}" class="text-xs text-gray-500 dark:text-gray-400">{{unavailableItem.option}}</p>
+              <!-- 재고부족 표시 -->
+              <p data-if="{{unavailableItem.reason === 'stock'}}" class="text-xs text-red-600 dark:text-red-400">$t:shop.cart.insufficient_stock_item|name={{unavailableItem.name}}|option={{unavailableItem.option}}|stock={{unavailableItem.stock}}|quantity={{unavailableItem.quantity}}</p>
+              <!-- 판매중지 표시 -->
+              <p data-if="{{unavailableItem.reason === 'status'}}" class="text-xs text-red-600 dark:text-red-400">$t:shop.cart.not_on_sale</p>
+              <!-- 최대 구매수량 초과 표시 -->
+              <p data-if="{{unavailableItem.reason === 'max_qty'}}" class="text-xs text-red-600 dark:text-red-400">$t:shop.cart.max_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}</p>
+              <!-- 최소 구매수량 미달 표시 -->
+              <p data-if="{{unavailableItem.reason === 'min_qty'}}" class="text-xs text-red-600 dark:text-red-400">$t:shop.cart.min_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}</p>
+              <!-- 구매 대상 제한 표시 -->
+              <p data-if="{{unavailableItem.reason === 'restricted'}}" class="text-xs text-red-600 dark:text-red-400">$t:shop.cart.restricted_item</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 모달 푸터 -->
+    <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+      <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+        <on type="click">
+          <!-- 이 창의 유일한 출구 — 문제 항목을 정리하러 장바구니로 되돌린다 -->
+          <sequence>
+            <close-modal target="cart_unavailable_modal"/>
+            <navigate path="{{_global.shopBase}}/cart"/>
+          </sequence>
+        </on>
+        $t:shop.cart.go_to_cart
+      </button>
+    </div>
+  </modal>
+</partial>

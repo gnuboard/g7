@@ -1,78 +1,79 @@
 {
-  "version": "1.0.0",
-  "layout_name": "errors/403",
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:errors.403.title",
-    "is_error_layout": true,
-    "error_code": 403
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "error_container",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
-        },
-        "children": [
-          {
-            "id": "error_icon",
-            "type": "basic",
-            "name": "Icon",
-            "props": {
-              "name": "shield-x",
-              "className": "w-24 h-24 text-red-400 dark:text-red-500 mb-6"
+    "comment": "로그인은 됐으나 그 화면에 대한 권한이 없을 때의 에러 화면.\n  401 과 달리 되돌릴 수 있는 상태가 아니므로 재시도 안내 없이 대시보드로 나가는 길만 준다.\n  권한 판정은 서버(permission 미들웨어)가 하고 이 레이아웃은 그 결과만 표시한다.",
+    "version": "1.0.0",
+    "layout_name": "errors/403",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:errors.403.title",
+        "is_error_layout": true,
+        "error_code": 403
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "error_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
+                },
+                "children": [
+                    {
+                        "id": "error_icon",
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "shield-halved",
+                            "className": "text-8xl text-red-400 dark:text-red-500 mb-6"
+                        }
+                    },
+                    {
+                        "id": "error_code",
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                            "className": "text-primary text-6xl font-bold mb-4"
+                        },
+                        "text": "403"
+                    },
+                    {
+                        "id": "error_title",
+                        "type": "basic",
+                        "name": "H2",
+                        "props": {
+                            "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                        },
+                        "text": "$t:errors.403.title"
+                    },
+                    {
+                        "id": "error_message",
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400 mb-8 max-w-md"
+                        },
+                        "text": "$t:errors.403.message"
+                    },
+                    {
+                        "id": "back_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin"
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                        },
+                        "text": "$t:errors.back_home"
+                    }
+                ]
             }
-          },
-          {
-            "id": "error_code",
-            "type": "basic",
-            "name": "H1",
-            "props": {
-              "className": "text-primary text-6xl font-bold mb-4"
-            },
-            "text": "403"
-          },
-          {
-            "id": "error_title",
-            "type": "basic",
-            "name": "H2",
-            "props": {
-              "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            },
-            "text": "$t:errors.403.title"
-          },
-          {
-            "id": "error_message",
-            "type": "basic",
-            "name": "P",
-            "props": {
-              "className": "text-gray-500 dark:text-gray-400 mb-8 max-w-md"
-            },
-            "text": "$t:errors.403.message"
-          },
-          {
-            "id": "back_button",
-            "type": "basic",
-            "name": "Button",
-            "props": {
-              "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-            },
-            "text": "$t:errors.back_home",
-            "actions": [
-              {
-                "type": "click",
-                "handler": "navigate",
-                "params": {
-                  "path": "/admin"
-                }
-              }
-            ]
-          }
         ]
-      }
-    ]
-  }
+    }
 }

@@ -8,6 +8,7 @@ use App\Http\Requests\NotificationTemplate\UpdateNotificationTemplateRequest;
 use App\Http\Resources\NotificationTemplateResource;
 use App\Models\NotificationTemplate;
 use App\Services\NotificationTemplateService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Log;
 class NotificationTemplateController extends AdminBaseController
 {
     /**
-     * @param NotificationTemplateService $templateService
+     * @param  NotificationTemplateService  $templateService
      */
     public function __construct(
         private readonly NotificationTemplateService $templateService,
@@ -27,9 +28,9 @@ class NotificationTemplateController extends AdminBaseController
     /**
      * 알림 템플릿을 수정합니다.
      *
-     * @param UpdateNotificationTemplateRequest $request
-     * @param NotificationTemplate $template
-     * @return \Illuminate\Http\JsonResponse
+     * @param  UpdateNotificationTemplateRequest  $request
+     * @param  NotificationTemplate  $template
+     * @return JsonResponse
      */
     public function update(UpdateNotificationTemplateRequest $request, NotificationTemplate $template)
     {
@@ -57,8 +58,8 @@ class NotificationTemplateController extends AdminBaseController
     /**
      * 알림 템플릿 활성/비활성을 토글합니다.
      *
-     * @param NotificationTemplate $template
-     * @return \Illuminate\Http\JsonResponse
+     * @param  NotificationTemplate  $template
+     * @return JsonResponse
      */
     public function toggleActive(NotificationTemplate $template)
     {
@@ -82,8 +83,8 @@ class NotificationTemplateController extends AdminBaseController
     /**
      * 알림 템플릿 미리보기를 반환합니다.
      *
-     * @param PreviewNotificationTemplateRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param  PreviewNotificationTemplateRequest  $request
+     * @return JsonResponse
      */
     public function preview(PreviewNotificationTemplateRequest $request)
     {
@@ -101,8 +102,8 @@ class NotificationTemplateController extends AdminBaseController
     /**
      * 알림 템플릿을 기본값으로 복원합니다.
      *
-     * @param NotificationTemplate $template
-     * @return \Illuminate\Http\JsonResponse
+     * @param  NotificationTemplate  $template
+     * @return JsonResponse
      */
     public function reset(NotificationTemplate $template)
     {
@@ -114,6 +115,8 @@ class NotificationTemplateController extends AdminBaseController
 
             $defaultData = $this->templateService->getDefaultTemplateData($definition->type, $template->channel);
             if (empty($defaultData)) {
+                $this->templateService->notifyLegacyResetWithoutDefault($template);
+
                 return $this->error(__('notification.default_data_not_found'), 404);
             }
 
@@ -132,5 +135,4 @@ class NotificationTemplateController extends AdminBaseController
             return $this->error(__('notification.template_reset_failed'), 500);
         }
     }
-
 }

@@ -39,9 +39,13 @@ class ActivityLogResource extends BaseApiResource
             'user' => $this->user ? [
                 'uuid' => $this->user->uuid,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : [
-                'name' => __('common.system'),
+                // 행위자 회원이 없는 로그(시스템·CLI·탈퇴 회원). uuid 를 null 로 명시해 화면이
+                // 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 그리지 않게 한다 — 종전에는 uuid
+                // 키가 없어 /admin/users/undefined 로 이동했다.
+                'uuid' => null,
+                'name' => $this->actor_name,
             ],
             'ip_address' => $this->ip_address,
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
@@ -55,7 +59,7 @@ class ActivityLogResource extends BaseApiResource
      * 단일 수정: changes = [{field, old, new}, ...]
      * 일괄 수정: bulk_changes = [{model_id, changes: [{field, old, new}, ...]}, ...]
      *
-     * @param array|null $changes 원본 changes 데이터
+     * @param  array|null  $changes  원본 changes 데이터
      * @return array changes + bulk_changes 키를 포함하는 배열
      */
     private function formatChangesOutput(?array $changes): array
@@ -90,7 +94,7 @@ class ActivityLogResource extends BaseApiResource
      * 모델의 현재 $activityLogFields에서 'enum'으로 정의된 필드는
      * 동적으로 enum 라벨을 해석합니다.
      *
-     * @param array $changes 변경 항목 배열
+     * @param  array  $changes  변경 항목 배열
      * @return array 번역된 변경 항목 배열
      */
     private function translateChangeGroup(array $changes): array
@@ -137,7 +141,7 @@ class ActivityLogResource extends BaseApiResource
     /**
      * 다국어 JSON 값에서 현재 로케일 텍스트를 추출합니다.
      *
-     * @param mixed $value 원본 값 (배열이면 로케일 추출, 아니면 그대로 반환)
+     * @param  mixed  $value  원본 값 (배열이면 로케일 추출, 아니면 그대로 반환)
      * @return mixed 로케일 텍스트 또는 원본 값
      */
     private function extractLocaleValue(mixed $value): mixed
@@ -180,8 +184,8 @@ class ActivityLogResource extends BaseApiResource
      * 하위 호환: 기존 DB 레코드에서 count 파라미터가 누락되어
      * `:count` 플레이스홀더가 미치환되는 문제를 방지합니다.
      *
-     * @param string $description 번역된 설명 문자열
-     * @param array|null $changes 변경 사항 데이터
+     * @param  string  $description  번역된 설명 문자열
+     * @param  array|null  $changes  변경 사항 데이터
      * @return string 보정된 설명 문자열
      */
     private function resolveUnreplacedCount(string $description, ?array $changes): string

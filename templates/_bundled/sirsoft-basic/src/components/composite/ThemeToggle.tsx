@@ -6,6 +6,13 @@ import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /**
  * 테마 모드 타입
  */
@@ -95,12 +102,16 @@ const getInitialTheme = (): ThemeMode => {
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   onThemeChange,
   className = '',
-  autoText = 'System',
-  lightText = 'Light',
-  darkText = 'Dark',
+  autoText: autoTextProp,
+  lightText: lightTextProp,
+  darkText: darkTextProp,
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const autoText = autoTextProp ?? tOr('common.theme.auto', 'System');
+  const lightText = lightTextProp ?? tOr('common.theme.light', 'Light');
+  const darkText = darkTextProp ?? tOr('common.theme.dark', 'Dark');
   // 초기 테마를 즉시 로드하고 적용
   const initialTheme = getInitialTheme();
   const [currentMode, setCurrentMode] = useState<ThemeMode>(initialTheme);
@@ -169,7 +180,10 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       <Button
         onClick={() => setShowMenu(!showMenu)}
         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
-        aria-label="Toggle theme"
+        // 언어와 무관하게 「Toggle theme」 이던 이름을 번역한다(7.1.0 J D-J5). 번역이 없을 때의 대체 문구는
+        // 다른 기본 문구와 같이 영어다(컴포넌트 다국어 규칙 — 한국어 기본값 금지)
+        aria-label={tOr('common.theme_select', 'Theme')}
+        aria-expanded={showMenu}
       >
         <Icon
           name={getCurrentIcon()}

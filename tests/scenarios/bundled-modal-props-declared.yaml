@@ -1,0 +1,20 @@
+feature: 번들 레이아웃 창(Modal) 속성 선언 가드
+
+description: |
+  쇼핑몰 관리자 창 17곳의 `description` 과 메인 배너 이탈 확인 창의 `titleIcon`·`titleIconColor` 는
+  관리자 템플릿 Modal 이 받지 않는 속성이라 화면에 한 번도 나오지 않았다(7.1.0 브라우저 실측).
+  2026-10-04 결정 1 로 레이아웃과 그 번역 키를 걷어냈고, 같은 속성이 다시 들어오지 않도록
+  번들 레이아웃 전체의 Modal 속성을 템플릿 components.json 의 Modal 선언과 대조한다.
+
+  축 template 은 대조 기준이다. 관리자 화면 레이아웃은 sirsoft-admin_basic, 그 밖은 sirsoft-basic 의
+  선언과 대조한다. `data-*` 와 `id` 는 화면 문구나 모양을 바꾸지 않는 표지라 대상이 아니다.
+
+axes:
+  template: [admin_basic, basic]
+
+effects:
+  - undeclared_modal_prop_is_reported
+  - bundled_modals_use_only_declared_props
+
+test_files:
+  - resources/js/core/template-engine/__tests__/BundledModalPropsDeclared.test.ts

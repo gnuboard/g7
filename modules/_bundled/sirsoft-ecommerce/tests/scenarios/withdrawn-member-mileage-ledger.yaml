@@ -1,0 +1,47 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   회원 상태 × 사건 × 마일리지 유형의 전 조합 중 갈래는 둘이다 — 탈퇴·삭제 처리(forfeitForWithdrawal·
+#   detachForUserDeletion)와 탈퇴 뒤 지급(forfeitIfWithdrawn, 유형과 무관한 공통 경로). 갈래마다 대표 조합과
+#   멱등·안전망(외래키)·집계 방어를 못박는다. effects 축은 면제하지 않는다.
+# e2e:allow 화면 변경은 관리자 내역의 「삭제된 회원」 문구와 탈퇴 확인 창 경고 한 줄이다 — 레이아웃 구조 테스트가
+#   노출 조건을, 실제 화면은 07 문서 Chrome MCP 실측(W1)이 잰다.
+feature: 회원 탈퇴·삭제 시 마일리지 원장 보존과 탈퇴 경고 (E3 · Q18 · Q19 · Q20) — #747 C5
+
+description: |
+  예전에는 회원 탈퇴·삭제 때 마일리지 원장·잔액 캐시 행을 지워 지급·사용·소멸 경위가 사라졌다.
+
+    - 탈퇴: 남은 마일리지를 「탈퇴로 소멸」 거래(expired, metadata.reason=withdrawal)로 기록하고 거래 행은 보존한다.
+    - 삭제(회원 행 하드 삭제): 소멸 기록 뒤 거래 행의 회원 연결만 끊는다(user_id NULL). 외래키도 nullOnDelete 로
+      바꿔 안전망으로 둔다. 잔액 캐시는 파생값이라 지운다. 연결이 끊긴 행은 잔액 재산출·소멸 배치가 건너뛴다.
+    - 탈퇴 뒤 도착하는 적립·환불 반환·현금 대체 지급(Q18)은 원래 거래를 기록하고 즉시 「탈퇴로 소멸」 한다.
+    - 유형 라벨 「유효기간 소멸」 → 「소멸」(Q19 — 탈퇴 소멸도 같은 유형).
+    - 탈퇴 확인 창은 환불로 받은 마일리지 잔여가 있으면 「그 금액도 소멸된다」 를 알린다(Q20).
+
+axes:
+  member_state: [active, withdrawn, deleted]
+  event: [withdraw, delete, credit_after_withdraw]
+  refund_credit: [present, absent]
+
+effects:
+  - withdrawal_and_deletion_have_separate_handlers
+  - withdrawal_forfeits_balance_and_keeps_ledger
+  - deletion_detaches_user_and_keeps_ledger
+  - detached_rows_are_skipped_by_balance_reconcile
+  - credit_to_withdrawn_member_is_recorded_then_forfeited
+  - admin_ledger_shows_deleted_member_for_detached_rows
+  - member_payload_carries_refund_credit_available
+  - withdraw_modal_warns_refund_credit_forfeiture
+  # 회원 응답의 마일리지 잔액 주입 (PHPUnit Unit — UserMileageInfoListenerTest)
+  - injects_mileage_summary_into_user_data
+  - injects_zero_filled_summary_for_user_without_activity
+  - injects_disabled_signal_when_mileage_disabled
+  - reads_cache_not_ledger_sum
+  - subscribes_to_filter_resource_data_as_filter_hook
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/UserMileageCleanupListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/UserMileageRefundCreditNoticeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/UserMileageInfoListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/UserMileageServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminMileageTransactionDeletedMember.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/extensions/mypageWithdrawRefundCreditNotice.test.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-withdraw-warning-anchor.test.ts

@@ -1,142 +1,143 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "배송정책 폼 - 기본정보 섹션 (정책명, 사용여부, 기본정책)"
-  },
-  "id": "basic_info_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "H2",
-      "props": {
-        "className": "card-title"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_basic"
+    "comment": "배송정책 폼의 기본 정보 구역 — 정책 이름·사용 여부·기본 정책 지정.\n  아래 국가별 설정들과 달리 **나라와 무관한 값**만 여기 있다. 폼 전체가 `_local.form` 한 그릇을\n  나눠 쓰므로 이 조각도 그 안에 직접 쓰고, 저장은 화면 하단에서 한 번에 한다.\n  '기본 정책' 은 상품에 정책이 지정되지 않았을 때 쓰이는 것이라 쇼핑몰에 하나뿐이다 — 여기서 켜면\n  다른 정책의 표시가 풀린다.",
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 기본정보 섹션 (정책명, 사용여부, 기본정책)"
     },
-    {
-      "id": "basic_info_fields",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
+    "id": "basic_info_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "id": "field_name",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.name"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-required"
-                      },
-                      "text": "*"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "MultilingualInput",
-                  "props": {
-                    "name": "name",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder",
-                    "maxLength": 200,
-                    "required": true,
-                    "layout": "tabs",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.name}}",
-                  "props": {
-                    "className": "form-error-xs"
-                  },
-                  "text": "{{_local.errors?.name?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ]
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_basic"
         },
         {
-          "id": "field_row_status",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col-responsive"
-          },
-          "children": [
-            {
-              "id": "field_is_active",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.is_active",
-                        "name": "is_active",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    }
-                  ]
-                }
-              ]
+            "id": "basic_info_fields",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
             },
-            {
-              "id": "field_is_default",
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.is_default",
-                        "name": "is_default",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    }
-                  ]
+                    "id": "field_name",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.name"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-required"
+                                            },
+                                            "text": "*"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "props": {
+                                        "name": "name",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder",
+                                        "maxLength": 200,
+                                        "required": true,
+                                        "layout": "tabs",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.name}}",
+                                    "props": {
+                                        "className": "form-error-xs"
+                                    },
+                                    "text": "{{_local.errors?.name?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "field_row_status",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "id": "field_is_active",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.is_active",
+                                                "name": "is_active",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_is_default",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.is_default",
+                                                "name": "is_default",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

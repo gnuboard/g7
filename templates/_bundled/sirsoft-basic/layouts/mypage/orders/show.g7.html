@@ -1,0 +1,164 @@
+<!-- 주문 상세 — 마이페이지 탭이 아니라 목록에서 들어가는 별도 화면이다. 비회원 주문 상세
+     (`shop/guest_order_show`)가 이 화면의 조각 다섯을 그대로 재사용하므로, 조각에는 회원 전용 값을
+     전제하는 코드를 두지 않는다. -->
+<layout name="mypage/orders/show" version="1.0.0" extends="_user_base">
+  <!-- 주문 본체 — 상태·결제·배송·항목이 모두 여기 담겨 온다. 취소·확정·배송지 변경 뒤에는 다시 받는다
+       SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onSuccess 가 발화하지 않는다 — 그러면 claimOrderId 를 세우고 claimable 을 부르는 체인이 통째로 건너뛰어져, 오류 없이 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 클레임 가능 여부는 진입할 때마다 서버가 다시 판정해야 하는 값이기도 하다. -->
+  <data-source id="order" label_key="$t:editor.data_source.order" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :cache="false" :refetchOnMount="true">
+    <init-local>
+      <field name="claimOrderId" value="id"/>
+    </init-local>
+    <success>
+      <!-- 클레임 가능 여부는 별도 엔드포인트가 판정한다(상품마다 어떤 유형이 열렸는지). 회원 클레임 API 는 주문 ID(정수)를 받는데 이 화면의 라우트는 주문번호를 쓰므로, 응답에서 받은 id 를 세운 뒤 claimable 을 부른다. 두 액션은 같은 sequence 안에 있어야 한다 — refetchDataSource 가 읽는 로컬 상태는 직전 setState 의 pending 값이다. -->
+      <sequence>
+        <set-state target="_local" claimOrderId="{{response.data.data.id}}"/>
+        <refetch-data-source dataSourceId="claimable"/>
+        <!-- 이 주문의 클레임 목록도 주문 ID 가 필요해 같은 체인에서 부른다 — 서브탭·페이지 이동은 주소만 바꾸고 이 화면을 다시 세우므로 그때마다 이 체인이 다시 돈다. -->
+        <refetch-data-source dataSourceId="claims"/>
+      </sequence>
+    </success>
+  </data-source>
+  <!-- 클레임 가능 상품·유형 — 버튼과 체크박스의 노출·활성 근거다. auto_fetch 를 끄고 order 응답이 도착한 뒤에만 부른다(주문 ID 가 필요하다). -->
+  <data-source id="claimable" label_key="$t:editor.data_source.claimable" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{_local.claimOrderId}}/claimable-options" method="GET" :auto_fetch="false" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="options" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 이 주문의 신청 내역 — 회원 신청내역 목록·비회원 주문상세 섹션과 같은 계약이다(유형 서브탭 하나 · 최신순 · 페이지). 회원 API 는 주문 ID 를 받으므로 auto_fetch 를 끄고 order 응답 뒤 체인에서 부른다. 철회한 신청서도 목록에 남으므로 페이지네이션은 필수다. 주소에 유형이 없으면 type 을 비워 보낸다 — 그러면 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 골라 응답 claim_type 으로 알려 주고, 공유 partial 이 그 값으로 활성 서브탭을 세운다(여기서 'exchange' 를 박으면 그 판정이 영영 돌지 않는다). 주석은 params 밖에 둔다 — params 의 키는 전부 쿼리스트링으로 전송된다. -->
+  <data-source id="claims" label_key="$t:editor.data_source.claims" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{_local.claimOrderId}}/claims" method="GET" :auto_fetch="false" :auth_required="true" :cache="false">
+    <params type="{{_local.claimsType ?? query.type ?? ''}}" page="{{_local.claimsPage ?? query.page ?? 1}}"/>
+  </data-source>
+  <!-- 회원 주소록 — 배송지 변경 창의 '저장된 배송지' 탭이 읽는다. 화면을 막지 않도록 진입 때 뒤에서 받아 두며, 배송지를 바꾼 뒤에는 주문만 다시 읽고 이 목록은 다시 받지 않는다. -->
+  <data-source id="userAddresses" label_key="$t:editor.data_source.userAddresses" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/addresses" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <!-- 리뷰 작성 규칙(사진 필수 여부·글자수 등). 로그인 없이도 읽히는 설정이라 인증을 걸지 않는다 -->
+  <data-source id="reviewSettings" label_key="$t:editor.data_source.reviewSettings" type="api" endpoint="/api/modules/sirsoft-ecommerce/settings/review" method="GET" :auto_fetch="true"/>
+  <init-local>
+    <field name="isGuest" :value="false"/>
+    <field name="withdrawRefreshDataSourceId" value="claims"/>
+    <field name="withdrawRefreshClaimable" :value="true"/>
+    <field name="claimDetailLinkMode" value="new_window"/>
+    <field name="claimWithdrawApiBase" value="/api/modules/sirsoft-ecommerce/user/claims"/>
+    <field name="claimDetailPathBase" value="/mypage/claims"/>
+    <field name="claimEmptyCtaPath" value="/mypage/orders"/>
+    <field name="isSubmittingAddress" :value="false"/>
+    <field name="selectedItemIds" :value="[]"/>
+    <field name="selectAllItems" :value="false"/>
+    <field name="confirmTarget" :value="null"/>
+    <field name="isConfirming" :value="false"/>
+    <field name="reviewTarget" :value="null"/>
+    <field name="reviewRating" :value="5"/>
+    <field name="reviewContent" value=""/>
+    <field name="reviewImages" :value="[]"/>
+    <field name="isSubmittingReview" :value="false"/>
+    <field name="reviewError" :value="null"/>
+  </init-local>
+  <permissions/>
+  <init>
+    <!-- 공유 목록 partial 이 서브탭·페이지 왕복에 쓰는 화면 주소 — 이 화면 자신이다. 레이아웃 initLocal 은 표현식을 해석하지 않으므로(값을 그대로 복사한다) 주문번호가 들어가는 값은 여기서 세운다(비회원 셸과 같은 규칙). -->
+    <set-state target="local" claimListPath="{{'/mypage/orders/' + (route.order_number ?? '')}}"/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 뒤로가기 헤더 -->
+        <div class="flex items-center gap-2 mb-6">
+          <responsive on="portable" class="flex items-center gap-2 mb-4"/>
+          <button class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+            <on type="click">
+              <!-- 주문 목록으로. 보던 목록 상태를 이고 간다 -->
+              <navigate path="/mypage/orders" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="chevron-left" size="md"/>
+            <span class="text-base font-medium">$t:mypage.order_detail.back</span>
+          </button>
+        </div>
+        <!-- 주문 상세 카드 컨테이너 -->
+        <div class="max-w-3xl mx-auto space-y-4">
+          <responsive on="portable" class="space-y-3"/>
+          <include src="partials/mypage/orders/_status_header.g7.html"/>
+          <include src="partials/mypage/orders/_items.g7.html"/>
+          <!-- 클레임 신청 버튼 3종 — 체크한 상품에 그 유형이 열려 있고 권한이 있을 때만 활성이다(신청 권한 = abilities.can_request, 바로 취소되는 상품은 주문 취소 권한 = abilities.can_cancel 도). 열린 유형은 서버(claimable-options)가 상품마다 판정하므로 화면이 상태를 다시 해석하지 않는다. 열린 상품이 하나도 없으면 이 줄 자체가 나타나지 않는다. -->
+          <div data-if="{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}" class="flex flex-row items-center justify-center gap-3 bg-white dark:bg-gray-800 rounded-lg p-4">
+            <responsive on="portable" class="flex flex-col gap-2 bg-white dark:bg-gray-800 rounded-lg p-4"/>
+            <!-- [취소·환불 신청] — 체크한 상품을 미리 고른 채 신청서를 연다. 즉시 취소될지 환불 심사를 거칠지는 그 화면이 상품별로 가르고, 주소에 함께 실은 주문 ID 로 신청서가 주문 조회를 기다리지 않고 신청 가능 상품을 곧바로 부른다. -->
+            <button type="button" class="px-5 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('refund')) || claimable?.data?.abilities?.can_request !== true || ((_local.selectedItemIds ?? []).some(id => (claimable?.data?.options ?? []).find(o => o.option?.id === id)?.refund_branch === 'auto') &amp;&amp; claimable?.data?.abilities?.can_cancel !== true)}}">
+              <on type="click">
+                <navigate path="/mypage/orders/{{route.order_number}}/claims/apply/refund" :mergeQuery="true">
+                  <query options="{{(_local.selectedItemIds ?? []).join(',')}}" order_id="{{order.data.id ?? ''}}"/>
+                </navigate>
+              </on>
+              $t:claim.apply.entry_refund
+            </button>
+            <!-- [반품 신청] — 체크한 상품을 미리 고른 채 반품 신청서를 연다. 회수 배송비는 그 화면의 서버 미리보기가 계산하고 청구 방식도 거기서 고르며, 주소에 실은 주문 ID 덕에 뒤로가기로 되돌아와도 신청서가 빈 채로 남지 않는다. -->
+            <button type="button" class="px-5 py-2.5 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('return')) || claimable?.data?.abilities?.can_request !== true}}">
+              <on type="click">
+                <navigate path="/mypage/orders/{{route.order_number}}/claims/apply/return" :mergeQuery="true">
+                  <query options="{{(_local.selectedItemIds ?? []).join(',')}}" order_id="{{order.data.id ?? ''}}"/>
+                </navigate>
+              </on>
+              $t:claim.apply.entry_return
+            </button>
+            <!-- [교환 신청] — 체크한 상품을 미리 고른 채 교환 신청서를 연다. 교환받을 옵션은 그 화면에서 상품 줄마다 따로 고르고, 주문 ID 를 주소로 넘겨 신청서의 첫 조회를 주문 응답과 떼어 놓는다. -->
+            <button type="button" class="px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('exchange')) || claimable?.data?.abilities?.can_request !== true}}">
+              <on type="click">
+                <navigate path="/mypage/orders/{{route.order_number}}/claims/apply/exchange" :mergeQuery="true">
+                  <query options="{{(_local.selectedItemIds ?? []).join(',')}}" order_id="{{order.data.id ?? ''}}"/>
+                </navigate>
+              </on>
+              $t:claim.apply.entry_exchange
+            </button>
+          </div>
+          <!-- 권한 때문에 잠긴 버튼의 안내 — 신청 권한이 없거나(전체), 바로 취소되는 상품(결제완료 이전)을 골랐는데 주문 취소 권한이 없을 때. 판정 키는 신청 가능 상품 응답의 abilities 이고 서버가 같은 기준으로 403 을 낸다. -->
+          <p data-if="{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0) &amp;&amp; claimable?.data?.abilities?.can_request === false}}" class="text-sm text-amber-600 dark:text-amber-400 text-center">$t:claim.apply.no_request_permission</p>
+          <p data-if="{{claimable?.data?.abilities?.can_request === true &amp;&amp; claimable?.data?.abilities?.can_cancel === false &amp;&amp; (_local.selectedItemIds ?? []).some(id => (claimable?.data?.options ?? []).find(o => o.option?.id === id)?.refund_branch === 'auto')}}" class="text-sm text-amber-600 dark:text-amber-400 text-center">$t:claim.apply.no_cancel_permission</p>
+          <include src="partials/mypage/orders/_orderer.g7.html"/>
+          <include src="partials/mypage/orders/_shipping.g7.html"/>
+          <include src="partials/mypage/orders/_payment.g7.html"/>
+          <include src="partials/mypage/orders/_history.g7.html"/>
+          <!-- 이 주문의 클레임 — 비회원 주문 상세와 **같은 partial** 을 무수정으로 쓴다. 복제하면 카드 규칙이 두 벌이 되어 한쪽만 낡는다. 서브탭·페이지 왕복 주소는 셸이 준 _local.claimListPath(이 화면 자신)다. -->
+          <div data-ref="order_claim_section" class="bg-white dark:bg-gray-800 rounded-lg p-6">
+            <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">$t:claim.list.order_section_title</h2>
+            <include src="partials/mypage/claims/_list.g7.html"/>
+          </div>
+          <!-- 액션 버튼 영역 -->
+          <div class="flex flex-row gap-4">
+            <responsive on="portable" class="flex flex-col gap-3"/>
+            <button class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+              <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑 계속하기 — 주문 목록이 아니라 상품 목록으로 나가는 이동이다. -->
+                <navigate path="{{_global.shopBase}}/products"/>
+              </on>
+              <icon name="shopping-bag" size="md"/>
+              <span>$t:mypage.order_detail.continue_shopping</span>
+            </button>
+            <!-- 재주문 버튼 - 취소된 주문만 표시 -->
+            <button data-if="{{order.data.order_status === 'cancelled'}}" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+              <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 재주문 — 주문서 작성 흐름으로 넘어가는 이동이므로 주문 목록 상태를 물려주지 않는다. -->
+                <navigate path="{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}"/>
+              </on>
+              <icon name="refresh-cw" size="md"/>
+              <span>$t:mypage.order_detail.reorder</span>
+            </button>
+          </div>
+        </div>
+      </container>
+    </div>
+  </slot>
+  <!-- 이 주문의 클레임 카드의 [철회] 확인 — 셸 계약값(claimWithdrawApiBase · isGuest · withdrawRefreshDataSourceId)은 initLocal 이 세운다. -->
+  <modal src="partials/mypage/claims/_modal_withdraw.g7.html"/>
+  <!-- 배송지 변경 창 — 결제대기·결제완료 주문에서 배송지 카드의 버튼이 연다. 회원은 주소록에서 고르거나 직접 입력하고, 적용하면 주문을 다시 읽어 카드가 바뀐다. -->
+  <modal src="partials/mypage/orders/_modal_change_address.g7.html"/>
+  <!-- 구매 확정 — 확정하면 취소·반품이 닫히므로 한 번 묻는다 -->
+  <modal src="partials/mypage/orders/_modal_confirm_purchase.g7.html"/>
+  <!-- 리뷰 작성 — 산 항목별로 따로 쓴다 -->
+  <modal src="partials/mypage/orders/_modal_write_review.g7.html"/>
+  <!-- 배송지를 새로 저장하려는데 자리가 꽉 찼을 때. 배송지 화면·주문서와 같은 창을 쓴다 -->
+  <modal src="partials/mypage/addresses/_modal_confirm_overwrite.g7.html"/>
+</layout>

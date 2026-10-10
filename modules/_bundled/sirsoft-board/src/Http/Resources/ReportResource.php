@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
  * 신고 케이스 API 리소스
@@ -14,6 +15,8 @@ use Illuminate\Http\Request;
  */
 class ReportResource extends BaseApiResource
 {
+    use ChecksBoardPermission;
+
     /**
      * 리소스를 배열로 변환합니다.
      *
@@ -24,6 +27,12 @@ class ReportResource extends BaseApiResource
     {
         // 상세 페이지 여부 확인
         $isDetailRequest = $request->routeIs('*.show') || $request->routeIs('*.reports.show');
+
+        // 대상 본문(원문·미리보기)은 관리자 모더레이션 화면에만 싣는다. 사용자 신고 생성 응답에
+        // 신고 대상 본문을 되돌려 주면, 신고 게이트에 우회로가 생기는 순간 그 응답이 비밀 원문
+        // 열람 경로가 된다(KVE-2026-2377 심층방어). 신고자는 이미 화면에서 본 대상을 신고하므로
+        // 응답으로 본문을 받을 이유가 없고, 사용자 화면도 이 값을 쓰지 않는다.
+        $exposeTargetContent = $this->isAdminRequest($request);
 
         // Controller에서 주입된 데이터 우선, 없으면 첫 번째 로그 스냅샷 폴백 (목록 N+1 방지)
         $firstLog = $this->logs?->first();
@@ -74,16 +83,16 @@ class ReportResource extends BaseApiResource
             'post_id' => $this->target_type->value === 'post'
                 ? $this->target_id
                 : ($this->target_post_id ?? $reportable['post']['id'] ?? $firstLogSnapshot['post_id'] ?? null),
-            'content' => $isDetailRequest ? $contentText : null,
+            'content' => $exposeTargetContent && $isDetailRequest ? $contentText : null,
             'content_mode' => $reportable['content_mode'] ?? 'text',
-            'content_preview' => ! $isDetailRequest ? mb_substr($contentText, 0, 100) : null,
+            'content_preview' => $exposeTargetContent && ! $isDetailRequest ? mb_substr($contentText, 0, 100) : null,
 
             // 작성자 정보 (케이스 author_id 우선, 없으면 스냅샷)
             'author' => ($this->author_id && $this->author)
                 ? [
                     'uuid' => $this->author->uuid,
                     'name' => $this->author->name,
-                    'email' => $this->author->email,
+                    'email' => $this->canExposeMemberEmail(null, $this->author->id) ? $this->author->email : null,
                     'is_guest' => false,
                 ]
                 : [
@@ -97,15 +106,15 @@ class ReportResource extends BaseApiResource
             'reporter' => $firstLog
                 ? ($firstLog->reporter
                     ? [
-                        'uuid'     => $firstLog->reporter->uuid,
-                        'name'     => $firstLog->reporter->name,
-                        'email'    => $firstLog->reporter->email,
+                        'uuid' => $firstLog->reporter->uuid,
+                        'name' => $firstLog->reporter->name,
+                        'email' => $this->canExposeMemberEmail(null, $firstLog->reporter->id) ? $firstLog->reporter->email : null,
                         'is_guest' => false,
                     ]
                     : [
-                        'uuid'     => null,
-                        'name'     => __('sirsoft-board::messages.common.guest'),
-                        'email'    => null,
+                        'uuid' => null,
+                        'name' => __('sirsoft-board::messages.common.guest'),
+                        'email' => null,
                         'is_guest' => true,
                     ])
                 : null,
@@ -149,11 +158,11 @@ class ReportResource extends BaseApiResource
             'target_trigger_type' => $this->target_trigger_type ?? null,
             'target_status_label' => isset($this->target_status)
                 ? __('sirsoft-board::messages.common.status.'.$this->target_status)
-                    . (($this->target_status === 'blinded' && isset($this->target_trigger_type))
+                    .(($this->target_status === 'blinded' && isset($this->target_trigger_type))
                         ? match ($this->target_trigger_type) {
                             'auto_hide' => ' ('.__('sirsoft-board::messages.common.blind_type.auto').')',
-                            'admin'     => ' ('.__('sirsoft-board::messages.common.blind_type.manual').')',
-                            default     => '',
+                            'admin' => ' ('.__('sirsoft-board::messages.common.blind_type.manual').')',
+                            default => '',
                         }
                         : '')
                 : null,

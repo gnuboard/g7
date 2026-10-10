@@ -1,0 +1,334 @@
+<!-- 위지윅 에디터가 본문에 끼워 넣은 이미지를 운영자가 한자리에서 보고 지우는 화면. 에디터는 업로드 시점에 파일을 남기지만 그 글이 지워져도 파일은 남으므로, 어느 파일이 아직 본문에 인용되고 있는지(참조 여부)가 이 목록의 존재 이유다 -->
+<layout name="ckeditor5_uploads" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ckeditor5.admin.uploads.title" description="$t:sirsoft-ckeditor5.admin.uploads.description"/>
+  <!-- 업로드 목록. 필터·정렬·페이지를 전부 URL 쿼리에서 읽으므로 새로고침·뒤로가기로도 같은 목록이 복원된다. 참조 여부는 본문을 훑어야 알 수 있어 서버가 훑는 범위에 상한이 있고, 그 상한에 걸리면 meta.scan_limited 로 알려 온다 -->
+  <data-source id="ckeditor5Uploads" label_key="$t:sirsoft-ckeditor5.editor.data_source.ckeditor5Uploads" type="api" endpoint="/api/plugins/sirsoft-ckeditor5/admin/uploads" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" referenced="{{query.referenced}}" date_from="{{query.date_from}}" date_to="{{query.date_to}}" sort_by="{{query.sort_by}}" sort_order="{{query.sort_order}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+          <field name="from" :value="null"/>
+          <field name="to" :value="null"/>
+        </field>
+        <field name="meta">
+          <field name="scan_limited" :value="false"/>
+          <field name="scan_window" :value="500"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="search" value=""/>
+      <field name="referenced" value="all"/>
+      <field name="dateFrom" value=""/>
+      <field name="dateTo" value=""/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ckeditor5.uploads.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>ckeditor5Uploads</wait-for>
+  </transition-overlay>
+  <!-- 필터 입력을 URL 로 밀어 넣어 목록을 다시 부른다. page 를 빈 값으로 덮는 것이 핵심이다 — 3페이지를 보던 중 검색하면 결과가 3페이지에 못 미쳐 빈 화면이 열린다 -->
+  <action name="searchUploads">
+    <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true" :mergeQuery="true" transition_overlay_target="ckeditor5_uploads_datagrid__body">
+      <query page="" search="{{_local.filter.search || ''}}" referenced="{{_local.filter.referenced || 'all'}}" date_from="{{_local.filter.dateFrom || ''}}" date_to="{{_local.filter.dateTo || ''}}"/>
+    </navigate>
+  </action>
+  <!-- 초기화는 두 곳을 함께 비운다 — 폼 상태를 비우지 않으면 URL 만 깨끗해지고 입력칸에는 지운 값이 남아 다음 검색에 되살아난다 -->
+  <action name="clearFilters">
+    <sequence>
+      <set-state target="local">
+        <field name="filter">
+          <field name="search" value=""/>
+          <field name="referenced" value="all"/>
+          <field name="dateFrom" value=""/>
+          <field name="dateTo" value=""/>
+        </field>
+      </set-state>
+      <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색·참조상태·기간과 페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다 -->
+      <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true">
+        <query/>
+      </navigate>
+    </sequence>
+  </action>
+  <init>
+    <set-state target="local">
+      <field name="filter">
+        <field name="search" value="{{query.search || ''}}"/>
+        <field name="referenced" value="{{query.referenced || 'all'}}"/>
+        <field name="dateFrom" value="{{query.date_from || ''}}"/>
+        <field name="dateTo" value="{{query.date_to || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="ckeditor5_uploads_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-between mb-6">
+        <div>
+          <h1 class="page-title">$t:sirsoft-ckeditor5.admin.uploads.title</h1>
+          <p class="text-label-subtle mt-1">$t:sirsoft-ckeditor5.admin.uploads.description</p>
+        </div>
+        <div class="flex-center gap-2">
+          <button data-ref="open_settings_button" type="button" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{ckeditor5Uploads?.data?.abilities?.can_open_settings !== true}}">
+            <on type="click">
+              <!-- audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 나가는 이동 — 목록 클러스터 밖이라 목록 상태를 승계하지 않는다 -->
+              <navigate path="/admin/plugins/sirsoft-ckeditor5/settings"/>
+            </on>
+            <span>$t:sirsoft-ckeditor5.admin.uploads.open_settings</span>
+          </button>
+          <button data-ref="refresh_button" type="button" class="btn-icon" title="$t:sirsoft-ckeditor5.admin.uploads.refresh">
+            <on type="click">
+              <refetch-data-source dataSourceId="ckeditor5Uploads"/>
+            </on>
+            <icon name="fa-solid fa-arrows-rotate" class="text-xl"/>
+          </button>
+        </div>
+      </div>
+      <div data-ref="reference_notice" class="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+        <p class="text-sm text-blue-800 dark:text-blue-200">$t:sirsoft-ckeditor5.admin.uploads.reference_notice</p>
+      </div>
+      <div data-ref="scan_limited_notice" data-if="{{ckeditor5Uploads?.data?.meta?.scan_limited === true}}" class="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <p class="text-sm text-amber-800 dark:text-amber-200">$t:sirsoft-ckeditor5.admin.uploads.scan_limited_notice|count={{ckeditor5Uploads?.data?.meta?.scan_window ?? 500}}</p>
+      </div>
+      <div data-ref="filter_section" class="admin-card mb-6">
+        <div data-ref="search_row" class="flex-center flex-wrap gap-2">
+          <div class="relative flex-1">
+            <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+            <input name="search" type="text" placeholder="$t:sirsoft-ckeditor5.admin.uploads.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+              <on type="change">
+                <!-- 타이핑은 폼 상태에만 담아 둔다. 여기서 목록을 부르지 않는 것은 의도다 — 검색 실행은 Enter 또는 검색 버튼이 맡는다 -->
+                <set-state target="local" filter.search="{{$event.target.value}}"/>
+              </on>
+              <on type="keydown" key="Enter">
+                <action-ref name="searchUploads"/>
+              </on>
+            </input>
+          </div>
+          <select name="referenced" value="{{_local.filter.referenced || 'all'}}">
+            <options>
+              <option value="all">$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_all</option>
+              <option value="referenced">$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_only</option>
+              <option value="unreferenced">$t:sirsoft-ckeditor5.admin.uploads.filter.unreferenced_only</option>
+            </options>
+            <on type="change">
+              <!-- 참조 여부는 고르는 즉시 목록을 다시 부른다 — 값이 세 가지뿐이라 따로 실행 버튼을 누르게 할 이유가 없다. 폼 상태를 먼저 채워야 뒤이은 검색 액션이 그 값을 URL 로 나른다 -->
+              <sequence>
+                <set-state target="local" filter.referenced="{{$event.target.value}}"/>
+                <action-ref name="searchUploads"/>
+              </sequence>
+            </on>
+          </select>
+          <input name="date_from" type="date" class="input w-40" title="$t:sirsoft-ckeditor5.admin.uploads.filter.date_from" value="{{_local.filter.dateFrom || ''}}">
+            <on type="change">
+              <!-- 기간 시작일도 담아만 둔다 — 시작·종료를 따로 고르는 동안 매번 목록을 부르면 반쪽짜리 기간으로 조회가 나간다 -->
+              <set-state target="local" filter.dateFrom="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <input name="date_to" type="date" class="input w-40" title="$t:sirsoft-ckeditor5.admin.uploads.filter.date_to" value="{{_local.filter.dateTo || ''}}">
+            <on type="change">
+              <!-- 종료일도 마찬가지다. 두 날짜가 다 정해진 뒤 검색 버튼이 한 번에 URL 로 싣는다 -->
+              <set-state target="local" filter.dateTo="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <button type="button" class="btn btn-primary">
+            <on type="click">
+              <action-ref name="searchUploads"/>
+            </on>
+            <span>$t:sirsoft-ckeditor5.admin.uploads.filter.search_button</span>
+          </button>
+        </div>
+        <div data-ref="clear_filters_row" data-if="{{!!(query.search || query.referenced || query.date_from || query.date_to)}}" class="flex justify-end mt-2">
+          <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline">
+            <on type="click">
+              <action-ref name="clearFilters"/>
+            </on>
+            $t:sirsoft-ckeditor5.admin.uploads.filter.clear
+          </button>
+        </div>
+      </div>
+      <div data-ref="bulk_action_bar" data-if="{{ckeditor5Uploads?.data?.abilities?.can_delete === true &amp;&amp; (_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}" class="flex-between mb-4 p-3 rounded-xl bg-gray-100 dark:bg-gray-800">
+        <span class="text-body">$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.selected|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}</span>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800">
+          <on type="click">
+            <open-modal target="bulk_delete_confirm_modal"/>
+          </on>
+          <span>$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.button</span>
+        </button>
+      </div>
+      <data-grid data-type="composite" data-ref="ckeditor5_uploads_datagrid" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" selectable="{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
+        <blur-until-loaded sources="ckeditor5Uploads"/>
+        <prop name="rowActions">
+          <item id="delete" label="$t:sirsoft-ckeditor5.admin.uploads.delete.button" iconName="trash" variant="danger" disabled="{{ckeditor5Uploads?.data?.abilities?.can_delete !== true}}"/>
+        </prop>
+        <column field="thumbnail" header="$t:sirsoft-ckeditor5.admin.uploads.col.thumbnail" width="90px">
+          <cell>
+            <img src="{{row.download_url}}" alt="{{row.original_name ?? ''}}" loading="lazy" class="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700"/>
+          </cell>
+        </column>
+        <column field="original_name" header="$t:sirsoft-ckeditor5.admin.uploads.col.original_name" :sortable="true" width="260px">
+          <cell>
+            <div>
+              <span class="block text-heading line-clamp-1">{{row.original_name ?? '-'}}</span>
+              <span class="block text-tertiary font-mono">{{row.hash ?? ''}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="file_size" header="$t:sirsoft-ckeditor5.admin.uploads.col.file_size" :sortable="true" width="110px">
+          <cell>
+            <span class="text-label whitespace-nowrap">{{Math.round((row.file_size ?? 0) / 1024).toLocaleString()}} KB</span>
+          </cell>
+        </column>
+        <column field="uploader_name" header="$t:sirsoft-ckeditor5.admin.uploads.col.uploader" width="140px">
+          <cell>
+            <span class="text-body">{{row.uploader_name ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="created_at" header="$t:sirsoft-ckeditor5.admin.uploads.col.created_at" :sortable="true" width="170px">
+          <cell>
+            <span class="text-label whitespace-nowrap">{{row.created_at ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="referenced" header="$t:sirsoft-ckeditor5.admin.uploads.col.referenced" width="110px">
+          <cell>
+            <span data-if="{{row.referenced === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-ckeditor5.admin.uploads.badge.referenced</span>
+            <span data-if="{{row.referenced !== true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-ckeditor5.admin.uploads.badge.unreferenced</span>
+          </cell>
+        </column>
+        <on type="change" event="onPageChange">
+          <!-- 페이지 이동은 걸려 있던 검색·필터를 그대로 이고 간다(mergeQuery). 표 몸통만 전환 오버레이로 덮어 헤더·필터가 깜빡이지 않는다 -->
+          <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true" :mergeQuery="true" transition_overlay_target="ckeditor5_uploads_datagrid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+        <on type="change" event="onSortChange">
+          <!-- 정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다 -->
+          <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true" :mergeQuery="true" transition_overlay_target="ckeditor5_uploads_datagrid__body">
+            <query page="" sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
+          </navigate>
+        </on>
+        <on type="action" event="onSelectionChange">
+          <!-- 선택은 전역에 둔다 — 일괄 삭제 바와 확인 모달이 표 밖에 있어 같은 목록을 공유해야 하기 때문이다. 표가 selectionScope="page" 라 화면을 벗어난 행은 선택이 따라오지 않는다 -->
+          <set-state target="global" selectedIds_ckeditor5_uploads="{{$args[0]}}"/>
+        </on>
+        <on type="action" event="onRowAction">
+          <!-- 행 삭제 버튼. 대상 행을 전역에 담은 뒤에야 모달을 연다 — 순서가 뒤집히면 모달이 직전 대상을 그린 채 뜬다 -->
+          <switch>
+            <case when="delete">
+              <set-state target="global" modal_data="{{$args[1]}}">
+                <success>
+                  <open-modal target="delete_confirm_modal"/>
+                </success>
+              </set-state>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+  <modal>
+    <!-- 행의 삭제 버튼으로 열린다. 아직 본문에 인용 중인 이미지도 지울 수 있으므로(목록이 참조 배지로 알려 줄 뿐 막지는 않는다) 확인을 한 단계 둔다 -->
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title" size="sm">
+      <meta editor_label="$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_message</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingUpload}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingUpload}}">
+          <on type="click">
+            <!-- 진행 플래그를 먼저 세워 두 버튼을 잠근다 — 삭제는 되돌릴 수 없어 연타로 같은 요청이 두 번 나가는 것을 막아야 한다. 성공·실패·403 세 갈래 모두에서 플래그를 반드시 되돌린다 -->
+            <sequence>
+              <set-state target="global" :isDeletingUpload="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-ckeditor5/admin/uploads/{{_global.modal_data.id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :isDeletingUpload="false"/>
+                  <refetch-data-source dataSourceId="ckeditor5Uploads"/>
+                  <toast type="success" message="$t:sirsoft-ckeditor5.admin.uploads.delete.success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeletingUpload="false"/>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"/>
+                </fail>
+                <error-handling>
+                  <on-code code="403">
+                    <sequence>
+                      <set-state target="global" :isDeletingUpload="false"/>
+                      <toast type="error" message="$t:auth.permission_denied"/>
+                    </sequence>
+                  </on-code>
+                </error-handling>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 체크한 행이 하나라도 있을 때만 뜨는 일괄 삭제 바에서 열린다. 대상은 지금 화면에 보이는 선택분이며, 확인 문구가 그 건수를 그대로 되읽어 준다 -->
+    <modal data-type="composite" data-ref="bulk_delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title" size="sm">
+      <meta editor_label="$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_message|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingUpload}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingUpload}}">
+          <on type="click">
+            <!-- 성공하면 선택 목록도 함께 비운다 — 지워진 행의 id 가 선택에 남아 있으면 다음 일괄 처리가 이미 없는 대상을 싣는다. 서버가 건별 결과를 요약해 주므로 안내 문구는 응답 것을 그대로 쓴다 -->
+            <sequence>
+              <set-state target="global" :isDeletingUpload="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-ckeditor5/admin/uploads/bulk-delete" method="POST">
+                <success>
+                  <set-state target="global" :isDeletingUpload="false" :selectedIds_ckeditor5_uploads="[]"/>
+                  <refetch-data-source dataSourceId="ckeditor5Uploads"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeletingUpload="false"/>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"/>
+                </fail>
+                <error-handling>
+                  <on-code code="403">
+                    <sequence>
+                      <set-state target="global" :isDeletingUpload="false"/>
+                      <toast type="error" message="$t:auth.permission_denied"/>
+                    </sequence>
+                  </on-code>
+                </error-handling>
+                <body ids="{{_global.selectedIds_ckeditor5_uploads ?? []}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

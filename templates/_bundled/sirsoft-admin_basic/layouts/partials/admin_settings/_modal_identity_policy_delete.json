@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 정책 삭제 확인 창. 정책이 사라지면 그 자리에서 인증을 요구하지 않게 되므로,\n  화면 동작이 조용히 느슨해진다는 점에서 되돌리기 전에 확인을 받는다.",
     "meta": {
         "is_partial": true,
         "description": "본인인증 정책 삭제 확인 모달",
@@ -30,11 +31,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.identityPolicyDeleting}}"
-                    },
                     "actions": [
                         {
                             "type": "click",
@@ -42,18 +38,19 @@
                             "target": "identity_policy_delete_modal"
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.identityPolicyDeleting}}"
+                    },
                     "text": "$t:common.cancel"
                 },
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.identityPolicyDeleting}}"
-                    },
                     "actions": [
                         {
+                            "comment": "삭제 실행 — 대상 id 는 목록이 전역에 담아 준 값이다. 성공하면 그 값을 비우고\n               정책 목록을 다시 받는다(관리자 전용 목록은 별도 소스라 여기서 건드리지 않는다).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -66,8 +63,8 @@
                                 },
                                 {
                                     "handler": "apiCall",
-                                    "auth_required": true,
                                     "target": "/api/admin/identity/policies/{{_global.identityPolicyDeleteId}}",
+                                    "auth_required": true,
                                     "params": {
                                         "method": "DELETE"
                                     },
@@ -118,6 +115,11 @@
                             ]
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.identityPolicyDeleting}}"
+                    },
                     "children": [
                         {
                             "type": "basic",

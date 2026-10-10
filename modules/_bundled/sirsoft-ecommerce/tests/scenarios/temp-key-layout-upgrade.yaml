@@ -1,0 +1,31 @@
+feature: 1.3.0 업그레이드 — 저장된 레이아웃의 예전 임시 키 생성식을 $uuid() 로 보정 (KVE-2026-2349)
+
+description: |
+  1.3.0 부터 이 모듈의 임시 키(temp_key)는 UUID 만 받는다. 레이아웃 편집기로 고쳐 둔 화면이나
+  업데이트 때 「편집본 유지」를 고른 화면에 남은 예전 생성식('temp_' + Date.now() …)은 업로드를
+  422 로 막으므로 업그레이드 스텝이 그 값만 {{$uuid()}} 로 바꾼다.
+
+  계층 결정:
+    - 대상: template_layouts · template_layout_extensions 중 이 모듈 API(/api/modules/sirsoft-ecommerce/)를 부르는 행
+    - 편집한 행은 해시 보존(편집본 유지), 편집하지 않은 행은 해시를 새 내용에 맞춤(계속 원본으로 취급)
+    - 변형 생성식은 고치지 않고 경고 로그로 위치를 남긴다
+  설계 결정(2026-09-26): "uuid 전용 유지하되, 업그레이드 스텝 필요함".
+
+axes:
+  row_state: [edited, unedited]
+
+effects:
+  - legacy_generator_replaced_with_uuid
+  - edited_row_keeps_original_hash
+  - unedited_row_hash_resynced
+  - changed_row_lock_version_bumped
+  - other_module_rows_untouched
+  - extension_rows_patched
+  - chunked_scan_covers_all_rows
+  - empty_map_preserved_after_patch # 본문의 {} 가 [] 로 굳지 않는다(U2-3)
+
+scale:
+  - { n: 100000, dataset: template_layouts, assert: [chunked_scan_bounded_memory, all_rows_patched_across_chunks] }
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Upgrade/TempKeyGeneratorLayoutUpgradeTest.php

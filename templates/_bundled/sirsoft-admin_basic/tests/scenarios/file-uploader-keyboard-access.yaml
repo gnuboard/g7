@@ -1,0 +1,22 @@
+feature: sirsoft-admin_basic FileUploader — 키보드로 다루는 첨부 목록
+
+description: |
+  첨부 썸네일의 대표·순서·다운로드·다시 시도·삭제 단추를 담은 덮개가 마우스를 올릴 때만 보여(opacity-0 group-hover),
+  Tab 으로 단추에 초점이 가도 어느 단추에 초점이 있는지 보이지 않았다(7.1.0 전수 실측, 원 세션 관측 O-M2r-1).
+  목록 끝 「추가」 타일은 onClick 만 있는 Div 라 Tab 이 닿지 않았다(O-M2r-2). 썸네일 안에 초점이 있으면 덮개와
+  대표 지정 단추를 보이고(group-focus-within), 추가 타일을 이름 있는 단추로 그려 Enter·Space 로 파일 선택을 연다.
+  첨부가 없을 때의 드롭존도 onClick 만 있는 Div 라 키보드로 첫 파일을 고를 수 없었다(M3 재실측) — 단추 구실로 Tab 이 닿고
+  Enter·Space 로 파일 선택을 연다. 축 target 은 확인 대상(썸네일 단추 덮개, 대표 지정 단추, 추가 타일, 빈 드롭존)이다.
+
+axes:
+  target: [item_overlay, primary_button, add_tile, empty_dropzone]
+
+effects:
+  - overlay_visible_on_focus
+  - add_tile_reachable_by_tab
+  - add_tile_opens_picker_by_key
+  - add_tile_hidden_when_disabled
+  - empty_dropzone_opens_picker_by_key
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderKeyboardAccess.test.tsx

@@ -1,0 +1,61 @@
+feature: 게시판 활동 로그 리스너 (훅 구독 → activity 채널 기록)
+
+description: |
+  `BoardActivityLogListener` 는 게시판 모듈이 발행하는 도메인 훅을 구독해
+  `Log::channel('activity')` 로 활동 로그를 남긴다. 이 매니페스트는 그 **구독 계약**과
+  **핸들러별 기록 형태**를 소유한다.
+
+  이 파일이 생긴 계기 (#525 3차 검증):
+    - `report.after_cancel` 훅이 **발행만 되고 구독자가 없던** 구간이 있었다. 발행 쪽만
+      보면 정상으로 읽히므로, 구독 매핑 자체를 재는 단언이 이 축의 본체다.
+    - 훅 개수를 손으로 박은 `assertCount(N)` 이 27→28→29→30 으로 네 번 낡았고
+      기준 커밋 시점에 이미 red 였다(32 ≠ 30). 개수만 재면 **매핑이 실재하는가**는
+      끝내 재지 못한다 — 부록 B D8.
+
+  핵심 계약:
+    - 구독한 훅마다 그 이름의 public 핸들러가 실재해야 한다 (발행·구독 양방향)
+    - 모든 훅은 로깅 전용이라 priority 20 이다 (도메인 훅보다 뒤에 선다)
+    - 원본이 이미 사라진 뒤 호출되는 경로(스크랩 해제·신고 취소·반응 해제)는
+      `loggable` 모델 대신 `loggable_type`/`loggable_id` 를 직접 실어야 로그가 남는다
+    - 스냅샷 없이 호출돼도 죽지 않는다 (변경 감지는 선택적 입력이다)
+    - 로깅 실패가 도메인 동작을 깨뜨리지 않는다 — 예외는 `Log::error` 로 흡수한다
+
+axes:
+  case:
+    - subscription_contract
+    - board_handlers
+    - board_type_handlers
+    - post_handlers
+    - comment_handlers
+    - attachment_handlers
+    - report_handlers
+    - settings_bulk_apply_handlers
+    - snapshotless_and_null_inputs
+    - logging_failure_is_absorbed
+
+effects:
+  - subscribed_hooks_map_to_existing_handlers
+  - all_hooks_registered_at_priority_20
+  - board_crud_and_menu_changes_are_logged
+  - board_type_crud_is_logged
+  - post_crud_and_state_changes_are_logged
+  - comment_crud_and_state_changes_are_logged
+  - attachment_upload_delete_download_are_logged
+  - report_lifecycle_events_are_logged
+  - bulk_apply_logs_with_and_without_loggable
+  - handlers_tolerate_missing_snapshot_and_null_models
+  - logging_exception_is_absorbed_into_log_error
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/BoardActivityLogListenerTest.php
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    <!-- audit:allow test-scenario-coverage[cross_product] reason: 축은 핸들러 묶음(도메인)별로
+    갈리고 각 묶음이 서로 다른 훅·인자 형태를 갖는다. 묶음 × 효과의 곱집합은 의미가 없고
+    묶음마다 그 묶음의 효과 하나가 대응한다. -->
+    이 매니페스트는 단위 테스트 하나만 소유한다 — 리스너의 구독 계약은 Feature 계층에서
+    재현하기 어렵고(훅 발행마다 실제 도메인 동작이 필요), 구독 누락은 단위 계층에서
+    가장 싸게 잡힌다. 실제 기록 여부는 각 도메인 매니페스트의 Feature 테스트가 잰다
+    (예: 신고 취소는 mypage-reports.yaml 의 `cancel_writes_activity_log_with_explicit_loggable`).

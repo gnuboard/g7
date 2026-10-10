@@ -67,7 +67,7 @@ G7 의 REST API 는 라우트 `->name()` 규약은 있으나 엔드포인트별 
 | `sirsoft-tosspayments` | `web.php` | 없음 — PG 콜백 2건 전부 브라우저 리다이렉트 |
 | `gnuboard7-hello_plugin` | `web.php` | 없음 |
 
-정적 검사는 `src/routes/api.php` 존재 여부로 이를 판정해, 해당 확장의
+자동 검증은 `src/routes/api.php` 존재 여부로 이를 판정해, 해당 확장의
 라우트/컨트롤러/FormRequest 변경에는 문서 동반을 요구하지 않는다. 확장에 `api.php` 를 추가하면
 그 시점부터 자동으로 검사 대상이 되므로, 문서 생성을 함께 수행한다.
 
@@ -95,7 +95,7 @@ G7 의 REST API 는 라우트 `->name()` 규약은 있으나 엔드포인트별 
 보존된다.
 
 확장 API 문서의 발견성은 이 목차를 통해 확보한다. `api:docgen` 과 코어 인덱스 생성기
-(`generate-docs-index.cjs`) 는 확장명을 하드코딩하지 않고
+문서 색인 생성은 확장명을 하드코딩하지 않고
 `{modules,plugins}/_bundled/*/docs/api/README.md` 를 **패턴 스캔**해, 코어 README 의 "확장 API 레퍼런스"
 표와 AGENTS.md·docs-index 에 자동 편입한다(동적 로딩 원칙 — 코어는 규약과 스캔 패턴만, 확장
 이름은 파일 시스템에서 발견). 문서 수·엔드포인트 수는 각 README 의 집계 라인
@@ -204,6 +204,8 @@ nullable 필드는 표본에 값이 있느냐에 따라 관측 타입이 흔들�
   응답 예시(에러 응답 표 앞)만 삽입한다. 이미 예시가 있으면 그 블록만 새 실측으로 치환(멱등, 실측 상대시간
   필드는 재측정으로 값이 달라질 수 있음). 표·필드 설명·엔드포인트 서술은 전량 보존된다. 최초 스캐폴딩이
   없는 신규 문서는 먼저 `api:docgen` 으로 생성한 뒤 서술을 채우고, 이후 예시는 `--examples-only` 로 유지한다.
+  실측이 제외된 엔드포인트(권한 거부·실제 파일 없음·부수효과 쓰기 등)는 기존 요청 예시와 사람이 쓴 응답 예시
+  (`<!-- @probed -->`·`<!-- 실측 제외` 표식이 없는 예시)를 그대로 둔다 — 실측 제외 마커로 덮거나 지우지 않는다.
 
 ```markdown
 ### GET /api/admin/users
@@ -305,7 +307,7 @@ php artisan api:docgen --scope=plugin:sirsoft-gdpr
 # 전체
 php artisan api:docgen --scope=all
 
-# 생성 없이 누락/drift 만 리포트 (하네스가 소비)
+# 생성 없이 누락/drift 만 리포트 (자동 점검용)
 php artisan api:docgen --check
 
 # 이미 서술이 채워진 문서에 요청/응답 예시 블록만 in-place 삽입 (표·서술 불가침, 재생성 금지)
@@ -359,9 +361,20 @@ php artisan api:docgen --scope=core --dry-run
 - 확장에 새 PHP 클래스를 추가했으므로 `_bundled` 작업 후 `{type}:update {id} --force` 로 활성 디렉토리에
   반영해야 오토로드된다.
 
+#### 실측이 끝나면 샘플을 걷는다
+
+커맨드는 코어·확장 시더가 시드하는 동안 만들어진 Eloquent 행(시더가 만든 행, 팩토리·모델 이벤트가 함께 만든 행)을
+만든 순서대로 기록했다가, 실측이 끝나면 만든 역순으로 지운다. 앞선 실행이 남긴 코어 샘플(식별자 `apidoc-sample-*`)도
+함께 지운다. 실측은 개발 사이트로 실제 HTTP 요청을 보내므로 시드를 트랜잭션으로 감싸 되돌리는 방식은 쓰지 않는다.
+
+- 시더는 `Model::create()`·팩토리처럼 Eloquent 생성 이벤트가 나는 경로로 만든다. `DB::table()->insert()` 나
+  `saveQuietly()` 로 만든 행은 기록되지 않아 남는다.
+- 다대다 연결 중 코어 역할·사용자·권한·메뉴의 연결은 지우기 전에 명시적으로 끊고, 그 밖의 연결 행은 외래키가 정리한다.
+- 실측 도중 멈춘 실행이 남긴 확장 샘플은 다음 실행이 재사용하면 기록에 들어가지 않는다 — 그 확장의 식별자로 찾아 지운다.
+
 #### 샘플은 시스템 동작을 바꾸지 않는다
 
-`--seed` 로 만든 샘플 레코드는 개발 DB 에 영구 잔존한다. 조회 예시를 만들기 위한 데이터일 뿐이므로,
+`--seed` 로 만든 샘플 레코드는 실측이 끝날 때까지 개발 DB 에 있다. 조회 예시를 만들기 위한 데이터일 뿐이므로,
 전역 설정을 읽는 쿼리에 걸리는 조합으로 생성해서는 안 된다.
 
 | ❌ 금지 | ✅ 올바른 사용 |
@@ -378,7 +391,6 @@ php artisan api:docgen --scope=core --dry-run
 같은 원리로 `is_default` / `status=active` 같은 승격·활성 플래그를 샘플에 붙이지 않는다. 샘플 레코드를
 만들기 전에 "이 조합이 전역 설정을 읽는 쿼리에 걸리는가" 를 확인한다.
 
-자동 차단: 정적 검사 대상 (위반 시 차단).
 
 ### 설명 백필 커맨드 (`api:docgen-backfill-*`)
 
@@ -407,7 +419,7 @@ php artisan api:docgen-backfill-fields
 - 트리거: `app/Http/Controllers/**`, `routes/api.php`, `app/Http/Requests/**`, `app/Http/Resources/**`
   (+ 확장 대응 경로) 편집.
 - 절차: 코드 변경 → `api:docgen --scope=...` 재실행 → `@generated` 블록 갱신 → 신규 TODO 서술 채움.
-- 검증: `api:docgen --check` 로 drift 0 확인. 정적 검사가 변경셋에 대응 문서
+- 검증: `api:docgen --check` 로 drift 0 확인. 자동 검증이 변경셋에 대응 문서
   동반 여부를 검사한다. 강제 수준은 **대상별**로 다르다 — 문서가 완비된 대상은 차단, 진행 중
   대상은 경고에 그친다. 코어(`docs/backend/api/`)는 2026-07-08 문서 완비로 차단 대상이 됐다.
   즉 코어 API 표면(`routes/api.php`·`app/Http/{Controllers,Requests,Resources}/**`)을

@@ -9,6 +9,9 @@ return [
     // Locale-specific suffix appended to names on copy (used by ProductNoticeTemplateRepository, etc.)
     'copy_suffix' => ' (Copy)',
 
+    // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
+    'vbank_close_reason' => 'Order cancelled before deposit',
+
     'categories' => [
         'list_retrieved' => 'Category list retrieved successfully.',
         'retrieved' => 'Category information retrieved successfully.',
@@ -50,10 +53,10 @@ return [
         'delete_failed' => 'Failed to delete product.',
         'can_delete_checked' => 'Checked if product can be deleted.',
         'can_delete_check_failed' => 'Failed to check if product can be deleted.',
-        'has_order_history' => 'This product has :count order(s) and cannot be deleted.',
-        'bulk_updated' => ':count products have been updated.',
-        'bulk_price_updated' => 'Prices of :count products have been updated.',
-        'bulk_stock_updated' => 'Stock of :count products have been updated.',
+        'has_order_history' => 'This product has :count order and cannot be deleted.|This product has :count orders and cannot be deleted.',
+        'bulk_updated' => ':count product has been updated.|:count products have been updated.',
+        'bulk_price_updated' => 'The price of :count product has been updated.|Prices of :count products have been updated.',
+        'bulk_stock_updated' => 'Stock of :count product has been updated.|Stock of :count products has been updated.',
         'bulk_price_update_failed' => 'Failed to update product prices.',
         'bulk_stock_update_failed' => 'Failed to update product stock.',
         'stock_mismatch' => 'Product stock (:product_stock) does not match option stock sum (:option_stock_sum).',
@@ -101,14 +104,14 @@ return [
         'has_products' => '(:count linked products)',
     ],
     'options' => [
-        'bulk_price_updated' => 'Prices of :count options have been updated.',
+        'bulk_price_updated' => 'The price of :count option has been updated.|Prices of :count options have been updated.',
         'bulk_price_update_failed' => 'Failed to update option prices.',
-        'bulk_stock_updated' => 'Stock of :count options have been updated.',
+        'bulk_stock_updated' => 'Stock of :count option has been updated.|Stock of :count options has been updated.',
         'bulk_stock_update_failed' => 'Failed to update option stock.',
         'bulk_update_success' => ':count options have been updated.',
         'bulk_update_failed' => 'Option bulk update failed.',
         'has_order_history' => 'Options with order history cannot be deleted.',
-        'bulk_updated' => ':count option(s) have been updated.',
+        'bulk_updated' => ':count option has been updated.|:count options have been updated.',
     ],
 
     // Order (singular) - User-facing order messages
@@ -152,9 +155,9 @@ return [
         'created' => 'Coupon has been created.',
         'updated' => 'Coupon has been updated.',
         'deleted' => 'Coupon has been deleted.',
-        'status_changed' => 'Issue status of :count coupons has been updated.',
-        'direct_issued' => 'Coupon issued to :issued member(s).',
-        'direct_issued_with_skip' => 'Coupon issued to :issued member(s). (:skipped excluded for not meeting issue conditions)',
+        'status_changed' => 'Issue status of :count coupon has been updated.|Issue status of :count coupons has been updated.',
+        'direct_issued' => 'Coupon issued to :issued member.|Coupon issued to :issued members.',
+        'direct_issued_with_skip' => 'Coupon issued to :issued member. (:skipped excluded for not meeting issue conditions)|Coupon issued to :issued members. (:skipped excluded for not meeting issue conditions)',
         'issue_cancelled' => 'Coupon issuance has been cancelled.',
         'issues_retrieved' => 'Coupon issue history retrieved successfully.',
         'has_issues' => '(:count issues)',
@@ -163,19 +166,21 @@ return [
         'benefit_fixed_format' => ':amount off',
         'benefit_rate_format' => ':rate% off',
         'benefit_rate_with_max_format' => ':rate% off (max :max)',
-        'valid_days_format' => ':days days from issue date',
+        'valid_days_format' => ':days day from issue date|:days days from issue date',
         'issue_period_unlimited' => 'Always available',
         'unlimited' => 'Unlimited',
     ],
 
     // Order Messages
     'orders' => [
+        'manual_paid_preview_retrieved' => 'Payment processing items retrieved.',
+        'manual_paid_preview_failed' => 'Failed to retrieve payment processing items.',
         'list_retrieved' => 'Order list retrieved successfully.',
         'retrieved' => 'Order information retrieved successfully.',
         'not_found' => 'Order not found.',
         'updated' => 'Order has been updated.',
         'deleted' => 'Order has been deleted.',
-        'bulk_updated' => ':count orders have been updated.',
+        'bulk_updated' => ':count order has been updated.|:count orders have been updated.',
         'bulk_status_updated' => 'Status of :count orders has been updated.',
         'bulk_shipping_updated' => 'Shipping information of :count orders has been updated.',
         'bulk_update_failed' => 'Bulk update failed.',
@@ -189,7 +194,7 @@ return [
         'cannot_cancel' => 'This order cannot be cancelled.',
         'cannot_refund' => 'This order cannot be refunded.',
         'statistics_retrieved' => 'Order statistics retrieved successfully.',
-        'option_status_changed' => 'Status of :count options has been changed.',
+        'option_status_changed' => 'Status of :count option has been changed.|Status of :count options has been changed.',
         'option_status_change_failed' => 'Failed to change option status.',
         'shipping_address_updated' => 'Shipping address has been updated.',
         'cannot_modify_address' => 'Shipping address can only be changed before shipping.',
@@ -200,10 +205,12 @@ return [
         'log_bulk_updated' => ':count orders have been bulk updated.',
         'email_sent' => 'Email has been sent successfully.',
         'email_send_failed' => 'Failed to send email.',
+        'email_channel_disabled' => 'The email cannot be sent because the mail channel is turned off or the mail settings/template are not ready. Check the mail channel and the "Order Message" template in E-commerce settings > Notifications.',
         'email_subject' => '[:app_name] Regarding Order :order_number',
         'fetch_success' => 'Order information retrieved successfully.',
         'fetch_failed' => 'Failed to retrieve order information.',
         'cancelled' => 'Order has been cancelled.',
+        'cancel_refund_requested' => 'A refund request has been filed. The order will be cancelled once the refund is completed.',
         'cancel_failed' => 'Failed to cancel order.',
         'estimate_refund_success' => 'Refund estimate retrieved successfully.',
         'estimate_refund_failed' => 'Failed to calculate refund estimate.',
@@ -211,9 +218,12 @@ return [
         'guest_password_reset_failed' => 'Failed to reset guest lookup password.',
         'guest_password_reset_not_guest' => 'Only guest orders can have their lookup password reset.',
         'deposit_confirmed' => 'Deposit confirmed and the order has been marked as paid.',
+        'deposit_recorded' => 'The deposit has been recorded. The order remains awaiting payment.',
+        'deposit_recorded_status_kept' => 'The deposit and the paid amount have been recorded. The order is already past payment, so its status is left unchanged.',
         'deposit_confirm_failed' => 'Failed to confirm the deposit.',
         'deposit_amount_mismatch' => 'The deposit amount does not match the amount due.',
         'deposit_not_dbank' => 'Only bank transfer (manual deposit) orders can be confirmed.',
+        'deposit_order_cancelled' => 'Cancelled orders cannot be confirmed for deposit.',
         'deposit_not_pending' => 'Only unpaid orders can have their deposit confirmed.',
         'payment_name_summary' => ':name and :count more',
         'deposit' => [
@@ -260,6 +270,9 @@ return [
 
     // Cart Messages
     'cart' => [
+        'admin_list_retrieved' => 'Carts retrieved.',
+        'admin_deleted' => 'Cart item deleted.',
+        'admin_bulk_deleted' => ':count cart item deleted.|:count cart items deleted.',
         'list_retrieved' => 'Cart items retrieved successfully.',
         'added' => 'Item has been added to cart.',
         'bulk_added' => ':count items have been added to cart.',
@@ -267,7 +280,7 @@ return [
         'option_changed' => 'Option has been changed.',
         'deleted' => 'Item has been removed from cart.',
         'bulk_deleted' => ':count items have been removed.',
-        'merged' => ':count items have been merged to cart.',
+        'merged' => ':count item has been merged to cart.|:count items have been merged to cart.',
         'empty' => 'Cart is empty.',
         'cart_key_issued' => 'Cart key has been issued.',
         'item_count' => 'You have :count items in your cart.',
@@ -282,8 +295,8 @@ return [
         'unknown_product' => 'Unknown product',
         'update_failed' => 'Failed to update cart.',
         'delete_failed' => 'Failed to delete cart item.',
-        'deleted_multiple' => ':deleted_count items have been removed.',
-        'deleted_all' => 'Cart has been cleared. :deleted_count items removed.',
+        'deleted_multiple' => ':deleted_count item has been removed.|:deleted_count items have been removed.',
+        'deleted_all' => 'Cart has been cleared. :deleted_count item removed.|Cart has been cleared. :deleted_count items removed.',
         'login_required' => 'Login is required.',
         'cart_key_required' => 'Cart key is required.',
         'invalid_cart_key' => 'Invalid cart key format.',
@@ -370,6 +383,8 @@ return [
         'not_earning' => 'Only earning transactions can be edited.',
         'expiry_not_editable' => 'Expiry cannot be changed for already-expired or fully-used earnings.',
         'expiry_before_earned' => 'Expiry cannot be earlier than the earned date.',
+        // Earned mileage label — points, not currency (`:points` is already thousands-separated).
+        'points_format' => ':pointsP',
     ],
 
     // Temporary Order Messages
@@ -460,7 +475,81 @@ return [
         'updated' => 'Claim reason has been updated.',
         'deleted' => 'Claim reason has been deleted.',
         'toggled' => 'Claim reason status has been changed.',
-        'delete_failed_in_use' => 'Cannot delete a reason in use by order cancellations. We recommend deactivating it instead.',
+        'delete_failed_in_use' => 'Cannot delete a reason that is already in use. We recommend deactivating it instead.',
+    ],
+
+    // Claim Common Messages
+    'claims' => [
+        // Which axis bound the cancellable amount (D19) — shown as the basis on the admin screen.
+        'cancellable_binding' => [
+            'domain_refundable' => 'The refundable amount is the binding limit.',
+            'payment_capacity' => 'The remaining payment method capacity is the binding limit.',
+        ],
+        // Display label for the per-method remaining capacity (D19). Mileage has no payment row —
+        // it is an order-column ledger, so it is absent from the payment method vocabulary.
+        'cancellable_method' => [
+            'reactivated_cash' => 'Payment re-recorded on reactivation',
+            'payment' => 'Payment method',
+            'mileage' => 'Mileage',
+        ],
+        'payment_order_name' => ':type additional charge (:number)',
+        'claimable_retrieved' => 'Claimable items retrieved.',
+        'preview_success' => 'Claim estimate calculated.',
+        'requested' => 'Your request has been submitted.',
+        'cancelled_instantly' => 'The order has been cancelled.',
+        'auto_refund_forbidden' => 'You cannot process the refund in one step without the refund execution permission. Turn the option off and file the request.',
+        'approve_on_receipt_forbidden' => 'You cannot approve on filing without the claim status change permission. Turn approval off and file the request.',
+        'instant_cancel_forbidden' => 'You do not have permission to cancel this order, so these items cannot be cancelled right away. Please contact the seller.',
+        'list_retrieved' => 'Claim history retrieved.',
+        'retrieved' => 'Claim retrieved.',
+        'updated' => 'The request has been updated.',
+        'rejected' => 'The request has been rejected.',
+        'withdrawn' => 'The request has been withdrawn.',
+        'image_uploaded' => 'Image attached.',
+        'image_deleted' => 'Attached image deleted.',
+        'payment_started' => 'Payment started.',
+        'payment_completed' => 'Payment completed.',
+        'settings_retrieved' => 'Claim settings retrieved.',
+        'operation_failed' => 'An error occurred while processing the claim.',
+        // Admin claim API
+        'status_updated' => 'The claim status has been updated.',
+        'payment_requested' => 'An additional charge has been requested. The claim will be approved after the payment is completed.',
+        'bulk_status_processed' => 'The bulk status change has been processed.',
+        'option_status_processed' => 'The item status change has been processed.',
+        'tracking_saved' => 'Tracking information saved.',
+        'tracking_delivered' => 'The items of the tracking number were marked as arrived.',
+        'notifications' => [
+            'advance_exchange_notice' => 'This is an advance exchange — please send the original items back by :date.',
+            'request_origin_admin' => 'The seller filed this request on your behalf.',
+            'withdraw_origin_admin' => 'The seller withdrew this request at your request.',
+            // 환불 완료 알림·상세의 수단별 금액 줄 (S7)
+            'refund_breakdown_cash' => ':method :amount',
+            'refund_breakdown_points' => 'Mileage :amount',
+        ],
+        // Exchange difference refund label — total and the method it returns by (S2)
+        'exchange_difference' => [
+            'format' => ':total (:methods)',
+            'part' => ':method :amount',
+            'points' => 'Mileage',
+        ],
+        'tracking_deliver_not_ready' => 'These items cannot be marked as arrived in their current status.',
+        'exchange_mode_updated' => 'The exchange mode was changed.',
+        'admin_requested' => 'The request was filed on behalf of the customer.',
+        'admin_requested_approval_skipped' => 'The request was filed but could not be approved. Check the reason on the claim.',
+        'stock_restored' => 'Stock was restored.',
+        'withdrawn_on_behalf' => 'The request was withdrawn as the customer asked.',
+        'request_updated_by_admin' => 'The request details were updated.',
+        'charge_repriced_after_partial_rejection' => 'Some items were rejected or withdrawn, so the difference in the charge is refunded.',
+        'charge_free' => 'Free (no shipping fee)',
+        'images_cleared' => 'All attached images have been deleted.',
+        'amounts_updated' => 'The amounts have been updated.',
+        'cancellable_retrieved' => 'The cancellable amount has been calculated.',
+        'refund_executed' => 'The refund has been executed.',
+        'refund_execute_failed' => 'Failed to execute the refund.',
+        'side_effect_failed' => 'The change was rolled back because restoring coupons, stock, or mileage failed.',
+        'completion_preview_retrieved' => 'The completion summary has been calculated.',
+        'refund_request_created' => 'The refund request has been created.',
+        'logs_retrieved' => 'Activity logs retrieved successfully.',
     ],
 
     // Shipping Policy Messages
@@ -473,11 +562,13 @@ return [
         'deleted' => 'Shipping policy has been deleted.',
         'toggled' => 'Shipping policy status has been changed.',
         'copied' => 'Shipping policy has been copied.',
-        'bulk_deleted' => ':count shipping policies have been deleted.',
+        'bulk_deleted' => ':count shipping policy has been deleted.|:count shipping policies have been deleted.',
         'active_list_retrieved' => 'Active shipping policy list retrieved successfully.',
-        'bulk_toggled' => ':count shipping policies status have been changed.',
+        'bulk_toggled' => 'The status of :count shipping policy has been changed.|The status of :count shipping policies has been changed.',
         'set_default_success' => 'Default shipping policy has been set.',
         'api_test_done' => 'Calculation API test call completed.',
+        'claim_settings_retrieved' => 'Claim shipping settings retrieved successfully.',
+        'claim_settings_updated' => 'Claim shipping settings have been saved.',
         'fee_summary' => [
             'free' => 'Free Shipping',
             'fixed' => 'Shipping: :fee',
@@ -714,8 +805,6 @@ return [
                     'cancel' => [
                         'title' => 'Cancel Order',
                         'description' => 'Cancel the order for selected products. Please review the estimated refund amount before proceeding.',
-                        'cancel_pg' => 'Cancel PG payment as well',
-                        'cancel_pg_hint' => 'If unchecked, only the order status will be changed without PG cancellation.',
                         'reason' => 'Cancel Reason',
                         'reason_placeholder' => 'Select a cancel reason',
                         'reason_detail' => 'Detailed Reason',
@@ -725,7 +814,7 @@ return [
                         'refund_product_amount' => 'Product Refund',
                         'refund_shipping_diff' => 'Shipping Difference',
                         'refund_discount_diff' => 'Discount Adjustment',
-                        'refund_points' => 'Points Refund',
+                        'refund_points' => 'Used mileage returned',
                         'refund_total' => 'Total Estimated Refund',
                         'confirm' => 'Cancel Order',
                         'close' => 'Close',
@@ -1185,6 +1274,9 @@ return [
     ],
 
     'wishlist' => [
+        'admin_list_retrieved' => 'Wishlists retrieved.',
+        'admin_deleted' => 'Wishlist item deleted.',
+        'admin_bulk_deleted' => ':count wishlist item deleted.|:count wishlist items deleted.',
         'added' => 'Product has been added to wishlist.',
         'removed' => 'Product has been removed from wishlist.',
         'retrieved' => 'Wishlist retrieved successfully.',
@@ -1202,9 +1294,9 @@ return [
         'updated' => 'Extra fee template has been updated.',
         'deleted' => 'Extra fee template has been deleted.',
         'toggled' => 'Extra fee template status has been changed.',
-        'bulk_deleted' => ':count extra fee templates have been deleted.',
-        'bulk_toggled' => ':count extra fee templates status have been changed.',
-        'bulk_created' => ':count extra fee templates have been created.',
+        'bulk_deleted' => ':count extra fee template has been deleted.|:count extra fee templates have been deleted.',
+        'bulk_toggled' => 'The status of :count extra fee template has been changed.|The status of :count extra fee templates has been changed.',
+        'bulk_created' => ':count extra fee template has been created.|:count extra fee templates have been created.',
         'settings_retrieved' => 'Active extra fee template settings retrieved successfully.',
     ],
 
@@ -1231,6 +1323,8 @@ return [
         'reply_deleted' => 'Reply has been deleted.',
         'reply_delete_failed' => 'Failed to delete reply.',
         'reply_not_found' => 'Reply not found.',
+        // 비밀 문의를 열람 권한 없는 사람에게 보일 때의 제목 자리 문구
+        'secret_post_title' => 'Secret post',
         // 서비스가 던진 사유를 그대로 덧붙여, 실패 원인을 서버 기록 없이도 알 수 있게 한다
         'operation_failed_reason' => ':reason',
     ],
@@ -1268,8 +1362,129 @@ return [
         'update_failed' => 'Failed to update shipping country.',
     ],
 
+    // Member-owned data admin lists (#524 §4.1)
+    'user_address' => [
+        'admin_list_retrieved' => 'Member addresses retrieved.',
+        'admin_deleted' => 'Address deleted.',
+        'admin_bulk_deleted' => ':count address deleted.|:count addresses deleted.',
+    ],
+
+    'product_inquiry' => [
+        'admin_list_retrieved' => 'Product inquiries retrieved.',
+        'admin_deleted' => 'Product inquiry deleted.',
+        'admin_bulk_deleted' => ':count inquiry deleted.|:count inquiries deleted.',
+    ],
+
+    // 개인정보 보유기간 (이슈 #636) — 코어 보유기간 커맨드의 핸들러 이름과 연간 통지문 「주문 정보」 섹션
+    'privacy_retention' => [
+        'handler_label' => 'E-commerce closed order personal information',
+        'target_columns' => [
+            'order_number' => 'Order number',
+            'orderer' => 'Orderer',
+            'status' => 'Order status',
+            'closed_at' => 'Closed on',
+        ],
+        'notice_section' => [
+            'title' => 'Order information',
+            'body' => 'When you place an order, we collect the orderer and recipient name, contact number and address to process and deliver the order. Under the Act on the Consumer Protection in Electronic Commerce, records of contracts, withdrawals, payments and supply of goods are kept for 5 years.',
+            'after_anonymize' => 'For orders closed by purchase confirmation or cancellation, the orderer and recipient information is anonymized :years year after closing.|For orders closed by purchase confirmation or cancellation, the orderer and recipient information is anonymized :years years after closing.',
+            'after_delete' => 'Orders closed by purchase confirmation or cancellation are deleted together with their records :years year after closing.|Orders closed by purchase confirmation or cancellation are deleted together with their records :years years after closing.',
+        ],
+    ],
+
     // Dashboard
     'dashboard' => [
         'fetch_success' => 'Dashboard data loaded.',
+    ],
+    // Relation names for the "related user" recipient rule — shown on the notification settings screen instead of keys.
+    'notification_relations' => [
+        'author' => 'Inquiry author',
+    ],
+    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
+    'notification_variables' => [
+        'common' => [
+            'name' => 'Recipient name',
+            'app_name' => 'Site name',
+            'order_number' => 'Order number',
+            'total_amount' => 'Payment amount',
+            'order_url' => 'Order details URL',
+            'site_url' => 'Site URL',
+            'shipping_recipient_name' => 'Shipping recipient name',
+            'shipping_country_name' => 'Shipping country name',
+            'shipping_address' => 'Shipping address',
+            'deposit_amount' => 'Amount to deposit (after mileage/deposit deductions)',
+            'bank_name' => 'Deposit bank',
+            'account_number' => 'Deposit account number',
+            'account_holder' => 'Account holder',
+            'depositor_name' => 'Depositor name',
+            'deposit_due_at' => 'Deposit deadline',
+            'carrier_name' => 'Carrier name',
+            'tracking_number' => 'Tracking number',
+            'cancel_reason' => 'Cancellation reason',
+            'customer_name' => 'Orderer name',
+            'product_name' => 'Product name',
+            'inquiry_content' => 'Inquiry content (summary)',
+            'inquiry_url' => 'Inquiry management URL',
+            'amount' => 'Mileage due to expire',
+            'currency' => 'Currency code',
+            'expires_date' => 'Expiry date',
+            'balance' => 'Currently available balance',
+            'mileage_url' => 'Mileage history URL',
+            'claim_type_label' => 'Claim type (exchange/return/refund)',
+            'claim_url' => 'Request details URL (guest order lookup page for guests)',
+            'claim_number' => 'Claim request number',
+            'status_label' => 'Current status',
+            'reason_label' => 'Request reason',
+            'request_origin_notice' => 'Notice of seller submission on behalf of the customer (empty for customer requests)',
+            'requester_name' => 'Requester name',
+            'charge_amount' => 'Total amount charged',
+            'outstanding_amount' => 'Outstanding amount',
+            'paid_amount' => 'Amount paid',
+            'admin_memo' => 'Hold notice memo',
+            'reject_reason' => 'Rejection reason',
+            'tracking_lines' => 'Product lines per tracking number (carrier · tracking number · product × quantity, one per line)',
+            'advance_exchange_notice' => 'Return deadline notice for the old item in an advance exchange (empty for regular exchanges)',
+            'refund_amount' => 'Refund amount',
+            'refund_method_label' => 'Refund method',
+            'withdraw_origin_notice' => 'Notice of seller withdrawal on behalf of the customer (empty for customer withdrawals)',
+            'processed_count' => 'Number of items processed this time',
+            'remaining_count' => 'Number of items not yet processed',
+            'item_lines' => 'Items processed this time (one per line)',
+            'total_count' => 'Number of items requested',
+            'approved_count' => 'Number of items approved this time',
+            'rejected_count' => 'Number of items rejected this time',
+            'decision_label' => 'Decision label for this processing',
+            'collection_due_date' => 'Return deadline for the old item in an advance exchange',
+            'overdue_days' => 'Days past the return deadline',
+            'unreturned_item_lines' => 'Items not yet collected (one per line)',
+            'subject' => 'Subject entered by the administrator',
+            'message' => 'Body entered by the administrator (line breaks preserved)',
+        ],
+        'by_type' => [
+            'new_order_admin' => [
+                'name' => 'Recipient (administrator) name',
+                'order_url' => 'Order management URL',
+            ],
+            'order_confirmed_admin' => [
+                'name' => 'Recipient (operator) name',
+                'order_url' => 'Order page URL (replaced with the admin address for operators)',
+            ],
+            'order_completed_admin' => [
+                'name' => 'Recipient (operator) name',
+                'order_url' => 'Order page URL (replaced with the admin address for operators)',
+            ],
+            'inquiry_received' => [
+                'name' => 'Recipient (administrator) name',
+                'customer_name' => 'Inquirer name',
+            ],
+            'inquiry_replied' => [
+                'name' => 'Recipient (inquirer) name',
+                'inquiry_content' => 'Original inquiry content (summary)',
+                'inquiry_url' => 'Inquiry details URL (My Page)',
+            ],
+            'order_custom_email' => [
+                'app_name' => 'Site name',
+            ],
+        ],
     ],
 ];

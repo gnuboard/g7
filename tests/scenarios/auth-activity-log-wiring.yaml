@@ -1,0 +1,27 @@
+feature: 가입·비밀번호 활동 로그와 마케팅 동의의 가입 훅 배선
+
+description: |
+  활동 로그 리스너와 마케팅 동의 리스너가 AuthService 가 발화하지 않는 옛 이름
+  (core.auth.register·forgot_password·reset_password)을 구독해, 회원가입·비밀번호 찾기 요청·비밀번호 변경
+  로그와 가입 시 마케팅 동의가 한 번도 기록되지 않았다(#138 후속 전수 점검 1·3번).
+
+  핵심 동작:
+    - 구독은 발화 이름(after_register·after_reset_password_request·password_change_recorded)을 쓴다.
+    - 비밀번호 찾기 요청 구독은 인자에 재설정 토큰이 실려 동기 실행한다(큐 테이블에 토큰 사본을 남기지 않음).
+    - 비밀번호 변경 로그는 #736 부터 경로·행위자를 아는 `core.auth.password_change_recorded` 에서 남긴다 —
+      메일 재설정은 auth.reset_password, 본인·관리자 지정·로그인 단계 변경은 auth.password_change.
+      행위자는 훅이 넘긴 actor_id(관리자가 정했으면 그 관리자, 아니면 회원 본인).
+    - 마케팅 동의는 훅 인자 registration_data 에서 읽는다(큐 워커의 request() 는 비어 있음).
+
+axes:
+  case: [register_self, forgot_password_self, password_changed_self, password_changed_admin, subscription_contract]
+
+effects:
+  - register_logged_via_published_hook
+  - forgot_password_logged_via_published_hook
+  - password_changed_logged_via_published_hook
+  - password_changed_by_admin_logs_admin_actor
+  - auth_subscriptions_use_published_names
+
+test_files:
+  - tests/Feature/ActivityLog/AuthActivityLogWiringTest.php

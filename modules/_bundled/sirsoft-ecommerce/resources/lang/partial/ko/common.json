@@ -9,6 +9,7 @@
   "saving": "저장중",
   "close": "닫기",
   "refresh": "새로고침",
+  "remove": "제거",
   "created_at": "생성일",
   "updated_at": "수정일",
   "active": "활성",
@@ -50,5 +51,6 @@
   "select_placeholder": "선택하세요",
   "selected_count": "{{count}}개 선택됨",
   "read_only_notice": "보기 권한만 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.",
-  "validation_error_notice": "입력값을 확인해주세요. 일부 항목이 올바르지 않습니다."
+  "validation_error_notice": "입력값을 확인해주세요. 일부 항목이 올바르지 않습니다.",
+  "module_name": "이커머스"
 }

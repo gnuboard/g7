@@ -1,132 +1,131 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Form - Label Uncheck Confirmation Modal (engine-v1.16.0: $parent 바인딩 사용)"
-  },
-  "id": "modal_label_uncheck_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "comment": "상품 폼 — 라벨 해제 확인. 그 라벨에 노출 기간을 걸어 두었다면 해제와 함께 그 설정이 사라지므로,\n  걸린 기간을 보여 주고 되묻는다. 기간 값은 폼이 들고 있어 `$parent` 로 건너다본다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Form - Label Uncheck Confirmation Modal (engine-v1.16.0: $parent 바인딩 사용)"
+    },
+    "id": "modal_label_uncheck_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 justify-center flex-shrink-0"
-              },
-              "children": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "exclamation-triangle",
-                    "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-primary font-medium mb-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "px-2 py-0.5 rounded text-xs font-medium",
-                        "style": "background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280'}}"
-                      },
-                      "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.name) ?? ''}}"
-                    }
-                  ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 justify-center flex-shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "exclamation-triangle",
+                                        "className": "text-xl text-yellow-600 dark:text-yellow-400"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-primary font-medium mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "px-2 py-0.5 rounded text-xs font-medium",
+                                                "style": "background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280'}}"
+                                            },
+                                            "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.name) ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.message"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at || ($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at}}",
+                                    "props": {
+                                        "className": "text-label-subtle mt-2 font-medium"
+                                    },
+                                    "text": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at ?? ''}} ~ {{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.message"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at || ($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at}}",
-                  "props": {
-                    "className": "text-label-subtle mt-2 font-medium"
-                  },
-                  "text": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at ?? ''}} ~ {{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at ?? ''}}"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.confirmUncheckLabel"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-warning"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-outline"
-              },
-              "text": "$t:sirsoft-ecommerce.common.cancel",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "closeModal"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-warning"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sirsoft-ecommerce.confirmUncheckLabel"
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ],
-      "props": {
-      }
-    }
-  ]
+    ]
 }

@@ -1,0 +1,16 @@
+feature: sirsoft-basic Modal — 머리말 닫기(×) 버튼의 손가락 커서
+
+description: |
+  사용자 템플릿 창의 머리말 닫기(×) 버튼만 커서가 default 였다(7.1.0 전수 실측 K2 관측 O-K2-8 —
+  스크랩 해제, 신고 취소, 신고 접수 창에서 「취소」·확인 버튼은 pointer, 닫기만 default).
+  사용자 템플릿 기반 스타일은 button 에 손가락 커서를 주지 않으므로 컴포넌트가 직접 단다.
+  축 header 는 머리말 구성(제목과 닫기, 닫기만)이다.
+
+axes:
+  header: [title_and_close, close_only]
+
+effects:
+  - close_button_uses_pointer_cursor
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/Modal.closeButton.test.tsx

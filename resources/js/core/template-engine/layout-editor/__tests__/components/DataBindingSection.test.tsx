@@ -12,6 +12,12 @@
  *  - 회귀 가드(1차 결함): 구조/수치 prop(dataProps 미선언)은 데이터 연결 행 0
  *
  * @since engine-v1.50.0
+ *
+ * @effects select_candidate_writes_binding_expression_to_props_propkey,
+ *   clear_removes_binding_back_to_unconnected,
+ *   complex_binding_degrades_to_code_edit_readonly_notice,
+ *   single_path_binding_prefilled_in_picker_via_parse,
+ *   shape_filter_returns_only_matching_scalar_array_object_candidates
  */
 
 import React from 'react';

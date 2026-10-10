@@ -1,0 +1,48 @@
+<!-- 쇼핑몰 설정 — 마일리지 기본 설정 카드. 적립률·유효기간 같은 값을 폼 자동 바인딩으로만
+  받으므로 액션이 없다. -->
+<partial description="마일리지 설정 - 기본 설정 카드">
+  <div data-ref="mileage_basic_card" class="admin-card">
+    <div class="flex-between mb-4 gap-2 flex-wrap">
+      <h3 class="section-heading">$t:sirsoft-ecommerce.admin.mileage_settings.basic.title</h3>
+      <button data-ref="view_transactions_button" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <on type="click">
+          <navigate path="/admin/ecommerce/mileage-transactions"/>
+        </on>
+        <icon name="list" size="sm"/>
+        <span>$t:sirsoft-ecommerce.admin.mileage_settings.view_transactions</span>
+      </button>
+    </div>
+    <div class="flex-between py-3">
+      <div>
+        <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.basic.enabled</label>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.basic.enabled_hint</p>
+      </div>
+      <toggle data-type="composite" name="mileage.enabled" value="{{_local.form?.mileage?.enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+    </div>
+    <div class="border-t border-gray-200 dark:border-gray-700 py-4">
+      <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate</label>
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_prefix</span>
+        <input type="number" name="mileage.default_earn_rate" value="{{_local.form?.mileage?.default_earn_rate ?? 1}}" min="{{_local?.form?._meta?.limits?.default_earn_rate_min ?? 0}}" max="{{_local?.form?._meta?.limits?.default_earn_rate_max ?? 100}}" step="0.1" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_suffix</span>
+      </div>
+      <span data-if="{{_local.errors?.['mileage.default_earn_rate']}}" class="text-red-500 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['mileage.default_earn_rate']?.[0] ?? ''}}</span>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_hint</p>
+    </div>
+    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger</label>
+      <div class="flex items-center gap-2 flex-wrap">
+        <select name="mileage.earn_trigger" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger" value="{{_local.form?.mileage?.earn_trigger ?? 'confirmed'}}" class="input w-32" disabled="{{_computed.isReadOnly}}">
+          <options>
+            <option value="confirmed">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger_confirmed</option>
+            <option value="delivered">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger_delivered</option>
+          </options>
+        </select>
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_prefix</span>
+        <input type="number" name="mileage.earn_delay_days" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_days" value="{{_local.form?.mileage?.earn_delay_days ?? 0}}" min="{{_local?.form?._meta?.limits?.earn_delay_days_min ?? 0}}" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_suffix|count={{_local.form?.mileage?.earn_delay_days ?? 0}}</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger_hint</p>
+    </div>
+  </div>
+</partial>

@@ -39,12 +39,20 @@ effects:
   - custom_asset_manage_upload_extension_whitelist
   - custom_asset_manage_binary_rejects_text_save
   - custom_asset_editor_save_invalidates_published_copy
+  - custom_asset_editor_saves_an_emptied_file
+  - custom_asset_editor_keeps_typing_for_a_new_path
+  - custom_asset_editor_guards_unsaved_text_on_close
+  - custom_asset_editor_saves_with_ctrl_s
+  - custom_asset_editor_renames_through_the_api
+  - custom_asset_editor_shows_a_file_tree
   - custom_asset_manager_surfaces_permission_denial_as_guidance
   - custom_asset_binary_file_offers_replace_not_text_edit
   - custom_asset_permission_reaches_existing_sites_via_core_sync
   - custom_assets_disabled_by_request_parameter
   - custom_asset_manage_all_extension_types_parity
   - custom_asset_published_for_all_extension_types
+  # 마지막 파일을 지우면 빈 폴더도 함께 정리한다(7.1.0 잔여 관측 R-11)
+  - custom_asset_removal_prunes_emptied_folders
 
 test_files:
   - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php

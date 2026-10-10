@@ -1,0 +1,18 @@
+feature: sirsoft-ckeditor5 화면 abilities 게이트 — 화면 잠금을 서버 권한과 맞춘다 (7.1.0 abilities 게이트 plugins·G04·R1)
+
+description: |
+  관리자 주문 상세 결제 주입·설정 화면·업로드 관리의 쓰기 컨트롤을 응답 abilities(호스트 주문 can_update·can_execute_refund, 플러그인 API 판정)로 잠근다.
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/plugin-abilities-gate.test.ts
+  # 업로드 관리 목록 응답이 싣는 abilities 판정(화면 잠금의 근거) — admin_index_reports_abilities
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/Http/Controllers/Admin/ImageUploadAdminControllerTest.php
+
+axes:
+  case:
+    - uploads_without_delete
+
+effects:
+  - uploads_delete_controls_locked
+  # 업로드 관리 목록 응답이 삭제·설정 열기 권한 판정을 싣는다 — 화면이 행 선택·삭제·[설정 열기]를 잠그는 근거(plugins #9·#13)
+  - admin_index_reports_abilities

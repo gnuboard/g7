@@ -1,0 +1,28 @@
+feature: ja 알림 시드의 자리표시자가 원본 알림 정의를 따른다 (#703)
+
+description: |
+  언어팩 동기화 검사(check-language-pack-sync)는 키 집합만 비교해, 원본(ko) 본문의 자리표시자가 바뀐 뒤 ja 시드
+  본문이 옛 자리표시자를 들고 있어도 통과한다. 두 자리가 그랬다.
+
+    - GDPR 연간 통지 메일: ko·en 은 처리방침 주소가 비면 링크 줄을 생략하는 {privacy_policy_link} 로 바뀌었는데
+      ja 만 <a href="{privacy_policy_url}"> 를 남겨, 주소를 비운 사이트의 일본어 회원이 주소 없는 링크를 받았다.
+    - 이커머스 결제 완료 메일: ko·en 에 받는 분·배송 국가·배송지 줄이 추가됐는데 ja 에는 없었다.
+
+  모집단은 `lang-packs/_bundled/*-ja/seed/` 의 알림 seed JSON 전량에서 파생하고, 짝이 되는 원본은 코어
+  `core.notification_definitions` / 확장 `getNotificationDefinitions()` 다. 비교 칸 수 하한으로 공동화를 막는다.
+
+axes:
+  locale: [ja]
+  surface: [notification_seed]
+
+effects:
+  - ja_notification_seed_placeholders_follow_source
+
+test_files:
+  - tests/Unit/LanguagePack/JaNotificationSeedPlaceholderParityTest.php
+
+rules_layer_coverage:
+  - rule: lang-pack-key-parity
+    coverage: |
+      키 존재 패리티는 check-language-pack-sync 가 본다. 이 매니페스트는 키는 있는데 값의 자리표시자가 원본과
+      갈리는 축을 덮는다.

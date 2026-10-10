@@ -1,0 +1,16 @@
+feature: 기본 페이지 시더의 언어팩 seed 번역 머지
+
+description: |
+  페이지 시더는 다국어 JSON(제목·본문)을 시드하면서 언어팩 필터를 거치지 않아, 활성 언어팩이
+  seed/pages.json 을 실어도 기본 페이지 6종은 ko/en 만으로 만들어졌다. 다른 확장 시더와 같은
+  seed.{확장}.{entity}.translations 필터(slug 매칭)로 머지되도록 TranslatableSeederInterface 를 구현한다.
+
+axes:
+  seed_source: [defaults_only, lang_pack_filter]
+
+effects:
+  - page_seeder_declares_lang_pack_seed_contract
+  - page_seeder_merges_lang_pack_translations
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Seeders/PageSeederTranslationTest.php

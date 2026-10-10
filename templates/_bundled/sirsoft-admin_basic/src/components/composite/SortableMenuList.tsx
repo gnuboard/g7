@@ -52,6 +52,8 @@ export interface MenuItem {
     name: string | Record<string, string>;
     permission_type?: string | null;
   }[];
+  /** 관리 목록이 싣는 부여 역할 ID (이름은 roleOptions 에서 찾는다) */
+  role_ids?: number[];
   created_at?: string;
   updated_at?: string;
 }
@@ -78,6 +80,20 @@ export interface SortableMenuListProps {
   titleClassName?: string;
   enableDrag?: boolean;
   toggleDisabled?: boolean;
+  /**
+   * 여러 개 선택 모드 (기본값: false). 켜면 항목 앞에 체크박스가 보이고, 끌어 옮기기와 상태
+   * 토글이 꺼지며, 항목 클릭은 상세 선택(onSelect) 대신 체크를 토글한다. 자식은 모두 펼친다.
+   */
+  selectionMode?: boolean;
+  /** 선택 모드에서 체크된 메뉴 ID */
+  selectedIds?: number[];
+  /** 선택 모드에서 체크가 바뀔 때 — 새 ID 배열 */
+  onSelectionChange?: (ids: number[]) => void;
+  /**
+   * 역할 이름표 — 항목의 role_ids 를 이름으로 바꿔 행마다 배지로 보인다. 주지 않으면 배지를 그리지 않는다.
+   * 목록에 없는 ID(비활성 역할 등)는 건너뛴다.
+   */
+  roleOptions?: { id: number; name: string | Record<string, string> }[];
   /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */
@@ -255,6 +271,10 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
   titleClassName = 'px-4 py-3 border-b border-gray-200 dark:border-gray-700',
   enableDrag = true,
   toggleDisabled = false,
+  selectionMode = false,
+  selectedIds = [],
+  onSelectionChange,
+  roleOptions,
   id,
   editorAttrs,
 }) => {
@@ -330,9 +350,51 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
     });
   }, []);
 
+  const selectedSet = useMemo(() => new Set(selectedIds ?? []), [selectedIds]);
+
+  // 역할 ID → 이름 (현재 로케일). roleOptions 가 없으면 배지를 그리지 않는다.
+  const roleNameById = useMemo(() => {
+    // 빈 배열은 「역할 목록 아직 안 옴」 이다(데이터소스 fallback) — 관리자 역할은 늘 있으므로 실제로 빈 경우는 없다
+    if (!Array.isArray(roleOptions) || roleOptions.length === 0) return null;
+    const map = new Map<number, string>();
+    roleOptions.forEach((role) => map.set(Number(role.id), getMenuLabel(role.name)));
+
+    return map;
+  }, [roleOptions, getMenuLabel]);
+
+  // 「역할 없음」 은 role_ids 가 정말 비었을 때만 보인다. 이름표(활성 역할 목록) 밖 ID 는 이름 없이 개수(roleCount)로만 센다.
+  // 이름표가 아직 안 왔거나(로그인 직후 진입 등)
+  // 부여된 역할이 모두 이름표 밖이면 이름을 모르는 것이지 역할이 없는 것이 아니므로 배지 줄을 그리지 않는다.
+  const resolveRoleNames = useCallback((item: MenuItem): string[] | undefined => {
+    if (!roleNameById || !Array.isArray(item.role_ids)) return undefined;
+    if (item.role_ids.length === 0) return [];
+
+    const names = item.role_ids
+      .map((roleId) => roleNameById.get(Number(roleId)))
+      .filter((name): name is string => !!name);
+
+    return names.length > 0 ? names : undefined;
+  }, [roleNameById]);
+
+  // 부모 체크 = 부모와 자손 전체 토글. 자손 일부만 골라져 있으면 indeterminate.
+  const subtreeIds = useCallback((item: MenuItem): number[] => [item.id, ...collectDescendantIds(item)], []);
+
+  const toggleSelection = useCallback((item: MenuItem) => {
+    const ids = subtreeIds(item);
+    const allChecked = ids.every((menuId) => selectedSet.has(menuId));
+    const next = new Set(selectedSet);
+    ids.forEach((menuId) => (allChecked ? next.delete(menuId) : next.add(menuId)));
+    onSelectionChange?.(Array.from(next));
+  }, [selectedSet, subtreeIds, onSelectionChange]);
+
   const handleItemClick = useCallback((item: MenuItem) => {
+    if (selectionMode) {
+      toggleSelection(item);
+
+      return;
+    }
     onSelect?.(item);
-  }, [onSelect]);
+  }, [onSelect, selectionMode, toggleSelection]);
 
   const handleToggleStatus = useCallback((id: number, currentStatus: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -417,12 +479,29 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
     isModuleMenu: !!item.module_id,
     moduleName: item.module ? getMenuLabel(item.module.name) : undefined,
     hasChildren: item.children && item.children.length > 0,
+    roleNames: resolveRoleNames(item),
+    roleCount: Array.isArray(item.role_ids) ? item.role_ids.length : undefined,
   });
+
+  // 선택 모드에서는 자식을 모두 펼친다 — 접힌 자식은 고를 수 없다
+  const effectiveExpanded = useMemo(() => {
+    if (!selectionMode) return expandedItems;
+    const all = new Set<number>();
+    const walk = (menuItems: MenuItem[]) => menuItems.forEach((item) => {
+      if (item.children?.length > 0) {
+        all.add(item.id);
+        walk(item.children);
+      }
+    });
+    walk(localItems);
+
+    return all;
+  }, [selectionMode, expandedItems, localItems]);
 
   // 트리를 평탄화 — 단일 SortableContext 사용
   const flatItems = useMemo(
-    () => flattenTree(localItems, expandedItems),
-    [localItems, expandedItems]
+    () => flattenTree(localItems, effectiveExpanded),
+    [localItems, effectiveExpanded]
   );
 
   const sortableIds = useMemo(
@@ -455,8 +534,8 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
               >
                 <SortableMenuItem
                   item={toMenuItemData(flatItem.item)}
-                  isSelected={selectedId === flatItem.item.id}
-                  isExpanded={expandedItems.has(flatItem.item.id)}
+                  isSelected={!selectionMode && selectedId === flatItem.item.id}
+                  isExpanded={effectiveExpanded.has(flatItem.item.id)}
                   level={flatItem.depth}
                   onClick={() => handleItemClick(flatItem.item)}
                   onToggle={(e) => handleToggleStatus(flatItem.item.id, flatItem.item.is_active, e)}
@@ -464,8 +543,15 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
                   className={itemClassName}
                   selectedClassName={itemSelectedClassName}
                   defaultClassName={itemDefaultClassName}
-                  enableDrag={enableDrag}
+                  enableDrag={enableDrag && !selectionMode}
                   toggleDisabled={toggleDisabled}
+                  selectable={selectionMode}
+                  {...(selectionMode ? (() => {
+                    const ids = subtreeIds(flatItem.item);
+                    const count = ids.filter((menuId) => selectedSet.has(menuId)).length;
+
+                    return { checked: count === ids.length, indeterminate: count > 0 && count < ids.length };
+                  })() : {})}
                 />
               </Div>
             ))}

@@ -276,7 +276,32 @@
     "save": "저장",
     "saving": "저장 중...",
     "cancel": "취소",
-    "back_to_list": "목록으로"
+    "back_to_list": "목록으로",
+    "section_claim_addresses": "클레임 회수지",
+    "claim_addresses_description": "교환·반품 신청이 접수될 때 고객에게 안내할 회수지입니다. 유형별로 한 곳씩 등록합니다.",
+    "claim_addresses_snapshot_notice": "회수지는 신청 시점에 신청서로 복사됩니다. 여기서 바꿔도 이미 접수된 건의 회수지는 바뀌지 않습니다.",
+    "claim_address_exchange": "교환 회수지",
+    "claim_address_return": "반품 회수지",
+    "claim_address_recipient_name": "수취인명",
+    "claim_address_recipient_name_placeholder": "예: 반품 담당자",
+    "claim_addresses_loading_notice": "회수지 정보를 불러오는 중입니다. 이 안내가 사라지지 않으면 불러오기에 실패한 것이므로 화면을 새로고침해 주세요 — 그 전에는 회수지를 수정할 수 없습니다.",
+    "claim_addresses_requires_update": "회수지는 정책을 만든 뒤 따로 저장되며 배송정책 수정 권한이 필요합니다. 권한이 있는 관리자가 등록된 정책의 수정 화면에서 설정합니다.",
+    "claim_address_phone": "연락처",
+    "claim_address_phone_placeholder": "예: 02-1234-5678",
+    "claim_address_zipcode": "우편번호",
+    "claim_address_address1": "기본주소",
+    "claim_address_address2": "상세주소",
+    "claim_address_clear": "이 회수지 지우기",
+    "claim_address_clear_confirm": "이 회수지를 지우시겠습니까? 저장하면 등록된 회수지가 삭제됩니다.",
+    "section_claim_fee": "클레임 배송비",
+    "claim_fee_description": "이 국가에서 교환·반품이 발생했을 때 고객에게 청구할 배송비를 정합니다.",
+    "claim_fee_mode": "산정 방식",
+    "claim_fee_mode_hint": "고정 금액은 아래 값을 그대로 청구하고, 원래 배송정책 재계산은 이 정책의 부과 규칙으로 다시 계산합니다.",
+    "claim_fee_original_policy_notice": "이 국가의 부과 규칙(무료/고정/구간/단위당 등)으로 다시 계산합니다. 반품은 편도, 교환은 왕복으로 청구됩니다.",
+    "return_fixed_fee": "반품 배송비 (편도)",
+    "return_fixed_fee_hint": "반품 회수 1회분입니다.",
+    "exchange_fixed_fee": "교환 배송비 (왕복)",
+    "exchange_fixed_fee_hint": "회수 + 재발송 2회분을 합한 금액입니다."
   },
 
   "modal_extra_fee": {
@@ -346,7 +371,9 @@
     "not_found": "배송정책을 찾을 수 없습니다.",
     "template_saved": "추가배송비 템플릿이 저장되었습니다.",
     "template_deleted": "추가배송비 템플릿이 삭제되었습니다.",
-    "template_bulk_deleted": "선택한 추가배송비 템플릿이 삭제되었습니다."
+    "template_bulk_deleted": "선택한 추가배송비 템플릿이 삭제되었습니다.",
+    "claim_settings_save_error": "클레임 회수지 저장에 실패했습니다. 배송정책 자체는 저장되었습니다.",
+    "claim_settings_not_loaded": "회수지 정보를 불러오지 못해 회수지는 저장하지 않았습니다. 배송정책 자체는 저장되었습니다. 화면을 새로고침한 뒤 다시 시도해 주세요."
   },
 
   "common": {

@@ -88,6 +88,38 @@ effects:
   - cancelled_to_pre_payment_status_blocked         # 취소 → pending_payment 등 결제 전 상태 차단
   # 동기화 일원화 회귀 (PHPUnit Unit)
   - sync_parent_lowest_status_unchanged_after_ssot  # syncParentOrderStatus 혼합 최저단계 선택 불변
+  # 배송 레코드 동기화 (PHPUnit Feature · S3-D2)
+  # 옵션일괄 전이로 송장을 넣으면 배송 레코드(ecommerce_order_shippings)도 따라 옮겨져야 한다.
+  # 회원 주문상세 「배송 현황」 카드가 이 레코드를 읽으므로, pending 에 머물면 배송완료 주문이
+  # 고객에게 「배송대기」로 보인다. 주문목록 일괄 운송장 경로는 처음부터 shipped 를 기록했다.
+  - shipping_record_follows_option_status         # 배송중→shipped(+shipped_at) · 배송완료→delivered(+delivered_at) · 배송준비중→pending 유지
+  # 수량 분할 행의 배송 행 (PHPUnit Feature · S3-D5)
+  # 분할 레코드에 배송 행이 없으면 ClaimShippingFeeService 가 정책을 못 찾아
+  # 고객 귀책 반품·교환인데도 회수비·왕복비가 0원(no_shipping_policy)으로 떨어진다.
+  - split_row_gets_its_own_shipping_record        # 분할 행이 원 행의 배송정책을 승계한 자기 배송 행을 갖는다
+  # 옵션일괄의 수량 분할·병합 기계 (PHPUnit Feature · #599 역매핑)
+  # 전이 게이트와 같은 endpoint 를 쓰지만 관심사가 다르다 — 게이트를 통과한 뒤 행이 어떻게
+  # 쪼개지고 다시 합쳐지는지, 그때 금액·부피·스냅샷·종속 레코드가 어디로 가는지.
+  - option_bulk_full_quantity_changes_without_split   # 전체 수량 변경은 분할 없이 상태만 바뀐다
+  - option_bulk_partial_quantity_splits_row           # 부분 수량 변경이 행을 쪼갠다(원본=잔량 · 분할=변경분)
+  - split_row_points_to_parent_and_is_marked_split    # 분할 행의 parent_option_id·source_type
+  - split_row_amounts_are_prorated_by_quantity        # 금액·할인·결제액이 수량 비율로 나뉜다
+  - split_row_weight_and_volume_are_prorated          # 무게·부피가 수량 비율로 나뉜다
+  - split_row_carries_over_product_and_snapshot_columns # 상품 참조·스냅샷 컬럼 승계
+  - option_bulk_quantity_out_of_range_rejected        # 보유 수량 초과·0 수량은 422
+  - option_bulk_requires_items_and_valid_status       # items 누락·어휘 밖 상태는 422
+  - option_bulk_cancelled_is_not_in_admin_vocabulary  # 일괄 어휘에 취소가 없다(환불 경로 우회 차단)
+  - shipping_status_requires_carrier_and_tracking     # 배송 계열 상태는 택배사·송장번호 필수
+  - delivered_status_treats_carrier_and_tracking_as_optional # 배송완료는 선택 입력
+  - option_bulk_requires_orders_update_permission     # 권한 없으면 403
+  - same_status_rows_merge_back_into_one              # 같은 상태가 되면 행이 다시 하나로 합쳐진다
+  - merged_row_sums_amounts_and_quantity              # 병합 행의 수량·금액이 합산된다
+  - merge_reassigns_dependent_shipping_and_review_rows # 병합 시 배송·리뷰 행이 생존 행으로 이전(cascade 삭제 방지)
+  - sequential_splits_accumulate_independent_rows     # 연속 분할이 서로 독립한 행으로 쌓인다
+  - option_bulk_response_carries_result_row_ids       # 응답 results 의 order_option_id·split_order_option_id
+  - parent_order_status_syncs_to_lowest_option_stage  # 부모 주문 상태가 옵션 최저 단계로 동기화
+  - claim_course_option_status_change_blocked_with_422_guidance # 클레임 진행 중 행의 상태 변경은 422 안내
+  - option_bulk_infrastructure_failure_returns_500    # 대조군 — 인프라 실패는 계속 500
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/OrderStatusTransitionTest.php

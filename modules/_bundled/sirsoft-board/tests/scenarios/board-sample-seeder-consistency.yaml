@@ -1,0 +1,28 @@
+feature: 게시판 샘플 시더 정합 (7.1.0 출시 점검 2.2)
+
+description: |
+  `module:seed sirsoft-board --sample` 결과가 운영 경로와 같은 불변식을 지키고, 재시드가 운영
+  데이터를 지우지 않는지 고정한다. 게시판은 모듈 기본값(반응 켜짐)을 병합하고 상품 문의 게시판을
+  만든다. 삭제 원글 아래 자식은 연쇄 삭제, 공지·관리자 전용 게시판 작성자는 관리자, 비회원 첨부
+  소유자 없음, 시각 순서, 카운트 일치. 반응은 본인 글·꺼진 게시판·켜지 않은 유형에 없다. 신고는
+  표식을 달고 상태별 조치(블라인드·삭제·자동 블라인드)가 대상에 반영된다. 재시드는 운영자 게시판·
+  신고·활동 로그를 남기고 샘플 로그를 중복하지 않는다.
+
+axes:
+  case:
+    - fresh_seed                      # 빈 사이트에 샘플 시드 1회
+    - reseed_preserves_operator_data  # 운영 데이터가 있는 사이트에 샘플 시드 2회
+    - site_locale_not_ko_en           # 사이트 기본 언어 ja, 언어팩 시드 없음
+    - operational_site_existing_posts # 샘플 slug 게시판에 기존 글, 그 작성자 일부는 탈퇴(행 없음)
+
+effects:
+  - sample_boards_merge_module_defaults_and_vary_demo_settings
+  - sample_posts_keep_cascade_author_time_and_count_invariants
+  - sample_reactions_respect_board_settings_and_self_rule
+  - sample_reports_apply_outcomes_like_report_service
+  - reseed_keeps_operator_reports_logs_and_boards
+  - sample_board_names_fill_site_locale_fallback
+  - sample_logs_only_for_resources_created_in_this_run
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Seeders/BoardSampleSeederConsistencyTest.php

@@ -35,6 +35,9 @@ axes:
   setting_value_type: [int, numeric_string, degenerate]
 
 effects:
+  # 주문/클레임 양쪽 설정 키의 유효값·빈 배열은 보존하고 취소완료 상태는 거절한다.
+  - cancel_status_values_survive_both_tab_validations
+  - invalid_cancel_status_is_rejected
   # 입금기한 산정
   - vbank_due_at_survives_string_setting
   - deposit_due_at_survives_string_setting
@@ -50,6 +53,10 @@ effects:
   - board_new_display_hours_is_integer
   # nullable 컬럼이 Carbon 경계에 닿는 경로 (설정이 아니라 모델 속성 출처)
   - coupon_update_rejects_days_from_issue_without_valid_days
+  # 19차: 위 거절의 **음성 대조군**(200). 거절 가드가 넓으면 저장된 valid_days 가 있는 쿠폰의
+  # 유형 변경도, 유효기간과 무관한 이름 변경도 막힌다. 두 케이스가 거절 effect 를 마킹하고
+  # 있어 그 셀이 200 단언만으로 채워졌다 — 422 가드가 회귀해도 커버리지가 초록으로 남는다.
+  - coupon_update_allows_changes_that_keep_a_usable_validity
   - coupon_issue_blocked_when_validity_not_configured
   # 같은 설정을 읽는 두 소비처의 판정 기준 통일
   - review_deadline_uses_single_policy_source

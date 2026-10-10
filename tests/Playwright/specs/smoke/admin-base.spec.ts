@@ -2,7 +2,7 @@
  * Smoke: admin 베이스 레이아웃 + sticky 탭 시맨틱화 회귀 검증
  *   (#399 Phase 1.2 ~ Phase 1.4)
  *
- * - _admin_base.json 의 1회 등장 컴포넌트들이 인라인 Tailwind 토큰에서
+ * - _admin_base.g7.html 의 1회 등장 컴포넌트들이 인라인 Tailwind 토큰에서
  *   id 와 동일한 underscore 클래스로 캡슐화됐다 (Phase 1.2). 캡슐화 후에도
  *   베이스 레이아웃이 정상 마운트되고 핵심 컴포넌트들이 DOM 에 렌더되는지 smoke 검증.
  * - admin_settings 의 sticky 탭 영역과 TabNavigation composite 의 variant 인라인
@@ -15,6 +15,8 @@
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
+// @scenario surface=admin_base
+// @effects admin_base_mounts_with_encapsulated_id_classes
 test('@smoke #399 Phase 1.2 - _admin_base 캡슐화 클래스가 적용된 채로 베이스가 마운트된다', async ({ page }) => {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
@@ -29,7 +31,7 @@ test('@smoke #399 Phase 1.2 - _admin_base 캡슐화 클래스가 적용된 채�
   expect(page.url(), '권한 보유 토큰임에도 /admin/login 으로 리다이렉트').not.toMatch(/\/admin\/login/);
 
   // 베이스 핵심 컴포넌트 id 들이 DOM 에 존재해야 한다.
-  // _admin_base.json 의 #admin_layout_root → #left_sidebar_area → #sidebar_header /
+  // _admin_base.g7.html 의 #admin_layout_root → #left_sidebar_area → #sidebar_header /
   // #admin_sidebar_menu / #right_content_wrapper → #main_header / #right_content_area
   // 트리가 정상 마운트되는지 확인.
   await expect(page.locator('#admin_layout_root')).toBeVisible({ timeout: 10_000 });
@@ -46,8 +48,10 @@ test('@smoke #399 Phase 1.2 - _admin_base 캡슐화 클래스가 적용된 채�
   await expect(page.locator('#right_content_area')).toHaveClass(/right_content_area/);
 });
 
+// @scenario surface=admin_settings_tabs
+// @effects settings_sticky_tab_nav_and_tab_buttons_use_semantic_classes
 test('@smoke #399 Phase 1.3 - admin_settings 진입 시 sticky-tab-nav 시맨틱과 TabNavigation 시맨틱 탭 버튼이 적용된다', async ({ page }) => {
-  const token = issueToken('core.settings.view');
+  const token = issueToken('core.settings.read');
   await authenticatePage(page, token);
 
   await page.goto('/admin/settings');
@@ -79,8 +83,10 @@ test('@smoke #399 Phase 1.3 - admin_settings 진입 시 sticky-tab-nav 시맨틱
   await expect(nav.locator('button.tab-btn-default-active')).toHaveCount(1);
 });
 
+// @scenario surface=admin_board_settings_header
+// @effects board_settings_sticky_header_uses_sticky_section_header
 test('@smoke #399 Phase 1.4 - admin_board_settings 진입 시 sticky_header 가 sticky-section-header 시맨틱으로 마운트된다', async ({ page }) => {
-  // admin_board_settings.json 의 permissions 는 `sirsoft-board.settings.read` 다.
+  // admin_board_settings.g7.html 의 permissions 는 `sirsoft-board.settings.read` 다.
   // (`...settings.view` 는 존재하지 않는 권한 키라 403 Access Denied 로 떨어진다)
   const token = issueToken('sirsoft-board.settings.read');
   await authenticatePage(page, token);
@@ -108,6 +114,8 @@ test('@smoke #399 Phase 1.4 - admin_board_settings 진입 시 sticky_header 가 
   await expect(tabNav).toBeAttached();
 });
 
+// @scenario surface=admin_sidebar
+// @effects admin_sidebar_items_use_semantic_classes_without_inline_padding
 test('@smoke #399 Phase 1.6 - AdminSidebar 메뉴 아이템이 admin-sidebar-* 시맨틱 클래스로 렌더된다', async ({ page }) => {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
@@ -147,8 +155,10 @@ test('@smoke #399 Phase 1.6 - AdminSidebar 메뉴 아이템이 admin-sidebar-* �
   await expect(firstItem).not.toHaveAttribute('style', /padding-left/);
 });
 
+// @scenario surface=admin_page_content
+// @effects admin_page_content_uses_semantic_class
 test('@smoke #399 Phase 1.7 - admin 페이지 컨텐츠 영역이 .admin-page-content 시맨틱으로 마운트된다', async ({ page }) => {
-  const token = issueToken('core.roles.read');
+  const token = issueToken('core.permissions.read');
   await authenticatePage(page, token);
 
   await page.goto('/admin/roles');
@@ -165,8 +175,10 @@ test('@smoke #399 Phase 1.7 - admin 페이지 컨텐츠 영역이 .admin-page-co
   });
 });
 
+// @scenario surface=admin_settings_content
+// @effects settings_page_content_uses_responsive_semantic_class
 test('@smoke #399 Phase 1.7 후속 - admin_settings 환경설정 페이지가 .admin-page-content-responsive 시맨틱으로 마운트된다', async ({ page }) => {
-  const token = issueToken('core.settings.view');
+  const token = issueToken('core.settings.read');
   await authenticatePage(page, token);
 
   await page.goto('/admin/settings');
@@ -182,8 +194,10 @@ test('@smoke #399 Phase 1.7 후속 - admin_settings 환경설정 페이지가 .a
   });
 });
 
+// @scenario surface=admin_page_header
+// @effects page_header_refresh_button_uses_btn_icon
 test('@smoke #399 Phase 1.8 - admin 페이지 헤더의 refresh 버튼이 .btn-icon 시맨틱으로 마운트된다', async ({ page }) => {
-  const token = issueToken('core.roles.read');
+  const token = issueToken('core.permissions.read');
   await authenticatePage(page, token);
 
   await page.goto('/admin/roles');
@@ -211,6 +225,8 @@ test('@smoke #399 Phase 1.8 - admin 페이지 헤더의 refresh 버튼이 .btn-i
   await expect(refreshParent).toHaveClass(/flex-center/);
 });
 
+// @scenario surface=admin_user_list_content
+// @effects user_list_content_and_bulk_actions_use_semantic_classes
 test('@smoke #399 Phase 1.10 - admin_user_list 의 컨텐츠 영역이 .admin-page-content-fluid 시맨틱으로 마운트된다', async ({ page }) => {
   const token = issueToken('core.users.read');
   await authenticatePage(page, token);
@@ -236,8 +252,10 @@ test('@smoke #399 Phase 1.10 - admin_user_list 의 컨텐츠 영역이 .admin-pa
   await expect(page.locator('#bulk_withdraw')).toHaveClass(/btn-warning/);
 });
 
+// @scenario surface=activity_log_filter
+// @effects activity_log_filter_grid_uses_filter_grid_class
 test('@smoke #399 Phase 1.12 - 활동 로그 필터 영역의 #filter_grid 가 gap-4 로 행 간격을 처리한다', async ({ page }) => {
-  const token = issueToken('core.activity-logs.read');
+  const token = issueToken('core.activities.read');
   await authenticatePage(page, token);
 
   await page.goto('/admin/activity-logs');
@@ -252,6 +270,8 @@ test('@smoke #399 Phase 1.12 - 활동 로그 필터 영역의 #filter_grid 가 g
   await expect(page.locator('#filter_grid')).toHaveClass(/filter-grid/);
 });
 
+// @scenario surface=identity_log_filter
+// @effects identity_log_filter_sections_use_filter_grid_class
 test('@smoke #399 Phase 1.13 - admin_identity_logs 의 filter_section (필터-그리드 바깥 filter-row 부모) 도 .filter-grid 시맨틱 적용', async ({ page }) => {
   const token = issueToken('core.admin.identity.logs.read');
   await authenticatePage(page, token);
@@ -279,6 +299,8 @@ test('@smoke #399 Phase 1.13 - admin_identity_logs 의 filter_section (필터-�
   await expect(page.locator('#advanced_filters')).toHaveClass(/filter-grid/);
 });
 
+// @scenario surface=admin_user_list_options
+// @effects user_list_options_use_flex_center_class
 test('@smoke #399 Phase 1.14 - admin_user_list 의 list_options + 섹션 헤딩 시맨틱', async ({ page }) => {
   const token = issueToken('core.users.read');
   await authenticatePage(page, token);
@@ -295,6 +317,8 @@ test('@smoke #399 Phase 1.14 - admin_user_list 의 list_options + 섹션 헤딩 
   await expect(page.locator('#list_options')).toHaveClass(/flex-center/);
 });
 
+// @scenario surface=admin_footer
+// @effects admin_footer_uses_semantic_classes
 test('@smoke #399 Phase 1.15 - AdminFooter composite 가 .admin-footer 시맨틱으로 마운트된다', async ({ page }) => {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
@@ -313,8 +337,10 @@ test('@smoke #399 Phase 1.15 - AdminFooter composite 가 .admin-footer 시맨틱
   await expect(page.locator('.admin-footer .admin-footer-row').first()).toBeAttached();
 });
 
+// @scenario surface=admin_settings_form
+// @effects settings_footer_buttons_use_btn_semantic_classes, settings_form_rows_have_no_inline_spacing_tokens, settings_stack_children_are_div_wrappers
 test('@smoke #399 Phase 1.16 - footer_buttons 의 cancel/save 가 .btn-secondary/.btn-primary 시맨틱으로 마운트된다', async ({ page }) => {
-  const token = issueToken('core.settings.view');
+  const token = issueToken('core.settings.read');
   await authenticatePage(page, token);
 
   await page.goto('/admin/settings');
@@ -404,12 +430,14 @@ test('@smoke #399 Phase 1.16 - footer_buttons 의 cancel/save 가 .btn-secondary
   }
 });
 
+// @scenario surface=admin_menu_panel
+// @effects menu_panel_header_uses_panel_header_class
 test('@smoke #399 Phase 1.21 후속 - admin/menu 패널 헤더에 .panel-header 분리선이 적용된다', async ({ page }) => {
   // Phase 1.20 에서 'px-4 py-3 border-b border-gray-200 dark:border-gray-700' 일괄
   // 제거 중 패널/카드 섹션 헤더가 의도치 않게 분리선까지 잃었던 회귀 (#menu_list_header
   // 등) 를 .panel-header 시맨틱 자산으로 복원. 어드민 메뉴 관리 화면의 #menu_list_header
   // 가 .panel-header 클래스를 가지고 렌더되는지 확인.
-  const token = issueToken('core.menus.view');
+  const token = issueToken('core.menus.read');
   await authenticatePage(page, token);
   await page.goto('/admin/menus');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });

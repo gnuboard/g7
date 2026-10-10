@@ -1,9 +1,7 @@
 {
+    "comment": "관리자 메모 작성·수정 화면 — 한 장이 두 모드를 겸하며 route.id 유무가 모드를 가른다.",
     "version": "1.0.0",
     "layout_name": "admin_memo_form",
-    "permissions": [
-        "gnuboard7-hello_module.memos.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"
@@ -21,14 +19,39 @@
             "initLocal": "form",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "수정 모드에서만 기존 메모를 받아 폼 초기값으로 넣는다(initLocal=form). 생성 모드는 data-if 가 요청 자체를 걸러 낸다."
+        },
+        {
+            "id": "memoCreateAbility",
+            "label_key": "$t:gnuboard7-hello_module.editor.data_source.memoCreateAbility",
+            "type": "api",
+            "endpoint": "/api/modules/gnuboard7-hello_module/admin/memos",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{!route?.id}}",
+            "params": {
+                "per_page": 1
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "생성 모드의 등록 권한 — 목록 응답의 컬렉션 abilities(can_create)를 한 건만 받아 읽는다. 수정 모드는 memoData 의 can_update 를 본다"
         }
+    ],
+    "computed": {
+        "isReadOnly": "{{route?.id ? memoData?.data?.abilities?.can_update !== true : memoCreateAbility?.data?.abilities?.can_create !== true}}",
+        "readOnlyNoticeVisible": "{{route?.id ? (!!memoData?.data && memoData?.data?.abilities?.can_update !== true) : (!!memoCreateAbility?.data && memoCreateAbility?.data?.abilities?.can_create !== true)}}"
+    },
+    "permissions": [
+        "gnuboard7-hello_module.memos.read"
     ],
     "init_actions": [
         {
             "comment": "생성 모드에서 폼 기본값 초기화",
-            "if": "{{!route?.id}}",
             "handler": "setState",
+            "if": "{{!route?.id}}",
             "params": {
                 "target": "local",
                 "form": {
@@ -58,6 +81,16 @@
                         },
                         "children": [
                             {
+                                "id": "memo_read_only_banner",
+                                "type": "basic",
+                                "name": "P",
+                                "if": "{{_computed.readOnlyNoticeVisible}}",
+                                "props": {
+                                    "className": "mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-700 dark:text-amber-300"
+                                },
+                                "text": "$t:gnuboard7-hello_module.admin.memos.form.read_only"
+                            },
+                            {
                                 "id": "memo_form_title",
                                 "type": "basic",
                                 "name": "H1",
@@ -85,11 +118,11 @@
                                     {
                                         "type": "basic",
                                         "name": "Input",
-                                        "name_attr": "title",
                                         "props": {
                                             "type": "text",
                                             "name": "title",
-                                            "className": ""
+                                            "className": "",
+                                            "disabled": "{{_computed.isReadOnly}}"
                                         }
                                     }
                                 ]
@@ -116,7 +149,8 @@
                                         "props": {
                                             "name": "content",
                                             "rows": 6,
-                                            "className": ""
+                                            "className": "",
+                                            "disabled": "{{_computed.isReadOnly}}"
                                         }
                                     }
                                 ]
@@ -133,12 +167,9 @@
                                         "id": "memo_cancel_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "취소하고 목록으로. 목록 상태를 그대로 넘겨 보던 페이지로 돌아간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -148,6 +179,10 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -160,16 +195,13 @@
                                         "id": "memo_save_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다.",
                                                 "type": "click",
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                     "body": "{{_local.form}}"
@@ -191,17 +223,20 @@
                                                         }
                                                     }
                                                 ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? 'error'}}"
-                                                        }
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? 'error'}}"
                                                     }
-                                                ]
+                                                }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{_computed.isReadOnly}}"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",

@@ -1,0 +1,75 @@
+{
+  "page_title": "Reactions",
+  "page_description": "Review and clean up reactions members left on posts and comments.",
+  "search_placeholder": "Enter a search term",
+  "search": "Search",
+  "reset": "Reset",
+  "advanced_search": "Advanced",
+  "selected_count": "{{count}} selected",
+  "search_fields": {
+    "all": "All",
+    "target_title": "Post title",
+    "target_content": "Content",
+    "board_name": "Board",
+    "member": "Member (name, email)",
+    "author_name": "Author"
+  },
+  "filters": {
+    "board_label": "Board",
+    "board_all": "All boards",
+    "type_label": "Reaction type",
+    "type_all": "All types",
+    "type_inactive_suffix": "(inactive)",
+    "target_all": "All targets",
+    "target_post": "Posts",
+    "target_comment": "Comments",
+    "reacted_at_label": "Reacted on",
+    "member_filter_notice": "Showing reactions from one member only",
+    "member_filter_clear": "Clear member filter",
+    "date_quick_today": "Today",
+    "date_quick_3days": "3 days",
+    "date_quick_week": "1 week",
+    "date_quick_month": "1 month",
+    "date_quick_3months": "3 months",
+    "date_quick_all": "All"
+  },
+  "columns": {
+    "reacted_at": "Reacted on",
+    "member": "Member",
+    "target": "Target",
+    "board_name": "Board",
+    "reaction_type": "Reaction type",
+    "target_status": "Status"
+  },
+  "cell": {
+    "view_member": "View member",
+    "search_member": "Search by this member"
+  },
+  "badges": {
+    "deleted_target": "Target deleted",
+    "board_deleted": "Board deleted",
+    "reaction_off": "Reactions off",
+    "type_inactive": "Inactive type",
+    "withdrawn": "Withdrawn"
+  },
+  "actions": {
+    "go_to_post": "View post",
+    "go_to_member": "Member details",
+    "delete": "Delete",
+    "bulk_delete": "Delete selected"
+  },
+  "modals": {
+    "delete_title": "Delete this reaction?",
+    "delete_confirm": "It disappears from the member's reactions and the target's counts are recalculated. The post or comment itself is not deleted.",
+    "delete_editor_label": "Confirm reaction deletion",
+    "bulk_delete_title": "Delete the selected reactions?",
+    "bulk_delete_confirm": "Delete {{count}} selected reactions? They disappear from the members' reaction lists.",
+    "bulk_delete_confirm_one": "Delete {{count}} selected reaction? It disappears from the member's reaction list.",
+    "bulk_delete_editor_label": "Confirm bulk reaction deletion",
+    "processing": "Processing..."
+  },
+  "pagination_info": "{{from}}-{{to}} of {{total}}",
+  "table_empty": "No reactions match the current filters.",
+  "refresh": "Refresh",
+  "total_count": "{{count}} total"
+}

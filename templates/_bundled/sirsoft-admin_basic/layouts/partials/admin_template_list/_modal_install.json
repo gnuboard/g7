@@ -1,437 +1,543 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "템플릿 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함",
-    "editor_label": "$t:admin.modal_label.admin_template_list.template_install_modal"
-  },
-  "id": "template_install_modal",
-  "type": "composite",
-  "name": "Modal",
-  "data_sources": [
-    {
-      "id": "templateInstallPreview",
-      "label_key": "$t:editor.data_source.templateInstallPreview",
-      "type": "api",
-      "endpoint": "/api/admin/templates/{{_global.selectedTemplate.identifier}}/install-preview",
-      "auth_required": true,
-      "initGlobal": "installPreview"
-    }
-  ],
-  "props": {
-    "title": "$t:admin.templates.modals.install_title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "py-2"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-gray-700 dark:text-gray-300"
-          },
-          "text": "$t:admin.templates.modals.install_confirm|name={{_global.selectedTemplate.name}}"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "mt-2 text-label-subtle"
-          },
-          "text": "$t:admin.templates.modals.install_description"
-        }
-      ]
+    "comment": "템플릿 설치 창 — 확인만 받는 것이 아니라 **함께 설치할 것을 고르는 창**이다. 열리면서 설치\n  미리보기를 받아 의존 확장과 동반 언어팩을 체크리스트로 편다.\n  선택값 계산은 모듈 설치 창과 같은 세 규칙을 따른다 — ⑴ 선택값이 아직 없으면 서버 기본 선택에서\n  시작 ⑵ 언어팩은 딸린 확장이 선택돼 있어야 켤 수 있음 ⑶ 요청 본문도 같은 규칙으로 다시 걸러 담음.\n  모듈 창과 달리 vendor 설치 방식을 고르는 자리는 없다(템플릿은 composer 의존을 두지 않는다).",
+    "meta": {
+        "is_partial": true,
+        "description": "템플릿 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함",
+        "editor_label": "$t:admin.modal_label.admin_template_list.template_install_modal"
     },
-    {
-      "id": "cascade_dependencies_section",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.installPreview?.dependencies && _global.installPreview.dependencies.length > 0}}",
-      "props": {
-        "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
-      },
-      "children": [
+    "data_sources": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2 mb-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "link",
-                "className": "w-4 h-4 text-gray-500"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-primary text-sm font-semibold"
-              },
-              "text": "$t:admin.templates.modals.cascade_dependencies_title"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-tertiary mb-2"
-          },
-          "text": "$t:admin.templates.modals.cascade_dependencies_hint"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "iteration": {
-            "source": "_global.installPreview.dependencies",
-            "item_var": "dep"
-          },
-          "props": {
-            "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "checkbox",
-                "checked": "{{(_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) && dep.default_selected)}}",
-                "disabled": "{{!dep.available}}",
-                "className": "w-4 h-4"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "installSelectedDeps": "{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{dep.type === 'module'}}",
-              "props": {
-                "name": "cube",
-                "className": "w-4 h-4 text-gray-500"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{dep.type === 'plugin'}}",
-              "props": {
-                "name": "puzzle-piece",
-                "className": "w-4 h-4 text-gray-500"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-primary text-sm"
-              },
-              "text": "{{dep.name ?? dep.identifier}} ({{dep.identifier}})"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-tertiary font-mono"
-              },
-              "text": "{{dep.required_version}}"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{dep.is_met}}",
-              "props": {
-                "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
-              },
-              "text": "$t:admin.templates.modals.dependency_met"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{!dep.is_installed}}",
-              "props": {
-                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
-              },
-              "text": "$t:admin.templates.modals.dependency_not_installed"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{dep.is_installed && !dep.is_active}}",
-              "props": {
-                "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
-              },
-              "text": "$t:admin.templates.modals.dependency_inactive"
-            }
-          ]
+            "id": "templateInstallPreview",
+            "label_key": "$t:editor.data_source.templateInstallPreview",
+            "type": "api",
+            "endpoint": "/api/admin/templates/{{_global.selectedTemplate.identifier}}/install-preview",
+            "auth_required": true,
+            "initGlobal": "installPreview",
+            "comment": "설치 미리보기 — 함께 깔릴 의존 확장·언어팩과 각각의 기본 선택 여부를 서버가 정해 준다.\n         응답을 전역 `installPreview` 에 올려 체크리스트와 요청 본문이 함께 읽는다."
         }
-      ]
+    ],
+    "id": "template_install_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.templates.modals.install_title",
+        "size": "medium"
     },
-    {
-      "id": "cascade_language_packs_section",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.installPreview?.language_packs && _global.installPreview.language_packs.length > 0}}",
-      "props": {
-        "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2 mb-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "language",
-                "className": "w-4 h-4 text-gray-500"
-              }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-primary text-sm font-semibold"
-              },
-              "text": "$t:admin.templates.modals.cascade_language_packs_title"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-tertiary mb-2"
-          },
-          "text": "$t:admin.templates.modals.cascade_language_packs_hint"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "iteration": {
-            "source": "_global.installPreview.language_packs",
-            "item_var": "lp"
-          },
-          "props": {
-            "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "checkbox",
-                "checked": "{{((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) && lp.default_selected)) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}",
-                "disabled": "{{lp.depends_on_extension && !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)}}",
-                "className": "w-4 h-4"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "installSelectedLPs": "{{ $event.target.checked ? [ ...((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier), lp.bundled_identifier ] : ((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier) }}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-primary text-sm"
-              },
-              "text": "{{lp.locale_native_name}} ({{lp.locale}})"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-tertiary font-mono"
-              },
-              "text": "v{{lp.version}}"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{lp.depends_on_extension}}",
-              "props": {
-                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
-              },
-              "text": "$t:admin.templates.modals.cascade_lp_depends_on|target={{lp.depends_on_extension}}"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isTemplateInstalling}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isTemplateInstalling}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isTemplateInstalling": true
-                  }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "template_install_icon",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{_global.selectedTemplate?.icon_url}}",
+                                    "props": {
+                                        "src": "{{_global.selectedTemplate.icon_url}}",
+                                        "alt": "",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "className": "w-5 h-5 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_global.selectedTemplate?.icon_url}}",
+                                    "props": {
+                                        "name": "{{_global.selectedTemplate?.type === 'admin' ? 'cog' : 'palette'}}",
+                                        "className": "text-xs text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.templates.modals.install_confirm|name={{_global.selectedTemplate.name}}"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/templates/install",
-                  "params": {
-                    "method": "POST",
-                    "body": {
-                      "template_name": "{{_global.selectedTemplate.identifier}}",
-                      "dependencies": "{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}",
-                      "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTemplateInstalling": false,
-                        "installSelectedDeps": null,
-                        "installSelectedLPs": null
-                      }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-2 text-label-subtle"
                     },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedTemplate": null
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.templates.install_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "templates"
-                      }
-                    },
-                    {
-                      "handler": "reloadExtensions"
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isTemplateInstalling": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "text": "$t:admin.templates.modals.install_description"
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{!_global.isTemplateInstalling}}",
-              "props": {
-                "name": "download",
-                "className": "w-4 h-4"
-              }
+            ]
+        },
+        {
+            "id": "cascade_dependencies_section",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.installPreview?.dependencies && _global.installPreview.dependencies.length > 0}}",
+            "props": {
+                "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
             },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isTemplateInstalling}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2 mb-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "link",
+                                "className": "text-base text-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary text-sm font-semibold"
+                            },
+                            "text": "$t:admin.templates.modals.cascade_dependencies_title"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-tertiary mb-2"
+                    },
+                    "text": "$t:admin.templates.modals.cascade_dependencies_hint"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.installPreview.dependencies.some(x => x.available && x.can_select !== true)}}",
+                    "props": {
+                        "className": "text-danger-soft mb-2"
+                    },
+                    "text": "$t:admin.templates.modals.cascade_no_permission_hint"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "_global.installPreview.dependencies",
+                        "item_var": "dep"
+                    },
+                    "props": {
+                        "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "의존 확장 체크. 선택값이 아직 없으면 서버 기본 선택에서 시작해 이 항목만 더하거나 뺀다.\n                 같은 id 를 먼저 걸러 내고 다시 넣어 중복을 막는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "installSelectedDeps": "{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "checked": "{{dep.can_select === true && ((_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) && dep.default_selected))}}",
+                                "disabled": "{{!dep.available || dep.can_select !== true}}",
+                                "className": "w-4 h-4"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{dep.type === 'module'}}",
+                            "props": {
+                                "name": "cube",
+                                "className": "text-base text-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{dep.type === 'plugin'}}",
+                            "props": {
+                                "name": "puzzle-piece",
+                                "className": "text-base text-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary text-sm"
+                            },
+                            "text": "{{dep.name || dep.identifier}} ({{dep.identifier}})"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-tertiary font-mono"
+                            },
+                            "text": "{{dep.required_version}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{dep.is_met}}",
+                            "props": {
+                                "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
+                            },
+                            "text": "$t:admin.templates.modals.dependency_met"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!dep.is_installed}}",
+                            "props": {
+                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                            },
+                            "text": "$t:admin.templates.modals.dependency_not_installed"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{dep.is_installed && !dep.is_active}}",
+                            "props": {
+                                "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
+                            },
+                            "text": "$t:admin.templates.modals.dependency_inactive"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{dep.available && dep.can_select !== true}}",
+                            "props": {
+                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                            },
+                            "text": "$t:admin.templates.modals.cascade_no_permission"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "cascade_language_packs_section",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.installPreview?.language_packs && _global.installPreview.language_packs.length > 0}}",
+            "props": {
+                "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isTemplateInstalling ? '$t:admin.templates.installing' : '$t:admin.templates.actions.install'}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2 mb-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "language",
+                                "className": "text-base text-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary text-sm font-semibold"
+                            },
+                            "text": "$t:admin.templates.modals.cascade_language_packs_title"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-tertiary mb-2"
+                    },
+                    "text": "$t:admin.templates.modals.cascade_language_packs_hint"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.installPreview.language_packs.some(x => x.can_select !== true)}}",
+                    "props": {
+                        "className": "text-danger-soft mb-2"
+                    },
+                    "text": "$t:admin.templates.modals.cascade_no_permission_hint"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "_global.installPreview.language_packs",
+                        "item_var": "lp"
+                    },
+                    "props": {
+                        "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "언어팩 체크 — 딸린 확장이 해제되면 이 칸은 잠기고 켜져 있던 것도 꺼진 것으로 계산된다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "installSelectedLPs": "{{ $event.target.checked ? [ ...((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier), lp.bundled_identifier ] : ((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier) }}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "checked": "{{lp.can_select === true && (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) && lp.default_selected)) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}",
+                                "disabled": "{{lp.can_select !== true || (lp.depends_on_extension && !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}",
+                                "className": "w-4 h-4"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary text-sm"
+                            },
+                            "text": "{{lp.locale_native_name}} ({{lp.locale}})"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-tertiary font-mono"
+                            },
+                            "text": "v{{lp.version}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(lp.depends_on_extension ?? lp.target_identifier) && (lp.depends_on_extension ?? lp.target_identifier) !== _global.installPreview?.target?.identifier}}",
+                            "props": {
+                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                            },
+                            "text": "$t:admin.templates.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{lp.can_select !== true}}",
+                            "props": {
+                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                            },
+                            "text": "$t:admin.templates.modals.cascade_no_permission"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isTemplateInstalling}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "설치 실행. 두 목록은 화면 체크 상태가 아니라 **같은 규칙으로 다시 계산**한 결과를 보낸다\n               (언어팩은 딸린 확장이 빠졌으면 여기서도 빠진다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isTemplateInstalling": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/templates/install",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "template_name": "{{_global.selectedTemplate.identifier}}",
+                                            "dependencies": "{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}",
+                                            "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isTemplateInstalling": false,
+                                                "installSelectedDeps": null,
+                                                "installSelectedLPs": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.templates.install_success"
+                                            }
+                                        },
+                                        {
+                                            "comment": "함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures).",
+                                            "handler": "toast",
+                                            "if": "{{(response.data?.language_pack_failures ?? []).length !== 0}}",
+                                            "params": {
+                                                "type": "warning",
+                                                "message": "$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f => f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host).",
+                                            "handler": "toast",
+                                            "if": "{{(response.data?.language_packs_awaiting_host ?? []).length !== 0}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:extensions.alerts.language_pack_awaiting_host|names={{(response.data?.language_packs_awaiting_host ?? []).join(', ')}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다.",
+                                            "handler": "toast",
+                                            "if": "{{(response?.data?.layout_warnings?.length ?? 0) > 0}}",
+                                            "params": {
+                                                "type": "warning",
+                                                "message": "$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "templates"
+                                            }
+                                        },
+                                        {
+                                            "handler": "reloadExtensions"
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": null
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isTemplateInstalling": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isTemplateInstalling}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{!_global.isTemplateInstalling}}",
+                            "props": {
+                                "name": "download",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isTemplateInstalling}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isTemplateInstalling ? '$t:admin.templates.installing' : '$t:admin.templates.actions.install'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

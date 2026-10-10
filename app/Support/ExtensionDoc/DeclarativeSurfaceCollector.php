@@ -55,6 +55,8 @@ class DeclarativeSurfaceCollector
         'getLayoutExtensions' => '레이아웃 확장',
         'getNotificationDefinitions' => '알림 정의',
         'getBenchmarkProfiles' => '성능 계측 프로파일',
+        'getAnalyticsGoals' => '통계 전환 지점',
+        'getAnalyticsDimensions' => '통계 분류 기준(dimension)',
         // 본인인증
         'getIdentityPolicies' => 'IDV 정책',
         'getIdentityPurposes' => 'IDV 목적',
@@ -194,6 +196,11 @@ class DeclarativeSurfaceCollector
     }
 
     /**
+     * 직전 인스턴스화에서 발생한 경로 주입 실패 사유 (없으면 null).
+     */
+    private ?string $pathInjectionError = null;
+
+    /**
      * 진입 클래스를 인스턴스화합니다.
      *
      * 같은 FQCN 이 이미 로드되어 있으면(활성 디렉토리 확장이 부팅된 경우) 클래스명을 바꿔
@@ -202,11 +209,6 @@ class DeclarativeSurfaceCollector
      * @param  array<string, mixed>  $record  확장 레코드
      * @return object|null 확장 인스턴스 (실패 시 null)
      */
-    /**
-     * 직전 인스턴스화에서 발생한 경로 주입 실패 사유 (없으면 null).
-     */
-    private ?string $pathInjectionError = null;
-
     private function instantiate(array $record): ?object
     {
         $fqcn = (string) $record['entryClass'];
@@ -270,6 +272,7 @@ class DeclarativeSurfaceCollector
      *
      * @param  object  $instance  확장 인스턴스
      * @param  string  $path  확장 디렉토리 절대 경로
+     * @return string|null 주입 실패 사유 (성공하면 null)
      */
     private function injectExtensionPath(object $instance, string $path): ?string
     {

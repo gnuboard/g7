@@ -3,7 +3,7 @@
  *
  * 비로그인 회원전용 게시판/비밀글 진입 시 로그인 페이지로 보내되,
  * 현재 경로(pathname + querystring)를 redirect 파라미터로 보존한다.
- * 로그인 폼은 {{query.redirect ?? '/'}} 로 복원하므로(_login_form.json:155),
+ * 로그인 폼은 {{query.redirect ?? '/'}} 로 복원하므로(_login_form.g7.html 의 로그인 성공 navigate),
  * 로그인 성공 후 원래 위치로 복귀한다.
  *
  * 배경: 게시판 목록/상세 데이터소스 401(auth_mode: optional + 토큰 없음)은

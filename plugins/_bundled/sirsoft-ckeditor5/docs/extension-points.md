@@ -69,8 +69,8 @@ _훅 리스너가 없습니다._
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/html-content.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
-| `resources/extensions/html-editor.json` | 다른 확장/템플릿 레이아웃에 주입되는 조각 |
+| `resources/extensions/html-content.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `html_content` |
+| `resources/extensions/html-editor.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `html_editor` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
@@ -78,8 +78,8 @@ _훅 리스너가 없습니다._
 
 | 조각 | 확장점 | 하는 일 |
 |---|---|---|
-| `html-editor.json` | `html_editor` | 동봉 CKEditor 5 UMD 를 로드하고 컨테이너 `onMount` 에서 `initEditor` 실행 |
-| `html-content.json` | `html_content` | 저장된 본문을 읽기 화면에 렌더 |
+| `html-editor.g7.html` | `html_editor` | 동봉 CKEditor 5 UMD 를 로드하고 컨테이너 `onMount` 에서 `initEditor` 실행 |
+| `html-content.g7.html` | `html_content` | 저장된 본문을 읽기 화면에 렌더 |
 
 `html_editor` 를 쓰는 쪽은 `props` 로 `name` · `content` · `multilingual` · `placeholder` ·
 `readOnly` 를 선언합니다. 여기에 **`trackChanges`(기본 `true`)** 가 있습니다 — 이 편집기의 입력을
@@ -94,6 +94,46 @@ _훅 리스너가 없습니다._
 저장 대상이 아닌 편집기는 **저장 요청 body 에서도 그 필드를 빼야** 합니다. 자동바인딩은
 `trackChanges` 와 무관하게 값을 `_local.form` 에 쌓으므로, body 를 `_local.form` 통째로 보내면
 미리보기 입력이 설정으로 저장됩니다. 서버는 200 을 돌려주므로 화면에는 아무 이상이 없습니다.
+
+`readOnly`(그리고 화면의 `_computed.isReadOnly`)는 편집기를 만든 뒤에도 따라갑니다. 권한 확인처럼
+로드 뒤에 값이 바뀌는 화면이 있어서입니다. `html-editor` 조각은 같은 식으로 컨테이너에 상태 표식
+`data-readonly="true|false"` 를 두고, 핸들러가 이 속성 변화를 지켜보다 편집기(와 평문 폴백)의 읽기
+전용을 켜고 끕니다. 표식은 스타일이 아니라 상태이므로 클래스로 두지 않습니다. 클래스로 두면 템플릿
+CSS 어휘 검사에서 스타일 없는 이름으로 잡힙니다. 이 조각을 대체하는 쪽도 같은 속성을 두면
+따라가고, 두지 않으면 마운트 때 받은 `readOnly` 로 고정됩니다.
+
+컨테이너에는 클래스가 없습니다. 핸들러는 컨테이너를 id `ckeditor5-{name}`(본문이면 `ckeditor5-content`)로
+찾으므로, 이 조각을 대체하는 쪽도 같은 id 를 두어야 편집기가 붙습니다. 예전에 붙어 있던 `ckeditor5-wrapper`
+클래스는 어느 CSS 에도 규칙이 없어 뺐습니다. 사이트 CSS 로 편집기 칸을 고를 때도 이 id 를 씁니다.
+
+## 쓰기 대상 — `writeScope` · `writePath`
+
+편집 결과는 기본적으로 **`_local.form.{name}`** 에 쌓입니다(다국어 편집기는 `.{locale}` 이
+덧붙습니다). 상태를 `_global` 네임스페이스에 두는 화면이 이 확장점을 그대로 쓰면, **타이핑은
+되는데 저장 payload 가 빕니다** — 편집기가 쓴 자리를 그 화면이 읽지 않기 때문입니다. 오류도
+경고도 없습니다.
+
+그래서 쓰는 쪽이 위치를 선언할 수 있습니다.
+
+| props | 기본값 | 뜻 |
+|---|---|---|
+| `writeScope` | `local` | `local` = `_local`, `global` = `_global` |
+| `writePath` | `form.{name}` | 점 표기 경로. 다국어 편집기는 여기에 `.{locale}` 이 덧붙습니다 |
+
+`global` 로 쓰면 `form.{name}_mode` 는 함께 보내지 않습니다 — 그 키는 `_local.form` 계약의
+일부라, 남의 저장소에 남기면 저장 payload 에 정체 모를 필드가 섞입니다.
+
+**활성 언어가 경로에 박히는 화면**(알림 템플릿 편집 모달처럼 모달이 자체 언어 탭을 가진
+경우)은 확장점을 설치 언어마다 하나씩 두고 편집 중인 언어의 것만 세웁니다 — `$locales` 를 도는
+반복 안에 확장점을 넣고 `data-if` 로 활성 언어만 남기며, `content`·`writePath` 와 편집기 이름(`name`)에
+반복 변수를 씁니다(예: 코어 `_modal_notification_template_form.g7.html`). 편집기는 마운트 때 본문과
+쓰기 경로를 한 번만 받으므로, 한 인스턴스를 언어 사이에 돌려 쓰면 언어를 바꾼 뒤에도 이전 언어 본문이
+보이고 입력이 **이전 언어** 로 저장됩니다. 노드 `id` 에 언어를 넣는 것으로는 다시 서지 않습니다 —
+엔진은 자식 key 를 바인딩 전 원문 `id` 로 잡습니다(7.1.0 브라우저 실측). 이름을 언어별로 두는 것은
+내려가는 편집기와 새로 서는 편집기가 같은 컨테이너(`ckeditor5-{name}`)를 두고 다투지 않게 하려는
+것입니다.
+
+선언하지 않으면 종전 동작 그대로입니다 — 게시판·상품·페이지 등 기존 사용처는 영향이 없습니다.
 
 둘 다 `mode: replace` 입니다 — 확장점 자리를 비우고 대신 들어갑니다. 같은 확장점을 노리는
 다른 편집기 플러그인이 함께 활성화되면 어느 쪽이 이기는지가 설치 순서에 좌우되므로, 편집기

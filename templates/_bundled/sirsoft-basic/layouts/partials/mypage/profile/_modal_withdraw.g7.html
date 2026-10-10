@@ -1,0 +1,73 @@
+<!-- 회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 «알고 있다» 체크를 받아야 버튼이 열린다.
+     성공하면 세션까지 끊어야 하므로 토스트 뒤에 로그아웃이 이어진다. -->
+<partial description="회원탈퇴 확인 모달" editor_label="$t:user.modal_label.mypage_profile.withdrawModal">
+  <modal data-type="composite" data-ref="withdrawModal" title="$t:mypage.withdraw.modal_title" size="sm" :closeOnBackdropClick="false">
+    <div class="text-center py-4">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+        <icon name="triangle-exclamation" size="2x" class="text-red-600 dark:text-red-400"/>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">$t:mypage.withdraw.confirm_title</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:mypage.withdraw.confirm_message</p>
+      <!-- 탈퇴 시 잃는 것 목록 — 확장(모듈)이 항목을 덧붙일 수 있게 data-ref 를 둔다(이커머스: 환불로 받은 마일리지 소멸 안내). -->
+      <ul data-ref="withdraw_warning_list" class="text-left text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4">
+        <li class="flex items-center gap-2 mb-2">
+          <icon name="x" size="sm" class="text-red-500"/>
+          <span>$t:mypage.withdraw.warning_posts</span>
+        </li>
+        <li class="flex items-center gap-2 mb-2">
+          <icon name="x" size="sm" class="text-red-500"/>
+          <span>$t:mypage.withdraw.warning_orders</span>
+        </li>
+        <li class="flex items-center gap-2">
+          <icon name="x" size="sm" class="text-red-500"/>
+          <span>$t:mypage.withdraw.warning_points</span>
+        </li>
+        <!-- 확장이 경고 항목을 덧붙이는 자리. 모달 안이라 target-id 오버레이는 닿지 않고, 확장점 주입만 모달 트리까지 순회한다. -->
+        <extension-point name="withdraw_warnings" data-ref="withdraw_warnings_slot"/>
+      </ul>
+      <div class="flex items-center gap-2 mb-4">
+        <checkbox name="confirmWithdraw" checked="{{_local.form?.confirmWithdraw ?? false}}">
+          <on type="change">
+            <!-- 이 체크가 곧 아래 탈퇴 버튼의 잠금 해제 조건이다 -->
+            <set-state target="local">
+              <field name="form">
+                <field name="confirmWithdraw" value="{{$event.target.checked}}"/>
+              </field>
+            </set-state>
+          </on>
+        </checkbox>
+        <label class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.withdraw.confirm_checkbox</label>
+      </div>
+      <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.form?.confirmWithdraw || _local.isWithdrawing}}">
+          <on type="click">
+            <!-- 탈퇴 실행 — 먼저 버튼을 잠그고, 성공하면 알린 뒤 로그아웃까지 이어 간다 -->
+            <sequence>
+              <set-state target="local" :isWithdrawing="true"/>
+              <api-call :auth_required="true" target="/api/me" method="DELETE">
+                <success>
+                  <set-state target="local" :isWithdrawing="false"/>
+                  <close-modal/>
+                  <toast type="success" message="$t:mypage.withdraw.success"/>
+                  <logout/>
+                </success>
+                <fail>
+                  <set-state target="local" :isWithdrawing="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isWithdrawing}}" name="spinner" size="sm" class="animate-spin"/>
+          <span>$t:mypage.withdraw.confirm_button</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

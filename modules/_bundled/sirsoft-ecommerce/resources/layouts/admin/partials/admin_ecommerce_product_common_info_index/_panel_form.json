@@ -1,473 +1,483 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Common Info Form Panel - Create/Edit/Copy Mode"
-  },
-  "id": "form_panel",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit' || _global.panelMode === 'copy'}}",
-  "onComponentEvent": [
-    {
-      "event": "common_info:init_copy_form",
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "form": {
-          "name": "{{_eventData.name}}",
-          "content": "{{_eventData.content}}",
-          "content_mode": "{{_eventData.content_mode}}",
-          "is_default": "{{_eventData.is_default}}",
-          "is_active": "{{_eventData.is_active}}"
-        },
-        "errors": null,
-        "isSaving": false,
-        "showPreview": false
-      }
-    }
-  ],
-  "children": [
-    {
-      "id": "form_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header flex-between"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "text-heading"
-          },
-          "text": "{{_global.panelMode === 'create' ? '$t:sirsoft-ecommerce.admin.common_info.form.title_add' : (_global.panelMode === 'copy' ? '$t:sirsoft-ecommerce.admin.common_info.form.title_copy' : '$t:sirsoft-ecommerce.admin.common_info.form.title_edit')}}"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "panelMode": "view"
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form": null,
-                        "errors": null,
-                        "isSaving": false,
-                        "showPreview": false
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form": {
-                          "name": {
-                            "ko": "",
-                            "en": ""
-                          },
-                          "content": {
-                            "ko": "",
-                            "en": ""
-                          },
-                          "content_mode": "text",
-                          "is_default": false,
-                          "is_active": true
-                        }
-                      }
-                    }
-                  ]
-                }
-              ],
-              "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel"
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_local.isSaving || (_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true)}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "isSaving": true,
-                        "errors": null
-                      }
-                    },
-                    {
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "{{_global.panelMode === 'edit' ? '/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId : '/api/modules/sirsoft-ecommerce/admin/product-common-infos'}}",
-                      "params": {
-                        "method": "{{_global.panelMode === 'edit' ? 'PUT' : 'POST'}}",
-                        "body": {
-                          "name": "{{_local.form.name}}",
-                          "content": "{{_local.form.content}}",
-                          "content_mode": "{{_local.form.content_mode}}",
-                          "is_default": "{{_local.form.is_default}}",
-                          "is_active": "{{_local.form.is_active}}"
-                        }
-                      },
-                      "onSuccess": [
-                        {
-                          "handler": "refetchDataSource",
-                          "params": {
-                            "dataSourceId": "commonInfos"
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "selectedId": "{{response.data.id}}",
-                            "selectedItem": "{{response.data}}",
-                            "panelMode": "view"
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form": null,
-                            "isSaving": false
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form": {
-                              "name": {
-                                "ko": "",
-                                "en": ""
-                              },
-                              "content": {
-                                "ko": "",
-                                "en": ""
-                              },
-                              "content_mode": "text",
-                              "is_default": false,
-                              "is_active": true
-                            }
-                          }
-                        },
-                        {
-                          "handler": "toast",
-                          "params": {
-                            "type": "success",
-                            "message": "{{response.message}}"
-                          }
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "isSaving": false,
-                            "errors": "{{error.errors}}"
-                          }
-                        },
-                        {
-                          "handler": "toast",
-                          "params": {
-                            "type": "error",
-                            "message": "{{error.message}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "text": "$t:sirsoft-ecommerce.admin.common_info.button.save"
-            }
-          ]
-        }
-      ]
+    "comment": "공통정보 등록·편집·복사 폼. 모드가 셋이라 제목·전송 주소·메서드가 모두 삼항으로 갈린다\n  (복사는 전송 면에서 등록과 같다 — 새로 만드는 것이기 때문이다).\n  **본문이 두 모드를 오간다** — 일반 텍스트와 HTML. 편집기가 그 전환을 스스로 알려 주고, 화면은\n  그 값을 `content_mode` 에 담아 저장 때 함께 보낸다. 위지윅에서 텍스트로 되돌릴 때만 확인 창을\n  거친다(서식이 사라지므로).\n  이름과 본문은 언어별로 갈린 값이다.\n  취소·저장이 끝날 때 폼을 `null` 로 비우는 데서 그치지 않고 **빈 초깃값으로 다시 세운다** —\n  `null` 인 채로는 다음 편집에서 입력칸이 값을 찾지 못한다.\n  복사 초깃값은 이 폼이 스스로 만들지 않고 복사 확인 창이 보낸 이벤트로 받는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Form Panel - Create/Edit/Copy Mode"
     },
-    {
-      "id": "form_content",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "p-4 max-h-[calc(100vh-200px)] overflow-y-auto"
-      },
-      "children": [
+    "id": "form_panel",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit' || _global.panelMode === 'copy'}}",
+    "onComponentEvent": [
         {
-          "id": "name_field",
-          "type": "basic",
-          "name": "Div",
-          "dataKey": "form",
-          "props": {
-            "className": "mb-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.common_info.form.name"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-required"
-                  },
-                  "text": "*"
+            "comment": "복사 초깃값 수신 — 복사 확인 창이 보낸 값으로 폼을 채운다. 그 창은 다른 조각이라 이 폼의 지역 상태에 직접 쓸 수 없어 이벤트를 쓴다.",
+            "event": "common_info:init_copy_form",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "errors": null,
+                "isSaving": false,
+                "showPreview": false,
+                "form": {
+                    "name": "{{_eventData.name}}",
+                    "content": "{{_eventData.content}}",
+                    "content_mode": "{{_eventData.content_mode}}",
+                    "is_default": "{{_eventData.is_default}}",
+                    "is_active": "{{_eventData.is_active}}"
                 }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "MultilingualInput",
-              "props": {
-                "name": "name",
-                "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.name_placeholder",
-                "error": "{{_local.errors?.name}}",
-                "layout": "tabs",
-                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
-              }
             }
-          ]
-        },
-        {
-          "id": "content_section",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "text-label-subtle block font-medium mb-3"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.common_info.form.content_section"
-            },
-            {
-              "id": "content_editor",
-              "type": "extension_point",
-              "name": "html_editor",
-              "if": "{{_global.panelMode === 'create' || (_local.form.content !== undefined && !Array.isArray(_local.form.content))}}",
-              "props": {
-                "name": "content",
-                "multilingual": true,
-                "value": "{{_local.form?.content ?? ''}}",
-                "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html",
-                "rows": 10,
-                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}",
-                "showHtmlModeToggle": true,
-                "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}"
-              },
-              "default": [
-                {
-                  "type": "composite",
-                  "name": "HtmlEditor",
-                  "props": {
-                    "name": "content",
-                    "multilingual": true,
-                    "value": "{{_local.form?.content ?? ''}}",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html",
-                    "rows": 10,
-                    "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}",
-                    "showHtmlModeToggle": true,
-                    "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}"
-                  },
-                  "actions": [
-                    {
-                      "event": "onChange",
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.content": "{{$event.target.value}}",
-                        "form.content_mode": "html"
-                      }
-                    },
-                    {
-                      "event": "onIsHtmlChange",
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "status_section",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "text-label-subtle block font-medium mb-3"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_section"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "grid grid-cols-2 gap-6"
-              },
-              "children": [
-                {
-                  "id": "default_setting_col",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "checked": "{{_local.form.is_default}}",
-                        "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "handler": "switch",
-                              "params": {
-                                "value": "{{$event && !_local.form.is_default}}"
-                              },
-                              "cases": {
-                                "true": {
-                                  "handler": "sequence",
-                                  "actions": [
-                                    {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "local",
-                                        "defaultModal": {
-                                          "isOpen": true
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "handler": "openModal",
-                                      "target": "default_confirm_modal"
-                                    }
-                                  ]
-                                },
-                                "false": {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "local",
-                                    "form.is_default": "{{$event}}"
-                                  }
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-body"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_default"
-                    }
-                  ]
-                },
-                {
-                  "id": "active_setting_col",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "checked": "{{_local.form.is_active}}",
-                        "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form.is_active": "{{$event}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-body"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_active"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
         }
-      ]
-    }
-  ]
+    ],
+    "children": [
+        {
+            "id": "form_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header flex-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-heading"
+                    },
+                    "text": "{{_global.panelMode === 'create' ? '$t:sirsoft-ecommerce.admin.common_info.form.title_add' : (_global.panelMode === 'copy' ? '$t:sirsoft-ecommerce.admin.common_info.form.title_copy' : '$t:sirsoft-ecommerce.admin.common_info.form.title_edit')}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "편집 취소 — 보기 모드로 돌아가며 폼을 비우고, 곧바로 빈 초깃값으로 다시 세운다. `null` 로만 두면 다음에 폼이 열릴 때 입력칸이 값을 찾지 못한다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "view"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form": null,
+                                                "errors": null,
+                                                "isSaving": false,
+                                                "showPreview": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form": {
+                                                    "name": {
+                                                        "ko": "",
+                                                        "en": ""
+                                                    },
+                                                    "content": {
+                                                        "ko": "",
+                                                        "en": ""
+                                                    },
+                                                    "content_mode": "text",
+                                                    "is_default": false,
+                                                    "is_active": true
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "저장 — 편집이면 갱신, 등록·복사면 새로 만들기. 성공하면 응답으로 선택을 갈아끼우고 보기 모드로 돌아간 뒤 폼을 빈 초깃값으로 다시 세운다(복사·등록 직후 남은 값이 다음 등록에 새지 않게).",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isSaving": true,
+                                                "errors": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "{{_global.panelMode === 'edit' ? '/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId : '/api/modules/sirsoft-ecommerce/admin/product-common-infos'}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "{{_global.panelMode === 'edit' ? 'PUT' : 'POST'}}",
+                                                "body": {
+                                                    "name": "{{_local.form.name}}",
+                                                    "content": "{{_local.form.content}}",
+                                                    "content_mode": "{{_local.form.content_mode}}",
+                                                    "is_default": "{{_local.form.is_default}}",
+                                                    "is_active": "{{_local.form.is_active}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "commonInfos"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "selectedId": "{{response.data.id}}",
+                                                        "selectedItem": "{{response.data}}",
+                                                        "panelMode": "view"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form": null,
+                                                        "isSaving": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form": {
+                                                            "name": {
+                                                                "ko": "",
+                                                                "en": ""
+                                                            },
+                                                            "content": {
+                                                                "ko": "",
+                                                                "en": ""
+                                                            },
+                                                            "content_mode": "text",
+                                                            "is_default": false,
+                                                            "is_active": true
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{response.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isSaving": false,
+                                                        "errors": "{{error.errors}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.isSaving || (_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true)}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.button.save"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "form_content",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4 max-h-[calc(100vh-200px)] overflow-y-auto"
+            },
+            "children": [
+                {
+                    "id": "name_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "dataKey": "form",
+                    "props": {
+                        "className": "mb-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.common_info.form.name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-required"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "props": {
+                                "name": "name",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.name_placeholder",
+                                "error": "{{_local.errors?.name}}",
+                                "layout": "tabs",
+                                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "content_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "text-label-subtle block font-medium mb-3"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.form.content_section"
+                        },
+                        {
+                            "id": "content_editor",
+                            "type": "extension_point",
+                            "name": "html_editor",
+                            "if": "{{_global.panelMode === 'create' || (_local.form.content !== undefined && !Array.isArray(_local.form.content))}}",
+                            "props": {
+                                "multilingual": true,
+                                "value": "{{_local.form?.content ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html",
+                                "rows": 10,
+                                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}",
+                                "showHtmlModeToggle": true,
+                                "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
+                                "name": "content"
+                            },
+                            "default": [
+                                {
+                                    "type": "composite",
+                                    "name": "HtmlEditor",
+                                    "actions": [
+                                        {
+                                            "comment": "본문 변경. 내용과 함께 모드를 `html` 로 못 박는다 — 위지윅에서 손대는 순간 서식이 들어갔다고 보는 것이고, 텍스트로 되돌리려면 아래 전환 이벤트를 거쳐야 한다.",
+                                            "type": "change",
+                                            "event": "onChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.content": "{{$event.target.value}}",
+                                                "form.content_mode": "html"
+                                            }
+                                        },
+                                        {
+                                            "comment": "HTML 모드 스위치. 편집기가 넘겨 준 체크 여부(`$args[0]`)로 모드만 바꾸고 본문은 건드리지 않는다 — 변환은 편집기 몫이다.",
+                                            "type": "change",
+                                            "event": "onIsHtmlChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "content",
+                                        "multilingual": true,
+                                        "value": "{{_local.form?.content ?? ''}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html",
+                                        "rows": 10,
+                                        "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}",
+                                        "showHtmlModeToggle": true,
+                                        "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "status_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "text-label-subtle block font-medium mb-3"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_section"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-2 gap-6"
+                            },
+                            "children": [
+                                {
+                                    "id": "default_setting_col",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "기본값 스위치 — **켤 때만** 확인 창을 거친다(끄는 것은 잃는 것이 없다). 조건에 이전 값을 함께 보는 것은 이미 켜져 있던 항목에서 창이 다시 뜨지 않게 하기 위해서다.",
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "switch",
+                                                            "params": {
+                                                                "value": "{{$event.target.checked && !_local.form.is_default}}"
+                                                            },
+                                                            "cases": {
+                                                                "true": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "폼 값도 함께 켠다 — 확인 창의 [확인] 은 창만 닫고, 반영은 폼 저장 때 나간다. 켜지 않으면 스위치만 켜져 보이고 저장에는 false 가 나갔다. 거부는 [취소] 가 되돌린다.",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.is_default": true,
+                                                                                "defaultModal": {
+                                                                                    "isOpen": true
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "default_confirm_modal"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "false": {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "form.is_default": "{{$event.target.checked}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{_local.form.is_default}}",
+                                                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_default"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "active_setting_col",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "노출 스위치 — 기본값 쪽과 달리 확인 창이 없다. 되돌리기 쉬운 값이고 다른 항목에 영향을 주지 않는다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.is_active": "{{$event.target.checked}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{_local.form.is_active}}",
+                                                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_active"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

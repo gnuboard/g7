@@ -62,6 +62,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | children | array | `[]` | 하위 항목 배열 (계층 트리 — children 관계 파생) |
 | creator | null | `null` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
 | roles | array | `[{"id":1,"name":{"ko":"관리자","en":"Administrator","ja":"管理…` | 이 메뉴 노출이 허용된 역할 목록 (원소 id/name/permission_type — roles 관계 파생, permission_type 은 pivot 의 노출 권한 유형) |
+| role_ids | array\<integer\> | `[1,7]` | 이 메뉴에 부여된 역할 ID (목록 행의 역할 배지용 — 상위 메뉴와 `children[]` 모두에 실린다. 이름은 역할 목록에서 찾는다) |
 | created_at | string | `2026-07-31 00:13:57` | 생성 일시 |
 | updated_at | string | `2026-08-01 11:46:14` | 최종 수정 일시 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -185,7 +186,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 메뉴 관리 화면(`partials/admin_menu_list/*`)의 목록 표시 기준 엔드포인트. `is_active` 또는 `filters` 가 있으면 필터링된 관리용 메뉴를, 없으면 최상위 메뉴 전체를 반환한다. `filters` 는 `field`(name/slug/url/all)·`value`·`operator`(like/eq/starts_with/ends_with) 조합의 배열이며 최대 10개까지 허용된다. `name` 은 다국어 JSON 객체로 내려오고, 각 항목에 `children`/`creator`/`roles` 관계와 `abilities`(현재 사용자의 수정/삭제 가능 여부)가 포함된다. 단, **하위 항목(`children[]`)에는 `roles` 키 자체가 없다** — 상위 메뉴마다 하위 전체의 역할 피벗까지 싣지 않기 위해서다. 빈 배열이 아니라 키를 생략하는 이유는, 빈 배열이 "역할 제한이 없다" 는 사실이 아닌 단언이 되어 그 값을 그대로 수정 요청에 실어 보내면 해당 메뉴의 역할 제한이 통째로 해제되기 때문이다. 하위 메뉴의 역할이 필요하면 `GET /api/admin/menus/{menu}` 로 단건 조회한다 (단건 응답은 항상 `roles` 를 포함한다). 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+관리자 메뉴 관리 화면(`partials/admin_menu_list/*`)의 목록 표시 기준 엔드포인트. `is_active` 또는 `filters` 가 있으면 필터링된 관리용 메뉴를, 없으면 최상위 메뉴 전체를 반환한다. `filters` 는 `field`(name/slug/url/all)·`value`·`operator`(like/eq/starts_with/ends_with) 조합의 배열이며 최대 10개까지 허용된다. `name` 은 다국어 JSON 객체로 내려오고, 각 항목에 `children`/`creator`/`roles` 관계와 `abilities`(현재 사용자의 수정/삭제 가능 여부)가 포함된다. 단, **하위 항목(`children[]`)에는 `roles` 키 자체가 없다** — 상위 메뉴마다 하위 전체의 역할 피벗까지 싣지 않기 위해서다. 빈 배열이 아니라 키를 생략하는 이유는, 빈 배열이 "역할 제한이 없다" 는 사실이 아닌 단언이 되어 그 값을 그대로 수정 요청에 실어 보내면 해당 메뉴의 역할 제한이 통째로 해제되기 때문이다. 하위 메뉴의 역할이 필요하면 `GET /api/admin/menus/{menu}` 로 단건 조회한다 (단건 응답은 항상 `roles` 를 포함한다). 대신 상위·하위 모든 행에는 부여된 역할 ID 만 담은 `role_ids` 가 실린다 — 메뉴 관리 목록이 행마다 역할 배지를 그리는 값이고, 역할 이름은 `GET /api/admin/roles/active` 에서 찾는다. 역할 객체가 아니라 ID 만 싣는 것은 위의 페이로드 정리를 유지하기 위해서다(조회 쿼리는 한 번 늘어난다). 목록은 보는 사람의 역할이 붙은 메뉴로 걸러지되, 메뉴 수정 권한(`core.menus.update`)을 **전체 범위**로 가진 관리자에게는 역할이 0개인 메뉴(상위·하위)도 함께 나온다(`role_ids: []`) — 화면의 「역할 없음」·「지정된 역할 없음 — 관리자만 복구 가능」 표시와 편집 저장(관리자 역할 재부착)으로 복구하는 경로다. 범위 제한·읽기 전용 운영자에게는 나오지 않는다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
 
 
 ### POST /api/admin/menus
@@ -331,14 +332,14 @@ HTTP/1.1 201
 
 **설명**
 
-새 메뉴를 생성한다. `name` 은 다국어 값(문자열로 보내면 지원 로케일 전체에 동일 값으로 자동 확장)이며 `slug` 는 `menus` 테이블 내 유일해야 한다. `parent_id` 로 하위 메뉴를 만들 수 있고, `roles` 배열로 이 메뉴 노출을 허용할 역할 ID 를 지정한다. 성공 시 `201` 과 함께 생성된 메뉴(관계 eager-load 포함)를 `MenuResource` 로 반환한다. 관리자 메뉴 관리 화면의 메뉴 추가 폼에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.create`.
+새 메뉴를 생성한다. `name` 은 다국어 값(문자열로 보내면 지원 로케일 전체에 동일 값으로 자동 확장)이며 `slug` 는 `menus` 테이블 내 유일해야 한다. `parent_id` 로 하위 메뉴를 만들 수 있고, `roles` 배열로 이 메뉴 노출을 허용할 역할 ID 를 지정한다. 성공 시 `201` 과 함께 생성된 메뉴(관계 eager-load 포함)를 `MenuResource` 로 반환한다. 관리자 메뉴 관리 화면의 메뉴 추가 폼에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.create`. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「메뉴 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the menu name field is required.").
 
 
 ### GET /api/admin/menus/active
 <!-- @generated:start:api.admin.menus.active -->
 - **라우트명**: `api.admin.menus.active`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\MenuController@active`
-- **인증/권한**: `auth:sanctum` + `permission:core.menus.read`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -447,14 +448,14 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 관리자 영역에 들어올 수 없는 회원인 경우(`admin` 미들웨어 — 메뉴 관리 권한은 요구하지 않음) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
 **설명**
 
-관리자 레이아웃 전역 부트스트랩 엔드포인트. `sirsoft-admin_basic/layouts/_admin_base.json` 의 `admin_menu` `data_source`(`/api/admin/menus/active`)가 모든 관리자 페이지 진입 시 자동 호출해, 사이드바 메뉴 트리를 채운다. 인증 사용자의 역할 기준으로 접근 가능한 활성 메뉴만 계층 구조(`children` 중첩)로 반환하며, `data` 는 최상위 메뉴 배열이다. 사용자 정보가 없을 때는 모든 활성 메뉴를 fallback 으로 반환한다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+관리자 레이아웃 전역 부트스트랩 엔드포인트. `sirsoft-admin_basic/layouts/_admin_base.g7.html` 의 `admin_menu` `data_source`(`/api/admin/menus/active`)가 모든 관리자 페이지 진입 시 자동 호출해, 사이드바 메뉴 트리를 채운다. 인증 사용자의 역할에 지정된 활성 메뉴만 계층 구조(`children` 중첩)로 반환하며, `data` 는 최상위 메뉴 배열이다(다른 역할에만 지정된 메뉴·역할이 0개인 메뉴는 나오지 않는다). 「내가 접근 가능한 메뉴」 조회이므로 메뉴 관리 권한(`core.menus.read`)을 요구하지 않는다 — 역할 폼 「접근 가능 메뉴」로 메뉴를 지정받은 역할이 그 권한 없이도 사이드바를 받는다. 메뉴 관리 화면이 쓰는 목록·상세·계층 엔드포인트는 종전대로 `core.menus.read` 를 요구한다. 인증 사용자가 없으면 빈 배열이다. 인증 계약: `auth:sanctum` + 관리자 영역 접근(`admin` 미들웨어).
 
 
 ### GET /api/admin/menus/extension/{type}/{identifier}
@@ -679,6 +680,78 @@ HTTP/1.1 200
 **설명**
 
 전체 메뉴를 계층 구조로 반환한다. `MenuService::getMenuHierarchy()` 로 조회한 메뉴를 `MenuCollection::toNavigationArray()` 로 변환해 최상위 메뉴 + `children` 중첩 형태로 내려준다. `active` 와 달리 사용자 역할 기반 접근 필터 없이 메뉴 트리 전체를 노출하므로, 관리자 메뉴 관리 화면의 트리 표현·순서 편집 기준 데이터로 사용된다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+
+
+### PATCH /api/admin/menus/bulk-roles
+<!-- @generated:start:api.admin.menus.bulk-roles -->
+- **라우트명**: `api.admin.menus.bulk-roles`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\MenuController@bulkUpdateRoles`
+- **인증/권한**: `auth:sanctum` + `permission:core.menus.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| menu_ids | body | array\<integer\> | 예 | min 1, max 500, 존재하는 메뉴 ID | 역할을 더하거나 뺄 메뉴 ID 목록 |
+| role_ids | body | array\<integer\> | 예 | min 1, 존재하는 역할 ID | 더하거나 뺄 역할 ID 목록 |
+| mode | body | string | 예 | `add`, `remove` | 추가 또는 제거 |
+
+**요청 예시**
+
+```http
+PATCH /api/admin/menus/bulk-roles HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "menu_ids": [3, 15],
+    "role_ids": [7],
+    "mode": "add"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| updated_count | integer | `17` | 역할 구성이 실제로 바뀐 메뉴 수 (자동 포함·제거된 상·하위 메뉴 포함, 이미 같은 상태인 메뉴는 제외) |
+| auto_included_parent_ids | array\<integer\> | `[14]` | 추가 시 하위 메뉴만 골라져 함께 추가된 상위 메뉴 ID |
+| auto_removed_child_ids | array\<integer\> | `[]` | 제거 시 상위 메뉴를 빼면서 함께 빠진 하위 메뉴 ID |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "메뉴 17개의 역할을 변경했습니다.",
+    "data": {
+        "updated_count": 17,
+        "auto_included_parent_ids": [14],
+        "auto_removed_child_ids": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.menus.update`)이 없거나, 권한 범위 밖 메뉴가 하나라도 섞인 경우 (`auth.scope_denied`, 요청 전체 거부) |
+| 422 | Unprocessable Entity | 검증 위반, 관리자 역할을 빼려는 경우(`role_ids`), 액터가 관리할 수 없는 메뉴(비활성 확장 메뉴 등)가 섞인 경우(`menu_ids`) |
+| 500 | Internal Server Error | 일괄 변경 중 예외 발생 (`menu.bulk_roles_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+메뉴 관리 화면 「여러 개 선택」 의 일괄 역할 변경이다. 한 트랜잭션으로 처리하며, 메뉴 단건 수정과 같은 규칙을 따른다 — 관리자 역할은 모든 메뉴에 항상 남고(빼는 요청은 422), 하위 메뉴에 더하면 상위에도 더하고 상위에서 빼면 하위에서도 뺀다. 바뀐 메뉴마다 `core.menu.after_sync_roles` 가 발화해 `user_overrides` 와 활동 로그가 남고, 요청 앞뒤로 `core.menu.before_bulk_update_roles`·`core.menu.after_bulk_update_roles` 가 발화한다. 같은 요청을 다시 보내도 행이 겹치지 않는다(`updated_count` 0). 라우트 모델이 없는 정적 경로라 범위 검사는 서비스가 메뉴 ID 전체에 대해 수행한다.
 
 
 ### PUT /api/admin/menus/order
@@ -1110,7 +1183,7 @@ HTTP/1.1 200
 
 **설명**
 
-기존 메뉴 정보를 수정한다. `{menu}` 는 라우트 모델 바인딩으로 해석되며, 전달된 필드만 갱신한다. `slug` 는 여전히 유일해야 하고, `roles` 배열을 보내면 이 메뉴 노출이 허용된 역할 목록을 교체한다. 성공 시 갱신된 메뉴를 관계 eager-load 포함해 `MenuResource` 로 반환하고, 실패 시 `menu.update_failed`(422 검증 오류 포함)를 반환한다. 관리자 메뉴 관리 화면의 메뉴 편집 폼 저장에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.update`.
+기존 메뉴 정보를 수정한다. `{menu}` 는 라우트 모델 바인딩으로 해석되며, 전달된 필드만 갱신한다. `slug` 는 여전히 유일해야 하고, `roles` 배열을 보내면 이 메뉴 노출이 허용된 역할 목록을 교체한다. 성공 시 갱신된 메뉴를 관계 eager-load 포함해 `MenuResource` 로 반환하고, 실패 시 `menu.update_failed`(422 검증 오류 포함)를 반환한다. 관리자 메뉴 관리 화면의 메뉴 편집 폼 저장에서 소비된다. 인증 계약: `auth:sanctum` + `permission:core.menus.update`. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「메뉴 이름의 한국어(ko) 값은 필수입니다.」).
 
 `parent_id` 에는 자기 자신이나 자신의 하위 메뉴를 지정할 수 없다. 순환이 만들어지는 요청은 422(`parent_id`)로 거절되며, 순서 변경 엔드포인트(`PUT /api/admin/menus/order`)와 동일한 기준이 적용된다.
 

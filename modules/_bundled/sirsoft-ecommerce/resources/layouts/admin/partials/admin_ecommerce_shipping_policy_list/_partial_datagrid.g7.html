@@ -1,0 +1,112 @@
+<!-- 배송정책 목록 표. 쪽 넘김은 서버가 하고(`serverSidePagination`), 쪽 번호는 URL 에 남는다.
+  행마다 **펼침 줄**(`<sub-row>`)에 나라별 설정 요약이 붙는다 — 정책 하나가 여러 나라를 품기 때문에
+  한 줄로는 무엇이 걸려 있는지 알 수 없다.
+  두 스위치의 성격이 갈린다: **기본값 스위치는 확인 창을 거치고**(다른 정책의 기본 표시가 함께
+  풀린다) **사용 여부 스위치는 곧바로 서버로 간다**. 그래서 기본값 쪽은 이미 켜진 정책에서 다시
+  눌리지 않도록 잠겨 있고, 창을 취소하면 화면을 되돌리는 절차가 따로 있다.
+  행 메뉴(수정·복사·삭제)는 저마다 다르게 움직인다 — 수정은 곧장 이동, 복사·삭제는 대상을 전역에
+  담고 확인 창을 연다. -->
+<partial description="Shipping Policy List DataGrid (국가별 설정 요약 표시)">
+  <data-grid data-type="composite" data-ref="shipping_policy_datagrid" data="{{shipping_policies?.data?.data || []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedItems || []}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.shipping_policy.empty.title" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{shipping_policies?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{shipping_policies?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{shipping_policies?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" subRowClassName="px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm">
+    <blur-until-loaded sources="shipping_policies"/>
+    <column field="is_default" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_default_header" width="70px">
+      <cell>
+        <toggle data-type="composite" data-ref="is_default_toggle_{{row.id}}" checked="{{row.is_default}}" size="sm" disabled="{{row.is_default || row.abilities?.can_update !== true}}">
+          <on type="change">
+            <!-- 기본값 스위치 — 곧바로 바꾸지 않고 대상을 전역에 담아 확인 창을 연다. 이미 기본인 행에서는 스위치 자체가 잠겨 있고, 조건(`if`)이 한 번 더 막는다(기본 해제라는 동작은 없다). -->
+            <sequence if="{{!row.is_default}}">
+              <set-state target="global" targetDefaultPolicy="{{row}}"/>
+              <open-modal target="set_default_modal"/>
+            </sequence>
+          </on>
+        </toggle>
+      </cell>
+    </column>
+    <column field="name_localized" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.name" :sortable="true" width="200px"/>
+    <column field="countries_display" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.countries" width="120px">
+      <cell>
+        <div class="flex items-center gap-1 flex-wrap">
+          <span data-each="countryCode in (row.country_settings ?? []).map(cs => cs.country_code)" class="fi fi-{{countryCode?.toLowerCase()}} fis rounded" title="{{countryCode}}"/>
+        </div>
+      </cell>
+    </column>
+    <column field="fee_summary" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.fee_summary" width="200px">
+      <cell>
+        <span class="text-body">{{row.fee_summary ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="is_active" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_active" :sortable="true" width="80px">
+      <cell>
+        <toggle data-type="composite" checked="{{row.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+          <on type="change">
+            <!-- 사용 여부 스위치 — 기본값 쪽과 달리 확인 없이 바로 서버로 간다. 스위치는 눌린 즉시 화면에서 넘어가므로 **실패 갈래도 목록을 다시 부른다** — 그러지 않으면 서버는 그대로인데 화면만 바뀐 채 남고, 다음 조작이 그 거짓 상태 위에서 일어난다. -->
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{row.id}}/toggle-active" method="PATCH">
+              <success>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.toggled"/>
+                <refetch-data-source dataSourceId="shipping_policies"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+                <refetch-data-source dataSourceId="shipping_policies"/>
+              </fail>
+            </api-call>
+          </on>
+        </toggle>
+      </cell>
+    </column>
+    <prop name="rowActions">
+      <item id="edit" label="$t:sirsoft-ecommerce.admin.shipping_policy.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+      <item id="copy" label="$t:sirsoft-ecommerce.admin.shipping_policy.action.copy" iconName="fa-regular fa-copy" disabledField="abilities.can_create"/>
+      <item id="divider" :divider="true"/>
+      <item id="delete" label="$t:sirsoft-ecommerce.admin.shipping_policy.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
+    </prop>
+    <sub-row>
+      <div class="row-stack">
+        <div data-if="{{(row.country_settings ?? []).length === 0}}" class="text-gray-400 dark:text-gray-500 text-sm">$t:sirsoft-ecommerce.admin.shipping_policy.table.no_country_settings</div>
+        <div data-each="cs, csIdx in row.country_settings ?? []" class="flex items-center gap-3 py-1.5 {{csIdx > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}}">
+          <div class="flex items-center gap-1.5 w-16 shrink-0">
+            <span class="fi fi-{{cs.country_code?.toLowerCase()}} fis rounded"/>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{cs.country_code}}</span>
+          </div>
+          <div class="flex-center gap-2 flex-wrap">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{cs.shipping_method_label ?? cs.shipping_method}}</span>
+            <span class="text-gray-400 dark:text-gray-500">|</span>
+            <span class="{{cs.charge_policy === 'free' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : cs.charge_policy === 'api' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'}}">{{cs.charge_policy_label ?? cs.charge_policy}}</span>
+            <span data-if="{{cs.charge_policy !== 'free' &amp;&amp; cs.charge_policy !== 'api'}}" class="text-xs text-gray-600 dark:text-gray-400">{{cs.charge_policy === 'fixed' || cs.charge_policy === 'conditional_free' ? (cs.base_fee ?? 0).toLocaleString() + ' ' + (cs.currency_code ?? '') : cs.charge_policy?.startsWith('per_') ? (cs.base_fee ?? 0).toLocaleString() + ' ' + (cs.currency_code ?? '') + '/' + $t('sirsoft-ecommerce.admin.shipping_policy.table.per_unit') : $t('sirsoft-ecommerce.admin.shipping_policy.table.range_based')}}</span>
+            <span data-if="{{cs.free_threshold > 0}}" class="text-xs text-green-600 dark:text-green-400">($t:sirsoft-ecommerce.admin.shipping_policy.table.free_above {{(cs.free_threshold ?? 0).toLocaleString()}})</span>
+            <span data-if="{{cs.extra_fee_enabled &amp;&amp; cs.country_code === 'KR'}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">$t:sirsoft-ecommerce.admin.shipping_policy.table.extra_fee_badge</span>
+            <span data-if="{{!cs.is_active}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-ecommerce.admin.shipping_policy.table.inactive</span>
+          </div>
+        </div>
+      </div>
+    </sub-row>
+    <on type="change" event="onSelectionChange">
+      <!-- 체크한 정책 id 묶음 — 위 일괄 작업 줄과 확인 창들이 함께 보므로 지역이 아니라 전역에 둔다. -->
+      <set-state target="global" bulkSelectedItems="{{$args[0]}}"/>
+    </on>
+    <on type="change" event="onPageChange">
+      <!-- 쪽 이동 — 쪽 번호만 갈아끼우고 나머지 조건은 그대로 둔다. 표 본문에만 전환 효과를 걸어 위 필터 영역이 깜빡이지 않게 한다. -->
+      <navigate path="/admin/ecommerce/shipping-policies" :replace="true" :mergeQuery="true" transition_overlay_target="shipping_policy_datagrid__body">
+        <query page="{{$args[0]}}"/>
+      </navigate>
+    </on>
+    <on type="action" event="onRowAction">
+      <!-- 행 메뉴 — 수정은 곧장 편집 화면으로 가고, 복사·삭제는 그 행 전체를 `_global.targetPolicy` 에 담은 뒤 확인 창을 연다(두 창 모두 조회를 하지 않으므로 이 자리가 그 값의 출처다). -->
+      <switch>
+        <case when="edit">
+          <navigate path="/admin/ecommerce/shipping-policies/{{$args[1].id}}/edit" :mergeQuery="true">
+            <query/>
+          </navigate>
+        </case>
+        <case when="copy">
+          <set-state target="global" targetPolicy="{{$args[1]}}"/>
+          <open-modal target="copy_modal"/>
+        </case>
+        <case when="delete">
+          <set-state target="global" targetPolicy="{{$args[1]}}"/>
+          <open-modal target="delete_modal"/>
+        </case>
+      </switch>
+    </on>
+  </data-grid>
+</partial>

@@ -126,7 +126,7 @@ php artisan template:check-updates [identifier?]
 **기능**:
 
 - **전체 확인** (인수 없음): 설치된 모든 템플릿의 업데이트 가용 여부를 테이블로 출력
-  - 감지 우선순위: GitHub > `_bundled` (2단계, `_pending` 미참여)
+  - 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `_pending` 미참여
   - DB에 `update_available`, `latest_version`, `update_source` 갱신
 - **단일 확인** (인수 있음): 특정 템플릿의 업데이트 가용 여부 확인
   - `checkTemplateUpdate()`는 DB 갱신 안 함 → 커맨드에서 `updateByIdentifier()` 직접 호출
@@ -154,23 +154,40 @@ php artisan template:update [identifier] [--layout-strategy=overwrite] [--force]
 - `identifier` (필수): 업데이트할 템플릿 식별자
 
 **옵션**:
-- `--layout-strategy=overwrite`: 레이아웃 전략 (`overwrite` | `keep`)
+- `--layout-strategy=overwrite`: 레이아웃 전략 (`overwrite` = 전체 덮어쓰기 | `keep` = 운영자 수정본에 새 버전 3자 병합 + 결과 표)
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
-- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub > `_bundled` 우선순위, `bundled` = `_bundled` 단독, `github` = GitHub 단독)
+- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음))
 
 **수행 작업**:
 - 레이아웃 전략 검증 (`overwrite` | `keep` 외 FAILURE)
 - 업데이트 가용 여부 확인 (없으면 info + SUCCESS, `--force` 시 무시하고 진행)
-- `overwrite` 전략 시 수정된 레이아웃 경고 (`hasModifiedLayouts()`)
+- `overwrite` 전략 시 덮어쓸 운영자 수정 화면 목록 경고 (`hasModifiedLayouts()`)
 - 확인 프롬프트 → 업데이트 실행
+- `keep` 전략이면 「레이아웃 처리 결과 (수정 유지)」 표 + 요약 한 줄
+- 템플릿이 비활성이면 레이아웃 행은 두고 새 버전 원본만 기준으로 저장 → 활성화할 때 병합
 - 실패 시 백업 복원 안내
+
+**`keep` 결과 표** — 운영자가 고친 화면이 있으면 업데이트 뒤 표와 요약 한 줄이 출력된다(보고할 화면이 없으면 출력 없음):
+
+```text
+레이아웃 처리 결과 (수정 유지)
++------------------------------------------+----------+----------------------------+-----------+------+
+| 화면                                     | 종류     | 결과                       | 자동 반영 | 겹침 |
++------------------------------------------+----------+----------------------------+-----------+------+
+| sirsoft-admin_basic · admin_module_list  | 레이아웃 | 새 버전 변경 일부 반영     | 1         | 0    |
+| sirsoft-admin_basic · admin_user_detail:board_tab | 확장 조각 | 겹쳐서 운영자 것 유지 | 0         | 1    |
++------------------------------------------+----------+----------------------------+-----------+------+
+레이아웃: 새 버전 변경 1곳 자동 반영, 운영자 수정과 겹친 1곳은 운영자 것 유지.
+```
+
+`overwrite` 는 업데이트 전에 덮어쓸 운영자 수정 화면(레이아웃·확장 조각) 목록을 경고로 보여 준다. 병합 규칙: [extension-update-system.md §10](extension-update-system.md#10-레이아웃-충돌-전략-3종-공통)
 
 **예시**:
 ```bash
 # 기본 전략(overwrite)으로 업데이트
 php artisan template:update sirsoft-admin_basic
 
-# 레이아웃 보존 전략
+# 운영자 수정본에 새 버전 병합 (수정 유지)
 php artisan template:update sirsoft-admin_basic --layout-strategy=keep
 
 # 강제 재설치
@@ -382,4 +399,4 @@ npm run build -- --debug
 - [템플릿 라우트](template-routing.md) - routes.json, 언어 파일
 - [템플릿 보안](template-security.md) - API 서빙, 화이트리스트
 - [템플릿 캐싱](template-caching.md) - 캐시 계층, 무효화
-- [인덱스로 돌아가기](index.md)
+- [인덱스로 돌아가기](README.md)

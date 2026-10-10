@@ -61,7 +61,7 @@
 | Resource | `src/Http/Resources/MemoResource.php` | API 응답 포맷 |
 | Controller | `src/Http/Controllers/Admin/MemoController.php` | RESTful CRUD |
 | Listener | `src/Listeners/*Listener.php` | 훅 구독 (자체 발행도 예시) |
-| Layout | `resources/layouts/admin/memos/*.json` | 관리자 목록/폼 레이아웃 |
+| Layout | `resources/layouts/admin/admin_memo_{list,form}.g7.html` | 관리자 목록/폼 레이아웃 (소스 SSoT) |
 | Test | `tests/Feature/MemoControllerTest.php` + `tests/Unit/` | Feature + Unit |
 | 다국어 (백엔드) | `src/lang/{ko,en}/messages.php` | PHP 배열 |
 | 다국어 (프론트) | `resources/lang/{ko,en}.json` | JSON |
@@ -78,7 +78,7 @@
 | Listener (Action) | `src/Listeners/*ActionListener.php` | 훅 발생 시 부가 작업 |
 | Listener (Filter) | `src/Listeners/*FilterListener.php` | `type: 'filter'` 명시, 반환값으로 가공 |
 | Settings Schema | `config/settings/defaults.json` + `getSettingsSchema()` | 관리자 UI 설정 |
-| Settings Layout | `resources/layouts/admin/plugin_settings.json` | 설정 UI (자동 바인딩 패턴) |
+| Settings Layout | `resources/layouts/admin/plugin_settings.g7.html` (소스 SSoT) + 짝 `.json` | 설정 UI (자동 바인딩 패턴) |
 | Test | `tests/Feature/`, `tests/Unit/` | 훅 발행 → 구독 검증 |
 | 다국어 (프론트) | `resources/lang/{ko,en}.json` | JSON (백엔드 PHP 다국어 없음) |
 
@@ -88,13 +88,15 @@
 
 Admin 템플릿의 최소 구성을 보여줍니다. `sirsoft-admin_basic` 의 전체 컴포넌트 세트 중 **꼭 필요한 Basic 8개** 와 에러 레이아웃 6종만 포함합니다.
 
+> **알려진 제한**: 이 템플릿은 번들 모듈·플러그인의 관리자 화면을 그리는 데 필요한 컴포넌트·공용 문구 키(`common.*`·`admin.*`)·스타일 클래스를 갖추지 않습니다. 활성화하면 그 화면들은 대부분 비거나 키 문자열로 보입니다 — 의도된 학습 범위입니다. 운영용 관리자 템플릿이 갖춰야 할 것은 [admin-template-contract.md](admin-template-contract.md) 를 봅니다.
+
 | 계층 | 예시 파일 | 역할 |
 |------|-----------|------|
 | Entry | `template.json` | type: admin, components 레지스트리, error_config |
 | Components | `src/components/basic/{Div,Button,Input,...}.tsx` | HTML 태그 래핑 Basic 8개 |
-| Layouts (베이스) | `layouts/_admin_base.json` | 헤더 + 사이드바 + 콘텐츠 슬롯 |
-| Layouts (초기) | `layouts/admin_dashboard.json` | 대시보드 예시 |
-| Layouts (에러) | `layouts/errors/{401,403,404,500,503,maintenance}.json` | 에러 6종 필수 |
+| Layouts (베이스) | `layouts/_admin_base.g7.html` | 헤더 + 사이드바 + 콘텐츠 슬롯 |
+| Layouts (초기) | `layouts/admin_dashboard.g7.html` | 대시보드 예시 |
+| Layouts (에러) | `layouts/errors/{401,403,404,500,503,maintenance}.g7.html` | 에러 6종 필수 |
 | Routes | `routes.json` | `*/admin/*` 라우트 |
 | Test | `__tests__/layouts/*.test.tsx` | `createLayoutTest()` 기반 렌더링 테스트 |
 | 다국어 | `lang/{ko,en}.json` | common.* 키만 |
@@ -107,9 +109,9 @@ User 템플릿의 최소 구성을 보여줍니다. `gnuboard7-hello_module` 의
 |------|-----------|------|
 | Entry | `template.json` | type: user, features 플래그, components 레지스트리 |
 | Components | `src/components/basic/*.tsx` | Basic 컴포넌트 |
-| Layouts (베이스) | `layouts/_user_base.json` | 헤더 + 콘텐츠 + 푸터 |
-| Layouts (홈) | `layouts/home.json` | Memo 모듈 `data_sources` 연동 |
-| Layouts (에러) | `layouts/errors/*.json` | 에러 6종 |
+| Layouts (베이스) | `layouts/_user_base.g7.html` | 헤더 + 콘텐츠 + 푸터 |
+| Layouts (홈) | `layouts/home.g7.html` | Memo 모듈 `data_sources` 연동 |
+| Layouts (에러) | `layouts/errors/*.g7.html` | 에러 6종 |
 | Routes | `routes.json` | `/` 루트, `auth_required: false` |
 | Test | `__tests__/layouts/*.test.tsx` | API 모킹 + 렌더링 테스트 |
 
@@ -236,6 +238,12 @@ php artisan module:uninstall gnuboard7-hello_module
 
 ---
 
+## 확장 아이콘
+
+네 샘플은 모두 `assets/icon.svg` 를 담고 있어 **아이콘 관례의 예제**이기도 합니다. 관리자 확장 관리
+화면과 설치 마법사가 이 파일을 찾아 그립니다. 규격과 매니페스트 `icon` 항목은
+[extension-icons.md](extension-icons.md) 를 보세요.
+
 ## hidden 플래그와 관리자 UI
 
 모든 Hello 샘플은 manifest 에 `"hidden": true` 가 설정되어 있습니다:
@@ -286,5 +294,6 @@ GET /api/admin/templates?include_hidden=1
 - [plugin-development.md](plugin-development.md) — 플러그인 기초, hidden 필드
 - [template-workflow.md](template-workflow.md) — 템플릿 워크플로우, hidden 필드
 - [extension-manager.md](extension-manager.md) — 관리자 UI 필터링, `?include_hidden=1`
+- [extension-icons.md](extension-icons.md) — 확장 아이콘 규격 (네 샘플이 담고 있는 `assets/icon.svg`)
 - [hooks.md](hooks.md) — Action/Filter 훅 (Hello 플러그인 학습에 필수)
 - [layout-testing.md](../frontend/layout-testing.md) — 레이아웃 렌더링 테스트 (Hello 템플릿 학습에 필수)

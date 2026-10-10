@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 173 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 59 · 엔드포인트 샘플 1 · 페이지 상태 17 · 액션 레시피 20
+> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 175 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 48 · 액션 레시피 20
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -32,14 +32,14 @@
 |---|---|---|---|
 | `componentPalette.entries` | 편집기 "요소 추가" 팔레트에 나타나는 항목 | 45 | `editor-spec/componentPalette.json` |
 | `componentPalette.groups` | 팔레트 좌측 목록의 묶음 | 2 | `editor-spec/componentPalette.json` |
-| `controls` | 재사용 스타일 컨트롤 정의 | 173 | `editor-spec/controls.json` |
+| `controls` | 재사용 스타일 컨트롤 정의 | 175 | `editor-spec/controls.json` |
 | `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 51 | `editor-spec/componentCapabilities.json` |
 | `nesting.draggable` | 캔버스에서 끌어 옮길 수 있는 컴포넌트 | 45 | `editor-spec/nesting.json` |
 | `nesting.containers` | 자식을 담을 수 있는 컴포넌트와 그 허용 규칙 | 14 | `editor-spec/nesting.json` |
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 59 | `editor-spec/sampleData.json` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 66 | `editor-spec/sampleData.json` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 1 | `editor-spec/sampleData.json` |
-| `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 6 | `editor-spec/sampleGlobal.json` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 17 | `editor-spec/states.json` |
+| `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 7 | `editor-spec/sampleGlobal.json` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 48 | `editor-spec/states.json` |
 | `stateLabels` | 상태값 친화 명칭 카탈로그 | 7 | `editor-spec/stateLabels.json` |
 | `actionRecipes` | 친화 명칭 → 액션 JSON 레시피 | 20 | `editor-spec/actionRecipes.json` |
 | `conditionRecipes.operators` | 조건 표현식에 쓸 수 있는 연산자 | 37 | `editor-spec/conditionRecipes.json` |
@@ -85,22 +85,35 @@
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 59 | `mileage_balance` · `mileage_history` · `user` · `userNotifications` · `searchResults` · `profile` · `userProfile` · `addresses` · `userAddresses` · `boardList` · `boards` · `home_boards` … 외 47개 |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 66 | `scrap` · `user` · `userNotifications` · `searchResults` · `profile` · `userProfile` · `addresses` · `userAddresses` · `boardList` · `boards` · `home_boards` · `cart` … 외 54개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 1 | `/api/modules/sirsoft-page/pages/*` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 17 | `/login` · `/search` · `/mypage/notifications` · `/mypage/profile/edit` · `/forgot-password` · `/reset-password` · `/identity/challenge` · `/mypage/change-password` · `/mypage/wishlist` · `/mypage/addresses` · `/users/:userId` · `/users/:userId/posts` … 외 5개 |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 48 | `/login` · `/search` · `/mypage/notifications` · `/mypage/profile/edit` · `/forgot-password` · `/reset-password` · `/identity/challenge` · `/mypage/change-password` · `/mypage/wishlist` · `/mypage/addresses` · `/users/:userId` · `/users/:userId/posts` … 외 36개 |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->
 
 <!-- @intent START -->
-`byDataSourceId` 59종이 사용자 화면 전반을 덮고, `byEndpointPattern` 1종이
+`byDataSourceId` 62종이 사용자 화면 전반을 덮고, `byEndpointPattern` 1종이
 `sirsoft-page` 의 공개 페이지를 덮습니다. 다른 확장 소유 경로를 이 템플릿이 덮는 것은
 그 화면을 **렌더하는 쪽이 템플릿**이기 때문입니다 — 페이지 모듈은 데이터를 주고, 그리는
 것은 템플릿입니다.
 
+클레임 3종(`claims` · `claim` · `claimable`)은 화면이 먼저 서고 표본이 늦게 붙은 자리입니다 — 그동안 편집기 캔버스에서 취소·반품·교환 화면만 빈 껍데기로 그려졌고, 실제 화면은 정상이라 오류도 경고도 남지 않았습니다. 새 화면을 세울 때 표본을 같은 작업에서 함께 넣어야 하는 이유입니다.
+
 `states.groups` 17종은 로그인·검색·마이페이지처럼 로그인 여부와 데이터 유무로 화면이
 갈리는 자리입니다. 사용자 화면은 "비어 있는 상태" 가 관리자 화면보다 흔하므로, 새 화면을
 만들 때는 데이터가 있는 경우보다 **없는 경우**를 먼저 상태로 등록합니다.
+
+### `nesting` 의 두 목록은 축이 다릅니다
+
+`draggable` 은 **팔레트에서 끌어 놓을 수 있는가**, `containers.*.accepts` 는 **자식으로 담길 수
+있는가** 입니다. 레이아웃이 손으로 쓰는 구조 부품(`Header`·`Footer`·`SlotContainer`·`ThemeToggle`
+등)은 팔레트에 두지 않으면서도 accepts 에는 있어야 합니다 — 없으면 컴파일 lint 가
+`Div 는 자식으로 Header 를 받도록 선언되지 않았습니다` 라고 **거짓 경고**를 냅니다(저장은 막지 않음).
+
+accepts 에 더하는 것은 팔레트를 넓히지 않으므로, 레이아웃이 실제로 쓰는 조합은 accepts 에
+빠짐없이 적습니다. 반대로 **확장 지점**(`type: extension_point`)은 컴포넌트가 아니라 accepts 대상이
+아니며, lint 이 따로 걸러냅니다 — 확장이 늘 때마다 이 목록을 고쳐야 한다면 그 설계가 틀린 것입니다.
 <!-- @intent END -->
 
 ## 수정 시 동반 의무

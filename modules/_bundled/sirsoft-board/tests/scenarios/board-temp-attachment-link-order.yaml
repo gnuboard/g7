@@ -1,0 +1,17 @@
+feature: 게시판 임시 첨부를 글에 이을 때의 순서
+
+description: |
+  글쓰기 화면은 고른 순서대로 임시 첨부를 올리고(서버는 임시 키 안에서 도착 순서로 1, 2, … 를 매김) 글을 저장할 때 잇는다.
+  이미 첨부가 있는 글의 수정 화면에서 더한 파일도 1 부터 번호를 받아 기존 첨부와 같은 번호가 됐고 목록에서 기존 첨부
+  사이에 끼었다(7.1.0 전수 실측 O-F1-3 서버 정합 확인 — 페이지 모듈 O-L1 (2) 와 같은 결함).
+  새 첨부는 기존 첨부의 마지막 번호 뒤에 붙고, 새 글은 1..N 그대로다.
+
+axes:
+  screen: [create, edit]
+
+effects:
+  - new_post_attachments_keep_upload_order
+  - edit_added_attachments_follow_existing_ones
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/TempAttachmentLinkOrderTest.php

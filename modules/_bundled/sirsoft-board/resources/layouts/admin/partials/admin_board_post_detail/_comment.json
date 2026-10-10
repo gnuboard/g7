@@ -1,732 +1,824 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Admin Board Post Detail - Single Comment Component (Enhanced Design)"
-  },
-  "type": "basic",
-  "name": "Div",
-  "children": [
-    {
-      "id": "comment_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-start justify-between gap-1"
-      },
-      "children": [
-        {
-          "id": "comment_left_section",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-2 flex-1 min-w-0"
-          },
-          "children": [
-            {
-              "id": "depth_indicator",
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0 text-sm"
-              },
-              "text": "↳",
-              "if": "{{comment.depth > 0}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1 min-w-0"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "id": "author_name_menu",
-                      "type": "composite",
-                      "name": "ActionMenu",
-                      "if": "{{!comment?.author?.is_guest}}",
-                      "props": {
-                        "triggerLabel": "{{comment?.author?.name}}",
-                        "triggerIconName": "",
-                        "triggerClassName": "font-semibold text-gray-900 dark:text-white",
-                        "position": "right",
-                        "items": [
-                          {
-                            "id": "view_user_info",
-                            "label": "$t:sirsoft-board.admin.posts.detail.user_info",
-                            "iconName": "user"
-                          }
-                        ]
-                      },
-                      "actions": [
-                        {
-                          "event": "onItemClick",
-                          "type": "click",
-                          "handler": "switch",
-                          "value": "{{$args[0]}}",
-                          "cases": {
-                            "view_user_info": {
-                              "handler": "navigate",
-                              "params": {
-                                "path": "/admin/users/{{comment?.author?.uuid}}"
-                              }
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{comment?.author?.is_guest}}",
-                      "props": {
-                        "className": "text-primary text-sm font-semibold"
-                      },
-                      "text": "{{comment?.author?.name}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-tertiary"
-                      },
-                      "text": "({{comment?.author?.email}})",
-                      "if": "{{comment?.author?.email}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:sirsoft-board.admin.posts.guest",
-                      "if": "{{comment?.author.is_guest}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                      },
-                      "text": "$t:sirsoft-board.admin.posts.detail.admin_badge",
-                      "if": "{{comment?.author.is_admin}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-tertiary"
-                      },
-                      "text": "· {{comment?.created_at}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-tertiary"
-                      },
-                      "if": "{{comment?.ip_address}}",
-                      "text": "· IP: {{comment?.ip_address}}"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "comment_right_section",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2 flex-shrink-0"
-          },
-          "children": [
-            {
-              "id": "reply_button",
-              "type": "basic",
-              "name": "Button",
-              "if": "{{post?.data?.board?.use_reply && (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
-              "props": {
-                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{post?.data?.abilities?.can_write_comments !== true}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "replyingTo": "{{_local.replyingTo === comment?.id ? null : comment?.id}}",
-                    "editingComment": null,
-                    "replySubmitting": false,
-                    "reply_comment_content": ""
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "comment",
-                    "className": "w-3.5 h-3.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.posts.detail.reply"
-                }
-              ]
-            },
-            {
-              "comment": "신고 버튼 — 미신고 상태 (모달 오픈)",
-              "id": "report_button",
-              "type": "basic",
-              "name": "Button",
-              "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && !comment?.is_already_reported}}",
-              "props": {
-                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "modal_data": {
-                          "id": "{{comment?.id}}",
-                          "type": "comment",
-                          "author": "{{comment?.author?.name}}"
-                        }
-                      }
-                    },
-                    {
-                      "handler": "openModal",
-                      "target": "report_modal"
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "flag",
-                    "className": "w-3.5 h-3.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.posts.detail.report"
-                }
-              ]
-            },
-            {
-              "comment": "신고 버튼 — 이미 신고한 상태 (클릭 불가)",
-              "type": "basic",
-              "name": "Button",
-              "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && comment?.is_already_reported}}",
-              "props": {
-                "disabled": true,
-                "className": "text-hint inline-flex items-center gap-1 px-2 py-1 font-medium rounded cursor-not-allowed opacity-60"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "flag",
-                    "className": "w-3.5 h-3.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.posts.detail.reported"
-                }
-              ]
-            },
-            {
-              "id": "comment_action_menu",
-              "type": "composite",
-              "name": "ActionMenu",
-              "props": {
-                "triggerLabel": "",
-                "triggerIconName": "ellipsis-vertical",
-                "position": "right",
-                "items": "{{comment?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.detail.edit', iconName: 'pencil', disabled: !((comment?.is_author && comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}, ...((comment?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: comment?.abilities?.can_manage !== true}] : []), ...((comment?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((comment?.is_author && comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}]}}"
-              },
-              "actions": [
-                {
-                  "event": "onItemClick",
-                  "type": "click",
-                  "handler": "switch",
-                  "value": "{{$args[0]}}",
-                  "cases": {
-                    "edit": {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "editingComment": "{{comment?.id}}",
-                        "editingCommentPostId": "{{comment?.post_id}}",
-                        "edit_comment_content": "{{comment?.content}}",
-                        "replyingTo": null,
-                        "editSubmitting": false
-                      }
-                    },
-                    "blind": {
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "blind_modal_data": {
-                              "id": "{{comment?.id}}",
-                              "slug": "{{route.slug}}",
-                              "type": "comment"
-                            }
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "blind_modal"
-                        }
-                      ]
-                    },
-                    "restore": {
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "restore_modal_data": {
-                              "id": "{{comment?.id}}",
-                              "slug": "{{route.slug}}",
-                              "type": "comment"
-                            }
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "restore_modal"
-                        }
-                      ]
-                    },
-                    "delete": {
-                      "handler": "sequence",
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "modal_data": {
-                              "id": "{{comment?.id}}",
-                              "type": "comment"
-                            }
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "delete_modal"
-                        }
-                      ]
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "댓글 한 줄. 같은 조각이 원댓글과 대댓글 양쪽에 쓰이고 `comment.depth` 로만 갈린다. 본문은 세 갈래 중 하나만 뜬다 — 삭제됨 · 가려짐 · 보통. 앞 둘은 원문을 감춘 채 「원문 보기」로 펼치게 하고 그 버튼은 관리 권한이 있을 때만 눌린다",
+    "meta": {
+        "is_partial": true,
+        "description": "Admin Board Post Detail - Single Comment Component (Enhanced Design)",
+        "_e2e_allow": "e2e:allow 댓글 반응 수는 읽기 전용 표시 한 줄이다 — 버튼·api-call 이 없어 조작할 동작 자체가 없다(읽기 전용임을 admin-board-post-detail-comment-reactions.test.tsx 가 /react 경로 부재로 잠근다). 노출 3조건·아이콘 2단 폴백·집계 바인딩은 같은 Vitest 레이아웃 테스트 5건이 커버하고, 줄을 지우면 4건이 red 다. 표시할 값이 실제로 내려오는지는 관리자 상세 API 실측으로 확인했다(use_comment_reaction·reaction_type_options·comment.reaction_counts)."
     },
-    {
-      "id": "comment_content_wrapper",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_local.editingComment !== comment.id}}",
-      "children": [
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "id": "deleted_comment_content",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{comment?.deleted_at && !comment?.is_cascade_deleted}}",
-          "props": {
-            "className": "mt-1.5 px-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle"
-              },
-              "children": [
+            "id": "comment_header_{{comment.id}}",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-start justify-between gap-1"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "trash",
-                        "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500"
-                      }
+                    "id": "comment_left_section_{{comment.id}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-2 flex-1 min-w-0"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.posts.detail.deleted_comment_notice"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "id": "depth_indicator_{{comment.id}}",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{comment.depth > 0}}",
+                            "props": {
+                                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0 text-sm"
+                            },
+                            "text": "↳"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1 min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "author_name_menu_{{comment.id}}",
+                                            "type": "composite",
+                                            "name": "ActionMenu",
+                                            "if": "{{!comment?.author?.is_guest}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원은 이 메뉴 자체가 없다(uuid 가 없어 갈 곳이 없다)",
+                                                    "type": "click",
+                                                    "event": "onItemClick",
+                                                    "handler": "switch",
+                                                    "cases": {
+                                                        "view_user_info": {
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "/admin/users/{{comment?.author?.uuid}}"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "triggerLabel": "{{comment?.author?.name}}",
+                                                "triggerIconName": "",
+                                                "triggerClassName": "font-semibold text-gray-900 dark:text-white",
+                                                "position": "right",
+                                                "items": [
+                                                    {
+                                                        "id": "view_user_info",
+                                                        "label": "$t:sirsoft-board.admin.posts.detail.user_info",
+                                                        "iconName": "user"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{comment?.author?.is_guest}}",
+                                            "props": {
+                                                "className": "text-primary text-sm font-semibold"
+                                            },
+                                            "text": "{{comment?.author?.name}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{comment?.author?.email}}",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "({{comment?.author?.email}})"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{comment?.author.is_guest}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.posts.guest"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{comment?.author.is_admin}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.posts.detail.admin_badge"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "· {{comment?.created_at}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{comment?.ip_address}}",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "· IP: {{comment?.ip_address}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "className": "text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{comment?.abilities?.can_manage !== true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "showDeletedCommentId": "{{_local.showDeletedCommentId === comment?.id ? null : comment?.id}}"
-                      }
-                    }
-                  ],
-                  "text": "{{_local.showDeletedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
+                    "id": "comment_right_section_{{comment.id}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2 flex-shrink-0"
+                    },
+                    "children": [
+                        {
+                            "id": "reply_button_{{comment.id}}",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{post?.data?.board?.use_reply && (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
+                            "actions": [
+                                {
+                                    "comment": "이 댓글 아래에 답글 칸을 열고 닫는다(같은 버튼을 다시 누르면 닫힌다). 열면서 편집 중이던 다른 댓글은 닫는다 — 한 화면에서 편집과 답글이 동시에 열려 있으면 어느 쪽이 저장되는지 알기 어렵다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "replyingTo": "{{_local.replyingTo === comment?.id ? null : comment?.id}}",
+                                        "editingComment": null,
+                                        "replySubmitting": false,
+                                        "reply_comment_content": ""
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{post?.data?.abilities?.can_write_comments !== true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "comment",
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.posts.detail.reply"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "신고 버튼 — 미신고 상태 (모달 오픈)",
+                            "id": "report_button_{{comment.id}}",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && !comment?.is_already_reported}}",
+                            "actions": [
+                                {
+                                    "comment": "이 댓글을 신고 대상으로 지목한 «뒤» 신고 창을 연다 — 모달은 별도 컨텍스트라 `comment` 를 볼 수 없어 전역에 실어 건네야 한다. 글쓴이 이름도 함께 넘겨 창에서 「누구의 댓글」인지 보여준다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "modal_data": {
+                                                    "id": "{{comment?.id}}",
+                                                    "type": "comment",
+                                                    "author": "{{comment?.author?.name}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "report_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "flag",
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.posts.detail.report"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "신고 버튼 — 이미 신고한 상태 (클릭 불가)",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && comment?.is_already_reported}}",
+                            "props": {
+                                "disabled": true,
+                                "className": "text-hint inline-flex items-center gap-1 px-2 py-1 font-medium rounded cursor-not-allowed opacity-60"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "flag",
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.posts.detail.reported"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "comment_action_menu_{{comment.id}}",
+                            "type": "composite",
+                            "name": "ActionMenu",
+                            "actions": [
+                                {
+                                    "comment": "댓글 점 메뉴 — 편집만 이 자리에서 바로 열고(지역 상태), 가리기·되살리기·삭제 셋은 대상을 전역에 실은 뒤 각자의 확인 창을 연다. 세 창이 서로 다른 키를 쓰는 이유는 겹쳐 열릴 때 대상이 섞이지 않게 하기 위해서다",
+                                    "type": "click",
+                                    "event": "onItemClick",
+                                    "handler": "switch",
+                                    "cases": {
+                                        "edit": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "editingComment": "{{comment?.id}}",
+                                                "editingCommentPostId": "{{comment?.post_id}}",
+                                                "edit_comment_content": "{{comment?.content}}",
+                                                "replyingTo": null,
+                                                "editSubmitting": false
+                                            }
+                                        },
+                                        "blind": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "blind_modal_data": {
+                                                            "id": "{{comment?.id}}",
+                                                            "slug": "{{route.slug}}",
+                                                            "type": "comment"
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "blind_modal"
+                                                }
+                                            ]
+                                        },
+                                        "restore": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "restore_modal_data": {
+                                                            "id": "{{comment?.id}}",
+                                                            "slug": "{{route.slug}}",
+                                                            "type": "comment"
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "restore_modal"
+                                                }
+                                            ]
+                                        },
+                                        "delete": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "modal_data": {
+                                                            "id": "{{comment?.id}}",
+                                                            "type": "comment"
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "delete_modal"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "triggerLabel": "",
+                                "triggerIconName": "ellipsis-vertical",
+                                "position": "right",
+                                "items": "{{comment?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.detail.edit', iconName: 'pencil', disabled: !(comment?.abilities?.can_write === true && (comment?.is_author || comment?.abilities?.can_manage === true))}, ...((comment?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: comment?.abilities?.can_manage !== true}] : []), ...((comment?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((comment?.is_author && comment?.abilities?.can_write === true) || comment?.abilities?.can_manage === true)}]}}"
+                            }
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_local.showDeletedCommentId === comment?.id}}",
-              "props": {
-                "className": "mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-label whitespace-pre-line leading-relaxed"
-              },
-              "text": "{{comment.content}}"
-            }
-          ]
+            ]
         },
         {
-          "id": "blinded_comment_content",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{comment?.status === 'blinded' && !comment?.deleted_at}}",
-          "props": {
-            "className": "mt-1.5 px-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle"
-              },
-              "children": [
+            "id": "comment_content_wrapper_{{comment.id}}",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.editingComment !== comment.id}}",
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center flex-wrap gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "eye-slash",
-                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
-                      }
+                    "id": "deleted_comment_content_{{comment.id}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{comment?.deleted_at && !comment?.is_cascade_deleted}}",
+                    "props": {
+                        "className": "mt-1.5 px-4"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.posts.detail.blinded_comment_notice"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{comment?.abilities?.can_manage && (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}",
-                      "props": {
-                        "className": "text-amber-600 dark:text-amber-400"
-                      },
-                      "text": "($t:sirsoft-board.admin.posts.detail.blind_reason_label {{(comment?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}})"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "trash",
+                                                "className": "text-sm text-red-400 dark:text-red-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.posts.detail.deleted_comment_notice"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "지워진 댓글의 원문을 폈다 접었다 한다 — 열려 있는 것은 한 번에 하나뿐이라(id 하나를 담는다) 다른 줄을 열면 이 줄은 닫힌다",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "showDeletedCommentId": "{{_local.showDeletedCommentId === comment?.id ? null : comment?.id}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{comment?.abilities?.can_manage !== true}}"
+                                    },
+                                    "text": "{{_local.showDeletedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.showDeletedCommentId === comment?.id}}",
+                            "props": {
+                                "className": "mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-label whitespace-pre-line leading-relaxed"
+                            },
+                            "text": "{{comment.content}}"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "className": "text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{comment?.abilities?.can_manage !== true}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "showBlindedCommentId": "{{_local.showBlindedCommentId === comment?.id ? null : comment?.id}}"
-                      }
-                    }
-                  ],
-                  "text": "{{_local.showBlindedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
+                    "id": "blinded_comment_content_{{comment.id}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{comment?.status === 'blinded' && !comment?.deleted_at}}",
+                    "props": {
+                        "className": "mt-1.5 px-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "eye-slash",
+                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.posts.detail.blinded_comment_notice"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{comment?.abilities?.can_manage && (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}",
+                                            "props": {
+                                                "className": "text-amber-600 dark:text-amber-400"
+                                            },
+                                            "text": "($t:sirsoft-board.admin.posts.detail.blind_reason_label {{(comment?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}})"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "가려진 댓글의 원문을 폈다 접었다 한다 — 삭제된 줄과 다른 키를 쓰므로 둘을 동시에 펼 수 있다",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "showBlindedCommentId": "{{_local.showBlindedCommentId === comment?.id ? null : comment?.id}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{comment?.abilities?.can_manage !== true}}"
+                                    },
+                                    "text": "{{_local.showBlindedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.showBlindedCommentId === comment?.id}}",
+                            "props": {
+                                "className": "mt-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-label whitespace-pre-line leading-relaxed"
+                            },
+                            "text": "{{comment.content}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "비밀 댓글 (열람 권한 없음) — 서버가 원문을 null 로 가려 보낸다. 비밀글 조회·게시판 관리 권한이 없는 관리자 역할에게만 해당하며, 안내가 없으면 빈 칸으로 보인다",
+                    "id": "secret_comment_content_{{comment.id}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted) && comment?.is_secret && comment?.content === null}}",
+                    "props": {
+                        "className": "mt-1.5 px-4 flex-center gap-2 text-label-subtle"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "lock",
+                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-board.admin.posts.detail.secret_comment_notice"
+                        }
+                    ]
+                },
+                {
+                    "id": "normal_comment_content_{{comment.id}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted) && !(comment?.is_secret && comment?.content === null)}}",
+                    "props": {
+                        "className": "mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed"
+                    },
+                    "text": "{{comment.content}}"
+                },
+                {
+                    "comment": "댓글 반응 수 — 읽기 전용. 관리자는 집계를 보기만 하고 반응을 남기지 않는다(버튼·api-call 없음). 삭제된 댓글은 집계를 감춘다",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{post?.data?.board?.use_comment_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0 && !comment?.deleted_at}}",
+                    "props": {
+                        "data-testid": "comment_reaction_counts",
+                        "className": "mt-2 px-4 flex flex-wrap items-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "iteration": {
+                                "source": "{{post?.data?.board?.reaction_type_options ?? []}}",
+                                "item_var": "rt"
+                            },
+                            "props": {
+                                "className": "text-tertiary inline-flex items-center gap-1 text-xs"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{!!rt.icon_url}}",
+                                    "props": {
+                                        "src": "{{rt.icon_url}}",
+                                        "alt": "",
+                                        "className": "w-4 h-4 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!rt.icon_url}}",
+                                    "props": {
+                                        "name": "{{rt.icon_name ?? 'fa-thumbs-up'}}",
+                                        "size": "xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{rt.name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium"
+                                    },
+                                    "text": "{{comment?.reaction_counts?.[rt.id] ?? 0}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_local.showBlindedCommentId === comment?.id}}",
-              "props": {
-                "className": "mt-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-label whitespace-pre-line leading-relaxed"
-              },
-              "text": "{{comment.content}}"
-            }
-          ]
+            ]
         },
         {
-          "id": "normal_comment_content",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{comment?.status !== 'blinded' && (!comment?.deleted_at || comment?.is_cascade_deleted)}}",
-          "props": {
-            "className": "mt-1.5 px-4 text-body whitespace-pre-line leading-relaxed"
-          },
-          "text": "{{comment.content}}"
-        }
-      ]
-    },
-    {
-      "id": "comment_edit_form",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mt-3 pl-10"
-      },
-      "if": "{{_local.editingComment === comment.id}}",
-      "children": [
-        {
-          "type": "composite",
-          "name": "Textarea",
-          "props": {
-            "value": "{{_local.edit_comment_content ?? comment.content}}",
-            "rows": 3,
-            "className": "text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2"
-          },
-          "actions": [
-            {
-              "type": "input",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "edit_comment_content": "{{$event.target.value}}"
-              }
-            }
-          ]
+            "id": "comment_edit_form_{{comment.id}}",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.editingComment === comment.id}}",
+            "props": {
+                "className": "mt-3 pl-10"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Textarea",
+                    "actions": [
+                        {
+                            "comment": "편집 중인 본문을 담는다 — 칸의 초기값은 원문이고, 이 상태가 비어 있으면 원문이 그대로 보인다",
+                            "type": "input",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "edit_comment_content": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "value": "{{_local.edit_comment_content ?? comment.content}}",
+                        "rows": 3,
+                        "className": "text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "편집을 접는다 — 고치던 내용은 버린다(따로 저장하지 않는다)",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "editingComment": null,
+                                        "edit_comment_content": ""
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.posts.detail.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "편집 저장 — 버튼이 잠겨 있어도 조건을 한 번 더 본다(`if`). 이 조각은 댓글마다 되풀이돼 저장 상태를 한 값으로 나눠 쓰므로, 잠금만 믿으면 다른 줄에서 저장이 도는 사이에 이 줄이 함께 나갈 수 있다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "if": "{{_local.editSubmitting !== true}}",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "editSubmitting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{comment?.post_id}}/comments/{{comment?.id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "PUT",
+                                                "body": {
+                                                    "content": "{{_local.edit_comment_content}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "post"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "editingComment": null,
+                                                        "edit_comment_content": "",
+                                                        "editSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-board.admin.posts.detail.comment_edit_success"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "editSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.editSubmitting === true || !(comment?.abilities?.can_write === true && (comment?.is_author || comment?.abilities?.can_manage === true))}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_local.editSubmitting}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.posts.detail.edit"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "editingComment": null,
-                    "edit_comment_content": ""
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.posts.detail.cancel"
-                }
-              ]
+            "id": "replies_toggle_button_{{comment.id}}",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{comment.depth === 0 && comment.replies_count > 0}}",
+            "props": {
+                "className": "mt-2 px-4"
             },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_local.editSubmitting === true}}"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "if": "{{_local.editSubmitting !== true}}",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "editSubmitting": true
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "대댓글 묶음을 폈다 접었다 한다 — 원댓글이 여럿이므로 하나의 id 가 아니라 «id 별 상태 표»를 들고, 그 표를 통째로 새로 지어 넣는다. 값이 없으면 접힘(`?? true`)이 기본이다",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "collapsedReplies": "{{Object.assign({}, _local.collapsedReplies || {}, {[comment.id]: !(_local.collapsedReplies?.[comment.id] ?? true)})}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "className": "inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                     },
-                    {
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{comment?.post_id}}/comments/{{comment?.id}}",
-                      "params": {
-                        "method": "PUT",
-                        "body": {
-                          "content": "{{_local.edit_comment_content}}"
-                        }
-                      },
-                      "onSuccess": [
+                    "children": [
                         {
-                          "handler": "refetchDataSource",
-                          "params": {
-                            "dataSourceId": "post"
-                          }
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "{{(_local.collapsedReplies?.[comment.id] ?? true) ? 'chevron-down' : 'chevron-up'}}",
+                                "className": "text-sm"
+                            }
                         },
                         {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "editingComment": null,
-                            "edit_comment_content": "",
-                            "editSubmitting": false
-                          }
-                        },
-                        {
-                          "handler": "toast",
-                          "params": {
-                            "type": "success",
-                            "message": "$t:sirsoft-board.admin.posts.detail.comment_edit_success"
-                          }
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{(_local.collapsedReplies?.[comment.id] ?? true) ? '$t:sirsoft-board.admin.posts.detail.show_replies|count=' + comment.replies_count : '$t:sirsoft-board.admin.posts.detail.hide_replies'}}"
                         }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "editSubmitting": false
-                          }
-                        },
-                        {
-                          "handler": "toast",
-                          "params": {
-                            "type": "error",
-                            "message": "{{error.message}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "spinner",
-                        "className": "spinner-sm"
-                      },
-                      "if": "{{_local.editSubmitting}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.posts.detail.edit"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    },
-    {
-      "id": "replies_toggle_button",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{comment.depth === 0 && comment.replies_count > 0}}",
-      "props": {
-        "className": "mt-2 px-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "collapsedReplies": "{{Object.assign({}, _local.collapsedReplies || {}, {[comment.id]: !(_local.collapsedReplies?.[comment.id] ?? true)})}}"
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "{{(_local.collapsedReplies?.[comment.id] ?? true) ? 'chevron-down' : 'chevron-up'}}",
-                "className": "w-3.5 h-3.5"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{(_local.collapsedReplies?.[comment.id] ?? true) ? '$t:sirsoft-board.admin.posts.detail.show_replies|count=' + comment.replies_count : '$t:sirsoft-board.admin.posts.detail.hide_replies'}}"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

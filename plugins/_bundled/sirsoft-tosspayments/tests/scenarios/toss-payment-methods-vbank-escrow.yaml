@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: S4 결제수단·가상계좌·에스크로 명세 SSoT. 8-tuple pairwise 19건을 테스트 docblock @scenario 로 전부 나열하는 것은 실효성이 낮다(테스트는 축별 동작을 격리 검증 — KG security-callback-defense 선례 동일). effects 는 test_files 의 단위/통합 테스트가 @effects 로 실제 매핑·검증한다. 실 PG 결제창(M20·M21)은 실계약 후 Chrome MCP 로 커버.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: S4 결제수단·가상계좌·에스크로 명세 SSoT. 8-tuple pairwise 19건을 테스트 docblock @scenario 로 전부 나열하는 것은 실효성이 낮다(테스트는 축별 동작을 격리 검증 — KG security-callback-defense 선례 동일). effects 는 test_files 의 단위/통합 테스트가 @effects 로 실제 매핑·검증한다. 실 PG 결제창(M20·M21)은 실계약 후 Chrome MCP 로 커버.
 # 시나리오 매니페스트 — 토스 결제수단 동적등록 · 가상계좌 · 웹훅 · 에스크로 (S4)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 계획서 §12-4 / §13-2
 
@@ -9,7 +9,9 @@ description: >-
 
 test_files:
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/WebhookControllerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/AdminWebhookUrlTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/VirtualAccountDueDateTimezoneTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterTossPaymentMethodsListenerTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterPgProviderClientConfigTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/RegisterPgProviderListenerTest.php
@@ -39,6 +41,8 @@ axes:
   kg_coexists: [false, true]
   # 주문 생성 시 서버로 보내는 payment_method — toss_* 는 코어 enum 이 거부하므로 core 값으로 번역해 전송
   core_payment_method_sent: [translated, raw_fallback]
+  # 입금통보가 발급 시점 paymentKey 를 건드리는지 (S1-D10)
+  webhook_case: [deposit_done_keeps_payment_key]
   # 관리자 설정 저장 서버측 범위 검증 (UI max 는 클라 힌트일 뿐 — API 직접 호출 우회 차단)
   settings_range: [valid, out_of_range]
 
@@ -60,6 +64,11 @@ axis_notes:
   settings_range: >-
     out_of_range = vbank_valid_hours 가 1~2160(90일) 밖이거나 use_escrow 가 3-상태 밖 → 422 로 저장 차단.
     valid = 범위 내 → 200 저장. UI input[max] 는 클라이언트 힌트라 API 직접 호출을 막지 못한다.
+  webhook_case: >-
+    deposit_done_keeps_payment_key = 입금통보(DONE)가 싣고 온 `transactionKey`(`txrd_…`, 회차마다
+    바뀌는 별개 식별자)로 `transaction_id`(= 취소 API 가 쓰는 paymentKey)를 덮어쓰지 않는지.
+    덮어쓰면 환불이 승인까지 간 뒤 실행에서만 「존재하지 않는 결제 정보 입니다」로 거절된다(S1-D10).
+    통보 식별자는 `payment_meta.deposit_transaction_key` 로 분리 보관한다.
 
 # 의미 없는 조합 컷
 exclusions:
@@ -72,16 +81,27 @@ exclusions:
 
 # 후속 효과 체인
 effects:
+  - vbank_due_at_stored_in_app_timezone   # 가상계좌 dueDate(+09:00)를 앱 시간대(UTC)로 바꿔 저장 — 9시간 어긋남 방지(S4-D5 후속)
   - toss_provider_registered_with_payment_handler
   - enabled_methods_exposed_with_core_mapping
   - vbank_account_stored_without_completing
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전) — KG·KCP·나이스와 같은 처리
   - vbank_secret_stored_for_webhook
   - is_escrow_snapshot_persisted
   - webhook_secret_verified
   - webhook_replay_idempotent
   - deposit_done_completes_payment
+  # 입금통보가 취소 API 의 paymentKey 를 보존한다 (S1-D10)
+  - deposit_webhook_preserves_payment_key
   - deposit_canceled_fails_payment
   - non_waiting_deposit_is_noop
+  # 알 수 없는 주문번호는 200 + 본문 FAIL — 토스가 재시도를 멈추도록 수신은 성립시킨다
+  - deposit_for_an_unknown_order_number_answers_fail
+  # status 값 자체가 규격 밖이면 검증에서 422 로 거른다 (분기 진입 전)
+  - deposit_with_an_unknown_status_is_rejected_by_validation
+  # 클레임 추가결제(CP 채번) 상태변경 웹훅은 주문 조회로 내려가지 않는다 — 정상 동작마다
+  # `order not found` warning 이 남으면 운영자 로그에서 결함으로 읽힌다
+  - claim_payment_status_webhook_terminates_without_an_order_lookup
   - non_krw_domestic_method_blocked
   - sdk_method_mapped_from_enabled_methods
   - virtual_account_payload_built
@@ -92,6 +112,8 @@ effects:
   - toss_methods_declare_pg_locked_to_tosspayments
   - locked_pg_id_matches_registered_provider
   - other_plugin_methods_untouched_by_toss_injection
+  # 환불 자동 승인 능력 선언 (코어 P16·P17) — 카드 계열만 true
+  - only_card_backed_methods_declare_auto_approve_refund
   # 코어 결제수단 번역 (본 이슈 수정분)
   - core_payment_method_preserved_through_settings_merge
   - core_payment_method_preserved_through_save_snapshot
@@ -108,6 +130,16 @@ effects:
   - escrow_products_absent_for_card
   # 에스크로 운영 안내 (W-6)
   - escrow_operation_notice_shown_when_escrow_enabled
+  # 설정 화면 입금통보 웹훅 URL — 경로만이 아니라 사이트 주소까지 붙은 전체 주소로 표시·복사
+  - webhook_url_returned_as_absolute_url
+  - webhook_url_display_and_copy_use_absolute_url
+  - webhook_url_lookup_requires_settings_read
+  # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
+  - skips_when_settings_json_is_malformed
+  - skips_when_settings_file_is_missing
+  - is_idempotent
+  - does_not_touch_other_plugins_or_builtin_methods
+  - backfills_pg_declaration_for_toss_methods
 
 notes: |
   실계약 전이므로 실제 PG 결제창 진입/승인은 샌드박스 의존이며 M20·M21(Chrome MCP)은

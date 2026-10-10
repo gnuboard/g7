@@ -3,6 +3,7 @@
   "title_edit": "掲示板編集",
   "description": "掲示板設定を管理します",
   "read_only_message": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。",
+  "create_read_only_message": "掲示板の作成権限がないため、読み取り専用で表示されます。",
   "validation_error": "入力情報をご確認ください。",
   "add_category": "分類追加",
   "tabs": {
@@ -136,7 +137,13 @@
       "channels_label": "通知チャネル",
       "channel_mail": "メール",
       "channel_database": "サイト通知"
-    }
+    },
+    "use_scrap": "スクラップ機能の使用",
+    "use_reaction": "リアクション使用",
+    "active_reaction_types": "使用するリアクションタイプを選択",
+    "use_comment_reaction": "コメントリアクション使用",
+    "manage_reaction_types": "タイプ管理",
+    "manage_reaction_types_no_permission": "リアクションタイプを管理するには掲示板環境設定の更新権限が必要です。"
   },
   "placeholders": {
     "name": "例：お知らせ",
@@ -154,7 +161,10 @@
     "use_comment": "有効化するとコメント関連の詳細設定(長さ、深さ、並べ替え)を指定できます。",
     "use_reply": "有効化すると回答投稿の最大深さを設定できます。",
     "use_report": "不適切な投稿/コメントの通報機能を有効化します",
-    "type": "掲示板の種類は環境設定 > 基本設定で管理できます。"
+    "type": "掲示板の種類は環境設定 > 基本設定で管理できます。",
+    "use_scrap": "会員が投稿を個人の保管庫に保存するスクラップ機能を有効化します",
+    "use_reaction": "投稿に推薦/非推薦などのリアクションを残す機能を有効化します",
+    "use_comment_reaction": "コメントにもリアクションボタンを追加します。「リアクション使用」を有効にした掲示板でのみ動作します。"
   },
   "options": {
     "secret_mode": {
@@ -166,6 +176,7 @@
   "permissions": {
     "managers_title": "掲示板管理者",
     "managers_description": "掲示板のすべての権限を持つ管理者を指定します。",
+    "members_assign_denied": "基本権限設定に含まれていないアカウントは、新しい掲示板の管理者に本人のみ指定できます。このまま保存すると本人がこの掲示板の管理者になります。他の管理者・スタッフは掲示板の作成後に掲示板の編集画面で指定してください（掲示板の編集権限が必要です）。",
     "managers_select_button": "管理者を選択",
     "manager_email_placeholder": "管理者メールアドレスを入力",
     "search_manager": "閲覧",

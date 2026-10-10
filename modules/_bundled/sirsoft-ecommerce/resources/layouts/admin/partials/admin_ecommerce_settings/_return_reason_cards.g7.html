@@ -1,0 +1,74 @@
+<!-- 쇼핑몰 설정 — 반품 사유 목록의 좁은 화면용 카드. 넓은 화면의 표와 같은 배열을 고치며, 고객이 반품을 신청할 때 고르는 사유와 그 귀책(반품 회수 배송비를 누가 내는가)을 여기서 관리한다. -->
+<partial description="반품 사유 관리 - Mobile 카드 뷰">
+  <div data-ref="return_reason_cards_container">
+    <div data-ref="return_reason_card_{{rIdx}}" data-each="reason, rIdx in (_local.form?.claim?.return_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card mb-3">
+      <div class="excel-card-header">
+        <div class="flex-center gap-2 min-w-0">
+          <div class="min-w-0">
+            <div class="{{_local.errors?.['claim.return_reasons.' + reason._idx + '.code'] ? 'excel-card-title font-mono text-red-600 dark:text-red-400' : 'excel-card-title font-mono'}}">{{reason.code}}</div>
+            <!-- PC 표와 같은 행 지목 통로 — 모바일에서만 코드 거절 사유가 사라지지 않게. -->
+            <span data-if="{{_local.errors?.['claim.return_reasons.' + reason._idx + '.code']}}" class="form-error">{{_local.errors?.['claim.return_reasons.' + reason._idx + '.code']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div class="flex-center gap-2 shrink-0">
+          <!-- 반품 사유 사용 여부. 끄면 고객 반품 신청 화면과 서버 접수에서 빠지지만, 줄은 남으므로 이미 접수된 반품 건의 사유 표시는 그대로다. -->
+          <toggle data-type="composite" checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+        </div>
+      </div>
+      <div class="excel-card-body">
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.name</span>
+          <div class="excel-card-value flex-1">
+            <!-- 반품 사유 문구(언어별). 접수된 반품 건은 사유 코드만 저장하고 표시할 때 이 문구를 가져오므로, 고치면 지난 반품 건의 사유 표시도 따라 바뀐다. -->
+            <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.return_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.return_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
+              </on>
+            </multilingual-input>
+          </div>
+        </div>
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.fault_type</span>
+          <div class="excel-card-value flex-1">
+            <!-- 반품 사유의 귀책. 고객 귀책이면 반품 회수 배송비를 고객이 부담하고 판매자·배송사 귀책이면 0원이며, 접수된 반품 건은 접수 때의 귀책을 따로 적어 두어 여기서 바꿔도 소급되지 않는다. -->
+            <select value="{{reason.fault_type ?? 'customer'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="customer">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.customer</option>
+                <option value="seller">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.seller</option>
+                <option value="carrier">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.fault_types.carrier</option>
+              </options>
+              <on type="change">
+                <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, fault_type: $event.target.value} : r)}}" :hasChanges="true"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.columns.is_user_selectable</span>
+          <div class="excel-card-value">
+            <!-- 고객이 반품 신청 화면에서 이 사유를 직접 고를 수 있는지. 끄면 선택지에서 빠지고 신청·수정 요청으로 보내도 서버가 거절하므로, 감춘 판매자 귀책 사유로 회수 배송비를 피하는 우회가 막힌다. -->
+            <input type="checkbox" checked="{{reason.is_user_selectable ?? false}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <set-state target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_user_selectable: !(r.is_user_selectable)} : r)}}" :hasChanges="true"/>
+              </on>
+            </input>
+          </div>
+        </div>
+      </div>
+      <div class="excel-card-footer">
+        <div/>
+        <!-- 반품 사유 삭제. 줄을 빼고 삭제 대상으로 표시해 두었다가 페이지 저장 때 지우며, 그 사유로 접수된 반품 건이 있으면 서버가 저장을 받지 않는다. -->
+        <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <set-state confirm="$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.confirm_delete" target="local" form.claim.return_reasons="{{(_local.form?.claim?.return_reasons ?? []).filter((_, i) => i !== reason._idx)}}" form.claim.return_reasons_deleted="{{[...(_local.form?.claim?.return_reasons_deleted ?? []), ...(reason?.id ? [reason.id] : [])]}}" :hasChanges="true"/>
+          </on>
+          <icon name="fa-solid fa-trash" class="text-sm"/>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

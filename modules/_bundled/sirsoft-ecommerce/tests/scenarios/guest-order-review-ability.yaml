@@ -1,0 +1,17 @@
+feature: 비회원 주문 상세의 리뷰 작성 버튼 (#703)
+
+description: |
+  can_write_review 가 권한만 보고 판정돼 비회원(guest 역할에 리뷰 작성 권한 기본 부여) 주문의 구매확정
+  품목에도 true 가 내려가, 리뷰 창이 없고 저장 API 가 로그인을 요구하는 비회원 주문 상세에 죽은 버튼이
+  생겼다. 비회원 주문 품목은 false, 회원 주문은 종전대로 유지한다.
+
+axes:
+  order_owner: [guest, member]
+  option_status: [confirmed]
+
+effects:
+  - guest_order_hides_review_button
+  - member_order_keeps_review_button
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestOrderReviewAbilityTest.php

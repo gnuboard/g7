@@ -1,0 +1,19 @@
+feature: 첨부 업로드 용량 상한의 게시판 기본값 폴백 (#703)
+
+description: |
+  게시판의 최대 파일 크기가 비어 있으면(null — 기본값 따름) 게시글 저장 검증은 게시판 환경설정 기본값을
+  쓰는데 첨부 업로드 검증·폼 메타만 10MB 리터럴로 떨어졌다. 업로드 검증(규칙·메시지)과 폼 메타(업로더
+  안내·클라이언트 차단 기준)가 게시글 저장과 같은 폴백 체인(게시판 값 → basic_defaults.max_file_size → 10)을 쓴다.
+
+axes:
+  board_max_file_size: ["null", set]
+  defaults_max_file_size: [raised]
+
+effects:
+  - upload_size_rule_falls_back_to_board_defaults
+  - board_value_precedes_defaults
+  - form_meta_max_file_size_falls_back_to_defaults
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentMaxFileSizeFallbackTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/GuestNoticeAbilityTest.php

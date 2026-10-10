@@ -1,0 +1,19 @@
+feature: 페이지에 연결되지 않은 임시 첨부의 순서 변경
+
+description: |
+  순서 변경은 대상 첨부마다 부모 페이지 스코프를 다시 검사한다. 임시 첨부(page_id 없음)는 부모가 없으므로
+  올린 사람만 다룬다. 컨트롤러가 넘기는 [ID => 순서] 매핑을 스코프 검사가 {id, order} 목록으로 읽어 ID 를
+  하나도 찾지 못하고 검사 없이 통과시켰다(실측 2026-10-09). 남의 첨부가 하나라도 섞이면 403 으로 전체를
+  거부하고 아무것도 바꾸지 않는다. 없는 첨부 ID 가 섞이면 서버 오류(500)가 아니라 404 로 끊는다.
+
+axes:
+  request: [uploader_own_only, other_admin_others_only, other_admin_mixed, missing_id]
+
+effects:
+  - own_temp_attachments_reordered
+  - others_temp_attachment_reorder_rejected_with_403
+  - mixed_reorder_rejected_without_partial_change
+  - missing_attachment_id_returns_404
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/TempAttachmentReorderTest.php

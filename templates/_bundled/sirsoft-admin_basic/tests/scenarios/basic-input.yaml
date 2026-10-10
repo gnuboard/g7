@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   기본 입력 컴포넌트의 단위 테스트는 렌더·타입·이벤트·IME·포커스 동기화를 각각 단언한다. 축의 곱(타입 × 포커스 × 외부 값
+#   변경)은 텍스트 계열에서만 의미가 있어 케이스로 나누지 않고 effects 로 잠근다.
+
+feature: admin_basic 기본 입력(Input) — 표시·IME·외부 값 동기화
+
+description: |
+  기본 입력은 IME 조합 중에는 외부 onChange 를 미루고, 외부 value 가 바뀌면 화면 값을 맞춘다. 포커스 중에는 내 입력이
+  디바운스로 늦게 돌아온 값(내가 내보낸 값)으로 되돌리지 않되, 내가 보낸 적 없는 값(같은 화면끼리 이동해 폼이 비워짐 등)은
+  따른다(#736 S2 — 회원 수정 화면끼리 이동 시 비밀번호 칸에 이전 입력이 남던 결함).
+
+axes:
+  focus: [kept, released]
+  external: [reset, lagging_echo, changed]
+
+effects:
+  - input_renders_basic_props
+  - input_applies_type
+  - input_forwards_events
+  - input_passes_html_attributes
+  - input_renders_label_and_error
+  - input_passes_custom_props
+  - input_merges_default_semantic_class
+  - input_combines_props
+  - input_defers_change_during_ime
+  - focused_input_follows_external_reset
+  - focused_input_ignores_own_lagging_echo
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Input.test.tsx

@@ -1,0 +1,24 @@
+feature: 이커머스 ja 언어팩을 켜면 시더가 다시 돌아 배송유형·택배사·클레임 사유 이름에 ja 가 채워진다
+
+description: |
+  모듈 언어팩 활성화 훅(core.language_packs.activated)이 module:seed 를 다시 돌리고, 시더는 언어팩의
+  seed/{entity}.json 번역을 `seed.sirsoft-ecommerce.{entity}.translations` 필터로 받아 이름에 ja 를 넣는다.
+  운영자가 고친 ko 이름(user_overrides)은 지키고 ja 만 채운다.
+
+  #727 에서 고친 것: 테스트가 번역 레지스트리 싱글톤을 갈아 끼워(forgetInstance), 부팅 때 등록된 번역 주입기가
+  옛 인스턴스의 캐시를 계속 봐서 새 활성 팩이 필터에 보이지 않았다(4건 실패). 리스너(#597)와 같은 규칙으로
+  캐시만 비운다(invalidate).
+
+axes:
+  entity: [shipping_types, shipping_carriers, claim_reasons]
+  override: [none, name_ko]
+
+exclusions:
+  - { entity: [shipping_carriers, claim_reasons], override: name_ko, reason: "운영자 ko 보존 규칙은 엔티티와 무관한 공통 시더 경로(GenericEntitySyncHelper)라 배송유형 한 곳에서 잰다" }
+
+effects:
+  - lang_pack_activation_injects_ja_into_seeded_rows
+  - operator_ko_edit_survives_ja_sync
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/LanguagePack/EcommerceLanguagePackSeederTriggerTest.php

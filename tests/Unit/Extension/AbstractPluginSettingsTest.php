@@ -41,14 +41,14 @@ class AbstractPluginSettingsTest extends TestCase
             public function getSettingsLayout(): ?string
             {
                 // 실제 존재하는 파일 경로 반환
-                return base_path('plugins/sirsoft-daum_postcode/resources/layouts/settings.json');
+                return base_path('plugins/sirsoft-daum_postcode/resources/layouts/admin/plugin_settings.json');
             }
         };
 
         // settings.json 파일이 존재하는지 먼저 확인
-        $layoutPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/settings.json');
+        $layoutPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/admin/plugin_settings.json');
         if (! file_exists($layoutPath)) {
-            $this->markTestSkipped('Daum postcode plugin settings.json not found');
+            $this->markTestSkipped('Daum postcode plugin plugin_settings.json not found (플러그인 미설치)');
         }
 
         $this->assertTrue($plugin->hasSettings());
@@ -94,10 +94,10 @@ class AbstractPluginSettingsTest extends TestCase
      */
     public function test_getSettingsLayout_returns_path_when_file_exists(): void
     {
-        $layoutPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/settings.json');
+        $layoutPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/admin/plugin_settings.json');
 
         if (! file_exists($layoutPath)) {
-            $this->markTestSkipped('Daum postcode plugin settings.json not found');
+            $this->markTestSkipped('Daum postcode plugin plugin_settings.json not found (플러그인 미설치)');
         }
 
         // 실제 Daum postcode 플러그인이 존재하면 테스트
@@ -346,10 +346,13 @@ class AbstractPluginSettingsTest extends TestCase
             require_once $pluginFile;
         }
 
-        $pluginClass = 'Plugins\\Sirsoft\\DaumPostcode\\PostcodePlugin';
+        // 클래스명은 plugin.php 의 선언과 일치해야 한다 — `plugin.php:12` = `class Plugin extends AbstractPlugin`.
+        // 종전 상수는 `PostcodePlugin` 이었고 그런 클래스는 저장소에 존재한 적이 없어,
+        // class_exists 가 항상 false → 아래 단언 전체가 영구 무음 스킵이었다.
+        $pluginClass = 'Plugins\\Sirsoft\\DaumPostcode\\Plugin';
 
         if (! class_exists($pluginClass)) {
-            $this->markTestSkipped('PostcodePlugin class not found');
+            $this->markTestSkipped('DaumPostcode Plugin class not found');
         }
 
         $plugin = new $pluginClass;

@@ -1,0 +1,287 @@
+<!-- 배송정책 목록의 검색 조건. 마일리지 내역 필터와 같은 규약이다 — 입력하는 동안에는 아무것도
+  조회하지 않고 `_local.filter` 에 모아 두었다가 [검색]에서 한 번에 내보낸다.
+  조건이 네 갈래다: 검색어 · 배송 방법(복수 선택) · 부과 방식(복수 선택) · 사용 여부(택일).
+  복수 선택은 모두 같은 형태로 움직인다 — '전체' 칸은 목록을 **비우는 것**이고(비었으면 곧 전체),
+  낱개 칸은 같은 코드를 먼저 걸러 낸 뒤 넣거나 뺀다. 그래서 두 번 눌러도 중복이 쌓이지 않는다.
+  배송 방법과 나라 선택지는 하드코딩이 아니라 **이커머스 설정의 활성 항목**에서 온다 — 설정에서
+  끈 방법·나라는 여기 나오지 않는다. 부과 방식만 코드가 마크업에 박혀 있다.
+  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다. -->
+<partial description="Shipping Policy List Filter Section">
+  <div data-ref="filter_section" class="admin-card">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchType" class="select-composite w-36" value="{{_local.filter.searchType || 'name'}}">
+          <options>
+            <option value="name">$t:sirsoft-ecommerce.admin.shipping_policy.filter.search_type.name</option>
+          </options>
+          <on type="change">
+            <!-- 검색 대상 — 지금은 선택지가 '정책명' 하나뿐이라 실질 선택지가 없다. 대상이 늘 때를 위한 자리다. -->
+            <set-state target="_local" filter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-gray-400 dark:text-gray-500"/>
+          <input type="text" name="search" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.search.placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <!-- 검색어 담기 — 조회는 하지 않는다. 바로 아래 엔터 처리와 화면 하단 [검색] 버튼이 같은 명명 액션을 부른다. -->
+              <set-state target="_local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <action-ref name="searchShippingPolicies"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="shipping_method_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.shipping_method</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.shipping_methods || _local.filter.shipping_methods.length === 0}}">
+              <on type="change">
+                <!-- 배송 방법 '전체' — 목록을 비우는 것이 곧 전체다(따로 표식을 두지 않는다). 그래서 이 칸의 체크 표시도 '목록이 비었는가' 로 판단한다. -->
+                <set-state target="_local" :filter.shipping_methods="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label data-each="option in (ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.shipping_methods || []).includes(option.value)}}">
+              <on type="change">
+                <!-- 배송 방법 낱개 — 넣기 전에 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. 선택지는 이커머스 설정의 활성 배송 방법에서 온다. -->
+                <set-state target="_local" filter.shipping_methods="{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== option.value), option.value] : (_local.filter.shipping_methods || []).filter(m => m !== option.value)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{option.label}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="charge_policy_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.charge_policy</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.charge_policies || _local.filter.charge_policies.length === 0}}">
+              <on type="change">
+                <!-- 부과 방식 '전체' — 배송 방법 쪽과 같은 규약(목록을 비우면 전체). -->
+                <set-state target="_local" :filter.charge_policies="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('free')}}">
+              <on type="change">
+                <!-- 부과방식 무료 — 배송비를 매기지 않는 정책만 추린다. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'free'), 'free'] : (_local.filter.charge_policies || []).filter(p => p !== 'free')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.free</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('fixed')}}">
+              <on type="change">
+                <!-- 부과방식 고정 — 금액이 하나로 정해진 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'fixed'), 'fixed'] : (_local.filter.charge_policies || []).filter(p => p !== 'fixed')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.fixed</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('conditional_free')}}">
+              <on type="change">
+                <!-- 부과방식 조건부 무료 — 기준액을 넘으면 무료가 되는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'conditional_free'), 'conditional_free'] : (_local.filter.charge_policies || []).filter(p => p !== 'conditional_free')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.conditional_free</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_amount')}}">
+              <on type="change">
+                <!-- 부과방식 금액 구간 — 주문 금액대별로 배송비가 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_amount'), 'range_amount'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_amount')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_amount</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_quantity')}}">
+              <on type="change">
+                <!-- 부과방식 수량 구간 — 상품 수량대별로 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_quantity'), 'range_quantity'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_quantity')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_quantity</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_weight')}}">
+              <on type="change">
+                <!-- 부과방식 무게 구간 — 무게대별로 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_weight'), 'range_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_volume')}}">
+              <on type="change">
+                <!-- 부과방식 부피 구간 — 부피대별로 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_volume'), 'range_volume'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_volume')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_volume</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('api')}}">
+              <on type="change">
+                <!-- 부과방식 외부 API — 배송비를 바깥에서 받아 오는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'api'), 'api'] : (_local.filter.charge_policies || []).filter(p => p !== 'api')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.api</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_volume_weight')}}">
+              <on type="change">
+                <!-- 부과방식 부피무게 구간 — 부피를 무게로 환산해 구간을 나누는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_volume_weight'), 'range_volume_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_volume_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_volume_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_quantity')}}">
+              <on type="change">
+                <!-- 부과방식 수량 비례 — 수량마다 단위 금액을 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_quantity'), 'per_quantity'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_quantity')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_quantity</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_weight')}}">
+              <on type="change">
+                <!-- 부과방식 무게 비례 — 무게 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_weight'), 'per_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_volume')}}">
+              <on type="change">
+                <!-- 부과방식 부피 비례 — 부피 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_volume'), 'per_volume'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_volume')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_volume</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_volume_weight')}}">
+              <on type="change">
+                <!-- 부과방식 부피무게 비례 — 환산 무게 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_volume_weight'), 'per_volume_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_volume_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_volume_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_amount')}}">
+              <on type="change">
+                <!-- 부과방식 금액 비례 — 주문 금액 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_amount'), 'per_amount'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_amount')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_amount</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="country_filter" data-if="{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).length > 0}}" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.country</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.countries || _local.filter.countries.length === 0}}">
+              <on type="change">
+                <!-- 나라 '전체' — 앞의 둘과 같은 규약. 이 구역 자체가 설정에 등록된 나라가 있을 때만 나타난다. -->
+                <set-state target="_local" :filter.countries="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label data-each="acountry in (ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.countries || []).includes(acountry.code)}}">
+              <on type="change">
+                <!-- 나라 낱개 — 활성 나라만 선택지로 나온다. 넣기 전 같은 코드를 걸러 내는 것도 배송 방법과 같다. -->
+                <set-state target="_local" filter.countries="{{$event.target.checked ? [...(_local.filter.countries || []).filter(c => c !== acountry.code), acountry.code] : (_local.filter.countries || []).filter(c => c !== acountry.code)}}"/>
+              </on>
+            </input>
+            <span class="fi fi-{{acountry.code?.toLowerCase()}} fis rounded"/>
+            <span class="text-label">{{acountry.code}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="is_active_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="radio" name="is_active_filter" class="radio" checked="{{!_local.filter.is_active || _local.filter.is_active === ''}}">
+              <on type="change">
+                <!-- 사용 여부 '전체' — 위 복수 선택들과 달리 택일이라 배열이 아니라 **빈 글자**가 전체를 뜻한다. -->
+                <set-state target="_local" filter.is_active=""/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="radio" name="is_active_filter" class="radio" checked="{{_local.filter.is_active === 'true'}}">
+              <on type="change">
+                <!-- 사용 중만 — 값이 참이 아니라 `'true'` 라는 **글자**다. 일괄 작업 줄의 상태 값도 같은 표기를 쓴다. -->
+                <set-state target="_local" filter.is_active="true"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.active</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="radio" name="is_active_filter" class="radio" checked="{{_local.filter.is_active === 'false'}}">
+              <on type="change">
+                <!-- 중지만 — 위와 같은 글자 표기(`'false'`). -->
+                <set-state target="_local" filter.is_active="false"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.inactive</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_buttons" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchShippingPolicies"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.shipping_policy.action.search
+      </button>
+      <!-- 검색 조건 초기화. 폼 상태를 비우고 목록을 조건 없는 상태로 다시 세운다 -->
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <set-state target="_local">
+            <field name="filter">
+              <field name="searchType" value="name"/>
+              <field name="search" value=""/>
+              <field name="shipping_methods" :value="[]"/>
+              <field name="charge_policies" :value="[]"/>
+              <field name="countries" :value="[]"/>
+              <field name="is_active" value=""/>
+            </field>
+          </set-state>
+          <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+          <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="false"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.shipping_policy.action.reset
+      </button>
+    </div>
+  </div>
+</partial>

@@ -15,6 +15,9 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
 {
     use CalculatesJsonContentDiff;
 
+    /**
+     * @param  TemplateLayoutVersion  $model  버전 모델
+     */
     public function __construct(
         private TemplateLayoutVersion $model
     ) {}
@@ -30,9 +33,10 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
      * @param  array  $content  저장할 content 스냅샷 (이 버전이 담는 내용)
      * @param  array|null  $previousContent  직전 버전 content (변경 요약 기준). null 이면 변경 요약 0
      * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
+     * @param  array<string, mixed>  $summaryExtra  계산된 변경 요약에 덧붙일 키 (예: 확장 업데이트 병합의 `source`·`applied`·`conflicts`)
      * @return TemplateLayoutVersion 생성된 버전
      */
-    public function saveVersion(int $layoutId, array $content, ?array $previousContent = null, ?int $createdBy = null): TemplateLayoutVersion
+    public function saveVersion(int $layoutId, array $content, ?array $previousContent = null, ?int $createdBy = null, array $summaryExtra = []): TemplateLayoutVersion
     {
         $nextVersion = $this->getNextVersion($layoutId);
 
@@ -40,6 +44,9 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
         $changesSummary = $previousContent !== null
             ? $this->calculateChanges($previousContent, $content)
             : ['added' => 0, 'removed' => 0, 'char_diff' => 0];
+
+        // 병합 출처 같은 부가 정보는 계산된 요약 뒤에 붙인다 — 재계산 커맨드가 카운트만 다시 쓰고 이 키는 보존한다.
+        $changesSummary = array_merge($changesSummary, $summaryExtra);
 
         return $this->model->create([
             'layout_id' => $layoutId,
@@ -189,6 +196,10 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
                 $summary = $previousContent !== null
                     ? $this->calculateChanges($previousContent, $version->content ?? [])
                     : ['added' => 0, 'removed' => 0, 'char_diff' => 0];
+
+                // 카운트가 아닌 부가 키(확장 업데이트 병합의 source·applied·conflicts)는 다시 계산할 수 없으니 보존한다.
+                $existing = is_array($version->changes_summary) ? $version->changes_summary : [];
+                $summary = array_merge(array_diff_key($existing, array_flip(self::SUMMARY_COUNT_KEYS)), $summary);
 
                 $version->update(['changes_summary' => $summary]);
                 $previousContent = $version->content ?? [];
